@@ -1,0 +1,1365 @@
+{
+  "schema_version": "1.0.0",
+  "timestamp_utc": "2026-09-15T18:37:45.263806+00:00",
+  "evaluation_unit": "single_event_log",
+  "gt_origin": "wazuh_detection_rule_mappings",
+  "independent_lineage_present": false,
+  "rules_catalog": {
+    "92213": {
+      "description": "Executable file dropped in folder commonly used by malware",
+      "count": 14714,
+      "mitre_ids": [
+        "T1105"
+      ],
+      "top_event_ids": {
+        "11": 14714
+      }
+    },
+    "60608": {
+      "description": "Summary event of the report's signatures.",
+      "count": 14532,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "1001": 14532
+      }
+    },
+    "92052": {
+      "description": "Windows command prompt started by an abnormal process",
+      "count": 6791,
+      "mitre_ids": [
+        "T1059.003"
+      ],
+      "top_event_ids": {
+        "1": 6791
+      }
+    },
+    "61602": {
+      "description": "Windows Sysmon error event",
+      "count": 5108,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "255": 5108
+      }
+    },
+    "92217": {
+      "description": "Executable dropped in Windows root folder",
+      "count": 4659,
+      "mitre_ids": [
+        "T1570"
+      ],
+      "top_event_ids": {
+        "11": 4659
+      }
+    },
+    "60602": {
+      "description": "Windows application error event.",
+      "count": 4190,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "1000": 2052,
+        "8200": 776,
+        "1014": 732
+      }
+    },
+    "752": {
+      "description": "Registry Value Entry Added to the System",
+      "count": 4034,
+      "mitre_ids": [
+        "T1112"
+      ],
+      "top_event_ids": {}
+    },
+    "61109": {
+      "description": "Name resolution for the name edgedl.me.gvt1.com timed out",
+      "count": 3935,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "1014": 3935
+      }
+    },
+    "92032": {
+      "description": "Suspicious Windows cmd shell execution",
+      "count": 3877,
+      "mitre_ids": [
+        "T1059.003",
+        "T1087"
+      ],
+      "top_event_ids": {
+        "1": 3877
+      }
+    },
+    "60106": {
+      "description": "Windows logon success.",
+      "count": 3359,
+      "mitre_ids": [
+        "T1078"
+      ],
+      "top_event_ids": {
+        "4624": 3359
+      }
+    },
+    "92154": {
+      "description": "Process loaded taskschd.dll module. May be used to create delayed malware execution",
+      "count": 3055,
+      "mitre_ids": [
+        "T1053.005"
+      ],
+      "top_event_ids": {
+        "7": 3055
+      }
+    },
+    "92031": {
+      "description": "Discovery activity executed",
+      "count": 2783,
+      "mitre_ids": [
+        "T1087"
+      ],
+      "top_event_ids": {
+        "1": 2783
+      }
+    },
+    "92910": {
+      "description": "Explorer process was accessed by C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe, possible process injection",
+      "count": 2429,
+      "mitre_ids": [
+        "T1055"
+      ],
+      "top_event_ids": {
+        "10": 2429
+      }
+    },
+    "92200": {
+      "description": "Scripting file created under Windows Temp or User folder",
+      "count": 2322,
+      "mitre_ids": [
+        "T1059",
+        "T1105"
+      ],
+      "top_event_ids": {
+        "11": 2322
+      }
+    },
+    "60642": {
+      "description": "Software protection service scheduled successfully.",
+      "count": 1767,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "16384": 1767
+      }
+    },
+    "750": {
+      "description": "Registry Value Integrity Checksum Changed",
+      "count": 1560,
+      "mitre_ids": [
+        "T1112",
+        "T1565.001"
+      ],
+      "top_event_ids": {}
+    },
+    "92021": {
+      "description": "Powershell was used to delete files or directories",
+      "count": 1307,
+      "mitre_ids": [
+        "T1070.004"
+      ],
+      "top_event_ids": {
+        "1": 1307
+      }
+    },
+    "92039": {
+      "description": "A net.exe account discovery command was initiated",
+      "count": 1147,
+      "mitre_ids": [
+        "T1087"
+      ],
+      "top_event_ids": {
+        "1": 1147
+      }
+    },
+    "19007": {
+      "description": "CIS Microsoft Windows 10 Enterprise Benchmark v1.12.0: Ensure 'MSS: (PerformRouterDiscovery) Allow IRDP to detect and configure Default Gateway addresses (could lead to DoS)' is set to 'Disabled'.",
+      "count": 1142,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "92036": {
+      "description": "A C:\\\\Windows\\\\System32\\\\net.exe binary was started by a Windows cmd shell",
+      "count": 1117,
+      "mitre_ids": [
+        "T1059.003",
+        "T1574.001"
+      ],
+      "top_event_ids": {
+        "1": 1117
+      }
+    },
+    "61102": {
+      "description": "Windows System error event",
+      "count": 1094,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "7009": 235,
+        "10016": 225,
+        "10001": 210
+      }
+    },
+    "92151": {
+      "description": "Binary loaded PowerShell automation library - Possible unmanaged Powershell execution by suspicious process",
+      "count": 934,
+      "mitre_ids": [
+        "T1059.001"
+      ],
+      "top_event_ids": {
+        "7": 934
+      }
+    },
+    "594": {
+      "description": "Registry Key Integrity Checksum Changed",
+      "count": 906,
+      "mitre_ids": [
+        "T1112",
+        "T1565.001"
+      ],
+      "top_event_ids": {}
+    },
+    "60635": {
+      "description": "Windows installer reconfigured the product.",
+      "count": 879,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "1035": 879
+      }
+    },
+    "598": {
+      "description": "Registry Key Entry Added to the System",
+      "count": 862,
+      "mitre_ids": [
+        "T1112"
+      ],
+      "top_event_ids": {}
+    },
+    "92307": {
+      "description": "Evidence of new service creation found in registry under HKLM\\\\System\\\\CurrentControlSet\\\\Services\\\\UserDataSvc_50754e\\\\ImagePath binary is: C:\\\\Windows\\\\system32\\\\svchost.exe -k UnistackSvcGroup",
+      "count": 811,
+      "mitre_ids": [
+        "T1543.003"
+      ],
+      "top_event_ids": {
+        "13": 811
+      }
+    },
+    "60646": {
+      "description": "License activation (slui.exe) failed.",
+      "count": 808,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "8198": 808
+      }
+    },
+    "751": {
+      "description": "Registry Value Entry Deleted.",
+      "count": 760,
+      "mitre_ids": [
+        "T1070.004",
+        "T1112",
+        "T1485"
+      ],
+      "top_event_ids": {}
+    },
+    "61104": {
+      "description": "Service startup type was changed",
+      "count": 735,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "7040": 735
+      }
+    },
+    "61643": {
+      "description": "Multiple Sysmon error events",
+      "count": 734,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "255": 734
+      }
+    },
+    "92041": {
+      "description": "Value added to registry key has Base64-like pattern",
+      "count": 612,
+      "mitre_ids": [
+        "T1027",
+        "T1112"
+      ],
+      "top_event_ids": {
+        "1": 612
+      }
+    },
+    "92006": {
+      "description": "Powershell script compiling code using CSC.exe, possible malware drop",
+      "count": 612,
+      "mitre_ids": [
+        "T1027.004"
+      ],
+      "top_event_ids": {
+        "1": 612
+      }
+    },
+    "19008": {
+      "description": "CIS Microsoft Windows 10 Enterprise Benchmark v1.12.0: Ensure 'Configure SMB v1 server' is set to 'Disabled'.",
+      "count": 577,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "92207": {
+      "description": "Executable file dropped in Users\\Public folder",
+      "count": 394,
+      "mitre_ids": [
+        "T1105"
+      ],
+      "top_event_ids": {
+        "11": 394
+      }
+    },
+    "92004": {
+      "description": "Powershell process spawned Windows command shell instance",
+      "count": 394,
+      "mitre_ids": [
+        "T1059.003"
+      ],
+      "top_event_ids": {
+        "1": 394
+      }
+    },
+    "92005": {
+      "description": "Command shell started script with /c modifier",
+      "count": 389,
+      "mitre_ids": [
+        "T1059"
+      ],
+      "top_event_ids": {
+        "1": 389
+      }
+    },
+    "92110": {
+      "description": "Detected WinRM activity from fe80:0:0:0:2927:e7f4:eaeb:5e4f to fe80:0:0:0:2927:e7f4:eaeb:5e4f",
+      "count": 376,
+      "mitre_ids": [
+        "T1021.006"
+      ],
+      "top_event_ids": {
+        "3": 376
+      }
+    },
+    "92074": {
+      "description": "curl.exe launched with commands to create a binary file",
+      "count": 371,
+      "mitre_ids": [
+        "T1105"
+      ],
+      "top_event_ids": {
+        "1": 371
+      }
+    },
+    "92029": {
+      "description": "Powershell executed script from suspicious location",
+      "count": 326,
+      "mitre_ids": [
+        "T1059.001"
+      ],
+      "top_event_ids": {
+        "1": 326
+      }
+    },
+    "92219": {
+      "description": "Possible DLL search order hijack by C:\\\\Windows\\\\SoftwareDistribution\\\\Download\\\\7588f06b0017936893382a55fe90af5c\\\\Metadata\\\\ReserveManager.dll created in Windows root folder",
+      "count": 314,
+      "mitre_ids": [
+        "T1574.001",
+        "T1574.002"
+      ],
+      "top_event_ids": {
+        "11": 314
+      }
+    },
+    "92201": {
+      "description": "C:\\\\Windows\\\\SysWOW64\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe created a new scripting file under Windows Temp or User data folder",
+      "count": 293,
+      "mitre_ids": [
+        "T1059",
+        "T1105"
+      ],
+      "top_event_ids": {
+        "11": 293
+      }
+    },
+    "510": {
+      "description": "Host-based anomaly detection event (rootcheck).",
+      "count": 257,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "92033": {
+      "description": "Discovery activity spawned via powershell execution",
+      "count": 240,
+      "mitre_ids": [
+        "T1059.001",
+        "T1087"
+      ],
+      "top_event_ids": {
+        "1": 240
+      }
+    },
+    "92027": {
+      "description": "Powershell process spawned powershell instance",
+      "count": 212,
+      "mitre_ids": [
+        "T1059.001"
+      ],
+      "top_event_ids": {
+        "1": 212
+      }
+    },
+    "92000": {
+      "description": "Scripting interpreter spawned a new process",
+      "count": 193,
+      "mitre_ids": [
+        "T1059.005"
+      ],
+      "top_event_ids": {
+        "1": 193
+      }
+    },
+    "60702": {
+      "description": "The VSS service is shutting down due to idle timeout.",
+      "count": 160,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "8224": 160
+      }
+    },
+    "19013": {
+      "description": "CIS Microsoft Windows 10 Enterprise Benchmark v1.12.0: Ensure 'Enforce password history' is set to '24 or more password(s)'.: Status changed from failed to 'not applicable'",
+      "count": 123,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "19014": {
+      "description": "CIS Microsoft Windows 10 Enterprise Benchmark v1.12.0: Ensure 'Enforce password history' is set to '24 or more password(s)'.: Status changed from 'not applicable' to failed",
+      "count": 121,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "60775": {
+      "description": "SessionEnv was unavailable to handle a notification event.",
+      "count": 113,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "6000": 113
+      }
+    },
+    "92066": {
+      "description": "C:\\\\Windows\\\\SysWOW64\\\\SecEdit.exe binary in a suspicious location launched by C:\\\\Windows\\\\SysWOW64\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe",
+      "count": 113,
+      "mitre_ids": [
+        "T1059.001"
+      ],
+      "top_event_ids": {
+        "1": 113
+      }
+    },
+    "60118": {
+      "description": "Windows workstation logon success.",
+      "count": 112,
+      "mitre_ids": [
+        "T1078"
+      ],
+      "top_event_ids": {
+        "4624": 112
+      }
+    },
+    "533": {
+      "description": "Listened ports status (netstat) changed (new port opened or closed).",
+      "count": 105,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "92057": {
+      "description": "Powershell.exe spawned a powershell process which executed a base64 encoded command",
+      "count": 103,
+      "mitre_ids": [
+        "T1059.001"
+      ],
+      "top_event_ids": {
+        "1": 103
+      }
+    },
+    "61138": {
+      "description": "New Windows Service Created",
+      "count": 102,
+      "mitre_ids": [
+        "T1543.003"
+      ],
+      "top_event_ids": {
+        "7045": 102
+      }
+    },
+    "503": {
+      "description": "Wazuh agent started.",
+      "count": 99,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "5501": {
+      "description": "PAM: Login session opened.",
+      "count": 96,
+      "mitre_ids": [
+        "T1078"
+      ],
+      "top_event_ids": {}
+    },
+    "60137": {
+      "description": "Windows User Logoff.",
+      "count": 87,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "4634": 70,
+        "4647": 17
+      }
+    },
+    "5502": {
+      "description": "PAM: Login session closed.",
+      "count": 86,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "92205": {
+      "description": "Powershell process created an executable file in Windows root folder",
+      "count": 86,
+      "mitre_ids": [
+        "T1105"
+      ],
+      "top_event_ids": {
+        "11": 86
+      }
+    },
+    "92157": {
+      "description": "An executable - C:\\\\Windows\\\\Temp\\\\D374FDBD-602D-4BA3-9ED1-635391C20A57\\\\DismHost.exe - loaded C:\\\\Windows\\\\Temp\\\\D374FDBD-602D-4BA3-9ED1-635391C20A57\\\\CbsProvider.dll from the Temp directory.",
+      "count": 84,
+      "mitre_ids": [
+        "T1546.011"
+      ],
+      "top_event_ids": {
+        "7": 84
+      }
+    },
+    "92056": {
+      "description": "Powershell process invoked known auto-elevated utility FodHelper.EXE, may have been used to bypass UAC",
+      "count": 83,
+      "mitre_ids": [
+        "T1548.002"
+      ],
+      "top_event_ids": {
+        "1": 83
+      }
+    },
+    "19015": {
+      "description": "CIS Microsoft Windows 10 Enterprise Benchmark v1.12.0: Ensure 'Network access: Allow anonymous SID/Name translation' is set to 'Disabled'.: Status changed from 'not applicable' to passed",
+      "count": 82,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "60808": {
+      "description": "The database engine is replaying log file C:\\Winnt\\system32\\wins\\j50.log.",
+      "count": 81,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "301": 81
+      }
+    },
+    "60805": {
+      "description": "The database engine is starting a new instance.",
+      "count": 81,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "102": 81
+      }
+    },
+    "19012": {
+      "description": "CIS Microsoft Windows 10 Enterprise Benchmark v1.12.0: Ensure 'Network access: Allow anonymous SID/Name translation' is set to 'Disabled'.: Status changed from passed to 'not applicable'",
+      "count": 81,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "19004": {
+      "description": "SCA summary: CIS Microsoft Windows 10 Enterprise Benchmark v1.12.0: Score less than 50% (33)",
+      "count": 80,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "60112": {
+      "description": "Windows audit policy changed.",
+      "count": 78,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "4719": 78
+      }
+    },
+    "60798": {
+      "description": "The database engine attached a database.",
+      "count": 76,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "326": 76
+      }
+    },
+    "60132": {
+      "description": "System time changed.",
+      "count": 76,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "4616": 76
+      }
+    },
+    "63104": {
+      "description": "A Windows log file was cleared",
+      "count": 74,
+      "mitre_ids": [
+        "T1070"
+      ],
+      "top_event_ids": {
+        "104": 74
+      }
+    },
+    "5402": {
+      "description": "Successful sudo to ROOT executed.",
+      "count": 71,
+      "mitre_ids": [
+        "T1548"
+      ],
+      "top_event_ids": {}
+    },
+    "60122": {
+      "description": "Logon failure - Unknown user or bad password.",
+      "count": 70,
+      "mitre_ids": [
+        "T1078",
+        "T1531"
+      ],
+      "top_event_ids": {
+        "4625": 70
+      }
+    },
+    "92306": {
+      "description": "C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe added to the registry a subkey associated with UAC bypass by auto-elevated processes",
+      "count": 63,
+      "mitre_ids": [
+        "T1112",
+        "T1548.002"
+      ],
+      "top_event_ids": {
+        "13": 63
+      }
+    },
+    "92305": {
+      "description": "Command interpreter added to registry key associated to UAC bypass by auto-elevated processes",
+      "count": 63,
+      "mitre_ids": [
+        "T1112",
+        "T1548.002"
+      ],
+      "top_event_ids": {
+        "13": 63
+      }
+    },
+    "60809": {
+      "description": "The database engine has completed recovery steps.",
+      "count": 59,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "302": 59
+      }
+    },
+    "11": {
+      "description": "",
+      "count": 58,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "7": 11,
+        "11": 9,
+        "10": 7
+      }
+    },
+    "60807": {
+      "description": "The database engine is initiating recovery steps.",
+      "count": 58,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "300": 58
+      }
+    },
+    "92107": {
+      "description": "Script generated suspicious network activity over TCP protocol",
+      "count": 57,
+      "mitre_ids": [
+        "T1095"
+      ],
+      "top_event_ids": {
+        "3": 57
+      }
+    },
+    "60776": {
+      "description": "SessionEnv was unavailable to handle a critical notification event.",
+      "count": 57,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "6003": 57
+      }
+    },
+    "61061": {
+      "description": "Multiple Windows error application events.",
+      "count": 57,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "1002": 21,
+        "1014": 15,
+        "1000": 9
+      }
+    },
+    "60668": {
+      "description": "The Windows search service started.",
+      "count": 56,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "1003": 56
+      }
+    },
+    "504": {
+      "description": "Wazuh agent disconnected.",
+      "count": 52,
+      "mitre_ids": [
+        "T1562.001"
+      ],
+      "top_event_ids": {}
+    },
+    "19009": {
+      "description": "CIS Ubuntu Linux 22.04 LTS Benchmark v1.0.0: Ensure SSH MaxSessions is set to 10 or less.",
+      "count": 49,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "92204": {
+      "description": "Powershell process created executable file in AppData temp folder",
+      "count": 46,
+      "mitre_ids": [
+        "T1105"
+      ],
+      "top_event_ids": {
+        "11": 46
+      }
+    },
+    "550": {
+      "description": "Integrity checksum changed.",
+      "count": 46,
+      "mitre_ids": [
+        "T1565.001"
+      ],
+      "top_event_ids": {}
+    },
+    "92206": {
+      "description": "DLL file created by printer spool service, possible malware binary drop from PrintNightmare exploit",
+      "count": 46,
+      "mitre_ids": [
+        "T1574.010"
+      ],
+      "top_event_ids": {
+        "11": 46
+      }
+    },
+    "60104": {
+      "description": "Windows audit failure event.",
+      "count": 44,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "5061": 30,
+        "4776": 10,
+        "6281": 4
+      }
+    },
+    "502": {
+      "description": "Wazuh server started.",
+      "count": 43,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "92043": {
+      "description": "Netsh used to add firewall rule",
+      "count": 43,
+      "mitre_ids": [
+        "T1562.004"
+      ],
+      "top_event_ids": {
+        "1": 43
+      }
+    },
+    "61110": {
+      "description": "Multiple System error events",
+      "count": 39,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "10001": 20,
+        "7000": 6,
+        "7009": 6
+      }
+    },
+    "19010": {
+      "description": "CIS Microsoft Windows 10 Enterprise Benchmark v1.12.0: Configure 'Accounts: Rename administrator account'.: Status changed from failed to passed",
+      "count": 39,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "92102": {
+      "description": "Suspicious DCOM/RPC activity from Powershell process",
+      "count": 34,
+      "mitre_ids": [
+        "T1110"
+      ],
+      "top_event_ids": {
+        "3": 34
+      }
+    },
+    "19011": {
+      "description": "CIS Microsoft Windows 10 Enterprise Benchmark v1.12.0: Ensure 'Accounts: Guest account status' is set to 'Disabled'.: Status changed from passed to failed",
+      "count": 33,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "60790": {
+      "description": "The registry file is still in use by other applications or services.",
+      "count": 31,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "1530": 31
+      }
+    },
+    "60778": {
+      "description": "The shell stopped unexpectedly.",
+      "count": 29,
+      "mitre_ids": [
+        "T1489"
+      ],
+      "top_event_ids": {
+        "1002": 29
+      }
+    },
+    "60110": {
+      "description": "User account changed.",
+      "count": 29,
+      "mitre_ids": [
+        "T1098"
+      ],
+      "top_event_ids": {
+        "4738": 27,
+        "4781": 2
+      }
+    },
+    "92152": {
+      "description": "Printer spooler service loaded a dll file. Possible PrintNightmare exploit: CVE-2021-34527",
+      "count": 28,
+      "mitre_ids": [
+        "T1210"
+      ],
+      "top_event_ids": {
+        "7": 28
+      }
+    },
+    "92203": {
+      "description": "Executable file created by powershell: C:\\\\ProgramData\\\\cmd.exe",
+      "count": 27,
+      "mitre_ids": [
+        "T1105"
+      ],
+      "top_event_ids": {
+        "11": 27
+      }
+    },
+    "60612": {
+      "description": "Application installed Product: Update for Windows 10 for x64-based Systems (KB4480730) -- Installation completed successfully..",
+      "count": 26,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "11707": 13,
+        "1033": 13
+      }
+    },
+    "92227": {
+      "description": "C:\\\\Windows\\\\System32\\\\curl.exe process created a dll binary",
+      "count": 23,
+      "mitre_ids": [
+        "T1105"
+      ],
+      "top_event_ids": {
+        "11": 23
+      }
+    },
+    "92211": {
+      "description": "Suspicious executable file creation by rundll32: C:\\\\Users\\\\mari\\\\AppData\\\\Local\\\\Microsoft\\\\CLR_v4.0\\\\UsageLogs\\\\rundll32.exe.log",
+      "count": 22,
+      "mitre_ids": [
+        "T1105"
+      ],
+      "top_event_ids": {
+        "11": 22
+      }
+    },
+    "61640": {
+      "description": "Sysmon - Suspicious Process - explorer.exe",
+      "count": 22,
+      "mitre_ids": [
+        "T1055"
+      ],
+      "top_event_ids": {
+        "1": 22
+      }
+    },
+    "554": {
+      "description": "File added to the system.",
+      "count": 21,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "60610": {
+      "description": "Windows installer began an installation process.",
+      "count": 19,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "1040": 19
+      }
+    },
+    "61618": {
+      "description": "Sysmon - Suspicious Process - svchost.exe",
+      "count": 16,
+      "mitre_ids": [
+        "T1055"
+      ],
+      "top_event_ids": {
+        "1": 16
+      }
+    },
+    "61625": {
+      "description": "Sysmon - Suspicious Process - lsass",
+      "count": 15,
+      "mitre_ids": [
+        "T1055"
+      ],
+      "top_event_ids": {
+        "1": 15
+      }
+    },
+    "92046": {
+      "description": "Possible use of fodhelper.exe used to bypass UAC and execute of malicious software",
+      "count": 15,
+      "mitre_ids": [
+        "T1548.002"
+      ],
+      "top_event_ids": {
+        "1": 15
+      }
+    },
+    "591": {
+      "description": "Log file rotated.",
+      "count": 13,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "61620": {
+      "description": "Sysmon - Suspicious Process - lsm.exe",
+      "count": 12,
+      "mitre_ids": [
+        "T1055"
+      ],
+      "top_event_ids": {
+        "1": 12
+      }
+    },
+    "92403": {
+      "description": "Local Security Authority Subsystem Service (LSASS) process was accessed by C:\\\\Windows\\\\System32\\\\rdrleakdiag.exe, possible code injection for credential dumping",
+      "count": 12,
+      "mitre_ids": [
+        "T1055"
+      ],
+      "top_event_ids": {
+        "8": 12
+      }
+    },
+    "92212": {
+      "description": "Suspicious file compression activity by powershell: C:\\\\Windows\\\\System32\\\\staged.zip",
+      "count": 12,
+      "mitre_ids": [
+        "T1105"
+      ],
+      "top_event_ids": {
+        "11": 12
+      }
+    },
+    "92400": {
+      "description": "Possible code injection on explorer.exe by C:\\\\Windows\\\\System32\\\\WerFault.exe",
+      "count": 11,
+      "mitre_ids": [
+        "T1055"
+      ],
+      "top_event_ids": {
+        "8": 11
+      }
+    },
+    "92024": {
+      "description": "Powershell used to copy SAM hive from VSS",
+      "count": 10,
+      "mitre_ids": [
+        "T1003.002",
+        "T1059.001"
+      ],
+      "top_event_ids": {
+        "1": 10
+      }
+    },
+    "60109": {
+      "description": "User account enabled or created.",
+      "count": 9,
+      "mitre_ids": [
+        "T1098"
+      ],
+      "top_event_ids": {
+        "4722": 7,
+        "4720": 2
+      }
+    },
+    "89502": {
+      "description": "WmiConsumerEvent created, possible persistence tactic using command-executing binaries",
+      "count": 8,
+      "mitre_ids": [
+        "T1546.003"
+      ],
+      "top_event_ids": {
+        "20": 8
+      }
+    },
+    "2902": {
+      "description": "New dpkg (Debian Package) installed.",
+      "count": 8,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "2904": {
+      "description": "Dpkg (Debian Package) half configured.",
+      "count": 8,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "553": {
+      "description": "File deleted.",
+      "count": 8,
+      "mitre_ids": [
+        "T1070.004",
+        "T1485"
+      ],
+      "top_event_ids": {}
+    },
+    "60730": {
+      "description": "Inconsistent system shutdown detected.",
+      "count": 7,
+      "mitre_ids": [
+        "T1047",
+        "T1529"
+      ],
+      "top_event_ids": {
+        "5611": 7
+      }
+    },
+    "506": {
+      "description": "Wazuh agent stopped.",
+      "count": 7,
+      "mitre_ids": [
+        "T1562.001"
+      ],
+      "top_event_ids": {}
+    },
+    "597": {
+      "description": "Registry Key Entry Deleted.",
+      "count": 7,
+      "mitre_ids": [
+        "T1070.004",
+        "T1112",
+        "T1485"
+      ],
+      "top_event_ids": {}
+    },
+    "63103": {
+      "description": "The audit log was cleared",
+      "count": 6,
+      "mitre_ids": [
+        "T1070"
+      ],
+      "top_event_ids": {
+        "1102": 6
+      }
+    },
+    "92302": {
+      "description": "Registry entry to be executed on next logon was modified using command line application reg.exe",
+      "count": 6,
+      "mitre_ids": [
+        "T1547.001"
+      ],
+      "top_event_ids": {
+        "13": 6
+      }
+    },
+    "92222": {
+      "description": "An executable C:\\\\WINDOWS\\\\system32\\\\calc.exe created a file in a Windows folder",
+      "count": 6,
+      "mitre_ids": [
+        "T1036"
+      ],
+      "top_event_ids": {
+        "11": 6
+      }
+    },
+    "92226": {
+      "description": "Powershell process has copied an executable file to Windows start-up folder",
+      "count": 5,
+      "mitre_ids": [
+        "T1547.001"
+      ],
+      "top_event_ids": {
+        "11": 5
+      }
+    },
+    "501": {
+      "description": "New wazuh agent connected.",
+      "count": 4,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "92055": {
+      "description": "Known auto-elevated utility FodHelper.EXE may have been used to bypass UAC",
+      "count": 3,
+      "mitre_ids": [
+        "T1548.002"
+      ],
+      "top_event_ids": {
+        "1": 3
+      }
+    },
+    "61107": {
+      "description": "Windows Audio terminated unexpectedly",
+      "count": 3,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "7031": 3
+      }
+    },
+    "60644": {
+      "description": "Proof of purchase installed successfully.",
+      "count": 3,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "1016": 3
+      }
+    },
+    "60671": {
+      "description": "The Windows search service removed the old search index successfully.",
+      "count": 3,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "1010": 3
+      }
+    },
+    "61060": {
+      "description": "The open procedure for service remote access failed.",
+      "count": 3,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "1008": 3
+      }
+    },
+    "60672": {
+      "description": "The Windows Search Service attempted to remove the old search index.",
+      "count": 3,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "1008": 3
+      }
+    },
+    "60154": {
+      "description": "Administrators group changed.",
+      "count": 3,
+      "mitre_ids": [
+        "T1484"
+      ],
+      "top_event_ids": {
+        "4732": 2,
+        "4733": 1
+      }
+    },
+    "5503": {
+      "description": "PAM: User login failed.",
+      "count": 3,
+      "mitre_ids": [
+        "T1110.001"
+      ],
+      "top_event_ids": {}
+    },
+    "60160": {
+      "description": "Domain users group changed.",
+      "count": 3,
+      "mitre_ids": [
+        "T1484"
+      ],
+      "top_event_ids": {
+        "4728": 2,
+        "4729": 1
+      }
+    },
+    "5403": {
+      "description": "First time user executed sudo.",
+      "count": 2,
+      "mitre_ids": [
+        "T1548"
+      ],
+      "top_event_ids": {}
+    },
+    "92900": {
+      "description": "Lsass process was accessed by C:\\\\WINDOWS\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe with read permissions, possible credential dump",
+      "count": 2,
+      "mitre_ids": [
+        "T1003.001"
+      ],
+      "top_event_ids": {
+        "10": 2
+      }
+    },
+    "60111": {
+      "description": "User account disabled or deleted.",
+      "count": 2,
+      "mitre_ids": [
+        "T1098",
+        "T1531"
+      ],
+      "top_event_ids": {
+        "4726": 1,
+        "4725": 1
+      }
+    },
+    "92076": {
+      "description": "Rundll32 executing suspicious .lock file, possible persistence tactic",
+      "count": 2,
+      "mitre_ids": [
+        "T1218",
+        "T1546"
+      ],
+      "top_event_ids": {
+        "1": 2
+      }
+    },
+    "202": {
+      "description": "Agent event queue is 90% full.",
+      "count": 2,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "205": {
+      "description": "Agent event queue is back to normal load.",
+      "count": 2,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "61017": {
+      "description": "The process was terminated due to an unhandled exception.",
+      "count": 2,
+      "mitre_ids": [
+        "T1489"
+      ],
+      "top_event_ids": {
+        "1026": 2
+      }
+    },
+    "2901": {
+      "description": "New dpkg (Debian Package) requested to install.",
+      "count": 2,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "19005": {
+      "description": "SCA summary: CIS Microsoft Windows 10 Enterprise Benchmark v1.12.0: Score less than 30% (29)",
+      "count": 1,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "5401": {
+      "description": "Failed attempt to run sudo.",
+      "count": 1,
+      "mitre_ids": [
+        "T1548"
+      ],
+      "top_event_ids": {}
+    },
+    "203": {
+      "description": "Agent event queue is full. Events may be lost.",
+      "count": 1,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "60703": {
+      "description": "The VSS service is shutting down due to a shutdown event from the service control manager.",
+      "count": 1,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "8225": 1
+      }
+    },
+    "63102": {
+      "description": "Windows Eventlog error event",
+      "count": 1,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "23": 1
+      }
+    },
+    "61021": {
+      "description": ".NET Runtime - Fatal execution engine error.",
+      "count": 1,
+      "mitre_ids": [],
+      "top_event_ids": {
+        "1023": 1
+      }
+    },
+    "657": {
+      "description": "Active response: restart-wazuh.exe - add",
+      "count": 1,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "5902": {
+      "description": "New user added to the system.",
+      "count": 1,
+      "mitre_ids": [
+        "T1136"
+      ],
+      "top_event_ids": {}
+    },
+    "5901": {
+      "description": "New group added to the system.",
+      "count": 1,
+      "mitre_ids": [],
+      "top_event_ids": {}
+    },
+    "92210": {
+      "description": "Suspicious file compression activity in Users\\Public folder",
+      "count": 1,
+      "mitre_ids": [
+        "T1105"
+      ],
+      "top_event_ids": {
+        "11": 1
+      }
+    }
+  }
+}

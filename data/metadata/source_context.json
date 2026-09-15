@@ -1,0 +1,105 @@
+{
+  "verification_status": "VERIFIED_CANONICAL_PRESERVED",
+  "verification_timestamp_utc": "2026-09-15T18:39:33.557241+00:00",
+  "canonical_documents": {
+    "docx": {
+      "path": "Context/RAG2ATTCK-20260915T154859Z-1-001/RAG2ATTCK/RAG_ATTCK_Research_Plan_Updated.docx",
+      "size_bytes": 214812,
+      "sha256": "39499aa68188530eed81d1426af4d2f0217e17e10d9d016ddc0b38c0ae7a91af",
+      "title": "Evaluating MITRE ATT&CK-Grounded RAG for Technique Attribution from Windows Endpoint Logs: A Replication-and-Extension Study",
+      "version": "1.1",
+      "plan_date": "2026-09-15",
+      "author": "Hà Hoàng Bách"
+    },
+    "xlsx": {
+      "path": "Context/RAG2ATTCK-20260915T154859Z-1-001/RAG2ATTCK/RAG_ATTCK_Project_Tracker_Updated.xlsx",
+      "size_bytes": 49142,
+      "sha256": "ed946fa1918af54a0634a317b6bf3d2b4291501219524de691c5da8b15725ef8",
+      "sheets": [
+        "Overview",
+        "Roadmap",
+        "RQ_Experiments",
+        "Resources"
+      ]
+    }
+  },
+  "official_dataset_reference": {
+    "dataset_name": "Windows-APT 2025: A Dataset of Attack Scenarios Inspired by Advanced Persistent Threats on Windows Systems",
+    "dataset_id": "b8fmtzvpy8",
+    "version": 3,
+    "provider": "Mendeley Data",
+    "dataset_doi": "10.17632/b8fmtzvpy8.3",
+    "publication_doi": "10.1016/j.dib.2026.112569",
+    "publication_outlet": "Elsevier Data in Brief",
+    "license": "Creative Commons Attribution 4.0 International (CC BY 4.0)",
+    "authors": [
+      "Morteza Mozaffari",
+      "Alireza Yazdinejad",
+      "Ali Dehghantanha"
+    ],
+    "total_mendeley_files": 21,
+    "total_mendeley_bytes": 480856926
+  },
+  "research_plan_parameters": {
+    "evaluation_task": "Windows endpoint log -> LLM -> MITRE ATT&CK Technique/Sub-technique attribution",
+    "experimental_conditions": [
+      "No-RAG baseline",
+      "ATT&CK-grounded RAG"
+    ],
+    "retriever_architecture": "Local FAISS vector store on MITRE ATT&CK Windows techniques corpus",
+    "target_class_count": "8 to 10 techniques",
+    "target_sample_quota_policy": {
+      "8_classes": 50,
+      "9_classes": 45,
+      "10_classes": 40
+    },
+    "total_evaluation_samples": 400,
+    "partition_seed": 20260915,
+    "partition_split_mod": "hash(seed + group_id) % 5 == 0 -> dev, else -> final",
+    "hard_restrictions": [
+      "No model fine-tuning",
+      "No autonomous AI agent implementation",
+      "No Wazuh/SIEM/EDR live deployment",
+      "No custom SDK implementation",
+      "No knowledge graph development",
+      "No final-holdout sample inspection"
+    ]
+  },
+  "preserved_source_research_files": [
+    {
+      "filename": "README.md",
+      "size_bytes": 5780,
+      "sha256": "0ed29fc5948d79e8007bd5911c0cf271e5c065f3c8762a9fe4a81940dac150b2"
+    },
+    {
+      "filename": "article_fulltext.xml",
+      "size_bytes": 104252,
+      "sha256": "1c23af7f1597f84b0c2fb11e230207949f59b62cf9926745c8b05489cd564893"
+    },
+    {
+      "filename": "article_sections.txt",
+      "size_bytes": 87484,
+      "sha256": "0b85fc39095ea2b947b67a9d7320538ae15907ef659b171c6b626676c7b5babf"
+    },
+    {
+      "filename": "checksums.sha256",
+      "size_bytes": 2187,
+      "sha256": "0ee0b4f68882f63ac9392b6fe6744c310e931ad27736acd3f58b9a18de0cd647"
+    },
+    {
+      "filename": "mendeley_v3_files.json",
+      "size_bytes": 14892,
+      "sha256": "f626ea56a2883febcb1776a20cf6001f306e3a627d987356f81a8e27692cabe9"
+    },
+    {
+      "filename": "scenario_manifest.csv",
+      "size_bytes": 28317,
+      "sha256": "77b881e662b2b912fa466a2510fb65597342b3869d0113118f49558dbb1fa81f"
+    },
+    {
+      "filename": "validation_summary.csv",
+      "size_bytes": 7318,
+      "sha256": "61afe9da2c7ea32f6ab58a700163c0bbb23c0b8b70e5142580d4a3113d731781"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0.0",
+  "attack_version": "19.2",
+  "release_url": "https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/enterprise-attack/enterprise-attack-19.2.json",
+  "acquisition_timestamp_utc": "2026-09-15T18:16:02.722706+00:00",
+  "stix_file": {
+    "path": "attack/raw/enterprise-v19.2/enterprise-attack-19.2.json",
+    "size_bytes": 53835637,
+    "sha256": "dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4"
+  },
+  "catalog_statistics": {
+    "total_techniques_and_subtechniques": 858,
+    "revoked_count": 149,
+    "deprecated_count": 12,
+    "active_count": 697,
+    "windows_active_count": 474,
+    "windows_root_techniques": 176,
+    "windows_subtechniques": 298
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "schema_version": "1.0.0",
+  "total_records": 102011,
+  "id_generation_rule": "SHA-256(source_file_sha256 + ':' + ordinal)[:16]",
+  "files": [
+    {
+      "filename": "01-03-December.csv",
+      "records": 8838,
+      "sha256": "1da71220fd233a053ae9629b32142aa7c7bd9f28bfa057decae776a87c23cc82",
+      "id_prefix": "rec_fd103061"
+    },
+    {
+      "filename": "03-04-December.csv",
+      "records": 7291,
+      "sha256": "91d005371ccce593a61c15dbde1a6780bfadaa5564304f3a20b8733d850b8d35",
+      "id_prefix": "rec_92631f70"
+    },
+    {
+      "filename": "04-07-December.csv",
+      "records": 7750,
+      "sha256": "dc5bab6434b7ff0c329f7f4baaff99d2d52b967cc138a332db7e518e66a12db9",
+      "id_prefix": "rec_be7e06af"
+    },
+    {
+      "filename": "07-10-December.csv",
+      "records": 9185,
+      "sha256": "f7ceb72aa4728620970fe3781ce7de948ae2f20576b0aa4f4600f27a5369b325",
+      "id_prefix": "rec_bdd88d0e"
+    },
+    {
+      "filename": "1-11-November.csv",
+      "records": 8807,
+      "sha256": "e60f822890dab491a7a189c549c873a52d56f52c3dc31c125923917014a56900",
+      "id_prefix": "rec_3c9e9ab5"
+    },
+    {
+      "filename": "10-December-P1.csv",
+      "records": 9049,
+      "sha256": "896eb72630932598192628f72012ce749786868cc2d1f7217937e555ab588229",
+      "id_prefix": "rec_6a530053"
+    },
+    {
+      "filename": "10-December-P2.csv",
+      "records": 1188,
+      "sha256": "847d58c19fc46680007ab26dd8de31ebe0ebe1fc12de37b149c1ea9d40ffeaa1",
+      "id_prefix": "rec_31d5e38a"
+    },
+    {
+      "filename": "11-12-December.csv",
+      "records": 9655,
+      "sha256": "f20c7ebfd1a02025d0b59f435174590133949e228c9cfb43fb04d2591ca98324",
+      "id_prefix": "rec_3aadfdf1"
+    },
+    {
+      "filename": "11-16-November.csv",
+      "records": 6554,
+      "sha256": "7be42cc28018b095ce121d1c7479f69c025ee33b8a20fc3a89bf1a6e519685eb",
+      "id_prefix": "rec_8f0eda1c"
+    },
+    {
+      "filename": "12-13-December.csv",
+      "records": 6406,
+      "sha256": "4e7581d44ecc4d864f2a0c6c9b424ec785e40ad903cdcd1c025251d25089dcbf",
+      "id_prefix": "rec_1b3a58d6"
+    },
+    {
+      "filename": "13-14-December.csv",
+      "records": 9738,
+      "sha256": "91585370696c11ca3ddb6f17011a7ecd38822898704c2c12d9c4cf306e3c99ff",
+      "id_prefix": "rec_e9c56728"
+    },
+    {
+      "filename": "14-17-December.csv",
+      "records": 5644,
+      "sha256": "aadb88153649f5fc35f75e8a0afe95f4fd4b69cb54873ee98caa91451c9478a9",
+      "id_prefix": "rec_46f033bb"
+    },
+    {
+      "filename": "22-December.csv",
+      "records": 1173,
+      "sha256": "71e975fcc53276ce8e3d311d47176407044c1d19320b3ccb4061f359e17cc6b6",
+      "id_prefix": "rec_40bab39d"
+    },
+    {
+      "filename": "23-30-November.csv",
+      "records": 8038,
+      "sha256": "1ff4ba90457024fe61e1416da8c755d53bd23a9937a3d75b80d44f7122d57373",
+      "id_prefix": "rec_d6c726da"
+    },
+    {
+      "filename": "28-October-01-November.csv",
+      "records": 693,
+      "sha256": "d63e3b95988a2940af87f01d05b064a6516687144de51398d4493eceb70a82c3",
+      "id_prefix": "rec_ee46a95c"
+    },
+    {
+      "filename": "30-November.csv",
+      "records": 2002,
+      "sha256": "6496073eb8ecc4317efba7d746aad18e9abf61a1276e3f3dfe35281977181249",
+      "id_prefix": "rec_8a5494db"
+    }
+  ]
+}

@@ -1,0 +1,396 @@
+field_name,present_record_count,null_record_count,fill_rate_percent,inferred_types,sample_values
+_id,102011,0,100.0,string,MPrEfpMBRlc-D5DFQSbD | YaHkgJMBrrvr6pEbXnOF | YqHkgJMBrrvr6pEbYnNx
+_index,102011,0,100.0,string,wazuh-alerts-4.x-2024.11.30 | wazuh-alerts-4.x-2024.12.01 | wazuh-alerts-4.x-2024.12.02
+_score,102011,0,100.0,integer,1
+_source.@timestamp,102011,0,100.0,string,"Nov 30, 2024 @ 20:30:08.057 | Dec 1, 2024 @ 06:24:28.026 | Dec 1, 2024 @ 06:24:29.426"
+_source.agent.id,102011,0,100.0,integer,0 | 2 | 3
+_source.agent.ip,100530,1481,98.55,string,192.168.117.130 | 192.168.117.134 | 192.168.117.129
+_source.agent.name,102011,0,100.0,string,Maryam | wazuh-agent | window-agent3
+_source.data.arch,18,101993,0.02,string,amd64
+_source.data.command,75,101936,0.07,string,/usr/bin/su | /usr/bin/systemctl start wazuh-manager | /usr/bin/systemctl start wazuh-dashboard
+_source.data.dpkg_status,18,101993,0.02,string,status installed | status half-configured | install
+_source.data.dstuser,261,101750,0.26,string,root(uid=0) | root | mari
+_source.data.euid,3,102008,0.0,integer,0
+_source.data.extra_data,110,101901,0.11,string,window-agent3->any | wazuh-agent->any | agent1->any
+_source.data.file,257,101754,0.25,string,/root/.npm/_cacache/index-v5/82/d7/dcbd0725f9366f2f85f22b083393726197ae5e3c24aab76e6921106117ff | /bin/diff | /usr/bin/diff
+_source.data.gid,2,102009,0.0,integer,119
+_source.data.home,1,102010,0.0,string,/nonexistent
+_source.data.level,5,102006,0.0,string,90% | normal | full
+_source.data.operation_type,4,102007,0.0,string,MODIFIED
+_source.data.origin.module,1,102010,0.0,string,wazuh-execd
+_source.data.package,18,101993,0.02,string,golang-go | man-db | filebeat
+_source.data.parameters.extra_args,1,102010,0.0,json_array,[]
+_source.data.parameters.program,1,102010,0.0,string,restart-wazuh.exe
+_source.data.process.args,1,102010,0.0,string,/var/ossec/api/scripts/wazuh-apid.py
+_source.data.process.cmd,4,102007,0.0,string,C:\Windows\System32\taskhostw.exe | C:\Windows\System32\RuntimeBroker.exe | C:\Program Files\Common Files\microsoft shared\ink\TabTip.exe
+_source.data.process.egroup,1,102010,0.0,string,wazuh
+_source.data.process.euser,1,102010,0.0,string,wazuh
+_source.data.process.fgroup,1,102010,0.0,string,wazuh
+_source.data.process.name,4,102007,0.0,string,taskhostw.exe | RuntimeBroker.exe | TabTip.exe
+_source.data.process.nice,1,102010,0.0,integer,0
+_source.data.process.nlwp,4,102007,0.0,integer,13 | 4 | 7
+_source.data.process.pgrp,1,102010,0.0,integer,1468
+_source.data.process.pid,4,102007,0.0,integer,3488 | 7204 | 6884
+_source.data.process.ppid,4,102007,0.0,integer,424 | 768 | 1060
+_source.data.process.priority,4,102007,0.0,integer,8 | 13 | 20
+_source.data.process.processor,1,102010,0.0,integer,17
+_source.data.process.resident,1,102010,0.0,integer,72280
+_source.data.process.rgroup,1,102010,0.0,string,wazuh
+_source.data.process.ruser,1,102010,0.0,string,wazuh
+_source.data.process.session,4,102007,0.0,integer,1 | 1468
+_source.data.process.sgroup,1,102010,0.0,string,wazuh
+_source.data.process.share,1,102010,0.0,integer,1784
+_source.data.process.size,4,102007,0.0,integer,6901760 | 2514944 | 3944448
+_source.data.process.start_time,4,102007,0.0,integer,1733076399 | 1733987322 | 1733898541
+_source.data.process.state,1,102010,0.0,string,S
+_source.data.process.stime,4,102007,0.0,integer,0 | 5 | 79
+_source.data.process.suser,1,102010,0.0,string,wazuh
+_source.data.process.tgid,1,102010,0.0,integer,1475
+_source.data.process.tty,1,102010,0.0,integer,0
+_source.data.process.utime,4,102007,0.0,integer,0 | 3 | 9397
+_source.data.process.vm_size,4,102007,0.0,integer,13197312 | 3575808 | 6508544
+_source.data.pwd,74,101937,0.07,string,/home/mari | /home/mari/caldera | /etc/wazuh-dashboard
+_source.data.sca.check.command,780,101231,0.76,json_array,"[""net user guest""] | [""net.exe accounts""] | [""auditpol.exe /get /subcategory:\""Credential Validation\""""]"
+_source.data.sca.check.compliance.cis,2247,99764,2.2,string,2.3.1.3 | 1.1.2 | 1.1.4
+_source.data.sca.check.compliance.cis_csc,1333,100678,1.31,string,4.7 | 5.2 | 4.1
+_source.data.sca.check.compliance.cis_csc_v7,178,101833,0.17,string,4.4 | 2.6 | 14.6
+_source.data.sca.check.compliance.cis_csc_v8,178,101833,0.17,string,5.2 | 4.8 | 3.3
+_source.data.sca.check.compliance.cmmc_v2.0,171,101840,0.17,string,"IA.L2-3.5.7 | CM.L2-3.4.7,CM.L2-3.4.8,SC.L2-3.13.6 | AC.L1-3.1.1,AC.L1-3.1.2,AC.L2-3.1.5,AC.L2-3.1.3,MP.L2-3.8.2"
+_source.data.sca.check.compliance.gdpr_IV,152,101859,0.15,string,35.7.d
+_source.data.sca.check.compliance.gpg13,84,101927,0.08,string,4.12
+_source.data.sca.check.compliance.gpg_13,68,101943,0.07,string,4.3
+_source.data.sca.check.compliance.hipaa,421,101590,0.41,string,"164.312.b | 164.312.a.2.IV,164.312.e.1,164.312.e.2.I,164.312.e.2.II | 164.308(a)(3)(i),164.308(a)(3)(ii)(A),164.312(a)(1)"
+_source.data.sca.check.compliance.mitre_mitigations,130,101881,0.13,string,M1027 | M1042 | M1022
+_source.data.sca.check.compliance.mitre_tactics,169,101842,0.17,string,TA0006 | TA0008 | TA0005
+_source.data.sca.check.compliance.mitre_techniques,170,101841,0.17,string,"T1078,T1078.001,T1078.002,T1078.003,T1078.004,T1110,T1110.001,T1110.002,T1110.003 | T1203,T1210,T1543,T1543.002 | T1499,T1499.001"
+_source.data.sca.check.compliance.nist_800_53,436,101575,0.43,string,CM.1 | SC.8 | AU.6
+_source.data.sca.check.compliance.nist_sp_800-53,133,101878,0.13,string,"AC-5,AC-6 | AC-6(9) | AC-5, AC-6"
+_source.data.sca.check.compliance.pci_dss,1032,100979,1.01,string,8.2 | 2.2.3 | 8.1.8
+_source.data.sca.check.compliance.pci_dss_3.2.1,104,101907,0.1,string,"1.1.6,1.2.1,2.2.2,2.2.5 | 1.4,1.1.4 | 10.1,10.2.2,10.2.4,10.2.5,10.3"
+_source.data.sca.check.compliance.pci_dss_4.0,104,101907,0.1,string,"2.2.2,8.3.5,8.3.6,8.6.3 | 1.2.5,2.2.4,6.4.1 | 1.2.1"
+_source.data.sca.check.compliance.pci_dss_v3.2.1,62,101949,0.06,string,"1.1.6,1.2.1,2.2.2,2.2.5 | 7.1,7.1.1,7.1.2,7.1.3 | 10.7"
+_source.data.sca.check.compliance.pci_dss_v4.0,62,101949,0.06,string,"1.2.5,2.2.4,6.4.1 | 1.3.1,7.1 | 10.2.1,10.2.1.1"
+_source.data.sca.check.compliance.soc_2,161,101850,0.16,string,"CC6.1 | CC6.3,CC6.6 | CC5.2,CC6.1"
+_source.data.sca.check.compliance.tsc,1004,101007,0.98,string,"CC6.1 | CC5.2 | CC6.1,CC6.7,CC7.2"
+_source.data.sca.check.description,2247,99764,2.2,string,This policy setting determines whether the Guest account is enabled or disabled. The Guest account allows unauthenticate | This policy setting defines how long a user can use their password before it expires. Values for this policy setting ran | This policy setting determines the least number of characters that make up a password for a user account. There are many
+_source.data.sca.check.directory,21,101990,0.02,json_array,"[""/etc/audit""] | [""/etc/audit/rules.d""] | [""/etc/rsyslog.d""]"
+_source.data.sca.check.file,51,101960,0.05,json_array,"[""/etc/security/pwquality.conf""] | [""/etc/motd""] | [""/etc/aide/aide.conf""]"
+_source.data.sca.check.id,2247,99764,2.2,integer,15511 | 15501 | 15503
+_source.data.sca.check.previous_result,479,101532,0.47,string,passed | failed | not applicable
+_source.data.sca.check.rationale,2247,99764,2.2,string,"The default Guest account allows unauthenticated network users to log on as Guest with no password. These unauthorized u | The longer a password exists the higher the likelihood that it will be compromised by a brute force attack, by an attack | Types of password attacks include dictionary attacks (which attempt to use common words and phrases) and brute force att"
+_source.data.sca.check.reason,253,101758,0.25,string,Unable to read registry 'HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate' (The system cannot find t | Timeout overtaken running command 'net.exe accounts' | Unable to read registry 'HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' (The system cannot fin
+_source.data.sca.check.references,83,101928,0.08,string,https://blogs.technet.microsoft.com/secguide/2016/10/02/the-mss-settings/ | https://workbench.cisecurity.org/benchmarks/766 | https://workbench.cisecurity.org/benchmarks/288
+_source.data.sca.check.registry,1421,100590,1.39,json_array,"[""HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Lsa""] | [""HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System""] | [""HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon""]"
+_source.data.sca.check.remediation,2247,99764,2.2,string,"To establish the recommended configuration via GP, set the following UI path to Disabled: Computer Configuration\Policie | To establish the recommended configuration via GP, set the following UI path to 365 or fewer days, but not 0: Computer C | To establish the recommended configuration via GP, set the following UI path to 14 or more character(s): Computer Config"
+_source.data.sca.check.result,2247,99764,2.2,string,failed | passed | not applicable
+_source.data.sca.check.title,2247,99764,2.2,string,"Ensure 'Accounts: Guest account status' is set to 'Disabled'. | Ensure 'Maximum password age' is set to '365 or fewer days, but not 0'. | Ensure 'Minimum password length' is set to '14 or more character(s)'."
+_source.data.sca.description,81,101930,0.08,string,This document provides prescriptive guidance for establishing a secure configuration posture for Microsoft Windows 10 En | This document provides prescriptive guidance for establishing a secure configuration posture for Microsoft Windows 10 En | This document provides prescriptive guidance for establishing a secure configuration posture for Microsoft Windows 10 En
+_source.data.sca.failed,81,101930,0.08,integer,272 | 271 | 263
+_source.data.sca.file,81,101930,0.08,string,cis_win10_enterprise.yml | cis_ubuntu22-04.yml
+_source.data.sca.invalid,81,101930,0.08,integer,4 | 5 | 12
+_source.data.sca.passed,81,101930,0.08,integer,118 | 119 | 127
+_source.data.sca.policy,2328,99683,2.28,string,CIS Microsoft Windows 10 Enterprise Benchmark v1.12.0 | CIS Ubuntu Linux 22.04 LTS Benchmark v1.0.0
+_source.data.sca.policy_id,81,101930,0.08,string,cis_win10_enterprise | cis_ubuntu22-04
+_source.data.sca.scan_id,2328,99683,2.28,integer,1804174142 | 1771025064 | 805470535
+_source.data.sca.score,81,101930,0.08,integer,30 | 32 | 33
+_source.data.sca.total_checks,81,101930,0.08,integer,394 | 182
+_source.data.sca.type,2328,99683,2.28,string,check | summary
+_source.data.shell,1,102010,0.0,string,"/bin/false,"
+_source.data.srcuser,148,101863,0.15,string,mari | root
+_source.data.title,257,101754,0.25,string,File is owned by root and has written permissions to anyone. | Trojaned version of file detected.
+_source.data.tty,77,101934,0.08,string,pts/0 | pts/3 | pts/4
+_source.data.type,4,102007,0.0,string,dbsync_processes
+_source.data.uid,100,101911,0.1,integer,1000 | 0 | 110
+_source.data.version,19,101992,0.02,integer;string,2:1.13~1ubuntu2 | 2.10.2-1 | 7.10.2
+_source.data.win.data_0x8000003F.error,41,101970,0.04,string,0x80041010
+_source.data.win.data_0x8000003F.namespace,41,101970,0.04,string,"SELECT * FROM __InstanceCreationEvent Within 3 Where TargetInstance Isa \""Win32_Process\"" And Targetinstance.Name = \""no | SELECT * FROM __InstanceCreationEvent Within 3 Where TargetInstance Isa \""Win32_Process\"" And Targetinstance.Name = \""no | SELECT * FROM __InstanceCreationEvent Within 3 Where TargetInstance Isa \""Win32_Process\"" And Targetinstance.Name = \""no"
+_source.data.win.data_0x8000003F.query,41,101970,0.04,string,//./root/subscription
+_source.data.win.eventdata.accountExpires,27,101984,0.03,string,%%1794
+_source.data.win.eventdata.accountName,48,101963,0.05,string,LocalSystem
+_source.data.win.eventdata.address,3935,98076,3.86,string,02000000C0A8750200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 | 02000000C0A8750200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 | 02000000C0A8750200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+_source.data.win.eventdata.addressLength,3935,98076,3.86,integer,128 | 16
+_source.data.win.eventdata.algorithmName,30,101981,0.03,string,UNKNOWN
+_source.data.win.eventdata.auditPolicyChanges,78,101933,0.08,string,"Success removed, Failure removed | Success removed | Success added, Failure added"
+_source.data.win.eventdata.auditPolicyChangesId,78,101933,0.08,string,"%%8448, %%8450 | %%8448 | %%8449, %%8451"
+_source.data.win.eventdata.authenticationPackageName,3542,98469,3.47,string,Negotiate | NTLM
+_source.data.win.eventdata.binary,2285,99726,2.24,integer;string,4.60061E+15 | D9060000 | 2D20436F64653A2020434F525356434330303030303735392D2043616C6C3A2020434F525356434330303030303734312D205049443A202030303030
+_source.data.win.eventdata.callTrace,2438,99573,2.39,string,C:\\Windows\\SYSTEM32\\ntdll.dll+9a374|C:\\Windows\\System32\\KERNELBASE.dll+2fd5d|UNKNOWN(00007FFBA8EAF5D0) | C:\\Windows\\SYSTEM32\\ntdll.dll+9a374|C:\\Windows\\System32\\KERNELBASE.dll+2fd5d|C:\\Windows\\assembly\\NativeImages_v | C:\\Windows\\SYSTEM32\\ntdll.dll+9a374|C:\\Windows\\System32\\KERNELBASE.dll+2fd5d|C:\\Windows\\assembly\\NativeImages_v
+_source.data.win.eventdata.category,78,101933,0.08,string,Logon/Logoff | Detailed Tracking | Account Logon
+_source.data.win.eventdata.categoryId,78,101933,0.08,string,%%8273 | %%8276 | %%8280
+_source.data.win.eventdata.clientProcessId,1,102010,0.0,integer,660
+_source.data.win.eventdata.commandLine,20814,81197,20.4,string,C:\\Windows\\system32\\net1 accounts | net user administrator | C:\\Windows\\system32\\net1 user administrator
+_source.data.win.eventdata.company,24861,77150,24.37,string,"Microsoft Corporation | curl, https://curl.haxx.se/ | Don HO don.h@free.fr"
+_source.data.win.eventdata.countOfCredentialsReturned,1,102010,0.0,integer,0
+_source.data.win.eventdata.creationUtcTime,22980,79031,22.53,string,26:00.7 | 26:01.6 | 26:08.1
+_source.data.win.eventdata.currentDirectory,20814,81197,20.4,string,C:\\Program Files (x86)\\ossec-agent\\ | C:\\Windows\\system32\\ | C:\\WINDOWS\\system32\\
+_source.data.win.eventdata.data,22778,79233,22.33,string,"2024-12-02T06:25:30Z, RulesEngine | 0, WindowsUpdateFailure3, Not available, 0, 10.0.17134.137, 800704cf, 00000000-0000-0000-0000-000000000000, Scan, 0, 0,  | 0, StoreAgentScanForUpdatesFailure0, Not available, 0, Update;, 800704cf, 17134, 165, Windows.Desktop,   \\\\?\\C:\\Prog"
+_source.data.win.eventdata.description,30680,71331,30.08,string,Net Command | Windows Command Processor | Task Scheduler COM API
+_source.data.win.eventdata.destination,8,102003,0.01,string,"\""cmd.exe\"""
+_source.data.win.eventdata.destinationHostname,14,101997,0.01,string,cdn-185-199-108-133.github.com | DESKTOP-FMI6MML.localdomain | cdn-185-199-111-133.github.com
+_source.data.win.eventdata.destinationIp,467,101544,0.46,string,185.199.108.133 | 0:0:0:0:0:0:0:1 | 192.168.117.134
+_source.data.win.eventdata.destinationIsIpv6,467,101544,0.46,boolean,FALSE | TRUE | true
+_source.data.win.eventdata.destinationPort,467,101544,0.46,integer,443 | 5985 | 135
+_source.data.win.eventdata.destinationPortName,14,101997,0.01,string,https | epmap
+_source.data.win.eventdata.detail,31,101980,0.03,string,38 user registry handles leaked from \\Registry\\User\\S-1-5-21-2469675487-2142651230-3143768571-1001: Process 604 (\\De | 44 user registry handles leaked from \\Registry\\User\\S-1-5-21-2112738947-1079733990-4202809988-1001: Process 568 (\\De | 37 user registry handles leaked from \\Registry\\User\\S-1-5-21-2097319277-886106531-2388652505-1001: Process 384 (\\Dev
+_source.data.win.eventdata.details,947,101064,0.93,string,"C:\\windows\\system32\\WindowsPowerShell\\v1.0\\powershell.exe -noexit -c \""write-host 'T1543.003 Test'\"" | C:\\Windows\\system32\\svchost.exe -k BcastDVRUserService | C:\\Windows\\system32\\svchost.exe -k BthAppGroup"
+_source.data.win.eventdata.deviceName,3,102008,0.0,string,\\Device\\HarddiskVolumeShadowCopy6 | \\Device\\HarddiskVolumeShadowCopy5 | \\Device\\HarddiskVolumeShadowCopy2
+_source.data.win.eventdata.displayName,27,101984,0.03,string,%%1793 | NewLocalUser
+_source.data.win.eventdata.elevatedToken,3472,98539,3.4,string,%%1842 | %%1843
+_source.data.win.eventdata.errorCode,10,102001,0.01,string,0x80073d02 | 0x8024200b | 0x80240016
+_source.data.win.eventdata.eventType,957,101054,0.94,string,SetValue | WmiConsumerEvent | CreatePipe
+_source.data.win.eventdata.extraInfo,1,102010,0.0,string,Details:  This operation returned because the timeout period expired.  (HRESULT : 0x800705b4) (0x800705b4)
+_source.data.win.eventdata.failureReason,70,101941,0.07,string,%%2308 | %%2313 | %%2310
+_source.data.win.eventdata.fileVersion,24874,77137,24.38,string,10.0.17134.1 (WinBuild.160101.0800) | 7.55.1 | 5.11
+_source.data.win.eventdata.grantedAccess,2438,99573,2.39,string,0x1410 | 0x1fffff | 0x101411
+_source.data.win.eventdata.hResult,66,101945,0.06,integer,-2147020471
+_source.data.win.eventdata.hashes,24927,77084,24.44,string,"MD5=B5A26C2BF17222E86B91D26F1247AF3E,SHA256=14CC5BE4C833ACC652195DEAD113E1C3B4AC0B98EA1AEAD11957836F9AE721CF,IMPHASH=3D3 | MD5=DD0561156F62BC1958CE0E370B23711B,SHA256=FD41D0261C6D22572DA448BCB5CBBB98F78A2922D1F1074D25237CC82C8CE432,IMPHASH=863 | MD5=DD0561156F62BC1958CE0E370B23711B,SHA256=FD41D0261C6D22572DA448BCB5CBBB98F78A2922D1F1074D25237CC82C8CE432,IMPHASH=863"
+_source.data.win.eventdata.homeDirectory,27,101984,0.03,string,%%1793
+_source.data.win.eventdata.homePath,27,101984,0.03,string,%%1793
+_source.data.win.eventdata.iD,5842,96169,5.73,string,DriverCommunication | IMAGE_LOAD | QUEUE
+_source.data.win.eventdata.image,49323,52688,48.35,string,C:\\Windows\\SysWOW64\\net1.exe | C:\\Windows\\SysWOW64\\net.exe | C:\\Windows\\System32\\cmd.exe
+_source.data.win.eventdata.imageLoaded,4112,97899,4.03,string,C:\\Windows\\System32\\taskschd.dll | C:\\Windows\\Temp\\9757AC32-EDE8-4DE6-BDBB-58AF6B7A13BA\\wdscore.dll | C:\\Windows\\assembly\\NativeImages_v4.0.30319_64\\System.Manaa57fc8cc#\\40658fa78e4203ccfff37c46cfeba9fb\\System.Manage
+_source.data.win.eventdata.imagePath,102,101909,0.1,string,C:\\Windows\\system32\\drivers\\ompamikf.sys | C:\\Windows\\system32\\cmd.exe /c powershell.exe -nop -w hidden -command New-Item -ItemType File C:\\art-marker.txt | C:\\ProgramData\\Microsoft\\Windows Defender\\Definition Updates\\{34B3A9E4-79F6-4486-9A2B-3F9B2A9777F2}\\MpKslDrv.sys
+_source.data.win.eventdata.impersonationLevel,3472,98539,3.4,string,%%1833
+_source.data.win.eventdata.initiated,467,101544,0.46,boolean,TRUE | FALSE | false
+_source.data.win.eventdata.integrityLevel,20814,81197,20.4,string,System | Medium | High
+_source.data.win.eventdata.ipAddress,133,101878,0.13,string,192.168.117.130 | 127.0.0.1 | 192.168.117.136
+_source.data.win.eventdata.ipPort,133,101878,0.13,integer,52369 | 0 | 51531
+_source.data.win.eventdata.isExecutable,1,102010,0.0,boolean,FALSE
+_source.data.win.eventdata.keyLength,3542,98469,3.47,integer,0
+_source.data.win.eventdata.keyName,30,101981,0.03,string,TB_1_linkedin.com | TB_2_linkedin.com | TB_0_linkedin.com
+_source.data.win.eventdata.keyType,30,101981,0.03,string,%%2500
+_source.data.win.eventdata.library,3,102008,0.0,string,C:\\WINDOWS\\system32\\msdtcuiu.DLL
+_source.data.win.eventdata.logonGuid,24286,77725,23.81,string,{00000000-0000-0000-0000-000000000000} | {D8AF36FB-00FA-674C-E703-000000000000} | {15959494-0014-674C-8D9A-030000000000}
+_source.data.win.eventdata.logonHours,27,101984,0.03,string,%%1797
+_source.data.win.eventdata.logonId,20814,81197,20.4,string,0x3e7 | 0x39a8d | 0xac92c
+_source.data.win.eventdata.logonProcessName,3542,98469,3.47,string,Advapi | NtLmSsp | User32
+_source.data.win.eventdata.logonType,3612,98399,3.54,integer,5 | 3 | 2
+_source.data.win.eventdata.memberSid,6,102005,0.01,string,S-1-5-21-3545194148-1031192003-2429619542-1002 | S-1-5-21-3545194148-1031192003-2429619542-1003
+_source.data.win.eventdata.nTSTATUS,8,102003,0.01,integer,3221225524 | 00000000
+_source.data.win.eventdata.name,8,102003,0.01,string,"\""AtomicRedTeam_consumer\"""
+_source.data.win.eventdata.newTargetUserName,2,102009,0.0,string,HaHa_755586393 | HaHa_562974998747
+_source.data.win.eventdata.newThreadId,23,101988,0.02,integer,348 | 4704 | 1320
+_source.data.win.eventdata.newTime,76,101935,0.07,string,2024-12-01T14:07:07.430495700Z | 2024-12-02T20:21:59.433566500Z | 2024-12-02T06:42:03.885000000Z
+_source.data.win.eventdata.newUacValue,27,101984,0.03,string,0x214 | 0x10 | 0x210
+_source.data.win.eventdata.oldTargetUserName,2,102009,0.0,string,Administrator
+_source.data.win.eventdata.oldUacValue,27,101984,0.03,string,0x214 | 0x215 | 0x15
+_source.data.win.eventdata.operation,38,101973,0.04,string,%%2480 | Created | Modified
+_source.data.win.eventdata.originalFileName,24871,77140,24.38,string,net1.exe | net.exe | Cmd.Exe
+_source.data.win.eventdata.packageName,10,102001,0.01,string,MICROSOFT_AUTHENTICATION_PACKAGE_V1_0
+_source.data.win.eventdata.param1,1795,100216,1.76,integer;string,Background Intelligent Transfer Service | application-specific | Windows Modules Installer
+_source.data.win.eventdata.param10,227,101784,0.22,string,Unavailable | Microsoft.Windows.ContentDeliveryManager_10.0.17134.1_neutral_neutral_cw5n1h2txyewy
+_source.data.win.eventdata.param11,227,101784,0.22,string,Unavailable | S-1-15-2-350187224-1905355452-1037786396-3028148496-2624191407-3283318427-1255436723
+_source.data.win.eventdata.param2,1722,100289,1.69,integer;string,demand start | Local | Fax
+_source.data.win.eventdata.param3,1240,100771,1.22,integer;string,auto start | Launch | Activation
+_source.data.win.eventdata.param4,1238,100773,1.21,integer;string,BITS | Windows.SecurityCenter.WscBrokerManager | TrustedInstaller
+_source.data.win.eventdata.param5,460,101551,0.45,string,Unavailable | {8BC3F05E-D86B-11D0-A075-00C04FB68820} | {56BE716B-2F76-4DFA-8702-67AE10044F0B}
+_source.data.win.eventdata.param6,227,101784,0.22,string,NT AUTHORITY | DESKTOP-FMI6MML | DESKTOP-QGB4EQH
+_source.data.win.eventdata.param7,227,101784,0.22,string,SYSTEM | maryam | mari
+_source.data.win.eventdata.param8,227,101784,0.22,string,S-1-5-18 | S-1-5-21-2112738947-1079733990-4202809988-1001 | S-1-5-21-2469675487-2142651230-3143768571-1001
+_source.data.win.eventdata.param9,227,101784,0.22,string,LocalHost (Using LRPC)
+_source.data.win.eventdata.parentCommandLine,20772,81239,20.36,string,"net.exe accounts | \""C:\\Program Files (x86)\\ossec-agent\\wazuh-agent.exe\"" | net user administrator"
+_source.data.win.eventdata.parentImage,20772,81239,20.36,string,C:\\Windows\\SysWOW64\\net.exe | C:\\Program Files (x86)\\ossec-agent\\wazuh-agent.exe | C:\\Windows\\System32\\RuntimeBroker.exe
+_source.data.win.eventdata.parentProcessGuid,20814,81197,20.4,string,{D8AF36FB-011A-674C-6700-000000000A00} | {D8AF36FB-0100-674C-3500-000000000A00} | {D8AF36FB-011C-674C-7100-000000000A00}
+_source.data.win.eventdata.parentProcessId,20814,81197,20.4,integer,5080 | 2436 | 4020
+_source.data.win.eventdata.parentUser,20758,81253,20.35,string,NT AUTHORITY\\SYSTEM | DESKTOP-QGB4EQH\\mari | DESKTOP-FMI6MML\\maryam
+_source.data.win.eventdata.passwordLastSet,27,101984,0.03,string,11/26/2024 1:41 | 12/2/2024 11:50 | 11/5/2024 17:36
+_source.data.win.eventdata.pipeName,2,102009,0.0,string,\\PSHost.133782452551274336.2952.DefaultAppDomain.powershell | \\PSHost.133784705800204585.12728.DefaultAppDomain.powershell
+_source.data.win.eventdata.previousCreationUtcTime,1,102010,0.0,string,39:27.1
+_source.data.win.eventdata.previousTime,76,101935,0.07,string,2024-12-01T14:07:07.430568600Z | 2024-12-02T20:21:59.433701100Z | 2024-12-02T05:01:55.963668100Z
+_source.data.win.eventdata.primaryGroupId,27,101984,0.03,integer,513
+_source.data.win.eventdata.privilegeList,1,102010,0.0,string,SeAssignPrimaryTokenPrivilege     SeTcbPrivilege     SeSecurityPrivilege     SeTakeOwnershipPrivilege     SeLoadDriverPr
+_source.data.win.eventdata.processCreationTime,1,102010,0.0,string,2024-12-09T05:56:32.8157531Z
+_source.data.win.eventdata.processGuid,49323,52688,48.35,string,{D8AF36FB-011B-674C-6A00-000000000A00} | {D8AF36FB-011B-674C-6B00-000000000A00} | {D8AF36FB-011C-674C-7100-000000000A00}
+_source.data.win.eventdata.processId,52941,49070,51.9,integer;string,0x220 | 1688 | 3188
+_source.data.win.eventdata.processName,3605,98406,3.53,string,C:\\Windows\\System32\\services.exe | C:\\Windows\\System32\\svchost.exe | C:\\Program Files\\VMware\\VMware Tools\\vmtoolsd.exe
+_source.data.win.eventdata.product,24861,77150,24.37,string,Microsoft® Windows® Operating System | The curl executable | WinGup for Notepad++
+_source.data.win.eventdata.profilePath,27,101984,0.03,string,%%1793
+_source.data.win.eventdata.protocol,467,101544,0.46,string,tcp
+_source.data.win.eventdata.providerName,30,101981,0.03,string,Microsoft Software Key Storage Provider
+_source.data.win.eventdata.queryName,3935,98076,3.86,string,wpad | raw.githubusercontent.com | r.bing.com
+_source.data.win.eventdata.readOperation,1,102010,0.0,string,%%8100
+_source.data.win.eventdata.reason,3,102008,0.0,string,Index Version Upgrade
+_source.data.win.eventdata.returnCode,31,101980,0.03,integer;string,0x80090016 | 3221226021
+_source.data.win.eventdata.ruleName,42584,59427,41.74,string,"technique_id=T1059.003,technique_name=Windows Command Shell | technique_id=T1053,technique_name=Scheduled Task | DLL"
+_source.data.win.eventdata.samAccountName,29,101982,0.03,string,Guest | NewLocalUser | Administrator
+_source.data.win.eventdata.scriptPath,27,101984,0.03,string,%%1793
+_source.data.win.eventdata.service,3,102008,0.0,string,MSDTC
+_source.data.win.eventdata.serviceGuid,10,102001,0.01,string,{855E8A7C-ECB4-4CA3-B045-1DFA50104289} | {9482f4b4-e343-43b6-b170-9a65bc822c77} | {855e8a7c-ecb4-4ca3-b045-1dfa50104289}
+_source.data.win.eventdata.serviceName,102,101909,0.1,string,ompamikf | ARTService | MpKsl8e20d224
+_source.data.win.eventdata.serviceType,102,101909,0.1,string,kernel mode driver | user mode service
+_source.data.win.eventdata.signature,3825,98186,3.75,string,Microsoft Windows | Microsoft Corporation
+_source.data.win.eventdata.signatureStatus,4112,97899,4.03,string,Valid | Unavailable
+_source.data.win.eventdata.signed,4112,97899,4.03,boolean,TRUE | FALSE | true
+_source.data.win.eventdata.sourceFileID,3,102008,0.0,string,0x0005
+_source.data.win.eventdata.sourceHostname,14,101997,0.01,string,DESKTOP-FMI6MML.localdomain
+_source.data.win.eventdata.sourceImage,2461,99550,2.41,string,C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe | C:\\Windows\\System32\\rdrleakdiag.exe | C:\\Windows\\system32\\WerFault.exe
+_source.data.win.eventdata.sourceIp,467,101544,0.46,string,192.168.117.134 | 0:0:0:0:0:0:0:1 | 192.168.117.130
+_source.data.win.eventdata.sourceIsIpv6,467,101544,0.46,boolean,FALSE | TRUE | true
+_source.data.win.eventdata.sourceLine,3,102008,0.0,integer,2601 | 2587
+_source.data.win.eventdata.sourcePort,467,101544,0.46,integer,51664 | 53064 | 53069
+_source.data.win.eventdata.sourceProcessGUID,2438,99573,2.39,string,{15959494-01B4-674C-4B01-000000000F00} | {15959494-51F5-674C-2301-000000001000} | {15959494-AA5C-674C-5901-000000001100}
+_source.data.win.eventdata.sourceProcessGuid,23,101988,0.02,string,{15959494-69E3-674D-6102-000000001200} | {D8AF36FB-69DA-674D-5103-000000000F00} | {D8AF36FB-BB15-674C-2002-000000000D00}
+_source.data.win.eventdata.sourceProcessId,2461,99550,2.41,integer,4260 | 5600 | 6892
+_source.data.win.eventdata.sourceTag,3,102008,0.0,integer,164
+_source.data.win.eventdata.sourceThreadId,2438,99573,2.39,integer,4240 | 7220 | 5756
+_source.data.win.eventdata.sourceUser,2461,99550,2.41,string,DESKTOP-QGB4EQH\\mari | DESKTOP-FMI6MML\\maryam | DESKTOP-DS4FBF4\\mari
+_source.data.win.eventdata.startAddress,23,101988,0.02,string,0x00007FF8D4501730 | 0x00007FF9D36433F0 | 0x00007FFA0E3E1730
+_source.data.win.eventdata.startFunction,6,102005,0.01,string,RtlHeapTrkInitialize
+_source.data.win.eventdata.startModule,23,101988,0.02,string,C:\\Windows\\SYSTEM32\\ntdll.dll | C:\\WINDOWS\\SYSTEM32\\ntdll.dll
+_source.data.win.eventdata.startType,102,101909,0.1,string,system start | demand start | disabled
+_source.data.win.eventdata.status,80,101931,0.08,string,0xc000015b | 0xc000006a | 0xc000006d
+_source.data.win.eventdata.subStatus,70,101941,0.07,string,0x0 | 0xc000006a | 0xc0000064
+_source.data.win.eventdata.subcategory,78,101933,0.08,string,Logon | Account Lockout | Logoff
+_source.data.win.eventdata.subcategoryGuid,78,101933,0.08,string,{0CCE9215-69AE-11D9-BED3-505054503030} | {0CCE9217-69AE-11D9-BED3-505054503030} | {0CCE9216-69AE-11D9-BED3-505054503030}
+_source.data.win.eventdata.subcategoryId,78,101933,0.08,string,%%12544 | %%12546 | %%12545
+_source.data.win.eventdata.subjectDomainName,3761,98250,3.69,string,WORKGROUP | NT AUTHORITY | DESKTOP-B37GATP
+_source.data.win.eventdata.subjectLogonId,3774,98237,3.7,string,0x3e7 | 0x0 | 0x3e5
+_source.data.win.eventdata.subjectUserName,3761,98250,3.69,string,DESKTOP-FMI6MML$ | DESKTOP-QGB4EQH$ | LOCAL SERVICE
+_source.data.win.eventdata.subjectUserSid,3774,98237,3.7,string,S-1-5-18 | S-1-0-0 | S-1-5-19
+_source.data.win.eventdata.targetDomainName,3662,98349,3.59,string,NT AUTHORITY | DESKTOP-QGB4EQH | DESKTOP-FMI6MML
+_source.data.win.eventdata.targetFilename,22981,79030,22.53,string,C:\\Windows\\assembly\\NativeImages_v4.0.30319_64\\Temp\\12b4-0\\PresentationFramework.Aero2.dll | C:\\Windows\\assembly\\NativeImages_v4.0.30319_64\\Temp\\1124-0\\System.Configuration.Install.dll | C:\\Windows\\assembly\\NativeImages_v4.0.30319_64\\Temp\\11f4-0\\System.Management.dll
+_source.data.win.eventdata.targetImage,2461,99550,2.41,string,C:\\Windows\\Explorer.EXE | C:\\Windows\\System32\\lsass.exe | C:\\Windows\\System32\\RuntimeBroker.exe
+_source.data.win.eventdata.targetLinkedLogonId,3472,98539,3.4,string,0x0 | 0xa69c3 | 0x88d67
+_source.data.win.eventdata.targetLogonId,3559,98452,3.49,string,0x3e7 | 0x39a8d | 0xac94f
+_source.data.win.eventdata.targetName,1,102010,0.0,string,MicrosoftAccount:user=02ypmeulzexajgpp
+_source.data.win.eventdata.targetObject,947,101064,0.93,string,HKLM\\System\\CurrentControlSet\\Services\\Fax\\ImagePath | HKLM\\System\\CurrentControlSet\\Services\\BcastDVRUserService_ae2a4\\ImagePath | HKLM\\System\\CurrentControlSet\\Services\\BluetoothUserService_ae2a4\\ImagePath
+_source.data.win.eventdata.targetProcessGUID,2438,99573,2.39,string,{15959494-0017-674C-6000-000000000F00} | {15959494-5159-674C-5F00-000000001000} | {15959494-A59E-674C-5A00-000000001100}
+_source.data.win.eventdata.targetProcessGuid,23,101988,0.02,string,{15959494-57D1-674D-0C00-000000001200} | {D8AF36FB-57A1-674D-0C00-000000000F00} | {D8AF36FB-A589-674C-0C00-000000000D00}
+_source.data.win.eventdata.targetProcessId,2461,99550,2.41,integer,4728 | 4116 | 4324
+_source.data.win.eventdata.targetSid,46,101965,0.05,string,S-1-5-21-2469675487-2142651230-3143768571-501 | S-1-5-21-2097319277-886106531-2388652505-501 | S-1-5-21-3545194148-1031192003-2429619542-1002
+_source.data.win.eventdata.targetUser,2461,99550,2.41,string,DESKTOP-QGB4EQH\\mari | NT AUTHORITY\\SYSTEM | DESKTOP-DS4FBF4\\mari
+_source.data.win.eventdata.targetUserName,3683,98328,3.61,string,SYSTEM | Administrator | mari
+_source.data.win.eventdata.targetUserSid,3629,98382,3.56,string,S-1-5-18 | S-1-0-0 | S-1-5-21-2469675487-2142651230-3143768571-1001
+_source.data.win.eventdata.terminalSessionId,20814,81197,20.4,integer,0 | 1
+_source.data.win.eventdata.type,9,102002,0.01,integer;string,Command Line | 0
+_source.data.win.eventdata.updateGuid,10,102001,0.01,string,{97BEF153-675B-4A14-9610-4E4217593075} | {f014c67e-2e96-4822-9eda-f6e083a0d46f} | {97bef153-675b-4a14-9610-4e4217593075}
+_source.data.win.eventdata.updateRevisionNumber,10,102001,0.01,integer,1 | 200
+_source.data.win.eventdata.updateTitle,10,102001,0.01,string,9WZDNCRFHVN5-MICROSOFT.WINDOWSCALCULATOR | Security Intelligence Update for Microsoft Defender Antivirus - KB2267602 (Version 1.421.664.0) - Current Channel (Broad | Security Intelligence Update for Microsoft Defender Antivirus - KB2267602 (Version 1.421.655.0) - Current Channel (Broad
+_source.data.win.eventdata.user,49331,52680,48.36,string,NT AUTHORITY\\SYSTEM | DESKTOP-QGB4EQH\\mari | NT AUTHORITY\\NETWORK SERVICE
+_source.data.win.eventdata.userAccountControl,12,101999,0.01,string,%%2048 | %%2048    %%2050 | %%2089
+_source.data.win.eventdata.userParameters,25,101986,0.02,string,%%1793
+_source.data.win.eventdata.userWorkstations,27,101984,0.03,string,%%1793
+_source.data.win.eventdata.utcTime,57634,44377,56.5,string,24:27.7 | 24:28.5 | 24:28.7
+_source.data.win.eventdata.virtualAccount,3472,98539,3.4,string,%%1843 | %%1842
+_source.data.win.eventdata.volumeName,3,102008,0.0,string,C:
+_source.data.win.eventdata.win32Error,3,102008,0.0,integer,2147944538
+_source.data.win.eventdata.workstation,10,102001,0.01,string,DESKTOP-FMI6MML
+_source.data.win.eventdata.workstationName,182,101829,0.18,string,DESKTOP-FMI6MML | DESKTOP-B37GATP | DESKTOP-QGB4EQH
+_source.data.win.initChannelLoggingFailure.channelPath,1,102010,0.0,string,Microsoft-Windows-Diagnosis-Scripted/Admin
+_source.data.win.initChannelLoggingFailure.errorCode,1,102010,0.0,integer,1500
+_source.data.win.logFileCleared.channel,74,101937,0.07,string,System | Application | Internet Explorer
+_source.data.win.logFileCleared.clientProcessId,1,102010,0.0,integer,8796
+_source.data.win.logFileCleared.clientProcessStartKey,1,102010,0.0,string,1.40737E+15
+_source.data.win.logFileCleared.subjectDomainName,80,101931,0.08,string,DESKTOP-QGB4EQH | DESKTOP-FMI6MML | DESKTOP-B37GATP
+_source.data.win.logFileCleared.subjectLogonId,6,102005,0.01,string,0x39922 | 0xac92c | 0x105bcf
+_source.data.win.logFileCleared.subjectUserName,80,101931,0.08,string,mari | maryam
+_source.data.win.logFileCleared.subjectUserSid,6,102005,0.01,string,S-1-5-21-2469675487-2142651230-3143768571-1001 | S-1-5-21-2112738947-1079733990-4202809988-1001
+_source.data.win.system.channel,90601,11410,88.81,string,Security | Microsoft-Windows-Sysmon/Operational | System
+_source.data.win.system.computer,90601,11410,88.81,string,DESKTOP-FMI6MML | DESKTOP-QGB4EQH | DESKTOP-B37GATP
+_source.data.win.system.eventID,90601,11410,88.81,integer,4624 | 1 | 7040
+_source.data.win.system.eventRecordID,90601,11410,88.81,integer,261850 | 51470 | 51471
+_source.data.win.system.eventSourceName,6284,95727,6.16,string,Service Control Manager | Software Protection Platform Service | DCOM
+_source.data.win.system.keywords,90601,11410,88.81,string,0x8020000000000000 | 0x8000000000000000 | 0x8080000000000000
+_source.data.win.system.level,90601,11410,88.81,integer,0 | 4 | 2
+_source.data.win.system.message,90572,11439,88.79,string,"""An account was successfully logged on.
+
+Subject:
+	Security ID:		S-1-5-18
+	Account Name:		DESKTOP-FMI6MML$
+	Account Doma | ""Process Create:
+RuleName: -
+UtcTime: 2024-12-01 06:24:27.693
+ProcessGuid: {D8AF36FB-011B-674C-6A00-000000000A00}
+Proces | ""Process Create:
+RuleName: -
+UtcTime: 2024-12-01 06:24:27.734
+ProcessGuid: {D8AF36FB-011B-674C-6B00-000000000A00}
+Proces"
+_source.data.win.system.opcode,79100,22911,77.54,integer,0 | 13
+_source.data.win.system.processID,79100,22911,77.54,integer,564 | 2448 | 544
+_source.data.win.system.providerGuid,71972,30039,70.55,string,{54849625-5478-4994-A5BA-3E3B0328C30D} | {5770385F-C22A-43E0-BF4C-06F5698FFBD9} | {555908d1-a6d7-4695-8e1e-26931d2012f4}
+_source.data.win.system.providerName,90601,11410,88.81,string,Microsoft-Windows-Security-Auditing | Microsoft-Windows-Sysmon | Service Control Manager
+_source.data.win.system.severityValue,90601,11410,88.81,string,AUDIT_SUCCESS | INFORMATION | ERROR
+_source.data.win.system.systemTime,90601,11410,88.81,string,2024-12-01T06:24:26.902929700Z | 2024-12-01T06:24:27.700700100Z | 2024-12-01T06:24:27.739856300Z
+_source.data.win.system.task,90601,11410,88.81,integer,12544 | 1 | 0
+_source.data.win.system.threadID,79100,22911,77.54,integer,604 | 3184 | 2344
+_source.data.win.system.version,79100,22911,77.54,integer,2 | 5 | 0
+_source.decoder,15788,86223,15.48,string,"{""name"":""windows_eventchannel""} | {""name"":""ossec""} | {""name"":""syscheck_registry_value_modified""}"
+_source.decoder.ftscomment,74,101937,0.07,string,First time user executed the sudo command
+_source.decoder.name,102009,2,100.0,string,ossec | windows_eventchannel | rootcheck
+_source.decoder.parent,374,101637,0.37,string,ossec | pam | sudo
+_source.full_log,9192,92819,9.01,string,ossec: File rotated (inode changed): '/var/log/syslog'. | ossec: Manager started. | File '/root/.npm/_cacache/index-v5/82/d7/dcbd0725f9366f2f85f22b083393726197ae5e3c24aab76e6921106117ff' is owned by root 
+_source.id,102011,0,100.0,integer;string,1732998608 | 1733034268 | 1733034269
+_source.input.type,102011,0,100.0,string,log
+_source.location,102011,0,100.0,string,logcollector | EventChannel | wazuh-monitord
+_source.manager.name,102011,0,100.0,string,Maryam
+_source.predecoder.hostname,261,101750,0.26,string,Maryam
+_source.predecoder.program_name,263,101748,0.26,string,sudo | su | systemd
+_source.predecoder.timestamp,263,101748,0.26,string,12/2/2025 15:12 | 12/1/2025 9:47 | 12/5/2025 17:50
+_source.previous_log,105,101906,0.1,string,"ossec: output: 'netstat listening ports':
+udp6       0      0 ::1:323                 :::*                               | ossec: output: 'netstat listening ports':
+udp6       0      0 ::1:323                 :::*                               | ossec: output: 'netstat listening ports':
+udp6       0      0 ::1:323                 :::*                              "
+_source.previous_output,935,101076,0.92,string,"Previous output:
+ossec: output: 'netstat listening ports':
+udp6       0      0 ::1:323                 :::*              | {""win"":{""system"":{""providerName"":""Microsoft-Windows-Security-SPP"",""providerGuid"":""{E23B33B0-C8C9-472C-A5F9-F2BDFEA0F156} | {""win"":{""system"":{""providerName"":""Microsoft-Windows-Security-SPP"",""providerGuid"":""{E23B33B0-C8C9-472C-A5F9-F2BDFEA0F156}"
+_source.rule.cis,2247,99764,2.2,json_array,"[""2.3.1.3""] | [""1.1.2""] | [""1.1.4""]"
+_source.rule.cis_csc,1333,100678,1.31,json_array,"[""4.7""] | [""5.2""] | [""4.10""]"
+_source.rule.cis_csc_v7,178,101833,0.17,json_array,"[""4.4""] | [""2.6""] | [""14.6""]"
+_source.rule.cis_csc_v8,178,101833,0.17,json_array,"[""5.2""] | [""4.8""] | [""3.3""]"
+_source.rule.description,101953,58,99.94,string,Log file rotated. | Windows logon success. | Discovery activity executed
+_source.rule.firedtimes,101953,58,99.94,integer,2 | 34 | 11
+_source.rule.frequency,830,101181,0.81,integer,8
+_source.rule.gdpr,26538,75473,26.01,json_array,"[""II_5.1.f"",""IV_35.7.d""] | [""IV_32.2""] | [""IV_35.7.d""]"
+_source.rule.gdpr_IV,152,101859,0.15,json_array,"[""35.7.d""]"
+_source.rule.gpg13,23102,78909,22.65,json_array,"[""10.1""] | [""7.1"",""7.2""] | [""4.3""]"
+_source.rule.gpg_13,68,101943,0.07,json_array,"[""4.3""]"
+_source.rule.groups,102011,0,100.0,json_array,"[""ossec""] | [""windows"",""windows_security"",""authentication_success""] | [""sysmon"",""sysmon_eid1_detections"",""windows""]"
+_source.rule.hipaa,13897,88114,13.62,json_array,"[""164.312.b""] | [""164.312.a.2.IV"",""164.312.e.1"",""164.312.e.2.I"",""164.312.e.2.II""] | [""164.312.c.1"",""164.312.c.2""]"
+_source.rule.id,102011,0,100.0,integer,591 | 60106 | 92031
+_source.rule.info,735,101276,0.72,string,This does not appear to be logged on Windows 2000
+_source.rule.level,102011,0,100.0,integer,3 | 4 | 6
+_source.rule.mail,102011,0,100.0,boolean,FALSE | TRUE | false
+_source.rule.mitre.id,63619,38392,62.36,json_array,"[""T1078""] | [""T1087""] | [""T1059.003""]"
+_source.rule.mitre.tactic,63619,38392,62.36,json_array,"[""Defense Evasion"",""Persistence"",""Privilege Escalation"",""Initial Access""] | [""Discovery""] | [""Execution""]"
+_source.rule.mitre.technique,63619,38392,62.36,json_array,"[""Valid Accounts""] | [""Account Discovery""] | [""Windows Command Shell""]"
+_source.rule.mitre_mitigations,130,101881,0.13,json_array,"[""M1027""] | [""M1042""] | [""M1022""]"
+_source.rule.mitre_tactics,169,101842,0.17,json_array,"[""TA0006""] | [""TA0008""] | [""TA0005""]"
+_source.rule.mitre_techniques,170,101841,0.17,json_array,"[""T1078"",""T1078.001"",""T1078.002"",""T1078.003"",""T1078.004"",""T1110"",""T1110.001"",""T1110.002"",""T1110.003""] | [""T1203"",""T1210"",""T1543"",""T1543.002""] | [""T1499"",""T1499.001""]"
+_source.rule.nist_800_53,15805,86206,15.49,json_array,"[""AU.9""] | [""AC.7"",""AU.14""] | [""AU.6""]"
+_source.rule.nist_sp_800-53,133,101878,0.13,json_array,"[""AC-5"",""AC-6""] | [""AC-6(9)""] | [""SC-7(5)""]"
+_source.rule.pci_dss,16065,85946,15.75,json_array,"[""10.5.2"",""10.5.5""] | [""10.2.5""] | [""10.6""]"
+_source.rule.soc_2,161,101850,0.16,json_array,"[""CC6.1""] | [""CC6.3"",""CC6.6""] | [""CC5.2"",""CC6.1""]"
+_source.rule.tsc,15805,86206,15.49,json_array,"[""CC6.1"",""CC7.2"",""CC7.3"",""PI1.4"",""PI1.5"",""CC7.1"",""CC8.1""] | [""CC6.8"",""CC7.2"",""CC7.3""] | [""CC6.1"",""CC6.8"",""CC7.2"",""CC7.3""]"
+_source.syscheck.arch,8130,93881,7.97,json_array,[x32] | [x64]
+_source.syscheck.attrs_after,10,102001,0.01,json_array,"[""ARCHIVE""]"
+_source.syscheck.changed_attributes,2513,99498,2.46,json_array,"[""mtime""] | [""md5"",""sha1"",""sha256""] | [""permission""]"
+_source.syscheck.event,8205,93806,8.04,string,deleted | added | modified
+_source.syscheck.gid_after,1840,100171,1.8,integer;string,S-1-5-18 | S-1-5-19 | S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464
+_source.syscheck.gid_before,199,101812,0.2,string,S-1-5-32-544 | S-1-5-18
+_source.syscheck.gname_after,1798,100213,1.76,string,SYSTEM | LOCAL\ SERVICE | TrustedInstaller
+_source.syscheck.inode_after,65,101946,0.06,integer,52396 | 1138 | 29561
+_source.syscheck.inode_before,6,102005,0.01,integer,29561 | 1230 | 318078
+_source.syscheck.md5_after,6430,95581,6.3,string,f9111ad9f15a7e601256e686d79555a3 | d4095896f9b4a13d33aa04e4918a0edb | e4bad64d7f89f4abcf36febb3b624763
+_source.syscheck.md5_before,1566,100445,1.54,string,98504f2bf217bded292767e86089181b | 61e12e12000d15921459762bdcd6a023 | 90b94c383ddfa4fb99fb2ca78e34ac25
+_source.syscheck.mode,8205,93806,8.04,string,scheduled | realtime
+_source.syscheck.mtime_after,1850,100161,1.81,string,2024-12-02T10:16:06 | 2024-12-02T10:16:07 | 2024-12-01T22:48:01
+_source.syscheck.mtime_before,951,101060,0.93,string,2024-09-22T00:47:26 | 2024-09-22T00:47:53 | 2024-10-15T21:38:39
+_source.syscheck.path,8205,93806,8.04,string,HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\RestrictedServices\AppIso\Fi | HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\RestrictedServices\AppIso\Fi | HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\RestrictedServices\AppIso\Fi
+_source.syscheck.perm_after,65,101946,0.06,string,rwxrwxrwx | rw-r--r-- | rw-r-----
+_source.syscheck.sha1_after,6430,95581,6.3,string,78e5e8094a97583800f1ee8720423ef59139b2ad | 51563cace13ebcc297cf9712df3c1f079382fc9f | 1e68b84cc796097c27857799b96fddfced5d8294
+_source.syscheck.sha1_before,1566,100445,1.54,string,459afb8be4b1a327131647831bfb85bfd33f2f0b | 48fa6b2543c4efa71f18e4600b6d8b47bc58b1db | 81c380f6b7e5a4e155e646f63b7e6b70198c6a98
+_source.syscheck.sha256_after,6430,95581,6.3,string,8ed899f3e2ba26b57a4914fb0d0c09c0cd98a96b72ea6345fa6ab894573f1b10 | 36099d983d298d74f90679ae541b7446c4d65ca0cccccaf130493bc8b18c11c0 | b47036d4b5b27eb3d097ef5e8086426849f622b794b6fdec1ca8854b9c162f41
+_source.syscheck.sha256_before,1566,100445,1.54,string,4850c85842656a7c58a4209172fefcc2786b27927f08e527dd4df7f4131f349c | 2dd673a174d461aefa644d4af5150c5ca1a07aadad4088c5d41f5a0bdc5d1ec6 | e6e3f88e84acf091bd077451f637e0f41659f273ce7fdf9591d93aec6d67443a
+_source.syscheck.size_after,6430,95581,6.3,integer,362 | 516 | 404
+_source.syscheck.size_before,20,101991,0.02,integer,1 | 18 | 81
+_source.syscheck.uid_after,1850,100161,1.81,integer;string,S-1-5-32-544 | S-1-5-18 | S-1-5-19
+_source.syscheck.uid_before,10,102001,0.01,string,S-1-5-18 | S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464
+_source.syscheck.uname_after,1850,100161,1.81,string,Administrators | SYSTEM | LOCAL\ SERVICE
+_source.syscheck.uname_before,10,102001,0.01,string,SYSTEM | TrustedInstaller
+_source.syscheck.value_name,6352,95659,6.23,string,{222E6EAF-DAC3-4A38-AF48-8AE0506DB080} | {250E313A-7BEB-4E56-B3C9-5B2FC6911DE1} | {29000AF6-C806-47B3-B5EA-A600DE109F60}
+_source.syscheck.value_type,6355,95656,6.23,string,REG_SZ | REG_DWORD | REG_BINARY
+_source.syscheck.win_perm_after,1785,100226,1.75,json_array,"[{""allowed"":[""READ_CONTROL"",""READ_DATA"",""READ_EA"",""WRITE_EA""],""name"":""Users""},{""allowed"":[""DELETE"",""READ_CONTROL"",""WRITE | [{""allowed"":[""READ_CONTROL"",""READ_DATA"",""READ_EA"",""WRITE_EA""],""name"":""Users""},{""allowed"":[""DELETE"",""READ_CONTROL"",""WRITE | [{""allowed"":[""READ_CONTROL"",""READ_DATA"",""READ_EA"",""WRITE_EA""],""name"":""Users""},{""allowed"":[""DELETE"",""READ_CONTROL"",""WRITE"
+_source.syscheck.win_perm_before,14,101997,0.01,json_array,"[{""allowed"":[""DELETE""],""name"":""S-1-5-21-2112738947-1079733990-4202809988-1000""},{""allowed"":[""DELETE""],""name"":""maryam""},{ | [{""allowed"":[""GENERIC_READ"",""READ_CONTROL"",""READ_DATA"",""READ_EA"",""WRITE_EA""],""name"":""Authenticated Users""},{""allowed"":["" | [{""allowed"":[""GENERIC_READ"",""READ_CONTROL"",""READ_DATA"",""READ_EA"",""WRITE_EA""],""name"":""Authenticated Users""},{""allowed"":["""
+_source.timestamp,102011,0,100.0,string,"Nov 30, 2024 @ 20:30:08.057 | Dec 1, 2024 @ 06:24:28.026 | Dec 1, 2024 @ 06:24:29.426"
+_version,102011,0,100.0,integer,1

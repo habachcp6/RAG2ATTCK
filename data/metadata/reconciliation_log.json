@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0.0",
+  "timestamp_utc": "2026-09-15T18:24:47.564667+00:00",
+  "status": "RECONCILED_EXACT_MATCH",
+  "total_period_files": 16,
+  "sum_period_rows": 102011,
+  "combined_csv_rows": 102011,
+  "row_count_delta": 0,
+  "combined_columns_superset_count": 377,
+  "files_breakdown": {
+    "01-03-December.csv": {
+      "rows": 8838,
+      "header_cols": 289
+    },
+    "03-04-December.csv": {
+      "rows": 7291,
+      "header_cols": 240
+    },
+    "04-07-December.csv": {
+      "rows": 7750,
+      "header_cols": 224
+    },
+    "07-10-December.csv": {
+      "rows": 9185,
+      "header_cols": 227
+    },
+    "1-11-November.csv": {
+      "rows": 8807,
+      "header_cols": 311
+    },
+    "10-December-P1.csv": {
+      "rows": 9049,
+      "header_cols": 157
+    },
+    "10-December-P2.csv": {
+      "rows": 1188,
+      "header_cols": 191
+    },
+    "11-12-December.csv": {
+      "rows": 9655,
+      "header_cols": 224
+    },
+    "11-16-November.csv": {
+      "rows": 6554,
+      "header_cols": 147
+    },
+    "12-13-December.csv": {
+      "rows": 6406,
+      "header_cols": 221
+    },
+    "13-14-December.csv": {
+      "rows": 9738,
+      "header_cols": 200
+    },
+    "14-17-December.csv": {
+      "rows": 5644,
+      "header_cols": 204
+    },
+    "22-December.csv": {
+      "rows": 1173,
+      "header_cols": 175
+    },
+    "23-30-November.csv": {
+      "rows": 8038,
+      "header_cols": 300
+    },
+    "28-October-01-November.csv": {
+      "rows": 693,
+      "header_cols": 208
+    },
+    "30-November.csv": {
+      "rows": 2002,
+      "header_cols": 189
+    }
+  },
+  "reconciliation_rule": "Period CSVs are ingest collections; combined.csv is for reconciliation only and not added to observations (no double-counting)."
+}

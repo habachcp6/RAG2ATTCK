@@ -1,0 +1,30 @@
+# Environment & virtual environments
+.venv/
+env/
+venv/
+
+# Build & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.cache/
+.tmp/
+
+# Agents scratch/runtime
+.agents/
+
+# Large datasets & immutable raw data (tracked via manifests & checksums)
+data/raw/
+attack/raw/
+data/ground_truth/
+data/processed/
+
+# IDE & OS
+.idea/
+.vscode/
+Thumbs.db
+Desktop.ini
+*.DS_Store

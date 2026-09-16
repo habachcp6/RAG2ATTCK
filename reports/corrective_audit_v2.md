@@ -2,7 +2,8 @@
 
 - Date: 2026-09-16
 - Workspace: `D:\RAG2ATT&CK`
-- Starting HEAD recorded before work: `a8521b3faeb032b3650e63e7d40412b9078d8d91`
+- Previous historical agent state: `a8521b3faeb032b3650e63e7d40412b9078d8d91`
+- Actual repository HEAD before corrective v2 implementation commit (`5acada7`): `c80281c727963a499bba91ce13ea5ee89ae37f90` (parent of `5acada7`)
 - Frozen methodology: `ORIGINAL_REQUEST.md`
 - Critical preservation checks: root `README.md` must remain byte-for-byte unchanged; raw dataset files must remain immutable; T6-T11 must remain not run.
 

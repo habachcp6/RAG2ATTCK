@@ -99,8 +99,8 @@ def cmd_profile(args):
     print(f"[*] Executing Task 3 Schema Profiling & Record Indexing on workspace: {ws}")
     try:
         res = profile_dataset_schemas(ws)
-        print(f"[+] Profiling complete. Total records: {res['total_records']}, Parsed: {res['parsed_records']}, Malformed: {res['malformed_records']}")
-        print(f"[+] Distinct fields: {res['distinct_fields_count']}")
+        print(f"[+] Profiling complete. Logical rows: {res['source_logical_rows']}, Parsed: {res['successfully_parsed_records']}, Malformed: {res['rejected_malformed_records']}")
+        print(f"[+] Distinct fields: {res['unique_field_count']}")
         print(f"[+] Artifacts: data/metadata/schema_profile.json, data/metadata/record_index.csv, data/metadata/parse_error_ledger.json")
         return 0
     except Exception as e:

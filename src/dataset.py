@@ -218,13 +218,49 @@ def verify_source_context(workspace_root: Path) -> Dict[str, Any]:
             "sha256": hashlib.sha256(data).hexdigest()
         })
 
-    # Canonical documents lookup (preserved in metadata or physically present in workspace)
+    # Canonical documents lookup: physically revalidate files even if saved metadata exists
     saved_ctx_file = workspace_root / "data" / "metadata" / "source_context.json"
     if saved_ctx_file.exists():
         with open(saved_ctx_file, "r", encoding="utf-8") as f:
             saved_data = json.load(f)
         canonical_docs = saved_data.get("canonical_documents", {})
+        if not canonical_docs or "docx" not in canonical_docs or "xlsx" not in canonical_docs:
+            raise PreflightSourceContextError("canonical_documents", "Saved metadata missing canonical docx/xlsx entries")
+
+        for doc_type in ["docx", "xlsx"]:
+            doc_meta = canonical_docs[doc_type]
+            rel_path = doc_meta.get("path")
+            if not rel_path:
+                raise PreflightSourceContextError(doc_type, f"Saved metadata missing path for {doc_type}")
+
+            # Physical resolution with strict workspace containment check
+            resolved_path = resolve_secure_path(workspace_root, rel_path)
+            if not resolved_path.exists() or not resolved_path.is_file():
+                raise PreflightSourceContextError(doc_type, f"Physical canonical file missing: {resolved_path}")
+
+            file_bytes = resolved_path.read_bytes()
+            curr_size = len(file_bytes)
+            curr_sha256 = hashlib.sha256(file_bytes).hexdigest()
+
+            expected_size = doc_meta.get("size_bytes")
+            expected_sha256 = doc_meta.get("sha256")
+
+            if expected_size is not None and curr_size != expected_size:
+                raise PreflightSourceContextError(
+                    doc_type,
+                    f"Canonical document size mismatch for '{rel_path}': expected {expected_size}, got {curr_size}"
+                )
+            if expected_sha256 is not None and curr_sha256 != expected_sha256:
+                raise PreflightSourceContextError(
+                    doc_type,
+                    f"Canonical document hash mismatch for '{rel_path}': expected {expected_sha256}, got {curr_sha256}"
+                )
+
+            # Re-verify and ensure current attributes are recorded
+            doc_meta["size_bytes"] = curr_size
+            doc_meta["sha256"] = curr_sha256
     else:
+        # First-time initialization: allowed only when canonical files are physically present in workspace
         docx_candidates = [
             workspace_root / "docs" / "context" / "RAG_ATTCK_Research_Plan_Updated.docx",
             workspace_root / "Context" / "RAG2ATTCK-20260915T154859Z-1-001" / "RAG2ATTCK" / "RAG_ATTCK_Research_Plan_Updated.docx",
@@ -233,35 +269,52 @@ def verify_source_context(workspace_root: Path) -> Dict[str, Any]:
             workspace_root / "docs" / "context" / "RAG_ATTCK_Project_Tracker_Updated.xlsx",
             workspace_root / "Context" / "RAG2ATTCK-20260915T154859Z-1-001" / "RAG2ATTCK" / "RAG_ATTCK_Project_Tracker_Updated.xlsx",
         ]
-        docx_path = next((p for p in docx_candidates if p.exists()), None)
-        xlsx_path = next((p for p in xlsx_candidates if p.exists()), None)
-        if docx_path and xlsx_path:
-            docx_bytes = docx_path.read_bytes()
-            xlsx_bytes = xlsx_path.read_bytes()
-            canonical_docs = {
-                "docx": {
-                    "path": str(docx_path.relative_to(workspace_root)).replace("\\", "/"),
-                    "size_bytes": len(docx_bytes),
-                    "sha256": hashlib.sha256(docx_bytes).hexdigest(),
-                    "title": "Evaluating MITRE ATT&CK-Grounded RAG for Technique Attribution from Windows Endpoint Logs: A Replication-and-Extension Study",
-                    "version": "1.1",
-                    "plan_date": "2026-09-15",
-                    "author": "Hà Hoàng Bách"
-                },
-                "xlsx": {
-                    "path": str(xlsx_path.relative_to(workspace_root)).replace("\\", "/"),
-                    "size_bytes": len(xlsx_bytes),
-                    "sha256": hashlib.sha256(xlsx_bytes).hexdigest(),
-                    "sheets": [
-                        "Overview",
-                        "Roadmap",
-                        "RQ_Experiments",
-                        "Resources"
-                    ]
-                }
+        docx_path = None
+        for cand in docx_candidates:
+            res_cand = resolve_secure_path(workspace_root, cand)
+            if res_cand.exists() and res_cand.is_file():
+                docx_path = res_cand
+                break
+
+        xlsx_path = None
+        for cand in xlsx_candidates:
+            res_cand = resolve_secure_path(workspace_root, cand)
+            if res_cand.exists() and res_cand.is_file():
+                xlsx_path = res_cand
+                break
+
+        if not docx_path or not xlsx_path:
+            missing = []
+            if not docx_path:
+                missing.append("Research Plan DOCX")
+            if not xlsx_path:
+                missing.append("Project Tracker XLSX")
+            raise PreflightSourceContextError(", ".join(missing), "Canonical documents missing in workspace for initialization")
+
+        docx_bytes = docx_path.read_bytes()
+        xlsx_bytes = xlsx_path.read_bytes()
+        canonical_docs = {
+            "docx": {
+                "path": str(docx_path.relative_to(workspace_root)).replace("\\", "/"),
+                "size_bytes": len(docx_bytes),
+                "sha256": hashlib.sha256(docx_bytes).hexdigest(),
+                "title": "Evaluating MITRE ATT&CK-Grounded RAG for Technique Attribution from Windows Endpoint Logs: A Replication-and-Extension Study",
+                "version": "1.1",
+                "plan_date": "2026-09-15",
+                "author": "Hà Hoàng Bách"
+            },
+            "xlsx": {
+                "path": str(xlsx_path.relative_to(workspace_root)).replace("\\", "/"),
+                "size_bytes": len(xlsx_bytes),
+                "sha256": hashlib.sha256(xlsx_bytes).hexdigest(),
+                "sheets": [
+                    "Overview",
+                    "Roadmap",
+                    "RQ_Experiments",
+                    "Resources"
+                ]
             }
-        else:
-            raise PreflightSourceContextError("Research Plan DOCX", "Canonical documents missing in metadata and workspace")
+        }
 
     return {
         "verification_status": "VERIFIED_CANONICAL_PRESERVED",
@@ -277,8 +330,8 @@ def verify_source_context(workspace_root: Path) -> Dict[str, Any]:
             "publication_outlet": "Elsevier Data in Brief",
             "license": "Creative Commons Attribution 4.0 International (CC BY 4.0)",
             "authors": [
-                "Morteza Mozaffari",
-                "Alireza Yazdinejad",
+                "Maryam Mozaffari",
+                "Abbas Yazdinejad",
                 "Ali Dehghantanha"
             ],
             "total_mendeley_files": 21,

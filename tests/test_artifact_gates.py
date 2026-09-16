@@ -104,6 +104,28 @@ def test_unresolved_task2_blocks_profile_in_production_workspace():
         validate_stage_prerequisites(Path("."), "profile")
 
 
+def test_unresolved_task2_blocks_audit_gt_in_production_workspace():
+    """The frozen methodology requires STOP before T4 audit-gt when T2 remains unresolved."""
+    with pytest.raises(ArtifactValidationError, match="T2_MULTISET_RECONCILIATION"):
+        validate_stage_prerequisites(Path("."), "audit-gt")
+
+
+def test_filename_only_fake_prerequisite_cannot_bypass_gate(tmp_path):
+    """Creating an empty or invalid file with the expected filename cannot bypass the gate."""
+    meta_dir = tmp_path / "data" / "metadata"
+    meta_dir.mkdir(parents=True)
+    # Write a dummy empty or malformed preflight.json
+    (meta_dir / "preflight.json").write_text("{}", encoding="utf-8")
+
+    with pytest.raises(ArtifactValidationError):
+        validate_stage_prerequisites(tmp_path, "acquire-dataset")
+
+    # Write a file that has schema_version but not PASS status
+    (meta_dir / "preflight.json").write_text('{"schema_version": "1.0.0", "task": "T0_PREFLIGHT"}', encoding="utf-8")
+    with pytest.raises(ArtifactValidationError):
+        validate_stage_prerequisites(tmp_path, "acquire-dataset")
+
+
 def test_task4_stop_blocks_downstream_tasks(tmp_path):
     """A Task 4 STOP artifact must prevent T5-reconcile and T6+ execution."""
     _write_json(
@@ -117,4 +139,8 @@ def test_task4_stop_blocks_downstream_tasks(tmp_path):
     )
 
     with pytest.raises(ArtifactValidationError, match="TASK_4_INDEPENDENT_GROUND_TRUTH"):
+        validate_stage_prerequisites(tmp_path, "t5-reconcile")
+
+    with pytest.raises(ArtifactValidationError, match="TASK_4_INDEPENDENT_GROUND_TRUTH"):
         validate_stage_prerequisites(tmp_path, "t6")
+

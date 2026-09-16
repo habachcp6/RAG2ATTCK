@@ -2,7 +2,7 @@
   "meta": {
     "schema_version": "1.0.0",
     "task": "T0_PREFLIGHT",
-    "timestamp_utc": "2026-09-16T16:34:26.765231+00:00",
+    "timestamp_utc": "2026-09-16T17:35:16.041138+00:00",
     "hostname": "Laptop-cua-bach",
     "os": {
       "system": "Windows",
@@ -112,8 +112,8 @@
   "capacity_assessment": {
     "drive": "D:",
     "live_total_bytes": 64578646016,
-    "live_used_bytes": 32656711680,
-    "live_free_bytes": 31921934336,
+    "live_used_bytes": 32657453056,
+    "live_free_bytes": 31921192960,
     "live_free_gib": 29.73,
     "estimates_breakdown_bytes": {
       "downloads_and_staging_bytes": 587202560,
@@ -128,16 +128,16 @@
     "minimum_floor_bytes": 5368709120,
     "effective_required_free_bytes": 5368709120,
     "effective_required_free_gib": 5.0,
-    "headroom_bytes": 26553225216,
+    "headroom_bytes": 26552483840,
     "headroom_gib": 24.73,
     "capacity_sufficient": true
   },
   "source_context": {
     "verification_status": "VERIFIED_CANONICAL_PRESERVED",
-    "verification_timestamp_utc": "2026-09-16T16:34:26.765197+00:00",
+    "verification_timestamp_utc": "2026-09-16T17:35:16.041070+00:00",
     "canonical_documents": {
       "docx": {
-        "path": "Context/RAG2ATTCK-20260915T154859Z-1-001/RAG2ATTCK/RAG_ATTCK_Research_Plan_Updated.docx",
+        "path": "docs/context/RAG_ATTCK_Research_Plan_Updated.docx",
         "size_bytes": 214812,
         "sha256": "39499aa68188530eed81d1426af4d2f0217e17e10d9d016ddc0b38c0ae7a91af",
         "title": "Evaluating MITRE ATT&CK-Grounded RAG for Technique Attribution from Windows Endpoint Logs: A Replication-and-Extension Study",
@@ -146,7 +146,7 @@
         "author": "Hà Hoàng Bách"
       },
       "xlsx": {
-        "path": "Context/RAG2ATTCK-20260915T154859Z-1-001/RAG2ATTCK/RAG_ATTCK_Project_Tracker_Updated.xlsx",
+        "path": "docs/context/RAG_ATTCK_Project_Tracker_Updated.xlsx",
         "size_bytes": 49142,
         "sha256": "ed946fa1918af54a0634a317b6bf3d2b4291501219524de691c5da8b15725ef8",
         "sheets": [
@@ -167,8 +167,8 @@
       "publication_outlet": "Elsevier Data in Brief",
       "license": "Creative Commons Attribution 4.0 International (CC BY 4.0)",
       "authors": [
-        "Morteza Mozaffari",
-        "Alireza Yazdinejad",
+        "Maryam Mozaffari",
+        "Abbas Yazdinejad",
         "Ali Dehghantanha"
       ],
       "total_mendeley_files": 21,

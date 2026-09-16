@@ -92,3 +92,31 @@ def test_field_inventory_distinguishes_absent_empty_null_and_nonempty(tmp_path):
     assert rows["b"]["empty_string_record_count"] == "1"
     assert rows["b"]["explicit_null_record_count"] == "1"
     assert rows["b"]["non_empty_record_count"] == "0"
+
+
+def test_cmd_profile_consumes_canonical_schema_without_keyerror(monkeypatch, capsys):
+    """cmd_profile must consume canonical schema keys without KeyError."""
+    from types import SimpleNamespace
+    from src.data_ground_truth import cmd_profile
+
+    # Mock _validate_or_exit to avoid running production gates in isolated unit test
+    monkeypatch.setattr("src.data_ground_truth._validate_or_exit", lambda ws, stage: None)
+
+    canonical_result = {
+        "source_logical_rows": 100,
+        "successfully_parsed_records": 98,
+        "rejected_malformed_records": 2,
+        "unique_field_count": 45,
+    }
+    monkeypatch.setattr("src.data_ground_truth.profile_dataset_schemas", lambda ws: canonical_result)
+
+    args = SimpleNamespace(workspace=".")
+    ret = cmd_profile(args)
+    assert ret == 0
+
+    captured = capsys.readouterr()
+    assert "Logical rows: 100" in captured.out
+    assert "Parsed: 98" in captured.out
+    assert "Malformed: 2" in captured.out
+    assert "Distinct fields: 45" in captured.out
+

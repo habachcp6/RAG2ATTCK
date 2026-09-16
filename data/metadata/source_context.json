@@ -1,9 +1,9 @@
 {
   "verification_status": "VERIFIED_CANONICAL_PRESERVED",
-  "verification_timestamp_utc": "2026-09-16T16:34:26.765197+00:00",
+  "verification_timestamp_utc": "2026-09-16T17:35:16.041070+00:00",
   "canonical_documents": {
     "docx": {
-      "path": "Context/RAG2ATTCK-20260915T154859Z-1-001/RAG2ATTCK/RAG_ATTCK_Research_Plan_Updated.docx",
+      "path": "docs/context/RAG_ATTCK_Research_Plan_Updated.docx",
       "size_bytes": 214812,
       "sha256": "39499aa68188530eed81d1426af4d2f0217e17e10d9d016ddc0b38c0ae7a91af",
       "title": "Evaluating MITRE ATT&CK-Grounded RAG for Technique Attribution from Windows Endpoint Logs: A Replication-and-Extension Study",
@@ -12,7 +12,7 @@
       "author": "Hà Hoàng Bách"
     },
     "xlsx": {
-      "path": "Context/RAG2ATTCK-20260915T154859Z-1-001/RAG2ATTCK/RAG_ATTCK_Project_Tracker_Updated.xlsx",
+      "path": "docs/context/RAG_ATTCK_Project_Tracker_Updated.xlsx",
       "size_bytes": 49142,
       "sha256": "ed946fa1918af54a0634a317b6bf3d2b4291501219524de691c5da8b15725ef8",
       "sheets": [
@@ -33,8 +33,8 @@
     "publication_outlet": "Elsevier Data in Brief",
     "license": "Creative Commons Attribution 4.0 International (CC BY 4.0)",
     "authors": [
-      "Morteza Mozaffari",
-      "Alireza Yazdinejad",
+      "Maryam Mozaffari",
+      "Abbas Yazdinejad",
       "Ali Dehghantanha"
     ],
     "total_mendeley_files": 21,

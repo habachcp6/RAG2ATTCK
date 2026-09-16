@@ -22,6 +22,9 @@ attack/raw/
 data/ground_truth/
 data/processed/
 
+# Historical context archive (canonical docs tracked in docs/context/)
+/Context/
+
 # IDE & OS
 .idea/
 .vscode/

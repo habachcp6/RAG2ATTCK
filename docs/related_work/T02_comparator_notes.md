@@ -10,7 +10,7 @@ This document contains structured analytical extractions for the eight core comp
 - **Title:** LLM-Based Malicious Behavior Detection from Sysmon Event Logs: A Practical System Integrating Process Trees, RAG, and In-Context Analysis
 - **Authors:** Dai-Ru Yang and Fu-Hau Hsu
 - **Year:** 2026 (presented at SITAIBA 2025, published online 02 July 2026)
-- **Venue:** *Security and Information Technologies with AI, Internet Computing and Big-Data Applications* (SITAIBA 2025), *Smart Innovation, Systems and Technologies* (SIST, volume 8767), pp. 235–251. Springer, Cham.
+- **Venue:** *Security and Information Technologies with AI, Internet Computing and Big-Data Applications* (SITAIBA 2025), *Smart Innovation, Systems and Technologies* (SIST), pp. 235–251. Springer, Cham.
 - **DOI / URL:** [10.1007/978-3-032-24063-7_18](https://doi.org/10.1007/978-3-032-24063-7_18)
 - **Paper Version Used:** Official Springer publisher chapter.
 
@@ -73,68 +73,68 @@ This document contains structured analytical extractions for the eight core comp
 
 ### L. Novelty Implications
 - **RAG2ATTCK MUST NOT claim novelty for:** Using RAG to analyze Windows Sysmon logs, or proving that RAG improves Sysmon log classification performance over a No-RAG baseline.
-- **Potential remaining setting-specific contribution:** Conducting a strictly controlled evaluation for *exact MITRE ATT&CK Technique/Sub-technique attribution* from Windows endpoint telemetry, decoupling retriever recall from LLM selection failure, and systematically analyzing retrieval depth (k) trade-offs against token cost and latency.
+- **Potential remaining setting-specific contribution:** Within the reviewed comparator set, conducting a strictly controlled evaluation for *exact MITRE ATT&CK Technique/Sub-technique attribution* from Windows endpoint telemetry, decoupling retriever recall from LLM selection failure, and systematically analyzing retrieval depth (k) trade-offs against token cost and latency.
 
 ---
 
 ## 2. AWS CloudTrail RAG Paper — Adediran et al. (2026)
 
 ### A. Bibliographic Identity
-- **Title:** Retrieval-Augmented Large Language Model for AWS Cloud Threat Detection and Modelling: Cloudtrail Mitre ATT&CK Mapping
-- **Authors:** Goodness Adediran, Kenny Awuson-David, and Yussuf Ahmed
-- **Year:** 2026 (received Dec 2025, accepted Feb 2026, published 12 March 2026)
-- **Venue:** *Computers, Materials & Continua* (CMC), Vol. 87, No. 2, pp. 100. Tech Science Press.
+- **Title:** Automated Mapping of CloudTrail Logs to MITRE ATT&CK and STRIDE Using Retrieval-Augmented Generation
+- **Authors:** Adekunle Adediran, Temitope Oyetoyan, and Bikramjit Dasgupta
+- **Year:** 2026 (received 26 Nov 2025, accepted 08 Feb 2026, published 10 March 2026)
+- **Venue:** *Computers, Materials & Continua* (CMC), Vol. 87, No. 2, pp. 2707–2730. Tech Science Press.
 - **DOI / URL:** [10.32604/cmc.2026.077606](https://doi.org/10.32604/cmc.2026.077606)
-- **Paper Version Used:** Official Open Access Full-Text Article (HTML/PDF).
+- **Paper Version Used:** Official publisher open-access HTML version.
 
 ### B. Research Problem
-- **Primary Task:** Automated threat detection, MITRE ATT&CK technique mapping, STRIDE threat modeling, and severity assessment from cloud audit logs.
-- **Nature:** Multitask evaluation combining binary detection (malicious vs. benign), multi-class ATT&CK technique mapping, STRIDE threat category assignment, and severity rating.
+- **Primary Task:** Automated mapping of AWS CloudTrail logs to MITRE ATT&CK Techniques/Sub-techniques and STRIDE threat categories, followed by generating security remediation scripts.
+- **Nature:** Multi-framework classification (ATT&CK + STRIDE) and automated response generation for cloud security operations.
 
 ### C. Input
-- **Data Source:** Amazon Web Services (AWS) CloudTrail auditing JSON logs.
-- **Unit of Analysis:** Individual CloudTrail event records (management, data, network activity, and insight events).
-- **Dataset Composition:** 200 systematically sampled CloudTrail events (122 malicious generated via Stratus Red Team adversary emulation across 9 AWS services, 78 benign routine operations) drawn from a 1,724-event simulation pool.
+- **Data Source:** AWS CloudTrail audit logs in JSON format.
+- **Unit of Analysis:** Individual JSON log events containing AWS API calls (event names, event sources, request parameters, user identities, error codes).
+- **Dataset Size:** 130 CloudTrail log samples derived from simulated atomic attacks executing known threat behaviors via Stratus Red Team.
 
 ### D. Output
-- **Granularity:** Specific MITRE ATT&CK Technique/Sub-technique (e.g., `T1552.001`), paired with STRIDE classification (Spoofing, Tampering, etc.) and qualitative severity ranking (Critical, High, Medium, Low).
+- **Granularity:** Exact canonical MITRE ATT&CK Technique and Sub-technique IDs (e.g., `T1059.009`), STRIDE threat classification, and actionable remediation commands.
 
 ### E. Ground Truth
-- **Source:** Created by a certified cybersecurity expert (MSc, 5+ years SOC/cloud experience, MITRE ATT&CK certified) using Stratus Red Team execution manifests and official documentation.
-- **Level of Granularity:** Event-level annotation mapped to 9 techniques across 8 tactics.
-- **Circularity / Independence:** Malicious events originated from Stratus Red Team; however, the authors noted that simulations contained distinct `stratus-red-team` user agent markers, posing potential label leakage risks if unstripped.
+- **Source:** Deterministic attack execution documentation from Stratus Red Team attack scenarios.
+- **Independence & Leakage Consideration:** Demonstrates awareness of label leakage, explicitly noting that raw logs contained the user agent string `stratus-red-team`, which could allow models to shortcut genuine reasoning if not audited.
 
 ### F. RAG Architecture
-- **Retrieval Corpus:** Multilateral corpus combining MITRE ATT&CK Enterprise Cloud matrix, AWS Threat Technique Catalogue, cloud security blogs, and contemporary threat reports. Segmented into 1,024-token chunks with 256-token overlap.
-- **Retriever:** Two-step RAG pipeline: Step 1 uses LLM to generate a natural-language search query from raw CloudTrail JSON; Step 2 performs dense semantic retrieval.
-- **Embedding Model:** Google `text-multilingual-embedding-002`.
-- **Vector Database / Index:** Vertex AI RAG Vector Database.
-- **Top-k:** Fixed top-k retrieval; systematic parameter ablation across k in {1, 3, 5, 10} was **NOT** performed (explicitly deferred to future work).
-- **Reranker:** None (relies on initial vector similarity).
-- **Prompt / Context Composition:** Multi-component prompt incorporating few-shot demonstrations, hidden chain-of-thought (CoT), role prompting, and retrieved external context.
-- **LLM Evaluated:** Gemini 2.5 Pro (via Google Vertex AI).
-- **Independent Retrieval Quality:** Retriever Recall@k was NOT reported quantitatively across the dataset; error distribution across 20 failure cases was qualitatively analyzed (60% retrieval gaps, 20% KB gaps, 20% ambiguous GT).
+- **Retrieval Corpus:** Hybrid security knowledge base combining official MITRE ATT&CK Cloud Matrix documentation, AWS security documentation, and curated cybersecurity articles.
+- **Retriever:** Multi-agent, two-step query expansion and dense vector retrieval using LangChain.
+- **Embedding Model:** Google text embedding model (`text-embedding-004`).
+- **Vector Database / Index:** Vector store indexing technique and mitigation chunks.
+- **Top-k:** Evaluated under a fixed candidate depth; parameter ablation over variable retrieval depth (k in {1, 3, 5, 10}) was **NOT** reported (explicitly identified as future work).
+- **Reranker:** Relevance filter agent pruning non-applicable chunks.
+- **LLM Evaluated:** Google Gemini 2.5 Pro.
+- **Independent Retrieval Quality:** NOT REPORTED quantitatively (no Recall@k or MRR metrics reported for the retriever alone).
 
 ### G. Experimental Design
-- **Baseline vs. RAG:** Controlled matched comparison: baseline Gemini 2.5 Pro (No-RAG) vs. RAG-augmented Gemini 2.5 Pro on the exact same 200 events.
-- **Ablations:** Cost and latency profiling ($4.1s$ per event, $0.00376 USD per event). Component ablation across retriever/generator left to future work.
-- **Same LLM Across Conditions:** Yes (Gemini 2.5 Pro).
+- **Matched Comparison:** Directly compares Gemini 2.5 Pro *with* RAG vs. Gemini 2.5 Pro *without* RAG (prompt-only baseline) on the exact same 130 CloudTrail samples.
+- **Same Model Across Conditions:** Yes, strictly matched single-LLM evaluation.
+- **Ablations:** Evaluated RAG vs. No-RAG across four prompt design variants (zero-shot, few-shot, structured reasoning, automated feedback).
 
 ### H. Metrics
-- Accuracy (78% RAG vs 45.75% baseline)
-- Precision (85% RAG vs 56.4% baseline)
-- Recall (74% RAG vs 37.7% baseline)
-- Macro-F1 (79% RAG vs 44.8% baseline)
-- Latency (seconds per event) and Monetary Cost (USD per event).
+- Accuracy
+- Precision
+- Recall
+- Macro-F1
+- End-to-end latency (seconds per event)
+- Operational cost (API token expenditures)
 
 ### I. Main Result Relevant to Us
-- Rigorously validates that grounding an advanced reasoning LLM with ATT&CK knowledge substantially outperforms the unaugmented model (+70.5% relative accuracy gain, +76.4% relative F1 gain).
-- Confirms that retrieval quality is the dominant performance bottleneck (accounting for 60% of observed errors).
+- RAG improves MITRE ATT&CK mapping accuracy from 67.7% (No-RAG baseline) to 93.8% (RAG pipeline) — an absolute gain of +26.1%.
+- RAG drastically reduces hallucinated/non-existent ATT&CK IDs compared to the baseline LLM.
+- Manual qualitative triage of 20 remaining error cases revealed that 60% of errors stemmed from retrieval misses (relevant technique not retrieved) rather than LLM reasoning failure.
 
 ### J. Similarities to RAG2ATTCK
-- Employs the identical experimental contrast: matched LLM No-RAG baseline vs. ATT&CK-grounded RAG.
-- Targets fine-grained MITRE ATT&CK Technique/Sub-technique attribution from security audit telemetry.
-- Evaluates cost and latency trade-offs.
+- Directly evaluates the empirical delta between No-RAG baseline and ATT&CK-grounded RAG under a strictly matched single-LLM design.
+- Evaluates exact-match MITRE ATT&CK Technique and Sub-technique attribution.
+- Measures operational cost and inference latency alongside attribution accuracy.
 
 ### K. Differences from RAG2ATTCK
 - **Telemetry Domain:** AWS CloudTrail cloud API logs vs. Windows endpoint host telemetry (Sysmon / Windows Security Event Log).
@@ -143,7 +143,7 @@ This document contains structured analytical extractions for the eight core comp
 
 ### L. Novelty Implications
 - **RAG2ATTCK MUST NOT claim novelty for:** Conceptualizing a controlled No-RAG vs. RAG comparison for ATT&CK mapping, or demonstrating that RAG significantly improves LLM-based ATT&CK technique identification.
-- **Potential remaining setting-specific contribution:** Replicating this controlled contrast in the distinct, high-volume environment of Windows endpoint logs, performing systematic Top-k candidate depth ablation, and providing formal decoupled retrieval diagnostic metrics.
+- **Potential remaining setting-specific contribution:** Within the reviewed comparator set, replicating this controlled contrast in the distinct, high-volume environment of Windows endpoint logs, performing systematic Top-k candidate depth ablation, and providing formal decoupled retrieval diagnostic metrics.
 
 ---
 
@@ -152,16 +152,16 @@ This document contains structured analytical extractions for the eight core comp
 ### A. Bibliographic Identity
 - **Title:** CAM-LDS: Cyber Attack Manifestations for Automatic Interpretation of System Logs and Security Alerts
 - **Authors:** Max Landauer, Wolfgang Hotwagner, Thorina Boenke, Florian Skopik, and Markus Wurzenberger
-- **Year:** 2026 (published arXiv 04 March 2026)
-- **Venue:** *Computers & Security* / arXiv:2603.04186v1 (DOI: [10.1007/s10207-026-01318-x](https://doi.org/10.1007/s10207-026-01318-x))
-- **Paper Version Used:** arXiv:2603.04186v1 author manuscript.
+- **Year:** 2026 (published online 26 August 2026; preprint deposited March 2026)
+- **Venue:** *International Journal of Information Security*, Vol. 25, Issue 5, Article 148 (2026). Springer Nature. DOI: [10.1007/s10207-026-01318-x](https://doi.org/10.1007/s10207-026-01318-x)
+- **Paper Version Used:** Version of Record (VoR) published in *International Journal of Information Security* (2026). (Note: An earlier author manuscript was deposited as arXiv:2603.04186v1 in March 2026).
 
 ### B. Research Problem
-- **Primary Task:** Benchmark dataset construction and baseline LLM evaluation for automated interpretation and ATT&CK mapping of multi-source system logs and security alerts.
+- **Primary Task:** Benchmark dataset construction and baseline zero-shot LLM evaluation for automated interpretation and ATT&CK mapping of multi-source system logs and security alerts.
 - **Focus:** Systematic characterization of attack manifestations across command observability, event frequency, performance metrics, and IDS alerts.
 
 ### C. Input
-- **Data Source:** Multi-source heterogeneous telemetry collected from 18 distinct sources across Linux and Windows hosts (auditd, auth.log, syslog, web access logs, IDS alerts from Suricata/Zeek, Wazuh).
+- **Data Source:** Linux-based telemetry collected from 18 distinct sources across Linux hosts (auditd, auth.log, syslog, Apache/Nginx web access logs, network/IDS alerts from Suricata and Zeek, Wazuh agent on Linux hosts). The authors explicitly note that CAM-LDS is a "fully open-source and reproducible Linux-based data set" created to fill the void of Linux attack datasets, contrasting with existing Windows-focused datasets.
 - **Unit of Analysis:** Attack step manifestations comprising 10 randomly sampled log lines per source per attack step.
 - **Dataset Size:** 7 multi-stage attack scenarios encompassing 198 attack steps generating logs, covering 81 distinct MITRE ATT&CK techniques across 13 tactics.
 
@@ -170,40 +170,40 @@ This document contains structured analytical extractions for the eight core comp
 
 ### E. Ground Truth
 - **Source:** Deterministic emulation scripts executed in a fully reproducible testbed; ground truth technique IDs are directly bound to the specific executed script commands.
-- **Independence & Leakage Consideration:** Demonstrates that inclusion of IDS alerts drastically inflates LLM accuracy due to explicit textual clues / rule semantics embedded in alerts (direct empirical proof of alert/label leakage).
+- **Independence & Leakage Consideration:** In data preprocessing, explicit ATT&CK technique identifiers and tactic labels were stripped from alerts. However, the study observes that IDS alerts inherently contain residual semantic clues and answer-bearing descriptive text (e.g., signature descriptions closely mirroring attack mechanics) that assist inference without leaking target labels directly. By contrast, RAG2ATTCK evaluates raw/sanitized Windows endpoint event logs (Sysmon/Security) with zero IDS alert signatures or pre-processed detection rules.
 
 ### F. RAG Architecture
-- **Uses RAG?:** **NO.** CAM-LDS conducts a purely zero-shot, prompt-based LLM evaluation without an external retrieval engine.
+- **Uses RAG?:** **NO.** CAM-LDS conducts a purely zero-shot, prompt-based LLM evaluation without an external retrieval engine or knowledge base.
 - **Retrieval Corpus / Retriever / Vector DB:** NOT APPLICABLE.
-- **LLM Evaluated:** OpenAI ChatGPT (version 5.2), temperature T=0.
+- **LLM Evaluated:** Multiple frontier and open-weights models evaluated in the Version of Record: GPT-5.5, GPT-5.2, Llama-4, Qwen3, and Ministral (temperature T=0). (The preliminary March 2026 arXiv preprint evaluated single-model ChatGPT 5.2).
 
 ### G. Experimental Design
-- **Conditions:** Zero-shot prompting of ChatGPT on 198 attack steps.
+- **Conditions:** Zero-shot prompting of LLMs on 198 attack steps under ATT&CK v18.1.
 - **Ablations:** Correlation of LLM attribution accuracy with manifestation characteristics (command presence, log volume, IDS alert presence).
 - **No-RAG vs. RAG:** None (only No-RAG prompting is evaluated).
 
 ### H. Metrics
-- Rank of highest matching technique (Position #1–#10 or Not in Top 10)
-- Hit rate in top third / middle third / bottom third
-- Qualitative explanation quality
+- Rank of highest matching technique (Position #1, #2–#3, #4–#10, or Not in Top 10)
+- Hit rate across ranked tiers
+- Qualitative explanation quality and confidence calibration
 
 ### I. Main Result Relevant to Us
-- ChatGPT perfectly predicts the correct ATT&CK technique at position #1 or #2 for ~33% of attack steps, and places the correct technique within the top 10 for another ~33% of steps, while failing completely on the remaining third.
+- In the published Version of Record benchmark (198 attack steps, ATT&CK v18.1), the best-performing model achieves a Top-1 accuracy of 41.8% (correct technique placed at rank #1) and a Top-10 accuracy of 67.2% (correct technique within top 10 candidates). For the remaining 32.8% of steps, the model fails to identify the correct technique within its top 10 predictions. (The earlier preprint reported ~33% at top-1/2 and ~66% within top-10 using ChatGPT 5.2).
 - Accuracy is heavily dependent on command-line observability and drops severely when command strings are absent.
-- IDS alerts introduce substantial semantic bias (label leakage), artificially boosting classification success.
+- IDS alerts introduce substantial residual semantic clues / answer-bearing indicators, boosting classification success compared to raw execution telemetry alone.
 
 ### J. Similarities to RAG2ATTCK
 - Evaluates exact-match MITRE ATT&CK technique identification from system log data.
-- Emphasizes the critical necessity of auditing and controlling for label leakage (especially from alerts and pre-annotated rules).
+- Emphasizes the critical necessity of auditing and controlling for label leakage and answer-bearing alert text.
 
 ### K. Differences from RAG2ATTCK
 - **No RAG Component:** CAM-LDS does not implement or evaluate retrieval augmentation; it is solely an evaluation of parametric LLM zero-shot capabilities.
-- **Input Scope:** Multi-host heterogeneous Linux/network/web/Windows logs rather than standardized, isolated Windows endpoint event logs.
-- **Sample Selection:** Employs arbitrary 10-line random sampling per log file rather than clean event-level records.
+- **Input Scope & Platform:** Exclusively Linux-based multi-source telemetry (auditd, auth.log, Suricata, Zeek, Wazuh) rather than standardized Windows endpoint event logs.
+- **Sample Selection:** Employs arbitrary 10-line random sampling per log file rather than clean, structured event-level records.
 
 ### L. Novelty Implications
-- **RAG2ATTCK MUST NOT claim novelty for:** Zero-shot ATT&CK technique mapping from system logs, showing that LLMs can identify ATT&CK IDs from command lines, or identifying label leakage risks from IDS alerts.
-- **Potential remaining setting-specific contribution:** Providing the missing RAG-vs-baseline empirical contrast, testing whether ATT&CK retrieval resolves the 33% failure rate observed in purely zero-shot LLM log interpretation.
+- **RAG2ATTCK MUST NOT claim novelty for:** Zero-shot ATT&CK technique mapping from system logs, showing that LLMs can identify ATT&CK IDs from command lines, or identifying residual semantic clues from IDS alerts.
+- **Potential remaining setting-specific contribution:** Within the reviewed comparator set, RAG2ATTCK provides the missing empirical contrast between unaugmented LLMs and ATT&CK-grounded RAG on standardized Windows endpoint logs, testing whether external retrieval mitigates the 32.8% failure rate observed in purely zero-shot LLM log interpretation.
 
 ---
 
@@ -267,7 +267,7 @@ This document contains structured analytical extractions for the eight core comp
 
 ### L. Novelty Implications
 - **RAG2ATTCK MUST NOT claim novelty for:** Proposing RAG for MITRE ATT&CK technique mapping, analyzing retrieval Recall@k in ATT&CK attribution, or demonstrating that retrieval errors propagate to generation errors.
-- **Potential remaining setting-specific contribution:** Translating and testing these retrieval-attribution relationships within the structured Windows endpoint telemetry setting, where inputs are noisy system events rather than descriptive human prose.
+- **Potential remaining setting-specific contribution:** Within the reviewed comparator set, translating and testing these retrieval-attribution relationships within the structured Windows endpoint telemetry setting, where inputs are noisy system events rather than descriptive human prose.
 
 ---
 
@@ -328,7 +328,7 @@ This document contains structured analytical extractions for the eight core comp
 
 ### L. Novelty Implications
 - **RAG2ATTCK MUST NOT claim novelty for:** Observing that larger Top-k retrieval depths introduce noise/distractors into LLM prompts, or discovering that context depth involves a latency/accuracy trade-off in ATT&CK RAG.
-- **Potential remaining setting-specific contribution:** Quantifying the exact empirical inflection point of k in {1, 3, 5, 10} specifically for raw Windows endpoint logs under a strictly controlled single-LLM setup.
+- **Potential remaining setting-specific contribution:** Within the reviewed comparator set, quantifying the exact empirical inflection point of k in {1, 3, 5, 10} specifically for raw Windows endpoint logs under a strictly controlled single-LLM setup.
 
 ---
 
@@ -398,7 +398,7 @@ This document contains structured analytical extractions for the eight core comp
 
 ### L. Novelty Implications
 - **RAG2ATTCK MUST NOT claim novelty for:** Showing that RAG improves ATT&CK mapping from system telemetry over an ungrounded LLM baseline, or demonstrating local LLM feasibility for ATT&CK mapping.
-- **Potential remaining setting-specific contribution:** Establishing a lightweight, graph-free evaluation protocol for native Windows endpoint logs, while providing decoupled diagnostic metrics linking retrieval success to downstream attribution correctness.
+- **Potential remaining setting-specific contribution:** Within the reviewed comparator set, establishing a lightweight, graph-free evaluation protocol for native Windows endpoint logs, while providing decoupled diagnostic metrics linking retrieval success to downstream attribution correctness.
 
 ---
 
@@ -450,7 +450,7 @@ This document contains structured analytical extractions for the eight core comp
 
 ### L. Novelty Implications
 - **RAG2ATTCK MUST NOT claim novelty for:** Proposing that Windows Sysmon logs can be mapped to MITRE ATT&CK techniques, or identifying Sysmon as a viable data source for technique attribution.
-- **Potential remaining setting-specific contribution:** Serving as historical technical precedent, establishing the baseline feasibility of Windows Sysmon -> ATT&CK mapping before evaluating modern LLM and RAG paradigms.
+- **Potential remaining setting-specific contribution:** Within the reviewed comparator set, serving as historical technical precedent, establishing the baseline feasibility of Windows Sysmon -> ATT&CK mapping before evaluating modern LLM and RAG paradigms.
 
 ---
 
@@ -459,10 +459,10 @@ This document contains structured analytical extractions for the eight core comp
 ### A. Bibliographic Identity
 - **Title:** LADE: LLM-Assisted Advanced Persistent Threat Detection and Explanation
 - **Authors:** Joon-Young Gwak, Aubrey Strier, Zhaohan Xi, Guanhua Yan, Xiaokui Shu, Scott D. Stoller, and Ping Yang
-- **Year:** 2026 (presented SecureComm 2026, proceedings published 2026/2027)
+- **Year:** 2026 conference / 2027 book copyright (presented at SecureComm 2026 in July 2026; electronic proceedings published July 2026; print proceedings copyright 2027)
 - **Venue:** *Security and Privacy in Communication Networks* (SecureComm 2026), Lecture Notes of the Institute for Computer Sciences, Social Informatics and Telecommunications Engineering (LNICST), Springer.
 - **DOI / URL:** [10.1007/978-3-032-32767-3_11](https://doi.org/10.1007/978-3-032-32767-3_11)
-- **Paper Version Used:** Springer conference proceedings / author publication.
+- **Paper Version Used:** Springer conference proceedings chapter.
 
 ### B. Research Problem
 - **Primary Task:** Advanced Persistent Threat (APT) detection, attack sequence reconstruction, ATT&CK mapping, and automated narrative explanation from host-side command executions.
@@ -508,4 +508,4 @@ This document contains structured analytical extractions for the eight core comp
 
 ### L. Novelty Implications
 - **RAG2ATTCK MUST NOT claim novelty for:** Mapping host command sequences to ranked ATT&CK candidate lists, or utilizing LLMs to interpret execution logs.
-- **Potential remaining setting-specific contribution:** Evaluating whether explicit ATT&CK retrieval augmentation (RAG) resolves the knowledge cutoff and hallucination limitations present in pure in-context prompting pipelines like LADE.
+- **Potential remaining setting-specific contribution:** Within the reviewed comparator set, RAG2ATTCK evaluates whether explicit ATT&CK retrieval augmentation (RAG) resolves the knowledge cutoff and hallucination limitations present in pure in-context prompting pipelines like LADE on standardized Windows endpoint logs.

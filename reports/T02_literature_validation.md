@@ -8,9 +8,9 @@ This report provides the formal validation analysis for Task **T02 — Read/anno
 
 All eight core comparator papers/research lines identified in the project roadmap were located, accessed via primary or author-archival sources, and comprehensively extracted:
 
-1. **Yang & Hsu (2026)** — *Springer Chapter / SITAIBA 2025 Proceedings*
+1. **Yang & Hsu (2026)** — *Springer Chapter / SITAIBA 2025 Proceedings (SIST)*
 2. **AWS CloudTrail RAG / Adediran et al. (2026)** — *Computers, Materials & Continua (CMC)*
-3. **CAM-LDS / Landauer et al. (2026)** — *arXiv:2603.04186 / Computers & Security*
+3. **CAM-LDS / Landauer et al. (2026)** — *International Journal of Information Security (Springer) / arXiv:2603.04186*
 4. **TechniqueRAG / Lekssays et al. (2025)** — *Findings of ACL 2025 / arXiv:2505.11988*
 5. **H-TechniqueRAG / Morbiato et al. (2026)** — *arXiv:2604.14166*
 6. **Trace2ATT&CK / Lupinacci et al. (2026)** — *arXiv:2609.12841*
@@ -23,14 +23,14 @@ All eight core comparator papers/research lines identified in the project roadma
 
 | Paper | Primary Source Identifier | Access Type / Venue | Verification Status |
 | :--- | :--- | :--- | :--- |
-| **Yang & Hsu (2026)** | DOI: [10.1007/978-3-032-24063-7_18](https://doi.org/10.1007/978-3-032-24063-7_18) | Springer Link (SITAIBA 2025) | Verified via official Springer metadata and proceedings record |
+| **Yang & Hsu (2026)** | DOI: [10.1007/978-3-032-24063-7_18](https://doi.org/10.1007/978-3-032-24063-7_18) | Springer Link (SITAIBA 2025, SIST) | Verified via official Springer metadata and proceedings record |
 | **Adediran et al. (2026)** | DOI: [10.32604/cmc.2026.077606](https://doi.org/10.32604/cmc.2026.077606) | Tech Science Press (*CMC* Vol. 87, No. 2) | Verified via full-text HTML article access |
-| **Landauer et al. (2026)** | arXiv: [2603.04186v1](https://arxiv.org/abs/2603.04186) / DOI: 10.1007/s10207-026-01318-x | arXiv author manuscript / Springer | Verified via arXiv experimental HTML full-text access |
+| **Landauer et al. (2026)** | DOI: [10.1007/s10207-026-01318-x](https://doi.org/10.1007/s10207-026-01318-x) / arXiv: [2603.04186v1](https://arxiv.org/abs/2603.04186) | *Int. J. Inf. Secur.* (Springer VoR) / arXiv | Verified via official Springer published article & arXiv author manuscript |
 | **Lekssays et al. (2025)** | DOI: [10.18653/v1/2025.findings-acl.1076](https://doi.org/10.18653/v1/2025.findings-acl.1076) / arXiv: [2505.11988v1](https://arxiv.org/abs/2505.11988) | ACL Anthology / arXiv author manuscript | Verified via arXiv full-text HTML and official GitHub repository |
 | **Morbiato et al. (2026)** | arXiv: [2604.14166v1](https://arxiv.org/abs/2604.14166) | arXiv author manuscript | Verified via arXiv full-text HTML access |
 | **Lupinacci et al. (2026)** | arXiv: [2609.12841v1](https://arxiv.org/abs/2609.12841) | arXiv author manuscript | Verified via arXiv full-text HTML access |
 | **Okuma et al. (2023)** | DOI: [10.1109/ICSPIS60075.2023.10343783](https://doi.org/10.1109/ICSPIS60075.2023.10343783) | IEEE Xplore (ICSPIS 2023) | Verified via IEEE index and bibliographic metadata |
-| **Gwak et al. (2026)** | DOI: [10.1007/978-3-032-32767-3_11](https://doi.org/10.1007/978-3-032-32767-3_11) | Springer Nature (SecureComm 2026) | Verified via Springer conference proceedings metadata |
+| **Gwak et al. (2026/2027)** | DOI: [10.1007/978-3-032-32767-3_11](https://doi.org/10.1007/978-3-032-32767-3_11) | Springer LNICST (SecureComm 2026) | Verified via Springer conference proceedings metadata (online 2026, copyright 2027) |
 
 ---
 
@@ -119,7 +119,7 @@ We evaluate the four central positioning hypotheses of the study against the dis
 - **Collision Status:** **PARTIAL OVERLAP.**
 - **Rationale:**
   - *Where overlap exists:* Yang & Hsu (2026) compared matched LLMs with and without RAG on Windows Sysmon logs, but their task was *binary malicious behavior detection*, not exact ATT&CK Technique ID attribution. Adediran et al. (2026) and Trace2ATT&CK (2026) compared No-RAG vs. RAG for exact ATT&CK mapping, but operated on *AWS CloudTrail* and *Linux eBPF graphs*, respectively.
-  - *Why the RQ remains valid:* No prior study has published a controlled RAG vs. No-RAG evaluation for *exact multi-class technique/sub-technique attribution* on *native Windows endpoint logs*.
+  - *Why the RQ remains valid:* Within the reviewed comparator literature, no prior study has published a controlled RAG vs. No-RAG evaluation for *exact multi-class technique/sub-technique attribution* on *native Windows endpoint logs*.
   - *Project Classification:* **Valid Conceptual Replication in a New Setting.**
 
 ---
@@ -151,7 +151,7 @@ We evaluate the four central positioning hypotheses of the study against the dis
 
 The following paragraph synthesizes the verified literature boundaries and provides the canonical framing for the project:
 
-> Prior studies have established that Retrieval-Augmented Generation (RAG) improves LLM-based security analysis over unaugmented baselines in binary Sysmon threat detection (Yang & Hsu, 2026), cloud audit log mapping (Adediran et al., 2026), and Linux kernel telemetry provenance graphs (Lupinacci et al., 2026), while retrieval quality and candidate depth trade-offs have been characterized in CTI text annotation (Lekssays et al., 2025; Morbiato et al., 2026). Therefore, RAG2ATTCK does not claim to invent RAG architectures, MITRE ATT&CK mapping, retrieval-quality evaluation, or Top-k candidate ablation. Instead, this study presents a controlled replication-and-extension evaluation specifically testing whether external grounding in the official MITRE ATT&CK Enterprise taxonomy improves exact technique- and sub-technique-level attribution from native, sanitized Windows endpoint telemetry under strictly matched single-LLM conditions. Its primary contribution is an empirical diagnostic extension that quantitatively decouples upstream retrieval failures from downstream LLM classification failures and benchmarks the performance, latency, and token trade-offs across retrieval depths ($k \in \{1, 3, 5, 10\}$).
+> Within the closest comparator literature reviewed here, prior studies have established that Retrieval-Augmented Generation (RAG) improves LLM-based security analysis over unaugmented baselines in binary Sysmon threat detection (Yang & Hsu, 2026), cloud audit log mapping (Adediran et al., 2026), and Linux kernel telemetry provenance graphs (Lupinacci et al., 2026), while retrieval quality and candidate depth trade-offs have been characterized in CTI text annotation (Lekssays et al., 2025; Morbiato et al., 2026). Therefore, RAG2ATTCK does not claim to invent RAG architectures, MITRE ATT&CK mapping, retrieval-quality evaluation, or Top-k candidate ablation. Instead, this study presents a controlled replication-and-extension evaluation specifically testing whether external grounding in the official MITRE ATT&CK Enterprise taxonomy improves exact technique- and sub-technique-level attribution from native, sanitized Windows endpoint telemetry under strictly matched single-LLM conditions. Its primary contribution is an empirical diagnostic extension that quantitatively decouples upstream retrieval failures from downstream LLM classification failures and benchmarks the performance, latency, and token trade-offs across retrieval depths ($k \in \{1, 3, 5, 10\}$).
 
 ---
 

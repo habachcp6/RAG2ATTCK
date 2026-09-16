@@ -1,12 +1,110 @@
 {
   "schema_version": "1.0.0",
-  "timestamp_utc": "2026-09-15T18:24:47.564667+00:00",
-  "status": "RECONCILED_EXACT_MATCH",
-  "total_period_files": 16,
-  "sum_period_rows": 102011,
-  "combined_csv_rows": 102011,
-  "row_count_delta": 0,
-  "combined_columns_superset_count": 377,
+  "timestamp_utc": "2026-09-16T04:12:17.045590+00:00",
+  "task": "T2_MULTISET_RECONCILIATION",
+  "multiset_equality_status": "RECONCILIATION_DIVERGENT",
+  "is_exact_match": false,
+  "row_count_accounting": {
+    "total_period_rows": 102011,
+    "total_combined_rows": 102011,
+    "row_count_delta": 0,
+    "row_counts_match": true
+  },
+  "fingerprint_accounting": {
+    "unique_period_fingerprints": 102011,
+    "unique_combined_fingerprints": 102011,
+    "matching_fingerprints_count": 36674,
+    "fingerprints_only_in_period_count": 65337,
+    "fingerprints_only_in_combined_count": 65337,
+    "multiplicity_differences_count": 130674,
+    "period_duplicate_multiplicities_count": 0,
+    "combined_duplicate_multiplicities_count": 0
+  },
+  "explanation": "Row counts match exactly (102,011 == 102,011), and all 102,011 record _ids match 1-to-1. However, exactly 65,337 rows diverge in cell formatting due to Microsoft Excel date/number serialization in combined.csv (e.g. utcTime serial dates like 45627.26699 vs 24:27.7, scientific notation, and timestamps). Under strict Task 2 multiset comparison, this is classified as RECONCILIATION_DIVERGENT, NOT exact match.",
+  "divergent_fields_summary": {
+    "_source.data.win.eventdata.utcTime": 57634,
+    "_source.data.win.eventdata.creationUtcTime": 22980,
+    "_source.rule.mail": 14937,
+    "_source.id": 14937,
+    "_source.agent.id": 14937,
+    "_source.data.win.eventdata.signed": 806,
+    "_source.data.win.eventdata.binary": 509,
+    "_source.predecoder.timestamp": 263,
+    "_source.data.win.eventdata.initiated": 48,
+    "_source.data.win.eventdata.destinationIsIpv6": 48
+  },
+  "sample_discrepancies": [
+    {
+      "_id": "YqHkgJMBrrvr6pEbYnNx",
+      "field": "_source.data.win.eventdata.utcTime",
+      "source_file": "01-03-December.csv",
+      "period_value": "24:27.7",
+      "combined_value": "45627.26699"
+    },
+    {
+      "_id": "Y6HkgJMBrrvr6pEbYnNx",
+      "field": "_source.data.win.eventdata.utcTime",
+      "source_file": "01-03-December.csv",
+      "period_value": "24:27.7",
+      "combined_value": "45627.26699"
+    },
+    {
+      "_id": "Z6HkgJMBrrvr6pEbYnNx",
+      "field": "_source.data.win.eventdata.utcTime",
+      "source_file": "01-03-December.csv",
+      "period_value": "24:28.5",
+      "combined_value": "45627.267"
+    },
+    {
+      "_id": "aKHkgJMBrrvr6pEbZnNZ",
+      "field": "_source.data.win.eventdata.utcTime",
+      "source_file": "01-03-December.csv",
+      "period_value": "24:28.7",
+      "combined_value": "45627.267"
+    },
+    {
+      "_id": "V6HkgJMBrrvr6pEbSnP-",
+      "field": "_source.data.win.eventdata.utcTime",
+      "source_file": "01-03-December.csv",
+      "period_value": "24:21.8",
+      "combined_value": "45627.26692"
+    },
+    {
+      "_id": "WKHkgJMBrrvr6pEbSnP-",
+      "field": "_source.data.win.eventdata.utcTime",
+      "source_file": "01-03-December.csv",
+      "period_value": "24:22.6",
+      "combined_value": "45627.26693"
+    },
+    {
+      "_id": "WaHkgJMBrrvr6pEbSnP-",
+      "field": "_source.data.win.eventdata.utcTime",
+      "source_file": "01-03-December.csv",
+      "period_value": "24:22.7",
+      "combined_value": "45627.26693"
+    },
+    {
+      "_id": "XKHkgJMBrrvr6pEbUnPO",
+      "field": "_source.data.win.eventdata.utcTime",
+      "source_file": "01-03-December.csv",
+      "period_value": "24:23.7",
+      "combined_value": "45627.26694"
+    },
+    {
+      "_id": "d6HlgJMBrrvr6pEbEnM8",
+      "field": "_source.data.win.eventdata.utcTime",
+      "source_file": "01-03-December.csv",
+      "period_value": "25:11.2",
+      "combined_value": "45627.26749"
+    },
+    {
+      "_id": "UaHkgJMBrrvr6pEbN3Ny",
+      "field": "_source.data.win.eventdata.utcTime",
+      "source_file": "01-03-December.csv",
+      "period_value": "24:06.6",
+      "combined_value": "45627.26674"
+    }
+  ],
   "files_breakdown": {
     "01-03-December.csv": {
       "rows": 8838,
@@ -73,5 +171,10 @@
       "header_cols": 189
     }
   },
-  "reconciliation_rule": "Period CSVs are ingest collections; combined.csv is for reconciliation only and not added to observations (no double-counting)."
+  "combined_file_metadata": {
+    "filename": "combined.csv",
+    "rows": 102011,
+    "header_cols": 377,
+    "role": "reconciliation_only_never_added_to_observations"
+  }
 }

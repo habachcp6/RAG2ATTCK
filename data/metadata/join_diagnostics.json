@@ -1,17 +1,21 @@
 {
   "schema_version": "1.0.0",
-  "timestamp_utc": "2026-09-15T18:37:45.262424+00:00",
+  "task": "T4_GROUND_TRUTH_LINEAGE_AUDIT",
+  "timestamp_utc": "2026-09-16T04:10:10.991186+00:00",
   "total_records": 102011,
   "records_with_wazuh_rule": 102011,
   "records_with_mitre_mapping": 63619,
   "unlabeled_records": 38392,
   "single_label_records": 51398,
   "multi_label_records": 12221,
-  "distinct_wazuh_rules": 153,
+  "total_distinct_wazuh_rules_fired": 153,
+  "distinct_wazuh_rules_with_mitre_mapping": 89,
   "distinct_mitre_techniques": 45,
   "independent_lineage_available": false,
+  "candidate_sources_inspected_count": 10,
+  "candidate_sources_accepted_count": 0,
   "gate_status": "BLOCKED_STOP",
-  "blocker_reason": "Independent event-level ground truth lineage is missing in raw Windows-APT 2025 v3 snapshot. All 63,619 event labels originate directly from Wazuh SIEM detection rules (_source.rule.mitre.id). Under Task 4 methodology and project guardrails: detector/rule mappings must not be promoted to independent ground truth, and scenario-wide lists (scenario_manifest.csv) cannot be used as event-level GT without explicit event-window linkage. This triggers the Task 4 STOP condition requiring human approval (Decision A) before proceeding.",
+  "blocker_reason": "Windows-APT 2025 v3 does not currently satisfy the frozen primary event-level ground-truth requirement unless independent execution lineage can be established. Programmatic inspection of all 10 candidate lineage sources rejected all candidates: all 63,619 labeled telemetry records originate exclusively from Wazuh SIEM detection rules (_source.rule.mitre.id), and no per-event Caldera execution logs exist. Under the frozen research methodology (§R6), detector/rule mappings cannot be promoted to independent ground truth.",
   "top_mitre_techniques": {
     "T1105": 18308,
     "T1059.003": 12174,
@@ -35,15 +39,260 @@
     "T1548.002": 227
   },
   "top_multi_label_combinations": {
-    "('T1059.003', 'T1087')": 3877,
-    "('T1059', 'T1105')": 2612,
-    "('T1112', 'T1565.001')": 2466,
-    "('T1059.003', 'T1574.001')": 1117,
-    "('T1070.004', 'T1112', 'T1485')": 767,
-    "('T1027', 'T1112')": 612,
-    "('T1574.001', 'T1574.002')": 305,
-    "('T1059.001', 'T1087')": 240,
-    "('T1112', 'T1548.002')": 126,
-    "('T1078', 'T1531')": 70
-  }
+    "['T1059.003', 'T1087']": 3877,
+    "['T1059', 'T1105']": 2612,
+    "['T1112', 'T1565.001']": 2466,
+    "['T1059.003', 'T1574.001']": 1117,
+    "['T1070.004', 'T1112', 'T1485']": 767,
+    "['T1027', 'T1112']": 612,
+    "['T1574.001', 'T1574.002']": 305,
+    "['T1059.001', 'T1087']": 240,
+    "['T1112', 'T1548.002']": 126,
+    "['T1078', 'T1531']": 70
+  },
+  "candidate_lineage_matrix": [
+    {
+      "source": "period_telemetry_csvs",
+      "investigated_files": [
+        "01-03-December.csv",
+        "03-04-December.csv",
+        "04-07-December.csv",
+        "07-10-December.csv",
+        "1-11-November.csv",
+        "10-December-P1.csv",
+        "10-December-P2.csv",
+        "11-12-December.csv",
+        "11-16-November.csv",
+        "12-13-December.csv",
+        "13-14-December.csv",
+        "14-17-December.csv",
+        "22-December.csv",
+        "23-30-November.csv",
+        "28-October-01-November.csv",
+        "30-November.csv"
+      ],
+      "candidate_keys": [
+        "_source.rule.mitre.id",
+        "_source.rule.id"
+      ],
+      "semantic_scope": "Wazuh SIEM alert detection rules triggered by signature matches on endpoint telemetry.",
+      "granularity": "alert_event_level",
+      "timestamp_availability": true,
+      "time_zone_precision": "UTC_ISO8601_millisecond",
+      "run_identity_availability": false,
+      "technique_identity_availability": true,
+      "possible_event_linkage": "direct_row_attribute",
+      "cardinality_behavior": "one_to_many_multilabel",
+      "ambiguity_conflicts": "High: 12,221 records map to multiple techniques; heuristic detection signature overlap.",
+      "independent_of_wazuh_detector": false,
+      "acceptance_result": "REJECTED",
+      "rejection_reason": "Violates frozen methodology (§R6): detector/rule mappings cannot be promoted to independent event-level ground truth; creates circular evaluation."
+    },
+    {
+      "source": "scenario_manifest_csv",
+      "investigated_files": [
+        "scenario_manifest.csv"
+      ],
+      "candidate_keys": [
+        "Scenrario_ID",
+        "Scenario_Name"
+      ],
+      "semantic_scope": "High-level scenario simulation plan (36 APT scenarios S01-S37).",
+      "granularity": "scenario_campaign_level",
+      "timestamp_availability": false,
+      "time_zone_precision": "none",
+      "run_identity_availability": false,
+      "technique_identity_availability": true,
+      "possible_event_linkage": "none_no_telemetry_join_key",
+      "cardinality_behavior": "many_to_many_coarse",
+      "ambiguity_conflicts": "Extreme: lists 2 to 74 expected techniques per scenario over multi-day execution with no event keys.",
+      "independent_of_wazuh_detector": true,
+      "acceptance_result": "REJECTED",
+      "rejection_reason": "Scenario-wide technique lists without per-event execution linkage or timestamps cannot serve as event-level ground truth."
+    },
+    {
+      "source": "validation_summary_csv",
+      "investigated_files": [
+        "validation_summary.csv"
+      ],
+      "candidate_keys": [
+        "Scenrario_ID",
+        "Scenario_Name"
+      ],
+      "semantic_scope": "Post-hoc statistical summary averaging technique success across 10 runs per scenario (36 scenarios).",
+      "granularity": "scenario_aggregate_statistics",
+      "timestamp_availability": false,
+      "time_zone_precision": "none",
+      "run_identity_availability": false,
+      "technique_identity_availability": false,
+      "possible_event_linkage": "none",
+      "cardinality_behavior": "many_to_many_aggregate",
+      "ambiguity_conflicts": "Complete lack of per-run or per-event attribution.",
+      "independent_of_wazuh_detector": false,
+      "acceptance_result": "REJECTED",
+      "rejection_reason": "Statistical summary table containing no execution timestamps, per-run identifiers, or event linkage keys."
+    },
+    {
+      "source": "dataset_readme_documentation",
+      "investigated_files": [
+        "README.md"
+      ],
+      "candidate_keys": [
+        "period_filename_date_ranges"
+      ],
+      "semantic_scope": "Collection narrative describing Wazuh manager, agent architecture, and simulation schedule.",
+      "granularity": "collection_period_level",
+      "timestamp_availability": true,
+      "time_zone_precision": "coarse_calendar_dates_only",
+      "run_identity_availability": false,
+      "technique_identity_availability": false,
+      "possible_event_linkage": "file_level_date_matching_only",
+      "cardinality_behavior": "one_to_thousands",
+      "ambiguity_conflicts": "Extreme: multi-day windows containing thousands of benign and attack events mixed.",
+      "independent_of_wazuh_detector": true,
+      "acceptance_result": "REJECTED",
+      "rejection_reason": "Narrative documentation does not provide machine-readable execution logs or ability timestamps."
+    },
+    {
+      "source": "publication_source_research_artifacts",
+      "investigated_files": [
+        "article_fulltext.xml",
+        "article_sections.txt"
+      ],
+      "candidate_keys": [
+        "article_methodology_text"
+      ],
+      "semantic_scope": "Elsevier Data in Brief paper describing experimental setup and Wazuh rule detection methodology.",
+      "granularity": "methodology_narrative",
+      "timestamp_availability": false,
+      "time_zone_precision": "none",
+      "run_identity_availability": false,
+      "technique_identity_availability": true,
+      "possible_event_linkage": "none",
+      "cardinality_behavior": "none",
+      "ambiguity_conflicts": "N/A",
+      "independent_of_wazuh_detector": false,
+      "acceptance_result": "REJECTED",
+      "rejection_reason": "Confirms that dataset technique annotations were generated via Wazuh detection rules rather than external execution logs."
+    },
+    {
+      "source": "telemetry_scenario_run_step_fields",
+      "investigated_files": [
+        "_source.data.operation_type",
+        "_source.data.win.eventdata.operation",
+        "_source.data.win.eventdata.readOperation"
+      ],
+      "candidate_keys": [
+        "operation_type",
+        "operation",
+        "readOperation"
+      ],
+      "semantic_scope": "OS-level file audit operations ('Created', 'Modified', '%%2480').",
+      "granularity": "event_field_level",
+      "timestamp_availability": false,
+      "time_zone_precision": "none",
+      "run_identity_availability": false,
+      "technique_identity_availability": false,
+      "possible_event_linkage": "none",
+      "cardinality_behavior": "none",
+      "ambiguity_conflicts": "Fields reflect Windows filesystem audit events, not Caldera emulation operations.",
+      "independent_of_wazuh_detector": true,
+      "acceptance_result": "REJECTED",
+      "rejection_reason": "No scenario, run, or attack-step identifiers exist in the raw telemetry schema."
+    },
+    {
+      "source": "telemetry_timestamps_and_time_zones",
+      "investigated_files": [
+        "_source.@timestamp",
+        "_source.data.win.system.systemTime",
+        "_source.data.win.eventdata.utcTime"
+      ],
+      "candidate_keys": [
+        "@timestamp",
+        "systemTime",
+        "utcTime"
+      ],
+      "semantic_scope": "Event logging timestamps recorded by Wazuh and Windows Sysmon.",
+      "granularity": "event_millisecond_level",
+      "timestamp_availability": true,
+      "time_zone_precision": "UTC_ISO8601",
+      "run_identity_availability": false,
+      "technique_identity_availability": false,
+      "possible_event_linkage": "temporal_proximity_window_only",
+      "cardinality_behavior": "one_to_many_temporal_ambiguity",
+      "ambiguity_conflicts": "Without per-ability execution start/end times, temporal proximity cannot distinguish attack commands from concurrent OS activity.",
+      "independent_of_wazuh_detector": true,
+      "acceptance_result": "REJECTED",
+      "rejection_reason": "Frozen methodology (§R6) explicitly prohibits inferring event-level ground truth from temporal proximity alone."
+    },
+    {
+      "source": "host_agent_identity_fields",
+      "investigated_files": [
+        "_source.agent.id",
+        "_source.agent.name",
+        "_source.data.win.system.computer"
+      ],
+      "candidate_keys": [
+        "agent.id",
+        "agent.name",
+        "computer"
+      ],
+      "semantic_scope": "Endpoint identity within testbed environment.",
+      "granularity": "host_level",
+      "timestamp_availability": false,
+      "time_zone_precision": "none",
+      "run_identity_availability": false,
+      "technique_identity_availability": false,
+      "possible_event_linkage": "spatial_containment_only",
+      "cardinality_behavior": "one_to_thousands",
+      "ambiguity_conflicts": "Identifies the host VM, but cannot differentiate among hundreds of simulated techniques.",
+      "independent_of_wazuh_detector": true,
+      "acceptance_result": "REJECTED",
+      "rejection_reason": "Host identity provides spatial boundary only, not technique attribution."
+    },
+    {
+      "source": "caldera_sandcat_process_metadata",
+      "investigated_files": [
+        "_source.data.win.eventdata.commandLine",
+        "_source.data.win.eventdata.image"
+      ],
+      "candidate_keys": [
+        "sandcat",
+        "caldera"
+      ],
+      "semantic_scope": "Process command lines and image paths mentioning 'sandcat' (157 rows) or 'caldera' (122 rows).",
+      "granularity": "sparse_event_substrings",
+      "timestamp_availability": true,
+      "time_zone_precision": "UTC_ISO8601",
+      "run_identity_availability": false,
+      "technique_identity_availability": false,
+      "possible_event_linkage": "sparse_process_string_match (covers <0.2% of dataset)",
+      "cardinality_behavior": "sparse_singleton",
+      "ambiguity_conflicts": "Mentions reflect agent daemon execution; individual technique commands are spawned as sub-processes without transaction tags.",
+      "independent_of_wazuh_detector": true,
+      "acceptance_result": "REJECTED",
+      "rejection_reason": "Process strings show Caldera agent presence but do not contain ability identifiers, execution transaction IDs, or complete coverage."
+    },
+    {
+      "source": "external_execution_artifacts_snapshot",
+      "investigated_files": [
+        "data/raw/windows_apt_2025/v3/ (all 21 files)"
+      ],
+      "candidate_keys": [
+        "none"
+      ],
+      "semantic_scope": "Complete Mendeley v3 repository snapshot.",
+      "granularity": "snapshot_level",
+      "timestamp_availability": false,
+      "time_zone_precision": "none",
+      "run_identity_availability": false,
+      "technique_identity_availability": false,
+      "possible_event_linkage": "none",
+      "cardinality_behavior": "none",
+      "ambiguity_conflicts": "None present.",
+      "independent_of_wazuh_detector": true,
+      "acceptance_result": "REJECTED",
+      "rejection_reason": "No Caldera operation log files, ability execution journals, attack flow graphs, or external ground-truth annotations exist in the snapshot."
+    }
+  ]
 }

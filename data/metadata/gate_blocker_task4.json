@@ -1,19 +1,27 @@
 {
+  "schema_version": "1.0.0",
   "gate": "TASK_4_INDEPENDENT_GROUND_TRUTH",
-  "timestamp_utc": "2026-09-15T18:37:45.265609+00:00",
+  "timestamp_utc": "2026-09-16T04:10:10.991186+00:00",
   "status": "STOP",
-  "blocker_reason": "Independent event-level ground truth lineage is missing in raw Windows-APT 2025 v3 snapshot. All 63,619 event labels originate directly from Wazuh SIEM detection rules (_source.rule.mitre.id). Under Task 4 methodology and project guardrails: detector/rule mappings must not be promoted to independent ground truth, and scenario-wide lists (scenario_manifest.csv) cannot be used as event-level GT without explicit event-window linkage. This triggers the Task 4 STOP condition requiring human approval (Decision A) before proceeding.",
-  "affected_downstream_tasks": [
-    "T6_leakage_audit",
-    "T7_sanitization_and_grouping",
-    "T8_class_selection",
-    "T9_partition_and_sampling",
-    "T10_validation_reproduction",
-    "T11_audit_package"
-  ],
+  "blocker_reason": "Windows-APT 2025 v3 does not currently satisfy the frozen primary event-level ground-truth requirement unless independent execution lineage can be established. Programmatic inspection of all 10 candidate lineage sources rejected all candidates: all 63,619 labeled telemetry records originate exclusively from Wazuh SIEM detection rules (_source.rule.mitre.id), and no per-event Caldera execution logs exist. Under the frozen research methodology (§R6), detector/rule mappings cannot be promoted to independent ground truth.",
+  "independent_lineage_available": false,
+  "candidate_lineage_matrix_summary": {
+    "sources_investigated": 10,
+    "sources_accepted": 0,
+    "rejection_summary": "All 10 investigated candidate sources lack independent event-level execution lineage."
+  },
+  "affected_downstream_tasks": {
+    "T5_reconcile": "NOT_RUN (T5 reference acquired; reconciliation blocked by Task 4 gate)",
+    "T6_leakage_audit": "NOT_RUN",
+    "T7_sanitization_and_grouping": "NOT_RUN",
+    "T8_class_selection": "NOT_RUN",
+    "T9_partition_and_sampling": "NOT_RUN",
+    "T10_validation_reproduction": "NOT_RUN",
+    "T11_audit_package": "NOT_RUN"
+  },
   "downstream_disposition": "NOT_RUN",
-  "required_human_decisions": {
-    "Decision_A": "Accept Windows-APT 2025 v3 and accept Wazuh rule-derived labels (with strict leakage quarantine) as the operational benchmark ground truth, OR require external Caldera execution logs.",
-    "Decision_B": "Accept proposed class selection and sample quota under the accepted GT basis."
+  "methodological_standing": {
+    "statement": "Windows-APT 2025 v3 does not currently satisfy the frozen primary event-level ground-truth requirement unless independent execution lineage can be established.",
+    "relaxing_requirement_warning": "Accepting Wazuh SIEM detector/rule mappings as operational benchmark ground truth would represent a substantive methodological revision requiring an explicit, separate user decision, not an approval of the current design."
   }
 }

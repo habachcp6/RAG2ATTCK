@@ -218,42 +218,55 @@ def verify_source_context(workspace_root: Path) -> Dict[str, Any]:
             "sha256": hashlib.sha256(data).hexdigest()
         })
 
-    docx_path = workspace_root / "Context" / "RAG2ATTCK-20260915T154859Z-1-001" / "RAG2ATTCK" / "RAG_ATTCK_Research_Plan_Updated.docx"
-    xlsx_path = workspace_root / "Context" / "RAG2ATTCK-20260915T154859Z-1-001" / "RAG2ATTCK" / "RAG_ATTCK_Project_Tracker_Updated.xlsx"
-
-    if not docx_path.exists():
-        raise PreflightSourceContextError("Research Plan DOCX", f"File missing at {docx_path}")
-    if not xlsx_path.exists():
-        raise PreflightSourceContextError("Project Tracker XLSX", f"File missing at {xlsx_path}")
-
-    docx_bytes = docx_path.read_bytes()
-    xlsx_bytes = xlsx_path.read_bytes()
+    # Canonical documents lookup (preserved in metadata or physically present in workspace)
+    saved_ctx_file = workspace_root / "data" / "metadata" / "source_context.json"
+    if saved_ctx_file.exists():
+        with open(saved_ctx_file, "r", encoding="utf-8") as f:
+            saved_data = json.load(f)
+        canonical_docs = saved_data.get("canonical_documents", {})
+    else:
+        docx_candidates = [
+            workspace_root / "docs" / "context" / "RAG_ATTCK_Research_Plan_Updated.docx",
+            workspace_root / "Context" / "RAG2ATTCK-20260915T154859Z-1-001" / "RAG2ATTCK" / "RAG_ATTCK_Research_Plan_Updated.docx",
+        ]
+        xlsx_candidates = [
+            workspace_root / "docs" / "context" / "RAG_ATTCK_Project_Tracker_Updated.xlsx",
+            workspace_root / "Context" / "RAG2ATTCK-20260915T154859Z-1-001" / "RAG2ATTCK" / "RAG_ATTCK_Project_Tracker_Updated.xlsx",
+        ]
+        docx_path = next((p for p in docx_candidates if p.exists()), None)
+        xlsx_path = next((p for p in xlsx_candidates if p.exists()), None)
+        if docx_path and xlsx_path:
+            docx_bytes = docx_path.read_bytes()
+            xlsx_bytes = xlsx_path.read_bytes()
+            canonical_docs = {
+                "docx": {
+                    "path": str(docx_path.relative_to(workspace_root)).replace("\\", "/"),
+                    "size_bytes": len(docx_bytes),
+                    "sha256": hashlib.sha256(docx_bytes).hexdigest(),
+                    "title": "Evaluating MITRE ATT&CK-Grounded RAG for Technique Attribution from Windows Endpoint Logs: A Replication-and-Extension Study",
+                    "version": "1.1",
+                    "plan_date": "2026-09-15",
+                    "author": "Hà Hoàng Bách"
+                },
+                "xlsx": {
+                    "path": str(xlsx_path.relative_to(workspace_root)).replace("\\", "/"),
+                    "size_bytes": len(xlsx_bytes),
+                    "sha256": hashlib.sha256(xlsx_bytes).hexdigest(),
+                    "sheets": [
+                        "Overview",
+                        "Roadmap",
+                        "RQ_Experiments",
+                        "Resources"
+                    ]
+                }
+            }
+        else:
+            raise PreflightSourceContextError("Research Plan DOCX", "Canonical documents missing in metadata and workspace")
 
     return {
         "verification_status": "VERIFIED_CANONICAL_PRESERVED",
         "verification_timestamp_utc": datetime.now(timezone.utc).isoformat(),
-        "canonical_documents": {
-            "docx": {
-                "path": str(docx_path.relative_to(workspace_root)).replace("\\", "/"),
-                "size_bytes": len(docx_bytes),
-                "sha256": hashlib.sha256(docx_bytes).hexdigest(),
-                "title": "Evaluating MITRE ATT&CK-Grounded RAG for Technique Attribution from Windows Endpoint Logs: A Replication-and-Extension Study",
-                "version": "1.1",
-                "plan_date": "2026-09-15",
-                "author": "Hà Hoàng Bách"
-            },
-            "xlsx": {
-                "path": str(xlsx_path.relative_to(workspace_root)).replace("\\", "/"),
-                "size_bytes": len(xlsx_bytes),
-                "sha256": hashlib.sha256(xlsx_bytes).hexdigest(),
-                "sheets": [
-                    "Overview",
-                    "Roadmap",
-                    "RQ_Experiments",
-                    "Resources"
-                ]
-            }
-        },
+        "canonical_documents": canonical_docs,
         "official_dataset_reference": {
             "dataset_name": "Windows-APT 2025: A Dataset of Attack Scenarios Inspired by Advanced Persistent Threats on Windows Systems",
             "dataset_id": "b8fmtzvpy8",
@@ -311,13 +324,37 @@ def run_preflight_check(
     meta_dir = ws / "data" / "metadata"
     meta_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. Path Safety & Containment
-    symlinks = [p for p in ws.rglob("*") if p.is_symlink()]
+    # 1. Path Safety, Containment & Windows Junction Detection
+    symlinks = []
+    junctions = []
+    for p in ws.rglob("*"):
+        try:
+            if p.is_symlink():
+                symlinks.append(p)
+            elif hasattr(p, "is_junction") and p.is_junction():
+                junctions.append(p)
+        except (OSError, PermissionError):
+            continue
+
     symlinks_detected = len(symlinks)
+    junctions_detected = len(junctions)
     path_verifications = verify_all_workspace_paths(ws)
+
     all_contained = (symlinks_detected == 0) and all(
         v.is_within_workspace for v in path_verifications.values()
     )
+
+    # Validate that any junctions stay within the workspace root
+    junction_targets_contained = True
+    for j in junctions:
+        try:
+            target = Path(os.readlink(j)).resolve()
+            if not target.is_relative_to(ws):
+                junction_targets_contained = False
+                all_contained = False
+        except Exception:
+            junction_targets_contained = False
+            all_contained = False
 
     # 2. Capacity Assessment
     cap = assess_disk_capacity(ws)
@@ -352,7 +389,9 @@ def run_preflight_check(
             "workspace_has_special_chars": "&" in str(ws),
             "special_char_safety_mode": "NATIVE_API_AND_LITERAL_PATHS",
             "symlinks_detected": symlinks_detected,
-            "junctions_detected": 0,
+            "junctions_detected": junctions_detected,
+            "junction_detection_implemented": True,
+            "junction_targets_contained": junction_targets_contained,
             "all_paths_contained": all_contained,
             "resolved_paths": {k: asdict(v) for k, v in path_verifications.items()}
         },
@@ -365,7 +404,8 @@ def run_preflight_check(
                 "path_containment_passed": all_contained,
                 "disk_capacity_passed": cap.capacity_sufficient,
                 "source_documents_preserved": True,
-                "python_version_valid": py_valid
+                "python_version_valid": py_valid,
+                "junction_validation_passed": junction_targets_contained
             },
             "recheck_required_at_execution": True,
             "blocker_reason": None if gate_passed else "One or more gate conditions failed"

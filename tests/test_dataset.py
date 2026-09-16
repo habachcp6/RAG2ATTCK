@@ -44,6 +44,8 @@ def test_symlinks_and_junctions_scan():
     ws = get_default_workspace_root()
     symlinks = [p for p in ws.rglob("*") if p.is_symlink()]
     assert len(symlinks) == 0, "No symlinks should exist in workspace root"
+    junctions = [p for p in ws.rglob("*") if hasattr(p, "is_junction") and p.is_junction()]
+    assert len(junctions) == 0, "No junctions should exist in clean workspace"
 
 
 def test_capacity_calculation_logic():

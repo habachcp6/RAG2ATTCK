@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "pipeline_name": "RAG2ATTCK Data & Ground Truth Pipeline",
+  "version": "1.0.0",
+  "frozen_methodology_reference": "ORIGINAL_REQUEST.md",
+  "dataset": {
+    "name": "Windows-APT 2025: A Dataset of Attack Scenarios Inspired by Advanced Persistent Threats on Windows Systems",
+    "dataset_id": "b8fmtzvpy8",
+    "version": 3,
+    "provider": "Mendeley Data",
+    "dataset_doi": "10.17632/b8fmtzvpy8.3",
+    "publication_doi": "10.1016/j.dib.2026.112569",
+    "publication_outlet": "Elsevier Data in Brief",
+    "total_files": 21,
+    "total_bytes": 480856926,
+    "total_ingest_period_files": 16,
+    "reconciliation_file": "combined.csv"
+  },
+  "attack_reference": {
+    "version": "19.2",
+    "domain": "enterprise",
+    "repository": "https://github.com/mitre-attack/attack-stix-data",
+    "immutable_git_commit": "6cda5ad8462c79e14fbb872f4e09059b18e0cfc4",
+    "immutable_raw_url": "https://raw.githubusercontent.com/mitre-attack/attack-stix-data/6cda5ad8462c79e14fbb872f4e09059b18e0cfc4/enterprise-attack/enterprise-attack-19.2.json",
+    "expected_size_bytes": 53835637,
+    "expected_sha256": "dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4"
+  },
+  "paths": {
+    "raw_dataset_dir": "data/raw/windows_apt_2025/v3",
+    "attack_reference_dir": "attack/raw/enterprise-v19.2",
+    "metadata_dir": "data/metadata",
+    "audit_dir": "data/audit",
+    "reports_dir": "reports",
+    "docs_dir": "docs",
+    "docs_context_dir": "docs/context",
+    "source_research_dir": "data/audit/source_research",
+    "cache_dir": ".cache",
+    "tmp_dir": ".tmp"
+  },
+  "protocol": {
+    "evaluation_task": "Windows endpoint log -> LLM -> MITRE ATT&CK Technique/Sub-technique attribution",
+    "partition_seed": 20260915,
+    "partition_modulus": 5,
+    "quota_policy": {
+      "8": 50,
+      "9": 45,
+      "10": 40
+    },
+    "minimum_free_space_gib": 5.0,
+    "headroom_requirement_gib": 1.0
+  }
+}

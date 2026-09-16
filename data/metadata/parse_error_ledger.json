@@ -1,8 +1,12 @@
 {
   "schema_version": "1.0.0",
-  "timestamp_utc": "2026-09-15T18:30:02.692173+00:00",
-  "total_parsed": 102011,
-  "total_malformed": 0,
+  "timestamp_utc": "2026-09-16T04:08:36.279110+00:00",
+  "source_logical_rows": 102011,
+  "successfully_parsed_records": 102011,
+  "rejected_malformed_records": 0,
+  "accounting_formula": "source_logical_rows = successfully_parsed_records + rejected_malformed_records",
+  "accounting_invariant_holds": true,
   "error_rate": 0.0,
+  "error_count": 0,
   "errors": []
 }

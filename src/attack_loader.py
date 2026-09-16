@@ -15,8 +15,12 @@ import urllib.request
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-ATTACK_V19_2_URL = "https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/enterprise-attack/enterprise-attack-19.2.json"
+ATTACK_VERSION = "19.2"
+ATTACK_REPO = "https://github.com/mitre-attack/attack-stix-data"
+ATTACK_V19_2_COMMIT = "6cda5ad8462c79e14fbb872f4e09059b18e0cfc4"
+ATTACK_V19_2_URL = f"https://raw.githubusercontent.com/mitre-attack/attack-stix-data/{ATTACK_V19_2_COMMIT}/enterprise-attack/enterprise-attack-19.2.json"
 EXPECTED_ATTACK_SIZE = 53835637
+EXPECTED_ATTACK_SHA256 = "dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4"
 
 
 @dataclass(frozen=True)
@@ -40,11 +44,13 @@ def download_attack_reference(
     workspace_root: Path,
     url: str = ATTACK_V19_2_URL,
     target_dir: Optional[Path] = None,
+    expected_size: int = EXPECTED_ATTACK_SIZE,
+    expected_sha256: str = EXPECTED_ATTACK_SHA256,
     chunk_size: int = 1024 * 1024
 ) -> Tuple[Path, str, int]:
     """
-    Downloads Enterprise ATT&CK v19.2 to attack/raw/enterprise-v19.2/
-    using staging and verifies size.
+    Downloads Enterprise ATT&CK v19.2 from immutable GitHub commit SHA to attack/raw/enterprise-v19.2/
+    using staging and verifies size and expected SHA-256 before moving to final destination.
     Returns (final_path, sha256_hash, file_size).
     """
     ws = workspace_root.resolve()
@@ -56,11 +62,14 @@ def download_attack_reference(
     staging_dir.mkdir(parents=True, exist_ok=True)
     staging_file = staging_dir / "enterprise-attack-19.2.json.tmp"
 
-    if target_file.exists() and target_file.stat().st_size == EXPECTED_ATTACK_SIZE:
+    if target_file.exists() and target_file.stat().st_size == expected_size:
         sha256 = hashlib.sha256(target_file.read_bytes()).hexdigest()
-        return target_file, sha256, target_file.stat().st_size
+        if sha256 == expected_sha256:
+            return target_file, sha256, target_file.stat().st_size
+        else:
+            raise ValueError(f"Existing ATT&CK file SHA-256 mismatch: expected {expected_sha256}, got {sha256}")
 
-    print(f"[*] Downloading ATT&CK v19.2 reference from {url}...")
+    print(f"[*] Downloading ATT&CK v19.2 reference from immutable source {url}...")
     req = urllib.request.Request(url, headers={"User-Agent": "RAG2ATTCK-Pipeline/1.0"})
     hasher = hashlib.sha256()
     total_downloaded = 0
@@ -75,7 +84,21 @@ def download_attack_reference(
             total_downloaded += len(chunk)
 
     computed_hash = hasher.hexdigest()
-    print(f"[+] Downloaded {total_downloaded} bytes. SHA-256: {computed_hash}")
+    print(f"[+] Downloaded {total_downloaded} bytes. Computed SHA-256: {computed_hash}")
+
+    if total_downloaded != expected_size:
+        if staging_file.exists():
+            staging_file.unlink()
+        raise ValueError(
+            f"ATT&CK download size mismatch: expected {expected_size}, got {total_downloaded}"
+        )
+
+    if computed_hash != expected_sha256:
+        if staging_file.exists():
+            staging_file.unlink()
+        raise ValueError(
+            f"ATT&CK download SHA-256 mismatch: expected {expected_sha256}, got {computed_hash}"
+        )
 
     # Move from staging to raw
     if target_file.exists():
@@ -208,9 +231,16 @@ def generate_attack_manifest(
 
     manifest_data = {
         "schema_version": "1.0.0",
-        "attack_version": "19.2",
-        "release_url": ATTACK_V19_2_URL,
+        "task": "T5_ACQUIRE_ATTACK_REFERENCE",
+        "task_status": "PASS",
+        "attack_version": ATTACK_VERSION,
+        "repository": ATTACK_REPO,
+        "immutable_git_commit": ATTACK_V19_2_COMMIT,
+        "immutable_raw_source": ATTACK_V19_2_URL,
         "acquisition_timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "expected_sha256": EXPECTED_ATTACK_SHA256,
+        "computed_sha256": sha256,
+        "sha256_verified": sha256 == EXPECTED_ATTACK_SHA256,
         "stix_file": {
             "path": str(stix_file.relative_to(ws)).replace("\\", "/"),
             "size_bytes": file_size,

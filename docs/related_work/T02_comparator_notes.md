@@ -97,7 +97,7 @@ This document contains structured analytical extractions for the eight core comp
 - **Dataset Size:** 1,724 total generated CloudTrail events; 200 systematically sampled evaluation events (122 malicious, 78 benign), spanning 9 ATT&CK techniques, 8 tactics, and 9 AWS services.
 
 ### D. Output
-- **Granularity:** ATT&CK Cloud technique identification (technique-level attribution) plus binary malicious/benign classification.
+- **Granularity:** MITRE ATT&CK Technique / Sub-technique attribution (the paper's annotation guideline maps events to the most specific sub-technique level where applicable, e.g., `T1552.001` rather than `T1552`) plus binary malicious/benign classification.
 
 ### E. Ground Truth
 - **Source:** Expert-annotated ground truth labels. A cybersecurity expert (MSc, 5+ years SOC/cloud experience, ATT&CK certified) annotated each event using CloudTrail context, the ATT&CK Cloud matrix, the AWS Threat Technique Catalogue, and Stratus Red Team execution context.
@@ -131,7 +131,7 @@ This document contains structured analytical extractions for the eight core comp
 - RAG improves MITRE ATT&CK mapping accuracy from **46% (No-RAG baseline) to 78% (RAG pipeline)** — an absolute gain of +32 percentage points.
 - Precision: 69% → 85%; Recall: 46% → 78%; F1: 45% → 79%.
 - Operational figures: 4.1 s/event latency, \$0.00376/event cost.
-- Error analysis of failure cases revealed three primary error categories: retrieval-generation gap (~26%), knowledge-base gap (~20%), and ambiguous ground truth (~20%). The 60% summary characterizes retrieval quality as the primary overall bottleneck across all error types — it is **NOT** a statement that 60% of individual errors were retrieval non-hits.
+- Error analysis of failure cases identified three categories in the detailed Section 6.4.1: retrieval-generation gap (~26%), knowledge-base gap (~20%), and ambiguous ground truth (~20%). **Note:** The paper contains an internal numerical inconsistency — the contribution summary reports retrieval-generation gaps at 60%, while the detailed error-analysis section reports 26%. These figures are not reconciled in the paper. The paper qualitatively identifies retrieval/generation interaction as an important bottleneck, but its reported percentage is internally inconsistent (60% in the contribution summary vs. 26% in the detailed error-analysis section).
 
 ### J. Similarities to RAG2ATTCK
 - Directly evaluates the empirical delta between No-RAG baseline and ATT&CK-grounded RAG under a strictly matched single-LLM design.

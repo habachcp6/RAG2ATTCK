@@ -15,15 +15,17 @@ if str(root_dir) not in sys.path:
 from src.dataset import run_preflight_check, get_default_workspace_root, PreflightGateBlocked
 from src.attack_loader import download_attack_reference, parse_attack_bundle, generate_attack_manifest
 from src.acquisition import acquire_windows_apt_dataset
+from src.artifacts import ArtifactValidationError, validate_stage_prerequisites
 from src.reconcile import run_multiset_reconciliation
 from src.profiler import profile_dataset_schemas
 from src.ground_truth import verify_ground_truth_provenance
 
 
-def _check_prerequisite(file_path: Path, step_name: str, required_by: str) -> None:
-    if not file_path.exists():
-        print(f"[-] Prerequisite error for '{required_by}': Missing required artifact '{file_path.name}'.")
-        print(f"    Please execute '{step_name}' first.")
+def _validate_or_exit(ws: Path, stage_name: str) -> None:
+    try:
+        validate_stage_prerequisites(ws, stage_name)
+    except ArtifactValidationError as e:
+        print(f"[-] Gate validation failed for '{stage_name}': {e}")
         sys.exit(1)
 
 
@@ -46,6 +48,7 @@ def cmd_preflight(args):
 
 def cmd_acquire_attack(args):
     ws = Path(args.workspace) if args.workspace else get_default_workspace_root()
+    _validate_or_exit(ws, "acquire-attack")
     print(f"[*] Executing Task 5-acquire ATT&CK v19.2 reference on workspace: {ws}")
     try:
         stix_file, sha256_hash, file_size = download_attack_reference(ws)
@@ -62,8 +65,7 @@ def cmd_acquire_attack(args):
 
 def cmd_acquire_dataset(args):
     ws = Path(args.workspace) if args.workspace else get_default_workspace_root()
-    preflight_file = ws / "data" / "metadata" / "preflight.json"
-    _check_prerequisite(preflight_file, "preflight", "acquire-dataset")
+    _validate_or_exit(ws, "acquire-dataset")
     print(f"[*] Executing Task 2 Dataset Acquisition on workspace: {ws}")
     try:
         manifest = acquire_windows_apt_dataset(ws)
@@ -77,8 +79,7 @@ def cmd_acquire_dataset(args):
 
 def cmd_reconcile(args):
     ws = Path(args.workspace) if args.workspace else get_default_workspace_root()
-    dataset_manifest = ws / "data" / "metadata" / "dataset_manifest.json"
-    _check_prerequisite(dataset_manifest, "acquire-dataset", "reconcile")
+    _validate_or_exit(ws, "reconcile")
     print(f"[*] Executing Task 2 Multiset Reconciliation on workspace: {ws}")
     try:
         res = run_multiset_reconciliation(ws)
@@ -94,8 +95,7 @@ def cmd_reconcile(args):
 
 def cmd_profile(args):
     ws = Path(args.workspace) if args.workspace else get_default_workspace_root()
-    dataset_manifest = ws / "data" / "metadata" / "dataset_manifest.json"
-    _check_prerequisite(dataset_manifest, "acquire-dataset", "profile")
+    _validate_or_exit(ws, "profile")
     print(f"[*] Executing Task 3 Schema Profiling & Record Indexing on workspace: {ws}")
     try:
         res = profile_dataset_schemas(ws)
@@ -110,8 +110,7 @@ def cmd_profile(args):
 
 def cmd_audit_gt(args):
     ws = Path(args.workspace) if args.workspace else get_default_workspace_root()
-    record_index = ws / "data" / "metadata" / "record_index.json"
-    _check_prerequisite(record_index, "profile", "audit-gt")
+    _validate_or_exit(ws, "audit-gt")
     print(f"[*] Executing Task 4 Independent Ground Truth Lineage Audit on workspace: {ws}")
     try:
         diagnostics = verify_ground_truth_provenance(ws)

@@ -14,6 +14,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
+EXPLICIT_NULL_VALUES = {"null", "none", "nan", "na", "n/a", "<null>"}
+
+
 def generate_opaque_record_id(file_sha256: str, record_ordinal: int) -> str:
     """
     Generates deterministic opaque record ID from source file SHA-256 and 0-indexed ordinal.
@@ -64,6 +67,8 @@ def profile_dataset_schemas(
 
     all_fields: Set[str] = set()
     field_counts = Counter()
+    field_state_counts = defaultdict(Counter)
+    field_file_presence = defaultdict(set)
     field_types = defaultdict(set)
     field_samples = defaultdict(list)
 
@@ -72,6 +77,22 @@ def profile_dataset_schemas(
     candidate_labels_counter = Counter()
     windows_event_ids_counter = Counter()
     observation_unit_counter = Counter()
+    source_id_counter = Counter()
+    blank_source_id_count = 0
+    linkage_fields = [
+        "_id",
+        "_index",
+        "_source.@timestamp",
+        "_source.agent.id",
+        "_source.agent.name",
+        "_source.data.win.system.computer",
+        "_source.data.win.system.eventID",
+        "_source.data.win.system.eventRecordID",
+        "_source.rule.id",
+        "_source.rule.mitre.id",
+    ]
+    linkage_field_non_empty = Counter()
+    nested_telemetry_prefixes = Counter()
 
     record_index_csv_path = meta_dir / "record_index.csv"
 
@@ -85,6 +106,8 @@ def profile_dataset_schemas(
             file_logical_rows = 0
             file_parsed_count = 0
             file_malformed_count = 0
+            first_valid_logical_ordinal = None
+            last_valid_logical_ordinal = None
 
             with open(p, "r", encoding="utf-8-sig", errors="replace") as f:
                 reader = csv.reader(f)
@@ -98,6 +121,11 @@ def profile_dataset_schemas(
 
                 for col_name in header:
                     field_counts[col_name] += 0  # ensure registered
+                    field_file_presence[col_name].add(pf)
+                    if col_name.startswith("_source."):
+                        parts = col_name.split(".")
+                        if len(parts) >= 3:
+                            nested_telemetry_prefixes[".".join(parts[:3])] += 1
 
                 for row_idx, row in enumerate(reader):
                     file_logical_rows += 1
@@ -117,16 +145,36 @@ def profile_dataset_schemas(
                         continue
 
                     # Successfully parsed record
-                    ordinal = file_parsed_count
+                    ordinal = row_idx
+                    if first_valid_logical_ordinal is None:
+                        first_valid_logical_ordinal = ordinal
+                    last_valid_logical_ordinal = ordinal
                     rec_id = generate_opaque_record_id(f_hash, ordinal)
                     index_writer.writerow([rec_id, pf, f_hash, ordinal])
 
                     file_parsed_count += 1
                     total_parsed_records += 1
+                    source_id = row[header.index("_id")].strip() if "_id" in header else ""
+                    if source_id:
+                        source_id_counter[source_id] += 1
+                    else:
+                        blank_source_id_count += 1
 
                     for col_idx, val in enumerate(row):
                         val_str = val.strip()
                         col_name = header[col_idx]
+                        field_state_counts[col_name]["schema_present"] += 1
+                        if val_str == "":
+                            field_state_counts[col_name]["empty_string"] += 1
+                            continue
+                        if val_str.lower() in EXPLICIT_NULL_VALUES:
+                            field_state_counts[col_name]["explicit_null"] += 1
+                            continue
+
+                        field_state_counts[col_name]["non_empty"] += 1
+                        if col_name in linkage_fields:
+                            linkage_field_non_empty[col_name] += 1
+
                         if val_str:
                             field_counts[col_name] += 1
                             if len(field_samples[col_name]) < sample_values_limit and val_str not in field_samples[col_name]:
@@ -159,8 +207,10 @@ def profile_dataset_schemas(
                 "rejected_malformed_records": file_malformed_count,
                 "columns_count": len(header),
                 "sha256": f_hash,
-                "first_record_id": generate_opaque_record_id(f_hash, 0) if file_parsed_count > 0 else None,
-                "last_record_id": generate_opaque_record_id(f_hash, file_parsed_count - 1) if file_parsed_count > 0 else None
+                "first_record_id": generate_opaque_record_id(f_hash, first_valid_logical_ordinal) if first_valid_logical_ordinal is not None else None,
+                "last_record_id": generate_opaque_record_id(f_hash, last_valid_logical_ordinal) if last_valid_logical_ordinal is not None else None,
+                "first_valid_logical_ordinal": first_valid_logical_ordinal,
+                "last_valid_logical_ordinal": last_valid_logical_ordinal
             }
 
             record_index_summary.append({
@@ -168,8 +218,10 @@ def profile_dataset_schemas(
                 "sha256": f_hash,
                 "source_logical_rows": file_logical_rows,
                 "parsed_records": file_parsed_count,
-                "first_record_id": generate_opaque_record_id(f_hash, 0) if file_parsed_count > 0 else None,
-                "last_record_id": generate_opaque_record_id(f_hash, file_parsed_count - 1) if file_parsed_count > 0 else None
+                "first_record_id": generate_opaque_record_id(f_hash, first_valid_logical_ordinal) if first_valid_logical_ordinal is not None else None,
+                "last_record_id": generate_opaque_record_id(f_hash, last_valid_logical_ordinal) if last_valid_logical_ordinal is not None else None,
+                "first_valid_logical_ordinal": first_valid_logical_ordinal,
+                "last_valid_logical_ordinal": last_valid_logical_ordinal
             })
             print(f"  [+] Profiled {pf}: {file_parsed_count:,} parsed, {file_malformed_count} malformed, {len(header)} cols")
 
@@ -184,16 +236,57 @@ def profile_dataset_schemas(
     with open(field_inventory_file, "w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
         writer.writerow([
-            "field_name", "present_record_count", "null_record_count",
-            "fill_rate_percent", "inferred_types", "sample_values"
+            "field_name",
+            "schema_present_record_count",
+            "schema_absent_record_count",
+            "empty_string_record_count",
+            "explicit_null_record_count",
+            "non_empty_record_count",
+            "fill_rate_percent",
+            "files_with_field_count",
+            "inferred_types",
+            "sample_values",
         ])
         for col in sorted(all_fields):
-            pres = field_counts[col]
-            nulls = total_parsed_records - pres
-            fill_rate = round((pres / total_parsed_records) * 100, 2) if total_parsed_records > 0 else 0.0
+            state = field_state_counts[col]
+            schema_present = state["schema_present"]
+            schema_absent = total_parsed_records - schema_present
+            empty_strings = state["empty_string"]
+            explicit_nulls = state["explicit_null"]
+            non_empty = state["non_empty"]
+            fill_rate = round((non_empty / total_parsed_records) * 100, 2) if total_parsed_records > 0 else 0.0
             types_str = ";".join(sorted(field_types[col])) if field_types[col] else "null"
             samples_str = " | ".join(field_samples[col][:3])
-            writer.writerow([col, pres, nulls, fill_rate, types_str, samples_str])
+            writer.writerow([
+                col,
+                schema_present,
+                schema_absent,
+                empty_strings,
+                explicit_nulls,
+                non_empty,
+                fill_rate,
+                len(field_file_presence[col]),
+                types_str,
+                samples_str,
+            ])
+
+    duplicate_source_ids = {rid: count for rid, count in source_id_counter.items() if count > 1}
+    linkage_field_profile = {
+        field: {
+            "non_empty_records": linkage_field_non_empty[field],
+            "coverage_percent": round((linkage_field_non_empty[field] / total_parsed_records) * 100, 2) if total_parsed_records else 0.0,
+        }
+        for field in linkage_fields
+    }
+    observation_unit_determination = {
+        "unit": "wazuh_alert_indexed_telemetry_record",
+        "basis": [
+            "Each parsed CSV row has a dataset `_id`/`_index` pair when exported from Wazuh/OpenSearch.",
+            "Rows contain Wazuh alert rule fields such as `_source.rule.id` and `_source.rule.description`.",
+            "Many rows also carry nested Windows telemetry under `_source.data.win.*`, but the row itself is the indexed alert/telemetry record exported by the dataset, not an independently verified attack execution step.",
+        ],
+        "caveat": "Rule-description frequency is not used as proof of event, alert, aggregate, or repeated-alert semantics.",
+    }
 
     # Write schema_profile.json
     schema_profile_doc = {
@@ -211,6 +304,15 @@ def profile_dataset_schemas(
         "candidate_labels_distribution": dict(candidate_labels_counter.most_common(50)),
         "windows_event_ids_distribution": dict(windows_event_ids_counter.most_common(20)),
         "observation_units_distribution": dict(observation_unit_counter.most_common(20)),
+        "observation_unit_determination": observation_unit_determination,
+        "duplicate_profile": {
+            "source_id_field": "_id",
+            "blank_source_id_count": blank_source_id_count,
+            "duplicate_source_id_count": len(duplicate_source_ids),
+            "duplicate_source_id_examples": dict(list(duplicate_source_ids.items())[:20]),
+        },
+        "candidate_linkage_fields": linkage_field_profile,
+        "nested_telemetry_prefixes": dict(nested_telemetry_prefixes.most_common(20)),
         "files_breakdown": file_profiles
     }
 
@@ -226,7 +328,8 @@ def profile_dataset_schemas(
             "task": "T3_RECORD_INDEX",
             "timestamp_utc": datetime.now(timezone.utc).isoformat(),
             "total_records": total_parsed_records,
-            "id_generation_formula": "rec_{hashlib.sha256(f'{source_file_sha256}:{record_ordinal}'.encode('utf-8')).hexdigest()[:16]}",
+            "id_generation_formula": "rec_{hashlib.sha256(f'{source_file_sha256}:{logical_record_ordinal}'.encode('utf-8')).hexdigest()[:16]}",
+            "record_ordinal_semantics": "0-indexed logical CSV record ordinal after the header; malformed records retain their ordinal and do not renumber later valid observations",
             "index_format": "CSV",
             "index_file_relative_path": "data/metadata/record_index.csv",
             "index_file_size_bytes": record_index_csv_path.stat().st_size,

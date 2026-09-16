@@ -15,238 +15,448 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
+def evaluate_lineage_evidence(evidence: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Apply the frozen acceptance criteria to evidence collected from one source.
+    """
+    if evidence.get("independent_of_wazuh_detector") is False:
+        return {
+            "acceptance_result": "REJECTED",
+            "reason": "detector/rule mappings cannot be promoted to independent event-level ground truth.",
+        }
+    if evidence.get("uses_temporal_proximity_only") is True:
+        return {
+            "acceptance_result": "REJECTED",
+            "reason": "Temporal proximity alone is not event-level ground truth under the frozen methodology.",
+        }
+    if evidence.get("granularity") != "event_execution_level" or evidence.get("has_event_level_join_key") is not True:
+        return {
+            "acceptance_result": "REJECTED",
+            "reason": "Candidate does not provide event-level execution linkage to telemetry records.",
+        }
+    if evidence.get("has_technique_identifier") is not True:
+        return {
+            "acceptance_result": "REJECTED",
+            "reason": "Candidate lacks MITRE technique identifiers at execution-event granularity.",
+        }
+    if evidence.get("has_run_identifier") is not True or evidence.get("has_execution_identifier") is not True:
+        return {
+            "acceptance_result": "REJECTED",
+            "reason": "Candidate lacks run and execution identifiers required for deterministic lineage.",
+        }
+    if evidence.get("has_execution_boundaries") is not True:
+        return {
+            "acceptance_result": "REJECTED",
+            "reason": "Candidate lacks execution start/end boundaries.",
+        }
+
+    coverage = float(evidence.get("coverage_ratio") or 0.0)
+    conflicts = int(evidence.get("conflicting_mappings_count") or 0)
+    cardinality = evidence.get("linkage_cardinality")
+    if coverage < 0.95 or conflicts > 0 or cardinality != "one_to_one":
+        return {
+            "acceptance_result": "REQUIRES_REVIEW",
+            "reason": "Independent evidence exists, but coverage, conflicts, or cardinality make the join ambiguous.",
+        }
+
+    return {
+        "acceptance_result": "ACCEPTED",
+        "reason": "Independent event-level execution lineage satisfies the frozen acceptance criteria.",
+    }
+
+
+def _read_csv_header_and_count(path: Path) -> Tuple[List[str], int]:
+    if not path.exists():
+        return [], 0
+    with open(path, "r", encoding="utf-8-sig", errors="replace") as f:
+        reader = csv.DictReader(f)
+        fields = reader.fieldnames or []
+        return fields, sum(1 for _ in reader)
+
+
+def _scan_period_telemetry(raw_dir: Path, period_files: List[str]) -> Dict[str, Any]:
+    fields: Set[str] = set()
+    total_records = 0
+    wazuh_rule_records = 0
+    mitre_records = 0
+    multi_label_records = 0
+    caldera_mentions = 0
+    sandcat_mentions = 0
+    candidate_identifier_fields: Set[str] = set()
+
+    keywords = ("scenario", "run", "operation", "ability", "paw", "execution", "command")
+    for pf in period_files:
+        path = raw_dir / pf
+        if not path.exists():
+            continue
+        with open(path, "r", encoding="utf-8-sig", errors="replace") as f:
+            reader = csv.DictReader(f)
+            fields.update(reader.fieldnames or [])
+            candidate_identifier_fields.update(
+                field for field in (reader.fieldnames or [])
+                if any(keyword in field.lower() for keyword in keywords)
+            )
+            for row in reader:
+                total_records += 1
+                if row.get("_source.rule.id", "").strip():
+                    wazuh_rule_records += 1
+                mitre_raw = row.get("_source.rule.mitre.id", "").strip()
+                if mitre_raw:
+                    mitre_records += 1
+                    try:
+                        labels = json.loads(mitre_raw)
+                        if isinstance(labels, list) and len(labels) > 1:
+                            multi_label_records += 1
+                    except Exception:
+                        pass
+                combined_text = " ".join(
+                    row.get(field, "")
+                    for field in (
+                        "_source.data.win.eventdata.commandLine",
+                        "_source.data.win.eventdata.image",
+                        "_source.data.win.eventdata.parentImage",
+                        "_source.full_log",
+                    )
+                ).lower()
+                if "caldera" in combined_text:
+                    caldera_mentions += 1
+                if "sandcat" in combined_text:
+                    sandcat_mentions += 1
+
+    return {
+        "total_records": total_records,
+        "fields": sorted(fields),
+        "wazuh_rule_records": wazuh_rule_records,
+        "mitre_records": mitre_records,
+        "multi_label_records": multi_label_records,
+        "candidate_identifier_fields": sorted(candidate_identifier_fields),
+        "caldera_mentions": caldera_mentions,
+        "sandcat_mentions": sandcat_mentions,
+    }
+
+
+def _candidate_row(
+    source: str,
+    investigated_files: List[str],
+    candidate_keys: List[str],
+    semantic_scope: str,
+    evidence: Dict[str, Any],
+    possible_event_linkage: str,
+    cardinality_behavior: str,
+    ambiguity_conflicts: str,
+) -> Dict[str, Any]:
+    decision = evaluate_lineage_evidence(evidence)
+    return {
+        "source": source,
+        "investigated_files": investigated_files,
+        "candidate_keys": candidate_keys,
+        "semantic_scope": semantic_scope,
+        "granularity": evidence.get("granularity", "unknown"),
+        "timestamp_availability": bool(evidence.get("timestamp_availability", False)),
+        "time_zone_precision": evidence.get("time_zone_precision", "none"),
+        "run_identity_availability": bool(evidence.get("has_run_identifier", False)),
+        "technique_identity_availability": bool(evidence.get("has_technique_identifier", False)),
+        "possible_event_linkage": possible_event_linkage,
+        "cardinality_behavior": cardinality_behavior,
+        "ambiguity_conflicts": ambiguity_conflicts,
+        "independent_of_wazuh_detector": bool(evidence.get("independent_of_wazuh_detector", False)),
+        "evidence": evidence,
+        "decision": decision,
+        "acceptance_result": decision["acceptance_result"],
+        "rejection_reason": decision["reason"],
+    }
+
+
 def inspect_candidate_lineage_sources(
     workspace_root: Path,
     period_files: Optional[List[str]] = None
 ) -> List[Dict[str, Any]]:
     """
-    Programmatically inspects all 10 candidate lineage sources available in the
-    workspace and dataset snapshot, producing an auditable joinability matrix.
+    Programmatically inspects candidate lineage sources, then derives each
+    acceptance result from a separate decision function.
     """
     ws = workspace_root.resolve()
     raw_dir = ws / "data" / "raw" / "windows_apt_2025" / "v3"
     sr_dir = ws / "data" / "audit" / "source_research"
 
     if period_files is None:
-        if raw_dir.exists():
-            period_files = sorted([
-                f.name for f in raw_dir.glob("*.csv")
-                if f.name not in ("combined.csv", "scenario_manifest.csv", "validation_summary.csv")
-            ])
-        else:
-            period_files = []
+        period_files = sorted([
+            f.name for f in raw_dir.glob("*.csv")
+            if f.name not in ("combined.csv", "scenario_manifest.csv", "validation_summary.csv")
+        ]) if raw_dir.exists() else []
 
-    matrix = []
+    telemetry = _scan_period_telemetry(raw_dir, period_files)
+    scen_fields, scen_rows = _read_csv_header_and_count(raw_dir / "scenario_manifest.csv")
+    val_fields, val_rows = _read_csv_header_and_count(raw_dir / "validation_summary.csv")
+    article_text = ""
+    for article_path in (sr_dir / "article_sections.txt", sr_dir / "article_fulltext.xml"):
+        if article_path.exists():
+            article_text += article_path.read_text(encoding="utf-8", errors="replace").lower()
+    raw_inventory = sorted(p.name for p in raw_dir.iterdir()) if raw_dir.exists() else []
 
-    # 1. Period Telemetry CSVs (_source.rule.mitre.id)
-    matrix.append({
-        "source": "period_telemetry_csvs",
-        "investigated_files": period_files,
-        "candidate_keys": ["_source.rule.mitre.id", "_source.rule.id"],
-        "semantic_scope": "Wazuh SIEM alert detection rules triggered by signature matches on endpoint telemetry.",
-        "granularity": "alert_event_level",
-        "timestamp_availability": True,
-        "time_zone_precision": "UTC_ISO8601_millisecond",
-        "run_identity_availability": False,
-        "technique_identity_availability": True,
-        "possible_event_linkage": "direct_row_attribute",
-        "cardinality_behavior": "one_to_many_multilabel",
-        "ambiguity_conflicts": "High: 12,221 records map to multiple techniques; heuristic detection signature overlap.",
-        "independent_of_wazuh_detector": False,
-        "acceptance_result": "REJECTED",
-        "rejection_reason": "Violates frozen methodology (§R6): detector/rule mappings cannot be promoted to independent event-level ground truth; creates circular evaluation."
-    })
-
-    # 2. Scenario Manifest (scenario_manifest.csv)
-    scen_path = raw_dir / "scenario_manifest.csv"
-    scen_rows = 0
-    scen_has_timestamps = False
-    scen_has_run_ids = False
-    if scen_path.exists():
-        with open(scen_path, "r", encoding="utf-8-sig", errors="replace") as f:
-            r = csv.DictReader(f)
-            fields = r.fieldnames or []
-            scen_has_timestamps = any("time" in col.lower() or "date" in col.lower() for col in fields)
-            scen_has_run_ids = any("run" in col.lower() for col in fields)
-            scen_rows = sum(1 for _ in r)
-
-    matrix.append({
-        "source": "scenario_manifest_csv",
-        "investigated_files": ["scenario_manifest.csv"],
-        "candidate_keys": ["Scenrario_ID", "Scenario_Name"],
-        "semantic_scope": f"High-level scenario simulation plan ({scen_rows} APT scenarios S01-S37).",
-        "granularity": "scenario_campaign_level",
-        "timestamp_availability": scen_has_timestamps,
-        "time_zone_precision": "none",
-        "run_identity_availability": scen_has_run_ids,
-        "technique_identity_availability": True,
-        "possible_event_linkage": "none_no_telemetry_join_key",
-        "cardinality_behavior": "many_to_many_coarse",
-        "ambiguity_conflicts": "Extreme: lists 2 to 74 expected techniques per scenario over multi-day execution with no event keys.",
-        "independent_of_wazuh_detector": True,
-        "acceptance_result": "REJECTED",
-        "rejection_reason": "Scenario-wide technique lists without per-event execution linkage or timestamps cannot serve as event-level ground truth."
-    })
-
-    # 3. Validation Summary (validation_summary.csv)
-    val_path = raw_dir / "validation_summary.csv"
-    val_rows = 0
-    val_has_timestamps = False
-    if val_path.exists():
-        with open(val_path, "r", encoding="utf-8-sig", errors="replace") as f:
-            r = csv.DictReader(f)
-            val_rows = sum(1 for _ in r)
-
-    matrix.append({
-        "source": "validation_summary_csv",
-        "investigated_files": ["validation_summary.csv"],
-        "candidate_keys": ["Scenrario_ID", "Scenario_Name"],
-        "semantic_scope": f"Post-hoc statistical summary averaging technique success across 10 runs per scenario ({val_rows} scenarios).",
-        "granularity": "scenario_aggregate_statistics",
-        "timestamp_availability": False,
-        "time_zone_precision": "none",
-        "run_identity_availability": False,
-        "technique_identity_availability": False,
-        "possible_event_linkage": "none",
-        "cardinality_behavior": "many_to_many_aggregate",
-        "ambiguity_conflicts": "Complete lack of per-run or per-event attribution.",
-        "independent_of_wazuh_detector": False,
-        "acceptance_result": "REJECTED",
-        "rejection_reason": "Statistical summary table containing no execution timestamps, per-run identifiers, or event linkage keys."
-    })
-
-    # 4. Dataset Documentation / README
-    matrix.append({
-        "source": "dataset_readme_documentation",
-        "investigated_files": ["README.md"],
-        "candidate_keys": ["period_filename_date_ranges"],
-        "semantic_scope": "Collection narrative describing Wazuh manager, agent architecture, and simulation schedule.",
-        "granularity": "collection_period_level",
-        "timestamp_availability": True,
-        "time_zone_precision": "coarse_calendar_dates_only",
-        "run_identity_availability": False,
-        "technique_identity_availability": False,
-        "possible_event_linkage": "file_level_date_matching_only",
-        "cardinality_behavior": "one_to_thousands",
-        "ambiguity_conflicts": "Extreme: multi-day windows containing thousands of benign and attack events mixed.",
-        "independent_of_wazuh_detector": True,
-        "acceptance_result": "REJECTED",
-        "rejection_reason": "Narrative documentation does not provide machine-readable execution logs or ability timestamps."
-    })
-
-    # 5. Publication Fulltext & Source Research Artifacts
-    matrix.append({
-        "source": "publication_source_research_artifacts",
-        "investigated_files": ["article_fulltext.xml", "article_sections.txt"],
-        "candidate_keys": ["article_methodology_text"],
-        "semantic_scope": "Elsevier Data in Brief paper describing experimental setup and Wazuh rule detection methodology.",
-        "granularity": "methodology_narrative",
-        "timestamp_availability": False,
-        "time_zone_precision": "none",
-        "run_identity_availability": False,
-        "technique_identity_availability": True,
-        "possible_event_linkage": "none",
-        "cardinality_behavior": "none",
-        "ambiguity_conflicts": "N/A",
-        "independent_of_wazuh_detector": False,
-        "acceptance_result": "REJECTED",
-        "rejection_reason": "Confirms that dataset technique annotations were generated via Wazuh detection rules rather than external execution logs."
-    })
-
-    # 6. Actual Scenario / Run / Step Identifiers in Telemetry
-    matrix.append({
-        "source": "telemetry_scenario_run_step_fields",
-        "investigated_files": ["_source.data.operation_type", "_source.data.win.eventdata.operation", "_source.data.win.eventdata.readOperation"],
-        "candidate_keys": ["operation_type", "operation", "readOperation"],
-        "semantic_scope": "OS-level file audit operations ('Created', 'Modified', '%%2480').",
-        "granularity": "event_field_level",
-        "timestamp_availability": False,
-        "time_zone_precision": "none",
-        "run_identity_availability": False,
-        "technique_identity_availability": False,
-        "possible_event_linkage": "none",
-        "cardinality_behavior": "none",
-        "ambiguity_conflicts": "Fields reflect Windows filesystem audit events, not Caldera emulation operations.",
-        "independent_of_wazuh_detector": True,
-        "acceptance_result": "REJECTED",
-        "rejection_reason": "No scenario, run, or attack-step identifiers exist in the raw telemetry schema."
-    })
-
-    # 7. Timestamps and Time Zones
-    matrix.append({
-        "source": "telemetry_timestamps_and_time_zones",
-        "investigated_files": ["_source.@timestamp", "_source.data.win.system.systemTime", "_source.data.win.eventdata.utcTime"],
-        "candidate_keys": ["@timestamp", "systemTime", "utcTime"],
-        "semantic_scope": "Event logging timestamps recorded by Wazuh and Windows Sysmon.",
-        "granularity": "event_millisecond_level",
-        "timestamp_availability": True,
-        "time_zone_precision": "UTC_ISO8601",
-        "run_identity_availability": False,
-        "technique_identity_availability": False,
-        "possible_event_linkage": "temporal_proximity_window_only",
-        "cardinality_behavior": "one_to_many_temporal_ambiguity",
-        "ambiguity_conflicts": "Without per-ability execution start/end times, temporal proximity cannot distinguish attack commands from concurrent OS activity.",
-        "independent_of_wazuh_detector": True,
-        "acceptance_result": "REJECTED",
-        "rejection_reason": "Frozen methodology (§R6) explicitly prohibits inferring event-level ground truth from temporal proximity alone."
-    })
-
-    # 8. Host and Agent Identity
-    matrix.append({
-        "source": "host_agent_identity_fields",
-        "investigated_files": ["_source.agent.id", "_source.agent.name", "_source.data.win.system.computer"],
-        "candidate_keys": ["agent.id", "agent.name", "computer"],
-        "semantic_scope": "Endpoint identity within testbed environment.",
-        "granularity": "host_level",
-        "timestamp_availability": False,
-        "time_zone_precision": "none",
-        "run_identity_availability": False,
-        "technique_identity_availability": False,
-        "possible_event_linkage": "spatial_containment_only",
-        "cardinality_behavior": "one_to_thousands",
-        "ambiguity_conflicts": "Identifies the host VM, but cannot differentiate among hundreds of simulated techniques.",
-        "independent_of_wazuh_detector": True,
-        "acceptance_result": "REJECTED",
-        "rejection_reason": "Host identity provides spatial boundary only, not technique attribution."
-    })
-
-    # 9. Caldera-related Fields, IDs, Paths, or Process Strings
-    matrix.append({
-        "source": "caldera_sandcat_process_metadata",
-        "investigated_files": ["_source.data.win.eventdata.commandLine", "_source.data.win.eventdata.image"],
-        "candidate_keys": ["sandcat", "caldera"],
-        "semantic_scope": "Process command lines and image paths mentioning 'sandcat' (157 rows) or 'caldera' (122 rows).",
-        "granularity": "sparse_event_substrings",
-        "timestamp_availability": True,
-        "time_zone_precision": "UTC_ISO8601",
-        "run_identity_availability": False,
-        "technique_identity_availability": False,
-        "possible_event_linkage": "sparse_process_string_match (covers <0.2% of dataset)",
-        "cardinality_behavior": "sparse_singleton",
-        "ambiguity_conflicts": "Mentions reflect agent daemon execution; individual technique commands are spawned as sub-processes without transaction tags.",
-        "independent_of_wazuh_detector": True,
-        "acceptance_result": "REJECTED",
-        "rejection_reason": "Process strings show Caldera agent presence but do not contain ability identifiers, execution transaction IDs, or complete coverage."
-    })
-
-    # 10. External Execution Artifacts in Frozen Dataset Snapshot
-    matrix.append({
-        "source": "external_execution_artifacts_snapshot",
-        "investigated_files": ["data/raw/windows_apt_2025/v3/ (all 21 files)"],
-        "candidate_keys": ["none"],
-        "semantic_scope": "Complete Mendeley v3 repository snapshot.",
-        "granularity": "snapshot_level",
-        "timestamp_availability": False,
-        "time_zone_precision": "none",
-        "run_identity_availability": False,
-        "technique_identity_availability": False,
-        "possible_event_linkage": "none",
-        "cardinality_behavior": "none",
-        "ambiguity_conflicts": "None present.",
-        "independent_of_wazuh_detector": True,
-        "acceptance_result": "REJECTED",
-        "rejection_reason": "No Caldera operation log files, ability execution journals, attack flow graphs, or external ground-truth annotations exist in the snapshot."
-    })
+    matrix = [
+        _candidate_row(
+            "period_telemetry_csvs",
+            period_files,
+            ["_source.rule.mitre.id", "_source.rule.id"],
+            "MITRE labels attached to Wazuh alert/rule rows in the telemetry export.",
+            {
+                "source": "period_telemetry_csvs",
+                "granularity": "alert_event_level",
+                "timestamp_availability": True,
+                "time_zone_precision": "UTC_ISO8601_millisecond",
+                "independent_of_wazuh_detector": False,
+                "has_event_level_join_key": True,
+                "has_run_identifier": False,
+                "has_execution_identifier": False,
+                "has_technique_identifier": telemetry["mitre_records"] > 0,
+                "has_execution_boundaries": False,
+                "coverage_ratio": telemetry["mitre_records"] / telemetry["total_records"] if telemetry["total_records"] else 0.0,
+                "conflicting_mappings_count": telemetry["multi_label_records"],
+                "linkage_cardinality": "one_to_many" if telemetry["multi_label_records"] else "one_to_one",
+                "uses_temporal_proximity_only": False,
+                "observed_records": telemetry["total_records"],
+                "records_with_wazuh_rule": telemetry["wazuh_rule_records"],
+                "records_with_mitre_mapping": telemetry["mitre_records"],
+            },
+            "direct_row_attribute",
+            "one_to_many_multilabel",
+            f"{telemetry['multi_label_records']:,} records contain multiple techniques; labels are detector-derived.",
+        ),
+        _candidate_row(
+            "scenario_manifest_csv",
+            ["scenario_manifest.csv"],
+            ["Scenrario_ID", "Scenario_Name"],
+            f"Scenario-level simulation plan with {scen_rows} rows.",
+            {
+                "source": "scenario_manifest_csv",
+                "granularity": "scenario_campaign_level",
+                "timestamp_availability": any("time" in col.lower() or "date" in col.lower() for col in scen_fields),
+                "time_zone_precision": "none",
+                "independent_of_wazuh_detector": True,
+                "has_event_level_join_key": False,
+                "has_run_identifier": any("run" in col.lower() for col in scen_fields),
+                "has_execution_identifier": False,
+                "has_technique_identifier": any("technique" in col.lower() or "mitre" in col.lower() for col in scen_fields),
+                "has_execution_boundaries": False,
+                "coverage_ratio": 0.0,
+                "conflicting_mappings_count": 0,
+                "linkage_cardinality": "many_to_many",
+                "uses_temporal_proximity_only": False,
+                "fields": scen_fields,
+            },
+            "none_no_telemetry_join_key",
+            "many_to_many_coarse",
+            "Scenario-level rows do not join to individual telemetry records.",
+        ),
+        _candidate_row(
+            "validation_summary_csv",
+            ["validation_summary.csv"],
+            ["Scenrario_ID", "Scenario_Name"],
+            f"Post-hoc scenario validation summary with {val_rows} rows.",
+            {
+                "source": "validation_summary_csv",
+                "granularity": "scenario_aggregate_statistics",
+                "timestamp_availability": any("time" in col.lower() or "date" in col.lower() for col in val_fields),
+                "time_zone_precision": "none",
+                "independent_of_wazuh_detector": False,
+                "has_event_level_join_key": False,
+                "has_run_identifier": any("run" in col.lower() for col in val_fields),
+                "has_execution_identifier": False,
+                "has_technique_identifier": False,
+                "has_execution_boundaries": False,
+                "coverage_ratio": 0.0,
+                "conflicting_mappings_count": 0,
+                "linkage_cardinality": "many_to_many_aggregate",
+                "uses_temporal_proximity_only": False,
+                "fields": val_fields,
+            },
+            "none",
+            "many_to_many_aggregate",
+            "Summary statistics contain no per-event attribution.",
+        ),
+        _candidate_row(
+            "dataset_readme_documentation",
+            ["README.md"],
+            ["period_filename_date_ranges"],
+            "Narrative collection documentation and file/date context.",
+            {
+                "source": "dataset_readme_documentation",
+                "granularity": "collection_period_level",
+                "timestamp_availability": True,
+                "time_zone_precision": "coarse_calendar_dates_only",
+                "independent_of_wazuh_detector": True,
+                "has_event_level_join_key": False,
+                "has_run_identifier": False,
+                "has_execution_identifier": False,
+                "has_technique_identifier": False,
+                "has_execution_boundaries": False,
+                "coverage_ratio": 0.0,
+                "conflicting_mappings_count": 0,
+                "linkage_cardinality": "one_to_thousands",
+                "uses_temporal_proximity_only": False,
+            },
+            "file_level_date_matching_only",
+            "one_to_thousands",
+            "Multi-day file windows mix benign and attack events.",
+        ),
+        _candidate_row(
+            "publication_source_research_artifacts",
+            ["article_fulltext.xml", "article_sections.txt"],
+            ["article_methodology_text"],
+            "Data in Brief methodology text preserved under source_research.",
+            {
+                "source": "publication_source_research_artifacts",
+                "granularity": "methodology_narrative",
+                "timestamp_availability": False,
+                "time_zone_precision": "none",
+                "independent_of_wazuh_detector": False,
+                "has_event_level_join_key": False,
+                "has_run_identifier": False,
+                "has_execution_identifier": False,
+                "has_technique_identifier": "mitre" in article_text or "att&ck" in article_text,
+                "has_execution_boundaries": False,
+                "coverage_ratio": 0.0,
+                "conflicting_mappings_count": 0,
+                "linkage_cardinality": "none",
+                "uses_temporal_proximity_only": False,
+                "mentions_wazuh": "wazuh" in article_text,
+                "mentions_caldera": "caldera" in article_text,
+            },
+            "none",
+            "none",
+            "Narrative text is not a machine-readable execution log.",
+        ),
+        _candidate_row(
+            "telemetry_scenario_run_step_fields",
+            telemetry["candidate_identifier_fields"],
+            telemetry["candidate_identifier_fields"],
+            "Telemetry fields whose names resemble operation, command, scenario, run, ability, paw, or execution identifiers.",
+            {
+                "source": "telemetry_scenario_run_step_fields",
+                "granularity": "event_field_level",
+                "timestamp_availability": False,
+                "time_zone_precision": "none",
+                "independent_of_wazuh_detector": True,
+                "has_event_level_join_key": False,
+                "has_run_identifier": False,
+                "has_execution_identifier": False,
+                "has_technique_identifier": False,
+                "has_execution_boundaries": False,
+                "coverage_ratio": 0.0,
+                "conflicting_mappings_count": 0,
+                "linkage_cardinality": "none",
+                "uses_temporal_proximity_only": False,
+                "candidate_identifier_fields": telemetry["candidate_identifier_fields"],
+            },
+            "none",
+            "none",
+            "Observed fields are OS/audit operations, not Caldera ability execution IDs.",
+        ),
+        _candidate_row(
+            "telemetry_timestamps_and_time_zones",
+            ["_source.@timestamp", "_source.data.win.system.systemTime", "_source.data.win.eventdata.utcTime"],
+            ["@timestamp", "systemTime", "utcTime"],
+            "Wazuh/Windows event timestamps in telemetry rows.",
+            {
+                "source": "telemetry_timestamps_and_time_zones",
+                "granularity": "event_millisecond_level",
+                "timestamp_availability": True,
+                "time_zone_precision": "UTC_ISO8601",
+                "independent_of_wazuh_detector": True,
+                "has_event_level_join_key": False,
+                "has_run_identifier": False,
+                "has_execution_identifier": False,
+                "has_technique_identifier": False,
+                "has_execution_boundaries": False,
+                "coverage_ratio": 0.0,
+                "conflicting_mappings_count": 0,
+                "linkage_cardinality": "one_to_many_temporal_ambiguity",
+                "uses_temporal_proximity_only": True,
+            },
+            "temporal_proximity_window_only",
+            "one_to_many_temporal_ambiguity",
+            "No per-ability execution windows are present.",
+        ),
+        _candidate_row(
+            "host_agent_identity_fields",
+            ["_source.agent.id", "_source.agent.name", "_source.data.win.system.computer"],
+            ["agent.id", "agent.name", "computer"],
+            "Endpoint identity fields within the testbed.",
+            {
+                "source": "host_agent_identity_fields",
+                "granularity": "host_level",
+                "timestamp_availability": False,
+                "time_zone_precision": "none",
+                "independent_of_wazuh_detector": True,
+                "has_event_level_join_key": False,
+                "has_run_identifier": False,
+                "has_execution_identifier": False,
+                "has_technique_identifier": False,
+                "has_execution_boundaries": False,
+                "coverage_ratio": 0.0,
+                "conflicting_mappings_count": 0,
+                "linkage_cardinality": "one_to_thousands",
+                "uses_temporal_proximity_only": False,
+            },
+            "spatial_containment_only",
+            "one_to_thousands",
+            "Host identity does not differentiate technique execution.",
+        ),
+        _candidate_row(
+            "caldera_sandcat_process_metadata",
+            ["_source.data.win.eventdata.commandLine", "_source.data.win.eventdata.image", "_source.full_log"],
+            ["sandcat", "caldera"],
+            "Sparse process/log strings mentioning Caldera or sandcat.",
+            {
+                "source": "caldera_sandcat_process_metadata",
+                "granularity": "sparse_event_substrings",
+                "timestamp_availability": True,
+                "time_zone_precision": "UTC_ISO8601",
+                "independent_of_wazuh_detector": True,
+                "has_event_level_join_key": False,
+                "has_run_identifier": False,
+                "has_execution_identifier": False,
+                "has_technique_identifier": False,
+                "has_execution_boundaries": False,
+                "coverage_ratio": (telemetry["caldera_mentions"] + telemetry["sandcat_mentions"]) / telemetry["total_records"] if telemetry["total_records"] else 0.0,
+                "conflicting_mappings_count": 0,
+                "linkage_cardinality": "sparse_singleton",
+                "uses_temporal_proximity_only": False,
+                "caldera_mentions": telemetry["caldera_mentions"],
+                "sandcat_mentions": telemetry["sandcat_mentions"],
+            },
+            "sparse_process_string_match",
+            "sparse_singleton",
+            "Agent/process strings do not contain ability IDs or complete execution transactions.",
+        ),
+        _candidate_row(
+            "external_execution_artifacts_snapshot",
+            raw_inventory,
+            ["none"],
+            "Complete file inventory of the frozen Mendeley v3 snapshot.",
+            {
+                "source": "external_execution_artifacts_snapshot",
+                "granularity": "snapshot_level",
+                "timestamp_availability": False,
+                "time_zone_precision": "none",
+                "independent_of_wazuh_detector": True,
+                "has_event_level_join_key": False,
+                "has_run_identifier": False,
+                "has_execution_identifier": False,
+                "has_technique_identifier": False,
+                "has_execution_boundaries": False,
+                "coverage_ratio": 0.0,
+                "conflicting_mappings_count": 0,
+                "linkage_cardinality": "none",
+                "uses_temporal_proximity_only": False,
+                "file_inventory": raw_inventory,
+            },
+            "none",
+            "none",
+            "No Caldera operation logs, ability execution journals, attack-flow graphs, or external annotations are present.",
+        ),
+    ]
 
     return matrix
 

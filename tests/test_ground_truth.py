@@ -12,11 +12,11 @@ import json
 from pathlib import Path
 import pytest
 
-from src.ground_truth import inspect_candidate_lineage_sources
+from src.ground_truth import evaluate_lineage_evidence, inspect_candidate_lineage_sources
 
 
 def test_candidate_lineage_matrix_structure():
-    """All 10 candidate sources must be evaluated across all 14 required dimensions."""
+    """All 10 candidate sources must be evaluated across required evidence dimensions."""
     sources = inspect_candidate_lineage_sources(Path("."))
     assert len(sources) == 10, "Must inspect all 10 candidate lineage sources"
 
@@ -25,16 +25,108 @@ def test_candidate_lineage_matrix_structure():
         "granularity", "timestamp_availability", "time_zone_precision",
         "run_identity_availability", "technique_identity_availability",
         "possible_event_linkage", "cardinality_behavior", "ambiguity_conflicts",
-        "independent_of_wazuh_detector", "acceptance_result", "rejection_reason"
+        "independent_of_wazuh_detector", "evidence", "decision",
+        "acceptance_result", "rejection_reason"
     ]
 
     for s in sources:
         for dim in required_dimensions:
             assert dim in s, f"Dimension '{dim}' missing in source '{s.get('source')}'"
 
-        # Every candidate source must be rejected under frozen methodology
-        assert s["acceptance_result"] == "REJECTED", f"Source {s['source']} was not rejected"
-        assert len(s["rejection_reason"]) > 0
+        assert s["acceptance_result"] == s["decision"]["acceptance_result"]
+        assert s["rejection_reason"] == s["decision"]["reason"]
+
+
+def test_independent_execution_lineage_fixture_accepts():
+    """Decision logic must be capable of accepting valid independent event lineage."""
+    decision = evaluate_lineage_evidence(
+        {
+            "source": "synthetic_independent_operation_log",
+            "granularity": "event_execution_level",
+            "independent_of_wazuh_detector": True,
+            "has_event_level_join_key": True,
+            "has_run_identifier": True,
+            "has_execution_identifier": True,
+            "has_technique_identifier": True,
+            "has_execution_boundaries": True,
+            "coverage_ratio": 1.0,
+            "conflicting_mappings_count": 0,
+            "linkage_cardinality": "one_to_one",
+            "uses_temporal_proximity_only": False,
+        }
+    )
+
+    assert decision["acceptance_result"] == "ACCEPTED"
+
+
+def test_detector_derived_lineage_fixture_rejects():
+    decision = evaluate_lineage_evidence(
+        {
+            "source": "wazuh_rule_labels",
+            "granularity": "alert_event_level",
+            "independent_of_wazuh_detector": False,
+            "has_event_level_join_key": True,
+            "has_technique_identifier": True,
+            "coverage_ratio": 1.0,
+        }
+    )
+
+    assert decision["acceptance_result"] == "REJECTED"
+    assert "detector" in decision["reason"].lower()
+
+
+def test_scenario_wide_lineage_fixture_rejects():
+    decision = evaluate_lineage_evidence(
+        {
+            "source": "scenario_manifest",
+            "granularity": "scenario_campaign_level",
+            "independent_of_wazuh_detector": True,
+            "has_event_level_join_key": False,
+            "has_technique_identifier": True,
+            "coverage_ratio": 1.0,
+        }
+    )
+
+    assert decision["acceptance_result"] == "REJECTED"
+    assert "event-level" in decision["reason"]
+
+
+def test_timestamp_only_lineage_fixture_rejects():
+    decision = evaluate_lineage_evidence(
+        {
+            "source": "timestamps_only",
+            "granularity": "event_millisecond_level",
+            "independent_of_wazuh_detector": True,
+            "has_event_level_join_key": False,
+            "has_execution_boundaries": False,
+            "uses_temporal_proximity_only": True,
+            "coverage_ratio": 1.0,
+        }
+    )
+
+    assert decision["acceptance_result"] == "REJECTED"
+    assert "temporal proximity" in decision["reason"].lower()
+
+
+def test_ambiguous_partial_lineage_fixture_requires_review_or_rejects():
+    decision = evaluate_lineage_evidence(
+        {
+            "source": "partial_operation_log",
+            "granularity": "event_execution_level",
+            "independent_of_wazuh_detector": True,
+            "has_event_level_join_key": True,
+            "has_run_identifier": True,
+            "has_execution_identifier": True,
+            "has_technique_identifier": True,
+            "has_execution_boundaries": True,
+            "coverage_ratio": 0.42,
+            "conflicting_mappings_count": 7,
+            "linkage_cardinality": "one_to_many",
+            "uses_temporal_proximity_only": False,
+        }
+    )
+
+    assert decision["acceptance_result"] in {"REJECTED", "REQUIRES_REVIEW"}
 
 
 def test_detector_rules_not_independent_gt():

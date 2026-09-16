@@ -1,9 +1,16 @@
 {
   "schema_version": "1.0.0",
-  "timestamp_utc": "2026-09-16T04:12:17.045590+00:00",
+  "timestamp_utc": "2026-09-16T16:31:09.206558+00:00",
   "task": "T2_MULTISET_RECONCILIATION",
   "multiset_equality_status": "RECONCILIATION_DIVERGENT",
   "is_exact_match": false,
+  "raw_exact_equality": false,
+  "semantic_reconciliation_status": "RECONCILIATION_DIVERGENT",
+  "representation_equivalence_resolved": false,
+  "discrepancy_count": 127184,
+  "equivalent_discrepancy_count": 111471,
+  "unresolved_discrepancy_count": 15713,
+  "missing_row_id_count": 0,
   "row_count_accounting": {
     "total_period_rows": 102011,
     "total_combined_rows": 102011,
@@ -20,18 +27,174 @@
     "period_duplicate_multiplicities_count": 0,
     "combined_duplicate_multiplicities_count": 0
   },
-  "explanation": "Row counts match exactly (102,011 == 102,011), and all 102,011 record _ids match 1-to-1. However, exactly 65,337 rows diverge in cell formatting due to Microsoft Excel date/number serialization in combined.csv (e.g. utcTime serial dates like 45627.26699 vs 24:27.7, scientific notation, and timestamps). Under strict Task 2 multiset comparison, this is classified as RECONCILIATION_DIVERGENT, NOT exact match.",
+  "explanation": "Row counts match exactly (102,011 == 102,011), but raw cell-level string multisets diverge in 65,337 rows and 15,713 cell differences cannot be proven representation-equivalent. Under the frozen methodology this remains an unresolved RECONCILIATION_DIVERGENT gate and downstream Task 3 execution must stop.",
   "divergent_fields_summary": {
     "_source.data.win.eventdata.utcTime": 57634,
     "_source.data.win.eventdata.creationUtcTime": 22980,
-    "_source.rule.mail": 14937,
     "_source.id": 14937,
     "_source.agent.id": 14937,
+    "_source.rule.mail": 14937,
     "_source.data.win.eventdata.signed": 806,
     "_source.data.win.eventdata.binary": 509,
     "_source.predecoder.timestamp": 263,
-    "_source.data.win.eventdata.initiated": 48,
+    "_source.data.win.eventdata.sourceIsIpv6": 48,
     "_source.data.win.eventdata.destinationIsIpv6": 48
+  },
+  "discrepancy_taxonomy": {
+    "by_field": {
+      "_source.data.win.eventdata.utcTime": 57634,
+      "_source.data.win.eventdata.creationUtcTime": 22980,
+      "_source.agent.id": 14937,
+      "_source.id": 14937,
+      "_source.rule.mail": 14937,
+      "_source.data.win.eventdata.signed": 806,
+      "_source.data.win.eventdata.binary": 509,
+      "_source.predecoder.timestamp": 263,
+      "_source.data.win.eventdata.destinationIsIpv6": 48,
+      "_source.data.win.eventdata.initiated": 48,
+      "_source.data.win.eventdata.sourceIsIpv6": 48,
+      "_source.data.win.eventdata.passwordLastSet": 23,
+      "_source.data.win.eventdata.param3": 3,
+      "_source.data.win.eventdata.nTSTATUS": 3,
+      "_source.data.win.eventdata.targetUserName": 3,
+      "_source.data.level": 2,
+      "_source.data.win.eventdata.previousCreationUtcTime": 1,
+      "_source.data.win.logFileCleared.clientProcessStartKey": 1,
+      "_source.data.sca.check.compliance.cis_csc": 1
+    },
+    "by_transformation_type": {
+      "EXCEL_SERIAL_TIME_DISPLAY_EQUIVALENT": 69352,
+      "BOOLEAN_CASE_EQUIVALENT": 15887,
+      "NUMERIC_PRECISION_OR_VALUE_LOSS": 15440,
+      "NUMERIC_FORMAT_EQUIVALENT": 14948,
+      "EXCEL_SERIAL_DATETIME_EQUIVALENT": 11282,
+      "EXCEL_SERIAL_DATETIME_MISMATCH": 264,
+      "TEXT_VALUE_CHANGED": 4,
+      "EXPLICIT_NULL_EMPTY_CHANGED": 3,
+      "PERCENT_DECIMAL_EQUIVALENT": 2,
+      "EXCEL_SERIAL_TIME_MISMATCH": 2
+    },
+    "by_field_and_transformation_type": {
+      "_source.data.win.eventdata.utcTime|EXCEL_SERIAL_TIME_DISPLAY_EQUIVALENT": 49721,
+      "_source.data.win.eventdata.creationUtcTime|EXCEL_SERIAL_TIME_DISPLAY_EQUIVALENT": 19630,
+      "_source.agent.id|NUMERIC_FORMAT_EQUIVALENT": 14937,
+      "_source.rule.mail|BOOLEAN_CASE_EQUIVALENT": 14937,
+      "_source.id|NUMERIC_PRECISION_OR_VALUE_LOSS": 14930,
+      "_source.data.win.eventdata.utcTime|EXCEL_SERIAL_DATETIME_EQUIVALENT": 7912,
+      "_source.data.win.eventdata.creationUtcTime|EXCEL_SERIAL_DATETIME_EQUIVALENT": 3349,
+      "_source.data.win.eventdata.signed|BOOLEAN_CASE_EQUIVALENT": 806,
+      "_source.data.win.eventdata.binary|NUMERIC_PRECISION_OR_VALUE_LOSS": 509,
+      "_source.predecoder.timestamp|EXCEL_SERIAL_DATETIME_MISMATCH": 249,
+      "_source.data.win.eventdata.destinationIsIpv6|BOOLEAN_CASE_EQUIVALENT": 48,
+      "_source.data.win.eventdata.initiated|BOOLEAN_CASE_EQUIVALENT": 48,
+      "_source.data.win.eventdata.sourceIsIpv6|BOOLEAN_CASE_EQUIVALENT": 48,
+      "_source.data.win.eventdata.passwordLastSet|EXCEL_SERIAL_DATETIME_MISMATCH": 15,
+      "_source.predecoder.timestamp|EXCEL_SERIAL_DATETIME_EQUIVALENT": 14,
+      "_source.id|NUMERIC_FORMAT_EQUIVALENT": 7,
+      "_source.data.win.eventdata.passwordLastSet|EXCEL_SERIAL_DATETIME_EQUIVALENT": 7,
+      "_source.data.win.eventdata.param3|TEXT_VALUE_CHANGED": 3,
+      "_source.data.win.eventdata.nTSTATUS|NUMERIC_FORMAT_EQUIVALENT": 3,
+      "_source.data.win.eventdata.targetUserName|EXPLICIT_NULL_EMPTY_CHANGED": 3,
+      "_source.data.level|PERCENT_DECIMAL_EQUIVALENT": 2,
+      "_source.data.win.eventdata.previousCreationUtcTime|EXCEL_SERIAL_TIME_DISPLAY_EQUIVALENT": 1,
+      "_source.data.win.eventdata.creationUtcTime|EXCEL_SERIAL_TIME_MISMATCH": 1,
+      "_source.data.win.eventdata.utcTime|EXCEL_SERIAL_TIME_MISMATCH": 1,
+      "_source.data.win.logFileCleared.clientProcessStartKey|NUMERIC_PRECISION_OR_VALUE_LOSS": 1,
+      "_source.data.win.eventdata.passwordLastSet|TEXT_VALUE_CHANGED": 1,
+      "_source.data.sca.check.compliance.cis_csc|NUMERIC_FORMAT_EQUIVALENT": 1
+    },
+    "examples": [
+      {
+        "field": "_source.data.win.eventdata.utcTime",
+        "period_value": "02:51.3",
+        "combined_value": "0.001982639",
+        "transformation_type": "EXCEL_SERIAL_TIME_DISPLAY_EQUIVALENT",
+        "is_equivalent": true,
+        "evidence": "minute/second display and Excel serial time agree within rounding tolerance",
+        "_id": "'-0qa7ZMBNimV4ECv_4DV"
+      },
+      {
+        "field": "_source.data.win.eventdata.creationUtcTime",
+        "period_value": "39:52.3",
+        "combined_value": "0.027688657",
+        "transformation_type": "EXCEL_SERIAL_TIME_DISPLAY_EQUIVALENT",
+        "is_equivalent": true,
+        "evidence": "minute/second display and Excel serial time agree within rounding tolerance",
+        "_id": "'-0rz7ZMBNimV4ECv04Lf"
+      },
+      {
+        "field": "_source.data.win.eventdata.utcTime",
+        "period_value": "39:52.3",
+        "combined_value": "0.027688657",
+        "transformation_type": "EXCEL_SERIAL_TIME_DISPLAY_EQUIVALENT",
+        "is_equivalent": true,
+        "evidence": "minute/second display and Excel serial time agree within rounding tolerance",
+        "_id": "'-0rz7ZMBNimV4ECv04Lf"
+      },
+      {
+        "field": "_source.predecoder.timestamp",
+        "period_value": "12/6/2025 21:37",
+        "combined_value": "45632.90084",
+        "transformation_type": "EXCEL_SERIAL_DATETIME_MISMATCH",
+        "is_equivalent": false,
+        "evidence": "datetime and Excel serial resolve to different instants",
+        "_id": "'-1onnZMBW7IoYvN2vDm0"
+      },
+      {
+        "field": "_source.data.win.eventdata.utcTime",
+        "period_value": "51:33.1",
+        "combined_value": "45632.7858",
+        "transformation_type": "EXCEL_SERIAL_TIME_DISPLAY_EQUIVALENT",
+        "is_equivalent": true,
+        "evidence": "minute/second display and Excel serial time agree within rounding tolerance",
+        "_id": "'-1pQnZMBW7IoYvN2LDu9"
+      },
+      {
+        "field": "_source.data.win.eventdata.utcTime",
+        "period_value": "43:23.6",
+        "combined_value": "45633.23847",
+        "transformation_type": "EXCEL_SERIAL_TIME_DISPLAY_EQUIVALENT",
+        "is_equivalent": true,
+        "evidence": "minute/second display and Excel serial time agree within rounding tolerance",
+        "_id": "'-1qln5MBW7IoYvN2AEAV"
+      },
+      {
+        "field": "_source.data.win.eventdata.creationUtcTime",
+        "period_value": "24:28.3",
+        "combined_value": "45632.85033",
+        "transformation_type": "EXCEL_SERIAL_TIME_DISPLAY_EQUIVALENT",
+        "is_equivalent": true,
+        "evidence": "minute/second display and Excel serial time agree within rounding tolerance",
+        "_id": "'-1qlnZMBW7IoYvN2UD0q"
+      },
+      {
+        "field": "_source.data.win.eventdata.utcTime",
+        "period_value": "24:28.3",
+        "combined_value": "45632.85033",
+        "transformation_type": "EXCEL_SERIAL_TIME_DISPLAY_EQUIVALENT",
+        "is_equivalent": true,
+        "evidence": "minute/second display and Excel serial time agree within rounding tolerance",
+        "_id": "'-1qlnZMBW7IoYvN2UD0q"
+      },
+      {
+        "field": "_source.data.win.eventdata.utcTime",
+        "period_value": "44:19.4",
+        "combined_value": "45633.28078",
+        "transformation_type": "EXCEL_SERIAL_TIME_DISPLAY_EQUIVALENT",
+        "is_equivalent": true,
+        "evidence": "minute/second display and Excel serial time agree within rounding tolerance",
+        "_id": "'-1rcn5MBW7IoYvN2v0MH"
+      },
+      {
+        "field": "_source.data.win.eventdata.creationUtcTime",
+        "period_value": "20:11.2",
+        "combined_value": "45634.26402",
+        "transformation_type": "EXCEL_SERIAL_TIME_DISPLAY_EQUIVALENT",
+        "is_equivalent": true,
+        "evidence": "minute/second display and Excel serial time agree within rounding tolerance",
+        "_id": "'-1rtpJMBW7IoYvN2B07T"
+      }
+    ]
   },
   "sample_discrepancies": [
     {

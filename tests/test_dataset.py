@@ -105,8 +105,44 @@ def test_python_runtime_version():
     assert sys.version_info.minor == 13
 
 
-def test_run_preflight_check_generates_valid_json():
-    ws = get_default_workspace_root()
+def test_run_preflight_check_generates_valid_json(tmp_path):
+    ws = tmp_path
+    sr_dir = ws / "data" / "audit" / "source_research"
+    sr_dir.mkdir(parents=True)
+    for filename in [
+        "article_fulltext.xml",
+        "article_sections.txt",
+        "checksums.sha256",
+        "mendeley_v3_files.json",
+        "README.md",
+        "scenario_manifest.csv",
+        "validation_summary.csv",
+    ]:
+        (sr_dir / filename).write_text(f"{filename}\n", encoding="utf-8")
+
+    meta_dir = ws / "data" / "metadata"
+    meta_dir.mkdir(parents=True)
+    (meta_dir / "source_context.json").write_text(
+        json.dumps(
+            {
+                "verification_status": "VERIFIED_CANONICAL_PRESERVED",
+                "canonical_documents": {
+                    "docx": {
+                        "path": "docs/context/RAG_ATTCK_Research_Plan_Updated.docx",
+                        "size_bytes": 1,
+                        "sha256": "0" * 64,
+                    },
+                    "xlsx": {
+                        "path": "docs/context/RAG_ATTCK_Project_Tracker_Updated.xlsx",
+                        "size_bytes": 1,
+                        "sha256": "1" * 64,
+                    },
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
     report = run_preflight_check(ws)
     assert report["gate_result"]["status"] == "PASS"
     assert report["gate_result"]["passed"] is True

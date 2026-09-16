@@ -1,0 +1,45 @@
+# T02: Core Comparator Matrix
+
+This matrix provides a structured, multi-dimensional comparison between **RAG2ATTCK** and the eight core comparator papers/research lines. All entries are grounded in primary sources and formal extraction notes (see [T02_comparator_notes.md](file:///d:/RAG2ATT&CK/docs/related_work/T02_comparator_notes.md)).
+
+---
+
+## Final Comparator Matrix (18 Dimensions)
+
+| Dimension | Yang & Hsu (2026) | AWS CloudTrail RAG (Adediran et al., 2026) | CAM-LDS (Landauer et al., 2026) | TechniqueRAG (Lekssays et al., 2025) | H-TechniqueRAG (Morbiato et al., 2026) | Trace2ATT&CK (Lupinacci et al., 2026) | Okuma et al. (2023) | LADE (Gwak et al., 2026) | **RAG2ATTCK (This Study)** |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **1. Paper** | Yang & Hsu | Adediran et al. | Landauer et al. | Lekssays et al. | Morbiato et al. | Lupinacci et al. | Okuma et al. | Gwak et al. | **RAG2ATTCK** |
+| **2. Year** | 2026 (SITAIBA 2025) | 2026 (CMC) | 2026 (arXiv / C&S) | 2025 (Findings of ACL) | 2026 (arXiv) | 2026 (arXiv) | 2023 (ICSPIS) | 2026 (SecureComm) | **2026** |
+| **3. Input** | Windows Sysmon event logs | AWS CloudTrail JSON logs | Multi-source system & audit logs + IDS alerts | Unstructured CTI report text | Unstructured CTI report text | Kernel-level eBPF events (Provenance Graphs) | Windows Sysmon event logs | Shell command sequences & execution traces | **Windows endpoint telemetry (Sysmon / Security Event Logs)** |
+| **4. Platform** | Windows | AWS Cloud | Linux / Windows / Multi-host | Cross-platform (CTI text) | Cross-platform (CTI text) | Linux | Windows | Cross-platform (host OS) | **Windows** |
+| **5. Primary Task** | Malicious behavior detection & explanation | Cloud threat detection, ATT&CK mapping, STRIDE | Benchmark dataset & zero-shot log interpretation | CTI technique & sub-technique annotation | CTI technique annotation & context optimization | Telemetry-to-ATT&CK mapping & rationale generation | Heuristic log-to-technique correlation | APT detection, ATT&CK mapping & explanation | **Exact ATT&CK Technique / Sub-technique attribution** |
+| **6. ATT&CK Granularity** | Contextual/informal (not primary target) | Technique / Sub-technique (`Txxxx.yyy`) | Top-10 Technique candidate IDs | Technique & Sub-technique (`Txxxx.yyy`) | Two-tier: Tactic $\to$ Technique / Sub-technique | Ranked Technique & Sub-technique candidates | Technique level (`Txxxx`) | Ranked Technique candidates (Top-1/3/10) | **Exact Technique / Sub-technique (`Txxxx.yyy`)** |
+| **7. Uses RAG?** | **Yes** | **Yes** | **No** (pure zero-shot prompting) | **Yes** | **Yes** | **Yes** | **No** (rule-based) | **No** (multi-stage prompting) | **Yes** (controlled contrast: No-RAG vs RAG) |
+| **8. Retrieval Corpus** | Security templates & attack patterns | MITRE ATT&CK Cloud, AWS Catalogue, threat blogs | N/A | MITRE ATT&CK Enterprise KB | MITRE ATT&CK Enterprise (hierarchical taxonomy) | Official MITRE ATT&CK Enterprise KB | N/A | N/A | **Official MITRE ATT&CK Enterprise (pinned STIX v19.2)** |
+| **9. No-RAG Baseline?** | **Yes** (matched LLM without RAG) | **Yes** (matched Gemini 2.5 Pro without RAG) | Evaluates *only* No-RAG zero-shot | **Yes** (direct LLM prompting baseline) | Evaluates flat RAG vs hierarchical RAG | **Yes** (taxonomy-grounded prompting without RAG) | No (heuristic only) | No (prompting only, no RAG variant) | **Yes** (strictly matched single LLM without RAG) |
+| **10. Top-k Analysis?** | **No** (fixed retrieval setup) | **No** (fixed k; ablation deferred to future work) | Output ranking top-10, NOT retrieval depth k | Evaluates candidate pool sizes; no cost ablation | **Yes** (evaluates retrieval depth k vs distractor noise) | Evaluates output rank cutoffs (HR@1/3/5), NOT retrieval depth k | No | Output ranking top-1/3/10, NOT retrieval depth k | **Yes** (systematic retrieval depth ablation: $k \in \{1, 3, 5, 10\}$) |
+| **11. Retrieval Metrics?** | **NOT REPORTED** | **NOT REPORTED** (only error case categorization) | N/A | **Yes** (Hit@k / Recall@k reported for retriever) | **Yes** (Hit rate, search space reduction %) | **NOT REPORTED** (only end-to-end HR@k reported) | N/A | N/A | **Yes** (explicit Retriever Recall@k reported) |
+| **12. Failure Decomposition?** | **No** | Qualitative error triage on 20 cases (60% retrieval) | No | Analyzes retriever vs generator errors | Explores distractor errors in flat vs hierarchical | No (treats RAG pipeline as single end-to-end box) | No | No | **Yes** (formal split: Retrieval Failure vs Generation/Selection Failure) |
+| **13. Ground Truth Source** | Open-source attacks + simulated benign activity | Expert annotation + Stratus Red Team executions | Scripted execution of 7 scenarios (198 steps) | Expert-annotated CTI datasets (TRAM, RC-Threat) | Expert-annotated CTI benchmarks | 347 Linux Atomic Red Team test executions | Atomic Red Team simulation metadata | DARPA TC & simulated APT scenarios | **Deterministic execution provenance from public Windows benchmark** |
+| **14. Leakage Controls?** | NOT REPORTED | Discusses `stratus-red-team` agent markers | Demonstrates that IDS alerts cause severe leakage | Curated text; no detector rules in input | Curated text benchmarks | Employs eBPF syscalls; no detector rule metadata | Relies on execution metadata | Evaluates command lines; no rule metadata | **Strict field whitelist; rule/alert/label metadata stripped** |
+| **15. Main Metric(s)** | Precision, F1-score, False Positive Rate (FPR) | Accuracy, Precision, Recall, Macro-F1, Latency, Cost | Technique Rank (#1–#10), Hit rate, Likert confidence | Precision, Recall, Macro-F1, Micro-F1, Hit@k | Macro-F1, Latency, API call count reduction | HR@1/3/5, MRR@5, NDCG@5, Empty Output Rate | Detection rate, accuracy | Precision, Recall, F1, Top-1/3/10 output accuracy | **Exact Accuracy, Macro-F1, Recall@k, Latency, Token Usage** |
+| **16. Closest Similarity to RAG2ATTCK** | Windows Sysmon logs + matched No-RAG vs RAG evaluation | Controlled No-RAG vs RAG evaluation for exact ATT&CK mapping | Exact ATT&CK technique prediction from command logs + leakage focus | MITRE ATT&CK technique RAG + retrieval quality analysis | Investigating retrieval depth k and distractor noise in ATT&CK RAG | Telemetry-to-ATT&CK mapping comparing prompting vs RAG | Windows Sysmon telemetry mapped to ATT&CK techniques | Host-side execution command evidence mapped to ATT&CK | **Integrates telemetry, exact attribution, controlled contrast, and diagnostics** |
+| **17. Key Difference from RAG2ATTCK** | Binary malicious detection, process trees, no exact ID target | CloudTrail cloud API logs, no retrieval k ablation | Zero-shot only (no RAG), multi-source Linux/network logs | Unstructured CTI text, fine-tunes generator model | Unstructured CTI text, complex hierarchical routing | Linux eBPF telemetry, complex provenance graphs, no k ablation | Non-LLM rule heuristic from 2023, no generative AI | Zero-shot prompting only (no RAG), small sample size (35 seqs) | **Windows endpoint logs + exact ID + Top-k ablation + failure decomposition** |
+| **18. Novelty Constraint** | Do NOT claim novelty for Sysmon RAG or No-RAG vs RAG contrast | Do NOT claim novelty for controlled ATT&CK RAG vs baseline | Do NOT claim novelty for zero-shot LLM log attribution | Do NOT claim novelty for RAG for ATT&CK or retrieval metrics | Do NOT claim novelty for Top-k context noise trade-offs | Do NOT claim novelty for telemetry-to-ATT&CK RAG | Do NOT claim novelty for Windows Sysmon $\to$ ATT&CK mapping | Do NOT claim novelty for command logs or ranked candidates | **Positioned strictly as a replication-and-extension empirical study** |
+
+---
+
+## Key Synthesis Takeaways
+
+1. **No-RAG vs. RAG Precedents:**
+   - Controlled No-RAG vs. RAG comparisons have been executed in Windows Sysmon for *binary detection* (Yang & Hsu, 2026), in AWS CloudTrail for *exact cloud ATT&CK mapping* (Adediran et al., 2026), and in Linux eBPF for *graph-based ATT&CK mapping* (Trace2ATT&CK, 2026).
+   - Therefore, evaluating RAG against an unaugmented baseline is **ALREADY ESTABLISHED** in adjacent domains.
+
+2. **Retrieval-Quality & Top-k Precedents:**
+   - Measuring retrieval quality (Recall@k / Hit@k) in ATT&CK-grounded RAG was established in CTI text by TechniqueRAG (2025).
+   - Evaluating retrieval depth $k$ against context noise, distractors, and latency was established in CTI text by H-TechniqueRAG (2026).
+   - Therefore, Top-k context trade-offs and retrieval evaluation are **ALREADY ESTABLISHED** globally.
+
+3. **Setting-Specific Defensible Position for RAG2ATTCK:**
+   - No prior study executes the combination of: (1) Windows endpoint logs, (2) exact technique/sub-technique attribution, (3) controlled single-LLM No-RAG vs. RAG contrast, (4) decoupled retrieval-failure vs. generation-failure decomposition, and (5) systematic retrieval depth ($k \in \{1, 3, 5, 10\}$) cost/latency ablation.
+   - This solidly confirms the project's positioning as a **controlled replication-and-extension study**.

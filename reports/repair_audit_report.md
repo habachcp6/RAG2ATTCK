@@ -1,5 +1,7 @@
 # RAG2ATTCK Corrective Audit & Repair Report: Tasks 0–4 & Task 5-Acquire
 
+> Corrective-audit note (2026-09-16): this prior repair report is superseded by `reports/corrective_audit_v2.md`. In particular, the corrected Task 2 semantic reconciliation remains unresolved, so Task 3 and Task 4 are not validly executable as current production pipeline stages without a human decision.
+
 - **Date**: 2026-09-16
 - **Repository**: [habachcp6/RAG2ATTCK](https://github.com/habachcp6/RAG2ATTCK)
 - **Target Directory**: `D:\RAG2ATT&CK`

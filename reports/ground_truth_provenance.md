@@ -1,5 +1,7 @@
 # Ground Truth Provenance and Lineage Audit Report
 
+> Corrective-audit note (2026-09-16): this report is retained as a historical Task 4 diagnostic from the prior pass. The corrected pipeline gate now stops at unresolved Task 2 reconciliation before Task 3/Task 4 production execution; see `reports/corrective_audit_v2.md`.
+
 - **Date**: 2026-09-16 04:10:11 UTC
 - **Dataset**: Windows-APT 2025 v3 (`b8fmtzvpy8.3`)
 - **Task**: Task 4 — Verify independent event-level ground truth

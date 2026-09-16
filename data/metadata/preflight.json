@@ -2,7 +2,7 @@
   "meta": {
     "schema_version": "1.0.0",
     "task": "T0_PREFLIGHT",
-    "timestamp_utc": "2026-09-16T04:16:16.797458+00:00",
+    "timestamp_utc": "2026-09-16T16:34:26.765231+00:00",
     "hostname": "Laptop-cua-bach",
     "os": {
       "system": "Windows",
@@ -11,7 +11,7 @@
       "architecture": "AMD64"
     },
     "python_version": "3.13.0 (tags/v3.13.0:60403a5, Oct  7 2024, 09:38:07) [MSC v.1941 64 bit (AMD64)]",
-    "python_executable": "D:\\RAG2ATT&CK\\.venv\\Scripts\\python.exe",
+    "python_executable": "C:\\Program Files\\Python313\\python.exe",
     "workspace_root": "D:\\RAG2ATT&CK"
   },
   "path_validation": {
@@ -112,9 +112,9 @@
   "capacity_assessment": {
     "drive": "D:",
     "live_total_bytes": 64578646016,
-    "live_used_bytes": 32522731520,
-    "live_free_bytes": 32055914496,
-    "live_free_gib": 29.85,
+    "live_used_bytes": 32656711680,
+    "live_free_bytes": 31921934336,
+    "live_free_gib": 29.73,
     "estimates_breakdown_bytes": {
       "downloads_and_staging_bytes": 587202560,
       "extraction_and_raw_dataset_bytes": 566231040,
@@ -128,13 +128,13 @@
     "minimum_floor_bytes": 5368709120,
     "effective_required_free_bytes": 5368709120,
     "effective_required_free_gib": 5.0,
-    "headroom_bytes": 26687205376,
-    "headroom_gib": 24.85,
+    "headroom_bytes": 26553225216,
+    "headroom_gib": 24.73,
     "capacity_sufficient": true
   },
   "source_context": {
     "verification_status": "VERIFIED_CANONICAL_PRESERVED",
-    "verification_timestamp_utc": "2026-09-16T04:16:16.797411+00:00",
+    "verification_timestamp_utc": "2026-09-16T16:34:26.765197+00:00",
     "canonical_documents": {
       "docx": {
         "path": "Context/RAG2ATTCK-20260915T154859Z-1-001/RAG2ATTCK/RAG_ATTCK_Research_Plan_Updated.docx",

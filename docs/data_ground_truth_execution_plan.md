@@ -27,7 +27,9 @@ T0 ──→ T1 ──→ T2 ──→ T3 ──→ T4 ──┬──→ T6 ─
 - **T3 — Schema Profiling, Observation Units & Record Indexing**:
   - Profile 16 period CSVs with quoted/multiline CSV parsing.
   - Strict parse accounting: `source_logical_rows = successfully_parsed_records + rejected_malformed_records`.
-  - Deterministic opaque record ID formula: `rec_{SHA256(file_sha256 + ':' + ordinal)[:16]}`.
+  - Deterministic opaque record ID formula: `rec_{SHA256(file_sha256 + ':' + logical_record_ordinal)[:16]}`.
+  - The logical record ordinal is the 0-indexed CSV record ordinal after the header. A malformed logical record keeps its ordinal and must not renumber later valid observations.
+  - Field profiling distinguishes schema-absent fields, present-but-empty fields, explicit null literals, and non-empty values.
   - Row-level deterministic index (`record_index.csv`) and parse error ledger (`parse_error_ledger.json`).
 - **T4 — Verify Independent Event-Level Ground Truth**:
   - Independent lineage verification: inspect all candidate lineage sources (telemetry CSVs, scenario manifests, validation summaries, documentation, publication XML, timestamps, Caldera references).
@@ -48,10 +50,21 @@ T0 ──→ T1 ──→ T2 ──→ T3 ──→ T4 ──┬──→ T6 ─
 ---
 
 ## 3. Prerequisite Enforcement & Execution Guardrails
-Each CLI stage programmatically validates predecessor artifacts and hashes:
+Each CLI stage programmatically validates predecessor artifacts and hashes through reusable validators in `src/artifacts.py`. A file with the expected name is not sufficient.
 1. `preflight`: Standalone; produces `data/metadata/preflight.json` and `data/metadata/source_context.json`.
 2. `acquire-attack`: Requires valid `preflight.json`. Produces `attack/raw/enterprise-v19.2/` and `data/metadata/attack_manifest.json`.
 3. `acquire-dataset`: Requires valid `preflight.json`. Produces `data/raw/windows_apt_2025/v3/` and `data/metadata/dataset_manifest.json`.
-4. `reconcile`: Requires `dataset_manifest.json`. Produces `data/metadata/reconciliation_log.json` and `data/audit/reconciliation_report.md`.
-5. `profile`: Requires `dataset_manifest.json` and `reconciliation_log.json`. Produces `data/metadata/schema_profile.json`, `field_inventory.csv`, `record_index.csv`, `parse_error_ledger.json`.
-6. `audit-gt`: Requires `schema_profile.json`, `field_inventory.csv`, `record_index.csv`. Produces `ground_truth_register.json`, `join_diagnostics.json`, `gate_blocker_task4.json`, `reports/ground_truth_provenance.md`, `reports/gate_blocker_task4.md`.
+4. `reconcile`: Requires valid `preflight.json` and a hash-verified `dataset_manifest.json`. Produces `data/metadata/reconciliation_log.json` and `data/audit/reconciliation_report.md`.
+5. `profile`: Requires valid `preflight.json`, a hash-verified `dataset_manifest.json`, and a Task 2 reconciliation artifact whose exact or semantic/representation reconciliation is resolved. If `reconciliation_log.json` remains `RECONCILIATION_DIVERGENT` with unresolved discrepancies, this stage exits before generating T3 artifacts.
+6. `audit-gt`: Requires the same resolved Task 2 gate plus validated `schema_profile.json`, `parse_error_ledger.json`, and `record_index.json`/`record_index.csv` hash integrity. It produces `ground_truth_register.json`, `join_diagnostics.json`, `gate_blocker_task4.json`, `reports/ground_truth_provenance.md`, and `reports/gate_blocker_task4.md` only after prerequisites pass.
+
+## 4. Corrected Current-State Gate
+
+The corrected Task 2 artifact currently reports:
+
+- raw exact equality: false
+- semantic/representation reconciliation: unresolved
+- unresolved non-equivalent cell differences: 15,713
+- gate result: `RECONCILIATION_DIVERGENT`
+
+Therefore, for the current production workspace, Task 3 and Task 4 artifacts from earlier runs are retained only as historical diagnostics. They are not validly executable outputs of the corrected pipeline until a human decision resolves or waives the Task 2 discrepancy.

@@ -150,6 +150,9 @@ Pipeline: registry → validator → generator → approval report → dataset.
 - 64 semantic template families (52 test, 12 dev), with no provider/EventID or
   rationale placeholders
 - Evidence predicates in structured DSL (eq, contains_ci, endswith_ci, all/any/not)
+- Relation operands use enforced signatures (for example `process_then_file`
+  requires process/file event keys; `temporal_before` requires before/after;
+  `same_logon` requires an events list with logon identifiers)
 - Canonical telemetry tuples: Security-Auditing/Security for EID 4688, 4697,
   4698, 4720; Eventlog/Security for EID 1102; Sysmon/Operational for EID 1,
   3, 11, 13

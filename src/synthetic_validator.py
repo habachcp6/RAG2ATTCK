@@ -90,6 +90,26 @@ PREDICATE_RELATIONS = {
 }
 GENERIC_METADATA_PLACEHOLDERS = {"dev", "benign", "ambiguous", "any", "multi", "ps", "reg", "svc", "net"}
 
+RELATION_SCHEMAS = {
+    "parent_child": {"required": {"parent", "child"}, "allowed": {"parent", "child"}},
+    "same_host": {"required": {"events"}, "allowed": {"events"}},
+    "same_user": {"required": {"events"}, "allowed": {"events"}},
+    "same_logon": {"required": {"events"}, "allowed": {"events"}},
+    "same_process_guid": {"required": {"events"}, "allowed": {"events"}},
+    "same_process": {"required": {"events"}, "allowed": {"events"}},
+    "temporal_before": {"required": {"before", "after"}, "allowed": {"before", "after"}},
+    "temporal_within": {
+        "required": {"before", "after", "within_seconds"},
+        "allowed": {"before", "after", "within_seconds"},
+    },
+    "network_then_file": {"required": {"network", "file"}, "allowed": {"network", "file"}},
+    "process_then_file": {"required": {"process", "file"}, "allowed": {"process", "file"}},
+    "process_then_network": {"required": {"process", "network"}, "allowed": {"process", "network"}},
+    "process_then_registry": {"required": {"process", "registry"}, "allowed": {"process", "registry"}},
+    "process_then_task": {"required": {"process", "task"}, "allowed": {"process", "task"}},
+    "process_then_service": {"required": {"process", "service"}, "allowed": {"process", "service"}},
+}
+
 
 # ============================================================
 # Authoritative registry validation (Stage A)
@@ -127,20 +147,6 @@ def _registry_predicate_leaves(predicate: Any) -> List[Dict[str, Any]]:
     return leaves
 
 
-def _registry_predicate_has_negative_clause(predicate: Any) -> bool:
-    """Whether a predicate contains an explicit negative/allowlist clause."""
-    if not isinstance(predicate, dict):
-        return False
-    if "not" in predicate:
-        return True
-    if predicate.get("op") in {"neq", "not_in"}:
-        return True
-    for key in ("all", "any"):
-        if any(_registry_predicate_has_negative_clause(item) for item in predicate.get(key, [])):
-            return True
-    return False
-
-
 def _validate_registry_dsl(
     predicate: Any,
     path: str,
@@ -176,10 +182,76 @@ def _validate_registry_dsl(
 
     if "relation" in keys:
         relation_name = predicate.get("relation")
-        if relation_name not in PREDICATE_RELATIONS:
+        schema = RELATION_SCHEMAS.get(relation_name)
+        if schema is None:
             result.add_error(f"{path}: unsupported relation {relation_name!r}")
-        if len(keys) < 2 or any(value in (None, "", [], {}) for key, value in predicate.items() if key != "relation"):
-            result.add_error(f"{path}: relation must identify related events")
+            return
+        argument_keys = keys - {"relation"}
+        missing = schema["required"] - argument_keys
+        extra = argument_keys - schema["allowed"]
+        if missing:
+            result.add_error(f"{path}: relation {relation_name} missing arguments {sorted(missing)}")
+        if extra:
+            result.add_error(f"{path}: relation {relation_name} has invalid arguments {sorted(extra)}")
+        if missing or extra:
+            return
+        if "events" in schema["required"]:
+            events = predicate.get("events")
+            if not isinstance(events, list) or len(events) < 2 or any(event not in allowed_events for event in events):
+                result.add_error(f"{path}: relation {relation_name}.events must list at least two view event keys")
+            elif relation_name == "same_logon":
+                for event in events:
+                    fields = allowed_events[event]
+                    if "SubjectLogonId" not in fields and "LogonId" not in fields:
+                        result.add_error(f"{path}: same_logon operand {event} has no logon identifier field")
+            elif relation_name == "same_user":
+                for event in events:
+                    fields = allowed_events[event]
+                    if not {"SubjectUserName", "User", "TargetUserName"}.intersection(fields):
+                        result.add_error(f"{path}: same_user operand {event} has no user identifier field")
+            elif relation_name == "same_host":
+                for event in events:
+                    if "Computer" not in allowed_events[event]:
+                        result.add_error(f"{path}: same_host operand {event} has no host identifier field")
+            elif relation_name in {"same_process", "same_process_guid"}:
+                for event in events:
+                    fields = allowed_events[event]
+                    identifiers = {"ProcessGuid"} if relation_name == "same_process_guid" else {"ProcessGuid", "ProcessId", "NewProcessId"}
+                    if not identifiers.intersection(fields):
+                        result.add_error(f"{path}: {relation_name} operand {event} has no process identifier field")
+        else:
+            event_arguments = schema["required"] - {"within_seconds"}
+            for argument in event_arguments:
+                value = predicate.get(argument)
+                if not isinstance(value, str) or not value or value not in allowed_events:
+                    result.add_error(f"{path}: relation {relation_name}.{argument} must name a view event key")
+            if relation_name == "temporal_within" and not isinstance(predicate.get("within_seconds"), (int, float)):
+                result.add_error(f"{path}: temporal_within.within_seconds must be numeric")
+            relation_classes = {
+                "network_then_file": ("network", "file"),
+                "process_then_file": ("process", "file"),
+                "process_then_network": ("process", "network"),
+                "process_then_registry": ("process", "registry"),
+                "process_then_task": ("process", "task"),
+                "process_then_service": ("process", "service"),
+            }
+            expected_classes = relation_classes.get(relation_name)
+            if expected_classes:
+                class_fields = {
+                    "process": {"Image", "NewProcessName"},
+                    "file": {"TargetFilename"},
+                    "network": {"DestinationIp", "DestinationPort"},
+                    "registry": {"TargetObject"},
+                    "task": {"TaskName", "TaskContent"},
+                    "service": {"ServiceName", "ServiceFileName"},
+                }
+                for expected_class in expected_classes:
+                    argument = expected_class
+                    event_name = predicate.get(argument)
+                    if event_name in allowed_events and not class_fields[expected_class].intersection(allowed_events[event_name]):
+                        result.add_error(
+                            f"{path}: {relation_name}.{argument}={event_name} is not {expected_class} telemetry"
+                        )
         return
 
     required_leaf_keys = {"event", "field", "op", "value"}
@@ -284,8 +356,15 @@ def _registry_ground_truth(
         predicate_leaves = _registry_predicate_leaves(predicate)
     if not predicate_leaves:
         result.add_error(f"{path}: evidence predicate has no visible field evidence")
-    if status == "unmapped" and not _registry_predicate_has_negative_clause(predicate):
-        result.add_error(f"{path}: unmapped predicate lacks affirmative negative/allowlist evidence")
+    if status == "unmapped":
+        affirmative_leaves = [
+            leaf for leaf in predicate_leaves
+            if leaf.get("field") != "EventID"
+            and leaf.get("op") not in {"neq", "not_in"}
+            and leaf.get("value") not in (None, "", [])
+        ]
+        if not affirmative_leaves:
+            result.add_error(f"{path}: unmapped predicate lacks affirmative benign evidence")
     rationale = gt.get("rationale")
     if not isinstance(rationale, str) or not rationale.strip():
         result.add_error(f"{path}: empty rationale")
@@ -302,6 +381,59 @@ def _registry_structure_signature(family: Dict[str, Any]) -> str:
         "contextual_event_specs": family.get("contextual_event_specs"),
     }
     return json.dumps(signature, sort_keys=True, ensure_ascii=False)
+
+
+def _validate_registry_field_roles(family: Dict[str, Any], result: ValidationResult) -> None:
+    """Reject predicates that use a valid telemetry field for the wrong role."""
+    fid = family.get("template_family_id", "<missing>")
+    predicates: List[Tuple[str, List[Dict[str, Any]]]] = []
+    for gt_key in ("single_ground_truth", "contextual_ground_truth"):
+        gt = family.get(gt_key) or {}
+        predicate = gt.get("evidence_predicate") if isinstance(gt, dict) else None
+        if isinstance(predicate, dict) and any(str(key).startswith("T") for key in predicate):
+            for tid, technique_predicate in predicate.items():
+                predicates.append((f"{gt_key}.{tid}", _registry_predicate_leaves(technique_predicate)))
+        else:
+            predicates.append((gt_key, _registry_predicate_leaves(predicate)))
+
+    anchor_event_id = (family.get("anchor") or {}).get("windows_event_id")
+    for predicate_name, leaves in predicates:
+        for leaf in leaves:
+            field = leaf.get("field")
+            value = str(leaf.get("value", "")).casefold()
+            if anchor_event_id == 13 and field == "Details" and any(
+                marker in value for marker in ("currentversion\\run", "\\runonce", "\\startup")
+            ):
+                result.add_error(
+                    f"{fid}.{predicate_name}: Sysmon EID 13 registry-key path belongs in TargetObject, not Details"
+                )
+            if anchor_event_id == 13 and field == "TargetObject" and "program files" in value:
+                result.add_error(
+                    f"{fid}.{predicate_name}: Sysmon EID 13 executable path belongs in Details, not TargetObject"
+                )
+            if anchor_event_id == 4720 and field == "SubjectUserName" and value in {"backupsvc", "jdoe", "svc_"}:
+                result.add_error(
+                    f"{fid}.{predicate_name}: SubjectUserName is the account creator; created-account identity belongs in TargetUserName"
+                )
+            if field in {"SubjectUserName", "SubjectLogonId"} and "-encodedcommand" in value:
+                result.add_error(
+                    f"{fid}.{predicate_name}: -EncodedCommand is not meaningful in {field}"
+                )
+
+    if fid == "TF_UNMAP_ACCT":
+        leaves = next((items for name, items in predicates if name == "single_ground_truth"), [])
+        has_target = any(
+            leaf.get("field") == "TargetUserName" and leaf.get("value") == "backupsvc"
+            for leaf in leaves
+        )
+        has_actor = any(
+            leaf.get("field") == "SubjectUserName" and leaf.get("value") == "Administrator"
+            for leaf in leaves
+        )
+        if not has_target or not has_actor:
+            result.add_error(
+                f"{fid}: benign account provisioning must identify backupsvc in TargetUserName and Administrator in SubjectUserName"
+            )
 
 
 def validate_template_registry(
@@ -433,6 +565,7 @@ def validate_template_registry(
 
         _registry_ground_truth(family, "single_ground_truth", {"anchor": event_schemas.get("anchor", ())}, stix_names, result)
         _registry_ground_truth(family, "contextual_ground_truth", event_schemas, stix_names, result)
+        _validate_registry_field_roles(family, result)
 
         single = family.get("single_ground_truth") or {}
         single_status = single.get("status")
@@ -461,6 +594,8 @@ def validate_template_registry(
             result.add_error(f"{fid}: EID 1102 must use Microsoft-Windows-Eventlog")
         if "T1685.005" in all_ids and anchor.get("windows_event_id") == 1102 and single_status == "mapped":
             result.add_error(f"{fid}: EID 1102-only single view cannot be mapped to T1685.005")
+        if anchor.get("windows_event_id") == 1102 and single_status == "unmapped":
+            result.add_error(f"{fid}: EID 1102-only single view cannot be unmapped from subject metadata alone")
         if anchor.get("windows_event_id") == 4697 and (
             anchor.get("provider") != "Microsoft-Windows-Security-Auditing" or anchor.get("channel") != "Security"
         ):

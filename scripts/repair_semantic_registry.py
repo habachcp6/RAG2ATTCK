@@ -329,7 +329,7 @@ def build() -> dict[str, Any]:
         spec("TF_T1543_003_D", "mapped_single", "test", "Windows service installed with a DLL entry point and LocalSystem account",
              a(SECURITY, SECURITY_CHANNEL, 4697, "Security 4697 where ServiceFileName uses svchost -k with an unusual DLL path and LocalSystem"),
              gt("mapped", ["T1543.003"], all_of(leaf("anchor", "ServiceFileName", "contains_ci", "svchost.exe"), leaf("anchor", "ServiceFileName", "contains_ci", "C:\\Users\\Public\\"), leaf("anchor", "ServiceAccount", "contains_ci", "LocalSystem")), "The service-install event records a service-hosted DLL path in a user-writable location under LocalSystem."),
-             gt("mapped", ["T1543.003"], all_of(leaf("anchor", "ServiceFileName", "contains_ci", "svchost.exe"), leaf("anchor", "ServiceFileName", "contains_ci", "C:\\Users\\Public\\"), leaf("context_1", "TargetFilename", "contains_ci", ".dll"), relation("process_then_service", "process", "context_1", "service", "anchor")), "The related DLL file event corroborates the installed service image and service-hosted execution."),
+             gt("mapped", ["T1543.003"], all_of(leaf("anchor", "ServiceFileName", "contains_ci", "svchost.exe"), leaf("anchor", "ServiceFileName", "contains_ci", "C:\\Users\\Public\\"), leaf("context_1", "TargetFilename", "contains_ci", ".dll"), relation("same_host", "events", ["context_1", "anchor"])), "The related DLL file event corroborates the installed service image and service-hosted execution."),
              ["A DLL file is created at the service image path before the service starts."],
              [ctx("context_1", SYSMON, SYSMON_CHANNEL, 11, "DLL written for the installed service")],
              "A vendor service may use svchost hosting, but the DLL must be signed and installed in a protected vendor directory.",
@@ -351,7 +351,7 @@ def build() -> dict[str, Any]:
         spec("TF_T1136_001_A", "mapped_single", "test", "Local account created through net user with a service-like name",
              a(SECURITY, SECURITY_CHANNEL, 4688, "Security 4688 where cmd.exe runs net user /add for a never-expiring service-like account"),
              gt("mapped", ["T1136.001"], all_of(leaf("anchor", "NewProcessName", "endswith_ci", "\\cmd.exe"), leaf("anchor", "CommandLine", "contains_ci", "net user"), leaf("anchor", "CommandLine", "contains_ci", "/add"), leaf("anchor", "CommandLine", "contains_ci", "/expires:never")), "The process event visibly records creation of a local account through net user with persistence-oriented account parameters."),
-             gt("mapped", ["T1136.001"], all_of(leaf("anchor", "NewProcessName", "endswith_ci", "\\cmd.exe"), leaf("anchor", "CommandLine", "contains_ci", "net user"), leaf("context_1", "TargetUserName", "endswith_ci", "$"), relation("process_then_network", "process", "anchor", "account", "context_1")), "The contextual account-created event links the net user command to the created local account."),
+             gt("mapped", ["T1136.001"], all_of(leaf("anchor", "NewProcessName", "endswith_ci", "\\cmd.exe"), leaf("anchor", "CommandLine", "contains_ci", "net user"), leaf("context_1", "TargetUserName", "endswith_ci", "$"), relation("same_host", "events", ["anchor", "context_1"])), "The contextual account-created event links the net user command to the created local account."),
              ["Security 4720 confirms the account named by the command line was created on the same host."],
              [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4720, "Local account creation corresponding to net user command")],
              "A service account created through an approved provisioning runbook is a benign alternative; ticket, owner, and managed naming are counter-evidence.",
@@ -369,7 +369,7 @@ def build() -> dict[str, Any]:
         spec("TF_T1136_001_C", "mapped_single", "test", "PowerShell New-LocalUser provisioning with non-expiring account options",
              a(SYSMON, SYSMON_CHANNEL, 1, "Sysmon process creation where pwsh.exe invokes New-LocalUser with AccountNeverExpires"),
              gt("mapped", ["T1136.001"], all_of(leaf("anchor", "Image", "endswith_ci", "\\pwsh.exe"), leaf("anchor", "CommandLine", "contains_ci", "New-LocalUser"), leaf("anchor", "CommandLine", "contains_ci", "AccountNeverExpires")), "The PowerShell process command line explicitly invokes New-LocalUser with a persistence-oriented option."),
-             gt("mapped", ["T1136.001"], all_of(leaf("anchor", "Image", "endswith_ci", "\\pwsh.exe"), leaf("anchor", "CommandLine", "contains_ci", "New-LocalUser"), leaf("context_1", "TargetUserName", "contains_ci", "svc_"), relation("process_then_network", "process", "anchor", "account", "context_1")), "The contextual 4720 record links the PowerShell provisioning command to the created local account."),
+             gt("mapped", ["T1136.001"], all_of(leaf("anchor", "Image", "endswith_ci", "\\pwsh.exe"), leaf("anchor", "CommandLine", "contains_ci", "New-LocalUser"), leaf("context_1", "TargetUserName", "contains_ci", "svc_"), relation("same_host", "events", ["anchor", "context_1"])), "The contextual 4720 record links the PowerShell provisioning command to the created local account."),
              ["Security 4720 records creation of the service-like account after the PowerShell command."],
              [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4720, "Account created by New-LocalUser")],
              "Golden-image provisioning may use New-LocalUser; approved image build identity and protected script location are counter-evidence.",
@@ -408,7 +408,7 @@ def build() -> dict[str, Any]:
         spec("TF_T1547_001_C", "mapped_single", "test", "PowerShell writes a RunOnce value to a public script",
              a(SYSMON, SYSMON_CHANNEL, 13, "Sysmon 13 where PowerShell writes a RunOnce value pointing to a public script"),
              gt("mapped", ["T1547.001"], all_of(leaf("anchor", "Image", "endswith_ci", "\\powershell.exe"), leaf("anchor", "TargetObject", "contains_ci", "\\RunOnce\\"), leaf("anchor", "Details", "contains_ci", "C:\\Users\\Public\\"), leaf("anchor", "Details", "endswith_ci", ".ps1")), "The registry event records PowerShell creating a RunOnce persistence value with a user-writable script target."),
-             gt("mapped", ["T1547.001"], all_of(leaf("anchor", "TargetObject", "contains_ci", "\\RunOnce\\"), leaf("anchor", "Details", "contains_ci", "C:\\Users\\Public\\"), leaf("context_1", "TargetFilename", "endswith_ci", ".ps1"), relation("process_then_registry", "process", "anchor", "registry", "context_1")), "The file event corroborates the script target used by the RunOnce value."),
+             gt("mapped", ["T1547.001"], all_of(leaf("anchor", "TargetObject", "contains_ci", "\\RunOnce\\"), leaf("anchor", "Details", "contains_ci", "C:\\Users\\Public\\"), leaf("context_1", "TargetFilename", "endswith_ci", ".ps1"), relation("same_process", "events", ["anchor", "context_1"])), "The file event corroborates the script target used by the RunOnce value."),
              ["The referenced PowerShell script is created before the RunOnce registry write."],
              [ctx("context_1", SYSMON, SYSMON_CHANNEL, 11, "PowerShell script written for RunOnce execution")],
              "A software installer can use RunOnce for a one-time setup; signed script and managed installer parent are counter-evidence.",
@@ -430,7 +430,7 @@ def build() -> dict[str, Any]:
         spec("TF_T1685_005_A", "mapped_single", "test", "Security audit log cleared by wevtutil, resolved only with process context",
              eventlog_anchor,
              gt("ambiguous", [], all_of(leaf("anchor", "EventID", "eq", 1102), leaf("anchor", "SubjectUserName", "neq", "")), "EID 1102 establishes that the Security audit log was cleared, but does not identify wevtutil or adversarial intent."),
-             gt("mapped", ["T1685.005"], all_of(leaf("anchor", "EventID", "eq", 1102), leaf("context_1", "NewProcessName", "endswith_ci", "\\wevtutil.exe"), leaf("context_1", "CommandLine", "contains_ci", " cl Security"), relation("process_then_network", "process", "context_1", "log_clear", "anchor")), "The linked wevtutil process explicitly clears the Security log and supplies the mechanism missing from EID 1102."),
+             gt("mapped", ["T1685.005"], all_of(leaf("anchor", "EventID", "eq", 1102), leaf("context_1", "NewProcessName", "endswith_ci", "\\wevtutil.exe"), leaf("context_1", "CommandLine", "contains_ci", " cl Security"), relation("temporal_before", "before", "context_1", "after", "anchor"), relation("same_logon", "events", ["context_1", "anchor"])), "The linked wevtutil process explicitly clears the Security log and supplies the mechanism missing from EID 1102."),
              ["A Security 4688 process event for wevtutil.exe precedes EID 1102 in the same logon."],
              [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "wevtutil.exe process that clears the Security log")],
              "Authorized log maintenance may use wevtutil; a scheduled maintenance identity and approved change window are counter-evidence.",
@@ -439,7 +439,7 @@ def build() -> dict[str, Any]:
         spec("TF_T1685_005_B", "mapped_single", "test", "Security audit log cleared by PowerShell Clear-EventLog",
              a(EVENTLOG, SECURITY_CHANNEL, 1102, "Security-channel Windows Eventlog EID 1102 for a non-empty subject user"),
              gt("ambiguous", [], all_of(leaf("anchor", "EventID", "eq", 1102), leaf("anchor", "SubjectLogonId", "neq", "")), "The audit-log-cleared event is genuine telemetry but cannot identify a PowerShell mechanism from the anchor alone."),
-             gt("mapped", ["T1685.005"], all_of(leaf("anchor", "EventID", "eq", 1102), leaf("context_1", "Image", "endswith_ci", "\\powershell.exe"), any_of(leaf("context_1", "CommandLine", "contains_ci", "Clear-EventLog"), leaf("context_1", "CommandLine", "contains_ci", "wevtutil")), relation("process_then_network", "process", "context_1", "log_clear", "anchor")), "PowerShell Clear-EventLog or equivalent log-clear syntax is visible in the linked process event, so T1685.005 is supported."),
+             gt("mapped", ["T1685.005"], all_of(leaf("anchor", "EventID", "eq", 1102), leaf("context_1", "Image", "endswith_ci", "\\powershell.exe"), any_of(leaf("context_1", "CommandLine", "contains_ci", "Clear-EventLog"), leaf("context_1", "CommandLine", "contains_ci", "wevtutil")), relation("temporal_before", "before", "context_1", "after", "anchor"), relation("same_logon", "events", ["context_1", "anchor"])), "PowerShell Clear-EventLog or equivalent log-clear syntax is visible in the linked process event, so T1685.005 is supported."),
              ["PowerShell executes Clear-EventLog under the same subject logon before EID 1102."],
              [ctx("context_1", SYSMON, SYSMON_CHANNEL, 1, "PowerShell log-clear command")],
              "A compliance script may clear a test log during rotation; maintenance identity and an approved rotation record are counter-evidence.",
@@ -448,7 +448,7 @@ def build() -> dict[str, Any]:
         spec("TF_T1685_005_C", "mapped_single", "test", "Security audit log cleared through an event-log API call",
              a(EVENTLOG, SECURITY_CHANNEL, 1102, "Security-channel Windows Eventlog EID 1102 with populated subject metadata"),
              gt("ambiguous", [], all_of(leaf("anchor", "EventID", "eq", 1102), leaf("anchor", "SubjectUserName", "neq", "")), "The anchor only reports the result of log clearing; an API mechanism is not visible in EID 1102."),
-             gt("mapped", ["T1685.005"], all_of(leaf("anchor", "EventID", "eq", 1102), leaf("context_1", "CommandLine", "contains_ci", "EvtClearLog"), leaf("context_1", "NewProcessName", "endswith_ci", ".exe"), relation("process_then_network", "process", "context_1", "log_clear", "anchor")), "The linked process command explicitly calls the event-log clear API and is temporally related to EID 1102."),
+             gt("mapped", ["T1685.005"], all_of(leaf("anchor", "EventID", "eq", 1102), leaf("context_1", "CommandLine", "contains_ci", "EvtClearLog"), leaf("context_1", "NewProcessName", "endswith_ci", ".exe"), relation("temporal_before", "before", "context_1", "after", "anchor"), relation("same_logon", "events", ["context_1", "anchor"])), "The linked process command explicitly calls the event-log clear API and is temporally related to EID 1102."),
              ["A process invoking EvtClearLog or an equivalent event-log API precedes EID 1102."],
              [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "Process invoking event-log clear API")],
              "A monitoring or test harness may call the API during approved maintenance; account, signer, and change record are counter-evidence.",
@@ -457,7 +457,7 @@ def build() -> dict[str, Any]:
         spec("TF_T1685_005_E", "mapped_single", "test", "Security audit log clearing after suspicious remote session activity",
              a(EVENTLOG, SECURITY_CHANNEL, 1102, "Security-channel Windows Eventlog EID 1102 with a populated logon identity"),
              gt("ambiguous", [], all_of(leaf("anchor", "EventID", "eq", 1102), leaf("anchor", "SubjectLogonId", "neq", "")), "EID 1102 confirms clearing but is insufficient to attribute a mechanism or adversarial context."),
-             gt("mapped", ["T1685.005"], all_of(leaf("anchor", "EventID", "eq", 1102), leaf("context_1", "DestinationPort", "eq", 445), leaf("context_2", "NewProcessName", "endswith_ci", "\\wevtutil.exe"), leaf("context_2", "CommandLine", "contains_ci", " cl Security"), relation("temporal_before", "before", "context_1", "after", "anchor"), relation("process_then_network", "process", "context_2", "log_clear", "anchor")), "Remote-session evidence plus an explicit wevtutil clear command supplies both contextual mechanism and suspicious sequence."),
+             gt("mapped", ["T1685.005"], all_of(leaf("anchor", "EventID", "eq", 1102), leaf("context_1", "DestinationPort", "eq", 445), leaf("context_2", "NewProcessName", "endswith_ci", "\\wevtutil.exe"), leaf("context_2", "CommandLine", "contains_ci", " cl Security"), relation("temporal_before", "before", "context_1", "after", "anchor"), relation("temporal_before", "before", "context_2", "after", "anchor"), relation("same_logon", "events", ["context_2", "anchor"])), "Remote-session evidence plus an explicit wevtutil clear command supplies both contextual mechanism and suspicious sequence."),
              ["A remote SMB session is followed by wevtutil clearing the Security log on the same host."],
              [ctx("context_1", SYSMON, SYSMON_CHANNEL, 3, "Remote session connection"), ctx("context_2", SECURITY, SECURITY_CHANNEL, 4688, "wevtutil clear process after remote session")],
              "Remote administration for approved incident response may clear a log; operator authorization and maintenance record are counter-evidence.",
@@ -469,7 +469,7 @@ def build() -> dict[str, Any]:
         spec("TF_T1105_A", "mapped_single", "test", "Certutil downloads a payload to ProgramData",
              a(SYSMON, SYSMON_CHANNEL, 1, "Sysmon process creation where certutil uses -urlcache -split -f with an external URL and output path"),
              gt("mapped", ["T1105"], all_of(leaf("anchor", "Image", "endswith_ci", "\\certutil.exe"), leaf("anchor", "CommandLine", "contains_ci", "-urlcache"), leaf("anchor", "CommandLine", "contains_ci", "-split"), leaf("anchor", "CommandLine", "contains_ci", "https://files.example.invalid/"), leaf("anchor", "CommandLine", "contains_ci", "C:\\ProgramData\\")), "The process command line contains concrete certutil download syntax, source URL, and destination path."),
-             gt("mapped", ["T1105"], all_of(leaf("anchor", "Image", "endswith_ci", "\\certutil.exe"), leaf("anchor", "CommandLine", "contains_ci", "-urlcache"), leaf("context_1", "TargetFilename", "startswith_ci", "C:\\ProgramData\\"), relation("network_then_file", "network", "anchor", "file", "context_1")), "The linked file-create event confirms the downloaded artifact was written to the declared destination."),
+             gt("mapped", ["T1105"], all_of(leaf("anchor", "Image", "endswith_ci", "\\certutil.exe"), leaf("anchor", "CommandLine", "contains_ci", "-urlcache"), leaf("context_1", "TargetFilename", "startswith_ci", "C:\\ProgramData\\"), relation("process_then_file", "process", "anchor", "file", "context_1")), "The linked file-create event confirms the downloaded artifact was written to the declared destination."),
              ["A Sysmon file-create event follows certutil and uses the same process identity."],
              [ctx("context_1", SYSMON, SYSMON_CHANNEL, 11, "Downloaded file created by certutil")],
              "A certificate-management job may fetch a CRL; a trusted endpoint, expected filename, and managed signer are counter-evidence.",
@@ -478,7 +478,7 @@ def build() -> dict[str, Any]:
         spec("TF_T1105_B", "mapped_single", "test", "BITSAdmin transfers a remote file to a local staging path",
              a(SYSMON, SYSMON_CHANNEL, 1, "Sysmon process creation where bitsadmin /transfer contains an external URL and local output path"),
              gt("mapped", ["T1105"], all_of(leaf("anchor", "Image", "endswith_ci", "\\bitsadmin.exe"), leaf("anchor", "CommandLine", "contains_ci", "/transfer"), leaf("anchor", "CommandLine", "contains_ci", "https://files.example.invalid/"), leaf("anchor", "CommandLine", "contains_ci", "C:\\ProgramData\\")), "The BITSAdmin command visibly specifies a transfer job, remote source, and local destination."),
-             gt("mapped", ["T1105"], all_of(leaf("anchor", "Image", "endswith_ci", "\\bitsadmin.exe"), leaf("anchor", "CommandLine", "contains_ci", "/transfer"), leaf("context_1", "TargetFilename", "startswith_ci", "C:\\ProgramData\\"), relation("network_then_file", "network", "anchor", "file", "context_1")), "The resulting file event establishes that the BITS transfer produced a local file."),
+             gt("mapped", ["T1105"], all_of(leaf("anchor", "Image", "endswith_ci", "\\bitsadmin.exe"), leaf("anchor", "CommandLine", "contains_ci", "/transfer"), leaf("context_1", "TargetFilename", "startswith_ci", "C:\\ProgramData\\"), relation("process_then_file", "process", "anchor", "file", "context_1")), "The resulting file event establishes that the BITS transfer produced a local file."),
              ["A file is created at the BITS output path after the transfer process."],
              [ctx("context_1", SYSMON, SYSMON_CHANNEL, 11, "BITS output file created")],
              "Enterprise software distribution may use BITS; an approved update URL, signed installer, and managed destination are counter-evidence.",
@@ -487,7 +487,7 @@ def build() -> dict[str, Any]:
         spec("TF_T1105_C", "mapped_single", "test", "Curl downloads a remote executable to a local path",
              a(SYSMON, SYSMON_CHANNEL, 1, "Sysmon process creation where curl uses a URL and -o output path"),
              gt("mapped", ["T1105"], all_of(leaf("anchor", "Image", "endswith_ci", "\\curl.exe"), leaf("anchor", "CommandLine", "contains_ci", "https://files.example.invalid/"), leaf("anchor", "CommandLine", "contains_ci", " -o "), leaf("anchor", "CommandLine", "contains_ci", "C:\\ProgramData\\")), "The curl command explicitly carries source and destination arguments for a transfer."),
-             gt("mapped", ["T1105"], all_of(leaf("anchor", "Image", "endswith_ci", "\\curl.exe"), leaf("anchor", "CommandLine", "contains_ci", " -o "), leaf("context_1", "TargetFilename", "startswith_ci", "C:\\ProgramData\\"), relation("network_then_file", "network", "anchor", "file", "context_1")), "The file-create event corroborates the local artifact produced by curl."),
+             gt("mapped", ["T1105"], all_of(leaf("anchor", "Image", "endswith_ci", "\\curl.exe"), leaf("anchor", "CommandLine", "contains_ci", " -o "), leaf("context_1", "TargetFilename", "startswith_ci", "C:\\ProgramData\\"), relation("process_then_file", "process", "anchor", "file", "context_1")), "The file-create event corroborates the local artifact produced by curl."),
              ["The output file is created after the curl process connects to the external URL."],
              [ctx("context_1", SYSMON, SYSMON_CHANNEL, 11, "Curl output file")],
              "A documented update agent may use curl; allowlisted endpoint and signed output are counter-evidence.",
@@ -512,7 +512,7 @@ def build() -> dict[str, Any]:
              gt("mapped", ["T1059.001"], all_of(leaf("anchor", "Image", "endswith_ci", "\\powershell.exe"), leaf("anchor", "CommandLine", "contains_ci", "Invoke-WebRequest")), "The single view independently supports PowerShell execution; the download and task behaviors are contextual."),
              gt("mapped", ["T1059.001", "T1105", "T1053.005"], {
                  "T1059.001": all_of(leaf("anchor", "Image", "endswith_ci", "\\powershell.exe"), leaf("anchor", "CommandLine", "contains_ci", "Invoke-WebRequest")),
-                 "T1105": all_of(leaf("anchor", "CommandLine", "contains_ci", "https://files.example.invalid/"), leaf("context_1", "TargetFilename", "startswith_ci", "C:\\ProgramData\\"), relation("network_then_file", "network", "anchor", "file", "context_1")),
+                 "T1105": all_of(leaf("anchor", "CommandLine", "contains_ci", "https://files.example.invalid/"), leaf("context_1", "TargetFilename", "startswith_ci", "C:\\ProgramData\\"), relation("process_then_file", "process", "anchor", "file", "context_1")),
                  "T1053.005": all_of(leaf("context_2", "TaskName", "contains_ci", "\\CacheRefresh"), leaf("context_2", "TaskContent", "contains_ci", "C:\\ProgramData\\"), relation("process_then_task", "process", "anchor", "task", "context_2")),
              }, "Each contextual label has separate evidence: PowerShell syntax, a downloaded file, and a scheduled-task object."),
              ["The same PowerShell process downloads a file and registers a task that uses the downloaded path."],
@@ -524,7 +524,7 @@ def build() -> dict[str, Any]:
              gt("mapped", ["T1543.003"], all_of(leaf("anchor", "ServiceFileName", "contains_ci", "C:\\Users\\Public\\"), leaf("anchor", "ServiceAccount", "contains_ci", "LocalSystem")), "The single service-install event independently supports Windows Service."),
              gt("mapped", ["T1543.003", "T1685.005"], {
                  "T1543.003": all_of(leaf("anchor", "ServiceFileName", "contains_ci", "C:\\Users\\Public\\"), leaf("anchor", "ServiceAccount", "contains_ci", "LocalSystem"), relation("process_then_service", "process", "context_1", "service", "anchor")),
-                 "T1685.005": all_of(leaf("context_2", "EventID", "eq", 1102), leaf("context_1", "CommandLine", "contains_ci", "wevtutil"), leaf("context_1", "CommandLine", "contains_ci", " cl Security"), relation("process_then_network", "process", "context_1", "log_clear", "context_2")),
+                 "T1685.005": all_of(leaf("context_2", "EventID", "eq", 1102), leaf("context_1", "CommandLine", "contains_ci", "wevtutil"), leaf("context_1", "CommandLine", "contains_ci", " cl Security"), relation("temporal_before", "before", "context_1", "after", "context_2"), relation("same_logon", "events", ["context_1", "context_2"])),
              }, "Service evidence and log-clear evidence are independently visible in the contextual view."),
              ["A service process is followed by wevtutil clearing the Security log."],
              [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "Service installation or wevtutil process"), ctx("context_2", EVENTLOG, SECURITY_CHANNEL, 1102, "Security audit log cleared")],
@@ -535,7 +535,7 @@ def build() -> dict[str, Any]:
              gt("mapped", ["T1136.001"], all_of(leaf("anchor", "TargetUserName", "contains_ci", "svc_"), leaf("anchor", "SubjectUserName", "neq", "")), "The single view supports local-account creation but does not yet show the persistence behavior."),
              gt("mapped", ["T1136.001", "T1547.001"], {
                  "T1136.001": all_of(leaf("anchor", "TargetUserName", "contains_ci", "svc_"), leaf("anchor", "SubjectUserName", "neq", ""), relation("same_user", "events", ["anchor", "context_1"])),
-                 "T1547.001": all_of(leaf("context_1", "TargetObject", "contains_ci", "\\CurrentVersion\\Run\\"), leaf("context_1", "Details", "contains_ci", "svc_"), relation("process_then_registry", "process", "anchor", "registry", "context_1")),
+                 "T1547.001": all_of(leaf("context_1", "TargetObject", "contains_ci", "\\CurrentVersion\\Run\\"), leaf("context_1", "Details", "contains_ci", "svc_"), relation("temporal_before", "before", "anchor", "after", "context_1"), relation("same_user", "events", ["anchor", "context_1"])),
              }, "The account event and Run-key mutation have separate predicates, supporting the two contextual techniques."),
              ["The newly created local account is used as the Run-key payload identity."],
              [ctx("context_1", SYSMON, SYSMON_CHANNEL, 13, "Run-key value referencing the created account payload")],
@@ -546,7 +546,7 @@ def build() -> dict[str, Any]:
              gt("mapped", ["T1059.003"], all_of(leaf("anchor", "NewProcessName", "endswith_ci", "\\cmd.exe"), leaf("anchor", "CommandLine", "contains_ci", " /c ")), "The single view independently supports Windows Command Shell execution."),
              gt("mapped", ["T1059.003", "T1105"], {
                  "T1059.003": all_of(leaf("anchor", "NewProcessName", "endswith_ci", "\\cmd.exe"), leaf("anchor", "CommandLine", "contains_ci", " /c "), leaf("anchor", "CommandLine", "contains_ci", "curl")),
-                 "T1105": all_of(leaf("anchor", "CommandLine", "contains_ci", "https://files.example.invalid/"), leaf("anchor", "CommandLine", "contains_ci", " -o "), leaf("context_1", "TargetFilename", "startswith_ci", "C:\\ProgramData\\"), relation("network_then_file", "network", "anchor", "file", "context_1")),
+                 "T1105": all_of(leaf("anchor", "CommandLine", "contains_ci", "https://files.example.invalid/"), leaf("anchor", "CommandLine", "contains_ci", " -o "), leaf("context_1", "TargetFilename", "startswith_ci", "C:\\ProgramData\\"), relation("process_then_file", "process", "anchor", "file", "context_1")),
              }, "Command-shell execution and the concrete curl transfer each have separate evidence in the contextual view."),
              ["A Sysmon file event confirms the curl output path after the cmd.exe process."],
              [ctx("context_1", SYSMON, SYSMON_CHANNEL, 11, "Curl output file")],
@@ -568,26 +568,121 @@ def build() -> dict[str, Any]:
         ("TF_UNMAP_REG", "Legitimate startup application registration", SYSMON, SYSMON_CHANNEL, 13, "OneDrive Run value under Program Files", ["CurrentVersion\\Run", "Program Files", "OneDrive"], "A signed startup application under Program Files is an affirmative benign startup scenario."),
         ("TF_UNMAP_EVTCLR", "Authorized log-retention maintenance", EVENTLOG, SECURITY_CHANNEL, 1102, "Security log rotation by SYSTEM", ["SYSTEM", "maintenance", "rotation"], "EID 1102 is paired with a SYSTEM maintenance process and an approved log-rotation context."),
     ]
+    benign_predicates = {
+        "TF_UNMAP_A": all_of(
+            leaf("anchor", "Image", "endswith_ci", "\\powershell.exe"),
+            leaf("anchor", "CommandLine", "contains_ci", "-NoProfile -File"),
+            leaf("anchor", "CommandLine", "contains_ci", "C:\\Program Files\\Contoso\\maintenance.ps1"),
+            leaf("anchor", "ParentImage", "endswith_ci", "\\taskeng.exe"),
+        ),
+        "TF_UNMAP_B": all_of(
+            leaf("anchor", "NewProcessName", "endswith_ci", "\\cmd.exe"),
+            leaf("anchor", "CommandLine", "contains_ci", "ipconfig /flushdns"),
+            leaf("anchor", "ParentProcessName", "endswith_ci", "\\explorer.exe"),
+            leaf("anchor", "SubjectUserName", "contains_ci", "helpdesk"),
+        ),
+        "TF_UNMAP_C": all_of(
+            leaf("anchor", "TaskName", "contains_ci", "\\Microsoft\\Windows\\DiskCleanup"),
+            leaf("anchor", "TaskContent", "contains_ci", "cleanmgr.exe"),
+            leaf("anchor", "TaskContent", "contains_ci", "C:\\Windows\\System32\\"),
+            leaf("anchor", "SubjectUserName", "contains_ci", "SYSTEM"),
+        ),
+        "TF_UNMAP_D": all_of(
+            leaf("anchor", "ServiceFileName", "contains_ci", "C:\\Program Files\\Contoso\\ContosoAgent.exe"),
+            leaf("anchor", "ServiceAccount", "contains_ci", "LocalSystem"),
+            leaf("anchor", "ServiceStartType", "eq", "2"),
+            leaf("anchor", "SubjectUserName", "contains_ci", "Administrator"),
+        ),
+        "TF_UNMAP_E": all_of(
+            leaf("anchor", "TargetUserName", "eq", "jdoe"),
+            leaf("anchor", "SubjectUserName", "eq", "helpdesk"),
+            leaf("anchor", "SubjectLogonId", "neq", ""),
+        ),
+        "TF_UNMAP_PS": all_of(
+            leaf("anchor", "Image", "endswith_ci", "\\powershell.exe"),
+            leaf("anchor", "CommandLine", "contains_ci", "Get-Service"),
+            leaf("anchor", "ParentImage", "endswith_ci", "\\taskeng.exe"),
+        ),
+        "TF_UNMAP_CMD": all_of(
+            leaf("anchor", "NewProcessName", "endswith_ci", "\\cmd.exe"),
+            leaf("anchor", "CommandLine", "contains_ci", "dir C:\\Program Files\\Contoso"),
+            leaf("anchor", "ParentProcessName", "endswith_ci", "\\explorer.exe"),
+        ),
+        "TF_UNMAP_SCHTASK": all_of(
+            leaf("anchor", "TaskName", "contains_ci", "\\Contoso\\UpdateMaintenance"),
+            leaf("anchor", "TaskContent", "contains_ci", "C:\\Program Files\\Contoso\\updater.exe"),
+            leaf("anchor", "SubjectUserName", "contains_ci", "SYSTEM"),
+        ),
+        "TF_UNMAP_SVC": all_of(
+            leaf("anchor", "ServiceName", "contains_ci", "ContosoPatch"),
+            leaf("anchor", "ServiceFileName", "contains_ci", "C:\\Program Files\\Contoso\\"),
+            leaf("anchor", "ServiceAccount", "contains_ci", "LocalService"),
+        ),
+        "TF_UNMAP_ACCT": all_of(
+            leaf("anchor", "TargetUserName", "eq", "backupsvc"),
+            leaf("anchor", "SubjectUserName", "eq", "Administrator"),
+            leaf("anchor", "SubjectLogonId", "neq", ""),
+        ),
+        "TF_UNMAP_REG": all_of(
+            leaf("anchor", "TargetObject", "contains_ci", "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"),
+            leaf("anchor", "Details", "contains_ci", "C:\\Program Files\\OneDrive\\"),
+            leaf("anchor", "Image", "endswith_ci", "\\OneDrive.exe"),
+        ),
+        "TF_UNMAP_EVTCLR": all_of(
+            leaf("anchor", "EventID", "eq", 1102),
+            leaf("anchor", "SubjectUserName", "neq", ""),
+        ),
+    }
+    benign_context_specs = {
+        "TF_UNMAP_A": [ctx("context_1", SYSMON, SYSMON_CHANNEL, 1, "taskeng.exe launches the approved maintenance script")],
+        "TF_UNMAP_B": [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "ipconfig.exe child of the interactive cmd session")],
+        "TF_UNMAP_C": [ctx("context_1", SYSMON, SYSMON_CHANNEL, 1, "cleanmgr.exe launched by the maintenance task")],
+        "TF_UNMAP_D": [ctx("context_1", SYSMON, SYSMON_CHANNEL, 1, "ContosoAgent.exe started after managed installation")],
+        "TF_UNMAP_E": [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "helpdesk net user command for employee onboarding")],
+        "TF_UNMAP_PS": [ctx("context_1", SYSMON, SYSMON_CHANNEL, 1, "taskeng.exe maintenance process")],
+        "TF_UNMAP_CMD": [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "interactive explorer.exe process")],
+        "TF_UNMAP_SCHTASK": [ctx("context_1", SYSMON, SYSMON_CHANNEL, 1, "signed updater.exe launched by taskeng.exe")],
+        "TF_UNMAP_SVC": [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "MSI service deployment process")],
+        "TF_UNMAP_ACCT": [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "Administrator net user provisioning command")],
+        "TF_UNMAP_REG": [ctx("context_1", SYSMON, SYSMON_CHANNEL, 1, "OneDrive startup application process")],
+    }
+    benign_context_predicates = {
+        "TF_UNMAP_A": all_of(leaf("context_1", "Image", "endswith_ci", "\\taskeng.exe"), leaf("context_1", "ParentImage", "endswith_ci", "\\svchost.exe")),
+        "TF_UNMAP_B": all_of(leaf("context_1", "NewProcessName", "endswith_ci", "\\ipconfig.exe"), leaf("context_1", "ParentProcessName", "endswith_ci", "\\cmd.exe"), leaf("context_1", "SubjectUserName", "contains_ci", "helpdesk")),
+        "TF_UNMAP_C": all_of(leaf("context_1", "Image", "endswith_ci", "\\cleanmgr.exe"), leaf("context_1", "User", "contains_ci", "SYSTEM")),
+        "TF_UNMAP_D": all_of(leaf("context_1", "Image", "endswith_ci", "\\ContosoAgent.exe"), leaf("context_1", "User", "contains_ci", "SYSTEM")),
+        "TF_UNMAP_E": all_of(leaf("context_1", "NewProcessName", "endswith_ci", "\\net.exe"), leaf("context_1", "CommandLine", "contains_ci", "net user jdoe /add"), leaf("context_1", "SubjectUserName", "eq", "helpdesk")),
+        "TF_UNMAP_PS": all_of(leaf("context_1", "Image", "endswith_ci", "\\taskeng.exe"), leaf("context_1", "ParentImage", "endswith_ci", "\\svchost.exe")),
+        "TF_UNMAP_CMD": all_of(leaf("context_1", "NewProcessName", "endswith_ci", "\\explorer.exe"), leaf("context_1", "SubjectUserName", "contains_ci", "helpdesk")),
+        "TF_UNMAP_SCHTASK": all_of(leaf("context_1", "Image", "endswith_ci", "\\updater.exe"), leaf("context_1", "ParentImage", "endswith_ci", "\\taskeng.exe")),
+        "TF_UNMAP_SVC": all_of(leaf("context_1", "NewProcessName", "endswith_ci", "\\msiexec.exe"), leaf("context_1", "SubjectUserName", "contains_ci", "Administrator")),
+        "TF_UNMAP_ACCT": all_of(leaf("context_1", "NewProcessName", "endswith_ci", "\\net.exe"), leaf("context_1", "CommandLine", "contains_ci", "net user backupsvc /add"), leaf("context_1", "SubjectUserName", "eq", "Administrator")),
+        "TF_UNMAP_REG": all_of(leaf("context_1", "Image", "endswith_ci", "\\OneDrive.exe"), leaf("context_1", "ParentImage", "endswith_ci", "\\explorer.exe")),
+    }
     for fid, behavior, provider, channel, eid, rule, indicators, rationale in benign_specs:
         anchor = a(provider, channel, eid, f"{rule}; select the concrete provider fields that contain {', '.join(indicators)}")
         event = ctx("context_1", provider, channel, eid, f"Related authorized maintenance event for {fid}")
-        pred_items = [leaf("anchor", "EventID", "eq", eid)]
-        pred_items += [leaf("anchor", "CommandLine" if eid in (1, 4688) else "TargetFilename" if eid == 11 else "Details" if eid == 13 else "TaskContent" if eid == 4698 else "ServiceFileName" if eid == 4697 else "SubjectUserName", "contains_ci", indicators[0])]
-        negative_field = (
-            "CommandLine" if eid in (1, 4688) else
-            "Details" if eid == 13 else
-            "TaskContent" if eid == 4698 else
-            "ServiceFileName" if eid == 4697 else
-            "SubjectUserName"
-        )
-        benign_pred = all_of(*pred_items, not_(leaf("anchor", negative_field, "contains_ci", "-EncodedCommand")))
-        families.append(spec(fid, "unmapped", "test", behavior, anchor,
-                             gt("unmapped", [], benign_pred, rationale),
-                             gt("unmapped", [], all_of(benign_pred, relation("same_host", "events", ["anchor", "context_1"])), f"Context confirms the same benign {behavior.lower()} workflow."),
-                             [f"A related event confirms the approved workflow for {behavior.lower()} without mapped-technique indicators."], [event],
+        benign_pred = benign_predicates[fid]
+        if fid == "TF_UNMAP_EVTCLR":
+            event = ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "SYSTEM wevtutil process in the approved log-rotation workflow")
+            single = gt("ambiguous", [], benign_pred, "EID 1102 and subject metadata show a log clear, but the single view does not establish authorization or mechanism.")
+            contextual = gt("unmapped", [], all_of(
+                leaf("anchor", "EventID", "eq", 1102),
+                leaf("context_1", "NewProcessName", "endswith_ci", "\\wevtutil.exe"),
+                leaf("context_1", "CommandLine", "contains_ci", " cl Security"),
+                leaf("context_1", "SubjectUserName", "contains_ci", "SYSTEM"),
+                relation("temporal_before", "before", "context_1", "after", "anchor"),
+                relation("same_logon", "events", ["context_1", "anchor"]),
+            ), "The linked SYSTEM maintenance process and same-logon ordering provide affirmative authorization context for the EID 1102 outcome.")
+        else:
+            single = gt("unmapped", [], benign_pred, rationale)
+            event = benign_context_specs[fid][0]
+            contextual = gt("unmapped", [], all_of(benign_pred, benign_context_predicates[fid], relation("same_host", "events", ["anchor", "context_1"])), f"Context confirms the same benign {behavior.lower()} workflow with an explicit maintenance process or actor.")
+        families.append(spec(fid, "unmapped", "test", behavior, anchor, single, contextual,
+                             [f"A related event confirms the approved workflow for {behavior.lower()} with affirmative benign telemetry."], [event],
                              "A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.",
                              f"The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: {behavior.lower()}.",
-                             ["Keep vendor, account, and path indicators visible."], ["Do not remove the affirmative benign context."], old[fid], comparison_ids=["T1059.001"] if "PowerShell" in behavior else None))
+                             ["Keep the provider-specific benign fields visible."], ["Do not reduce the family to label_status only or use unrelated negative text."], old[fid], comparison_ids=["T1059.001"] if "PowerShell" in behavior else None))
 
     ambiguous_specs = [
         ("TF_AMBIG_A", "Unknown PowerShell script execution", SYSMON, SYSMON_CHANNEL, 1, "powershell.exe -File C:\\Users\\Public\\unknown.ps1", "unknown.ps1"),
@@ -624,7 +719,7 @@ def build() -> dict[str, Any]:
         contextual_pred = all_of(pred, relation("same_host", "events", ["anchor", "context_1"]))
         if tid == "T1685.005":
             single = gt("ambiguous", [], pred, "EID 1102 establishes a cleared Security audit log but does not identify the PowerShell mechanism in the single view.")
-            contextual_pred = all_of(leaf("anchor", "EventID", "eq", 1102), leaf("context_1", "CommandLine", "contains_ci", "Clear-EventLog"), relation("process_then_network", "process", "context_1", "log_clear", "anchor"))
+            contextual_pred = all_of(leaf("anchor", "EventID", "eq", 1102), leaf("context_1", "CommandLine", "contains_ci", "Clear-EventLog"), relation("temporal_before", "before", "context_1", "after", "anchor"), relation("same_logon", "events", ["context_1", "anchor"]))
             contextual = gt("mapped", [tid], contextual_pred, "A linked PowerShell Clear-EventLog process supplies the mechanism evidence for T1685.005.")
         else:
             single = gt("mapped", [tid], pred, f"The DEV-only {behavior.lower()} has concrete technique-specific evidence in its anchor event.")
@@ -643,7 +738,7 @@ def build() -> dict[str, Any]:
              gt("mapped", ["T1547.001"], all_of(leaf("anchor", "TargetObject", "contains_ci", "\\Run\\"), leaf("anchor", "Details", "contains_ci", "DEV\\agent.exe")), "The DEV single view independently supports a Run-key persistence artifact."),
              gt("mapped", ["T1547.001", "T1543.003"], {
                  "T1547.001": all_of(leaf("anchor", "TargetObject", "contains_ci", "\\Run\\"), leaf("anchor", "Details", "contains_ci", "DEV\\agent.exe")),
-                 "T1543.003": all_of(leaf("context_1", "ServiceFileName", "contains_ci", "DEV\\agent.exe"), leaf("context_1", "ServiceAccount", "contains_ci", "LocalService"), relation("process_then_service", "process", "anchor", "service", "context_1")),
+                 "T1543.003": all_of(leaf("context_1", "ServiceFileName", "contains_ci", "DEV\\agent.exe"), leaf("context_1", "ServiceAccount", "contains_ci", "LocalService"), relation("same_host", "events", ["anchor", "context_1"])),
              }, "The DEV contextual view supplies separate Run-key and service-install evidence."),
              ["The DEV payload is registered for startup and then installed as a service under a separate service event."],
              [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4697, "DEV service installation")],
@@ -655,7 +750,7 @@ def build() -> dict[str, Any]:
              gt("mapped", ["T1053.005", "T1059.001", "T1105"], {
                  "T1053.005": all_of(leaf("anchor", "TaskName", "contains_ci", "\\DEV\\PackageRefresh"), leaf("anchor", "TaskContent", "contains_ci", "pwsh.exe")),
                  "T1059.001": all_of(leaf("context_1", "Image", "endswith_ci", "\\pwsh.exe"), leaf("context_1", "CommandLine", "contains_ci", "-File"), relation("process_then_task", "process", "context_1", "task", "anchor")),
-                 "T1105": all_of(leaf("context_1", "CommandLine", "contains_ci", "https://files.example.invalid/"), leaf("context_2", "TargetFilename", "contains_ci", "DEV\\cache"), relation("network_then_file", "network", "context_1", "file", "context_2")),
+                 "T1105": all_of(leaf("context_1", "CommandLine", "contains_ci", "https://files.example.invalid/"), leaf("context_2", "TargetFilename", "contains_ci", "DEV\\cache"), relation("process_then_file", "process", "context_1", "file", "context_2")),
              }, "The DEV contextual view independently supports the task object, PowerShell execution, and transfer artifact."),
              ["The DEV task starts pwsh.exe, which downloads a package and writes the cache file."],
              [ctx("context_1", SYSMON, SYSMON_CHANNEL, 1, "DEV pwsh execution"), ctx("context_2", SYSMON, SYSMON_CHANNEL, 11, "DEV downloaded package cache")],

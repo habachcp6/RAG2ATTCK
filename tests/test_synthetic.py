@@ -40,7 +40,7 @@ from src.synthetic_validator import (
     validate_template_registry,
     compute_transition_matrix, compute_statistics, generate_audit_table,
     ALLOWED_TRANSITIONS, BENCHMARK_CATALOG, BENCHMARK_TECHNIQUE_NAMES,
-    VALID_LABEL_STATUSES,
+    VALID_LABEL_STATUSES, _validate_registry_dsl,
     _check_01_schema, _check_04_single_one_event,
     _check_05_contextual_event_count, _check_06_anchor_exists_in_both,
     _check_07_strict_anchor_equality, _check_11_mapped_has_techniques,
@@ -822,6 +822,110 @@ class TestSemanticRegistryValidator:
         result = self.validate(registry)
         assert result.passed, result.errors
 
+    def test_eid_4720_account_roles_are_distinct(self, registry):
+        family = self.family(registry, "TF_UNMAP_ACCT")
+        leaves = family["single_ground_truth"]["evidence_predicate"]["all"]
+        assert {item["field"] for item in leaves} >= {"TargetUserName", "SubjectUserName"}
+        assert any(item["field"] == "TargetUserName" and item["value"] == "backupsvc" for item in leaves)
+        assert any(item["field"] == "SubjectUserName" and item["value"] == "Administrator" for item in leaves)
+
+    def test_rejects_account_name_in_subject_username(self, registry):
+        candidate = copy.deepcopy(registry)
+        family = self.family(candidate, "TF_UNMAP_ACCT")
+        family["single_ground_truth"]["evidence_predicate"] = {"all": [
+            {"event": "anchor", "field": "SubjectUserName", "op": "eq", "value": "backupsvc"},
+            {"event": "anchor", "field": "SubjectLogonId", "op": "neq", "value": ""},
+        ]}
+        result = self.validate(candidate)
+        assert any("created-account identity belongs in TargetUserName" in e for e in result.errors)
+
+    def test_eid_13_run_key_path_and_value_fields_are_distinct(self, registry):
+        family = self.family(registry, "TF_UNMAP_REG")
+        leaves = family["single_ground_truth"]["evidence_predicate"]["all"]
+        assert any(item["field"] == "TargetObject" and "CurrentVersion\\Run" in item["value"] for item in leaves)
+        assert any(item["field"] == "Details" and "Program Files" in item["value"] for item in leaves)
+
+    def test_rejects_run_key_path_in_eid_13_details(self, registry):
+        candidate = copy.deepcopy(registry)
+        family = self.family(candidate, "TF_UNMAP_REG")
+        family["single_ground_truth"]["evidence_predicate"]["all"][1] = {
+            "event": "anchor", "field": "Details", "op": "contains_ci",
+            "value": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+        }
+        result = self.validate(candidate)
+        assert any("registry-key path belongs in TargetObject" in e for e in result.errors)
+
+    def test_eid_1102_system_single_view_is_not_unmapped(self, registry):
+        candidate = copy.deepcopy(registry)
+        family = self.family(candidate, "TF_UNMAP_EVTCLR")
+        family["single_ground_truth"]["status"] = "unmapped"
+        family["expected_transition"] = "unmapped->unmapped"
+        result = self.validate(candidate)
+        assert any("1102-only single view cannot be unmapped" in e for e in result.errors)
+
+    def test_eid_1102_approved_maintenance_transition_is_present(self, registry):
+        family = self.family(registry, "TF_UNMAP_EVTCLR")
+        assert family["single_ground_truth"]["status"] == "ambiguous"
+        assert family["contextual_ground_truth"]["status"] == "unmapped"
+        assert family["expected_transition"] == "ambiguous->unmapped"
+        assert family["contextual_event_specs"][0]["windows_event_id"] == 4688
+
+    def test_relation_signature_rejects_wrong_operand_name(self):
+        result = ValidationResult()
+        _validate_registry_dsl(
+            {"relation": "process_then_network", "process": "context_1", "log_clear": "anchor"},
+            "test.relation", {"anchor": ("EventID",), "context_1": ("Image", "CommandLine")}, result,
+        )
+        assert any("invalid arguments" in error or "missing arguments" in error for error in result.errors)
+
+    def test_relation_signature_rejects_wrong_event_class(self):
+        result = ValidationResult()
+        _validate_registry_dsl(
+            {"relation": "process_then_file", "process": "context_1", "file": "anchor"},
+            "test.relation", {
+                "anchor": ("TargetFilename", "EventID"),
+                "context_1": ("TargetFilename", "EventID"),
+            }, result,
+        )
+        assert any("not process telemetry" in error for error in result.errors)
+
+    @pytest.mark.parametrize("predicate", [
+        {"relation": "temporal_before", "before": "anchor"},
+        {"relation": "process_then_file", "process": "anchor"},
+        {"relation": "same_host", "events": "anchor"},
+        {"relation": "same_logon", "events": ["anchor"]},
+    ])
+    def test_relation_signature_requires_complete_arguments(self, predicate):
+        result = ValidationResult()
+        _validate_registry_dsl(
+            predicate, "test.relation", {
+                "anchor": ("Image", "EventID", "Computer", "SubjectLogonId"),
+                "context_1": ("TargetFilename", "SubjectLogonId"),
+            }, result,
+        )
+        assert not result.passed
+
+    def test_every_unmapped_family_has_affirmative_evidence(self, registry):
+        def leaves(predicate):
+            if not isinstance(predicate, dict):
+                return []
+            if {"event", "field", "op", "value"}.issubset(predicate):
+                return [predicate]
+            values = []
+            for key in ("all", "any"):
+                for child in predicate.get(key, []):
+                    values.extend(leaves(child))
+            if "not" in predicate:
+                values.extend(leaves(predicate["not"]))
+            return values
+
+        for family in registry["families"]:
+            if family["category"] != "unmapped" or family["template_family_id"] == "TF_UNMAP_EVTCLR":
+                continue
+            evidence = leaves(family["single_ground_truth"]["evidence_predicate"])
+            assert any(item["field"] != "EventID" and item["value"] not in ("", "-EncodedCommand") for item in evidence), family["template_family_id"]
+            assert not any(item["value"] == "-EncodedCommand" for item in evidence), family["template_family_id"]
+
     @pytest.mark.parametrize("mutation", [
         lambda f: f["single_ground_truth"].__setitem__("evidence_predicate", {"all": []}),
         lambda f: f["single_ground_truth"].__setitem__("rationale", ""),
@@ -898,7 +1002,7 @@ class TestSemanticRegistryValidator:
             {"event": "anchor", "field": "EventID", "op": "eq", "value": 1},
         ]}
         result = self.validate(candidate)
-        assert any("affirmative negative/allowlist" in e for e in result.errors)
+        assert any("affirmative benign evidence" in e for e in result.errors)
 
     def test_multi_label_requires_independent_contextual_predicates(self, registry):
         candidate = copy.deepcopy(registry)

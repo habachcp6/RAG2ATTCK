@@ -2,7 +2,7 @@
 
 This package is generated from `config/synthetic_templates.json`. It is a human semantic-review artifact for Stage A. Stage B generation and final dataset freezing are intentionally not performed.
 
-- Registry SHA-256: `4ba78e04809e7aa4018869cf19041487f65a122b606d155374685e63ed9cbccd`
+- Registry SHA-256: `ff0562cd1893812fc00782fc00f63176b6bd2851d31e79f627dbb0ebe5bb3274`
 - Total families: `64` (`test=52`, `dev=12`)
 - Planned pairs: `670`
 - ATT&CK catalog: pinned Enterprise v19.2; names are checked against the local STIX snapshot.
@@ -28,6 +28,14 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 - `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational`: EID 1, 3, 11, 13.
 - EID 4697 is the Security service-install event; EID 7045 is not used.
 - EID 1102 is an audit-log-cleared outcome and is not mechanism evidence by itself.
+
+## Relation DSL signatures
+
+- `same_host`, `same_user`, `same_logon`, `same_process`, `same_process_guid`: `events` list.
+- `temporal_before`: `before`, `after` event keys.
+- `process_then_file`: `process`, `file`; `process_then_network`: `process`, `network`.
+- `process_then_registry`: `process`, `registry`; `process_then_task`: `process`, `task`; `process_then_service`: `process`, `service`.
+- `network_then_file`: `network`, `file`; operands are checked against the canonical event classes.
 
 ## Family-by-family semantic review
 
@@ -1521,9 +1529,11 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": ".dll"
     },
     {
-      "relation": "process_then_service",
-      "process": "context_1",
-      "service": "anchor"
+      "relation": "same_host",
+      "events": [
+        "context_1",
+        "anchor"
+      ]
     }
   ]
 }
@@ -1723,9 +1733,11 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": "$"
     },
     {
-      "relation": "process_then_network",
-      "process": "anchor",
-      "account": "context_1"
+      "relation": "same_host",
+      "events": [
+        "anchor",
+        "context_1"
+      ]
     }
   ]
 }
@@ -1939,9 +1951,11 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": "svc_"
     },
     {
-      "relation": "process_then_network",
-      "process": "anchor",
-      "account": "context_1"
+      "relation": "same_host",
+      "events": [
+        "anchor",
+        "context_1"
+      ]
     }
   ]
 }
@@ -2359,9 +2373,11 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": ".ps1"
     },
     {
-      "relation": "process_then_registry",
-      "process": "anchor",
-      "registry": "context_1"
+      "relation": "same_process",
+      "events": [
+        "anchor",
+        "context_1"
+      ]
     }
   ]
 }
@@ -2555,9 +2571,16 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": " cl Security"
     },
     {
-      "relation": "process_then_network",
-      "process": "context_1",
-      "log_clear": "anchor"
+      "relation": "temporal_before",
+      "before": "context_1",
+      "after": "anchor"
+    },
+    {
+      "relation": "same_logon",
+      "events": [
+        "context_1",
+        "anchor"
+      ]
     }
   ]
 }
@@ -2657,9 +2680,16 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       ]
     },
     {
-      "relation": "process_then_network",
-      "process": "context_1",
-      "log_clear": "anchor"
+      "relation": "temporal_before",
+      "before": "context_1",
+      "after": "anchor"
+    },
+    {
+      "relation": "same_logon",
+      "events": [
+        "context_1",
+        "anchor"
+      ]
     }
   ]
 }
@@ -2749,9 +2779,16 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": ".exe"
     },
     {
-      "relation": "process_then_network",
-      "process": "context_1",
-      "log_clear": "anchor"
+      "relation": "temporal_before",
+      "before": "context_1",
+      "after": "anchor"
+    },
+    {
+      "relation": "same_logon",
+      "events": [
+        "context_1",
+        "anchor"
+      ]
     }
   ]
 }
@@ -2852,9 +2889,16 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "after": "anchor"
     },
     {
-      "relation": "process_then_network",
-      "process": "context_2",
-      "log_clear": "anchor"
+      "relation": "temporal_before",
+      "before": "context_2",
+      "after": "anchor"
+    },
+    {
+      "relation": "same_logon",
+      "events": [
+        "context_2",
+        "anchor"
+      ]
     }
   ]
 }
@@ -2962,8 +3006,8 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": "C:\\ProgramData\\"
     },
     {
-      "relation": "network_then_file",
-      "network": "anchor",
+      "relation": "process_then_file",
+      "process": "anchor",
       "file": "context_1"
     }
   ]
@@ -3066,8 +3110,8 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": "C:\\ProgramData\\"
     },
     {
-      "relation": "network_then_file",
-      "network": "anchor",
+      "relation": "process_then_file",
+      "process": "anchor",
       "file": "context_1"
     }
   ]
@@ -3170,8 +3214,8 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": "C:\\ProgramData\\"
     },
     {
-      "relation": "network_then_file",
-      "network": "anchor",
+      "relation": "process_then_file",
+      "process": "anchor",
       "file": "context_1"
     }
   ]
@@ -3379,8 +3423,8 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
         "value": "C:\\ProgramData\\"
       },
       {
-        "relation": "network_then_file",
-        "network": "anchor",
+        "relation": "process_then_file",
+        "process": "anchor",
         "file": "context_1"
       }
     ]
@@ -3527,9 +3571,16 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
         "value": " cl Security"
       },
       {
-        "relation": "process_then_network",
-        "process": "context_1",
-        "log_clear": "context_2"
+        "relation": "temporal_before",
+        "before": "context_1",
+        "after": "context_2"
+      },
+      {
+        "relation": "same_logon",
+        "events": [
+          "context_1",
+          "context_2"
+        ]
       }
     ]
   }
@@ -3644,9 +3695,16 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
         "value": "svc_"
       },
       {
-        "relation": "process_then_registry",
-        "process": "anchor",
-        "registry": "context_1"
+        "relation": "temporal_before",
+        "before": "anchor",
+        "after": "context_1"
+      },
+      {
+        "relation": "same_user",
+        "events": [
+          "anchor",
+          "context_1"
+        ]
       }
     ]
   }
@@ -3778,8 +3836,8 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
         "value": "C:\\ProgramData\\"
       },
       {
-        "relation": "network_then_file",
-        "network": "anchor",
+        "relation": "process_then_file",
+        "process": "anchor",
         "file": "context_1"
       }
     ]
@@ -3837,23 +3895,27 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   "all": [
     {
       "event": "anchor",
-      "field": "EventID",
-      "op": "eq",
-      "value": 1
+      "field": "Image",
+      "op": "endswith_ci",
+      "value": "\\powershell.exe"
     },
     {
       "event": "anchor",
       "field": "CommandLine",
       "op": "contains_ci",
-      "value": "PowerShell"
+      "value": "-NoProfile -File"
     },
     {
-      "not": {
-        "event": "anchor",
-        "field": "CommandLine",
-        "op": "contains_ci",
-        "value": "-EncodedCommand"
-      }
+      "event": "anchor",
+      "field": "CommandLine",
+      "op": "contains_ci",
+      "value": "C:\\Program Files\\Contoso\\maintenance.ps1"
+    },
+    {
+      "event": "anchor",
+      "field": "ParentImage",
+      "op": "endswith_ci",
+      "value": "\\taskeng.exe"
     }
   ]
 }
@@ -3870,23 +3932,43 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "all": [
         {
           "event": "anchor",
-          "field": "EventID",
-          "op": "eq",
-          "value": 1
+          "field": "Image",
+          "op": "endswith_ci",
+          "value": "\\powershell.exe"
         },
         {
           "event": "anchor",
           "field": "CommandLine",
           "op": "contains_ci",
-          "value": "PowerShell"
+          "value": "-NoProfile -File"
         },
         {
-          "not": {
-            "event": "anchor",
-            "field": "CommandLine",
-            "op": "contains_ci",
-            "value": "-EncodedCommand"
-          }
+          "event": "anchor",
+          "field": "CommandLine",
+          "op": "contains_ci",
+          "value": "C:\\Program Files\\Contoso\\maintenance.ps1"
+        },
+        {
+          "event": "anchor",
+          "field": "ParentImage",
+          "op": "endswith_ci",
+          "value": "\\taskeng.exe"
+        }
+      ]
+    },
+    {
+      "all": [
+        {
+          "event": "context_1",
+          "field": "Image",
+          "op": "endswith_ci",
+          "value": "\\taskeng.exe"
+        },
+        {
+          "event": "context_1",
+          "field": "ParentImage",
+          "op": "endswith_ci",
+          "value": "\\svchost.exe"
         }
       ]
     },
@@ -3900,13 +3982,13 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Context confirms the same benign routine signed powershell maintenance workflow.
+- Rationale: Context confirms the same benign routine signed powershell maintenance workflow with an explicit maintenance process or actor.
 - Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for routine signed powershell maintenance without mapped-technique indicators."]
+- Contextual event descriptions: ["A related event confirms the approved workflow for routine signed powershell maintenance with affirmative benign telemetry."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: routine signed powershell maintenance.
-- Allowed variations: ["Keep vendor, account, and path indicators visible."]
-- Disallowed variations: ["Do not remove the affirmative benign context."]
+- Allowed variations: ["Keep the provider-specific benign fields visible."]
+- Disallowed variations: ["Do not reduce the family to label_status only or use unrelated negative text."]
 - ATT&CK source:
 ```json
 {
@@ -3939,23 +4021,27 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   "all": [
     {
       "event": "anchor",
-      "field": "EventID",
-      "op": "eq",
-      "value": 4688
+      "field": "NewProcessName",
+      "op": "endswith_ci",
+      "value": "\\cmd.exe"
     },
     {
       "event": "anchor",
       "field": "CommandLine",
       "op": "contains_ci",
-      "value": "cmd.exe"
+      "value": "ipconfig /flushdns"
     },
     {
-      "not": {
-        "event": "anchor",
-        "field": "CommandLine",
-        "op": "contains_ci",
-        "value": "-EncodedCommand"
-      }
+      "event": "anchor",
+      "field": "ParentProcessName",
+      "op": "endswith_ci",
+      "value": "\\explorer.exe"
+    },
+    {
+      "event": "anchor",
+      "field": "SubjectUserName",
+      "op": "contains_ci",
+      "value": "helpdesk"
     }
   ]
 }
@@ -3972,23 +4058,49 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "all": [
         {
           "event": "anchor",
-          "field": "EventID",
-          "op": "eq",
-          "value": 4688
+          "field": "NewProcessName",
+          "op": "endswith_ci",
+          "value": "\\cmd.exe"
         },
         {
           "event": "anchor",
           "field": "CommandLine",
           "op": "contains_ci",
-          "value": "cmd.exe"
+          "value": "ipconfig /flushdns"
         },
         {
-          "not": {
-            "event": "anchor",
-            "field": "CommandLine",
-            "op": "contains_ci",
-            "value": "-EncodedCommand"
-          }
+          "event": "anchor",
+          "field": "ParentProcessName",
+          "op": "endswith_ci",
+          "value": "\\explorer.exe"
+        },
+        {
+          "event": "anchor",
+          "field": "SubjectUserName",
+          "op": "contains_ci",
+          "value": "helpdesk"
+        }
+      ]
+    },
+    {
+      "all": [
+        {
+          "event": "context_1",
+          "field": "NewProcessName",
+          "op": "endswith_ci",
+          "value": "\\ipconfig.exe"
+        },
+        {
+          "event": "context_1",
+          "field": "ParentProcessName",
+          "op": "endswith_ci",
+          "value": "\\cmd.exe"
+        },
+        {
+          "event": "context_1",
+          "field": "SubjectUserName",
+          "op": "contains_ci",
+          "value": "helpdesk"
         }
       ]
     },
@@ -4002,13 +4114,13 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Context confirms the same benign normal cmd-based dns administration workflow.
+- Rationale: Context confirms the same benign normal cmd-based dns administration workflow with an explicit maintenance process or actor.
 - Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for normal cmd-based dns administration without mapped-technique indicators."]
+- Contextual event descriptions: ["A related event confirms the approved workflow for normal cmd-based dns administration with affirmative benign telemetry."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: normal cmd-based dns administration.
-- Allowed variations: ["Keep vendor, account, and path indicators visible."]
-- Disallowed variations: ["Do not remove the affirmative benign context."]
+- Allowed variations: ["Keep the provider-specific benign fields visible."]
+- Disallowed variations: ["Do not reduce the family to label_status only or use unrelated negative text."]
 - ATT&CK source:
 ```json
 {
@@ -4026,9 +4138,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 - Category: `unmapped`
 - Behavior description: Standard scheduled disk-maintenance task
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4698`
-- Context telemetry: `context_1` = `Microsoft-Windows-Security-Auditing` / `Security` / EID `4698`
+- Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
 - Anchor selection rule: \Microsoft\Windows\DiskCleanup with cleanmgr.exe; select the concrete provider fields that contain DiskCleanup, cleanmgr.exe, System32
-- Windows documentation: EID 4698 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4698]
+- Windows documentation: EID 4698 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4698]; EID 1 [https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-1-process-create]
 - Telemetry combinations covered: `2` registry event specifications
 ### Single-view ground truth
 - Status: `unmapped`
@@ -4039,23 +4151,27 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   "all": [
     {
       "event": "anchor",
-      "field": "EventID",
-      "op": "eq",
-      "value": 4698
+      "field": "TaskName",
+      "op": "contains_ci",
+      "value": "\\Microsoft\\Windows\\DiskCleanup"
     },
     {
       "event": "anchor",
       "field": "TaskContent",
       "op": "contains_ci",
-      "value": "DiskCleanup"
+      "value": "cleanmgr.exe"
     },
     {
-      "not": {
-        "event": "anchor",
-        "field": "TaskContent",
-        "op": "contains_ci",
-        "value": "-EncodedCommand"
-      }
+      "event": "anchor",
+      "field": "TaskContent",
+      "op": "contains_ci",
+      "value": "C:\\Windows\\System32\\"
+    },
+    {
+      "event": "anchor",
+      "field": "SubjectUserName",
+      "op": "contains_ci",
+      "value": "SYSTEM"
     }
   ]
 }
@@ -4072,23 +4188,43 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "all": [
         {
           "event": "anchor",
-          "field": "EventID",
-          "op": "eq",
-          "value": 4698
+          "field": "TaskName",
+          "op": "contains_ci",
+          "value": "\\Microsoft\\Windows\\DiskCleanup"
         },
         {
           "event": "anchor",
           "field": "TaskContent",
           "op": "contains_ci",
-          "value": "DiskCleanup"
+          "value": "cleanmgr.exe"
         },
         {
-          "not": {
-            "event": "anchor",
-            "field": "TaskContent",
-            "op": "contains_ci",
-            "value": "-EncodedCommand"
-          }
+          "event": "anchor",
+          "field": "TaskContent",
+          "op": "contains_ci",
+          "value": "C:\\Windows\\System32\\"
+        },
+        {
+          "event": "anchor",
+          "field": "SubjectUserName",
+          "op": "contains_ci",
+          "value": "SYSTEM"
+        }
+      ]
+    },
+    {
+      "all": [
+        {
+          "event": "context_1",
+          "field": "Image",
+          "op": "endswith_ci",
+          "value": "\\cleanmgr.exe"
+        },
+        {
+          "event": "context_1",
+          "field": "User",
+          "op": "contains_ci",
+          "value": "SYSTEM"
         }
       ]
     },
@@ -4102,13 +4238,13 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Context confirms the same benign standard scheduled disk-maintenance task workflow.
+- Rationale: Context confirms the same benign standard scheduled disk-maintenance task workflow with an explicit maintenance process or actor.
 - Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for standard scheduled disk-maintenance task without mapped-technique indicators."]
+- Contextual event descriptions: ["A related event confirms the approved workflow for standard scheduled disk-maintenance task with affirmative benign telemetry."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: standard scheduled disk-maintenance task.
-- Allowed variations: ["Keep vendor, account, and path indicators visible."]
-- Disallowed variations: ["Do not remove the affirmative benign context."]
+- Allowed variations: ["Keep the provider-specific benign fields visible."]
+- Disallowed variations: ["Do not reduce the family to label_status only or use unrelated negative text."]
 - ATT&CK source:
 ```json
 {
@@ -4126,9 +4262,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 - Category: `unmapped`
 - Behavior description: Legitimate signed service deployment
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4697`
-- Context telemetry: `context_1` = `Microsoft-Windows-Security-Auditing` / `Security` / EID `4697`
+- Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
 - Anchor selection rule: ContosoAgent.exe from C:\Program Files\Contoso; select the concrete provider fields that contain ContosoAgent.exe, Program Files, LocalSystem
-- Windows documentation: EID 4697 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4697]
+- Windows documentation: EID 4697 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4697]; EID 1 [https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-1-process-create]
 - Telemetry combinations covered: `2` registry event specifications
 ### Single-view ground truth
 - Status: `unmapped`
@@ -4139,23 +4275,27 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   "all": [
     {
       "event": "anchor",
-      "field": "EventID",
-      "op": "eq",
-      "value": 4697
+      "field": "ServiceFileName",
+      "op": "contains_ci",
+      "value": "C:\\Program Files\\Contoso\\ContosoAgent.exe"
     },
     {
       "event": "anchor",
-      "field": "ServiceFileName",
+      "field": "ServiceAccount",
       "op": "contains_ci",
-      "value": "ContosoAgent.exe"
+      "value": "LocalSystem"
     },
     {
-      "not": {
-        "event": "anchor",
-        "field": "ServiceFileName",
-        "op": "contains_ci",
-        "value": "-EncodedCommand"
-      }
+      "event": "anchor",
+      "field": "ServiceStartType",
+      "op": "eq",
+      "value": "2"
+    },
+    {
+      "event": "anchor",
+      "field": "SubjectUserName",
+      "op": "contains_ci",
+      "value": "Administrator"
     }
   ]
 }
@@ -4172,23 +4312,43 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "all": [
         {
           "event": "anchor",
-          "field": "EventID",
-          "op": "eq",
-          "value": 4697
+          "field": "ServiceFileName",
+          "op": "contains_ci",
+          "value": "C:\\Program Files\\Contoso\\ContosoAgent.exe"
         },
         {
           "event": "anchor",
-          "field": "ServiceFileName",
+          "field": "ServiceAccount",
           "op": "contains_ci",
-          "value": "ContosoAgent.exe"
+          "value": "LocalSystem"
         },
         {
-          "not": {
-            "event": "anchor",
-            "field": "ServiceFileName",
-            "op": "contains_ci",
-            "value": "-EncodedCommand"
-          }
+          "event": "anchor",
+          "field": "ServiceStartType",
+          "op": "eq",
+          "value": "2"
+        },
+        {
+          "event": "anchor",
+          "field": "SubjectUserName",
+          "op": "contains_ci",
+          "value": "Administrator"
+        }
+      ]
+    },
+    {
+      "all": [
+        {
+          "event": "context_1",
+          "field": "Image",
+          "op": "endswith_ci",
+          "value": "\\ContosoAgent.exe"
+        },
+        {
+          "event": "context_1",
+          "field": "User",
+          "op": "contains_ci",
+          "value": "SYSTEM"
         }
       ]
     },
@@ -4202,13 +4362,13 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Context confirms the same benign legitimate signed service deployment workflow.
+- Rationale: Context confirms the same benign legitimate signed service deployment workflow with an explicit maintenance process or actor.
 - Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for legitimate signed service deployment without mapped-technique indicators."]
+- Contextual event descriptions: ["A related event confirms the approved workflow for legitimate signed service deployment with affirmative benign telemetry."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: legitimate signed service deployment.
-- Allowed variations: ["Keep vendor, account, and path indicators visible."]
-- Disallowed variations: ["Do not remove the affirmative benign context."]
+- Allowed variations: ["Keep the provider-specific benign fields visible."]
+- Disallowed variations: ["Do not reduce the family to label_status only or use unrelated negative text."]
 - ATT&CK source:
 ```json
 {
@@ -4226,9 +4386,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 - Category: `unmapped`
 - Behavior description: Expected employee local-account provisioning
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4720`
-- Context telemetry: `context_1` = `Microsoft-Windows-Security-Auditing` / `Security` / EID `4720`
+- Context telemetry: `context_1` = `Microsoft-Windows-Security-Auditing` / `Security` / EID `4688`
 - Anchor selection rule: TargetUserName=jdoe created by helpdesk; select the concrete provider fields that contain jdoe, helpdesk, employee
-- Windows documentation: EID 4720 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4720]
+- Windows documentation: EID 4720 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4720]; EID 4688 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4688]
 - Telemetry combinations covered: `2` registry event specifications
 ### Single-view ground truth
 - Status: `unmapped`
@@ -4239,23 +4399,21 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   "all": [
     {
       "event": "anchor",
-      "field": "EventID",
+      "field": "TargetUserName",
       "op": "eq",
-      "value": 4720
+      "value": "jdoe"
     },
     {
       "event": "anchor",
       "field": "SubjectUserName",
-      "op": "contains_ci",
-      "value": "jdoe"
+      "op": "eq",
+      "value": "helpdesk"
     },
     {
-      "not": {
-        "event": "anchor",
-        "field": "SubjectUserName",
-        "op": "contains_ci",
-        "value": "-EncodedCommand"
-      }
+      "event": "anchor",
+      "field": "SubjectLogonId",
+      "op": "neq",
+      "value": ""
     }
   ]
 }
@@ -4272,23 +4430,43 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "all": [
         {
           "event": "anchor",
-          "field": "EventID",
+          "field": "TargetUserName",
           "op": "eq",
-          "value": 4720
+          "value": "jdoe"
         },
         {
           "event": "anchor",
           "field": "SubjectUserName",
-          "op": "contains_ci",
-          "value": "jdoe"
+          "op": "eq",
+          "value": "helpdesk"
         },
         {
-          "not": {
-            "event": "anchor",
-            "field": "SubjectUserName",
-            "op": "contains_ci",
-            "value": "-EncodedCommand"
-          }
+          "event": "anchor",
+          "field": "SubjectLogonId",
+          "op": "neq",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "all": [
+        {
+          "event": "context_1",
+          "field": "NewProcessName",
+          "op": "endswith_ci",
+          "value": "\\net.exe"
+        },
+        {
+          "event": "context_1",
+          "field": "CommandLine",
+          "op": "contains_ci",
+          "value": "net user jdoe /add"
+        },
+        {
+          "event": "context_1",
+          "field": "SubjectUserName",
+          "op": "eq",
+          "value": "helpdesk"
         }
       ]
     },
@@ -4302,13 +4480,13 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Context confirms the same benign expected employee local-account provisioning workflow.
+- Rationale: Context confirms the same benign expected employee local-account provisioning workflow with an explicit maintenance process or actor.
 - Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for expected employee local-account provisioning without mapped-technique indicators."]
+- Contextual event descriptions: ["A related event confirms the approved workflow for expected employee local-account provisioning with affirmative benign telemetry."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: expected employee local-account provisioning.
-- Allowed variations: ["Keep vendor, account, and path indicators visible."]
-- Disallowed variations: ["Do not remove the affirmative benign context."]
+- Allowed variations: ["Keep the provider-specific benign fields visible."]
+- Disallowed variations: ["Do not reduce the family to label_status only or use unrelated negative text."]
 - ATT&CK source:
 ```json
 {
@@ -4339,9 +4517,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   "all": [
     {
       "event": "anchor",
-      "field": "EventID",
-      "op": "eq",
-      "value": 1
+      "field": "Image",
+      "op": "endswith_ci",
+      "value": "\\powershell.exe"
     },
     {
       "event": "anchor",
@@ -4350,12 +4528,10 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": "Get-Service"
     },
     {
-      "not": {
-        "event": "anchor",
-        "field": "CommandLine",
-        "op": "contains_ci",
-        "value": "-EncodedCommand"
-      }
+      "event": "anchor",
+      "field": "ParentImage",
+      "op": "endswith_ci",
+      "value": "\\taskeng.exe"
     }
   ]
 }
@@ -4372,9 +4548,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "all": [
         {
           "event": "anchor",
-          "field": "EventID",
-          "op": "eq",
-          "value": 1
+          "field": "Image",
+          "op": "endswith_ci",
+          "value": "\\powershell.exe"
         },
         {
           "event": "anchor",
@@ -4383,12 +4559,26 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
           "value": "Get-Service"
         },
         {
-          "not": {
-            "event": "anchor",
-            "field": "CommandLine",
-            "op": "contains_ci",
-            "value": "-EncodedCommand"
-          }
+          "event": "anchor",
+          "field": "ParentImage",
+          "op": "endswith_ci",
+          "value": "\\taskeng.exe"
+        }
+      ]
+    },
+    {
+      "all": [
+        {
+          "event": "context_1",
+          "field": "Image",
+          "op": "endswith_ci",
+          "value": "\\taskeng.exe"
+        },
+        {
+          "event": "context_1",
+          "field": "ParentImage",
+          "op": "endswith_ci",
+          "value": "\\svchost.exe"
         }
       ]
     },
@@ -4402,13 +4592,13 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Context confirms the same benign routine powershell service inventory workflow.
+- Rationale: Context confirms the same benign routine powershell service inventory workflow with an explicit maintenance process or actor.
 - Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for routine powershell service inventory without mapped-technique indicators."]
+- Contextual event descriptions: ["A related event confirms the approved workflow for routine powershell service inventory with affirmative benign telemetry."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: routine powershell service inventory.
-- Allowed variations: ["Keep vendor, account, and path indicators visible."]
-- Disallowed variations: ["Do not remove the affirmative benign context."]
+- Allowed variations: ["Keep the provider-specific benign fields visible."]
+- Disallowed variations: ["Do not reduce the family to label_status only or use unrelated negative text."]
 - ATT&CK source:
 ```json
 {
@@ -4441,23 +4631,21 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   "all": [
     {
       "event": "anchor",
-      "field": "EventID",
-      "op": "eq",
-      "value": 4688
+      "field": "NewProcessName",
+      "op": "endswith_ci",
+      "value": "\\cmd.exe"
     },
     {
       "event": "anchor",
       "field": "CommandLine",
       "op": "contains_ci",
-      "value": "cmd.exe"
+      "value": "dir C:\\Program Files\\Contoso"
     },
     {
-      "not": {
-        "event": "anchor",
-        "field": "CommandLine",
-        "op": "contains_ci",
-        "value": "-EncodedCommand"
-      }
+      "event": "anchor",
+      "field": "ParentProcessName",
+      "op": "endswith_ci",
+      "value": "\\explorer.exe"
     }
   ]
 }
@@ -4474,23 +4662,37 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "all": [
         {
           "event": "anchor",
-          "field": "EventID",
-          "op": "eq",
-          "value": 4688
+          "field": "NewProcessName",
+          "op": "endswith_ci",
+          "value": "\\cmd.exe"
         },
         {
           "event": "anchor",
           "field": "CommandLine",
           "op": "contains_ci",
-          "value": "cmd.exe"
+          "value": "dir C:\\Program Files\\Contoso"
         },
         {
-          "not": {
-            "event": "anchor",
-            "field": "CommandLine",
-            "op": "contains_ci",
-            "value": "-EncodedCommand"
-          }
+          "event": "anchor",
+          "field": "ParentProcessName",
+          "op": "endswith_ci",
+          "value": "\\explorer.exe"
+        }
+      ]
+    },
+    {
+      "all": [
+        {
+          "event": "context_1",
+          "field": "NewProcessName",
+          "op": "endswith_ci",
+          "value": "\\explorer.exe"
+        },
+        {
+          "event": "context_1",
+          "field": "SubjectUserName",
+          "op": "contains_ci",
+          "value": "helpdesk"
         }
       ]
     },
@@ -4504,13 +4706,13 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Context confirms the same benign routine cmd directory listing workflow.
+- Rationale: Context confirms the same benign routine cmd directory listing workflow with an explicit maintenance process or actor.
 - Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for routine cmd directory listing without mapped-technique indicators."]
+- Contextual event descriptions: ["A related event confirms the approved workflow for routine cmd directory listing with affirmative benign telemetry."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: routine cmd directory listing.
-- Allowed variations: ["Keep vendor, account, and path indicators visible."]
-- Disallowed variations: ["Do not remove the affirmative benign context."]
+- Allowed variations: ["Keep the provider-specific benign fields visible."]
+- Disallowed variations: ["Do not reduce the family to label_status only or use unrelated negative text."]
 - ATT&CK source:
 ```json
 {
@@ -4528,9 +4730,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 - Category: `unmapped`
 - Behavior description: Scheduled Windows update maintenance
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4698`
-- Context telemetry: `context_1` = `Microsoft-Windows-Security-Auditing` / `Security` / EID `4698`
+- Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
 - Anchor selection rule: \Contoso\UpdateMaintenance runs signed updater.exe; select the concrete provider fields that contain UpdateMaintenance, updater.exe, Program Files
-- Windows documentation: EID 4698 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4698]
+- Windows documentation: EID 4698 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4698]; EID 1 [https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-1-process-create]
 - Telemetry combinations covered: `2` registry event specifications
 ### Single-view ground truth
 - Status: `unmapped`
@@ -4541,23 +4743,21 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   "all": [
     {
       "event": "anchor",
-      "field": "EventID",
-      "op": "eq",
-      "value": 4698
+      "field": "TaskName",
+      "op": "contains_ci",
+      "value": "\\Contoso\\UpdateMaintenance"
     },
     {
       "event": "anchor",
       "field": "TaskContent",
       "op": "contains_ci",
-      "value": "UpdateMaintenance"
+      "value": "C:\\Program Files\\Contoso\\updater.exe"
     },
     {
-      "not": {
-        "event": "anchor",
-        "field": "TaskContent",
-        "op": "contains_ci",
-        "value": "-EncodedCommand"
-      }
+      "event": "anchor",
+      "field": "SubjectUserName",
+      "op": "contains_ci",
+      "value": "SYSTEM"
     }
   ]
 }
@@ -4574,23 +4774,37 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "all": [
         {
           "event": "anchor",
-          "field": "EventID",
-          "op": "eq",
-          "value": 4698
+          "field": "TaskName",
+          "op": "contains_ci",
+          "value": "\\Contoso\\UpdateMaintenance"
         },
         {
           "event": "anchor",
           "field": "TaskContent",
           "op": "contains_ci",
-          "value": "UpdateMaintenance"
+          "value": "C:\\Program Files\\Contoso\\updater.exe"
         },
         {
-          "not": {
-            "event": "anchor",
-            "field": "TaskContent",
-            "op": "contains_ci",
-            "value": "-EncodedCommand"
-          }
+          "event": "anchor",
+          "field": "SubjectUserName",
+          "op": "contains_ci",
+          "value": "SYSTEM"
+        }
+      ]
+    },
+    {
+      "all": [
+        {
+          "event": "context_1",
+          "field": "Image",
+          "op": "endswith_ci",
+          "value": "\\updater.exe"
+        },
+        {
+          "event": "context_1",
+          "field": "ParentImage",
+          "op": "endswith_ci",
+          "value": "\\taskeng.exe"
         }
       ]
     },
@@ -4604,13 +4818,13 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Context confirms the same benign scheduled windows update maintenance workflow.
+- Rationale: Context confirms the same benign scheduled windows update maintenance workflow with an explicit maintenance process or actor.
 - Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for scheduled windows update maintenance without mapped-technique indicators."]
+- Contextual event descriptions: ["A related event confirms the approved workflow for scheduled windows update maintenance with affirmative benign telemetry."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: scheduled windows update maintenance.
-- Allowed variations: ["Keep vendor, account, and path indicators visible."]
-- Disallowed variations: ["Do not remove the affirmative benign context."]
+- Allowed variations: ["Keep the provider-specific benign fields visible."]
+- Disallowed variations: ["Do not reduce the family to label_status only or use unrelated negative text."]
 - ATT&CK source:
 ```json
 {
@@ -4628,9 +4842,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 - Category: `unmapped`
 - Behavior description: Signed service restart after patching
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4697`
-- Context telemetry: `context_1` = `Microsoft-Windows-Security-Auditing` / `Security` / EID `4697`
+- Context telemetry: `context_1` = `Microsoft-Windows-Security-Auditing` / `Security` / EID `4688`
 - Anchor selection rule: ContosoPatch service from Program Files; select the concrete provider fields that contain ContosoPatch, Program Files, LocalService
-- Windows documentation: EID 4697 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4697]
+- Windows documentation: EID 4697 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4697]; EID 4688 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4688]
 - Telemetry combinations covered: `2` registry event specifications
 ### Single-view ground truth
 - Status: `unmapped`
@@ -4641,23 +4855,21 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   "all": [
     {
       "event": "anchor",
-      "field": "EventID",
-      "op": "eq",
-      "value": 4697
+      "field": "ServiceName",
+      "op": "contains_ci",
+      "value": "ContosoPatch"
     },
     {
       "event": "anchor",
       "field": "ServiceFileName",
       "op": "contains_ci",
-      "value": "ContosoPatch"
+      "value": "C:\\Program Files\\Contoso\\"
     },
     {
-      "not": {
-        "event": "anchor",
-        "field": "ServiceFileName",
-        "op": "contains_ci",
-        "value": "-EncodedCommand"
-      }
+      "event": "anchor",
+      "field": "ServiceAccount",
+      "op": "contains_ci",
+      "value": "LocalService"
     }
   ]
 }
@@ -4674,23 +4886,37 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "all": [
         {
           "event": "anchor",
-          "field": "EventID",
-          "op": "eq",
-          "value": 4697
+          "field": "ServiceName",
+          "op": "contains_ci",
+          "value": "ContosoPatch"
         },
         {
           "event": "anchor",
           "field": "ServiceFileName",
           "op": "contains_ci",
-          "value": "ContosoPatch"
+          "value": "C:\\Program Files\\Contoso\\"
         },
         {
-          "not": {
-            "event": "anchor",
-            "field": "ServiceFileName",
-            "op": "contains_ci",
-            "value": "-EncodedCommand"
-          }
+          "event": "anchor",
+          "field": "ServiceAccount",
+          "op": "contains_ci",
+          "value": "LocalService"
+        }
+      ]
+    },
+    {
+      "all": [
+        {
+          "event": "context_1",
+          "field": "NewProcessName",
+          "op": "endswith_ci",
+          "value": "\\msiexec.exe"
+        },
+        {
+          "event": "context_1",
+          "field": "SubjectUserName",
+          "op": "contains_ci",
+          "value": "Administrator"
         }
       ]
     },
@@ -4704,13 +4930,13 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Context confirms the same benign signed service restart after patching workflow.
+- Rationale: Context confirms the same benign signed service restart after patching workflow with an explicit maintenance process or actor.
 - Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for signed service restart after patching without mapped-technique indicators."]
+- Contextual event descriptions: ["A related event confirms the approved workflow for signed service restart after patching with affirmative benign telemetry."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: signed service restart after patching.
-- Allowed variations: ["Keep vendor, account, and path indicators visible."]
-- Disallowed variations: ["Do not remove the affirmative benign context."]
+- Allowed variations: ["Keep the provider-specific benign fields visible."]
+- Disallowed variations: ["Do not reduce the family to label_status only or use unrelated negative text."]
 - ATT&CK source:
 ```json
 {
@@ -4728,9 +4954,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 - Category: `unmapped`
 - Behavior description: Normal local backup-account provisioning
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4720`
-- Context telemetry: `context_1` = `Microsoft-Windows-Security-Auditing` / `Security` / EID `4720`
+- Context telemetry: `context_1` = `Microsoft-Windows-Security-Auditing` / `Security` / EID `4688`
 - Anchor selection rule: backupsvc created by Administrator; select the concrete provider fields that contain backupsvc, Administrator, backup
-- Windows documentation: EID 4720 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4720]
+- Windows documentation: EID 4720 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4720]; EID 4688 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4688]
 - Telemetry combinations covered: `2` registry event specifications
 ### Single-view ground truth
 - Status: `unmapped`
@@ -4741,23 +4967,21 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   "all": [
     {
       "event": "anchor",
-      "field": "EventID",
+      "field": "TargetUserName",
       "op": "eq",
-      "value": 4720
+      "value": "backupsvc"
     },
     {
       "event": "anchor",
       "field": "SubjectUserName",
-      "op": "contains_ci",
-      "value": "backupsvc"
+      "op": "eq",
+      "value": "Administrator"
     },
     {
-      "not": {
-        "event": "anchor",
-        "field": "SubjectUserName",
-        "op": "contains_ci",
-        "value": "-EncodedCommand"
-      }
+      "event": "anchor",
+      "field": "SubjectLogonId",
+      "op": "neq",
+      "value": ""
     }
   ]
 }
@@ -4774,23 +4998,43 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "all": [
         {
           "event": "anchor",
-          "field": "EventID",
+          "field": "TargetUserName",
           "op": "eq",
-          "value": 4720
+          "value": "backupsvc"
         },
         {
           "event": "anchor",
           "field": "SubjectUserName",
-          "op": "contains_ci",
-          "value": "backupsvc"
+          "op": "eq",
+          "value": "Administrator"
         },
         {
-          "not": {
-            "event": "anchor",
-            "field": "SubjectUserName",
-            "op": "contains_ci",
-            "value": "-EncodedCommand"
-          }
+          "event": "anchor",
+          "field": "SubjectLogonId",
+          "op": "neq",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "all": [
+        {
+          "event": "context_1",
+          "field": "NewProcessName",
+          "op": "endswith_ci",
+          "value": "\\net.exe"
+        },
+        {
+          "event": "context_1",
+          "field": "CommandLine",
+          "op": "contains_ci",
+          "value": "net user backupsvc /add"
+        },
+        {
+          "event": "context_1",
+          "field": "SubjectUserName",
+          "op": "eq",
+          "value": "Administrator"
         }
       ]
     },
@@ -4804,13 +5048,13 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Context confirms the same benign normal local backup-account provisioning workflow.
+- Rationale: Context confirms the same benign normal local backup-account provisioning workflow with an explicit maintenance process or actor.
 - Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for normal local backup-account provisioning without mapped-technique indicators."]
+- Contextual event descriptions: ["A related event confirms the approved workflow for normal local backup-account provisioning with affirmative benign telemetry."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: normal local backup-account provisioning.
-- Allowed variations: ["Keep vendor, account, and path indicators visible."]
-- Disallowed variations: ["Do not remove the affirmative benign context."]
+- Allowed variations: ["Keep the provider-specific benign fields visible."]
+- Disallowed variations: ["Do not reduce the family to label_status only or use unrelated negative text."]
 - ATT&CK source:
 ```json
 {
@@ -4828,9 +5072,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 - Category: `unmapped`
 - Behavior description: Legitimate startup application registration
 - Anchor telemetry: `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `13`
-- Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `13`
+- Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
 - Anchor selection rule: OneDrive Run value under Program Files; select the concrete provider fields that contain CurrentVersion\Run, Program Files, OneDrive
-- Windows documentation: EID 13 [https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-13-registry-event]
+- Windows documentation: EID 13 [https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-13-registry-event]; EID 1 [https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-1-process-create]
 - Telemetry combinations covered: `2` registry event specifications
 ### Single-view ground truth
 - Status: `unmapped`
@@ -4841,23 +5085,21 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   "all": [
     {
       "event": "anchor",
-      "field": "EventID",
-      "op": "eq",
-      "value": 13
+      "field": "TargetObject",
+      "op": "contains_ci",
+      "value": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
     },
     {
       "event": "anchor",
       "field": "Details",
       "op": "contains_ci",
-      "value": "CurrentVersion\\Run"
+      "value": "C:\\Program Files\\OneDrive\\"
     },
     {
-      "not": {
-        "event": "anchor",
-        "field": "Details",
-        "op": "contains_ci",
-        "value": "-EncodedCommand"
-      }
+      "event": "anchor",
+      "field": "Image",
+      "op": "endswith_ci",
+      "value": "\\OneDrive.exe"
     }
   ]
 }
@@ -4874,23 +5116,37 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "all": [
         {
           "event": "anchor",
-          "field": "EventID",
-          "op": "eq",
-          "value": 13
+          "field": "TargetObject",
+          "op": "contains_ci",
+          "value": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
         },
         {
           "event": "anchor",
           "field": "Details",
           "op": "contains_ci",
-          "value": "CurrentVersion\\Run"
+          "value": "C:\\Program Files\\OneDrive\\"
         },
         {
-          "not": {
-            "event": "anchor",
-            "field": "Details",
-            "op": "contains_ci",
-            "value": "-EncodedCommand"
-          }
+          "event": "anchor",
+          "field": "Image",
+          "op": "endswith_ci",
+          "value": "\\OneDrive.exe"
+        }
+      ]
+    },
+    {
+      "all": [
+        {
+          "event": "context_1",
+          "field": "Image",
+          "op": "endswith_ci",
+          "value": "\\OneDrive.exe"
+        },
+        {
+          "event": "context_1",
+          "field": "ParentImage",
+          "op": "endswith_ci",
+          "value": "\\explorer.exe"
         }
       ]
     },
@@ -4904,13 +5160,13 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Context confirms the same benign legitimate startup application registration workflow.
+- Rationale: Context confirms the same benign legitimate startup application registration workflow with an explicit maintenance process or actor.
 - Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for legitimate startup application registration without mapped-technique indicators."]
+- Contextual event descriptions: ["A related event confirms the approved workflow for legitimate startup application registration with affirmative benign telemetry."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: legitimate startup application registration.
-- Allowed variations: ["Keep vendor, account, and path indicators visible."]
-- Disallowed variations: ["Do not remove the affirmative benign context."]
+- Allowed variations: ["Keep the provider-specific benign fields visible."]
+- Disallowed variations: ["Do not reduce the family to label_status only or use unrelated negative text."]
 - ATT&CK source:
 ```json
 {
@@ -4928,12 +5184,12 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 - Category: `unmapped`
 - Behavior description: Authorized log-retention maintenance
 - Anchor telemetry: `Microsoft-Windows-Eventlog` / `Security` / EID `1102`
-- Context telemetry: `context_1` = `Microsoft-Windows-Eventlog` / `Security` / EID `1102`
+- Context telemetry: `context_1` = `Microsoft-Windows-Security-Auditing` / `Security` / EID `4688`
 - Anchor selection rule: Security log rotation by SYSTEM; select the concrete provider fields that contain SYSTEM, maintenance, rotation
-- Windows documentation: EID 1102 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-1102]
+- Windows documentation: EID 1102 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-1102]; EID 4688 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4688]
 - Telemetry combinations covered: `2` registry event specifications
 ### Single-view ground truth
-- Status: `unmapped`
+- Status: `ambiguous`
 - Technique(s): none
 - Evidence predicate:
 ```json
@@ -4948,21 +5204,13 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
     {
       "event": "anchor",
       "field": "SubjectUserName",
-      "op": "contains_ci",
-      "value": "SYSTEM"
-    },
-    {
-      "not": {
-        "event": "anchor",
-        "field": "SubjectUserName",
-        "op": "contains_ci",
-        "value": "-EncodedCommand"
-      }
+      "op": "neq",
+      "value": ""
     }
   ]
 }
 ```
-- Rationale: EID 1102 is paired with a SYSTEM maintenance process and an approved log-rotation context.
+- Rationale: EID 1102 and subject metadata show a log clear, but the single view does not establish authorization or mechanism.
 ### Contextual ground truth
 - Status: `unmapped`
 - Technique(s): none
@@ -4971,46 +5219,51 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 {
   "all": [
     {
-      "all": [
-        {
-          "event": "anchor",
-          "field": "EventID",
-          "op": "eq",
-          "value": 1102
-        },
-        {
-          "event": "anchor",
-          "field": "SubjectUserName",
-          "op": "contains_ci",
-          "value": "SYSTEM"
-        },
-        {
-          "not": {
-            "event": "anchor",
-            "field": "SubjectUserName",
-            "op": "contains_ci",
-            "value": "-EncodedCommand"
-          }
-        }
-      ]
+      "event": "anchor",
+      "field": "EventID",
+      "op": "eq",
+      "value": 1102
     },
     {
-      "relation": "same_host",
+      "event": "context_1",
+      "field": "NewProcessName",
+      "op": "endswith_ci",
+      "value": "\\wevtutil.exe"
+    },
+    {
+      "event": "context_1",
+      "field": "CommandLine",
+      "op": "contains_ci",
+      "value": " cl Security"
+    },
+    {
+      "event": "context_1",
+      "field": "SubjectUserName",
+      "op": "contains_ci",
+      "value": "SYSTEM"
+    },
+    {
+      "relation": "temporal_before",
+      "before": "context_1",
+      "after": "anchor"
+    },
+    {
+      "relation": "same_logon",
       "events": [
-        "anchor",
-        "context_1"
+        "context_1",
+        "anchor"
       ]
     }
   ]
 }
 ```
-- Rationale: Context confirms the same benign authorized log-retention maintenance workflow.
-- Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for authorized log-retention maintenance without mapped-technique indicators."]
+- Rationale: The linked SYSTEM maintenance process and same-logon ordering provide affirmative authorization context for the EID 1102 outcome.
+- Expected transition: `ambiguous->unmapped`
+- Contextual event descriptions: ["A related event confirms the approved workflow for authorized log-retention maintenance with affirmative benign telemetry."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: authorized log-retention maintenance.
-- Allowed variations: ["Keep vendor, account, and path indicators visible."]
-- Disallowed variations: ["Do not remove the affirmative benign context."]
+- Allowed variations: ["Keep the provider-specific benign fields visible."]
+- Disallowed variations: ["Do not reduce the family to label_status only or use unrelated negative text."]
 - ATT&CK source:
 ```json
 {
@@ -6061,9 +6314,16 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": "Clear-EventLog"
     },
     {
-      "relation": "process_then_network",
-      "process": "context_1",
-      "log_clear": "anchor"
+      "relation": "temporal_before",
+      "before": "context_1",
+      "after": "anchor"
+    },
+    {
+      "relation": "same_logon",
+      "events": [
+        "context_1",
+        "anchor"
+      ]
     }
   ]
 }
@@ -6268,9 +6528,11 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
         "value": "LocalService"
       },
       {
-        "relation": "process_then_service",
-        "process": "anchor",
-        "service": "context_1"
+        "relation": "same_host",
+        "events": [
+          "anchor",
+          "context_1"
+        ]
       }
     ]
   }
@@ -6399,8 +6661,8 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
         "value": "DEV\\cache"
       },
       {
-        "relation": "network_then_file",
-        "network": "context_1",
+        "relation": "process_then_file",
+        "process": "context_1",
         "file": "context_2"
       }
     ]

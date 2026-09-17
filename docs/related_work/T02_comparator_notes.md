@@ -9,7 +9,7 @@ This document contains structured analytical extractions for the eight core comp
 ### A. Bibliographic Identity
 - **Title:** LLM-Based Malicious Behavior Detection from Sysmon Event Logs: A Practical System Integrating Process Trees, RAG, and In-Context Analysis
 - **Authors:** Dai-Ru Yang and Fu-Hau Hsu
-- **Year:** 2026 (presented at SITAIBA 2025, published online 02 July 2026)
+- **Year:** 2026 (presented at SITAIBA 2025, eBook ISBN published 13 August 2026)
 - **Venue:** *Security and Information Technologies with AI, Internet Computing and Big-Data Applications* (SITAIBA 2025), *Smart Innovation, Systems and Technologies* (SIST), pp. 235–251. Springer, Cham.
 - **DOI / URL:** [10.1007/978-3-032-24063-7_18](https://doi.org/10.1007/978-3-032-24063-7_18)
 - **Paper Version Used:** Official Springer publisher chapter.
@@ -80,43 +80,44 @@ This document contains structured analytical extractions for the eight core comp
 ## 2. AWS CloudTrail RAG Paper — Adediran et al. (2026)
 
 ### A. Bibliographic Identity
-- **Title:** Automated Mapping of CloudTrail Logs to MITRE ATT&CK and STRIDE Using Retrieval-Augmented Generation
-- **Authors:** Adekunle Adediran, Temitope Oyetoyan, and Bikramjit Dasgupta
-- **Year:** 2026 (received 26 Nov 2025, accepted 08 Feb 2026, published 10 March 2026)
-- **Venue:** *Computers, Materials & Continua* (CMC), Vol. 87, No. 2, pp. 2707–2730. Tech Science Press.
+- **Title:** Retrieval-Augmented Large Language Model for AWS Cloud Threat Detection and Modelling: Cloudtrail Mitre ATT&CK Mapping
+- **Authors:** Goodness Adediran, Kenny Awuson-David, and Yussuf Ahmed
+- **Year:** 2026 (received 13 December 2025, accepted 14 February 2026, published 12 March 2026)
+- **Venue:** *Computers, Materials & Continua* (CMC), Vol. 87, No. 2, Article 100. Tech Science Press.
 - **DOI / URL:** [10.32604/cmc.2026.077606](https://doi.org/10.32604/cmc.2026.077606)
 - **Paper Version Used:** Official publisher open-access HTML version.
 
 ### B. Research Problem
-- **Primary Task:** Automated mapping of AWS CloudTrail logs to MITRE ATT&CK Techniques/Sub-techniques and STRIDE threat categories, followed by generating security remediation scripts.
-- **Nature:** Multi-framework classification (ATT&CK + STRIDE) and automated response generation for cloud security operations.
+- **Primary Task:** Cloud threat detection and ATT&CK mapping on AWS CloudTrail logs using a Retrieval-Augmented LLM pipeline.
+- **Nature:** Binary threat classification (malicious vs. benign) combined with MITRE ATT&CK Cloud technique attribution for cloud security operations.
 
 ### C. Input
-- **Data Source:** AWS CloudTrail audit logs in JSON format.
-- **Unit of Analysis:** Individual JSON log events containing AWS API calls (event names, event sources, request parameters, user identities, error codes).
-- **Dataset Size:** 130 CloudTrail log samples derived from simulated atomic attacks executing known threat behaviors via Stratus Red Team.
+- **Data Source:** AWS CloudTrail audit logs in JSON format, generated via Stratus Red Team attack simulation.
+- **Unit of Analysis:** Individual JSON CloudTrail log events containing AWS API calls (event names, event sources, request parameters, user identities, error codes).
+- **Dataset Size:** 1,724 total generated CloudTrail events; 200 systematically sampled evaluation events (122 malicious, 78 benign), spanning 9 ATT&CK techniques, 8 tactics, and 9 AWS services.
 
 ### D. Output
-- **Granularity:** Exact canonical MITRE ATT&CK Technique and Sub-technique IDs (e.g., `T1059.009`), STRIDE threat classification, and actionable remediation commands.
+- **Granularity:** MITRE ATT&CK Technique / Sub-technique attribution (the paper's annotation guideline maps events to the most specific sub-technique level where applicable, e.g., `T1552.001` rather than `T1552`) plus binary malicious/benign classification.
 
 ### E. Ground Truth
-- **Source:** Deterministic attack execution documentation from Stratus Red Team attack scenarios.
-- **Independence & Leakage Consideration:** Demonstrates awareness of label leakage, explicitly noting that raw logs contained the user agent string `stratus-red-team`, which could allow models to shortcut genuine reasoning if not audited.
+- **Source:** Expert-annotated ground truth labels. A cybersecurity expert (MSc, 5+ years SOC/cloud experience, ATT&CK certified) annotated each event using CloudTrail context, the ATT&CK Cloud matrix, the AWS Threat Technique Catalogue, and Stratus Red Team execution context.
+- **Independence & Leakage Consideration:** The `stratus-red-team` user-agent string is present in raw CloudTrail logs; the paper explicitly notes this as a potential leakage concern if not audited, as models could shortcut genuine reasoning by pattern-matching the user-agent string rather than analysing the API call semantics.
 
 ### F. RAG Architecture
-- **Retrieval Corpus:** Hybrid security knowledge base combining official MITRE ATT&CK Cloud Matrix documentation, AWS security documentation, and curated cybersecurity articles.
-- **Retriever:** Multi-agent, two-step query expansion and dense vector retrieval using LangChain.
-- **Embedding Model:** Google text embedding model (`text-embedding-004`).
-- **Vector Database / Index:** Vector store indexing technique and mitigation chunks.
-- **Top-k:** Evaluated under a fixed candidate depth; parameter ablation over variable retrieval depth (k in {1, 3, 5, 10}) was **NOT** reported (explicitly identified as future work).
-- **Reranker:** Relevance filter agent pruning non-applicable chunks.
+- **Retrieval Corpus:** MITRE ATT&CK Enterprise Cloud matrix, AWS Threat Technique Catalogue, cloud security blogs, and contemporary threat reports.
+- **Architecture:** Two-step RAG — CloudTrail JSON event is first sent to the LLM to generate a semantic search query, which is then used for dense retrieval over the knowledge base, followed by grounded generation.
+- **Embedding Model:** `text-multilingual-embedding-002`.
+- **Chunking:** 1,024-token chunks with 256-token overlap.
+- **Vector Database / Index:** Vertex AI RAG Vector Database.
+- **Top-k:** Fixed retrieval depth (parameter ablation over variable k was **NOT** reported; identified as future work).
+- **Reranker:** None; no reranker or relevance-filter agent was used.
 - **LLM Evaluated:** Google Gemini 2.5 Pro.
 - **Independent Retrieval Quality:** NOT REPORTED quantitatively (no Recall@k or MRR metrics reported for the retriever alone).
 
 ### G. Experimental Design
-- **Matched Comparison:** Directly compares Gemini 2.5 Pro *with* RAG vs. Gemini 2.5 Pro *without* RAG (prompt-only baseline) on the exact same 130 CloudTrail samples.
+- **Matched Comparison:** Directly compares Gemini 2.5 Pro *with* RAG vs. Gemini 2.5 Pro *without* RAG (prompt-only baseline) on the identical 200 evaluation CloudTrail events.
 - **Same Model Across Conditions:** Yes, strictly matched single-LLM evaluation.
-- **Ablations:** Evaluated RAG vs. No-RAG across four prompt design variants (zero-shot, few-shot, structured reasoning, automated feedback).
+- **Evaluation Scope:** Binary detection (malicious/benign) and ATT&CK technique attribution, with latency and cost measurement.
 
 ### H. Metrics
 - Accuracy
@@ -124,16 +125,17 @@ This document contains structured analytical extractions for the eight core comp
 - Recall
 - Macro-F1
 - End-to-end latency (seconds per event)
-- Operational cost (API token expenditures)
+- Operational cost (USD per event)
 
 ### I. Main Result Relevant to Us
-- RAG improves MITRE ATT&CK mapping accuracy from 67.7% (No-RAG baseline) to 93.8% (RAG pipeline) — an absolute gain of +26.1%.
-- RAG drastically reduces hallucinated/non-existent ATT&CK IDs compared to the baseline LLM.
-- Manual qualitative triage of 20 remaining error cases revealed that 60% of errors stemmed from retrieval misses (relevant technique not retrieved) rather than LLM reasoning failure.
+- RAG improves MITRE ATT&CK mapping accuracy from **46% (No-RAG baseline) to 78% (RAG pipeline)** — an absolute gain of +32 percentage points.
+- Precision: 69% → 85%; Recall: 46% → 78%; F1: 45% → 79%.
+- Operational figures: 4.1 s/event latency, \$0.00376/event cost.
+- Error analysis of failure cases identified three categories in the detailed Section 6.4.1: retrieval-generation gap (~26%), knowledge-base gap (~20%), and ambiguous ground truth (~20%). **Note:** The paper contains an internal numerical inconsistency — the contribution summary reports retrieval-generation gaps at 60%, while the detailed error-analysis section reports 26%. These figures are not reconciled in the paper. The paper qualitatively identifies retrieval/generation interaction as an important bottleneck, but its reported percentage is internally inconsistent (60% in the contribution summary vs. 26% in the detailed error-analysis section).
 
 ### J. Similarities to RAG2ATTCK
 - Directly evaluates the empirical delta between No-RAG baseline and ATT&CK-grounded RAG under a strictly matched single-LLM design.
-- Evaluates exact-match MITRE ATT&CK Technique and Sub-technique attribution.
+- Evaluates MITRE ATT&CK technique attribution alongside binary threat detection.
 - Measures operational cost and inference latency alongside attribution accuracy.
 
 ### K. Differences from RAG2ATTCK

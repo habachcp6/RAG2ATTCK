@@ -129,7 +129,7 @@ We evaluate the four central positioning hypotheses of the study against the dis
 
 - **Collision Status:** **PARTIAL OVERLAP.**
 - **Rationale:**
-  - *Where overlap exists:* TechniqueRAG (2025) measured retriever Hit@k and observed that candidate retrieval quality bounds generation accuracy on CTI text. Adediran et al. (2026) performed qualitative error triage showing that retrieval gaps accounted for 60% of mapping errors in cloud logs.
+  - *Where overlap exists:* TechniqueRAG (2025) measured retriever Hit@k and observed that candidate retrieval quality bounds generation accuracy on CTI text. Adediran et al. (2026) performed qualitative error analysis identifying retrieval/generation interaction as an important bottleneck, but its reported percentage is internally inconsistent (60% in the contribution summary vs. 26% in the detailed error-analysis section — not reconciled in the paper).
   - *Why the RQ remains valid:* Prior telemetry studies (Trace2ATT&CK, Yang & Hsu) treated RAG as an uninspected black box and did not quantitatively report retriever Recall@k or formally decouple retrieval failures ($\text{GT} \notin \text{Top-k}$) from generation/classification failures ($\text{GT} \in \text{Top-k}$ but LLM chooses wrong candidate).
   - *Project Classification:* **Valid Diagnostic Extension.**
 

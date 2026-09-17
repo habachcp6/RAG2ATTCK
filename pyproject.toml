@@ -5,6 +5,8 @@ description = "RAG2ATTCK: Data & Ground Truth Pipeline for Windows Endpoint Log 
 readme = "README.md"
 requires-python = ">=3.13.0"
 dependencies = [
+    "openai>=3.14.1",
+    "pydantic>=2.13.5",
     "pytest>=8.0.0",
     "requests>=2.31.0",
 ]

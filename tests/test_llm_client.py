@@ -60,19 +60,47 @@ def create_mock_usage(input_tokens=1500, output_tokens=4200):
 
 
 def create_mock_responses_api_response(
-    text: str,
+    text: str = "",
     status: str = "completed",
     refusal: str | None = None,
-    incomplete_details: str | None = None,
+    incomplete_details: Any = None,
     input_tokens: int = 1500,
     output_tokens: int = 4200,
 ):
     """Creates a mock response matching OpenAI Responses API structure."""
+    output = []
+    if refusal is not None:
+        output = [
+            SimpleNamespace(
+                type="message",
+                content=[
+                    SimpleNamespace(type="refusal", refusal=refusal)
+                ],
+            )
+        ]
+    elif text:
+        output = [
+            SimpleNamespace(
+                type="message",
+                content=[
+                    SimpleNamespace(type="output_text", text=text)
+                ],
+            )
+        ]
+
+    inc_details_obj = None
+    if incomplete_details is not None:
+        if isinstance(incomplete_details, str):
+            inc_details_obj = SimpleNamespace(reason=incomplete_details)
+        else:
+            inc_details_obj = incomplete_details
+
     resp = SimpleNamespace(
         status=status,
-        output_text=text,
+        output=output,
+        output_text=text if text else None,
         refusal=refusal,
-        incomplete_details=incomplete_details,
+        incomplete_details=inc_details_obj,
         usage=create_mock_usage(input_tokens, output_tokens),
     )
     return resp
@@ -117,7 +145,7 @@ def test_real_client_fails_without_api_key(monkeypatch):
 
 def test_real_client_succeeds_with_env_key(monkeypatch):
     """Verify that a real OpenAI client is constructed when OPENAI_API_KEY is present."""
-    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-for-unit-tests")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-unit-tests")
     client = LLMClient()
     assert isinstance(client.client, openai.OpenAI)
     assert client.is_live is True
@@ -126,7 +154,7 @@ def test_real_client_succeeds_with_env_key(monkeypatch):
 def test_real_client_succeeds_with_injected_key(monkeypatch):
     """Verify that api_key parameter bypasses env var requirement."""
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    client = LLMClient(api_key="sk-injected-test-key")
+    client = LLMClient(api_key="test-injected-key")
     assert isinstance(client.client, openai.OpenAI)
     assert client.is_live is True
 
@@ -389,7 +417,7 @@ def test_status_refusal():
     mock_openai = MagicMock()
     mock_openai.responses.create.return_value = create_mock_responses_api_response(
         text="",
-        status="refused",
+        status="completed",
         refusal="I cannot perform cyber threat analysis on this data.",
     )
 
@@ -399,6 +427,122 @@ def test_status_refusal():
     assert record.parse_status == ParseStatus.REFUSAL.value
     assert record.predicted_technique_id is None
     assert "cannot perform" in record.invalid_reason
+
+
+def test_refusal_via_nested_content_part():
+    """Verify refusal detection through realistic nested output[].content[] parts."""
+    mock_resp = SimpleNamespace(
+        status="completed",
+        output=[
+            SimpleNamespace(
+                type="message",
+                content=[
+                    SimpleNamespace(type="refusal", refusal="Safety policy: attribution denied"),
+                ],
+            )
+        ],
+        output_text=None,
+        refusal=None,
+        incomplete_details=None,
+        usage=create_mock_usage(100, 20),
+    )
+    mock_openai = MagicMock()
+    mock_openai.responses.create.return_value = mock_resp
+
+    client = LLMClient(openai_client=mock_openai)
+    record = client.predict(sample_id="s_nested_refusal", endpoint_evidence="test log")
+
+    assert record.parse_status == ParseStatus.REFUSAL.value
+    assert record.predicted_technique_id is None
+    assert "attribution denied" in record.invalid_reason
+    assert record.input_tokens == 100
+    assert record.output_tokens == 20
+
+
+def test_status_failed_produces_api_failure():
+    """Verify Responses API status='failed' is classified as API_FAILURE."""
+    mock_resp = SimpleNamespace(
+        status="failed",
+        error="Internal server error",
+        usage=None,
+    )
+    mock_openai = MagicMock()
+    mock_openai.responses.create.return_value = mock_resp
+
+    client = LLMClient(openai_client=mock_openai)
+    record = client.predict(sample_id="s_failed", endpoint_evidence="test log")
+
+    assert record.parse_status == ParseStatus.API_FAILURE.value
+    assert record.predicted_technique_id is None
+    assert "failed" in record.invalid_reason
+
+
+def test_status_cancelled_produces_api_failure():
+    """Verify Responses API status='cancelled' is classified as API_FAILURE."""
+    mock_resp = SimpleNamespace(
+        status="cancelled",
+        usage=None,
+    )
+    mock_openai = MagicMock()
+    mock_openai.responses.create.return_value = mock_resp
+
+    client = LLMClient(openai_client=mock_openai)
+    record = client.predict(sample_id="s_cancelled", endpoint_evidence="test log")
+
+    assert record.parse_status == ParseStatus.API_FAILURE.value
+    assert record.predicted_technique_id is None
+    assert "cancelled" in record.invalid_reason
+
+
+def test_status_queued_produces_api_failure():
+    """Verify Responses API unexpected status='queued' is classified as API_FAILURE."""
+    mock_resp = SimpleNamespace(
+        status="queued",
+        usage=None,
+    )
+    mock_openai = MagicMock()
+    mock_openai.responses.create.return_value = mock_resp
+
+    client = LLMClient(openai_client=mock_openai)
+    record = client.predict(sample_id="s_queued", endpoint_evidence="test log")
+
+    assert record.parse_status == ParseStatus.API_FAILURE.value
+    assert record.predicted_technique_id is None
+    assert "queued" in record.invalid_reason
+
+
+def test_status_in_progress_produces_api_failure():
+    """Verify Responses API unexpected status='in_progress' is classified as API_FAILURE."""
+    mock_resp = SimpleNamespace(
+        status="in_progress",
+        usage=None,
+    )
+    mock_openai = MagicMock()
+    mock_openai.responses.create.return_value = mock_resp
+
+    client = LLMClient(openai_client=mock_openai)
+    record = client.predict(sample_id="s_in_progress", endpoint_evidence="test log")
+
+    assert record.parse_status == ParseStatus.API_FAILURE.value
+    assert record.predicted_technique_id is None
+    assert "in_progress" in record.invalid_reason
+
+
+def test_status_unknown_produces_api_failure():
+    """Verify Responses API unknown status string is defensively classified as API_FAILURE."""
+    mock_resp = SimpleNamespace(
+        status="unexpected_future_status",
+        usage=None,
+    )
+    mock_openai = MagicMock()
+    mock_openai.responses.create.return_value = mock_resp
+
+    client = LLMClient(openai_client=mock_openai)
+    record = client.predict(sample_id="s_unknown", endpoint_evidence="test log")
+
+    assert record.parse_status == ParseStatus.API_FAILURE.value
+    assert record.predicted_technique_id is None
+    assert "unexpected_future_status" in record.invalid_reason
 
 
 def test_status_incomplete():
@@ -678,3 +822,52 @@ def test_no_hidden_fallback_bypasses_budget():
     assert mock_openai.responses.create.call_count == 1
     # Budget consumed exactly 1 unit
     assert budget.count == 1
+
+
+# ---------------------------------------------------------------------------
+# R3: Condition Enum Validation Tests
+# ---------------------------------------------------------------------------
+
+def test_invalid_condition_norag_variant():
+    """Verify condition='norag' raises ValueError before API call."""
+    mock_openai = MagicMock()
+    client = LLMClient(openai_client=mock_openai)
+    with pytest.raises(ValueError, match="Invalid experiment condition"):
+        client.predict(sample_id="s_test", endpoint_evidence="ev", condition="norag")
+    mock_openai.responses.create.assert_not_called()
+
+
+def test_invalid_condition_hyphenated():
+    """Verify condition='no-rag' raises ValueError before API call."""
+    mock_openai = MagicMock()
+    client = LLMClient(openai_client=mock_openai)
+    with pytest.raises(ValueError, match="Invalid experiment condition"):
+        client.predict(sample_id="s_test", endpoint_evidence="ev", condition="no-rag")
+    mock_openai.responses.create.assert_not_called()
+
+
+def test_invalid_condition_capitalized():
+    """Verify condition='No-RAG' raises ValueError before API call."""
+    mock_openai = MagicMock()
+    client = LLMClient(openai_client=mock_openai)
+    with pytest.raises(ValueError, match="Invalid experiment condition"):
+        client.predict(sample_id="s_test", endpoint_evidence="ev", condition="No-RAG")
+    mock_openai.responses.create.assert_not_called()
+
+
+def test_invalid_condition_empty():
+    """Verify empty string condition raises ValueError before API call."""
+    mock_openai = MagicMock()
+    client = LLMClient(openai_client=mock_openai)
+    with pytest.raises(ValueError, match="Invalid experiment condition"):
+        client.predict(sample_id="s_test", endpoint_evidence="ev", condition="")
+    mock_openai.responses.create.assert_not_called()
+
+
+def test_invalid_condition_arbitrary():
+    """Verify arbitrary condition='baseline' raises ValueError before API call."""
+    mock_openai = MagicMock()
+    client = LLMClient(openai_client=mock_openai)
+    with pytest.raises(ValueError, match="Invalid experiment condition"):
+        client.predict(sample_id="s_test", endpoint_evidence="ev", condition="baseline")
+    mock_openai.responses.create.assert_not_called()

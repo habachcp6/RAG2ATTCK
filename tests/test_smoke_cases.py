@@ -22,6 +22,7 @@ from src.baseline.smoke import (
     load_smoke_cases,
     run_failure_pathways_suite,
     run_smoke_test_pipeline,
+    write_smoke_test_report,
 )
 from src.llm.client import (
     get_live_request_count,
@@ -182,4 +183,49 @@ def test_smoke_cases_loading_validation_errors(tmp_path: Path):
     )
     with pytest.raises(ValueError, match="between 20 and 30"):
         load_smoke_cases(few_cases)
+
+
+def test_regenerated_report_no_fallback_references(tmp_path: Path):
+    """Verifies that the generated smoke test report contains zero fallback references,
+    correctly distinguishes live samples from requests, labels mock telemetry,
+    and reflects mock runtime without claiming authenticated runtime or Chat Completions.
+    """
+    test_report = tmp_path / "regenerated_report.md"
+    results = run_smoke_test_pipeline(report_path=test_report, allow_live=False)
+
+    assert test_report.exists()
+    content = test_report.read_text(encoding="utf-8")
+
+    # Invariant 1: Sole frozen interface declared, no runtime fallback
+    assert "Responses API execution (sole frozen experimental interface, no runtime fallback)" in content
+    assert "Chat Completions" not in content
+    assert "fallback_api_interface" not in content
+
+    # Invariant 2: No 'fallback' references in report (case-insensitive) except in "no runtime fallback"
+    fallback_count = content.lower().count("fallback")
+    assert fallback_count == 1, f"Expected exactly 1 occurrence of 'fallback' (in 'no runtime fallback'), got {fallback_count}"
+
+    # Invariant 3: Mock-only runtime status and cost when 0 live calls
+    assert "Mock-only / unauthenticated test runtime" in content
+    assert "Authenticated Runtime" not in content
+    assert "$0.00 (no live requests)" in content
+    assert "*(mock telemetry)*" in content
+
+    # Invariant 4: Live samples dispatched vs Live API requests consumed distinct reporting
+    assert "Live Samples Dispatched" in content
+    assert "Live API Requests Consumed" in content
+    assert "per-process smoke-test live request cap" in content
+
+
+def test_smoke_mock_by_default_even_with_key(monkeypatch, tmp_path: Path):
+    """Verifies that run_smoke_test_pipeline defaults to mock even if OPENAI_API_KEY is present."""
+    monkeypatch.setenv("OPENAI_API_KEY", "test-env-key-for-smoke-test")
+    test_report = tmp_path / "mock_default_report.md"
+
+    res = run_smoke_test_pipeline(report_path=test_report)
+
+    assert res["live_api_requests_consumed"] == 0
+    assert res["live_samples_dispatched"] == 0
+    assert res["mock_requests_count"] == 25
+    assert res["total_synthetic_cases"] == 25
 

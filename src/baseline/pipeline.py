@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
 from src.llm.client import LLMClient
-from src.llm.schemas import ExecutionRecord, get_workspace_root
+from src.llm.schemas import ExecutionRecord, get_workspace_root, validate_condition
 
 
 def format_baseline_prompt(
@@ -73,6 +73,9 @@ class BaselinePipeline:
         Raises:
             ValueError: If condition is "no_rag" but retrieved_context is non-empty.
         """
+        # Runtime condition enum validation
+        validate_condition(condition)
+
         # No-RAG context isolation invariant (enforced at pipeline level too)
         if condition == "no_rag" and retrieved_context is not None and retrieved_context.strip():
             raise ValueError(

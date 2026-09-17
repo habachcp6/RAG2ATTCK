@@ -46,7 +46,7 @@ The frozen configuration is committed at `config/model.json`. All parameters doc
 2. **First-Class Reasoning Parameter:** In the Responses API, reasoning compute is governed cleanly by the `reasoning` parameter object (`reasoning={"effort": "xhigh"}`).
 3. **Native Output Budgeting:** Uses `max_output_tokens`, which directly represents the unified generation budget covering both reasoning tokens and visible structured completion tokens.
 4. **Structured Output Integration:** Uses `text={"format": {"type": "json_schema", ...}}` with `strict: true` for schema-constrained generation, followed by Pydantic `model_validate()` post-parse.
-5. **Detailed Token Telemetry:** Provides structured reporting of reasoning token usage via `usage.output_tokens_details.reasoning_tokens`.
+5. **Detailed Token Telemetry:** The Responses API exposes reasoning token counts via `usage.output_tokens_details.reasoning_tokens` at query time; however, `ExecutionRecord` does not persist this field — only aggregate `input_tokens` and `output_tokens` are recorded.
 6. **Experimental Consistency:** Using a single API interface across all samples eliminates interface-specific confounding variables.
 
 ---
@@ -79,7 +79,7 @@ The following table enumerates every model parameter explicitly frozen in `confi
 | :--- | :--- | :--- | :--- |
 | `provider` | `"openai"` | String | Identifies the execution backend provider |
 | `model` | `"gpt-5.6-luna"` | String | Canonical frontier model identifier |
-| `reasoning_effort` | `"xhigh"` | String | Deepest reasoning compute tier |
+| `reasoning_effort` | `"xhigh"` | String | Frozen reasoning effort selected for this study |
 | `api_interface` | `"responses"` | String | Sole frozen API interface endpoint (no runtime fallback) |
 | `max_output_tokens` | `8192` | Integer | Generation budget in Responses API (reasoning + output) |
 | `timeout_seconds` | `120` | Integer | Client-side socket and read timeout per attempt |
@@ -129,7 +129,7 @@ In accordance with the project's core research title (*"Evaluating MITRE ATT&CK-
 During SDK and API specification verification, the following parameter incompatibilities were identified and explicitly avoided:
 
 1. **`max_tokens` (Unsupported on Reasoning Models):**
-   - In legacy Chat Completions, `max_tokens` governed output length. On reasoning models, OpenAI rejects `max_tokens` with HTTP 400 Bad Request, requiring `max_completion_tokens` (or `max_output_tokens` in Responses API). `config/model.json` strictly specifies `max_output_tokens` and `max_completion_tokens`.
+   - In legacy Chat Completions, `max_tokens` governed output length. On reasoning models, OpenAI rejects `max_tokens` with HTTP 400 Bad Request, requiring `max_completion_tokens` (Chat Completions) or `max_output_tokens` (Responses API). `config/model.json` specifies only `max_output_tokens` since the frozen interface is Responses API.
 2. **Arbitrary `temperature` Tuning (Unsupported):**
    - Submitting `temperature != 1.0` to reasoning models results in validation errors. Temperature is omitted to preserve provider default calibration.
 3. **Legacy Function Calling (`functions` / `function_call`):**

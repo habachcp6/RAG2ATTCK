@@ -104,7 +104,24 @@ class ExecutionRecord(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# 4. Two-Layer Post-Hoc ATT&CK ID Validation
+# 4. Condition Validation (No-RAG vs RAG)
+# ---------------------------------------------------------------------------
+
+VALID_CONDITIONS = frozenset({"no_rag", "rag"})
+
+
+def validate_condition(condition: str) -> str:
+    """Runtime validator: condition must be exactly 'no_rag' or 'rag'."""
+    if condition not in VALID_CONDITIONS:
+        raise ValueError(
+            f"Invalid experiment condition: '{condition}'. "
+            f"Must be one of: {sorted(VALID_CONDITIONS)}"
+        )
+    return condition
+
+
+# ---------------------------------------------------------------------------
+# 5. Two-Layer Post-Hoc ATT&CK ID Validation
 # ---------------------------------------------------------------------------
 
 ATTACK_ID_PATTERN = re.compile(r"^T[0-9]{4}(?:\.[0-9]{3})?$")

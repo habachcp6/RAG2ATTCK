@@ -30,6 +30,7 @@ from src.llm.schemas import (
     ParseStatus,
     TechniquePrediction,
     get_workspace_root,
+    validate_condition,
     validate_technique_id,
 )
 from src.llm.logging import WallClockTimer
@@ -49,7 +50,8 @@ class LiveBudgetExceededError(RuntimeError):
 class LiveBudget:
     """
     Thread-safe live request budget tracker.
-    Strictly caps actual live network requests (including retries) across the application lifecycle.
+    Per-process smoke-test live request cap. Resets when the process restarts.
+    The external OpenAI/project spend limit is the true cross-process safeguard.
     Every actual outbound OpenAI API request must consume exactly one unit.
     """
 
@@ -241,29 +243,78 @@ class LLMClient:
             input_tokens = getattr(usage, "input_tokens", None) or getattr(usage, "prompt_tokens", None)
             output_tokens = getattr(usage, "output_tokens", None) or getattr(usage, "completion_tokens", None)
 
-        # Check response status
         resp_status = getattr(response, "status", None)
-        if resp_status == "refused" or getattr(response, "refusal", None):
-            refusal_msg = getattr(response, "refusal", None) or "Model refused attribution request"
-            return None, ParseStatus.REFUSAL, str(refusal_msg), input_tokens, output_tokens
 
+        # 1. Status classification — non-completed statuses
         if resp_status == "incomplete":
             incomplete_details = getattr(response, "incomplete_details", None)
-            reason = f"Response incomplete: {incomplete_details}" if incomplete_details else "Response terminated before completion"
+            reason_str = None
+            if incomplete_details is not None:
+                if hasattr(incomplete_details, "reason"):
+                    reason_str = getattr(incomplete_details, "reason")
+                elif isinstance(incomplete_details, dict):
+                    reason_str = incomplete_details.get("reason")
+                else:
+                    reason_str = str(incomplete_details)
+            reason = f"Response incomplete: {reason_str}" if reason_str else "Response terminated before completion"
             return None, ParseStatus.INCOMPLETE, reason, input_tokens, output_tokens
 
-        # Extract output text
-        raw_text = getattr(response, "output_text", None)
-        if raw_text is None:
-            # Handle structured output items
-            outputs = getattr(response, "output", None)
-            if outputs and isinstance(outputs, list):
-                for item in outputs:
-                    if hasattr(item, "content") and item.content:
-                        for c in item.content:
-                            if hasattr(c, "text"):
-                                raw_text = c.text
+        if resp_status == "failed":
+            err = getattr(response, "error", None)
+            reason = f"Responses API status: failed ({err})" if err else "Responses API status: failed"
+            return None, ParseStatus.API_FAILURE, reason, input_tokens, output_tokens
+
+        if resp_status == "cancelled":
+            return None, ParseStatus.API_FAILURE, "Responses API status: cancelled", input_tokens, output_tokens
+
+        if resp_status in ("queued", "in_progress"):
+            return None, ParseStatus.API_FAILURE, f"Responses API status: {resp_status} (unexpected synchronous state)", input_tokens, output_tokens
+
+        if resp_status != "completed":
+            # Defensive fallback for any unexpected / unknown status
+            return None, ParseStatus.API_FAILURE, f"Responses API status unknown or unexpected: '{resp_status}'", input_tokens, output_tokens
+
+        # 2. Completed status: inspect output for refusal parts first
+        outputs = getattr(response, "output", None)
+        if outputs and isinstance(outputs, list):
+            for item in outputs:
+                content = getattr(item, "content", None) or (item.get("content") if isinstance(item, dict) else None)
+                if content and isinstance(content, list):
+                    for part in content:
+                        part_type = getattr(part, "type", None) or (part.get("type") if isinstance(part, dict) else None)
+                        if part_type == "refusal":
+                            refusal_msg = (
+                                getattr(part, "refusal", None)
+                                or (part.get("refusal") if isinstance(part, dict) else None)
+                                or "Model refused attribution request"
+                            )
+                            return None, ParseStatus.REFUSAL, str(refusal_msg), input_tokens, output_tokens
+
+        # Fallback check for flat refusal attribute
+        if getattr(response, "refusal", None):
+            return None, ParseStatus.REFUSAL, str(getattr(response, "refusal")), input_tokens, output_tokens
+
+        # Extract output text from output_text content parts or output_text property
+        raw_text = None
+        if outputs and isinstance(outputs, list):
+            for item in outputs:
+                content = getattr(item, "content", None) or (item.get("content") if isinstance(item, dict) else None)
+                if content and isinstance(content, list):
+                    for part in content:
+                        part_type = getattr(part, "type", None) or (part.get("type") if isinstance(part, dict) else None)
+                        if part_type == "output_text":
+                            raw_text = getattr(part, "text", None) or (part.get("text") if isinstance(part, dict) else None)
+                            if raw_text is not None:
                                 break
+                        elif hasattr(part, "text") and getattr(part, "text", None) is not None:
+                            raw_text = getattr(part, "text", None)
+                            break
+                if raw_text is not None:
+                    break
+
+        if raw_text is None:
+            raw_text = getattr(response, "output_text", None)
+
         return raw_text, None, None, input_tokens, output_tokens
 
     def _post_hoc_validate_prediction(
@@ -332,6 +383,9 @@ class LLMClient:
         Raises:
             ValueError: If condition is "no_rag" but retrieved_context is non-empty.
         """
+        # Runtime condition enum validation
+        validate_condition(condition)
+
         # ---- No-RAG context isolation invariant ----
         if condition == "no_rag" and retrieved_context is not None and retrieved_context.strip():
             raise ValueError(

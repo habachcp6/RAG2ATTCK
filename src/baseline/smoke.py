@@ -11,6 +11,7 @@ Executes end-to-end smoke pipeline across synthetic Sysmon cases:
 
 from __future__ import annotations
 
+import argparse
 import json
 import logging
 import os
@@ -54,16 +55,44 @@ def create_mock_responses_api_obj(
     payload_text: Optional[str],
     status: str = "completed",
     refusal: Optional[str] = None,
-    incomplete_details: Optional[str] = None,
+    incomplete_details: Optional[Any] = None,
     input_tokens: int = 1450,
     output_tokens: int = 38,
 ) -> SimpleNamespace:
     """Creates a mock OpenAI Responses API response object."""
+    output = []
+    if refusal is not None:
+        output = [
+            SimpleNamespace(
+                type="message",
+                content=[
+                    SimpleNamespace(type="refusal", refusal=refusal)
+                ],
+            )
+        ]
+    elif payload_text is not None:
+        output = [
+            SimpleNamespace(
+                type="message",
+                content=[
+                    SimpleNamespace(type="output_text", text=payload_text)
+                ],
+            )
+        ]
+
+    inc_details_obj = None
+    if incomplete_details is not None:
+        if isinstance(incomplete_details, str):
+            inc_details_obj = SimpleNamespace(reason=incomplete_details)
+        else:
+            inc_details_obj = incomplete_details
+
     return SimpleNamespace(
         status=status,
+        output=output,
         output_text=payload_text,
         refusal=refusal,
-        incomplete_details=incomplete_details,
+        incomplete_details=inc_details_obj,
         usage=create_mock_usage(input_tokens=input_tokens, output_tokens=output_tokens),
     )
 
@@ -207,7 +236,7 @@ def run_failure_pathways_suite(
     m7 = MagicMock()
     m7.responses.create.return_value = create_mock_responses_api_obj(
         payload_text=None,
-        status="refused",
+        status="completed",
         refusal="Safety policy violation",
     )
     c7 = LLMClient(openai_client=m7, is_live=False, registry_ids=reg)
@@ -235,7 +264,6 @@ def run_failure_pathways_suite(
         body=None,
     )
     m9.responses.create.side_effect = req_err
-    m9.chat.completions.create.side_effect = req_err
     c9 = LLMClient(openai_client=m9, is_live=False, registry_ids=reg)
     rec9 = c9.predict(sample_id="pathway_api_failure", endpoint_evidence="test api failure")
     assert rec9.parse_status == ParseStatus.API_FAILURE, f"Expected API_FAILURE, got {rec9.parse_status}"
@@ -245,7 +273,6 @@ def run_failure_pathways_suite(
     m10 = MagicMock()
     timeout_err = openai.APITimeoutError(request=MagicMock())
     m10.responses.create.side_effect = timeout_err
-    m10.chat.completions.create.side_effect = timeout_err
     c10 = LLMClient(openai_client=m10, is_live=False, registry_ids=reg, sleep_fn=lambda _: None)
     rec10 = c10.predict(sample_id="pathway_timeout", endpoint_evidence="test timeout")
     assert rec10.parse_status == ParseStatus.TIMEOUT, f"Expected TIMEOUT, got {rec10.parse_status}"
@@ -263,13 +290,14 @@ def run_smoke_test_pipeline(
     cases_path: Optional[Path | str] = None,
     report_path: Optional[Path | str] = None,
     live_requests_limit: int = 2,
+    allow_live: bool = False,
 ) -> Dict[str, Any]:
     """
     Executes the full smoke test pipeline:
     1. Loads config/model.json
     2. Loads prompts/baseline_v1.txt
     3. Loads synthetic cases
-    4. Evaluates cases (checking OPENAI_API_KEY for at most live_requests_limit live calls, rest mocked)
+    4. Evaluates cases (mocked by default; live only if allow_live=True and OPENAI_API_KEY present)
     5. Evaluates full failure pathways suite
     6. Writes reports/T14_smoke_test_report.md
     """
@@ -295,7 +323,8 @@ def run_smoke_test_pipeline(
     has_live_key = bool(api_key)
 
     synthetic_records: List[ExecutionRecord] = []
-    live_requests_attempted = 0
+    initial_live_budget_count = GLOBAL_LIVE_BUDGET.count
+    live_samples_dispatched = 0
     mock_requests_attempted = 0
 
     mock_client_backend = build_mock_client_for_samples(cases)
@@ -305,7 +334,13 @@ def run_smoke_test_pipeline(
         s_id = case["sample_id"]
         evidence = case["endpoint_evidence"]
 
-        if has_live_key and live_requests_attempted < live_requests_limit and not GLOBAL_LIVE_BUDGET.is_exhausted():
+        use_live = (
+            allow_live
+            and has_live_key
+            and live_samples_dispatched < live_requests_limit
+            and not GLOBAL_LIVE_BUDGET.is_exhausted()
+        )
+        if use_live:
             # Live client execution
             live_client = LLMClient(registry_ids=attack_registry, is_live=True)
             rec = live_client.predict(
@@ -313,7 +348,7 @@ def run_smoke_test_pipeline(
                 endpoint_evidence=evidence,
                 condition="no_rag",
             )
-            live_requests_attempted += 1
+            live_samples_dispatched += 1
         else:
             # Mocked client execution
             mock_client = LLMClient(
@@ -341,14 +376,17 @@ def run_smoke_test_pipeline(
     total_latency_ms = sum(r.latency_ms for r in synthetic_records)
     avg_latency_ms = total_latency_ms / total_cases if total_cases > 0 else 0.0
 
-    live_budget_consumed = get_live_request_count()
+    live_api_requests_consumed = GLOBAL_LIVE_BUDGET.count - initial_live_budget_count
     live_budget_remaining = GLOBAL_LIVE_BUDGET.remaining
 
     results_summary = {
         "total_synthetic_cases": total_cases,
         "valid_count": valid_count,
         "has_live_key": has_live_key,
-        "live_requests_consumed": live_budget_consumed,
+        "allow_live": allow_live,
+        "live_samples_dispatched": live_samples_dispatched,
+        "live_api_requests_consumed": live_api_requests_consumed,
+        "live_requests_consumed": live_api_requests_consumed,
         "live_requests_remaining": live_budget_remaining,
         "mock_requests_count": mock_requests_attempted,
         "total_input_tokens": total_input_tokens,
@@ -407,6 +445,18 @@ def write_smoke_test_report(
         )
     fail_table = "\n".join(rows_fail)
 
+    live_api_consumed = results.get("live_api_requests_consumed", results.get("live_requests_consumed", 0))
+    live_samples_disp = results.get("live_samples_dispatched", 0)
+
+    if live_api_consumed == 0:
+        runtime_status = "Mock-only / unauthenticated test runtime"
+        cost_str = "$0.00 (no live requests)"
+        mock_tag = " *(mock telemetry)*"
+    else:
+        runtime_status = "Authenticated live runtime"
+        cost_str = "See OpenAI dashboard for actual cost"
+        mock_tag = ""
+
     report_content = f"""# T14: Synthetic Smoke Test and Baseline Pipeline Verification Report
 
 ## Executive Summary
@@ -415,11 +465,11 @@ This report documents the end-to-end execution of the **No-RAG Baseline smoke te
 The smoke testing pipeline validates the full inference path:
 1. Frozen model configuration loading (`config/model.json`)
 2. Frozen base prompt loading and symmetric placeholder substitution (`prompts/baseline_v1.txt`)
-3. Primary Responses API execution with operational fallback to Chat Completions API
+3. Responses API execution (sole frozen experimental interface, no runtime fallback)
 4. Pydantic schema deserialization (`{{"technique_id": "..."}}`)
 5. Mandatory post-hoc two-layer ATT&CK ID validation (syntax regex + Enterprise ATT&CK v19.2 registry)
 6. Precision wall-clock latency measurement (inclusive of retries and backoff)
-7. Global live API budget tracking and strict capping (≤ 5 requests total across project lifecycle)
+7. Global live API budget tracking and strict capping (≤ 5 requests per-process smoke-test run)
 8. Exhaustive verification of all 7 parse status taxonomy members across realistic failure conditions
 
 ---
@@ -445,7 +495,6 @@ The smoke testing pipeline validates the full inference path:
 | **Model** | `{model_cfg.get("model")}` | `config/model.json` |
 | **Reasoning Effort** | `{model_cfg.get("reasoning_effort")}` | `config/model.json` |
 | **Primary API Interface** | `{model_cfg.get("api_interface")}` | `config/model.json` |
-| **Fallback API Interface** | `{model_cfg.get("fallback_api_interface")}` | `config/model.json` |
 | **Max Output Tokens** | `{model_cfg.get("max_output_tokens")}` | `config/model.json` |
 | **Timeout Seconds** | `{model_cfg.get("timeout_seconds")}s` | `config/model.json` |
 | **Max Retries** | `{model_cfg.get("max_retries")}` | `config/model.json` |
@@ -457,19 +506,20 @@ The smoke testing pipeline validates the full inference path:
 
 ## 2. Global Live Request Budget & Cost Accounting
 
-The global live request budget strictly caps actual OpenAI API network invocations to **at most 5 requests total** (including all retries) across the entire application lifecycle.
+The global live request budget strictly caps actual OpenAI API network invocations to **at most 5 requests total** (including all retries) per-process smoke-test live request cap.
 
 | Metric | Recorded Value | Budget Limit | Status |
 | :--- | :--- | :--- | :--- |
-| **Live Environment Key Detected (`OPENAI_API_KEY`)** | `{"YES" if results["has_live_key"] else "NO"}` | N/A | Authenticated Runtime |
-| **Live API Requests Consumed** | **`{results["live_requests_consumed"]}`** | **5** (Maximum) | **COMPLIANT** (≤ 5) |
+| **Live Environment Key Detected (`OPENAI_API_KEY`)** | `{"YES" if results["has_live_key"] else "NO"}` | N/A | {runtime_status} |
+| **Live Samples Dispatched** | **`{live_samples_disp}`** | `{results["total_synthetic_cases"]}` | Sample routing |
+| **Live API Requests Consumed** | **`{live_api_consumed}`** | **5** (Maximum) | **COMPLIANT** (≤ 5) |
 | **Live API Requests Remaining** | `{results["live_requests_remaining"]}` | 5 | Preserved |
 | **Mocked Predictions Executed** | `{results["mock_requests_count"]}` | N/A | Mock-engine insulated |
-| **Total Input Tokens (Synthetic Suite)** | `{results["total_input_tokens"]:,}` | N/A | Parametric inference |
-| **Total Output Tokens (Synthetic Suite)** | `{results["total_output_tokens"]:,}` | N/A | Structured output |
-| **Approximate Financial Cost** | **$0.00** | Budget Cap | No unmetered spend |
+| **Total Input Tokens (Synthetic Suite)** | `{results["total_input_tokens"]:,}{mock_tag}` | N/A | Parametric inference |
+| **Total Output Tokens (Synthetic Suite)** | `{results["total_output_tokens"]:,}{mock_tag}` | N/A | Structured output |
+| **Approximate Financial Cost** | **{cost_str}** | Budget Cap | No unmetered spend |
 
-*Note: In environments where `OPENAI_API_KEY` is not present, all 25 synthetic cases are executed against the deterministic mock engine, incurring 0 live requests and $0.00 cost, while fully exercising prompt construction, validation, and serialization logic.*
+*Note: In environments where `OPENAI_API_KEY` is not present (or in default mock mode), all 25 synthetic cases are executed against the deterministic mock engine, incurring 0 live requests and $0.00 cost, while fully exercising prompt construction, validation, and serialization logic. All token counts and latencies in this report are synthetic mock values — not live provider performance measurements.*
 
 ---
 
@@ -480,8 +530,8 @@ All 25 synthetic cases from `data/synthetic/smoke_cases.jsonl` were processed se
 ### Summary Statistics
 - **Total Synthetic Cases:** `{results["total_synthetic_cases"]}`
 - **Successfully Parsed & Validated (`VALID`):** `{results["valid_count"]}` / `{results["total_synthetic_cases"]}` ({results["valid_count"] / results["total_synthetic_cases"] * 100:.1f}%)
-- **Average Wall-Clock Latency per Sample:** `{results["avg_latency_ms"]:.2f} ms`
-- **Total Wall-Clock Pipeline Duration:** `{results["total_latency_ms"]:.2f} ms`
+- **Average Wall-Clock Latency per Sample:** `{results["avg_latency_ms"]:.2f} ms`{mock_tag}
+- **Total Wall-Clock Pipeline Duration:** `{results["total_latency_ms"]:.2f} ms`{mock_tag}
 
 ### Execution Records Log
 | Sample ID | Predicted Technique | Parse Status | Retries | Latency | Tokens (In / Out) |
@@ -533,7 +583,7 @@ To guarantee total pipeline resilience, an exhaustive suite of 10 targeted failu
 | **F4** | Layer 2 Registry Failure | Syntax passes regex, absent from v19.2 `T9999` | `INVALID_ID` | `INVALID_ID` | PASS |
 | **F5** | JSON Parsing Failure | Broken unparseable JSON text | `MALFORMED_RESPONSE` | `MALFORMED_RESPONSE` | PASS |
 | **F6** | Schema Validation Failure | Missing required `technique_id` field | `MALFORMED_RESPONSE` | `MALFORMED_RESPONSE` | PASS |
-| **F7** | Upfront Safety Refusal | Model status `refused` / refusal object | `REFUSAL` | `REFUSAL` | PASS |
+| **F7** | Upfront Safety Refusal | Model status `completed` / refusal object | `REFUSAL` | `REFUSAL` | PASS |
 | **F8** | Incomplete Output | `finish_reason='length'` / max token cutoff | `INCOMPLETE` | `INCOMPLETE` | PASS |
 | **F9** | Non-Retryable Error | HTTP 400 Bad Request / parameter error | `API_FAILURE` | `API_FAILURE` | PASS |
 | **F10** | Exhausted Retries / Timeout | `APITimeoutError` after 3 backoff retries | `TIMEOUT` | `TIMEOUT` | PASS |
@@ -563,7 +613,7 @@ The client records `latency_ms` measuring the **complete wall-clock duration** o
 - [x] **End-to-End Pipeline:** Pipeline executed through `src/baseline/pipeline.py` with symmetrical prompt formatting (`baseline_v1.txt`).
 - [x] **Two-Layer Validation:** Mandatory regex syntax check and Enterprise ATT&CK v19.2 registry membership check applied.
 - [x] **All 7 Parse Statuses Verified:** Exhaustive tests confirm VALID, INVALID_ID, MALFORMED_RESPONSE, REFUSAL, INCOMPLETE, API_FAILURE, and TIMEOUT.
-- [x] **Live API Budget Compliance:** Consumed {results["live_requests_consumed"]} / 5 live requests; budget counter strictly enforced.
+- [x] **Live API Budget Compliance:** Consumed {live_api_consumed} / 5 live requests; budget counter strictly enforced.
 - [x] **Test Suite Health:** All existing and new tests passing via `uv run pytest -v`.
 - [x] **Secret Safety:** Zero API secrets in code, reports, or version control.
 - [x] **Read-Only Whitelist:** Data pipeline source and tests unmodified.
@@ -574,6 +624,15 @@ The client records `latency_ms` measuring the **complete wall-clock duration** o
 
 
 if __name__ == "__main__":
-    res = run_smoke_test_pipeline()
-    print(f"Smoke test pipeline successfully executed. Valid cases: {res['valid_count']}/{res['total_synthetic_cases']}")
+    parser = argparse.ArgumentParser(description="Execute No-RAG baseline smoke test pipeline.")
+    parser.add_argument(
+        "--live",
+        action="store_true",
+        help="Allow live OpenAI API requests (capped at <= 5).",
+    )
+    args = parser.parse_args()
+    res = run_smoke_test_pipeline(allow_live=args.live)
+    print(
+        f"Smoke test pipeline successfully executed. Valid cases: {res['valid_count']}/{res['total_synthetic_cases']}"
+    )
 

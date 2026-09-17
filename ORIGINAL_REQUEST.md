@@ -521,3 +521,186 @@ No OpenAI/GPT inference, prompt benchmarking, model comparison, embeddings, FAIS
 
 ---
 *Expecting this to run as a full team project with orchestrator, parallel workers, and QA review — given the 12-task dependency chain with strict methodology gates.*
+
+## 2026-09-17T06:50:24Z
+
+Execute 8 final merge-readiness corrections on the `baseline-infra` branch of the RAG2ATTCK research project. This is a correction pass on existing infrastructure code — all changes are well-specified. Commit and push to `origin/baseline-infra` when done. **Do NOT merge into main.**
+
+Working directory: d:\RAG2ATT&CK-baseline-infra
+Integrity mode: development
+
+## Reference Material
+
+- Repository: https://github.com/habachcp6/RAG2ATTCK
+- Branch: `baseline-infra` at HEAD `6505bdea71156159ab07c5f2e4c11709aa34ac34`
+- Main HEAD: `e3c68566ca21ec10a6c089bf6c2020002082b70a`
+- Git worktree of `d:\RAG2ATT&CK` on branch `baseline-infra`
+- Package manager: `uv`
+- Python: >=3.13.0
+- Test framework: pytest
+- The implementation plan is at: `C:\Users\hahoa\.gemini\antigravity\brain\2041db39-b675-401e-92b8-b5cbe4a10771\implementation_plan.md`
+
+### Critical Constraints
+- Do NOT merge baseline-infra into main
+- Do NOT modify: README.md, Data/GT production files (`src/acquisition.py`, `src/artifacts.py`, `src/attack_loader.py`, `src/data_ground_truth.py`, `src/dataset.py`, `src/ground_truth.py`, `src/profiler.py`, `src/reconcile.py`), `config/data_ground_truth.json`, T02 literature docs
+- Do NOT add `sk-` prefixed strings to any file (not even test fixtures)
+- ZERO live OpenAI API calls allowed during implementation and testing
+
+## Requirements
+
+### R1. Fix Responses API Status and Refusal Handling
+
+Rewrite `_extract_response_content_and_status()` in `src/llm/client.py` to handle real OpenAI Responses API object shapes:
+
+**Status classification — full coverage:**
+
+| `response.status` | → `ParseStatus` |
+|---|---|
+| `completed` | Continue to output extraction |
+| `incomplete` | `INCOMPLETE` |
+| `failed` | `API_FAILURE` |
+| `cancelled` | `API_FAILURE` |
+| `queued` / `in_progress` | `API_FAILURE` (unexpected for synchronous calls) |
+| Any unknown value | `API_FAILURE` (defensive) |
+
+**Refusal detection for `completed` responses:**
+- Inspect `response.output[*].content[*]` for content parts with `type == "refusal"`
+- Extract `part.refusal` as the refusal message → `ParseStatus.REFUSAL`
+- For normal output: extract text from `type == "output_text"` parts or fall back to `response.output_text`
+
+**Also update mock objects in `src/baseline/smoke.py` failure pathways:**
+- Pathway 7 (REFUSAL): use realistic nested `output[].content[]` structure instead of flat `status="refused"` / `refusal="..."`
+- Remove stale `m9.chat.completions.create.side_effect` and `m10.chat.completions.create.side_effect` lines (lines 238, 248)
+
+**Also update mock helper `create_mock_responses_api_obj()` and the test helper `create_mock_responses_api_response()` in test files** to produce realistic nested output structure matching the real API.
+
+### R2. Fix Smoke Report Generator
+
+The `write_smoke_test_report()` function in `src/baseline/smoke.py` (lines 410–570) still emits stale fallback references. Fix:
+
+1. Remove `"Primary Responses API execution with operational fallback to Chat Completions API"` → `"Responses API execution (sole frozen experimental interface, no runtime fallback)"`
+2. Remove the `fallback_api_interface` row from the config table (line 448)
+3. Replace `"across the entire application lifecycle"` → `"per-process smoke-test live request cap"`
+4. Fix the status label: when `live_requests_consumed == 0` use `"Mock-only / unauthenticated test runtime"`, when > 0 use `"Authenticated live runtime"`
+5. Do NOT hardcode `$0.00` for cost — make it conditional: `$0.00` only when 0 live requests, otherwise `"See OpenAI dashboard for actual cost"`
+6. Label token/latency values as `*(mock telemetry)*` when `live_requests_consumed == 0`
+7. **Distinguish live sample count from actual API request count:** Report both `live_samples_dispatched` (samples sent to live API) and `live_api_requests_consumed` (from `LiveBudget.count`, includes retries). These are different numbers because one sample may consume multiple budget units due to retries.
+
+### R3. Validate Condition Enum at Runtime
+
+`condition` parameter currently accepts any string. Invalid values like `"norag"`, `"no-rag"`, `"No-RAG"`, `"baseline"` silently bypass the No-RAG retrieved_context isolation check.
+
+Add runtime validation:
+1. In `src/llm/schemas.py`: add `VALID_CONDITIONS = frozenset({"no_rag", "rag"})` and a `validate_condition(condition: str)` function that raises `ValueError` for invalid values
+2. In `src/llm/client.py` `predict()`: call `validate_condition()` as the **first** check — before the No-RAG isolation check
+3. In `src/baseline/pipeline.py` `run_sample()`: call `validate_condition()` before forwarding to client
+4. Tests must prove `ValueError` is raised **before** any API call (`mock.assert_not_called()`)
+
+### R4. Correct T11 Report
+
+In `reports/T11_model_freeze.md`:
+1. Line 82: Change `"Deepest reasoning compute tier"` → `"Frozen reasoning effort selected for this study"` (GPT-5.6 Luna supports `max` tier too)
+2. Line 49: The claim about `usage.output_tokens_details.reasoning_tokens` implies it's persisted — check `ExecutionRecord` in `src/llm/schemas.py` (it only stores `input_tokens` and `output_tokens`, not reasoning token breakdown). Reword to: `"The Responses API exposes reasoning token counts via usage.output_tokens_details.reasoning_tokens at query time; however, ExecutionRecord does not persist this field — only aggregate input_tokens and output_tokens are recorded."`
+3. Line 132: Remove stale mention of `max_completion_tokens`: change `"config/model.json strictly specifies max_output_tokens and max_completion_tokens"` → `"config/model.json specifies only max_output_tokens since the frozen interface is Responses API"`
+
+### R5. Correct LiveBudget Semantics + Mock-by-Default
+
+1. In `src/llm/client.py`: Update `LiveBudget` docstring — replace `"across the application lifecycle"` with `"Per-process smoke-test live request cap. Resets when the process restarts. The external OpenAI/project spend limit is the true cross-process safeguard."`
+2. In `src/baseline/smoke.py` `run_smoke_test_pipeline()`: Add `allow_live: bool = False` parameter. When `allow_live=False` (default): **always use mock client**, regardless of whether `OPENAI_API_KEY` exists. When `allow_live=True`: check key, respect ≤5 budget cap. Update `if __name__ == "__main__"` to accept `--live` flag.
+3. In `reports/T14_smoke_test_report.md`: Replace `"across the entire application lifecycle"` → `"per-process smoke-test run"` in the committed static report.
+
+### R6. Secret-Scan Cleanliness
+
+Replace all `sk-` prefixed fake test keys with non-secret placeholders:
+
+| File | Current | Replacement |
+|------|---------|-------------|
+| `tests/test_llm_client.py:120` | `"sk-test-key-for-unit-tests"` | `"test-key-for-unit-tests"` |
+| `tests/test_llm_client.py:129` | `"sk-injected-test-key"` | `"test-injected-key"` |
+| `tests/test_baseline_pipeline.py:98` | `"sk-test-pipeline-key"` | `"test-pipeline-key"` |
+
+Do NOT change the secret-scan patterns in `tests/test_model_config.py` (lines 90, 112) — those are scan/assertion logic, not fake keys.
+
+### R7. Remove Out-of-Scope Scripts
+
+Delete both files:
+- `scripts/adversarial_challenge_suite.py`
+- `scripts/generate_smoke_cases.py`
+
+Justification: `generate_smoke_cases.py` was a one-shot generator (output `smoke_cases.jsonl` already committed). `adversarial_challenge_suite.py` coverage is subsumed by existing test files. Neither is imported by `src/` or `tests/`. Both are outside the T11–T14 approved file whitelist.
+
+If removing these breaks any import or test, fix the breakage.
+
+### R8. Final Verification and Push
+
+1. Sync with current main: `git fetch origin && git merge origin/main` (resolve cleanly)
+2. Run `uv sync && uv run pytest -v` — all tests must pass
+3. Run secret scan: `Select-String -Pattern "sk-[A-Za-z0-9_\-]{20,}" -Recurse` across src/, tests/, config/, reports/
+4. Commit with descriptive message
+5. Push to `origin/baseline-infra`
+6. **Do NOT merge into main**
+
+## Acceptance Criteria
+
+### Responses API Status Handling
+- [ ] `_extract_response_content_and_status()` classifies all 6 documented Responses API statuses (`completed`, `incomplete`, `failed`, `cancelled`, `queued`, `in_progress`) correctly
+- [ ] Unknown/unexpected status values produce `API_FAILURE`, not `MALFORMED_RESPONSE`
+- [ ] Refusal detection works via realistic nested `response.output[*].content[*]` with `type == "refusal"` — NOT via flat `response.status == "refused"`
+- [ ] Each status classification has a dedicated passing test
+
+### Condition Validation
+- [ ] `validate_condition()` exists and is called before prompt construction in both `predict()` and `run_sample()`
+- [ ] `"norag"`, `"no-rag"`, `"No-RAG"`, `""`, `"baseline"` all raise `ValueError`
+- [ ] `"no_rag"` and `"rag"` are the only accepted values
+- [ ] Tests prove `ValueError` fires before any mock API call (`assert_not_called()`)
+
+### Report Generator
+- [ ] Regenerated T14 report contains ZERO occurrences of: `"Chat Completions"`, `"fallback"`, `"fallback_api_interface"`, `"Authenticated Runtime"` (when no live calls)
+- [ ] Regenerated report distinguishes live sample count from actual API request count
+- [ ] When 0 live requests: cost shows `$0.00`, metrics labelled as mock telemetry
+- [ ] Regression test verifies these invariants programmatically
+
+### Mock-by-Default
+- [ ] `run_smoke_test_pipeline()` with default `allow_live=False` performs ZERO live API calls even when `OPENAI_API_KEY` environment variable is set
+- [ ] `allow_live=True` + key present → live calls possible (capped at ≤5)
+- [ ] Test proves mock-by-default behavior with monkeypatched key
+
+### T11 Report
+- [ ] `reasoning_effort` described as `"Frozen reasoning effort selected for this study"`, not `"Deepest reasoning compute tier"`
+- [ ] No claim that `config/model.json` contains `max_completion_tokens`
+- [ ] Reasoning token telemetry accurately described as "available at query time" but not persisted in `ExecutionRecord`
+
+### LiveBudget Semantics
+- [ ] `LiveBudget` docstring says "per-process" not "application lifecycle"
+- [ ] T14 committed report says "per-process" not "application lifecycle"
+
+### Secret Scan
+- [ ] `Select-String -Pattern "sk-[A-Za-z0-9_\-]{20,}"` returns 0 matches across `src/`, `tests/`, `config/`, `reports/` (excluding scan pattern definitions in test_model_config.py)
+- [ ] Test fixture keys use non-`sk-` prefixed placeholders
+
+### Scope
+- [ ] `scripts/adversarial_challenge_suite.py` deleted
+- [ ] `scripts/generate_smoke_cases.py` deleted
+- [ ] No imports or tests broken by deletion
+
+### Final State
+- [ ] `uv run pytest -v` — all tests pass, 0 failures
+- [ ] baseline-infra is 0 commits behind current `origin/main`
+- [ ] Changes pushed to `origin/baseline-infra`
+- [ ] Branch is NOT merged into main
+- [ ] T15 remains unexecuted
+- [ ] 0 live OpenAI API calls during implementation
+
+### Return Report
+Produce a 10-item structured report:
+1. New HEAD SHA
+2. pytest collected/passed/failed/skipped
+3. Files changed relative to main (`git diff origin/main --stat`)
+4. Refusal-handling verification (which tests, pass/fail)
+5. Condition-validation verification (which tests, pass/fail)
+6. Regenerated-report verification (which tests, pass/fail)
+7. Mock-by-default verification (which tests, pass/fail)
+8. Secret-scan result (exact command, match count)
+9. Scope decision for the two scripts (deleted/retained + justification)
+10. Merge-ready YES/NO
+

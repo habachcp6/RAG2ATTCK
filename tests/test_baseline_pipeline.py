@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 from unittest.mock import MagicMock
+import pytest
 
 from src.baseline.pipeline import BaselinePipeline, format_baseline_prompt
 from src.llm.client import LLMClient
@@ -95,7 +96,7 @@ def test_baseline_pipeline_run_batch():
 
 def test_baseline_pipeline_default_instantiation(monkeypatch):
     """Verify default constructor BaselinePipeline() succeeds when API key is present."""
-    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-pipeline-key")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-pipeline-key")
     pipeline = BaselinePipeline()
     assert isinstance(pipeline.client, LLMClient)
     assert pipeline.prompt_version == "baseline_v1"
@@ -121,7 +122,6 @@ def test_pipeline_run_sample_rejects_norag_with_context():
     client = LLMClient(openai_client=mock_openai)
     pipeline = BaselinePipeline(client=client)
 
-    import pytest
     with pytest.raises(ValueError, match="Research integrity violation"):
         pipeline.run_sample(
             sample_id="test_isolation",
@@ -151,4 +151,20 @@ def test_pipeline_run_sample_allows_rag_with_context():
     )
     assert rec.condition == "rag"
     assert rec.parse_status == ParseStatus.VALID.value
+
+
+@pytest.mark.parametrize("bad_cond", ["norag", "no-rag", "No-RAG", "baseline", ""])
+def test_pipeline_run_sample_rejects_invalid_condition(bad_cond):
+    """Verify that run_sample() validates condition before forwarding or making API call."""
+    mock_openai = MagicMock()
+    client = LLMClient(openai_client=mock_openai)
+    pipeline = BaselinePipeline(client=client)
+
+    with pytest.raises(ValueError, match="Invalid experiment condition"):
+        pipeline.run_sample(
+            sample_id="test_bad_cond",
+            endpoint_evidence="powershell.exe",
+            condition=bad_cond,
+        )
+    mock_openai.responses.create.assert_not_called()
 

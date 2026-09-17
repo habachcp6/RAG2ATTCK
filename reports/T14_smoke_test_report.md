@@ -10,7 +10,7 @@ The smoke testing pipeline validates the full inference path:
 4. Pydantic schema deserialization (`{"technique_id": "..."}`)
 5. Mandatory post-hoc two-layer ATT&CK ID validation (syntax regex + Enterprise ATT&CK v19.2 registry)
 6. Precision wall-clock latency measurement (inclusive of retries and backoff)
-7. Global live API budget tracking and strict capping (≤ 5 requests total across project lifecycle)
+7. Global live API budget tracking and strict capping (≤ 5 requests per-process smoke-test run)
 8. Exhaustive verification of all 7 parse status taxonomy members across realistic failure conditions
 
 ---
@@ -47,19 +47,20 @@ The smoke testing pipeline validates the full inference path:
 
 ## 2. Global Live Request Budget & Cost Accounting
 
-The global live request budget strictly caps actual OpenAI API network invocations to **at most 5 requests total** (including all retries) across the entire application lifecycle.
+The global live request budget strictly caps actual OpenAI API network invocations to **at most 5 requests total** (including all retries) per-process smoke-test live request cap.
 
 | Metric | Recorded Value | Budget Limit | Status |
 | :--- | :--- | :--- | :--- |
-| **Live Environment Key Detected (`OPENAI_API_KEY`)** | `NO` | N/A | Mock-only / unauthenticated test runtime |
+| **Live Environment Key Detected (`OPENAI_API_KEY`)** | `YES` | N/A | Mock-only / unauthenticated test runtime |
+| **Live Samples Dispatched** | **`0`** | `25` | Sample routing |
 | **Live API Requests Consumed** | **`0`** | **5** (Maximum) | **COMPLIANT** (≤ 5) |
 | **Live API Requests Remaining** | `5` | 5 | Preserved |
 | **Mocked Predictions Executed** | `25` | N/A | Mock-engine insulated |
-| **Total Input Tokens (Synthetic Suite)** | `35,500` *(mock telemetry)* | N/A | Parametric inference |
-| **Total Output Tokens (Synthetic Suite)** | `800` *(mock telemetry)* | N/A | Structured output |
-| **Approximate Financial Cost** | **$0.00** | Budget Cap | No unmetered spend |
+| **Total Input Tokens (Synthetic Suite)** | `35,500 *(mock telemetry)*` | N/A | Parametric inference |
+| **Total Output Tokens (Synthetic Suite)** | `800 *(mock telemetry)*` | N/A | Structured output |
+| **Approximate Financial Cost** | **$0.00 (no live requests)** | Budget Cap | No unmetered spend |
 
-*Note: In environments where `OPENAI_API_KEY` is not present, all 25 synthetic cases are executed against the deterministic mock engine, incurring 0 live requests and $0.00 cost, while fully exercising prompt construction, validation, and serialization logic. All token counts and latencies in this report are synthetic mock values — not live provider performance measurements.*
+*Note: In environments where `OPENAI_API_KEY` is not present (or in default mock mode), all 25 synthetic cases are executed against the deterministic mock engine, incurring 0 live requests and $0.00 cost, while fully exercising prompt construction, validation, and serialization logic. All token counts and latencies in this report are synthetic mock values — not live provider performance measurements.*
 
 ---
 
@@ -70,37 +71,37 @@ All 25 synthetic cases from `data/synthetic/smoke_cases.jsonl` were processed se
 ### Summary Statistics
 - **Total Synthetic Cases:** `25`
 - **Successfully Parsed & Validated (`VALID`):** `25` / `25` (100.0%)
-- **Average Wall-Clock Latency per Sample:** `0.24 ms` *(mock telemetry — not live provider latency)*
-- **Total Wall-Clock Pipeline Duration:** `6.07 ms` *(mock telemetry)*
+- **Average Wall-Clock Latency per Sample:** `0.49 ms` *(mock telemetry)*
+- **Total Wall-Clock Pipeline Duration:** `12.19 ms` *(mock telemetry)*
 
 ### Execution Records Log
 | Sample ID | Predicted Technique | Parse Status | Retries | Latency | Tokens (In / Out) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `synthetic_001` | `T1059.001` | `VALID` | `0` | `0.6 ms` | `1420 / 32` |
-| `synthetic_002` | `T1059.003` | `VALID` | `0` | `0.3 ms` | `1420 / 32` |
+| `synthetic_001` | `T1059.001` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
+| `synthetic_002` | `T1059.003` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
 | `synthetic_003` | `T1053.005` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
-| `synthetic_004` | `T1105` | `VALID` | `0` | `0.3 ms` | `1420 / 32` |
+| `synthetic_004` | `T1105` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
 | `synthetic_005` | `T1003.001` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
 | `synthetic_006` | `T1547.001` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
 | `synthetic_007` | `T1087.001` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
-| `synthetic_008` | `T1562.001` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
+| `synthetic_008` | `T1562.001` | `VALID` | `0` | `0.3 ms` | `1420 / 32` |
 | `synthetic_009` | `T1112` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
-| `synthetic_010` | `T1055.001` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
-| `synthetic_011` | `T1070.004` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
-| `synthetic_012` | `T1218.005` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
-| `synthetic_013` | `T1218.010` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
-| `synthetic_014` | `T1218.011` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
-| `synthetic_015` | `T1047` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
-| `synthetic_016` | `T1548.002` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
-| `synthetic_017` | `T1566.001` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
+| `synthetic_010` | `T1055.001` | `VALID` | `0` | `0.4 ms` | `1420 / 32` |
+| `synthetic_011` | `T1070.004` | `VALID` | `0` | `4.4 ms` | `1420 / 32` |
+| `synthetic_012` | `T1218.005` | `VALID` | `0` | `0.4 ms` | `1420 / 32` |
+| `synthetic_013` | `T1218.010` | `VALID` | `0` | `0.3 ms` | `1420 / 32` |
+| `synthetic_014` | `T1218.011` | `VALID` | `0` | `0.3 ms` | `1420 / 32` |
+| `synthetic_015` | `T1047` | `VALID` | `0` | `0.4 ms` | `1420 / 32` |
+| `synthetic_016` | `T1548.002` | `VALID` | `0` | `0.4 ms` | `1420 / 32` |
+| `synthetic_017` | `T1566.001` | `VALID` | `0` | `0.4 ms` | `1420 / 32` |
 | `synthetic_018` | `T1486` | `VALID` | `0` | `0.4 ms` | `1420 / 32` |
-| `synthetic_019` | `T1490` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
-| `synthetic_020` | `T1082` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
-| `synthetic_021` | `T1083` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
-| `synthetic_022` | `T1016` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
-| `synthetic_023` | `T1078.003` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
-| `synthetic_024` | `T1027.002` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
-| `synthetic_025` | `T1570` | `VALID` | `0` | `0.2 ms` | `1420 / 32` |
+| `synthetic_019` | `T1490` | `VALID` | `0` | `0.4 ms` | `1420 / 32` |
+| `synthetic_020` | `T1082` | `VALID` | `0` | `0.4 ms` | `1420 / 32` |
+| `synthetic_021` | `T1083` | `VALID` | `0` | `0.4 ms` | `1420 / 32` |
+| `synthetic_022` | `T1016` | `VALID` | `0` | `0.4 ms` | `1420 / 32` |
+| `synthetic_023` | `T1078.003` | `VALID` | `0` | `0.4 ms` | `1420 / 32` |
+| `synthetic_024` | `T1027.002` | `VALID` | `0` | `0.5 ms` | `1420 / 32` |
+| `synthetic_025` | `T1570` | `VALID` | `0` | `0.4 ms` | `1420 / 32` |
 
 ---
 
@@ -147,7 +148,7 @@ To guarantee total pipeline resilience, an exhaustive suite of 10 targeted failu
 | **F4** | Layer 2 Registry Failure | Syntax passes regex, absent from v19.2 `T9999` | `INVALID_ID` | `INVALID_ID` | PASS |
 | **F5** | JSON Parsing Failure | Broken unparseable JSON text | `MALFORMED_RESPONSE` | `MALFORMED_RESPONSE` | PASS |
 | **F6** | Schema Validation Failure | Missing required `technique_id` field | `MALFORMED_RESPONSE` | `MALFORMED_RESPONSE` | PASS |
-| **F7** | Upfront Safety Refusal | Model status `refused` / refusal object | `REFUSAL` | `REFUSAL` | PASS |
+| **F7** | Upfront Safety Refusal | Model status `completed` / refusal object | `REFUSAL` | `REFUSAL` | PASS |
 | **F8** | Incomplete Output | `finish_reason='length'` / max token cutoff | `INCOMPLETE` | `INCOMPLETE` | PASS |
 | **F9** | Non-Retryable Error | HTTP 400 Bad Request / parameter error | `API_FAILURE` | `API_FAILURE` | PASS |
 | **F10** | Exhausted Retries / Timeout | `APITimeoutError` after 3 backoff retries | `TIMEOUT` | `TIMEOUT` | PASS |

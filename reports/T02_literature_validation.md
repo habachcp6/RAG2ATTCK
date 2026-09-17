@@ -101,10 +101,10 @@ We evaluate the four central positioning hypotheses of the study against the dis
 ### Statement D: "The potentially defensible extension is the combination of: Windows endpoint logs + exact technique/sub-technique attribution + controlled matched RAG vs No-RAG experiment + explicit retrieval-success -> final-attribution analysis + retrieval-vs-generation failure decomposition + Top-k accuracy/latency/token analysis."
 - **Status:** **SETTING-SPECIFIC EXTENSION.**
 - **Breakdown:**
-  1. *Windows endpoint logs:* ALREADY ESTABLISHED as an input domain (Okuma et al., 2023; Yang & Hsu, 2026), but NOT in a controlled exact-technique RAG experiment.
-  2. *Exact technique/sub-technique attribution:* ALREADY ESTABLISHED in CTI (TechniqueRAG) and cloud telemetry (Adediran et al.), but NOT systematically benchmarked under controlled RAG vs No-RAG on Windows endpoint event logs.
+  1. *Windows endpoint logs:* ALREADY ESTABLISHED as an input domain (Okuma et al., 2023; Yang & Hsu, 2026), but a controlled exact-technique RAG experiment was not identified among the reviewed comparators.
+  2. *Exact technique/sub-technique attribution:* ALREADY ESTABLISHED in CTI (TechniqueRAG) and cloud telemetry (Adediran et al.), but a controlled RAG-vs-No-RAG benchmark on Windows endpoint event logs was not identified among the reviewed comparators.
   3. *Controlled matched RAG vs No-RAG experiment:* ALREADY ESTABLISHED in adjacent domains (CloudTrail, Linux eBPF, and binary Sysmon).
-  4. *Explicit retrieval-success $\to$ final-attribution analysis:* PARTIALLY ESTABLISHED in CTI text (TechniqueRAG), but UNEXPLORED in Windows endpoint telemetry.
+  4. *Explicit retrieval-success $\to$ final-attribution analysis:* PARTIALLY ESTABLISHED in CTI text (TechniqueRAG), but was not identified in the reviewed Windows endpoint comparator literature.
   5. *Retrieval-vs-generation failure decomposition:* PARTIALLY ESTABLISHED (qualitatively noted in Adediran et al., but not formally structured as a conditional quantitative metric $\text{Acc} \mid (\text{GT} \in \text{Top-k})$ vs $\text{Acc} \mid (\text{GT} \notin \text{Top-k})$).
   6. *Top-k accuracy/latency/token analysis:* ALREADY ESTABLISHED conceptually (H-TechniqueRAG), but constitutes a SETTING-SPECIFIC EXTENSION when applied as an empirical parameter ablation on Windows endpoint telemetry.
 - **Verdict:** The whole combination is defensible as a **setting-specific empirical replication and diagnostic extension**, not an algorithmic invention.

@@ -37,8 +37,10 @@ from src.synthetic import (
 )
 from src.synthetic_validator import (
     ValidationResult, validate_synthetic_dataset,
+    validate_template_registry,
     compute_transition_matrix, compute_statistics, generate_audit_table,
-    ALLOWED_TRANSITIONS, BENCHMARK_CATALOG, VALID_LABEL_STATUSES,
+    ALLOWED_TRANSITIONS, BENCHMARK_CATALOG, BENCHMARK_TECHNIQUE_NAMES,
+    VALID_LABEL_STATUSES,
     _check_01_schema, _check_04_single_one_event,
     _check_05_contextual_event_count, _check_06_anchor_exists_in_both,
     _check_07_strict_anchor_equality, _check_11_mapped_has_techniques,
@@ -798,6 +800,136 @@ class TestTemplateRegistry:
                     # At least rationale should exist
                     assert "rationale" in gt or "rationale" in f, \
                         f"{f['template_family_id']} {gt_key}: missing rationale"
+
+
+class TestSemanticRegistryValidator:
+    """Registry-level checks must fail closed before Stage B can run."""
+
+    @pytest.fixture
+    def registry(self):
+        return json.loads(Path("config/synthetic_templates.json").read_text(encoding="utf-8"))
+
+    @staticmethod
+    def validate(registry):
+        stix = Path("attack/raw/enterprise-v19.2/enterprise-attack-19.2.json")
+        return validate_template_registry(registry, stix)
+
+    @staticmethod
+    def family(registry, family_id):
+        return next(f for f in registry["families"] if f["template_family_id"] == family_id)
+
+    def test_current_registry_passes(self, registry):
+        result = self.validate(registry)
+        assert result.passed, result.errors
+
+    @pytest.mark.parametrize("mutation", [
+        lambda f: f["single_ground_truth"].__setitem__("evidence_predicate", {"all": []}),
+        lambda f: f["single_ground_truth"].__setitem__("rationale", ""),
+        lambda f: f["anchor"].__setitem__("provider", "any"),
+        lambda f: f["anchor"].__setitem__("channel", "any"),
+        lambda f: f["anchor"].__setitem__("windows_event_id", 0),
+        lambda f: f.__setitem__("behavior_description", "Dev"),
+        lambda f: f.__setitem__("behavior_description", "Benign"),
+        lambda f: f["anchor"].__setitem__("selection_rule", "any"),
+        lambda f: f["single_ground_truth"]["technique_names"].__setitem__(0, "CMD"),
+        lambda f: f["single_ground_truth"]["technique_names"].__setitem__(0, "wrong name"),
+        lambda f: f.pop("attack_source"),
+        lambda f: f.pop("windows_telemetry_source"),
+    ])
+    def test_rejects_semantic_placeholder_or_missing_provenance(self, registry, mutation):
+        candidate = copy.deepcopy(registry)
+        mutation(self.family(candidate, "TF_T1059_001_A"))
+        result = self.validate(candidate)
+        assert not result.passed
+
+    def test_eid_4697_security_auditing_is_accepted(self, registry):
+        result = self.validate(registry)
+        assert result.passed
+
+    def test_eid_7045_security_auditing_is_rejected(self, registry):
+        candidate = copy.deepcopy(registry)
+        family = self.family(candidate, "TF_T1543_003_A")
+        family["anchor"]["windows_event_id"] = 7045
+        result = self.validate(candidate)
+        assert any("unsupported provider/channel/EventID" in e or "7045" in e for e in result.errors)
+
+    def test_eid_1102_eventlog_security_is_accepted(self, registry):
+        result = self.validate(registry)
+        assert result.passed
+
+    def test_eid_1102_security_auditing_is_rejected(self, registry):
+        candidate = copy.deepcopy(registry)
+        family = self.family(candidate, "TF_T1685_005_A")
+        family["anchor"]["provider"] = "Microsoft-Windows-Security-Auditing"
+        result = self.validate(candidate)
+        assert any("1102" in e and ("unsupported" in e or "Eventlog" in e) for e in result.errors)
+
+    def test_sysmon_canonical_provider_channel_is_accepted(self, registry):
+        result = self.validate(registry)
+        assert result.passed
+
+    def test_eid_1102_only_mapped_template_is_rejected(self, registry):
+        candidate = copy.deepcopy(registry)
+        family = self.family(candidate, "TF_T1685_005_A")
+        family["single_ground_truth"] = {
+            "status": "mapped",
+            "technique_ids": ["T1685.005"],
+            "technique_names": [BENCHMARK_TECHNIQUE_NAMES["T1685.005"]],
+            "evidence_predicate": {"all": [
+                {"event": "anchor", "field": "EventID", "op": "eq", "value": 1102},
+            ]},
+            "rationale": "Incorrectly maps the outcome event without mechanism evidence.",
+        }
+        family["expected_transition"] = "mapped->mapped"
+        result = self.validate(candidate)
+        assert any("1102-only" in e for e in result.errors)
+
+    def test_ambiguous_template_requires_visible_evidence(self, registry):
+        candidate = copy.deepcopy(registry)
+        family = self.family(candidate, "TF_AMBIG_A")
+        family["single_ground_truth"]["evidence_predicate"] = {"all": []}
+        result = self.validate(candidate)
+        assert any("empty evidence predicate" in e for e in result.errors)
+
+    def test_unmapped_template_requires_affirmative_benign_clause(self, registry):
+        candidate = copy.deepcopy(registry)
+        family = self.family(candidate, "TF_UNMAP_A")
+        family["single_ground_truth"]["evidence_predicate"] = {"all": [
+            {"event": "anchor", "field": "EventID", "op": "eq", "value": 1},
+        ]}
+        result = self.validate(candidate)
+        assert any("affirmative negative/allowlist" in e for e in result.errors)
+
+    def test_multi_label_requires_independent_contextual_predicates(self, registry):
+        candidate = copy.deepcopy(registry)
+        family = self.family(candidate, "TF_MULTI_A")
+        family["contextual_ground_truth"]["evidence_predicate"].pop("T1105")
+        result = self.validate(candidate)
+        assert any("each contextual multi-label technique" in e for e in result.errors)
+
+    def test_dev_family_cannot_be_structural_clone_of_test(self, registry):
+        candidate = copy.deepcopy(registry)
+        test_family = self.family(candidate, "TF_T1059_001_A")
+        dev_family = self.family(candidate, "TF_T1059_001_DEV")
+        for key in ("category", "technique_ids", "anchor", "single_ground_truth", "contextual_ground_truth", "contextual_event_specs"):
+            dev_family[key] = copy.deepcopy(test_family[key])
+        result = self.validate(candidate)
+        assert any("structural clone" in e for e in result.errors)
+
+    def test_assign_splits_preserves_registry_approved_family_split(self):
+        pairs = [
+            make_valid_pair("split_dev", split="dev", family="TF_T1059_001_DEV"),
+            make_valid_pair("split_test", split="test", family="TF_T1059_001_A"),
+        ]
+        dev, test = assign_splits(
+            pairs,
+            seed=20260915,
+            dev_quota={"mapped_single": 0},
+            test_quota={"mapped_single": 2},
+            approved_splits={"TF_T1059_001_DEV": "dev", "TF_T1059_001_A": "test"},
+        )
+        assert {p.template_family_id for p in dev} == {"TF_T1059_001_DEV"}
+        assert {p.template_family_id for p in test} == {"TF_T1059_001_A"}
 
 
 # ============================================================

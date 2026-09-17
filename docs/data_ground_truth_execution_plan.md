@@ -132,7 +132,7 @@ All 8 techniques verified active (not revoked/deprecated) against pinned STIX sn
 ### 5.7 Constraints
 
 - **Determinism**: Seed `20260915`; `random.Random(seed)` per scenario, not global.
-- **Providers**: Windows Security + Sysmon only.
+- **Providers**: Windows Security-Auditing, Windows Eventlog, and Sysmon.
 - **Service install**: EID **4697** (Security-Auditing), not 7045 (Service Control Manager/System).
 - **Safe indicators**: RFC 5737 IPs, `*.example.invalid` domains.
 - **Near-duplicate detection**: Character 5-gram Jaccard ≥ 0.95.
@@ -147,8 +147,14 @@ Authoritative source: `config/synthetic_templates.json`.
 
 Pipeline: registry → validator → generator → approval report → dataset.
 
-- 64 template families (52 test, 12 dev)
+- 64 semantic template families (52 test, 12 dev), with no provider/EventID or
+  rationale placeholders
 - Evidence predicates in structured DSL (eq, contains_ci, endswith_ci, all/any/not)
+- Canonical telemetry tuples: Security-Auditing/Security for EID 4688, 4697,
+  4698, 4720; Eventlog/Security for EID 1102; Sysmon/Operational for EID 1,
+  3, 11, 13
+- EID 1102 is an audit-log-cleared outcome only; T1685.005 single views remain
+  ambiguous unless mechanism evidence is visible in that view
 - Registry hash verified for freeze integrity
 
 ### 5.9 Staged Execution
@@ -156,7 +162,7 @@ Pipeline: registry → validator → generator → approval report → dataset.
 **Stage A** (prepare & approve):
 1. Validate ATT&CK catalog against pinned STIX
 2. Create template registry with structured evidence predicates
-3. Build schema, validator (30 checks), tests
+3. Build schema, registry semantic validator, dataset validator, and tests
 4. Create human-review approval package
 5. **STOP** → `STATUS: WAITING_FOR_HUMAN_APPROVAL`
 
@@ -182,6 +188,6 @@ The synthetic pipeline does **not** depend on Windows-APT Task 2 or Task 4 gates
 ### 5.11 Source Modules
 
 - `src/synthetic.py`: Data model, event builders, ID generation, serialization.
-- `src/synthetic_validator.py`: 30 validation checks covering schema, quotas, transitions, leakage, host constraints, near-duplicates, and freeze integrity.
+- `src/synthetic_validator.py`: registry semantic validation plus the dataset checks covering schema, quotas, transitions, leakage, host constraints, near-duplicates, and freeze integrity.
 - `tests/test_synthetic.py`: Comprehensive test suite with positive and negative tests.
 - `config/synthetic_templates.json`: Authoritative template registry (64 families).

@@ -57,7 +57,7 @@
       "T1136.001", "T1547.001", "T1685.005", "T1105"
     ],
     "attack_version_pinned": "19.2",
-    "providers": ["Microsoft-Windows-Security-Auditing", "Microsoft-Windows-Sysmon"],
+    "providers": ["Microsoft-Windows-Security-Auditing", "Microsoft-Windows-Eventlog", "Microsoft-Windows-Sysmon"],
     "channels": ["Security", "Microsoft-Windows-Sysmon/Operational"],
     "attribution_rubric": {
       "policy": "evidence_conditioned_closed_world",
@@ -114,11 +114,12 @@
       "safe_ip_ranges": ["192.0.2.0/24", "198.51.100.0/24", "203.0.113.0/24"],
       "safe_domain_tld": [".invalid", ".example"]
     },
-    "paths": {
-      "template_registry": "config/synthetic_templates.json",
-      "template_families_approval": "docs/synthetic/template_families_approval.md",
-      "synthetic_output_dir": "data/ground_truth/synthetic",
-      "synthetic_metadata_dir": "data/metadata/synthetic"
+      "paths": {
+        "template_registry": "config/synthetic_templates.json",
+        "template_families_approval": "docs/synthetic/template_families_approval.md",
+        "template_registry_validator": "scripts/validate_synthetic_registry.py",
+        "synthetic_output_dir": "data/ground_truth/synthetic",
+        "synthetic_metadata_dir": "data/metadata/synthetic"
     }
   }
 }

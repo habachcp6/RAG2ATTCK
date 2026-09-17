@@ -19,7 +19,7 @@ from src.synthetic import (
     ScenarioPair, View, SyntheticEvent, ViewGroundTruth,
     check_leakage, find_near_duplicates, get_inference_payload,
     INFERENCE_ALLOWLIST, HOSTS_DOMAIN_CONTROLLER,
-    HOSTS_ALLOWED_LOCAL_ACCOUNT,
+    HOSTS_ALLOWED_LOCAL_ACCOUNT, CANONICAL_TELEMETRY_SCHEMA,
 )
 
 
@@ -64,6 +64,499 @@ BENCHMARK_CATALOG = {
     "T1059.001", "T1059.003", "T1053.005", "T1543.003",
     "T1136.001", "T1547.001", "T1685.005", "T1105",
 }
+
+BENCHMARK_TECHNIQUE_NAMES = {
+    "T1059.001": "PowerShell",
+    "T1059.003": "Windows Command Shell",
+    "T1053.005": "Scheduled Task",
+    "T1543.003": "Windows Service",
+    "T1136.001": "Local Account",
+    "T1547.001": "Registry Run Keys / Startup Folder",
+    "T1685.005": "Clear Windows Event Logs",
+    "T1105": "Ingress Tool Transfer",
+}
+
+VALID_REGISTRY_CATEGORIES = {"mapped_single", "mapped_multi", "unmapped", "ambiguous"}
+VALID_REGISTRY_SPLITS = {"dev", "test"}
+PREDICATE_OPERATORS = {
+    "eq", "neq", "contains", "contains_ci", "startswith", "startswith_ci",
+    "endswith", "endswith_ci", "regex", "in", "not_in",
+}
+PREDICATE_RELATIONS = {
+    "parent_child", "same_host", "same_user", "same_logon",
+    "same_process_guid", "same_process", "temporal_before",
+    "temporal_within", "network_then_file", "process_then_file", "process_then_network",
+    "process_then_registry", "process_then_task", "process_then_service",
+}
+GENERIC_METADATA_PLACEHOLDERS = {"dev", "benign", "ambiguous", "any", "multi", "ps", "reg", "svc", "net"}
+
+
+# ============================================================
+# Authoritative registry validation (Stage A)
+# ============================================================
+
+def _registry_predicate_has_leaf(predicate: Any) -> bool:
+    """Return whether a structured predicate contains an actual field test."""
+    if not isinstance(predicate, dict):
+        return False
+    if {"event", "field", "op", "value"}.issubset(predicate):
+        return True
+    if "all" in predicate or "any" in predicate:
+        return any(_registry_predicate_has_leaf(item)
+                   for item in predicate.get("all", predicate.get("any", [])))
+    if "not" in predicate:
+        return _registry_predicate_has_leaf(predicate["not"])
+    if "relation" in predicate:
+        return True
+    return False
+
+
+def _registry_predicate_leaves(predicate: Any) -> List[Dict[str, Any]]:
+    """Collect field-test leaves from a registry DSL predicate."""
+    if not isinstance(predicate, dict):
+        return []
+    if {"event", "field", "op", "value"}.issubset(predicate):
+        return [predicate]
+    leaves: List[Dict[str, Any]] = []
+    for key in ("all", "any"):
+        if key in predicate and isinstance(predicate[key], list):
+            for item in predicate[key]:
+                leaves.extend(_registry_predicate_leaves(item))
+    if "not" in predicate:
+        leaves.extend(_registry_predicate_leaves(predicate["not"]))
+    return leaves
+
+
+def _registry_predicate_has_negative_clause(predicate: Any) -> bool:
+    """Whether a predicate contains an explicit negative/allowlist clause."""
+    if not isinstance(predicate, dict):
+        return False
+    if "not" in predicate:
+        return True
+    if predicate.get("op") in {"neq", "not_in"}:
+        return True
+    for key in ("all", "any"):
+        if any(_registry_predicate_has_negative_clause(item) for item in predicate.get(key, [])):
+            return True
+    return False
+
+
+def _validate_registry_dsl(
+    predicate: Any,
+    path: str,
+    allowed_events: Dict[str, Tuple[str, ...]],
+    result: ValidationResult,
+) -> None:
+    """Validate the closed, machine-readable registry predicate DSL."""
+    if not isinstance(predicate, dict) or not predicate:
+        result.add_error(f"{path}: empty evidence predicate")
+        return
+
+    keys = set(predicate)
+    logical_keys = keys & {"all", "any", "not"}
+    if logical_keys:
+        if len(logical_keys) != 1:
+            result.add_error(f"{path}: predicate has multiple logical operators")
+            return
+        operator = next(iter(logical_keys))
+        if operator in {"all", "any"}:
+            children = predicate[operator]
+            if not isinstance(children, list) or not children:
+                result.add_error(f"{path}: empty evidence predicate")
+                result.add_error(f"{path}: {operator} must contain at least one rule")
+                return
+            for index, child in enumerate(children):
+                _validate_registry_dsl(child, f"{path}.{operator}[{index}]", allowed_events, result)
+            return
+        if keys != {"not"}:
+            result.add_error(f"{path}: not predicate has unexpected keys")
+            return
+        _validate_registry_dsl(predicate["not"], f"{path}.not", allowed_events, result)
+        return
+
+    if "relation" in keys:
+        relation_name = predicate.get("relation")
+        if relation_name not in PREDICATE_RELATIONS:
+            result.add_error(f"{path}: unsupported relation {relation_name!r}")
+        if len(keys) < 2 or any(value in (None, "", [], {}) for key, value in predicate.items() if key != "relation"):
+            result.add_error(f"{path}: relation must identify related events")
+        return
+
+    required_leaf_keys = {"event", "field", "op", "value"}
+    if keys != required_leaf_keys:
+        result.add_error(f"{path}: unsupported predicate shape/keys {sorted(keys)}")
+        return
+    event_name = predicate["event"]
+    field = predicate["field"]
+    operator = predicate["op"]
+    if event_name not in allowed_events:
+        result.add_error(f"{path}: event reference {event_name!r} is not in this view")
+    elif field not in allowed_events[event_name]:
+        result.add_error(
+            f"{path}: field {field!r} is not visible for {event_name} in its telemetry schema"
+        )
+    if operator not in PREDICATE_OPERATORS:
+        result.add_error(f"{path}: unsupported field operator {operator!r}")
+    elif operator == "regex":
+        try:
+            re.compile(str(predicate["value"]))
+        except re.error as exc:
+            result.add_error(f"{path}: invalid regex: {exc}")
+    elif operator in {"in", "not_in"} and (
+        not isinstance(predicate["value"], list) or not predicate["value"]
+    ):
+        result.add_error(f"{path}: {operator} requires a non-empty list")
+
+
+def _registry_event_schema(
+    event_spec: Dict[str, Any], path: str, result: ValidationResult
+) -> Optional[Tuple[str, ...]]:
+    """Validate a provider/channel/EventID tuple and return visible fields."""
+    provider = event_spec.get("provider")
+    channel = event_spec.get("channel")
+    event_id = event_spec.get("windows_event_id")
+    if provider == "any":
+        result.add_error(f"{path}: provider='any' is not allowed")
+    if channel == "any":
+        result.add_error(f"{path}: channel='any' is not allowed")
+    if not isinstance(event_id, int) or isinstance(event_id, bool) or event_id == 0:
+        result.add_error(f"{path}: EventID must be a non-zero integer")
+        return None
+    fields = CANONICAL_TELEMETRY_SCHEMA.get((provider, channel), {}).get(event_id)
+    if fields is None:
+        result.add_error(
+            f"{path}: unsupported provider/channel/EventID combination "
+            f"{provider!r}/{channel!r}/{event_id}"
+        )
+    return fields
+
+
+def _registry_ground_truth(
+    family: Dict[str, Any],
+    gt_key: str,
+    event_schemas: Dict[str, Tuple[str, ...]],
+    stix_names: Dict[str, str],
+    result: ValidationResult,
+) -> None:
+    gt = family.get(gt_key)
+    path = f"{family.get('template_family_id', '<missing>')}.{gt_key}"
+    if not isinstance(gt, dict):
+        result.add_error(f"{path}: missing ground-truth object")
+        return
+    status = gt.get("status")
+    if status not in VALID_LABEL_STATUSES:
+        result.add_error(f"{path}: invalid status {status!r}")
+    ids = gt.get("technique_ids")
+    names = gt.get("technique_names")
+    if not isinstance(ids, list) or not isinstance(names, list):
+        result.add_error(f"{path}: technique_ids and technique_names must be lists")
+        ids, names = [], []
+    if len(ids) != len(names):
+        result.add_error(f"{path}: technique ID/name lengths differ")
+    for index, tid in enumerate(ids):
+        if tid not in BENCHMARK_CATALOG:
+            result.add_error(f"{path}: technique outside benchmark catalog: {tid!r}")
+        expected_name = stix_names.get(tid, BENCHMARK_TECHNIQUE_NAMES.get(tid))
+        if index >= len(names) or names[index] != expected_name:
+            result.add_error(
+                f"{path}: ATT&CK ID/name mismatch for {tid}: "
+                f"{names[index] if index < len(names) else None!r} != {expected_name!r}"
+            )
+    if status == "mapped" and not ids:
+        result.add_error(f"{path}: mapped ground truth has no mapped technique")
+    if status in {"unmapped", "ambiguous"} and ids:
+        result.add_error(f"{path}: {status} ground truth must not contain techniques")
+    predicate = gt.get("evidence_predicate")
+    is_multi_context = (
+        gt_key == "contextual_ground_truth"
+        and family.get("category") == "mapped_multi"
+    )
+    predicate_leaves: List[Dict[str, Any]] = []
+    if is_multi_context:
+        if not isinstance(predicate, dict) or set(predicate) != set(ids) or len(predicate) < 2:
+            result.add_error(f"{path}: each contextual multi-label technique needs its own predicate")
+        else:
+            for tid in ids:
+                _validate_registry_dsl(predicate[tid], f"{path}.evidence_predicate.{tid}", event_schemas, result)
+                predicate_leaves.extend(_registry_predicate_leaves(predicate[tid]))
+    else:
+        _validate_registry_dsl(predicate, f"{path}.evidence_predicate", event_schemas, result)
+        predicate_leaves = _registry_predicate_leaves(predicate)
+    if not predicate_leaves:
+        result.add_error(f"{path}: evidence predicate has no visible field evidence")
+    if status == "unmapped" and not _registry_predicate_has_negative_clause(predicate):
+        result.add_error(f"{path}: unmapped predicate lacks affirmative negative/allowlist evidence")
+    rationale = gt.get("rationale")
+    if not isinstance(rationale, str) or not rationale.strip():
+        result.add_error(f"{path}: empty rationale")
+
+
+def _registry_structure_signature(family: Dict[str, Any]) -> str:
+    """Signature used to catch DEV/TEST clones that only change decoration."""
+    signature = {
+        "category": family.get("category"),
+        "technique_ids": family.get("technique_ids"),
+        "anchor": family.get("anchor"),
+        "single": family.get("single_ground_truth"),
+        "contextual": family.get("contextual_ground_truth"),
+        "contextual_event_specs": family.get("contextual_event_specs"),
+    }
+    return json.dumps(signature, sort_keys=True, ensure_ascii=False)
+
+
+def validate_template_registry(
+    registry: Dict[str, Any],
+    stix_path: Optional[Path] = None,
+) -> ValidationResult:
+    """Validate the authoritative Stage A template registry before Stage B.
+
+    This validator intentionally accepts no placeholder semantics.  It checks
+    registry content directly, independently of generated dataset artifacts.
+    """
+    result = ValidationResult()
+    if not isinstance(registry, dict):
+        result.add_error("[REGISTRY] registry must be a JSON object")
+        return result
+    families = registry.get("families")
+    if not isinstance(families, list) or not families:
+        result.add_error("[REGISTRY] families must be a non-empty list")
+        return result
+
+    stix_names = dict(BENCHMARK_TECHNIQUE_NAMES)
+    if stix_path and stix_path.exists():
+        try:
+            from src.attack_loader import parse_attack_bundle
+            loaded = parse_attack_bundle(stix_path)
+            stix_names = {tid: loaded[tid].name for tid in BENCHMARK_CATALOG if tid in loaded}
+        except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
+            result.add_error(f"[REGISTRY] unable to read pinned ATT&CK snapshot: {exc}")
+
+    seen_ids: Set[str] = set()
+    dev_signatures: Dict[str, str] = {}
+    test_signatures: Dict[str, str] = {}
+    category_quota = {
+        ("test", "mapped_single"): 400,
+        ("test", "mapped_multi"): 40,
+        ("test", "unmapped"): 150,
+        ("test", "ambiguous"): 50,
+        ("dev", "mapped_single"): 16,
+        ("dev", "mapped_multi"): 4,
+        ("dev", "unmapped"): 6,
+        ("dev", "ambiguous"): 4,
+    }
+
+    for index, family in enumerate(families):
+        path = f"[REGISTRY] family[{index}]"
+        if not isinstance(family, dict):
+            result.add_error(f"{path}: family must be an object")
+            continue
+        fid = family.get("template_family_id")
+        if not isinstance(fid, str) or not fid.strip():
+            result.add_error(f"{path}: missing family ID")
+            fid = f"<family-{index}>"
+        elif fid in seen_ids:
+            result.add_error(f"{path}: duplicate family ID {fid}")
+        seen_ids.add(fid)
+
+        category = family.get("category")
+        split = family.get("split")
+        if category not in VALID_REGISTRY_CATEGORIES:
+            result.add_error(f"{fid}: invalid category {category!r}")
+        if split not in VALID_REGISTRY_SPLITS:
+            result.add_error(f"{fid}: invalid split {split!r}")
+
+        behavior = family.get("behavior_description")
+        if not isinstance(behavior, str) or not behavior.strip():
+            result.add_error(f"{fid}: empty behavior_description")
+        elif behavior.strip().casefold() in GENERIC_METADATA_PLACEHOLDERS:
+            result.add_error(f"{fid}: generic behavior_description placeholder")
+
+        anchor = family.get("anchor")
+        if not isinstance(anchor, dict):
+            result.add_error(f"{fid}: missing anchor")
+            anchor = {}
+        anchor_fields = _registry_event_schema(anchor, f"{fid}.anchor", result)
+        selection_rule = anchor.get("selection_rule")
+        if not isinstance(selection_rule, str) or not selection_rule.strip() or selection_rule.strip().casefold() in GENERIC_METADATA_PLACEHOLDERS:
+            result.add_error(f"{fid}: empty/generic anchor selection_rule")
+
+        context_specs = family.get("contextual_event_specs")
+        if not isinstance(context_specs, list) or not context_specs:
+            result.add_error(f"{fid}: contextual_event_specs are required")
+            context_specs = []
+        event_schemas: Dict[str, Tuple[str, ...]] = {}
+        if anchor_fields is not None:
+            event_schemas["anchor"] = anchor_fields
+        context_keys: Set[str] = set()
+        for context_index, context in enumerate(context_specs):
+            cpath = f"{fid}.contextual_event_specs[{context_index}]"
+            if not isinstance(context, dict):
+                result.add_error(f"{cpath}: context spec must be an object")
+                continue
+            event_key = context.get("event_key")
+            if not isinstance(event_key, str) or not event_key or event_key == "anchor" or event_key in context_keys:
+                result.add_error(f"{cpath}: invalid or duplicate event_key")
+                continue
+            context_keys.add(event_key)
+            fields = _registry_event_schema(context, cpath, result)
+            if fields is not None:
+                event_schemas[event_key] = fields
+            rule = context.get("selection_rule")
+            if not isinstance(rule, str) or not rule.strip() or rule.strip().casefold() in GENERIC_METADATA_PLACEHOLDERS:
+                result.add_error(f"{cpath}: empty/generic selection_rule")
+
+        descriptions = family.get("contextual_event_descriptions")
+        if not isinstance(descriptions, list) or not descriptions or any(not isinstance(item, str) or not item.strip() for item in descriptions):
+            result.add_error(f"{fid}: contextual_event_descriptions are required")
+
+        for text_key in ("counter_evidence", "benign_near_miss"):
+            value = family.get(text_key)
+            if not isinstance(value, str) or not value.strip() or value.strip().casefold() in {"none", "n/a", "any"}:
+                result.add_error(f"{fid}: empty/generic {text_key}")
+        for list_key in ("allowed_variations", "disallowed_variations"):
+            values = family.get(list_key)
+            if not isinstance(values, list) or not values or any(not isinstance(item, str) or not item.strip() for item in values):
+                result.add_error(f"{fid}: {list_key} must contain meaningful guidance")
+
+        planned = family.get("planned_instances")
+        if not isinstance(planned, int) or isinstance(planned, bool) or planned <= 0:
+            result.add_error(f"{fid}: planned_instances must be a positive integer")
+
+        family_ids = family.get("technique_ids")
+        contextual_gt = family.get("contextual_ground_truth") or {}
+        contextual_ids = contextual_gt.get("technique_ids", []) if isinstance(contextual_gt, dict) else []
+        if not isinstance(family_ids, list) or family_ids != contextual_ids:
+            result.add_error(f"{fid}: technique_ids must equal contextual technique_ids")
+            family_ids = family_ids if isinstance(family_ids, list) else []
+        if len(set(family_ids)) != len(family_ids):
+            result.add_error(f"{fid}: duplicate technique ID")
+
+        _registry_ground_truth(family, "single_ground_truth", {"anchor": event_schemas.get("anchor", ())}, stix_names, result)
+        _registry_ground_truth(family, "contextual_ground_truth", event_schemas, stix_names, result)
+
+        single = family.get("single_ground_truth") or {}
+        single_status = single.get("status")
+        contextual_status = contextual_gt.get("status")
+        transition = (single_status, contextual_status)
+        if transition not in ALLOWED_TRANSITIONS:
+            result.add_error(f"{fid}: invalid transition {single_status!r}->{contextual_status!r}")
+        expected_transition = family.get("expected_transition")
+        if expected_transition != f"{single_status}->{contextual_status}":
+            result.add_error(f"{fid}: expected_transition does not match ground truth statuses")
+        if single_status == "mapped" and contextual_status == "mapped":
+            if not set(single.get("technique_ids", [])).issubset(set(contextual_gt.get("technique_ids", []))):
+                result.add_error(f"{fid}: mapped contextual labels must preserve single labels")
+
+        if category == "mapped_single" and (contextual_status != "mapped" or len(contextual_gt.get("technique_ids", [])) != 1):
+            result.add_error(f"{fid}: mapped_single requires exactly one contextual mapped technique")
+        if category == "mapped_multi" and (contextual_status != "mapped" or len(contextual_gt.get("technique_ids", [])) < 2):
+            result.add_error(f"{fid}: mapped_multi requires at least two contextual labels")
+        if category in {"unmapped", "ambiguous"} and contextual_gt.get("technique_ids"):
+            result.add_error(f"{fid}: {category} family has contextual techniques")
+
+        # EID 1102 is outcome telemetry only.  A single 1102 anchor has no
+        # mechanism field and therefore cannot be mapped to T1685.005 alone.
+        all_ids = set(family_ids)
+        if anchor.get("windows_event_id") == 1102 and anchor.get("provider") != "Microsoft-Windows-Eventlog":
+            result.add_error(f"{fid}: EID 1102 must use Microsoft-Windows-Eventlog")
+        if "T1685.005" in all_ids and anchor.get("windows_event_id") == 1102 and single_status == "mapped":
+            result.add_error(f"{fid}: EID 1102-only single view cannot be mapped to T1685.005")
+        if anchor.get("windows_event_id") == 4697 and (
+            anchor.get("provider") != "Microsoft-Windows-Security-Auditing" or anchor.get("channel") != "Security"
+        ):
+            result.add_error(f"{fid}: EID 4697 must use Security-Auditing/Security")
+        if anchor.get("windows_event_id") == 7045:
+            result.add_error(f"{fid}: EID 7045 is not an approved service-install event")
+
+        if "T1136.001" in all_ids:
+            constraints = family.get("host_constraints") or {}
+            if "DC01" not in constraints.get("forbidden_hosts", []) or not {"workstation", "member_server"}.issubset(set(constraints.get("allowed_host_roles", []))):
+                result.add_error(f"{fid}: T1136.001 requires workstation/member-server and forbids DC01")
+
+        attack_source = family.get("attack_source")
+        if not isinstance(attack_source, dict) or not attack_source.get("catalog_url") or not attack_source.get("catalog"):
+            result.add_error(f"{fid}: missing ATT&CK source/provenance")
+        if isinstance(attack_source, dict):
+            for ref in attack_source.get("technique_references", []):
+                if ref.get("technique_id") in BENCHMARK_CATALOG and ref.get("technique_name") != stix_names.get(ref.get("technique_id"), BENCHMARK_TECHNIQUE_NAMES.get(ref.get("technique_id"))):
+                    result.add_error(f"{fid}: ATT&CK source technique name mismatch")
+
+        telemetry_sources = family.get("windows_telemetry_source")
+        if not isinstance(telemetry_sources, list) or not telemetry_sources:
+            result.add_error(f"{fid}: missing Windows telemetry documentation source")
+        else:
+            source_keys = {
+                (provider_source.get("provider"), provider_source.get("channel"), event_id)
+                for provider_source in telemetry_sources
+                if isinstance(provider_source, dict)
+                for event_id in provider_source.get("event_ids", [])
+            }
+            expected_keys = {
+                (event_spec.get("provider"), event_spec.get("channel"), event_spec.get("windows_event_id"))
+                for event_spec in [anchor, *context_specs]
+                if isinstance(event_spec, dict)
+            }
+            if source_keys != expected_keys:
+                result.add_error(f"{fid}: Windows telemetry provenance does not match event specifications")
+            for source_index, telemetry in enumerate(telemetry_sources):
+                if not isinstance(telemetry, dict) or not telemetry.get("reference"):
+                    result.add_error(f"{fid}.windows_telemetry_source[{source_index}]: missing documentation reference")
+
+        signature = _registry_structure_signature(family)
+        if split == "dev":
+            dev_signatures[fid] = signature
+        elif split == "test":
+            test_signatures[fid] = signature
+
+    overlap = set(dev_signatures) & set(test_signatures)
+    if overlap:
+        result.add_error(f"[REGISTRY] DEV/TEST family overlap: {sorted(overlap)}")
+    duplicate_signatures = set(dev_signatures.values()) & set(test_signatures.values())
+    if duplicate_signatures:
+        result.add_error("[REGISTRY] DEV family is a structural clone of a TEST family")
+
+    totals: Dict[Tuple[str, str], int] = defaultdict(int)
+    for family in families:
+        if isinstance(family, dict) and family.get("split") in VALID_REGISTRY_SPLITS and family.get("category") in VALID_REGISTRY_CATEGORIES and isinstance(family.get("planned_instances"), int):
+            totals[(family["split"], family["category"])] += family["planned_instances"]
+    for key, expected in category_quota.items():
+        if totals.get(key, 0) != expected:
+            result.add_error(f"[REGISTRY] quota {key[0]}/{key[1]}={totals.get(key, 0)}, expected {expected}")
+
+    # Per-technique quotas derive from registry content, never from a second
+    # hand-maintained family count.
+    for split, expected in (("test", 50), ("dev", 2)):
+        for tid in BENCHMARK_CATALOG:
+            actual = sum(
+                family.get("planned_instances", 0)
+                for family in families
+                if isinstance(family, dict)
+                and family.get("split") == split
+                and family.get("category") == "mapped_single"
+                and family.get("technique_ids") == [tid]
+            )
+            if actual != expected:
+                result.add_error(f"[REGISTRY] {split} {tid} single-label quota={actual}, expected {expected}")
+
+    # Formula-based diversity: ceil(quota / eligible families), with no magic
+    # constant and no decorative-instance exception.
+    for (split, category), quota in category_quota.items():
+        eligible = [family for family in families if isinstance(family, dict) and family.get("split") == split and family.get("category") == category and isinstance(family.get("planned_instances"), int) and family.get("planned_instances", 0) > 0]
+        if not eligible:
+            continue
+        max_instances = ceil(quota / len(eligible))
+        for family in eligible:
+            if family["planned_instances"] > max_instances:
+                result.add_error(f"[REGISTRY] {family['template_family_id']} exceeds diversity bound {max_instances}")
+
+    result.statistics.update({
+        "total_families": len(families),
+        "test_families": sum(1 for family in families if isinstance(family, dict) and family.get("split") == "test"),
+        "dev_families": sum(1 for family in families if isinstance(family, dict) and family.get("split") == "dev"),
+        "planned_instances": sum(family.get("planned_instances", 0) for family in families if isinstance(family, dict)),
+        "quota_totals": {f"{split}/{category}": totals.get((split, category), 0) for split, category in category_quota},
+    })
+    return result
 
 
 # ============================================================
@@ -551,6 +1044,17 @@ def _check_service_event_provider(pair: ScenarioPair, result: ValidationResult) 
             )
 
 
+def _check_event_telemetry_schema(pair: ScenarioPair, result: ValidationResult) -> None:
+    """Reject generated events whose provider/channel/EventID tuple is not canonical."""
+    for eid, event in pair.events.items():
+        fields = CANONICAL_TELEMETRY_SCHEMA.get((event.provider, event.channel), {}).get(event.windows_event_id)
+        if fields is None:
+            result.add_error(
+                f"Pair {pair.pair_id} event {eid}: unsupported provider/channel/EventID "
+                f"{event.provider!r}/{event.channel!r}/{event.windows_event_id}"
+            )
+
+
 # ============================================================
 # Main validation entry point
 # ============================================================
@@ -594,6 +1098,7 @@ def validate_synthetic_dataset(
         _check_18_leakage(pair, result)
         _check_27_local_account_host(pair, result)
         _check_service_event_provider(pair, result)
+        _check_event_telemetry_schema(pair, result)
 
     # Dataset-level checks
     if pairs:

@@ -17,10 +17,10 @@ from typing import Any, Dict, List, Set, Tuple, Optional
 @dataclass(frozen=True)
 class SyntheticEvent:
     event_id: str           # Unique in dataset, format: 'evt_XXXXXXXX'
-    provider: str           # 'Microsoft-Windows-Security-Auditing' or 'Microsoft-Windows-Sysmon'
-    channel: str            # 'Security' or 'Microsoft-Windows-Sysmon/Operational'
+    provider: str           # Canonical Windows event provider
+    channel: str            # Canonical Windows event channel
     event_record_id: int
-    windows_event_id: int   # Windows EventID (4688, 4698, 7045, 1, 3, 11, 13...)
+    windows_event_id: int   # Windows EventID (4688, 4697, 4698, 4720, 1102, 1, 3, 11, 13)
     computer: str
     timestamp_utc: str      # ISO 8601 UTC
     fields: Dict[str, Any]  # Provider-specific telemetry fields
@@ -125,6 +125,70 @@ HOSTS_WORKSTATION = ['WORKSTATION01', 'WORKSTATION02']
 HOSTS_MEMBER_SERVER = ['FILESVR01', 'APPSVR01', 'DB01', 'EXCH01', 'WEB01']
 HOSTS_DOMAIN_CONTROLLER = ['DC01']
 HOSTS_ALLOWED_LOCAL_ACCOUNT = HOSTS_WORKSTATION + HOSTS_MEMBER_SERVER
+
+# One authoritative provider/channel/EventID schema for the synthetic registry
+# and the future event generator.  Provider and channel are intentionally
+# separate: EID 1102 is emitted by Windows Eventlog on the Security channel,
+# while EID 4697 is emitted by Security-Auditing on that same channel.
+CANONICAL_TELEMETRY_SCHEMA: Dict[Tuple[str, str], Dict[int, Tuple[str, ...]]] = {
+    (
+        'Microsoft-Windows-Security-Auditing',
+        'Security',
+    ): {
+        4688: (
+            'TimeCreated', 'Computer', 'EventID', 'NewProcessName',
+            'CommandLine', 'ParentProcessName', 'SubjectUserName',
+            'TargetUserName', 'NewProcessId', 'ProcessId', 'SubjectLogonId',
+        ),
+        4697: (
+            'TimeCreated', 'Computer', 'EventID', 'ServiceName',
+            'ServiceFileName', 'ServiceType', 'ServiceStartType',
+            'ServiceAccount', 'SubjectUserName', 'SubjectDomainName',
+            'SubjectLogonId',
+        ),
+        4698: (
+            'TimeCreated', 'Computer', 'EventID', 'TaskName', 'TaskContent',
+            'SubjectUserName', 'SubjectLogonId',
+        ),
+        4720: (
+            'TimeCreated', 'Computer', 'EventID', 'TargetUserName',
+            'SubjectUserName', 'SubjectLogonId',
+        ),
+    },
+    (
+        'Microsoft-Windows-Eventlog',
+        'Security',
+    ): {
+        1102: (
+            'TimeCreated', 'Computer', 'EventID', 'SubjectUserName',
+            'SubjectLogonId',
+        ),
+    },
+    (
+        'Microsoft-Windows-Sysmon',
+        'Microsoft-Windows-Sysmon/Operational',
+    ): {
+        1: (
+            'UtcTime', 'Computer', 'EventID', 'Image', 'CommandLine',
+            'ParentImage', 'ParentCommandLine', 'User', 'ProcessId',
+            'ParentProcessId', 'ProcessGuid', 'ParentProcessGuid',
+            'LogonGuid', 'LogonId', 'Hashes',
+        ),
+        3: (
+            'UtcTime', 'Computer', 'EventID', 'Image', 'User', 'SourceIp',
+            'SourcePort', 'DestinationIp', 'DestinationPort', 'Protocol',
+            'ProcessId', 'ProcessGuid',
+        ),
+        11: (
+            'UtcTime', 'Computer', 'EventID', 'Image', 'TargetFilename',
+            'ProcessId', 'ProcessGuid', 'User',
+        ),
+        13: (
+            'UtcTime', 'Computer', 'EventID', 'Image', 'EventType',
+            'TargetObject', 'Details', 'ProcessId', 'ProcessGuid', 'User',
+        ),
+    },
+}
 
 # ==============================================================================
 # 4. Event Builder Functions
@@ -343,6 +407,8 @@ INFERENCE_ALLOWLIST = {
 def get_inference_payload(event: SyntheticEvent) -> Dict[str, Any]:
     """Return only allowlisted fields for model inference. No leakage."""
     event_id_val = event.windows_event_id
+    if event_id_val not in CANONICAL_TELEMETRY_SCHEMA.get((event.provider, event.channel), {}):
+        return {}
     channel_key = 'Security' if 'Security' in event.channel else 'Sysmon'
     allowlist = INFERENCE_ALLOWLIST.get(channel_key, {}).get(event_id_val, [])
     
@@ -424,11 +490,21 @@ def compute_split_key(seed: int, group_id: str, scenario_id: str) -> str:
     payload = f"{seed}|{group_id}|{scenario_id}".encode('utf-8')
     return hashlib.sha256(payload).hexdigest()
 
-def assign_splits(pairs: List[ScenarioPair], seed: int,
-                  dev_quota: Dict[str, int],
-                  test_quota: Dict[str, int]) -> Tuple[List[ScenarioPair], List[ScenarioPair]]:
-    """Deterministically assign pairs to dev/test splits.
-    Groups stay together. Returns (dev_pairs, test_pairs)."""
+def assign_splits(
+    pairs: List[ScenarioPair],
+    seed: int,
+    dev_quota: Optional[Dict[str, int]] = None,
+    test_quota: Optional[Dict[str, int]] = None,
+    approved_splits: Optional[Dict[str, str]] = None,
+) -> Tuple[List[ScenarioPair], List[ScenarioPair]]:
+    """Order pairs without repartitioning approved template families.
+
+    Stage A assigns ``split`` at template-family level.  Stage B must preserve
+    that holdout; quota dictionaries are retained only for API compatibility
+    with the earlier helper and are intentionally not used to move a family.
+    If ``approved_splits`` is supplied, it is the authoritative family map;
+    otherwise the split already present on each pair is used.
+    """
     groups: Dict[str, List[ScenarioPair]] = {}
     for pair in pairs:
         groups.setdefault(pair.template_family_id, []).append(pair)
@@ -438,25 +514,31 @@ def assign_splits(pairs: List[ScenarioPair], seed: int,
     
     sorted_group_ids = sorted(groups.keys(), key=lambda g: compute_split_key(seed, g, ""))
     
-    dev_counts: Dict[str, int] = {k: 0 for k in dev_quota}
-    test_counts: Dict[str, int] = {k: 0 for k in test_quota}
-    
     for group_id in sorted_group_ids:
         group_pairs = groups[group_id]
-        category = group_pairs[0].template_family_id # using family id as category here
-        
+        observed_splits = {pair.split for pair in group_pairs}
+        if len(observed_splits) != 1 or not observed_splits.issubset({'dev', 'test'}):
+            raise ValueError(
+                f"template family {group_id} has inconsistent or invalid approved splits: "
+                f"{sorted(observed_splits)}"
+            )
+        approved_split = next(iter(observed_splits))
+        if approved_splits is not None:
+            if group_id not in approved_splits:
+                raise ValueError(f"missing approved split for template family {group_id}")
+            if approved_splits[group_id] != approved_split:
+                raise ValueError(
+                    f"pair split for {group_id} disagrees with approved registry split "
+                    f"{approved_splits[group_id]!r}"
+                )
+
         group_pairs.sort(key=lambda p: compute_split_key(seed, group_id, p.scenario_id))
-        
-        assigned_dev = False
-        if dev_counts.get(category, 0) < dev_quota.get(category, float('inf')):
-            assigned_dev = True
-            
         for pair in group_pairs:
             new_pair = ScenarioPair(
                 pair_id=pair.pair_id,
                 scenario_id=pair.scenario_id,
                 template_family_id=pair.template_family_id,
-                split='dev' if assigned_dev else 'test',
+                split=approved_split,
                 single_view=pair.single_view,
                 contextual_view=pair.contextual_view,
                 events=pair.events,
@@ -465,13 +547,11 @@ def assign_splits(pairs: List[ScenarioPair], seed: int,
                 generation_seed=pair.generation_seed,
                 generation_provenance=pair.generation_provenance
             )
-            if assigned_dev:
+            if approved_split == 'dev':
                 dev_pairs.append(new_pair)
-                dev_counts[category] = dev_counts.get(category, 0) + 1
             else:
                 test_pairs.append(new_pair)
-                test_counts[category] = test_counts.get(category, 0) + 1
-                
+
     return dev_pairs, test_pairs
 
 

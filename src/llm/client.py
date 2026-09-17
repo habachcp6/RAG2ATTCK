@@ -2,13 +2,15 @@
 RAG2ATTCK - Unified LLM Client Module (Milestone M2, Tasks T12, R2, R3)
 Implements:
 - Unified client loading config/model.json
-- OpenAI Responses API primary interface with Chat Completions API fallback
+- OpenAI Responses API as the sole frozen experimental interface (no runtime fallback)
 - Generic prediction interface supporting No-RAG (retrieved_context=None) vs RAG
 - 7 mutually exclusive parse statuses:
   VALID, INVALID_ID, MALFORMED_RESPONSE, REFUSAL, INCOMPLETE, API_FAILURE, TIMEOUT
 - Strict post-hoc two-layer ATT&CK ID validation (syntax regex + v19.2 registry)
 - Global live-request budget enforcement (max 5 actual live requests including retries)
 - Precision wall-clock latency measurement including retries and backoff
+- Runtime No-RAG context isolation invariant
+- Fail-fast on missing API key (no placeholder credentials)
 """
 
 from __future__ import annotations
@@ -48,6 +50,7 @@ class LiveBudget:
     """
     Thread-safe live request budget tracker.
     Strictly caps actual live network requests (including retries) across the application lifecycle.
+    Every actual outbound OpenAI API request must consume exactly one unit.
     """
 
     def __init__(self, max_requests: int = 5) -> None:
@@ -57,7 +60,7 @@ class LiveBudget:
 
     def consume(self) -> int:
         """
-        Consumes one unit of live budget.
+        Consumes one unit of live budget BEFORE dispatching a network request.
         Raises LiveBudgetExceededError if budget is exhausted.
         """
         with self._lock:
@@ -109,6 +112,12 @@ class LLMClient:
     """
     Unified LLM client for RAG2ATTCK experiments.
     Shared identically across No-RAG and RAG conditions.
+
+    The API interface (Responses API) is part of the frozen experimental
+    configuration. No runtime fallback to Chat Completions is performed
+    during experiment samples — if the Responses API fails, the error is
+    classified per retry/error policy and eventually returns API_FAILURE
+    or TIMEOUT.
     """
 
     def __init__(
@@ -140,9 +149,7 @@ class LLMClient:
         self.model = self.config.get("model", "gpt-5.6-luna")
         self.reasoning_effort = self.config.get("reasoning_effort", "xhigh")
         self.api_interface = self.config.get("api_interface", "responses")
-        self.fallback_api_interface = self.config.get("fallback_api_interface", "chat_completions")
         self.max_output_tokens = self.config.get("max_output_tokens", 8192)
-        self.max_completion_tokens = self.config.get("max_completion_tokens", 8192)
         self.timeout_seconds = float(self.config.get("timeout_seconds", 120))
         self.max_retries = int(self.config.get("max_retries", 3))
         self.retry_initial_delay = float(self.config.get("retry_initial_delay_seconds", 1.0))
@@ -157,18 +164,23 @@ class LLMClient:
         self.live_budget = live_budget or GLOBAL_LIVE_BUDGET
         self.sleep_fn = sleep_fn or time.sleep
 
-        # Client setup
+        # Client setup — fail fast on missing credentials
         secret_env_var = self.config.get("secret_policy", {}).get("env_var_name", "OPENAI_API_KEY")
         resolved_key = api_key or os.environ.get(secret_env_var, "").strip() or None
 
         if openai_client is not None:
+            # Injected mock/test client — no API key required
             self.client = openai_client
             self.is_live = False if is_live is None else is_live
         else:
-            if not resolved_key and (is_live is True):
-                raise ValueError("OPENAI_API_KEY environment variable is required for live LLM client execution.")
+            # Real OpenAI client — API key is mandatory
+            if not resolved_key:
+                raise ValueError(
+                    f"{secret_env_var} environment variable is required to construct a real OpenAI client. "
+                    f"For testing, inject a mock client via openai_client parameter."
+                )
             self.client = openai.OpenAI(
-                api_key=resolved_key or "unauthenticated",
+                api_key=resolved_key,
                 timeout=self.timeout_seconds,
             )
             self.is_live = True if is_live is None else is_live
@@ -191,7 +203,7 @@ class LLMClient:
         return False
 
     def _call_responses_api(self, prompt: str) -> Any:
-        """Execute request using Responses API."""
+        """Execute request using the frozen Responses API interface."""
         if not hasattr(self.client, "responses") or not hasattr(self.client.responses, "create"):
             raise NotImplementedError("OpenAI client does not support Responses API")
 
@@ -211,32 +223,13 @@ class LLMClient:
             timeout=self.timeout_seconds,
         )
 
-    def _call_chat_completions_api(self, prompt: str) -> Any:
-        """Execute request using Chat Completions API fallback."""
-        return self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            reasoning_effort=self.reasoning_effort,
-            max_completion_tokens=self.max_completion_tokens,
-            response_format={
-                "type": "json_schema",
-                "json_schema": {
-                    "name": "attack_technique_prediction",
-                    "schema": TechniquePrediction.model_json_schema(),
-                    "strict": True,
-                }
-            },
-            timeout=self.timeout_seconds,
-        )
-
     def _extract_response_content_and_status(
         self,
         response: Any,
-        used_interface: str
     ) -> Tuple[Optional[str], Optional[ParseStatus], Optional[str], Optional[int], Optional[int]]:
         """
         Extracts raw response text, detects upfront refusal or incompleteness,
-        and retrieves token accounting metrics.
+        and retrieves token accounting metrics from a Responses API response.
         Returns: (raw_text, upfront_status, upfront_reason, input_tokens, output_tokens)
         """
         input_tokens: Optional[int] = None
@@ -248,53 +241,30 @@ class LLMClient:
             input_tokens = getattr(usage, "input_tokens", None) or getattr(usage, "prompt_tokens", None)
             output_tokens = getattr(usage, "output_tokens", None) or getattr(usage, "completion_tokens", None)
 
-        if used_interface == "responses":
-            # Check response status
-            resp_status = getattr(response, "status", None)
-            if resp_status == "refused" or getattr(response, "refusal", None):
-                refusal_msg = getattr(response, "refusal", None) or "Model refused attribution request"
-                return None, ParseStatus.REFUSAL, str(refusal_msg), input_tokens, output_tokens
+        # Check response status
+        resp_status = getattr(response, "status", None)
+        if resp_status == "refused" or getattr(response, "refusal", None):
+            refusal_msg = getattr(response, "refusal", None) or "Model refused attribution request"
+            return None, ParseStatus.REFUSAL, str(refusal_msg), input_tokens, output_tokens
 
-            if resp_status == "incomplete":
-                incomplete_details = getattr(response, "incomplete_details", None)
-                reason = f"Response incomplete: {incomplete_details}" if incomplete_details else "Response terminated before completion"
-                return None, ParseStatus.INCOMPLETE, reason, input_tokens, output_tokens
+        if resp_status == "incomplete":
+            incomplete_details = getattr(response, "incomplete_details", None)
+            reason = f"Response incomplete: {incomplete_details}" if incomplete_details else "Response terminated before completion"
+            return None, ParseStatus.INCOMPLETE, reason, input_tokens, output_tokens
 
-            # Extract output text
-            raw_text = getattr(response, "output_text", None)
-            if raw_text is None:
-                # Handle structured output items
-                outputs = getattr(response, "output", None)
-                if outputs and isinstance(outputs, list):
-                    for item in outputs:
-                        if hasattr(item, "content") and item.content:
-                            for c in item.content:
-                                if hasattr(c, "text"):
-                                    raw_text = c.text
-                                    break
-            return raw_text, None, None, input_tokens, output_tokens
-
-        else:
-            # Chat Completions
-            choices = getattr(response, "choices", [])
-            if not choices:
-                return None, ParseStatus.MALFORMED_RESPONSE, "Chat Completions returned zero choices", input_tokens, output_tokens
-
-            choice = choices[0]
-            finish_reason = getattr(choice, "finish_reason", None)
-            msg = getattr(choice, "message", None)
-
-            # Refusal check
-            if finish_reason == "refusal" or (msg and getattr(msg, "refusal", None)):
-                refusal_reason = getattr(msg, "refusal", None) if msg else None
-                return None, ParseStatus.REFUSAL, str(refusal_reason or "Model refused request"), input_tokens, output_tokens
-
-            # Incomplete check
-            if finish_reason in ("length", "max_tokens"):
-                return None, ParseStatus.INCOMPLETE, f"Response reached max tokens (finish_reason='{finish_reason}')", input_tokens, output_tokens
-
-            raw_text = getattr(msg, "content", None) if msg else None
-            return raw_text, None, None, input_tokens, output_tokens
+        # Extract output text
+        raw_text = getattr(response, "output_text", None)
+        if raw_text is None:
+            # Handle structured output items
+            outputs = getattr(response, "output", None)
+            if outputs and isinstance(outputs, list):
+                for item in outputs:
+                    if hasattr(item, "content") and item.content:
+                        for c in item.content:
+                            if hasattr(c, "text"):
+                                raw_text = c.text
+                                break
+        return raw_text, None, None, input_tokens, output_tokens
 
     def _post_hoc_validate_prediction(
         self,
@@ -347,7 +317,7 @@ class LLMClient:
     ) -> ExecutionRecord:
         """
         Executes prediction for a single sample.
-        
+
         Args:
             sample_id: Unique identifier for the telemetry sample
             endpoint_evidence: Sanitized Windows endpoint log string
@@ -355,10 +325,21 @@ class LLMClient:
             condition: "no_rag" or "rag"
             prompt_template: Custom prompt template string (defaults to loading prompts/baseline_v1.txt)
             prompt_version: Version identifier of prompt template
-            
+
         Returns:
             ExecutionRecord containing complete metadata and validation status.
+
+        Raises:
+            ValueError: If condition is "no_rag" but retrieved_context is non-empty.
         """
+        # ---- No-RAG context isolation invariant ----
+        if condition == "no_rag" and retrieved_context is not None and retrieved_context.strip():
+            raise ValueError(
+                "Research integrity violation: condition='no_rag' but non-empty "
+                "retrieved_context was supplied. No-RAG must be structurally "
+                "incapable of receiving ATT&CK retrieval context."
+            )
+
         # Load prompt template if not provided
         if prompt_template is None:
             p_file = self.ws_root / "prompts" / f"{prompt_version}.txt"
@@ -378,33 +359,17 @@ class LLMClient:
         error_type: Optional[str] = None
         last_error_msg: Optional[str] = None
         response_obj: Any = None
-        used_interface = self.api_interface
-        raw_text: Optional[str] = None
-        upfront_status: Optional[ParseStatus] = None
-        upfront_reason: Optional[str] = None
 
         with WallClockTimer() as timer:
             for attempt in range(self.max_retries + 1):
                 try:
-                    # Enforce live budget before dispatching actual network call
+                    # Enforce live budget BEFORE dispatching the actual network call.
+                    # Guarantee: 1 consume() = 1 actual outbound request.
                     if self.is_live:
                         self.live_budget.consume()
 
-                    # Attempt primary API interface
-                    if self.api_interface == "responses":
-                        try:
-                            response_obj = self._call_responses_api(formatted_prompt)
-                            used_interface = "responses"
-                        except (NotImplementedError, AttributeError, openai.BadRequestError, openai.NotFoundError) as api_err:
-                            logger.warning(
-                                "Responses API call failed (%s), falling back to Chat Completions API",
-                                api_err
-                            )
-                            response_obj = self._call_chat_completions_api(formatted_prompt)
-                            used_interface = "chat_completions"
-                    else:
-                        response_obj = self._call_chat_completions_api(formatted_prompt)
-                        used_interface = "chat_completions"
+                    # Execute via the frozen Responses API interface — no fallback.
+                    response_obj = self._call_responses_api(formatted_prompt)
 
                     # Successfully received response
                     break
@@ -465,10 +430,9 @@ class LLMClient:
                 error_type=error_type,
             )
 
-        # Inspect response
+        # Inspect response (Responses API only)
         raw_text, upfront_status, upfront_reason, in_tok, out_tok = self._extract_response_content_and_status(
             response_obj,
-            used_interface
         )
 
         if upfront_status is not None:

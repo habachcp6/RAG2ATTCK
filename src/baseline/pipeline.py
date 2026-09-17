@@ -69,7 +69,17 @@ class BaselinePipeline:
     ) -> ExecutionRecord:
         """
         Executes baseline prediction for a single telemetry sample.
+
+        Raises:
+            ValueError: If condition is "no_rag" but retrieved_context is non-empty.
         """
+        # No-RAG context isolation invariant (enforced at pipeline level too)
+        if condition == "no_rag" and retrieved_context is not None and retrieved_context.strip():
+            raise ValueError(
+                "Research integrity violation: condition='no_rag' but non-empty "
+                "retrieved_context was supplied to BaselinePipeline.run_sample(). "
+                "No-RAG must be structurally incapable of receiving ATT&CK retrieval context."
+            )
         return self.client.predict(
             sample_id=sample_id,
             endpoint_evidence=endpoint_evidence,

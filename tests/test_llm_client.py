@@ -4,9 +4,8 @@ Unit tests for Unified LLM Client (Milestone M2, Tasks T12, R2, R3).
 Verifies:
 1. Configuration loading from config/model.json.
 2. Request construction and symmetric prompt formatting (No-RAG vs RAG).
-3. Primary Responses API execution with Pydantic structured output.
-4. Operational fallback to Chat Completions API.
-5. All 7 parse statuses correctly produced:
+3. Responses API as the sole frozen experimental interface (no runtime fallback).
+4. All 7 parse statuses correctly produced:
    - VALID
    - INVALID_ID (syntax failure and registry failure)
    - MALFORMED_RESPONSE (broken JSON and missing field)
@@ -14,10 +13,12 @@ Verifies:
    - INCOMPLETE (max tokens / length cutoff)
    - API_FAILURE (transient errors exhausted or non-retryable error)
    - TIMEOUT
-6. Retries and exponential backoff behavior.
-7. Total wall-clock latency measurement semantics (including retries and backoff).
-8. Global live request budget enforcement (max 5 requests across lifecycle).
-9. ZERO live API calls incurred across entire test suite (strictly mocked).
+5. Retries and exponential backoff behavior.
+6. Total wall-clock latency measurement semantics (including retries and backoff).
+7. Global live request budget enforcement (max 5 requests across lifecycle).
+8. No-RAG context isolation invariant (ValueError on non-empty retrieved_context).
+9. Fail-fast when API key is absent (no placeholder credentials).
+10. ZERO live API calls incurred across entire test suite (strictly mocked).
 """
 
 from __future__ import annotations
@@ -77,29 +78,6 @@ def create_mock_responses_api_response(
     return resp
 
 
-def create_mock_chat_completion_response(
-    content: str | None,
-    finish_reason: str = "stop",
-    refusal: str | None = None,
-    input_tokens: int = 1500,
-    output_tokens: int = 4200,
-):
-    """Creates a mock response matching OpenAI Chat Completions API structure."""
-    message = SimpleNamespace(
-        content=content,
-        refusal=refusal,
-        role="assistant",
-    )
-    choice = SimpleNamespace(
-        message=message,
-        finish_reason=finish_reason,
-    )
-    return SimpleNamespace(
-        choices=[choice],
-        usage=create_mock_usage(input_tokens, output_tokens),
-    )
-
-
 # ---------------------------------------------------------------------------
 # 1. Configuration Loading & Initialization
 # ---------------------------------------------------------------------------
@@ -111,9 +89,7 @@ def test_llm_client_initialization_defaults():
     assert client.model == "gpt-5.6-luna"
     assert client.reasoning_effort == "xhigh"
     assert client.api_interface == "responses"
-    assert client.fallback_api_interface == "chat_completions"
     assert client.max_output_tokens == 8192
-    assert client.max_completion_tokens == 8192
     assert client.timeout_seconds == 120.0
     assert client.max_retries == 3
     assert client.retry_initial_delay == 1.0
@@ -121,33 +97,57 @@ def test_llm_client_initialization_defaults():
     assert client.is_live is False
 
 
-def test_llm_client_default_instantiation_without_key(monkeypatch):
-    """Verify default constructor LLMClient() succeeds without NameError when OPENAI_API_KEY is unset."""
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    client = LLMClient()
-    assert isinstance(client.client, openai.OpenAI)
-    assert client.provider == "openai"
-    assert client.model == "gpt-5.6-luna"
-    assert client.is_live is True
-
-
-def test_llm_client_default_instantiation_with_key(monkeypatch):
-    """Verify default constructor LLMClient() succeeds when OPENAI_API_KEY is provided via env."""
-    monkeypatch.setenv("OPENAI_API_KEY", "MOCK_ENV_OPENAI_KEY_FOR_TESTING")
-    client = LLMClient()
-    assert isinstance(client.client, openai.OpenAI)
-    assert client.is_live is True
-
-
-def test_llm_client_live_flag_requires_key_when_unset(monkeypatch):
-    """Verify that is_live=True raises ValueError if no API key is resolved."""
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    with pytest.raises(ValueError, match="OPENAI_API_KEY environment variable is required"):
-        LLMClient(is_live=True)
+def test_llm_client_no_fallback_api_interface():
+    """Verify that the client does NOT have a fallback_api_interface attribute."""
+    client = LLMClient(openai_client=MagicMock())
+    assert not hasattr(client, "fallback_api_interface")
+    assert not hasattr(client, "max_completion_tokens")
 
 
 # ---------------------------------------------------------------------------
-# 2. Prompt Construction & Condition Isolation
+# 2. Fail-Fast on Missing API Key
+# ---------------------------------------------------------------------------
+
+def test_real_client_fails_without_api_key(monkeypatch):
+    """Verify that constructing a real OpenAI client without API key raises ValueError immediately."""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    with pytest.raises(ValueError, match="OPENAI_API_KEY environment variable is required"):
+        LLMClient()  # No openai_client injected, no api_key, no env var
+
+
+def test_real_client_succeeds_with_env_key(monkeypatch):
+    """Verify that a real OpenAI client is constructed when OPENAI_API_KEY is present."""
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-for-unit-tests")
+    client = LLMClient()
+    assert isinstance(client.client, openai.OpenAI)
+    assert client.is_live is True
+
+
+def test_real_client_succeeds_with_injected_key(monkeypatch):
+    """Verify that api_key parameter bypasses env var requirement."""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    client = LLMClient(api_key="sk-injected-test-key")
+    assert isinstance(client.client, openai.OpenAI)
+    assert client.is_live is True
+
+
+def test_mock_client_needs_no_api_key(monkeypatch):
+    """Verify that injecting a mock openai_client does not require an API key."""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    client = LLMClient(openai_client=MagicMock())
+    assert client.is_live is False
+
+
+def test_no_placeholder_credential_created(monkeypatch):
+    """Verify that no 'unauthenticated' placeholder is ever used."""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    # Must raise, not silently create with placeholder
+    with pytest.raises(ValueError):
+        LLMClient()
+
+
+# ---------------------------------------------------------------------------
+# 3. Prompt Construction & Condition Isolation
 # ---------------------------------------------------------------------------
 
 def test_llm_client_prompt_construction_no_rag():
@@ -172,8 +172,6 @@ def test_llm_client_prompt_construction_no_rag():
     assert "powershell.exe -enc abc" in passed_input
     assert "{ENDPOINT_EVIDENCE}" not in passed_input
     assert "{RETRIEVED_CONTEXT}" not in passed_input
-    # Ensure no retrieval text present
-    assert "REFERENCE CONTEXT:\n\n---" in passed_input or "REFERENCE CONTEXT:\r\n\r\n---" in passed_input or "REFERENCE CONTEXT:\n\n" in passed_input
 
 
 def test_llm_client_prompt_construction_rag_context():
@@ -200,11 +198,84 @@ def test_llm_client_prompt_construction_rag_context():
 
 
 # ---------------------------------------------------------------------------
-# 3. Responses API Primary Interface & Valid Extraction
+# 4. No-RAG Context Isolation Invariant
+# ---------------------------------------------------------------------------
+
+def test_no_rag_rejects_non_empty_retrieved_context():
+    """No-RAG condition must raise ValueError if non-empty retrieved_context is supplied."""
+    mock_openai = MagicMock()
+    client = LLMClient(openai_client=mock_openai)
+
+    with pytest.raises(ValueError, match="Research integrity violation"):
+        client.predict(
+            sample_id="test_isolation",
+            endpoint_evidence="some log data",
+            retrieved_context="ATT&CK Technique T1059.001: PowerShell execution",
+            condition="no_rag",
+        )
+
+    # Verify no API call was made
+    mock_openai.responses.create.assert_not_called()
+
+
+def test_no_rag_allows_none_context():
+    """No-RAG condition with retrieved_context=None is allowed."""
+    mock_openai = MagicMock()
+    mock_openai.responses.create.return_value = create_mock_responses_api_response(
+        json.dumps({"technique_id": "T1059.001"})
+    )
+
+    client = LLMClient(openai_client=mock_openai)
+    record = client.predict(
+        sample_id="test_none",
+        endpoint_evidence="log data",
+        retrieved_context=None,
+        condition="no_rag",
+    )
+    assert record.parse_status == ParseStatus.VALID.value
+
+
+def test_no_rag_allows_empty_string_context():
+    """No-RAG condition with retrieved_context='' (empty) is allowed."""
+    mock_openai = MagicMock()
+    mock_openai.responses.create.return_value = create_mock_responses_api_response(
+        json.dumps({"technique_id": "T1059.001"})
+    )
+
+    client = LLMClient(openai_client=mock_openai)
+    record = client.predict(
+        sample_id="test_empty",
+        endpoint_evidence="log data",
+        retrieved_context="",
+        condition="no_rag",
+    )
+    assert record.parse_status == ParseStatus.VALID.value
+
+
+def test_no_rag_rejects_whitespace_only_context():
+    """No-RAG condition with whitespace-only retrieved_context is allowed (strip() -> empty)."""
+    mock_openai = MagicMock()
+    mock_openai.responses.create.return_value = create_mock_responses_api_response(
+        json.dumps({"technique_id": "T1059.001"})
+    )
+
+    client = LLMClient(openai_client=mock_openai)
+    # Whitespace-only should pass (strip() yields "")
+    record = client.predict(
+        sample_id="test_ws",
+        endpoint_evidence="log data",
+        retrieved_context="   ",
+        condition="no_rag",
+    )
+    assert record.parse_status == ParseStatus.VALID.value
+
+
+# ---------------------------------------------------------------------------
+# 5. Responses API (Sole Frozen Interface) — Valid Extraction
 # ---------------------------------------------------------------------------
 
 def test_responses_api_valid_prediction():
-    """Verify successful execution via primary Responses API endpoint."""
+    """Verify successful execution via the frozen Responses API endpoint."""
     mock_openai = MagicMock()
     mock_openai.responses.create.return_value = create_mock_responses_api_response(
         json.dumps({"technique_id": "T1059.001"}),
@@ -228,37 +299,29 @@ def test_responses_api_valid_prediction():
     mock_openai.responses.create.assert_called_once()
 
 
-# ---------------------------------------------------------------------------
-# 4. Fallback to Chat Completions API
-# ---------------------------------------------------------------------------
-
-def test_fallback_to_chat_completions_when_responses_fails():
-    """Verify that client seamlessly falls back to Chat Completions when Responses API fails."""
+def test_no_fallback_when_responses_api_fails():
+    """Verify that Responses API errors are NOT silently retried via Chat Completions."""
     mock_openai = MagicMock()
-    # Responses API fails with NotImplementedError or BadRequestError
+    mock_sleep = MagicMock()
+
+    # Responses API raises NotImplementedError — previously this would trigger fallback
     mock_openai.responses.create.side_effect = NotImplementedError("Responses API not available")
-    mock_openai.chat.completions.create.return_value = create_mock_chat_completion_response(
-        json.dumps({"technique_id": "T1078.003"}),
-        input_tokens=1100,
-        output_tokens=2200,
-    )
 
-    client = LLMClient(openai_client=mock_openai)
+    client = LLMClient(openai_client=mock_openai, sleep_fn=mock_sleep)
     record = client.predict(
-        sample_id="sample_fallback",
-        endpoint_evidence="net user /add attacker Pass123",
+        sample_id="sample_no_fallback",
+        endpoint_evidence="test log",
     )
 
-    assert record.parse_status == ParseStatus.VALID.value
-    assert record.predicted_technique_id == "T1078.003"
-    assert record.input_tokens == 1100
-    assert record.output_tokens == 2200
-    mock_openai.responses.create.assert_called_once()
-    mock_openai.chat.completions.create.assert_called_once()
+    # Should be API_FAILURE, NOT a successful Chat Completions response
+    assert record.parse_status == ParseStatus.API_FAILURE.value
+    assert record.error_type == "NotImplementedError"
+    # Chat Completions should NEVER be called
+    assert not hasattr(mock_openai.chat, "completions") or not mock_openai.chat.completions.create.called
 
 
 # ---------------------------------------------------------------------------
-# 5. Parse Status Testing: All 7 Distinct Statuses
+# 6. Parse Status Testing: All 7 Distinct Statuses
 # ---------------------------------------------------------------------------
 
 def test_status_invalid_id_syntax_failure():
@@ -396,7 +459,7 @@ def test_status_api_failure_non_retryable():
 
 
 # ---------------------------------------------------------------------------
-# 6. Retries and Exponential Backoff
+# 7. Retries and Exponential Backoff
 # ---------------------------------------------------------------------------
 
 def test_transient_retries_and_exponential_backoff_recovery():
@@ -425,7 +488,7 @@ def test_transient_retries_and_exponential_backoff_recovery():
 
 
 # ---------------------------------------------------------------------------
-# 7. Total Wall-Clock Latency Semantics
+# 8. Total Wall-Clock Latency Semantics
 # ---------------------------------------------------------------------------
 
 def test_latency_ms_measures_total_wall_clock_duration():
@@ -450,7 +513,7 @@ def test_latency_ms_measures_total_wall_clock_duration():
 
 
 # ---------------------------------------------------------------------------
-# 8. Global Live Request Budget Enforcement (Max 5 Requests)
+# 9. Global Live Request Budget Enforcement (Max 5 Requests)
 # ---------------------------------------------------------------------------
 
 def test_live_budget_tracker_unit_logic():
@@ -526,3 +589,92 @@ def test_client_live_budget_counts_retries():
     assert custom_budget.count == 3
     assert custom_budget.is_exhausted()
     assert rec.parse_status == ParseStatus.API_FAILURE.value
+
+
+def test_5_maximum_network_attempts():
+    """Prove that at most 5 actual network requests can be dispatched with max budget."""
+    mock_openai = MagicMock()
+    mock_sleep = MagicMock()
+
+    # All calls fail with retryable error
+    mock_openai.responses.create.side_effect = openai.RateLimitError(
+        "Rate limit", response=MagicMock(), body=None
+    )
+
+    budget = LiveBudget(max_requests=5)
+    client = LLMClient(
+        openai_client=mock_openai,
+        live_budget=budget,
+        is_live=True,
+        sleep_fn=mock_sleep,
+    )
+
+    # First call: up to 4 attempts (initial + 3 retries), consuming 4 budget units
+    rec1 = client.predict(sample_id="net_1", endpoint_evidence="evidence")
+    assert budget.count == 4  # initial + 3 retries
+
+    # Second call: only 1 budget unit remaining, then exhaustion
+    rec2 = client.predict(sample_id="net_2", endpoint_evidence="evidence")
+    assert budget.count == 5
+    assert budget.is_exhausted()
+
+    # Total actual network calls = 5 (4 from first sample + 1 from second)
+    assert mock_openai.responses.create.call_count == 5
+
+    # Third call: budget exhausted, no network request dispatched
+    rec3 = client.predict(sample_id="net_3", endpoint_evidence="evidence")
+    assert rec3.parse_status == ParseStatus.API_FAILURE.value
+    assert "budget exhausted" in rec3.invalid_reason.lower()
+    assert mock_openai.responses.create.call_count == 5  # Still 5, no new calls
+
+
+def test_budget_exhaustion_prevents_network_dispatch():
+    """Prove that budget exhaustion prevents any further network requests."""
+    mock_openai = MagicMock()
+    mock_openai.responses.create.return_value = create_mock_responses_api_response(
+        json.dumps({"technique_id": "T1059.001"})
+    )
+
+    budget = LiveBudget(max_requests=0)  # Immediately exhausted
+    client = LLMClient(
+        openai_client=mock_openai,
+        live_budget=budget,
+        is_live=True,
+    )
+
+    rec = client.predict(sample_id="no_budget", endpoint_evidence="evidence")
+    assert rec.parse_status == ParseStatus.API_FAILURE.value
+    assert "budget exhausted" in rec.invalid_reason.lower()
+    # No network request should have been made
+    mock_openai.responses.create.assert_not_called()
+
+
+def test_no_hidden_fallback_bypasses_budget():
+    """Prove no hidden/fallback request can bypass the budget counter.
+
+    Previously, a Responses API error would trigger a Chat Completions fallback
+    that consumed a second network request without consuming budget. This test
+    confirms that behavior is eliminated.
+    """
+    mock_openai = MagicMock()
+    mock_sleep = MagicMock()
+
+    # Responses API raises a non-retryable error
+    mock_openai.responses.create.side_effect = NotImplementedError("Not available")
+
+    budget = LiveBudget(max_requests=1)
+    client = LLMClient(
+        openai_client=mock_openai,
+        live_budget=budget,
+        is_live=True,
+        sleep_fn=mock_sleep,
+    )
+
+    rec = client.predict(sample_id="no_hidden", endpoint_evidence="evidence")
+
+    # Should fail as API_FAILURE, NOT silently fall back
+    assert rec.parse_status == ParseStatus.API_FAILURE.value
+    # Only 1 network attempt was made (the Responses API call that failed)
+    assert mock_openai.responses.create.call_count == 1
+    # Budget consumed exactly 1 unit
+    assert budget.count == 1

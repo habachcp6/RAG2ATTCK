@@ -43,18 +43,15 @@ def test_model_config_required_fields():
     assert config.get("model") == "gpt-5.6-luna"
     assert config.get("reasoning_effort") == "xhigh"
 
-    # API interface
+    # API interface — Responses API is the sole frozen experimental interface
     assert config.get("api_interface") == "responses"
-    assert config.get("fallback_api_interface") == "chat_completions"
+    assert "fallback_api_interface" not in config, "Fallback API interface must not exist in frozen config"
 
-    # Token budgets (must support Responses API max_output_tokens and Chat max_completion_tokens)
-    assert "max_output_tokens" in config or "max_completion_tokens" in config
-    if "max_output_tokens" in config:
-        assert isinstance(config["max_output_tokens"], int)
-        assert config["max_output_tokens"] >= 8192, "Output budget must account for xhigh reasoning tokens"
-    if "max_completion_tokens" in config:
-        assert isinstance(config["max_completion_tokens"], int)
-        assert config["max_completion_tokens"] >= 8192, "Output budget must account for xhigh reasoning tokens"
+    # Token budget (Responses API uses max_output_tokens only)
+    assert "max_output_tokens" in config
+    assert isinstance(config["max_output_tokens"], int)
+    assert config["max_output_tokens"] >= 8192, "Output budget must account for xhigh reasoning tokens"
+    assert "max_completion_tokens" not in config, "Chat Completions token budget must not exist in frozen config"
 
     # Execution controls
     assert isinstance(config.get("timeout_seconds"), (int, float))

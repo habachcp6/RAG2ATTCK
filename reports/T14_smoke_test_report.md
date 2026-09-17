@@ -6,7 +6,7 @@ This report documents the end-to-end execution of the **No-RAG Baseline smoke te
 The smoke testing pipeline validates the full inference path:
 1. Frozen model configuration loading (`config/model.json`)
 2. Frozen base prompt loading and symmetric placeholder substitution (`prompts/baseline_v1.txt`)
-3. Primary Responses API execution with operational fallback to Chat Completions API
+3. Responses API execution (sole frozen experimental interface, no runtime fallback)
 4. Pydantic schema deserialization (`{"technique_id": "..."}`)
 5. Mandatory post-hoc two-layer ATT&CK ID validation (syntax regex + Enterprise ATT&CK v19.2 registry)
 6. Precision wall-clock latency measurement (inclusive of retries and backoff)
@@ -36,7 +36,6 @@ The smoke testing pipeline validates the full inference path:
 | **Model** | `gpt-5.6-luna` | `config/model.json` |
 | **Reasoning Effort** | `xhigh` | `config/model.json` |
 | **Primary API Interface** | `responses` | `config/model.json` |
-| **Fallback API Interface** | `chat_completions` | `config/model.json` |
 | **Max Output Tokens** | `8192` | `config/model.json` |
 | **Timeout Seconds** | `120s` | `config/model.json` |
 | **Max Retries** | `3` | `config/model.json` |
@@ -52,15 +51,15 @@ The global live request budget strictly caps actual OpenAI API network invocatio
 
 | Metric | Recorded Value | Budget Limit | Status |
 | :--- | :--- | :--- | :--- |
-| **Live Environment Key Detected (`OPENAI_API_KEY`)** | `NO` | N/A | Authenticated Runtime |
+| **Live Environment Key Detected (`OPENAI_API_KEY`)** | `NO` | N/A | Mock-only / unauthenticated test runtime |
 | **Live API Requests Consumed** | **`0`** | **5** (Maximum) | **COMPLIANT** (≤ 5) |
 | **Live API Requests Remaining** | `5` | 5 | Preserved |
 | **Mocked Predictions Executed** | `25` | N/A | Mock-engine insulated |
-| **Total Input Tokens (Synthetic Suite)** | `35,500` | N/A | Parametric inference |
-| **Total Output Tokens (Synthetic Suite)** | `800` | N/A | Structured output |
+| **Total Input Tokens (Synthetic Suite)** | `35,500` *(mock telemetry)* | N/A | Parametric inference |
+| **Total Output Tokens (Synthetic Suite)** | `800` *(mock telemetry)* | N/A | Structured output |
 | **Approximate Financial Cost** | **$0.00** | Budget Cap | No unmetered spend |
 
-*Note: In environments where `OPENAI_API_KEY` is not present, all 25 synthetic cases are executed against the deterministic mock engine, incurring 0 live requests and $0.00 cost, while fully exercising prompt construction, validation, and serialization logic.*
+*Note: In environments where `OPENAI_API_KEY` is not present, all 25 synthetic cases are executed against the deterministic mock engine, incurring 0 live requests and $0.00 cost, while fully exercising prompt construction, validation, and serialization logic. All token counts and latencies in this report are synthetic mock values — not live provider performance measurements.*
 
 ---
 
@@ -71,8 +70,8 @@ All 25 synthetic cases from `data/synthetic/smoke_cases.jsonl` were processed se
 ### Summary Statistics
 - **Total Synthetic Cases:** `25`
 - **Successfully Parsed & Validated (`VALID`):** `25` / `25` (100.0%)
-- **Average Wall-Clock Latency per Sample:** `0.24 ms`
-- **Total Wall-Clock Pipeline Duration:** `6.07 ms`
+- **Average Wall-Clock Latency per Sample:** `0.24 ms` *(mock telemetry — not live provider latency)*
+- **Total Wall-Clock Pipeline Duration:** `6.07 ms` *(mock telemetry)*
 
 ### Execution Records Log
 | Sample ID | Predicted Technique | Parse Status | Retries | Latency | Tokens (In / Out) |

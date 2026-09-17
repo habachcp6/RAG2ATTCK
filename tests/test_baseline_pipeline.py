@@ -94,10 +94,61 @@ def test_baseline_pipeline_run_batch():
 
 
 def test_baseline_pipeline_default_instantiation(monkeypatch):
-    """Verify default constructor BaselinePipeline() succeeds without NameError."""
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    """Verify default constructor BaselinePipeline() succeeds when API key is present."""
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-pipeline-key")
     pipeline = BaselinePipeline()
     assert isinstance(pipeline.client, LLMClient)
     assert pipeline.prompt_version == "baseline_v1"
     assert "{ENDPOINT_EVIDENCE}" in pipeline.prompt_template
     assert "{RETRIEVED_CONTEXT}" in pipeline.prompt_template
+
+
+def test_baseline_pipeline_default_instantiation_fails_without_key(monkeypatch):
+    """Verify default constructor BaselinePipeline() fails when API key is absent."""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    import pytest
+    with pytest.raises(ValueError, match="OPENAI_API_KEY"):
+        BaselinePipeline()
+
+
+# ---------------------------------------------------------------------------
+# No-RAG Context Isolation at Pipeline Level
+# ---------------------------------------------------------------------------
+
+def test_pipeline_run_sample_rejects_norag_with_context():
+    """Verify BaselinePipeline.run_sample raises ValueError for no_rag with non-empty context."""
+    mock_openai = MagicMock()
+    client = LLMClient(openai_client=mock_openai)
+    pipeline = BaselinePipeline(client=client)
+
+    import pytest
+    with pytest.raises(ValueError, match="Research integrity violation"):
+        pipeline.run_sample(
+            sample_id="test_isolation",
+            endpoint_evidence="test log",
+            retrieved_context="ATT&CK Technique: T1059.001",
+            condition="no_rag",
+        )
+    # No API call should have been made
+    mock_openai.responses.create.assert_not_called()
+
+
+def test_pipeline_run_sample_allows_rag_with_context():
+    """Verify that RAG condition with retrieved_context is allowed."""
+    mock_openai = MagicMock()
+    mock_openai.responses.create.return_value = create_mock_responses_api_response(
+        json.dumps({"technique_id": "T1059.001"})
+    )
+
+    client = LLMClient(openai_client=mock_openai)
+    pipeline = BaselinePipeline(client=client)
+
+    rec = pipeline.run_sample(
+        sample_id="test_rag",
+        endpoint_evidence="powershell.exe",
+        retrieved_context="ATT&CK Technique: T1059.001",
+        condition="rag",
+    )
+    assert rec.condition == "rag"
+    assert rec.parse_status == ParseStatus.VALID.value
+

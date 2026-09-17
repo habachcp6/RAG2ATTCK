@@ -38,37 +38,37 @@ The frozen configuration is committed at `config/model.json`. All parameters doc
 ---
 
 ## 5. API Interface Selection
-- **Primary Interface:** **OpenAI Responses API** (`client.responses.create` / `client.responses.parse`).
-- **Fallback Interface:** **OpenAI Chat Completions API** (`client.chat.completions.create` / `client.beta.chat.completions.parse`).
+- **Frozen Interface:** **OpenAI Responses API** (`client.responses.create` with JSON Schema structured output and Pydantic post-parse validation).
+- **No runtime fallback.** The API interface is part of the frozen experimental configuration. If a Responses API request fails, the error is classified per retry/error policy and eventually returns `API_FAILURE` or `TIMEOUT`. No silent switching to Chat Completions occurs during experiment samples.
 
 ### Selection Rationale
 1. **Modern Protocol Alignment:** The Responses API is OpenAI's primary interface in SDK v3+, engineered specifically for agentic execution, native schema parsing, and modern reasoning model control.
 2. **First-Class Reasoning Parameter:** In the Responses API, reasoning compute is governed cleanly by the `reasoning` parameter object (`reasoning={"effort": "xhigh"}`).
 3. **Native Output Budgeting:** Uses `max_output_tokens`, which directly represents the unified generation budget covering both reasoning tokens and visible structured completion tokens.
-4. **Structured Output Integration:** Direct integration with Pydantic via `client.responses.parse(..., text_format=AttackPrediction)`.
+4. **Structured Output Integration:** Uses `text={"format": {"type": "json_schema", ...}}` with `strict: true` for schema-constrained generation, followed by Pydantic `model_validate()` post-parse.
 5. **Detailed Token Telemetry:** Provides structured reporting of reasoning token usage via `usage.output_tokens_details.reasoning_tokens`.
-6. **Resilience via Fallback:** To guard against upstream endpoint maintenance or transient schema discrepancies, the client architecture maintains full fallback capability to Chat Completions (`reasoning_effort="xhigh"`, `max_completion_tokens=8192`).
+6. **Experimental Consistency:** Using a single API interface across all samples eliminates interface-specific confounding variables.
 
 ---
 
 ## 6. Maximum Output Token Budget
 - **Parameter Name (Responses API):** `max_output_tokens`
-- **Parameter Name (Chat Completions API):** `max_completion_tokens`
 - **Frozen Budget Value:** `8192` (8,192 tokens)
 
 ### Detailed Token Accounting Rationale
 On OpenAI reasoning models (`gpt-5.6-luna`, o-series architectures), the output token budget is a **shared allocation pool** that must accommodate:
-1. **Internal Reasoning Tokens (Hidden):** The model's internal chain-of-thought tokens. Under `reasoning_effort="xhigh"`, telemetry analysis and security attribution tasks generate an average of 2,000 to 7,500 reasoning tokens per sample depending on log complexity.
+1. **Internal Reasoning Tokens (Hidden):** The model's internal chain-of-thought tokens. Under `reasoning_effort="xhigh"`, the model allocates substantial compute for deep reasoning before emitting the visible output. The exact reasoning token consumption per sample is unknown prior to live evaluation and will vary with log complexity.
 2. **Visible Output Tokens:** The final structured JSON prediction:
    ```json
    {"technique_id": "T1059.001"}
    ```
    This payload consumes only approximately 10–20 tokens.
 
+**Conservative Engineering Budget:**
+A frozen budget of **8,192 tokens** is set as a conservative engineering ceiling that provides ample reasoning headroom for `xhigh` contemplation while establishing a firm upper bound to protect against runaway latency and unbounded cost. This value was chosen based on the model's documented maximum output capacity (128,000 tokens) and the need to balance sufficient reasoning depth against cost control. No live baseline samples were executed to empirically establish reasoning token averages prior to setting this budget.
+
 **Failure Mode Prevention:**
 If the output token budget were set to a conventional value (e.g., 512 or 1,024 tokens), the model would exhaust its token quota while still generating internal reasoning tokens, before emitting the visible JSON object. This triggers an abrupt termination with API status `incomplete` / finish reason `length`, resulting in an invalid or empty prediction.
-
-A frozen budget of **8,192 tokens** provides ample reasoning headroom for `xhigh` contemplation while establishing a firm upper bound to protect against runaway latency and unbounded cost.
 
 ---
 
@@ -80,10 +80,8 @@ The following table enumerates every model parameter explicitly frozen in `confi
 | `provider` | `"openai"` | String | Identifies the execution backend provider |
 | `model` | `"gpt-5.6-luna"` | String | Canonical frontier model identifier |
 | `reasoning_effort` | `"xhigh"` | String | Deepest reasoning compute tier |
-| `api_interface` | `"responses"` | String | Primary API interface endpoint |
-| `fallback_api_interface` | `"chat_completions"` | String | Operational fallback endpoint |
+| `api_interface` | `"responses"` | String | Sole frozen API interface endpoint (no runtime fallback) |
 | `max_output_tokens` | `8192` | Integer | Generation budget in Responses API (reasoning + output) |
-| `max_completion_tokens`| `8192` | Integer | Generation budget in Chat Completions API |
 | `timeout_seconds` | `120` | Integer | Client-side socket and read timeout per attempt |
 | `retry_policy` | `"exponential_backoff"` | String | Retry strategy for transient errors |
 | `max_retries` | `3` | Integer | Maximum retry attempts per sample |

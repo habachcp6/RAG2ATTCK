@@ -3,7 +3,8 @@ RAG2ATTCK - Synthetic Smoke Test Execution Engine (Milestone M3, Tasks T14, R5, 
 Executes end-to-end smoke pipeline across synthetic Sysmon cases:
 1. Configuration verification from config/model.json
 2. Base prompt template loading from prompts/baseline_v1.txt
-3. Inference execution (live if OPENAI_API_KEY is available within <= 5 budget, else mocked)
+3. Inference execution (mocked by default; live execution requires explicit
+   allow_live=True / --live flag and OPENAI_API_KEY, capped by LiveBudget <= 5)
 4. Mandatory post-hoc two-layer ATT&CK ID validation (syntax + Enterprise v19.2 registry)
 5. Comprehensive failure pathways test suite verifying all 7 ParseStatus taxonomy members
 6. Generates reports/T14_smoke_test_report.md
@@ -289,7 +290,7 @@ def run_failure_pathways_suite(
 def run_smoke_test_pipeline(
     cases_path: Optional[Path | str] = None,
     report_path: Optional[Path | str] = None,
-    live_requests_limit: int = 2,
+    live_sample_limit: int = 2,
     allow_live: bool = False,
 ) -> Dict[str, Any]:
     """
@@ -322,6 +323,13 @@ def run_smoke_test_pipeline(
     api_key = os.environ.get("OPENAI_API_KEY", "").strip()
     has_live_key = bool(api_key)
 
+    # Fail fast: explicit live mode requires credentials
+    if allow_live and not has_live_key:
+        raise ValueError(
+            "allow_live=True was specified but OPENAI_API_KEY is not set. "
+            "Provide a valid API key or run without allow_live=True for mock-only execution."
+        )
+
     synthetic_records: List[ExecutionRecord] = []
     initial_live_budget_count = GLOBAL_LIVE_BUDGET.count
     live_samples_dispatched = 0
@@ -337,7 +345,7 @@ def run_smoke_test_pipeline(
         use_live = (
             allow_live
             and has_live_key
-            and live_samples_dispatched < live_requests_limit
+            and live_samples_dispatched < live_sample_limit
             and not GLOBAL_LIVE_BUDGET.is_exhausted()
         )
         if use_live:

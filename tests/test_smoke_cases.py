@@ -229,3 +229,20 @@ def test_smoke_mock_by_default_even_with_key(monkeypatch, tmp_path: Path):
     assert res["mock_requests_count"] == 25
     assert res["total_synthetic_cases"] == 25
 
+
+def test_allow_live_without_api_key_raises_value_error(monkeypatch, tmp_path: Path):
+    """
+    Verifies that allow_live=True raises ValueError immediately when OPENAI_API_KEY
+    is absent — no silent fallback to mock mode when live execution is explicitly requested.
+    Zero live API requests are consumed before the error.
+    """
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    test_report = tmp_path / "live_missing_key_report.md"
+
+    initial_count = get_live_request_count()
+
+    with pytest.raises(ValueError, match="allow_live=True was specified but OPENAI_API_KEY is not set"):
+        run_smoke_test_pipeline(report_path=test_report, allow_live=True)
+
+    # No live API requests consumed before the error
+    assert get_live_request_count() == initial_count

@@ -91,7 +91,7 @@ The following table enumerates every model parameter explicitly frozen in `confi
 | `structured_output.format` | `"json_schema"` | String | Enforces strict JSON Schema adherence |
 | `structured_output.strict` | `true` | Boolean | Strict grammar constraints enabled |
 | `structured_output.target_field` | `"technique_id"` | String | Target prediction key |
-| `logging_policy.log_token_usage` | `true` | Boolean | Capture input, output, and reasoning tokens |
+| `logging_policy.log_token_usage` | `true` | Boolean | Capture aggregate input and output token usage |
 | `logging_policy.log_latency` | `true` | Boolean | Capture wall-clock latency including retries |
 | `logging_policy.log_prompt_version` | `true` | Boolean | Trace prompt template version in metadata |
 | `logging_policy.log_condition` | `true` | Boolean | Record experiment condition (`no_rag` vs `rag`) |

@@ -48,5 +48,77 @@
     },
     "minimum_free_space_gib": 5.0,
     "headroom_requirement_gib": 1.0
+  },
+  "synthetic_benchmark": {
+    "design": "paired_single_contextual",
+    "seed": 20260915,
+    "attack_catalog": [
+      "T1059.001", "T1059.003", "T1053.005", "T1543.003",
+      "T1136.001", "T1547.001", "T1685.005", "T1105"
+    ],
+    "attack_version_pinned": "19.2",
+    "providers": ["Microsoft-Windows-Security-Auditing", "Microsoft-Windows-Sysmon"],
+    "channels": ["Security", "Microsoft-Windows-Sysmon/Operational"],
+    "attribution_rubric": {
+      "policy": "evidence_conditioned_closed_world",
+      "methodology_statement": "Ground-truth labels are benchmark reference annotations constructed under the RAG2ATTCK evidence-conditioned, closed-world attribution rubric and validated against the pinned MITRE ATT&CK catalog.",
+      "mapped": "Sufficient positive attribution evidence is present in the view for one or more techniques in the benchmark catalog.",
+      "unmapped": "The visible evidence affirmatively supports a benign/non-attributable interpretation under the closed-world eight-technique rubric.",
+      "ambiguous": "Neither the mapped threshold nor the unmapped threshold can be established from the visible evidence."
+    },
+    "transition_policy": {
+      "allowed": [
+        "mapped->mapped(same)",
+        "mapped->mapped(expanded)",
+        "ambiguous->mapped",
+        "ambiguous->unmapped",
+        "ambiguous->ambiguous",
+        "unmapped->unmapped"
+      ],
+      "disallowed_v1": [
+        "mapped->ambiguous",
+        "mapped->unmapped",
+        "unmapped->ambiguous",
+        "unmapped->mapped"
+      ]
+    },
+    "quota_test": {
+      "mapped_single_per_technique": 50,
+      "mapped_multi": 40,
+      "unmapped": 150,
+      "ambiguous": 50,
+      "total": 640
+    },
+    "quota_dev": {
+      "mapped_single_per_technique": 2,
+      "mapped_multi": 4,
+      "unmapped": 6,
+      "ambiguous": 4,
+      "total": 30
+    },
+    "constraints": {
+      "single_view_events": 1,
+      "contextual_view_events_min": 2,
+      "contextual_view_events_max": 6,
+      "near_duplicate_threshold": 0.95,
+      "near_duplicate_ngram_size": 5,
+      "family_diversity_policy": "ceil(category_or_technique_quota / num_eligible_families)",
+      "split_method": "template_family_holdout",
+      "split_rule": "DEV and TEST template_family_id sets must be disjoint",
+      "host_constraints": {
+        "T1136.001": {
+          "allowed_roles": ["workstation", "member_server"],
+          "excluded_hosts": ["DC01"]
+        }
+      },
+      "safe_ip_ranges": ["192.0.2.0/24", "198.51.100.0/24", "203.0.113.0/24"],
+      "safe_domain_tld": [".invalid", ".example"]
+    },
+    "paths": {
+      "template_registry": "config/synthetic_templates.json",
+      "template_families_approval": "docs/synthetic/template_families_approval.md",
+      "synthetic_output_dir": "data/ground_truth/synthetic",
+      "synthetic_metadata_dir": "data/metadata/synthetic"
+    }
   }
 }

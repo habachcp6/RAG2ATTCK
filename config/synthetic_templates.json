@@ -1,0 +1,2975 @@
+{
+  "families": [
+    {
+      "template_family_id": "TF_T1059_001_A",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1059.001"
+      ],
+      "behavior_description": "Encoded PowerShell from Office process.",
+      "anchor": {
+        "provider": "Microsoft-Windows-Sysmon",
+        "channel": "Microsoft-Windows-Sysmon/Operational",
+        "windows_event_id": 1,
+        "selection_rule": "powershell.exe with -enc or -EncodedCommand, parent Office application"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.001"
+        ],
+        "technique_names": [
+          "Command and Scripting Interpreter: PowerShell"
+        ],
+        "evidence_predicate": {
+          "all": [
+            {
+              "event": "anchor",
+              "field": "Image",
+              "op": "endswith_ci",
+              "value": "\\\\powershell.exe"
+            },
+            {
+              "any": [
+                {
+                  "event": "anchor",
+                  "field": "CommandLine",
+                  "op": "contains_ci",
+                  "value": "-EncodedCommand"
+                },
+                {
+                  "event": "anchor",
+                  "field": "CommandLine",
+                  "op": "contains_ci",
+                  "value": "-enc "
+                }
+              ]
+            }
+          ]
+        },
+        "rationale": "Encoded PowerShell execution"
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.001"
+        ],
+        "technique_names": [
+          "Command and Scripting Interpreter: PowerShell"
+        ],
+        "evidence_predicate": {
+          "all": [
+            {
+              "event": "anchor",
+              "field": "Image",
+              "op": "endswith_ci",
+              "value": "\\\\powershell.exe"
+            }
+          ]
+        },
+        "rationale": "Encoded PowerShell execution from Office"
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [
+        "Parent process is winword.exe/excel.exe"
+      ],
+      "counter_evidence": "Legitimate admin script using encoded commands",
+      "benign_near_miss": "IT script with encoded payload",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_T1059_001_C",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1059.001"
+      ],
+      "behavior_description": "PowerShell via WMI/DCOM remote execution.",
+      "anchor": {
+        "provider": "Microsoft-Windows-Sysmon",
+        "channel": "Microsoft-Windows-Sysmon/Operational",
+        "windows_event_id": 1,
+        "selection_rule": "powershell.exe from WmiPrvSE.exe"
+      },
+      "single_ground_truth": {
+        "status": "ambiguous",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": [
+            {
+              "event": "anchor",
+              "field": "Image",
+              "op": "endswith_ci",
+              "value": "\\\\powershell.exe"
+            },
+            {
+              "event": "anchor",
+              "field": "ParentImage",
+              "op": "endswith_ci",
+              "value": "\\\\WmiPrvSE.exe"
+            }
+          ]
+        },
+        "rationale": "WMI is legitimate admin tool"
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.001"
+        ],
+        "technique_names": [
+          "Command and Scripting Interpreter: PowerShell"
+        ],
+        "evidence_predicate": {
+          "all": [
+            {
+              "event": "anchor",
+              "field": "Image",
+              "op": "endswith_ci",
+              "value": "\\\\powershell.exe"
+            }
+          ]
+        },
+        "rationale": "Remote network + WmiPrvSE + PS chain"
+      },
+      "expected_transition": "ambiguous->mapped",
+      "contextual_event_descriptions": [
+        "Network connection preceding WMI",
+        "Suspicious payload"
+      ],
+      "counter_evidence": "IT remote execution",
+      "benign_near_miss": "Admin remote execution",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_T1059_001_E",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1059.001"
+      ],
+      "behavior_description": "Obfuscated PowerShell (string concatenation, Invoke-Expression, char array).",
+      "anchor": {
+        "provider": "Microsoft-Windows-Sysmon",
+        "channel": "Microsoft-Windows-Sysmon/Operational",
+        "windows_event_id": 1,
+        "selection_rule": "CommandLine contains IEX/Invoke-Expression with obfuscation"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.001"
+        ],
+        "technique_names": [
+          "Command and Scripting Interpreter: PowerShell"
+        ],
+        "evidence_predicate": {
+          "all": [
+            {
+              "event": "anchor",
+              "field": "CommandLine",
+              "op": "contains_ci",
+              "value": "Invoke-Expression"
+            }
+          ]
+        },
+        "rationale": "Obfuscation used"
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.001"
+        ],
+        "technique_names": [
+          "Command and Scripting Interpreter: PowerShell"
+        ],
+        "evidence_predicate": {
+          "all": [
+            {
+              "event": "anchor",
+              "field": "CommandLine",
+              "op": "contains_ci",
+              "value": "Invoke-Expression"
+            }
+          ]
+        },
+        "rationale": "Obfuscation used"
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "None",
+      "benign_near_miss": "None",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_T1059_001_F",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1059.001"
+      ],
+      "behavior_description": "PowerShell reflective loading / in-memory execution.",
+      "anchor": {
+        "provider": "Microsoft-Windows-Sysmon",
+        "channel": "Microsoft-Windows-Sysmon/Operational",
+        "windows_event_id": 1,
+        "selection_rule": "Assembly.Load, System.Net.WebClient"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.001"
+        ],
+        "technique_names": [
+          "Command and Scripting Interpreter: PowerShell"
+        ],
+        "evidence_predicate": {
+          "all": [
+            {
+              "event": "anchor",
+              "field": "CommandLine",
+              "op": "contains_ci",
+              "value": "Assembly"
+            }
+          ]
+        },
+        "rationale": "Reflective load"
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.001"
+        ],
+        "technique_names": [
+          "Command and Scripting Interpreter: PowerShell"
+        ],
+        "evidence_predicate": {
+          "all": [
+            {
+              "event": "anchor",
+              "field": "CommandLine",
+              "op": "contains_ci",
+              "value": "Assembly"
+            }
+          ]
+        },
+        "rationale": "Reflective load"
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "None",
+      "benign_near_miss": "None",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_T1059_003_A",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1059.003"
+      ],
+      "behavior_description": "cmd.exe reconnaissance",
+      "anchor": {
+        "provider": "Microsoft-Windows-Security-Auditing",
+        "channel": "Security",
+        "windows_event_id": 4688,
+        "selection_rule": "cmd executing whoami/ipconfig"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.003"
+        ],
+        "technique_names": [
+          "CMD"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.003"
+        ],
+        "technique_names": [
+          "CMD"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_T1059_003_B",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1059.003"
+      ],
+      "behavior_description": "cmd.exe from services.exe with certutil",
+      "anchor": {
+        "provider": "Microsoft-Windows-Security-Auditing",
+        "channel": "Security",
+        "windows_event_id": 4688,
+        "selection_rule": "cmd from services"
+      },
+      "single_ground_truth": {
+        "status": "ambiguous",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.003"
+        ],
+        "technique_names": [
+          "CMD"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "ambiguous->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_T1059_003_C",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1059.003"
+      ],
+      "behavior_description": "cmd.exe batch script",
+      "anchor": {
+        "provider": "Microsoft-Windows-Security-Auditing",
+        "channel": "Security",
+        "windows_event_id": 4688,
+        "selection_rule": "batch execution"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.003"
+        ],
+        "technique_names": [
+          "CMD"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.003"
+        ],
+        "technique_names": [
+          "CMD"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_T1059_003_E",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1059.003"
+      ],
+      "behavior_description": "cmd.exe piping",
+      "anchor": {
+        "provider": "Microsoft-Windows-Security-Auditing",
+        "channel": "Security",
+        "windows_event_id": 4688,
+        "selection_rule": "piping"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.003"
+        ],
+        "technique_names": [
+          "CMD"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.003"
+        ],
+        "technique_names": [
+          "CMD"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_T1053_005_A",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1053.005"
+      ],
+      "behavior_description": "schtasks /create",
+      "anchor": {
+        "provider": "Microsoft-Windows-Security-Auditing",
+        "channel": "Security",
+        "windows_event_id": 4698,
+        "selection_rule": "schtasks create"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1053.005"
+        ],
+        "technique_names": [
+          "Task"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1053.005"
+        ],
+        "technique_names": [
+          "Task"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_T1053_005_B",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1053.005"
+      ],
+      "behavior_description": "Task via COM",
+      "anchor": {
+        "provider": "Microsoft-Windows-Security-Auditing",
+        "channel": "Security",
+        "windows_event_id": 4698,
+        "selection_rule": "COM"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1053.005"
+        ],
+        "technique_names": [
+          "Task"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1053.005"
+        ],
+        "technique_names": [
+          "Task"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_T1053_005_D",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1053.005"
+      ],
+      "behavior_description": "Suspicious task name",
+      "anchor": {
+        "provider": "Microsoft-Windows-Security-Auditing",
+        "channel": "Security",
+        "windows_event_id": 4698,
+        "selection_rule": "name"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1053.005"
+        ],
+        "technique_names": [
+          "Task"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1053.005"
+        ],
+        "technique_names": [
+          "Task"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_T1053_005_E",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1053.005"
+      ],
+      "behavior_description": "Task executing PS",
+      "anchor": {
+        "provider": "Microsoft-Windows-Security-Auditing",
+        "channel": "Security",
+        "windows_event_id": 4698,
+        "selection_rule": "ps"
+      },
+      "single_ground_truth": {
+        "status": "ambiguous",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1053.005"
+        ],
+        "technique_names": [
+          "Task"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "ambiguous->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_T1543_003_A",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1543.003"
+      ],
+      "behavior_description": "Suspicious ServiceFileName",
+      "anchor": {
+        "provider": "Microsoft-Windows-Security-Auditing",
+        "channel": "Security",
+        "windows_event_id": 4697,
+        "selection_rule": "svc"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1543.003"
+        ],
+        "technique_names": [
+          "Svc"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1543.003"
+        ],
+        "technique_names": [
+          "Svc"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_T1543_003_B",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1543.003"
+      ],
+      "behavior_description": "Service cmd",
+      "anchor": {
+        "provider": "Microsoft-Windows-Security-Auditing",
+        "channel": "Security",
+        "windows_event_id": 4697,
+        "selection_rule": "cmd"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1543.003"
+        ],
+        "technique_names": [
+          "Svc"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1543.003"
+        ],
+        "technique_names": [
+          "Svc"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_T1543_003_D",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1543.003"
+      ],
+      "behavior_description": "Service API",
+      "anchor": {
+        "provider": "Microsoft-Windows-Security-Auditing",
+        "channel": "Security",
+        "windows_event_id": 4697,
+        "selection_rule": "API"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1543.003"
+        ],
+        "technique_names": [
+          "Svc"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1543.003"
+        ],
+        "technique_names": [
+          "Svc"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_T1543_003_E",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1543.003"
+      ],
+      "behavior_description": "Service DLL sideload",
+      "anchor": {
+        "provider": "Microsoft-Windows-Security-Auditing",
+        "channel": "Security",
+        "windows_event_id": 4697,
+        "selection_rule": "DLL"
+      },
+      "single_ground_truth": {
+        "status": "ambiguous",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1543.003"
+        ],
+        "technique_names": [
+          "Svc"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "ambiguous->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_T1136_001_A",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1136.001"
+      ],
+      "behavior_description": "net user",
+      "anchor": {
+        "provider": "Microsoft-Windows-Security-Auditing",
+        "channel": "Security",
+        "windows_event_id": 4720,
+        "selection_rule": "net user"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1136.001"
+        ],
+        "technique_names": [
+          "Acct"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1136.001"
+        ],
+        "technique_names": [
+          "Acct"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13,
+      "host_constraint": "WORKSTATION01, WORKSTATION02, FILESVR01, APPSVR01 (NO DC01)"
+    },
+    {
+      "template_family_id": "TF_T1136_001_B",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1136.001"
+      ],
+      "behavior_description": "LSASS",
+      "anchor": {
+        "provider": "Microsoft-Windows-Security-Auditing",
+        "channel": "Security",
+        "windows_event_id": 4720,
+        "selection_rule": "lsass"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1136.001"
+        ],
+        "technique_names": [
+          "Acct"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1136.001"
+        ],
+        "technique_names": [
+          "Acct"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13,
+      "host_constraint": "WORKSTATION01, WORKSTATION02, FILESVR01, APPSVR01 (NO DC01)"
+    },
+    {
+      "template_family_id": "TF_T1136_001_C",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1136.001"
+      ],
+      "behavior_description": "PS New-LocalUser",
+      "anchor": {
+        "provider": "Microsoft-Windows-Security-Auditing",
+        "channel": "Security",
+        "windows_event_id": 4720,
+        "selection_rule": "ps"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1136.001"
+        ],
+        "technique_names": [
+          "Acct"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1136.001"
+        ],
+        "technique_names": [
+          "Acct"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12,
+      "host_constraint": "WORKSTATION01, WORKSTATION02, FILESVR01, APPSVR01 (NO DC01)"
+    },
+    {
+      "template_family_id": "TF_T1136_001_E",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1136.001"
+      ],
+      "behavior_description": "Admin group add",
+      "anchor": {
+        "provider": "Microsoft-Windows-Security-Auditing",
+        "channel": "Security",
+        "windows_event_id": 4720,
+        "selection_rule": "group"
+      },
+      "single_ground_truth": {
+        "status": "ambiguous",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1136.001"
+        ],
+        "technique_names": [
+          "Acct"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "ambiguous->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12,
+      "host_constraint": "WORKSTATION01, WORKSTATION02, FILESVR01, APPSVR01 (NO DC01)"
+    },
+    {
+      "template_family_id": "TF_T1547_001_A",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1547.001"
+      ],
+      "behavior_description": "reg.exe",
+      "anchor": {
+        "provider": "Microsoft-Windows-Sysmon",
+        "channel": "Microsoft-Windows-Sysmon/Operational",
+        "windows_event_id": 13,
+        "selection_rule": "reg"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1547.001"
+        ],
+        "technique_names": [
+          "Reg"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1547.001"
+        ],
+        "technique_names": [
+          "Reg"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_T1547_001_B",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1547.001"
+      ],
+      "behavior_description": "Startup folder",
+      "anchor": {
+        "provider": "Microsoft-Windows-Sysmon",
+        "channel": "Microsoft-Windows-Sysmon/Operational",
+        "windows_event_id": 11,
+        "selection_rule": "folder"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1547.001"
+        ],
+        "technique_names": [
+          "Reg"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1547.001"
+        ],
+        "technique_names": [
+          "Reg"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_T1547_001_C",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1547.001"
+      ],
+      "behavior_description": "PS Run key",
+      "anchor": {
+        "provider": "Microsoft-Windows-Sysmon",
+        "channel": "Microsoft-Windows-Sysmon/Operational",
+        "windows_event_id": 13,
+        "selection_rule": "ps"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1547.001"
+        ],
+        "technique_names": [
+          "Reg"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1547.001"
+        ],
+        "technique_names": [
+          "Reg"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_T1547_001_E",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1547.001"
+      ],
+      "behavior_description": "RunOnce",
+      "anchor": {
+        "provider": "Microsoft-Windows-Sysmon",
+        "channel": "Microsoft-Windows-Sysmon/Operational",
+        "windows_event_id": 13,
+        "selection_rule": "runonce"
+      },
+      "single_ground_truth": {
+        "status": "ambiguous",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1547.001"
+        ],
+        "technique_names": [
+          "Reg"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "ambiguous->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_T1685_005_A",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1685.005"
+      ],
+      "behavior_description": "wevtutil",
+      "anchor": {
+        "provider": "Microsoft-Windows-Security-Auditing",
+        "channel": "Security",
+        "windows_event_id": 1102,
+        "selection_rule": "wevt"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1685.005"
+        ],
+        "technique_names": [
+          "Clear"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1685.005"
+        ],
+        "technique_names": [
+          "Clear"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_T1685_005_B",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1685.005"
+      ],
+      "behavior_description": "PS clear",
+      "anchor": {
+        "provider": "Microsoft-Windows-Security-Auditing",
+        "channel": "Security",
+        "windows_event_id": 1102,
+        "selection_rule": "ps"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1685.005"
+        ],
+        "technique_names": [
+          "Clear"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1685.005"
+        ],
+        "technique_names": [
+          "Clear"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_T1685_005_C",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1685.005"
+      ],
+      "behavior_description": "API clear",
+      "anchor": {
+        "provider": "Microsoft-Windows-Security-Auditing",
+        "channel": "Security",
+        "windows_event_id": 1102,
+        "selection_rule": "api"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1685.005"
+        ],
+        "technique_names": [
+          "Clear"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1685.005"
+        ],
+        "technique_names": [
+          "Clear"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_T1685_005_E",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1685.005"
+      ],
+      "behavior_description": "Lateral move clear",
+      "anchor": {
+        "provider": "Microsoft-Windows-Security-Auditing",
+        "channel": "Security",
+        "windows_event_id": 1102,
+        "selection_rule": "lateral"
+      },
+      "single_ground_truth": {
+        "status": "ambiguous",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1685.005"
+        ],
+        "technique_names": [
+          "Clear"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "ambiguous->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_T1105_A",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1105"
+      ],
+      "behavior_description": "certutil",
+      "anchor": {
+        "provider": "Microsoft-Windows-Sysmon",
+        "channel": "Microsoft-Windows-Sysmon/Operational",
+        "windows_event_id": 1,
+        "selection_rule": "certutil"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1105"
+        ],
+        "technique_names": [
+          "Ingress"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1105"
+        ],
+        "technique_names": [
+          "Ingress"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_T1105_B",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1105"
+      ],
+      "behavior_description": "bitsadmin",
+      "anchor": {
+        "provider": "Microsoft-Windows-Sysmon",
+        "channel": "Microsoft-Windows-Sysmon/Operational",
+        "windows_event_id": 1,
+        "selection_rule": "bitsadmin"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1105"
+        ],
+        "technique_names": [
+          "Ingress"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1105"
+        ],
+        "technique_names": [
+          "Ingress"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_T1105_C",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1105"
+      ],
+      "behavior_description": "curl",
+      "anchor": {
+        "provider": "Microsoft-Windows-Sysmon",
+        "channel": "Microsoft-Windows-Sysmon/Operational",
+        "windows_event_id": 1,
+        "selection_rule": "curl"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1105"
+        ],
+        "technique_names": [
+          "Ingress"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1105"
+        ],
+        "technique_names": [
+          "Ingress"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_T1105_D",
+      "category": "mapped_single",
+      "split": "test",
+      "technique_ids": [
+        "T1105"
+      ],
+      "behavior_description": "Network only",
+      "anchor": {
+        "provider": "Microsoft-Windows-Sysmon",
+        "channel": "Microsoft-Windows-Sysmon/Operational",
+        "windows_event_id": 3,
+        "selection_rule": "net"
+      },
+      "single_ground_truth": {
+        "status": "ambiguous",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1105"
+        ],
+        "technique_names": [
+          "Ingress"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "ambiguous->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_MULTI_A",
+      "category": "mapped_multi",
+      "split": "test",
+      "technique_ids": [
+        "T1059.001",
+        "T1105",
+        "T1053.005"
+      ],
+      "behavior_description": "PS download + task",
+      "anchor": {
+        "provider": "Sysmon",
+        "channel": "Op",
+        "windows_event_id": 1,
+        "selection_rule": "multi"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.001"
+        ],
+        "technique_names": [
+          "PS"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.001",
+          "T1105",
+          "T1053.005"
+        ],
+        "technique_names": [
+          "PS",
+          "Ingress",
+          "Task"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 10
+    },
+    {
+      "template_family_id": "TF_MULTI_B",
+      "category": "mapped_multi",
+      "split": "test",
+      "technique_ids": [
+        "T1543.003",
+        "T1685.005"
+      ],
+      "behavior_description": "Svc + event clear",
+      "anchor": {
+        "provider": "Sec",
+        "channel": "Sec",
+        "windows_event_id": 4697,
+        "selection_rule": "multi"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1543.003"
+        ],
+        "technique_names": [
+          "Svc"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1543.003",
+          "T1685.005"
+        ],
+        "technique_names": [
+          "Svc",
+          "Clear"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 10
+    },
+    {
+      "template_family_id": "TF_MULTI_C",
+      "category": "mapped_multi",
+      "split": "test",
+      "technique_ids": [
+        "T1136.001",
+        "T1547.001"
+      ],
+      "behavior_description": "Acct + reg",
+      "anchor": {
+        "provider": "Sec",
+        "channel": "Sec",
+        "windows_event_id": 4720,
+        "selection_rule": "multi"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1136.001"
+        ],
+        "technique_names": [
+          "Acct"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1136.001",
+          "T1547.001"
+        ],
+        "technique_names": [
+          "Acct",
+          "Reg"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 10,
+      "host_constraint": "WORKSTATION01, WORKSTATION02, FILESVR01, APPSVR01 (NO DC01)"
+    },
+    {
+      "template_family_id": "TF_MULTI_D",
+      "category": "mapped_multi",
+      "split": "test",
+      "technique_ids": [
+        "T1059.003",
+        "T1105"
+      ],
+      "behavior_description": "CMD + Ingress",
+      "anchor": {
+        "provider": "Sec",
+        "channel": "Sec",
+        "windows_event_id": 4688,
+        "selection_rule": "multi"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.003"
+        ],
+        "technique_names": [
+          "CMD"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.003",
+          "T1105"
+        ],
+        "technique_names": [
+          "CMD",
+          "Ingress"
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 10
+    },
+    {
+      "template_family_id": "TF_UNMAP_A",
+      "category": "unmapped",
+      "split": "test",
+      "technique_ids": [],
+      "behavior_description": "Benign",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "unmapped->unmapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_UNMAP_B",
+      "category": "unmapped",
+      "split": "test",
+      "technique_ids": [],
+      "behavior_description": "Benign",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "unmapped->unmapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_UNMAP_C",
+      "category": "unmapped",
+      "split": "test",
+      "technique_ids": [],
+      "behavior_description": "Benign",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "unmapped->unmapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_UNMAP_D",
+      "category": "unmapped",
+      "split": "test",
+      "technique_ids": [],
+      "behavior_description": "Benign",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "unmapped->unmapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_UNMAP_E",
+      "category": "unmapped",
+      "split": "test",
+      "technique_ids": [],
+      "behavior_description": "Benign",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "unmapped->unmapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_UNMAP_PS",
+      "category": "unmapped",
+      "split": "test",
+      "technique_ids": [],
+      "behavior_description": "Benign",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "unmapped->unmapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_UNMAP_CMD",
+      "category": "unmapped",
+      "split": "test",
+      "technique_ids": [],
+      "behavior_description": "Benign",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "unmapped->unmapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_UNMAP_SCHTASK",
+      "category": "unmapped",
+      "split": "test",
+      "technique_ids": [],
+      "behavior_description": "Benign",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "unmapped->unmapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_UNMAP_SVC",
+      "category": "unmapped",
+      "split": "test",
+      "technique_ids": [],
+      "behavior_description": "Benign",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "unmapped->unmapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_UNMAP_ACCT",
+      "category": "unmapped",
+      "split": "test",
+      "technique_ids": [],
+      "behavior_description": "Benign",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "unmapped->unmapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_UNMAP_REG",
+      "category": "unmapped",
+      "split": "test",
+      "technique_ids": [],
+      "behavior_description": "Benign",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "unmapped->unmapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_UNMAP_EVTCLR",
+      "category": "unmapped",
+      "split": "test",
+      "technique_ids": [],
+      "behavior_description": "Benign",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "unmapped->unmapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_AMBIG_A",
+      "category": "ambiguous",
+      "split": "test",
+      "technique_ids": [],
+      "behavior_description": "Ambiguous",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "ambiguous",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "ambiguous",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "ambiguous->ambiguous",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_AMBIG_B",
+      "category": "ambiguous",
+      "split": "test",
+      "technique_ids": [],
+      "behavior_description": "Ambiguous",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "ambiguous",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "ambiguous",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "ambiguous->ambiguous",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 13
+    },
+    {
+      "template_family_id": "TF_AMBIG_C",
+      "category": "ambiguous",
+      "split": "test",
+      "technique_ids": [],
+      "behavior_description": "Ambiguous",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "ambiguous",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "ambiguous",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "ambiguous->ambiguous",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_AMBIG_D",
+      "category": "ambiguous",
+      "split": "test",
+      "technique_ids": [],
+      "behavior_description": "Ambiguous",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "ambiguous",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "ambiguous",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "ambiguous->ambiguous",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 12
+    },
+    {
+      "template_family_id": "TF_T1059_001_DEV",
+      "category": "mapped_single",
+      "split": "dev",
+      "technique_ids": [
+        "T1059.001"
+      ],
+      "behavior_description": "Dev",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.001"
+        ],
+        "technique_names": [
+          ""
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.001"
+        ],
+        "technique_names": [
+          ""
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 2
+    },
+    {
+      "template_family_id": "TF_T1059_003_DEV",
+      "category": "mapped_single",
+      "split": "dev",
+      "technique_ids": [
+        "T1059.003"
+      ],
+      "behavior_description": "Dev",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.003"
+        ],
+        "technique_names": [
+          ""
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.003"
+        ],
+        "technique_names": [
+          ""
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 2
+    },
+    {
+      "template_family_id": "TF_T1053_005_DEV",
+      "category": "mapped_single",
+      "split": "dev",
+      "technique_ids": [
+        "T1053.005"
+      ],
+      "behavior_description": "Dev",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1053.005"
+        ],
+        "technique_names": [
+          ""
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1053.005"
+        ],
+        "technique_names": [
+          ""
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 2
+    },
+    {
+      "template_family_id": "TF_T1543_003_DEV",
+      "category": "mapped_single",
+      "split": "dev",
+      "technique_ids": [
+        "T1543.003"
+      ],
+      "behavior_description": "Dev",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1543.003"
+        ],
+        "technique_names": [
+          ""
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1543.003"
+        ],
+        "technique_names": [
+          ""
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 2
+    },
+    {
+      "template_family_id": "TF_T1136_001_DEV",
+      "category": "mapped_single",
+      "split": "dev",
+      "technique_ids": [
+        "T1136.001"
+      ],
+      "behavior_description": "Dev",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1136.001"
+        ],
+        "technique_names": [
+          ""
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1136.001"
+        ],
+        "technique_names": [
+          ""
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 2,
+      "host_constraint": "WORKSTATION01, WORKSTATION02, FILESVR01, APPSVR01 (NO DC01)"
+    },
+    {
+      "template_family_id": "TF_T1547_001_DEV",
+      "category": "mapped_single",
+      "split": "dev",
+      "technique_ids": [
+        "T1547.001"
+      ],
+      "behavior_description": "Dev",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1547.001"
+        ],
+        "technique_names": [
+          ""
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1547.001"
+        ],
+        "technique_names": [
+          ""
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 2
+    },
+    {
+      "template_family_id": "TF_T1685_005_DEV",
+      "category": "mapped_single",
+      "split": "dev",
+      "technique_ids": [
+        "T1685.005"
+      ],
+      "behavior_description": "Dev",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1685.005"
+        ],
+        "technique_names": [
+          ""
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1685.005"
+        ],
+        "technique_names": [
+          ""
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 2
+    },
+    {
+      "template_family_id": "TF_T1105_DEV",
+      "category": "mapped_single",
+      "split": "dev",
+      "technique_ids": [
+        "T1105"
+      ],
+      "behavior_description": "Dev",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1105"
+        ],
+        "technique_names": [
+          ""
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1105"
+        ],
+        "technique_names": [
+          ""
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 2
+    },
+    {
+      "template_family_id": "TF_MULTI_DEV_A",
+      "category": "mapped_multi",
+      "split": "dev",
+      "technique_ids": [
+        "T1059.001",
+        "T1543.003"
+      ],
+      "behavior_description": "Dev multi A",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.001"
+        ],
+        "technique_names": [
+          ""
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.001",
+          "T1543.003"
+        ],
+        "technique_names": [
+          ""
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 2
+    },
+    {
+      "template_family_id": "TF_MULTI_DEV_B",
+      "category": "mapped_multi",
+      "split": "dev",
+      "technique_ids": [
+        "T1059.003",
+        "T1105",
+        "T1136.001"
+      ],
+      "behavior_description": "Dev multi B",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.003"
+        ],
+        "technique_names": [
+          ""
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "mapped",
+        "technique_ids": [
+          "T1059.003",
+          "T1105",
+          "T1136.001"
+        ],
+        "technique_names": [
+          ""
+        ],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "mapped->mapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 2,
+      "host_constraint": "WORKSTATION01, WORKSTATION02, FILESVR01, APPSVR01 (NO DC01)"
+    },
+    {
+      "template_family_id": "TF_UNMAP_DEV",
+      "category": "unmapped",
+      "split": "dev",
+      "technique_ids": [],
+      "behavior_description": "Dev unmapped",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "unmapped",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "unmapped->unmapped",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 6
+    },
+    {
+      "template_family_id": "TF_AMBIG_DEV",
+      "category": "ambiguous",
+      "split": "dev",
+      "technique_ids": [],
+      "behavior_description": "Dev ambiguous",
+      "anchor": {
+        "provider": "any",
+        "channel": "any",
+        "windows_event_id": 0,
+        "selection_rule": "any"
+      },
+      "single_ground_truth": {
+        "status": "ambiguous",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "contextual_ground_truth": {
+        "status": "ambiguous",
+        "technique_ids": [],
+        "technique_names": [],
+        "evidence_predicate": {
+          "all": []
+        },
+        "rationale": ""
+      },
+      "expected_transition": "ambiguous->ambiguous",
+      "contextual_event_descriptions": [],
+      "counter_evidence": "",
+      "benign_near_miss": "",
+      "allowed_variations": [],
+      "disallowed_variations": [],
+      "planned_instances": 4
+    }
+  ]
+}

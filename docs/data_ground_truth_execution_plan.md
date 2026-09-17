@@ -68,3 +68,120 @@ The corrected Task 2 artifact currently reports:
 - gate result: `RECONCILIATION_DIVERGENT`
 
 Therefore, for the current production workspace, Task 3 and Task 4 artifacts from earlier runs are retained only as historical diagnostics. They are not validly executable outputs of the corrected pipeline until a human decision resolves or waives the Task 2 discrepancy.
+
+---
+
+## 5. Synthetic Paired Benchmark Protocol
+
+### 5.1 Motivation
+
+The Windows-APT pipeline is legitimately blocked at Task 4 (no independent ground truth). A **synthetic paired benchmark** generates controlled Windows endpoint telemetry with fully traceable ground truth established from template → evidence → annotation, bypassing the detector-rule dependency.
+
+### 5.2 Design: Paired Single-Event / Contextual Views
+
+Each **scenario instance** produces two views of the same anchor event:
+
+- **Single-event view**: One anchor event only.
+- **Contextual view**: The same anchor event plus 1–5 related events (total 2–6).
+
+Ground truth is annotated **per-view independently**. A single view may legitimately be `ambiguous` while its contextual counterpart is `mapped`, reflecting the additional evidence available in context.
+
+### 5.3 Attribution Rubric (Evidence-Conditioned Closed-World)
+
+Ground-truth labels are benchmark reference annotations constructed under the RAG2ATTCK evidence-conditioned, closed-world attribution rubric and validated against the pinned MITRE ATT&CK catalog.
+
+| Status | Definition |
+|---|---|
+| **Mapped** | Sufficient positive attribution evidence is present in the view for one or more techniques in the benchmark catalog. |
+| **Unmapped** | The visible evidence affirmatively supports a benign/non-attributable interpretation under the closed-world eight-technique rubric. |
+| **Ambiguous** | Neither the mapped threshold nor the unmapped threshold can be established from the visible evidence. |
+
+> **Note**: Lack of evidence alone produces **ambiguous**, not unmapped.
+
+### 5.4 Transition Policy (Benchmark v1)
+
+Allowed single → contextual transitions:
+
+| Single Status | Contextual Status | Type |
+|---|---|---|
+| mapped | mapped (same techniques) | Context confirms |
+| mapped(n) | mapped(n+k techniques) | Context expands |
+| ambiguous | mapped | Context resolves |
+| ambiguous | unmapped | Context resolves negatively |
+| ambiguous | ambiguous | Context insufficient |
+| unmapped | unmapped | Context confirms benign |
+
+**Disallowed in v1**: mapped→ambiguous, mapped→unmapped, unmapped→ambiguous, unmapped→mapped.
+
+### 5.5 Quota (counted at pair / contextual-view level)
+
+| Category | Test | Dev | Total |
+|---|---:|---:|---:|
+| Mapped single-label (8 techniques × 50) | 400 | 16 | 416 |
+| Mapped multi-label | 40 | 4 | 44 |
+| Unmapped | 150 | 6 | 156 |
+| Ambiguous | 50 | 4 | 54 |
+| **Total** | **640** | **30** | **670** |
+
+### 5.6 ATT&CK Catalog (pinned to STIX v19.2)
+
+`T1059.001`, `T1059.003`, `T1053.005`, `T1543.003`, `T1136.001`, `T1547.001`, `T1685.005`, `T1105`
+
+All 8 techniques verified active (not revoked/deprecated) against pinned STIX snapshot.
+
+### 5.7 Constraints
+
+- **Determinism**: Seed `20260915`; `random.Random(seed)` per scenario, not global.
+- **Providers**: Windows Security + Sysmon only.
+- **Service install**: EID **4697** (Security-Auditing), not 7045 (Service Control Manager/System).
+- **Safe indicators**: RFC 5737 IPs, `*.example.invalid` domains.
+- **Near-duplicate detection**: Character 5-gram Jaccard ≥ 0.95.
+- **Split**: Strict template-family holdout — DEV ∩ TEST template_family_id = ∅.
+- **Family diversity**: `ceil(category_quota / num_eligible_families)` — no hard cap.
+- **T1136.001 host constraint**: Workstation/member-server only; excluded from DC hosts.
+- **No leakage**: Inference payload filtered by allowlist; no technique IDs, ground truth keywords.
+
+### 5.8 Template Registry
+
+Authoritative source: `config/synthetic_templates.json`.
+
+Pipeline: registry → validator → generator → approval report → dataset.
+
+- 64 template families (52 test, 12 dev)
+- Evidence predicates in structured DSL (eq, contains_ci, endswith_ci, all/any/not)
+- Registry hash verified for freeze integrity
+
+### 5.9 Staged Execution
+
+**Stage A** (prepare & approve):
+1. Validate ATT&CK catalog against pinned STIX
+2. Create template registry with structured evidence predicates
+3. Build schema, validator (30 checks), tests
+4. Create human-review approval package
+5. **STOP** → `STATUS: WAITING_FOR_HUMAN_APPROVAL`
+
+**Stage B** (generate & freeze — only after explicit approval):
+1. Lock approved templates via registry hash
+2. Generate candidate pool from templates
+3. Validate all 670 pairs
+4. Near-duplicate audit
+5. Verify dev/test split holdout
+6. Manual spot-check audit
+7. Freeze dataset
+8. Reproduce from seed
+9. Commit & push
+
+### 5.10 Prerequisite Independence
+
+The synthetic pipeline does **not** depend on Windows-APT Task 2 or Task 4 gates. It has its own prerequisite chain:
+- `prepare-synthetic`: Requires valid `attack_manifest.json` (T5-acquire PASS).
+- `validate-synthetic`: Requires prepared synthetic artifacts.
+- `freeze-synthetic`: Requires validation PASS.
+- `verify-synthetic`: Requires frozen dataset.
+
+### 5.11 Source Modules
+
+- `src/synthetic.py`: Data model, event builders, ID generation, serialization.
+- `src/synthetic_validator.py`: 30 validation checks covering schema, quotas, transitions, leakage, host constraints, near-duplicates, and freeze integrity.
+- `tests/test_synthetic.py`: Comprehensive test suite with positive and negative tests.
+- `config/synthetic_templates.json`: Authoritative template registry (64 families).

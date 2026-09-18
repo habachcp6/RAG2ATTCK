@@ -559,11 +559,11 @@ def build() -> dict[str, Any]:
         ("TF_UNMAP_B", "Normal cmd-based DNS administration", SECURITY, SECURITY_CHANNEL, 4688, "cmd.exe /c ipconfig /flushdns", ["cmd.exe", "ipconfig", "/flushdns"], "The command is a routine local diagnostic action with no staged payload, persistence, transfer, or account mutation."),
         ("TF_UNMAP_C", "Standard scheduled disk-maintenance task", SECURITY, SECURITY_CHANNEL, 4698, "\\Microsoft\\Windows\\DiskCleanup with cleanmgr.exe", ["DiskCleanup", "cleanmgr.exe", "System32"], "The task name and System32 cleanmgr.exe content identify routine Windows maintenance."),
         ("TF_UNMAP_D", "Legitimate signed service deployment", SECURITY, SECURITY_CHANNEL, 4697, "ContosoAgent.exe from C:\\Program Files\\Contoso", ["ContosoAgent.exe", "Program Files", "LocalSystem"], "The service binary is in a protected vendor directory and its deployment is a normal managed installation."),
-        ("TF_UNMAP_E", "Expected employee local-account provisioning", SECURITY, SECURITY_CHANNEL, 4720, "TargetUserName=jdoe created by helpdesk", ["jdoe", "helpdesk", "employee"], "The account name and help-desk creator match ordinary onboarding and show no persistence or privilege escalation."),
+        ("TF_UNMAP_E", "Expected employee local-account provisioning", SECURITY, SECURITY_CHANNEL, 4720, "TargetUserName=jdoe created by helpdesk", ["jdoe", "helpdesk", "employee"], "EID 4720 identifies the created account (jdoe) and creator (helpdesk), but actor identity and account creation alone do not establish affirmative authorization in the single view."),
         ("TF_UNMAP_PS", "Routine PowerShell service inventory", SYSMON, SYSMON_CHANNEL, 1, "powershell.exe -Command Get-Service", ["Get-Service", "NoProfile", "powershell.exe"], "PowerShell inventory is ordinary administration with no obfuscation, transfer, or persistence evidence."),
         ("TF_UNMAP_CMD", "Routine cmd directory listing", SECURITY, SECURITY_CHANNEL, 4688, "cmd.exe /c dir C:\\Program Files\\Contoso", ["cmd.exe", "dir", "Program Files"], "The command shell lists a managed software directory and does not stage or execute a payload."),
         ("TF_UNMAP_SCHTASK", "Scheduled Windows update maintenance", SECURITY, SECURITY_CHANNEL, 4698, "\\Contoso\\UpdateMaintenance runs signed updater.exe", ["UpdateMaintenance", "updater.exe", "Program Files"], "The task content is a signed vendor updater in a protected path and is tied to maintenance context."),
-        ("TF_UNMAP_SVC", "Signed service restart after patching", SECURITY, SECURITY_CHANNEL, 4697, "ContosoPatch service from Program Files", ["ContosoPatch", "Program Files", "LocalService"], "The service is a signed patching component in a protected location and has no public-path payload."),
+        ("TF_UNMAP_SVC", "Approved enterprise service deployment", SECURITY, SECURITY_CHANNEL, 4697, "ContosoPatch service installation from Program Files", ["ContosoPatch", "Program Files", "LocalService"], "EID 4697 records a service installation from Program Files under LocalService, but a protected path alone does not establish authorization without deployment workflow context."),
         ("TF_UNMAP_ACCT", "Normal local backup-account provisioning", SECURITY, SECURITY_CHANNEL, 4720, "backupsvc created by Administrator", ["backupsvc", "Administrator", "backup"], "The service account is created by the approved administrator provisioning identity without immediate group escalation."),
         ("TF_UNMAP_REG", "Legitimate startup application registration", SYSMON, SYSMON_CHANNEL, 13, "OneDrive Run value under Program Files", ["CurrentVersion\\Run", "Program Files", "OneDrive"], "A signed startup application under Program Files is an affirmative benign startup scenario."),
         ("TF_UNMAP_EVTCLR", "Authorized log-retention maintenance", EVENTLOG, SECURITY_CHANNEL, 1102, "Security log rotation by SYSTEM", ["SYSTEM", "maintenance", "rotation"], "EID 1102 is paired with a SYSTEM maintenance process and an approved log-rotation context."),
@@ -638,11 +638,11 @@ def build() -> dict[str, Any]:
         "TF_UNMAP_B": [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "ipconfig.exe child of the interactive cmd session")],
         "TF_UNMAP_C": [ctx("context_1", SYSMON, SYSMON_CHANNEL, 1, "cleanmgr.exe launched by the maintenance task")],
         "TF_UNMAP_D": [ctx("context_1", SYSMON, SYSMON_CHANNEL, 1, "ContosoAgent.exe started after managed installation")],
-        "TF_UNMAP_E": [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "helpdesk net user command for employee onboarding")],
+        "TF_UNMAP_E": [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "Provisioner.exe launches net.exe for employee onboarding under IAM provisioning workflow")],
         "TF_UNMAP_PS": [ctx("context_1", SYSMON, SYSMON_CHANNEL, 1, "taskeng.exe maintenance process")],
         "TF_UNMAP_CMD": [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "interactive explorer.exe process")],
         "TF_UNMAP_SCHTASK": [ctx("context_1", SYSMON, SYSMON_CHANNEL, 1, "signed updater.exe launched by taskeng.exe")],
-        "TF_UNMAP_SVC": [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "MSI service deployment process")],
+        "TF_UNMAP_SVC": [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "Approved deployment agent executes msiexec to deploy the service package")],
         "TF_UNMAP_ACCT": [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "Contoso account-provisioner process under the approved management agent")],
         "TF_UNMAP_REG": [ctx("context_1", SYSMON, SYSMON_CHANNEL, 1, "OneDrive startup application process")],
     }
@@ -651,11 +651,11 @@ def build() -> dict[str, Any]:
         "TF_UNMAP_B": all_of(leaf("context_1", "NewProcessName", "endswith_ci", "\\ipconfig.exe"), leaf("context_1", "ParentProcessName", "endswith_ci", "\\cmd.exe"), leaf("context_1", "SubjectUserName", "contains_ci", "helpdesk")),
         "TF_UNMAP_C": all_of(leaf("context_1", "Image", "endswith_ci", "\\cleanmgr.exe"), leaf("context_1", "User", "contains_ci", "SYSTEM")),
         "TF_UNMAP_D": all_of(leaf("context_1", "Image", "endswith_ci", "\\ContosoAgent.exe"), leaf("context_1", "User", "contains_ci", "SYSTEM")),
-        "TF_UNMAP_E": all_of(leaf("context_1", "NewProcessName", "endswith_ci", "\\net.exe"), leaf("context_1", "CommandLine", "contains_ci", "net user jdoe /add"), leaf("context_1", "SubjectUserName", "eq", "helpdesk")),
+        "TF_UNMAP_E": all_of(leaf("context_1", "NewProcessName", "endswith_ci", "\\net.exe"), leaf("context_1", "ParentProcessName", "endswith_ci", "\\Provisioner.exe"), leaf("context_1", "CommandLine", "contains_ci", "net user jdoe /add")),
         "TF_UNMAP_PS": all_of(leaf("context_1", "Image", "endswith_ci", "\\taskeng.exe"), leaf("context_1", "ParentImage", "endswith_ci", "\\svchost.exe")),
         "TF_UNMAP_CMD": all_of(leaf("context_1", "NewProcessName", "endswith_ci", "\\explorer.exe"), leaf("context_1", "SubjectUserName", "contains_ci", "helpdesk")),
         "TF_UNMAP_SCHTASK": all_of(leaf("context_1", "Image", "endswith_ci", "\\updater.exe"), leaf("context_1", "ParentImage", "endswith_ci", "\\taskeng.exe")),
-        "TF_UNMAP_SVC": all_of(leaf("context_1", "NewProcessName", "endswith_ci", "\\msiexec.exe"), leaf("context_1", "SubjectUserName", "contains_ci", "Administrator")),
+        "TF_UNMAP_SVC": all_of(leaf("context_1", "NewProcessName", "endswith_ci", "\\msiexec.exe"), leaf("context_1", "ParentProcessName", "endswith_ci", "\\CcmExec.exe"), leaf("context_1", "CommandLine", "contains_ci", "msiexec.exe /i"), leaf("context_1", "CommandLine", "contains_ci", "ContosoPatch.msi")),
         "TF_UNMAP_ACCT": all_of(leaf("context_1", "NewProcessName", "endswith_ci", "\\account-provisioner.exe"), leaf("context_1", "CommandLine", "contains_ci", "--create backupsvc --role backup"), leaf("context_1", "ParentProcessName", "endswith_ci", "\\management-agent.exe"), leaf("context_1", "SubjectUserName", "eq", "Administrator")),
         "TF_UNMAP_REG": all_of(leaf("context_1", "Image", "endswith_ci", "\\OneDrive.exe"), leaf("context_1", "ParentImage", "endswith_ci", "\\explorer.exe")),
     }
@@ -692,6 +692,22 @@ def build() -> dict[str, Any]:
                 relation("same_host", "events", ["context_1", "anchor"]),
                 relation("same_logon", "events", ["context_1", "anchor"]),
             ), "The linked Contoso account-provisioner process, approved management parent, explicit role, ordering, host, and logon establish an affirmative synthetic provisioning workflow.")
+        elif fid == "TF_UNMAP_E":
+            single = gt("ambiguous", [], benign_pred, "EID 4720 identifies the created account (jdoe) and creator (helpdesk), but actor identity and account creation alone do not establish affirmative authorization in the single view.")
+            contextual = gt("unmapped", [], all_of(
+                benign_pred,
+                benign_context_predicates[fid],
+                relation("temporal_before", "before", "context_1", "after", "anchor"),
+                relation("same_host", "events", ["context_1", "anchor"]),
+            ), "The enterprise provisioning parent process (Provisioner.exe), expected net.exe child, explicit command (net user jdoe /add), temporal ordering, and host linkage establish an authorized employee onboarding workflow.")
+        elif fid == "TF_UNMAP_SVC":
+            single = gt("ambiguous", [], benign_pred, "EID 4697 records a service installation from Program Files under LocalService, but a protected path alone does not establish authorization without deployment workflow context.")
+            contextual = gt("unmapped", [], all_of(
+                benign_pred,
+                benign_context_predicates[fid],
+                relation("temporal_before", "before", "context_1", "after", "anchor"),
+                relation("same_host", "events", ["context_1", "anchor"]),
+            ), "The enterprise deployment agent parent process (CcmExec.exe), msiexec installer execution with approved package path, temporal ordering, and host linkage establish an authorized service deployment workflow independent of user identity.")
         else:
             single = gt("unmapped", [], benign_pred, rationale)
             contextual = gt("unmapped", [], all_of(benign_pred, benign_context_predicates[fid], relation("same_host", "events", ["anchor", "context_1"])), f"Context confirms the same benign {behavior.lower()} workflow with an explicit maintenance process or actor.")

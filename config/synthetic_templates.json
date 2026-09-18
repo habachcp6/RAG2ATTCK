@@ -5943,7 +5943,7 @@
         "selection_rule": "TargetUserName=jdoe created by helpdesk; select the concrete provider fields that contain jdoe, helpdesk, employee"
       },
       "single_ground_truth": {
-        "status": "unmapped",
+        "status": "ambiguous",
         "technique_ids": [],
         "technique_names": [],
         "evidence_predicate": {
@@ -5968,7 +5968,7 @@
             }
           ]
         },
-        "rationale": "The account name and help-desk creator match ordinary onboarding and show no persistence or privilege escalation."
+        "rationale": "EID 4720 identifies the created account (jdoe) and creator (helpdesk), but actor identity and account creation alone do not establish affirmative authorization in the single view."
       },
       "contextual_ground_truth": {
         "status": "unmapped",
@@ -6008,30 +6008,35 @@
                 },
                 {
                   "event": "context_1",
-                  "field": "CommandLine",
-                  "op": "contains_ci",
-                  "value": "net user jdoe /add"
+                  "field": "ParentProcessName",
+                  "op": "endswith_ci",
+                  "value": "\\Provisioner.exe"
                 },
                 {
                   "event": "context_1",
-                  "field": "SubjectUserName",
-                  "op": "eq",
-                  "value": "helpdesk"
+                  "field": "CommandLine",
+                  "op": "contains_ci",
+                  "value": "net user jdoe /add"
                 }
               ]
             },
             {
+              "relation": "temporal_before",
+              "before": "context_1",
+              "after": "anchor"
+            },
+            {
               "relation": "same_host",
               "events": [
-                "anchor",
-                "context_1"
+                "context_1",
+                "anchor"
               ]
             }
           ]
         },
-        "rationale": "Context confirms the same benign expected employee local-account provisioning workflow with an explicit maintenance process or actor."
+        "rationale": "The enterprise provisioning parent process (Provisioner.exe), expected net.exe child, explicit command (net user jdoe /add), temporal ordering, and host linkage establish an authorized employee onboarding workflow."
       },
-      "expected_transition": "unmapped->unmapped",
+      "expected_transition": "ambiguous->unmapped",
       "contextual_event_descriptions": [
         "A related event confirms the approved workflow for expected employee local-account provisioning with affirmative benign telemetry."
       ],
@@ -6041,7 +6046,7 @@
           "provider": "Microsoft-Windows-Security-Auditing",
           "channel": "Security",
           "windows_event_id": 4688,
-          "selection_rule": "helpdesk net user command for employee onboarding"
+          "selection_rule": "Provisioner.exe launches net.exe for employee onboarding under IAM provisioning workflow"
         }
       ],
       "counter_evidence": "A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.",
@@ -6495,15 +6500,15 @@
       "category": "unmapped",
       "split": "test",
       "technique_ids": [],
-      "behavior_description": "Signed service restart after patching",
+      "behavior_description": "Approved enterprise service deployment",
       "anchor": {
         "provider": "Microsoft-Windows-Security-Auditing",
         "channel": "Security",
         "windows_event_id": 4697,
-        "selection_rule": "ContosoPatch service from Program Files; select the concrete provider fields that contain ContosoPatch, Program Files, LocalService"
+        "selection_rule": "ContosoPatch service installation from Program Files; select the concrete provider fields that contain ContosoPatch, Program Files, LocalService"
       },
       "single_ground_truth": {
-        "status": "unmapped",
+        "status": "ambiguous",
         "technique_ids": [],
         "technique_names": [],
         "evidence_predicate": {
@@ -6528,7 +6533,7 @@
             }
           ]
         },
-        "rationale": "The service is a signed patching component in a protected location and has no public-path payload."
+        "rationale": "EID 4697 records a service installation from Program Files under LocalService, but a protected path alone does not establish authorization without deployment workflow context."
       },
       "contextual_ground_truth": {
         "status": "unmapped",
@@ -6568,26 +6573,43 @@
                 },
                 {
                   "event": "context_1",
-                  "field": "SubjectUserName",
+                  "field": "ParentProcessName",
+                  "op": "endswith_ci",
+                  "value": "\\CcmExec.exe"
+                },
+                {
+                  "event": "context_1",
+                  "field": "CommandLine",
                   "op": "contains_ci",
-                  "value": "Administrator"
+                  "value": "msiexec.exe /i"
+                },
+                {
+                  "event": "context_1",
+                  "field": "CommandLine",
+                  "op": "contains_ci",
+                  "value": "ContosoPatch.msi"
                 }
               ]
             },
             {
+              "relation": "temporal_before",
+              "before": "context_1",
+              "after": "anchor"
+            },
+            {
               "relation": "same_host",
               "events": [
-                "anchor",
-                "context_1"
+                "context_1",
+                "anchor"
               ]
             }
           ]
         },
-        "rationale": "Context confirms the same benign signed service restart after patching workflow with an explicit maintenance process or actor."
+        "rationale": "The enterprise deployment agent parent process (CcmExec.exe), msiexec installer execution with approved package path, temporal ordering, and host linkage establish an authorized service deployment workflow independent of user identity."
       },
-      "expected_transition": "unmapped->unmapped",
+      "expected_transition": "ambiguous->unmapped",
       "contextual_event_descriptions": [
-        "A related event confirms the approved workflow for signed service restart after patching with affirmative benign telemetry."
+        "A related event confirms the approved workflow for approved enterprise service deployment with affirmative benign telemetry."
       ],
       "contextual_event_specs": [
         {
@@ -6595,11 +6617,11 @@
           "provider": "Microsoft-Windows-Security-Auditing",
           "channel": "Security",
           "windows_event_id": 4688,
-          "selection_rule": "MSI service deployment process"
+          "selection_rule": "Approved deployment agent executes msiexec to deploy the service package"
         }
       ],
       "counter_evidence": "A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.",
-      "benign_near_miss": "The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: signed service restart after patching.",
+      "benign_near_miss": "The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: approved enterprise service deployment.",
       "allowed_variations": [
         "Keep the provider-specific benign fields visible."
       ],

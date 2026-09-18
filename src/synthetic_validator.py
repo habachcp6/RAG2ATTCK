@@ -425,6 +425,65 @@ def _validate_special_benign_workflow(
                     f"{fid}: contextual unmapped decision requires affirmative provisioning-process evidence"
                 )
 
+    if fid == "TF_UNMAP_E":
+        single = family.get("single_ground_truth") or {}
+        if single.get("status") == "unmapped":
+            result.add_error(
+                f"{fid}: EID 4720 account/creator fields alone cannot establish authorized provisioning in single view; must be ambiguous"
+            )
+        if status == "unmapped":
+            has_process = bool({1, 4688}.intersection(event_ids))
+            has_parent_provisioner = any(
+                leaf.get("field") in {"ParentProcessName", "ParentImage"}
+                and any(marker in str(leaf.get("value", "")).casefold() for marker in ("provisioner", "iam", "provision"))
+                for leaf in leaves
+            )
+            has_cmd = any(
+                leaf.get("field") == "CommandLine" and "net user" in str(leaf.get("value", "")).casefold()
+                for leaf in leaves
+            )
+            if not (has_process and has_parent_provisioner and has_cmd):
+                result.add_error(
+                    f"{fid}: contextual unmapped decision requires an affirmative enterprise provisioning workflow (provisioning parent process and command); actor identity and command alone cannot establish authorization"
+                )
+
+    if fid == "TF_UNMAP_SVC":
+        desc = (family.get("behavior_description") or "").casefold()
+        if "restart" in desc:
+            result.add_error(
+                f"{fid}: EID 4697 indicates service installation and cannot be described as a restart event"
+            )
+        single = family.get("single_ground_truth") or {}
+        if single.get("status") == "unmapped":
+            result.add_error(
+                f"{fid}: service installation without deployment workflow authorization cannot be unmapped in single view; must be ambiguous"
+            )
+        if status == "unmapped":
+            has_process = bool({1, 4688}.intersection(event_ids))
+            has_deployment_parent = any(
+                leaf.get("field") in {"ParentProcessName", "ParentImage"}
+                and any(marker in str(leaf.get("value", "")).casefold() for marker in ("ccmexec", "deploy", "contoso"))
+                for leaf in leaves
+            )
+            has_package_cmd = any(
+                leaf.get("field") == "CommandLine"
+                and any(marker in str(leaf.get("value", "")).casefold() for marker in ("msiexec", ".msi"))
+                for leaf in leaves
+            )
+            has_admin_deciding = any(
+                leaf.get("field") in {"SubjectUserName", "User"}
+                and "administrator" in str(leaf.get("value", "")).casefold()
+                for leaf in leaves
+            )
+            if has_admin_deciding and not (has_deployment_parent and has_package_cmd):
+                result.add_error(
+                    f"{fid}: Administrator identity alone cannot establish deployment authorization; requires deployment workflow evidence"
+                )
+            if not (has_process and has_deployment_parent and has_package_cmd):
+                result.add_error(
+                    f"{fid}: contextual unmapped decision requires affirmative enterprise deployment workflow evidence (deployment agent parent and package command) independent of user identity"
+                )
+
 
 def _validate_registry_field_roles(family: Dict[str, Any], result: ValidationResult) -> None:
     """Reject predicates that use a valid telemetry field for the wrong role."""

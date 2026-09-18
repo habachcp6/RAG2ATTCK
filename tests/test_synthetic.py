@@ -40,7 +40,7 @@ from src.synthetic_validator import (
     validate_template_registry,
     compute_transition_matrix, compute_statistics, generate_audit_table,
     ALLOWED_TRANSITIONS, BENCHMARK_CATALOG, BENCHMARK_TECHNIQUE_NAMES,
-    VALID_LABEL_STATUSES, _validate_registry_dsl,
+    VALID_LABEL_STATUSES, _validate_registry_dsl, _registry_predicate_leaves,
     _check_01_schema, _check_04_single_one_event,
     _check_05_contextual_event_count, _check_06_anchor_exists_in_both,
     _check_07_strict_anchor_equality, _check_11_mapped_has_techniques,
@@ -902,6 +902,80 @@ class TestSemanticRegistryValidator:
         assert family["single_ground_truth"]["status"] == "ambiguous"
         assert family["contextual_ground_truth"]["status"] == "unmapped"
         assert any("account-provisioner" in str(item) for item in family["contextual_ground_truth"]["evidence_predicate"]["all"])
+
+    def test_tf_unmap_e_transition_and_workflow(self, registry):
+        family = self.family(registry, "TF_UNMAP_E")
+        assert family["category"] == "unmapped"
+        assert family["single_ground_truth"]["status"] == "ambiguous"
+        assert family["contextual_ground_truth"]["status"] == "unmapped"
+        assert family["expected_transition"] == "ambiguous->unmapped"
+        leaves = _registry_predicate_leaves(family["contextual_ground_truth"]["evidence_predicate"])
+        # Affirmative provisioning workflow required: Provisioner.exe parent and net.exe child
+        assert any(item.get("field") == "ParentProcessName" and "provisioner" in str(item.get("value", "")).lower() for item in leaves if isinstance(item, dict))
+        assert any(item.get("field") == "CommandLine" and "net user jdoe /add" in str(item.get("value", "")).lower() for item in leaves if isinstance(item, dict))
+
+    def test_tf_unmap_e_rejects_identity_only_unmapped(self, registry):
+        candidate = copy.deepcopy(registry)
+        family = self.family(candidate, "TF_UNMAP_E")
+        family["single_ground_truth"]["status"] = "unmapped"
+        family["expected_transition"] = "unmapped->unmapped"
+        result = self.validate(candidate)
+        assert any("alone cannot establish authorized provisioning in single view" in e for e in result.errors)
+
+    def test_tf_unmap_e_rejects_context_without_provisioner_parent(self, registry):
+        candidate = copy.deepcopy(registry)
+        family = self.family(candidate, "TF_UNMAP_E")
+        # Strip provisioning workflow from contextual evidence (leave only net.exe and helpdesk identity)
+        family["contextual_ground_truth"]["evidence_predicate"] = {"all": [
+            {"event": "anchor", "field": "TargetUserName", "op": "eq", "value": "jdoe"},
+            {"event": "context_1", "field": "NewProcessName", "op": "endswith_ci", "value": "\\net.exe"},
+            {"event": "context_1", "field": "SubjectUserName", "op": "eq", "value": "helpdesk"},
+            {"relation": "same_host", "events": ["context_1", "anchor"]},
+        ]}
+        result = self.validate(candidate)
+        assert any("actor identity and command alone cannot establish authorization" in e for e in result.errors)
+
+    def test_tf_unmap_svc_semantics_and_workflow(self, registry):
+        family = self.family(registry, "TF_UNMAP_SVC")
+        assert family["category"] == "unmapped"
+        assert "restart" not in family["behavior_description"].lower()
+        assert any(term in family["behavior_description"].lower() for term in ("deployment", "installation", "deploy", "install"))
+        assert family["single_ground_truth"]["status"] == "ambiguous"
+        assert family["contextual_ground_truth"]["status"] == "unmapped"
+        assert family["expected_transition"] == "ambiguous->unmapped"
+        # Contextual predicate requires deployment workflow independent of Administrator identity
+        leaves = _registry_predicate_leaves(family["contextual_ground_truth"]["evidence_predicate"])
+        assert any(item.get("field") == "ParentProcessName" and "ccmexec" in str(item.get("value", "")).lower() for item in leaves if isinstance(item, dict))
+        assert any(item.get("field") == "CommandLine" and "msiexec" in str(item.get("value", "")).lower() for item in leaves if isinstance(item, dict))
+        assert not any(item.get("field") == "SubjectUserName" and "administrator" in str(item.get("value", "")).lower() for item in leaves if isinstance(item, dict))
+
+    def test_tf_unmap_svc_rejects_restart_description(self, registry):
+        candidate = copy.deepcopy(registry)
+        family = self.family(candidate, "TF_UNMAP_SVC")
+        family["behavior_description"] = "Signed service restart after patching"
+        result = self.validate(candidate)
+        assert any("cannot be described as a restart event" in e for e in result.errors)
+
+    def test_tf_unmap_svc_rejects_single_view_unmapped(self, registry):
+        candidate = copy.deepcopy(registry)
+        family = self.family(candidate, "TF_UNMAP_SVC")
+        family["single_ground_truth"]["status"] = "unmapped"
+        family["expected_transition"] = "unmapped->unmapped"
+        result = self.validate(candidate)
+        assert any("cannot be unmapped in single view" in e for e in result.errors)
+
+    def test_tf_unmap_svc_rejects_admin_identity_without_workflow(self, registry):
+        candidate = copy.deepcopy(registry)
+        family = self.family(candidate, "TF_UNMAP_SVC")
+        # Strip deployment agent and MSI command, leaving only Administrator identity and msiexec
+        family["contextual_ground_truth"]["evidence_predicate"]["all"] = [
+            {"event": "anchor", "field": "ServiceName", "op": "contains_ci", "value": "ContosoPatch"},
+            {"event": "context_1", "field": "NewProcessName", "op": "endswith_ci", "value": "\\msiexec.exe"},
+            {"event": "context_1", "field": "SubjectUserName", "op": "contains_ci", "value": "Administrator"},
+            {"relation": "same_host", "events": ["context_1", "anchor"]},
+        ]
+        result = self.validate(candidate)
+        assert any("Administrator identity alone cannot establish deployment authorization" in e or "requires affirmative enterprise deployment workflow" in e for e in result.errors)
 
     def test_relation_signature_rejects_wrong_operand_name(self):
         result = ValidationResult()

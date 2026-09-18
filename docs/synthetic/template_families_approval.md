@@ -2,7 +2,7 @@
 
 This package is generated from `config/synthetic_templates.json`. It is a human semantic-review artifact for Stage A. Stage B generation and final dataset freezing are intentionally not performed.
 
-- Registry SHA-256: `1fbe27edd7b20d0f520c13a409a0faa539e52b6e28afb513dfcd6d35b2da483c`
+- Registry SHA-256: `ce9e3d79b827f59a2975be356f0430ebe6939f8012519b476c191360b36b3b7a`
 - Total families: `64` (`test=52`, `dev=12`)
 - Planned pairs: `670`
 - ATT&CK catalog: pinned Enterprise v19.2; names are checked against the local STIX snapshot.
@@ -4391,7 +4391,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 - Windows documentation: EID 4720 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4720]; EID 4688 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4688]
 - Telemetry combinations covered: `2` registry event specifications
 ### Single-view ground truth
-- Status: `unmapped`
+- Status: `ambiguous`
 - Technique(s): none
 - Evidence predicate:
 ```json
@@ -4418,7 +4418,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The account name and help-desk creator match ordinary onboarding and show no persistence or privilege escalation.
+- Rationale: EID 4720 identifies the created account (jdoe) and creator (helpdesk), but actor identity and account creation alone do not establish affirmative authorization in the single view.
 ### Contextual ground truth
 - Status: `unmapped`
 - Technique(s): none
@@ -4458,30 +4458,35 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
         },
         {
           "event": "context_1",
-          "field": "CommandLine",
-          "op": "contains_ci",
-          "value": "net user jdoe /add"
+          "field": "ParentProcessName",
+          "op": "endswith_ci",
+          "value": "\\Provisioner.exe"
         },
         {
           "event": "context_1",
-          "field": "SubjectUserName",
-          "op": "eq",
-          "value": "helpdesk"
+          "field": "CommandLine",
+          "op": "contains_ci",
+          "value": "net user jdoe /add"
         }
       ]
     },
     {
+      "relation": "temporal_before",
+      "before": "context_1",
+      "after": "anchor"
+    },
+    {
       "relation": "same_host",
       "events": [
-        "anchor",
-        "context_1"
+        "context_1",
+        "anchor"
       ]
     }
   ]
 }
 ```
-- Rationale: Context confirms the same benign expected employee local-account provisioning workflow with an explicit maintenance process or actor.
-- Expected transition: `unmapped->unmapped`
+- Rationale: The enterprise provisioning parent process (Provisioner.exe), expected net.exe child, explicit command (net user jdoe /add), temporal ordering, and host linkage establish an authorized employee onboarding workflow.
+- Expected transition: `ambiguous->unmapped`
 - Contextual event descriptions: ["A related event confirms the approved workflow for expected employee local-account provisioning with affirmative benign telemetry."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: expected employee local-account provisioning.
@@ -4840,14 +4845,14 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `test`
 - Category: `unmapped`
-- Behavior description: Signed service restart after patching
+- Behavior description: Approved enterprise service deployment
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4697`
 - Context telemetry: `context_1` = `Microsoft-Windows-Security-Auditing` / `Security` / EID `4688`
-- Anchor selection rule: ContosoPatch service from Program Files; select the concrete provider fields that contain ContosoPatch, Program Files, LocalService
+- Anchor selection rule: ContosoPatch service installation from Program Files; select the concrete provider fields that contain ContosoPatch, Program Files, LocalService
 - Windows documentation: EID 4697 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4697]; EID 4688 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4688]
 - Telemetry combinations covered: `2` registry event specifications
 ### Single-view ground truth
-- Status: `unmapped`
+- Status: `ambiguous`
 - Technique(s): none
 - Evidence predicate:
 ```json
@@ -4874,7 +4879,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The service is a signed patching component in a protected location and has no public-path payload.
+- Rationale: EID 4697 records a service installation from Program Files under LocalService, but a protected path alone does not establish authorization without deployment workflow context.
 ### Contextual ground truth
 - Status: `unmapped`
 - Technique(s): none
@@ -4914,27 +4919,44 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
         },
         {
           "event": "context_1",
-          "field": "SubjectUserName",
+          "field": "ParentProcessName",
+          "op": "endswith_ci",
+          "value": "\\CcmExec.exe"
+        },
+        {
+          "event": "context_1",
+          "field": "CommandLine",
           "op": "contains_ci",
-          "value": "Administrator"
+          "value": "msiexec.exe /i"
+        },
+        {
+          "event": "context_1",
+          "field": "CommandLine",
+          "op": "contains_ci",
+          "value": "ContosoPatch.msi"
         }
       ]
     },
     {
+      "relation": "temporal_before",
+      "before": "context_1",
+      "after": "anchor"
+    },
+    {
       "relation": "same_host",
       "events": [
-        "anchor",
-        "context_1"
+        "context_1",
+        "anchor"
       ]
     }
   ]
 }
 ```
-- Rationale: Context confirms the same benign signed service restart after patching workflow with an explicit maintenance process or actor.
-- Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for signed service restart after patching with affirmative benign telemetry."]
+- Rationale: The enterprise deployment agent parent process (CcmExec.exe), msiexec installer execution with approved package path, temporal ordering, and host linkage establish an authorized service deployment workflow independent of user identity.
+- Expected transition: `ambiguous->unmapped`
+- Contextual event descriptions: ["A related event confirms the approved workflow for approved enterprise service deployment with affirmative benign telemetry."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
-- Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: signed service restart after patching.
+- Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: approved enterprise service deployment.
 - Allowed variations: ["Keep the provider-specific benign fields visible."]
 - Disallowed variations: ["Do not reduce the family to label_status only or use unrelated negative text."]
 - ATT&CK source:

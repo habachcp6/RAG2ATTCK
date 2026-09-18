@@ -24,6 +24,72 @@ def _write_json(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
+def _write_valid_preflight(ws: Path) -> None:
+    """Minimal preflight artifact accepted by validate_preflight_artifact()."""
+    _write_json(
+        ws / "data" / "metadata" / "preflight.json",
+        {
+            "meta": {"schema_version": "1.0.0", "task": "T0_PREFLIGHT"},
+            "gate_result": {"status": "PASS", "passed": True},
+            "path_validation": {"all_paths_contained": True},
+            "capacity_assessment": {"capacity_sufficient": True},
+            "source_context": {"verification_status": "VERIFIED_CANONICAL_PRESERVED"},
+        },
+    )
+
+
+def _write_valid_dataset_manifest(ws: Path) -> None:
+    """Tiny deterministic CSV + valid manifest accepted by validate_dataset_manifest_artifact().
+
+    Uses 18-byte synthetic bytes — the validator cares about manifest↔raw-bytes
+    integrity, not that the file is the real 480 MB dataset.
+    """
+    raw_dir = ws / "data" / "raw" / "windows_apt_2025" / "v3"
+    raw_dir.mkdir(parents=True)
+    content = b"id,value\n1,test\n"
+    raw_file = raw_dir / "period.csv"
+    raw_file.write_bytes(content)
+    digest = hashlib.sha256(content).hexdigest()
+    _write_json(
+        ws / "data" / "metadata" / "dataset_manifest.json",
+        {
+            "schema_version": "1.0.0",
+            "dataset_id": "b8fmtzvpy8",
+            "dataset_version": "3",
+            "files": [
+                {
+                    "filename": "period.csv",
+                    "role": "ingest_period_csv",
+                    "size_bytes": len(content),
+                    "sha256": digest,
+                    "expected_sha256": digest,
+                    "verified": True,
+                }
+            ],
+        },
+    )
+
+
+def _write_unresolved_reconciliation(ws: Path) -> None:
+    """Structurally valid reconciliation log that is intentionally unresolved.
+
+    This causes validate_reconciliation_artifact(..., require_resolved=True) to raise
+    ArtifactValidationError matching 'T2_MULTISET_RECONCILIATION'.
+    """
+    _write_json(
+        ws / "data" / "metadata" / "reconciliation_log.json",
+        {
+            "schema_version": "1.0.0",
+            "task": "T2_MULTISET_RECONCILIATION",
+            "row_count_accounting": {"row_counts_match": True},
+            "multiset_equality_status": "RECONCILIATION_DIVERGENT",
+            "is_exact_match": False,
+            "semantic_reconciliation_status": "UNRESOLVED",
+            "representation_equivalence_resolved": False,
+        },
+    )
+
+
 def test_preflight_stop_artifact_cannot_unlock_acquisition(tmp_path):
     """A syntactically named preflight artifact with STOP status is not a valid T0 gate."""
     _write_json(
@@ -98,16 +164,31 @@ def test_attack_manifest_integrity_rejects_corrupted_stix(tmp_path):
         validate_attack_manifest_artifact(tmp_path)
 
 
-def test_unresolved_task2_blocks_profile_in_production_workspace():
-    """The frozen methodology requires STOP before T3 when T2 remains unresolved."""
+def test_unresolved_task2_blocks_profile(tmp_path):
+    """T2 reconciliation unresolved must block validate_stage_prerequisites('profile').
+
+    The controlled workspace has valid T0 preflight and T2 dataset manifest so
+    that the validator reaches the reconciliation gate — the intended failure point.
+    """
+    _write_valid_preflight(tmp_path)
+    _write_valid_dataset_manifest(tmp_path)
+    _write_unresolved_reconciliation(tmp_path)
+
     with pytest.raises(ArtifactValidationError, match="T2_MULTISET_RECONCILIATION"):
-        validate_stage_prerequisites(Path("."), "profile")
+        validate_stage_prerequisites(tmp_path, "profile")
 
 
-def test_unresolved_task2_blocks_audit_gt_in_production_workspace():
-    """The frozen methodology requires STOP before T4 audit-gt when T2 remains unresolved."""
+def test_unresolved_task2_blocks_audit_gt(tmp_path):
+    """T2 reconciliation unresolved must block validate_stage_prerequisites('audit-gt').
+
+    Same setup as above; verifies the gate also applies to the audit-gt stage.
+    """
+    _write_valid_preflight(tmp_path)
+    _write_valid_dataset_manifest(tmp_path)
+    _write_unresolved_reconciliation(tmp_path)
+
     with pytest.raises(ArtifactValidationError, match="T2_MULTISET_RECONCILIATION"):
-        validate_stage_prerequisites(Path("."), "audit-gt")
+        validate_stage_prerequisites(tmp_path, "audit-gt")
 
 
 def test_filename_only_fake_prerequisite_cannot_bypass_gate(tmp_path):

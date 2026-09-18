@@ -5,9 +5,15 @@ name: CI
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+env:
+  # Keep the CI toolchain reproducible; update deliberately with lockfile review.
+  UV_VERSION: "0.11.24"
+  UV_NO_PROGRESS: "1"
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -16,75 +22,111 @@ concurrency:
 jobs:
   registry-validation:
     name: Registry Validation
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7.0.0
         with:
           python-version-file: ".python-version"
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10.1.0
         with:
+          version: "${{ env.UV_VERSION }}"
           enable-cache: true
-          cache-dependency-glob: "uv.lock"
+          cache-suffix: registry-validation
+          cache-dependency-glob: |
+            pyproject.toml
+            uv.lock
+
+      - name: Validate lockfile
+        run: uv lock --check --offline
 
       - name: Install dependencies
         run: uv sync --frozen
+
+      - name: Check installed dependencies
+        run: uv pip check
 
       - name: Validate Synthetic Registry
         run: uv run python scripts/validate_synthetic_registry.py
 
   synthetic-tests:
     name: Synthetic Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7.0.0
         with:
           python-version-file: ".python-version"
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10.1.0
         with:
+          version: "${{ env.UV_VERSION }}"
           enable-cache: true
-          cache-dependency-glob: "uv.lock"
+          cache-suffix: synthetic-tests
+          cache-dependency-glob: |
+            pyproject.toml
+            uv.lock
+
+      - name: Validate lockfile
+        run: uv lock --check --offline
 
       - name: Install dependencies
         run: uv sync --frozen
+
+      - name: Check installed dependencies
+        run: uv pip check
 
       - name: Run Synthetic Tests
         run: uv run pytest tests/test_synthetic.py -q
 
   full-test-suite:
     name: Full Test Suite
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7.0.0
         with:
           python-version-file: ".python-version"
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10.1.0
         with:
+          version: "${{ env.UV_VERSION }}"
           enable-cache: true
-          cache-dependency-glob: "uv.lock"
+          cache-suffix: full-test-suite
+          cache-dependency-glob: |
+            pyproject.toml
+            uv.lock
+
+      - name: Validate lockfile
+        run: uv lock --check --offline
 
       - name: Install dependencies
         run: uv sync --frozen
+
+      - name: Check installed dependencies
+        run: uv pip check
 
       - name: Run Full Test Suite
         run: uv run pytest -q

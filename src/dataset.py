@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import platform
 import shutil
 import sys
@@ -90,9 +90,25 @@ def resolve_secure_path(workspace_root: Path, target: str | Path) -> Path:
     """
     Resolves a target path and ensures it is strictly within workspace_root.
     Raises PreflightPathSafetyError if resolution escapes workspace_root.
+
+    On non-Windows hosts, Windows absolute/drive-qualified paths (e.g.
+    ``C:/Windows/System32``, ``C:\\Windows``, ``\\\\server\\share``) are
+    detected via PureWindowsPath before they can silently become relative
+    POSIX paths and pass the containment check.
     """
     workspace_root = workspace_root.resolve()
+    raw_target = str(target)
     target_path = Path(target)
+    windows_path = PureWindowsPath(raw_target)
+
+    # On non-Windows hosts, Windows absolute/drive-qualified paths must not
+    # silently become relative POSIX paths.
+    if os.name != "nt" and (windows_path.is_absolute() or windows_path.drive):
+        raise PreflightPathSafetyError(
+            raw_target,
+            "Foreign Windows absolute/drive-qualified path is outside workspace",
+        )
+
     if not target_path.is_absolute():
         resolved = (workspace_root / target_path).resolve()
     else:
@@ -100,10 +116,11 @@ def resolve_secure_path(workspace_root: Path, target: str | Path) -> Path:
 
     if not resolved.is_relative_to(workspace_root):
         raise PreflightPathSafetyError(
-            str(target),
-            f"Resolved path '{resolved}' escapes workspace root '{workspace_root}'"
+            raw_target,
+            f"Resolved path '{resolved}' escapes workspace root '{workspace_root}'",
         )
     return resolved
+
 
 
 def verify_all_workspace_paths(workspace_root: Path) -> Dict[str, PathVerification]:

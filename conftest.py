@@ -1,4 +1,4 @@
-﻿"""
+r"""
 conftest.py - Root pytest configuration.
 
 ENVIRONMENT GUARD: Aborts immediately if pytest is not running inside

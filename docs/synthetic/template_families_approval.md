@@ -2,7 +2,7 @@
 
 This package is generated from `config/synthetic_templates.json`. It is a human semantic-review artifact for Stage A. Stage B generation and final dataset freezing are intentionally not performed.
 
-- Registry SHA-256: `ce9e3d79b827f59a2975be356f0430ebe6939f8012519b476c191360b36b3b7a`
+- Registry SHA-256: `8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c`
 - Total families: `64` (`test=52`, `dev=12`)
 - Planned pairs: `670`
 - ATT&CK catalog: pinned Enterprise v19.2; names are checked against the local STIX snapshot.
@@ -36,6 +36,8 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 - `process_then_file`: `process`, `file`; `process_then_network`: `process`, `network`.
 - `process_then_registry`: `process`, `registry`; `process_then_task`: `process`, `task`; `process_then_service`: `process`, `service`.
 - `network_then_file`: `network`, `file`; operands are checked against the canonical event classes.
+- Approved Stage B corrections: `task_then_process`, `service_then_process`, `registry_then_process`, `file_then_process` distinguish activation from registration; `parent_network_before_child` links a parent network event to a subsequently created child.
+- Ordered relations require strictly increasing timestamps; process identity and resource correlations are specified in `docs/synthetic/relation_contract.md`.
 
 ## Family-by-family semantic review
 
@@ -214,9 +216,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": 135
     },
     {
-      "relation": "process_then_network",
-      "process": "anchor",
-      "network": "context_1"
+      "relation": "parent_network_before_child",
+      "network": "context_1",
+      "child": "anchor"
     }
   ]
 }
@@ -353,9 +355,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 - Category: `mapped_single`
 - Behavior description: PowerShell reflective assembly loading in memory
 - Anchor telemetry: `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
-- Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
+- Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `3`
 - Anchor selection rule: PowerShell command line contains Reflection.Assembly and Assembly.Load
-- Windows documentation: EID 1 [https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-1-process-create]
+- Windows documentation: EID 1 [https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-1-process-create]; EID 3 [https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-3-network-connection]
 - Telemetry combinations covered: `2` registry event specifications
 ### Single-view ground truth
 - Status: `mapped`
@@ -421,9 +423,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The follow-on event shares the process identity and confirms the in-memory PowerShell execution chain.
+- Rationale: The command line establishes the reflective-loading invocation; later same-process network activity corroborates process continuity, not successful assembly loading.
 - Expected transition: `mapped->mapped`
-- Contextual event descriptions: ["A same-process Sysmon event follows the reflective load."]
+- Contextual event descriptions: ["A Sysmon network connection follows the PowerShell creation event with the same ProcessGuid."]
 - Counter-evidence: A signed application compatibility shim may load an assembly reflectively; approved publisher and path are counter-evidence.
 - Benign near-miss: PowerShell loading a normal module from a trusted module directory.
 - Allowed variations: ["Keep Reflection.Assembly and Assembly.Load as visible indicators."]
@@ -518,18 +520,16 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": "&&"
     },
     {
-      "relation": "same_process",
-      "events": [
-        "anchor",
-        "context_1"
-      ]
+      "relation": "parent_child",
+      "parent": "anchor",
+      "child": "context_1"
     }
   ]
 }
 ```
-- Rationale: The same process is confirmed by a later Security process record, preserving the command-shell evidence.
+- Rationale: The child process is linked to the command-shell parent through creator/new-process identifiers, preserving the command-shell evidence.
 - Expected transition: `mapped->mapped`
-- Contextual event descriptions: ["A related child process is recorded under the same command-shell process identity."]
+- Contextual event descriptions: ["A distinct child process is created by the command-shell anchor; the child creator PID equals the anchor new-process PID."]
 - Counter-evidence: Routine support scripts may use cmd.exe; an approved script path, signed parent, and no suspicious output destination are counter-evidence.
 - Benign near-miss: cmd.exe /c ipconfig used interactively by a help-desk operator.
 - Allowed variations: ["Use NewProcessName and CommandLine from Security 4688."]
@@ -722,9 +722,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": ".bat"
     },
     {
-      "relation": "process_then_file",
-      "process": "anchor",
-      "file": "context_1"
+      "relation": "file_then_process",
+      "file": "context_1",
+      "process": "anchor"
     }
   ]
 }
@@ -936,9 +936,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": "\\powershell.exe"
     },
     {
-      "relation": "process_then_task",
-      "process": "context_1",
-      "task": "anchor"
+      "relation": "task_then_process",
+      "task": "anchor",
+      "process": "context_1"
     }
   ]
 }
@@ -1028,9 +1028,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": "C:\\ProgramData\\"
     },
     {
-      "relation": "process_then_task",
-      "process": "context_1",
-      "task": "anchor"
+      "relation": "task_then_process",
+      "task": "anchor",
+      "process": "context_1"
     }
   ]
 }
@@ -1132,9 +1132,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": "\\rundll32.exe"
     },
     {
-      "relation": "process_then_task",
-      "process": "context_1",
-      "task": "anchor"
+      "relation": "task_then_process",
+      "task": "anchor",
+      "process": "context_1"
     }
   ]
 }
@@ -1230,9 +1230,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": 443
     },
     {
-      "relation": "process_then_task",
-      "process": "context_1",
-      "task": "anchor"
+      "relation": "task_then_process",
+      "task": "anchor",
+      "process": "context_1"
     },
     {
       "relation": "process_then_network",
@@ -1431,9 +1431,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": "\\cmd.exe"
     },
     {
-      "relation": "process_then_service",
-      "process": "context_1",
-      "service": "anchor"
+      "relation": "service_then_process",
+      "service": "anchor",
+      "process": "context_1"
     }
   ]
 }
@@ -1629,9 +1629,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": "\\svchost.exe"
     },
     {
-      "relation": "process_then_service",
-      "process": "context_2",
-      "service": "anchor"
+      "relation": "service_then_process",
+      "service": "anchor",
+      "process": "context_2"
     }
   ]
 }
@@ -2479,9 +2479,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": ".exe"
     },
     {
-      "relation": "process_then_registry",
-      "process": "context_2",
-      "registry": "anchor"
+      "relation": "registry_then_process",
+      "registry": "anchor",
+      "process": "context_2"
     }
   ]
 }
@@ -5295,9 +5295,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "value": "--clear Security"
     },
     {
-      "relation": "process_then_task",
-      "process": "context_2",
-      "task": "context_1"
+      "relation": "task_then_process",
+      "task": "context_1",
+      "process": "context_2"
     },
     {
       "relation": "temporal_before",
@@ -6711,9 +6711,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
         "value": "-File"
       },
       {
-        "relation": "process_then_task",
-        "process": "context_1",
-        "task": "anchor"
+        "relation": "task_then_process",
+        "task": "anchor",
+        "process": "context_1"
       }
     ]
   },

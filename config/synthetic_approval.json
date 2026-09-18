@@ -1,0 +1,9 @@
+{
+  "approved": true,
+  "base_main_sha": "827eb8b147efc756146261649399ee9e40a1e634",
+  "config_sha256": "edc14bfbadeb4c532c306aefd2f3036d65d815c6d79332e867c2937db64cf4c9",
+  "decision": "User approved Stage B execution and the bounded telemetry/relation corrections in reports/T05_T10_stage_b_preflight_blockers.md on 2026-09-19.",
+  "prior_registry_sha256": "ce9e3d79b827f59a2975be356f0430ebe6939f8012519b476c191360b36b3b7a",
+  "registry_sha256": "8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c",
+  "schema_version": "1.0.0"
+}

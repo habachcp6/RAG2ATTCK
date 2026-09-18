@@ -100,6 +100,8 @@ def main() -> int:
         "- `process_then_file`: `process`, `file`; `process_then_network`: `process`, `network`.",
         "- `process_then_registry`: `process`, `registry`; `process_then_task`: `process`, `task`; `process_then_service`: `process`, `service`.",
         "- `network_then_file`: `network`, `file`; operands are checked against the canonical event classes.",
+        "- Approved Stage B corrections: `task_then_process`, `service_then_process`, `registry_then_process`, `file_then_process` distinguish activation from registration; `parent_network_before_child` links a parent network event to a subsequently created child.",
+        "- Ordered relations require strictly increasing timestamps; process identity and resource correlations are specified in `docs/synthetic/relation_contract.md`.",
         "",
         "## Family-by-family semantic review",
         "",

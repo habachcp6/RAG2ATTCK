@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0.0",
-  "registry_status": "awaiting_human_semantic_approval",
+  "registry_status": "approved_for_stage_b",
   "benchmark_catalog": {
     "attack_version": "19.2",
     "snapshot_commit": "6cda5ad8462c79e14fbb872f4e09059b18e0cfc4",
@@ -229,9 +229,9 @@
               "value": 135
             },
             {
-              "relation": "process_then_network",
-              "process": "anchor",
-              "network": "context_1"
+              "relation": "parent_network_before_child",
+              "network": "context_1",
+              "child": "anchor"
             }
           ]
         },
@@ -515,19 +515,19 @@
             }
           ]
         },
-        "rationale": "The follow-on event shares the process identity and confirms the in-memory PowerShell execution chain."
+        "rationale": "The command line establishes the reflective-loading invocation; later same-process network activity corroborates process continuity, not successful assembly loading."
       },
       "expected_transition": "mapped->mapped",
       "contextual_event_descriptions": [
-        "A same-process Sysmon event follows the reflective load."
+        "A Sysmon network connection follows the PowerShell creation event with the same ProcessGuid."
       ],
       "contextual_event_specs": [
         {
           "event_key": "context_1",
           "provider": "Microsoft-Windows-Sysmon",
           "channel": "Microsoft-Windows-Sysmon/Operational",
-          "windows_event_id": 1,
-          "selection_rule": "Same PowerShell process after the reflective load"
+          "windows_event_id": 3,
+          "selection_rule": "Follow-on network connection from the same PowerShell process after its creation"
         }
       ],
       "counter_evidence": "A signed application compatibility shim may load an assembly reflectively; approved publisher and path are counter-evidence.",
@@ -560,6 +560,14 @@
             1
           ],
           "reference": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-1-process-create"
+        },
+        {
+          "provider": "Microsoft-Windows-Sysmon",
+          "channel": "Microsoft-Windows-Sysmon/Operational",
+          "event_ids": [
+            3
+          ],
+          "reference": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-3-network-connection"
         }
       ],
       "planned_instances": 12
@@ -645,19 +653,17 @@
               "value": "&&"
             },
             {
-              "relation": "same_process",
-              "events": [
-                "anchor",
-                "context_1"
-              ]
+              "relation": "parent_child",
+              "parent": "anchor",
+              "child": "context_1"
             }
           ]
         },
-        "rationale": "The same process is confirmed by a later Security process record, preserving the command-shell evidence."
+        "rationale": "The child process is linked to the command-shell parent through creator/new-process identifiers, preserving the command-shell evidence."
       },
       "expected_transition": "mapped->mapped",
       "contextual_event_descriptions": [
-        "A related child process is recorded under the same command-shell process identity."
+        "A distinct child process is created by the command-shell anchor; the child creator PID equals the anchor new-process PID."
       ],
       "contextual_event_specs": [
         {
@@ -917,9 +923,9 @@
               "value": ".bat"
             },
             {
-              "relation": "process_then_file",
-              "process": "anchor",
-              "file": "context_1"
+              "relation": "file_then_process",
+              "file": "context_1",
+              "process": "anchor"
             }
           ]
         },
@@ -1211,9 +1217,9 @@
               "value": "\\powershell.exe"
             },
             {
-              "relation": "process_then_task",
-              "process": "context_1",
-              "task": "anchor"
+              "relation": "task_then_process",
+              "task": "anchor",
+              "process": "context_1"
             }
           ]
         },
@@ -1339,9 +1345,9 @@
               "value": "C:\\ProgramData\\"
             },
             {
-              "relation": "process_then_task",
-              "process": "context_1",
-              "task": "anchor"
+              "relation": "task_then_process",
+              "task": "anchor",
+              "process": "context_1"
             }
           ]
         },
@@ -1483,9 +1489,9 @@
               "value": "\\rundll32.exe"
             },
             {
-              "relation": "process_then_task",
-              "process": "context_1",
-              "task": "anchor"
+              "relation": "task_then_process",
+              "task": "anchor",
+              "process": "context_1"
             }
           ]
         },
@@ -1617,9 +1623,9 @@
               "value": 443
             },
             {
-              "relation": "process_then_task",
-              "process": "context_1",
-              "task": "anchor"
+              "relation": "task_then_process",
+              "task": "anchor",
+              "process": "context_1"
             },
             {
               "relation": "process_then_network",
@@ -1913,9 +1919,9 @@
               "value": "\\cmd.exe"
             },
             {
-              "relation": "process_then_service",
-              "process": "context_1",
-              "service": "anchor"
+              "relation": "service_then_process",
+              "service": "anchor",
+              "process": "context_1"
             }
           ]
         },
@@ -2187,9 +2193,9 @@
               "value": "\\svchost.exe"
             },
             {
-              "relation": "process_then_service",
-              "process": "context_2",
-              "service": "anchor"
+              "relation": "service_then_process",
+              "service": "anchor",
+              "process": "context_2"
             }
           ]
         },
@@ -3348,9 +3354,9 @@
               "value": ".exe"
             },
             {
-              "relation": "process_then_registry",
-              "process": "context_2",
-              "registry": "anchor"
+              "relation": "registry_then_process",
+              "registry": "anchor",
+              "process": "context_2"
             }
           ]
         },
@@ -7039,9 +7045,9 @@
               "value": "--clear Security"
             },
             {
-              "relation": "process_then_task",
-              "process": "context_2",
-              "task": "context_1"
+              "relation": "task_then_process",
+              "task": "context_1",
+              "process": "context_2"
             },
             {
               "relation": "temporal_before",
@@ -8952,9 +8958,9 @@
                 "value": "-File"
               },
               {
-                "relation": "process_then_task",
-                "process": "context_1",
-                "task": "anchor"
+                "relation": "task_then_process",
+                "task": "anchor",
+                "process": "context_1"
               }
             ]
           },
@@ -9293,5 +9299,16 @@
       ],
       "planned_instances": 4
     }
-  ]
+  ],
+  "semantic_correction_approval": {
+    "reference": "reports/T05_T10_stage_b_preflight_blockers.md",
+    "decision": "User explicitly approved the listed telemetry and relation corrections and continuation of Stage B on 2026-09-19.",
+    "preserved": [
+      "labels",
+      "technique_catalog",
+      "seed",
+      "quotas",
+      "family_splits"
+    ]
+  }
 }

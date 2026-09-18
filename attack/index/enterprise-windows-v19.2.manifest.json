@@ -1,0 +1,16 @@
+{
+  "corpus_sha256": "b219341154ddf2f12e97d622158a04ab7d57641df6a865559258d365852c3c75",
+  "document_count": 474,
+  "document_mapping_file": "attack/index/enterprise-windows-v19.2.docmap.json",
+  "document_mapping_sha256": "a7de3dfcf2b6e186e639d2922fcbc27766c160ae58bbafea74b5efc0faf30586",
+  "embedding_dimension": 384,
+  "embedding_model_id": "sentence-transformers/all-MiniLM-L6-v2",
+  "embedding_model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+  "faiss_index_file": "attack/index/enterprise-windows-v19.2.index",
+  "faiss_index_type": "IndexFlatIP",
+  "faiss_version": "1.15.1",
+  "index_sha256": "7e3b9944870860766ebd5ba76f19a420c1bbe57cebd4e4238b06fd31128578e5",
+  "normalization": "L2",
+  "schema_version": "1.0.0",
+  "similarity_metric": "cosine"
+}

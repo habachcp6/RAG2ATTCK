@@ -87,6 +87,4 @@ jobs:
         run: uv sync --frozen
 
       - name: Run Full Test Suite
-        env:
-          PYTEST_ADDOPTS: "-k 'not (in_production_workspace or test_path_safety_with_ampersand or test_path_escape_rejection or test_capacity or test_canonical_docx_xlsx_verification)'"
         run: uv run pytest -q

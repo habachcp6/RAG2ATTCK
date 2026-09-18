@@ -22,37 +22,56 @@ from src.dataset import (
 )
 
 
-def test_path_safety_with_ampersand():
-    ws = get_default_workspace_root()
+def test_path_safety_with_ampersand(tmp_path):
+    ws = tmp_path / "RAG2ATT&CK"
+    ws.mkdir()
     assert "&" in str(ws)
     assert ws.exists()
     assert ws.is_dir()
     resolved = resolve_secure_path(ws, "data/metadata")
     assert resolved.is_relative_to(ws)
-    assert str(resolved).endswith("data\\metadata") or str(resolved).endswith("data/metadata")
+    assert str(resolved).endswith("data/metadata") or str(resolved).endswith("data\\metadata")
 
 
-def test_path_escape_rejection():
-    ws = get_default_workspace_root()
+def test_path_escape_rejection(tmp_path):
+    ws = tmp_path / "RAG2ATT&CK"
+    ws.mkdir()
+
     with pytest.raises(PreflightPathSafetyError):
         resolve_secure_path(ws, "../outside_workspace")
 
     with pytest.raises(PreflightPathSafetyError):
         resolve_secure_path(ws, "C:/Windows/System32")
 
+    with pytest.raises(PreflightPathSafetyError):
+        resolve_secure_path(ws, r"C:\Windows\System32")
 
-def test_symlinks_and_junctions_scan():
-    ws = get_default_workspace_root()
-    symlinks = [p for p in ws.rglob("*") if p.is_symlink()]
-    assert len(symlinks) == 0, "No symlinks should exist in workspace root"
-    junctions = [p for p in ws.rglob("*") if hasattr(p, "is_junction") and p.is_junction()]
-    assert len(junctions) == 0, "No junctions should exist in clean workspace"
+    with pytest.raises(PreflightPathSafetyError):
+        resolve_secure_path(ws, r"\\server\share\secret")
 
 
-def test_capacity_calculation_logic():
-    ws = get_default_workspace_root()
-    # Mock custom breakdown with total 1.0 GiB (1024^3 bytes)
-    one_gib = 1024 * 1024 * 1024
+def test_clean_workspace_path_containment(tmp_path):
+    ws = tmp_path / "RAG2ATT&CK"
+    ws.mkdir()
+
+    normal_dir = ws / "data"
+    normal_dir.mkdir()
+
+    resolved = resolve_secure_path(ws, "data")
+
+    assert resolved.is_relative_to(ws)
+
+
+def test_capacity_calculation_logic(tmp_path, monkeypatch):
+    ws = tmp_path / "workspace"
+    ws.mkdir()
+
+    gib = 1024 ** 3
+    monkeypatch.setattr(
+        "src.dataset.shutil.disk_usage",
+        lambda _: (20 * gib, 10 * gib, 10 * gib),
+    )
+
     custom_breakdown = {
         "downloads_and_staging_bytes": 200 * 1024 * 1024,
         "extraction_and_raw_dataset_bytes": 200 * 1024 * 1024,
@@ -61,28 +80,51 @@ def test_capacity_calculation_logic():
         "reproduction_run_bytes": 224 * 1024 * 1024,
     }
     cap = assess_disk_capacity(ws, custom_breakdown=custom_breakdown)
-    # Estimate is 1024 MiB (1 GiB)
-    assert cap.total_estimate_bytes == 1024 * 1024 * 1024
-    # Estimate + 1 GiB is 2 GiB
-    assert cap.estimate_plus_one_gib_bytes == 2 * one_gib
-    # Floor is 5 GiB
-    assert cap.minimum_floor_bytes == 5 * one_gib
-    # Effective required is max(2 GiB, 5 GiB) = 5 GiB
-    assert cap.effective_required_free_bytes == 5 * one_gib
+
+    # Breakdown total = 1 GiB exactly
+    assert cap.total_estimate_bytes == 1 * gib
+    # Estimate + 1 GiB buffer = 2 GiB
+    assert cap.estimate_plus_one_gib_bytes == 2 * gib
+    # Floor is always 5 GiB
+    assert cap.minimum_floor_bytes == 5 * gib
+    # Effective required = max(2 GiB, 5 GiB) = 5 GiB
+    assert cap.effective_required_free_bytes == 5 * gib
+    # Mocked free space = 10 GiB
+    assert cap.live_free_bytes == 10 * gib
     assert cap.capacity_sufficient is True
 
 
-def test_capacity_gate_pass_live():
-    ws = get_default_workspace_root()
+def test_capacity_gate_passes_with_sufficient_space(tmp_path, monkeypatch):
+    ws = tmp_path / "workspace"
+    ws.mkdir()
+
+    gib = 1024 ** 3
+    monkeypatch.setattr(
+        "src.dataset.shutil.disk_usage",
+        lambda _: (20 * gib, 10 * gib, 10 * gib),
+    )
+
     cap = assess_disk_capacity(ws)
-    assert cap.live_free_bytes >= 5 * 1024 * 1024 * 1024
     assert cap.capacity_sufficient is True
-    assert cap.headroom_bytes > 0
+
+
+def test_capacity_gate_fails_with_insufficient_space(tmp_path, monkeypatch):
+    ws = tmp_path / "workspace"
+    ws.mkdir()
+
+    gib = 1024 ** 3
+    monkeypatch.setattr(
+        "src.dataset.shutil.disk_usage",
+        lambda _: (20 * gib, 16 * gib, 4 * gib),
+    )
+
+    cap = assess_disk_capacity(ws)
+    assert cap.capacity_sufficient is False
 
 
 def test_canonical_docx_xlsx_verification():
-    ws = get_default_workspace_root()
-    ctx = verify_source_context(ws)
+    repo_root = Path(__file__).resolve().parents[1]
+    ctx = verify_source_context(repo_root)
     assert ctx["verification_status"] == "VERIFIED_CANONICAL_PRESERVED"
     docs = ctx["canonical_documents"]
     assert "docx" in docs

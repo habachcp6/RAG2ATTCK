@@ -194,3 +194,21 @@ The synthetic pipeline does **not** depend on Windows-APT Task 2 or Task 4 gates
 - `src/synthetic_validator.py`: registry semantic validation plus the dataset checks covering schema, quotas, transitions, leakage, host constraints, near-duplicates, and freeze integrity.
 - `tests/test_synthetic.py`: Comprehensive test suite with positive and negative tests.
 - `config/synthetic_templates.json`: Authoritative template registry (64 families).
+
+## 6. Stage B execution record (2026-09-19)
+
+The synthetic Stage B pipeline has executed and frozen successfully: 670 pairs
+(TEST 640 / DEV 30), 1,340 views, and 1,434 unique events. All approved quotas and
+family holdout passed; leakage and unacceptable near duplicates are zero. The
+deterministic 66-case agent spot-check covers all 64 families. Independent
+regeneration produced byte-identical semantic artifacts, reports and manifest.
+
+The user explicitly approved the bounded telemetry/relation corrections recorded
+in `reports/T05_T10_stage_b_preflight_blockers.md`. The revised registry is locked
+in `config/synthetic_approval.json`; label policy, seed, quotas and splits are unchanged.
+
+Frozen artifacts: `data/ground_truth/synthetic/`. Commands and review gates:
+`docs/synthetic/stage_b_commands.md`. Complete evidence and limitations:
+`reports/T05_T10_synthetic_dataset_freeze.md`. The historical Windows-APT gate
+status in sections 2-4 remains unchanged; this record concerns only the synthetic
+benchmark. No T20 or live model experiment is included.

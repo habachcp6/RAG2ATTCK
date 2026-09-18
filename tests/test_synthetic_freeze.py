@@ -126,3 +126,20 @@ def test_manual_review_cannot_leave_unresolved_findings(workspace,frozen):
 def test_cli_verification_failure_returns_nonzero(tmp_path):
     result=subprocess.run([sys.executable,'-m','src.data_ground_truth','verify-synthetic','--workspace',str(tmp_path)],cwd=ROOT,capture_output=True,text=True)
     assert result.returncode==1 and 'Synthetic gate FAILED' in result.stdout
+
+
+def test_synthetic_cli_default_workspace_is_repository_not_legacy_path(monkeypatch, tmp_path):
+    import src.data_ground_truth as cli
+    import src.synthetic_pipeline as pipeline
+    received = []
+    def verify(workspace, output):
+        received.append(workspace)
+        return {"passed": True}
+    def legacy_default():
+        pytest.fail("Synthetic commands must not inherit historical acquisition paths")
+    monkeypatch.setattr(pipeline, "verify_synthetic", verify)
+    monkeypatch.setattr(cli, "get_default_workspace_root", legacy_default)
+    monkeypatch.setattr(sys, "argv", ["data_ground_truth", "verify-synthetic"])
+    monkeypatch.chdir(tmp_path)
+    assert cli.main() == 0
+    assert received == [ROOT]

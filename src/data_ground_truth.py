@@ -134,7 +134,9 @@ def cmd_audit_gt(args):
 def cmd_synthetic(args):
     from src.synthetic_pipeline import prepare_synthetic, validate_synthetic, freeze_synthetic, verify_synthetic
     import json
-    ws = Path(args.workspace).resolve() if args.workspace else get_default_workspace_root()
+    # Synthetic stages are portable and independent of the historical Windows
+    # acquisition workspace. Resolve the default from this module, never CWD.
+    ws = Path(args.workspace).resolve() if args.workspace else Path(__file__).resolve().parents[1]
     try:
         if args.command == "prepare-synthetic":
             result = prepare_synthetic(ws, args.output_dir)

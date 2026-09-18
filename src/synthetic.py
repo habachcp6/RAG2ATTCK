@@ -427,7 +427,10 @@ def check_leakage(payload: Dict[str, Any]) -> List[str]:
     if re.search(r't\d{4}(\.\d{3})?', payload_str):
         leaks.append("Potential ATT&CK technique ID (T####) found.")
         
-    if "ground_truth" in payload_str or "expected_technique" in payload_str or "rationale" in payload_str:
+    if any(word in payload_str for word in (
+        "ground_truth", "expected_technique", "rationale", "approval_reference",
+        "technique_label", "attack_label", "technique_id", "technique_name", "label_status",
+    )):
         leaks.append("Potential ground truth keywords found.")
         
     return leaks
@@ -455,7 +458,7 @@ def normalize_for_dedup(event: SyntheticEvent) -> str:
     """Normalize event by removing decorative fields (PID, timestamp, hostname)."""
     fields_copy = dict(event.fields)
     decorative_keys = {'TimeCreated', 'UtcTime', 'Computer', 'ProcessId', 'NewProcessId', 'ParentProcessId',
-                       'ProcessGuid', 'ParentProcessGuid', 'LogonGuid', 'LogonId'}
+                       'ProcessGuid', 'ParentProcessGuid', 'LogonGuid', 'LogonId', 'SubjectLogonId'}
     
     for key in decorative_keys:
         fields_copy.pop(key, None)
@@ -466,7 +469,7 @@ def find_near_duplicates(pairs: List[ScenarioPair], threshold: float = 0.95) -> 
     """Find near-duplicate scenario pairs using 5-gram Jaccard."""
     pair_signatures = {}
     for pair in pairs:
-        events_str = " ".join(normalize_for_dedup(e) for e in pair.events.values())
+        events_str = " ".join(normalize_for_dedup(e) for e in sorted(pair.events.values(), key=lambda e: (e.timestamp_utc, e.event_id)))
         pair_signatures[pair.pair_id] = character_ngrams(events_str)
         
     duplicates = []
@@ -574,68 +577,49 @@ def _sha256_file(path: Path) -> str:
     return hash_sha256.hexdigest()
 
 def serialize_dataset(pairs: List[ScenarioPair], output_dir: Path) -> Dict[str, str]:
-    """Serialize complete dataset to output_dir. Returns file->sha256 manifest."""
+    """Canonical UTF-8/LF serialization; opaque inference rows exclude all GT.
+
+    Sort keys and records, use compact JSON, and always include the final newline.
+    Existing load_dataset remains compatible with this canonical representation.
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
-    
-    events_path = output_dir / "events.jsonl"
-    views_path = output_dir / "views.jsonl"
-    pairs_path = output_dir / "pairs.jsonl"
-    gt_path = output_dir / "ground_truth.jsonl"
-    split_manifest_path = output_dir / "split_manifest.json"
-    dataset_manifest_path = output_dir / "dataset_manifest.json"
-    
-    all_events = {}
-    all_views = {}
-    all_gt = {}
+    ordered = sorted(pairs, key=lambda pair: pair.pair_id)
+    events, views, truths, inference = {}, {}, {}, {}
     splits = {'dev': [], 'test': []}
-    
-    with open(pairs_path, 'w', encoding='utf-8') as f_pairs:
-        for pair in pairs:
-            for ev_id, ev in pair.events.items():
-                if ev_id not in all_events:
-                    all_events[ev_id] = ev
-                    
-            all_views[pair.single_view.view_id] = pair.single_view
-            all_views[pair.contextual_view.view_id] = pair.contextual_view
-            
-            all_gt[pair.single_ground_truth.view_id] = pair.single_ground_truth
-            all_gt[pair.contextual_ground_truth.view_id] = pair.contextual_ground_truth
-            
-            splits[pair.split].append(pair.pair_id)
-            
-            pair_dict = asdict(pair)
-            f_pairs.write(json.dumps(pair_dict, default=_default_serializer) + "\n")
-            
-    with open(events_path, 'w', encoding='utf-8') as f:
-        for ev in all_events.values():
-            f.write(json.dumps(asdict(ev), default=_default_serializer) + "\n")
-            
-    with open(views_path, 'w', encoding='utf-8') as f:
-        for v in all_views.values():
-            f.write(json.dumps(asdict(v), default=_default_serializer) + "\n")
-            
-    with open(gt_path, 'w', encoding='utf-8') as f:
-        for gt in all_gt.values():
-            f.write(json.dumps(asdict(gt), default=_default_serializer) + "\n")
-            
-    with open(split_manifest_path, 'w', encoding='utf-8') as f:
-        json.dump(splits, f, indent=2)
-        
-    manifest = {
-        "events.jsonl": _sha256_file(events_path),
-        "views.jsonl": _sha256_file(views_path),
-        "pairs.jsonl": _sha256_file(pairs_path),
-        "ground_truth.jsonl": _sha256_file(gt_path),
-        "split_manifest.json": _sha256_file(split_manifest_path)
+    for pair in ordered:
+        events.update(pair.events)
+        splits[pair.split].append(pair.pair_id)
+        for view, gt in ((pair.single_view, pair.single_ground_truth),
+                         (pair.contextual_view, pair.contextual_ground_truth)):
+            views[view.view_id] = view
+            truths[gt.view_id] = gt
+            inference[view.view_id] = {
+                'sample_id': view.view_id,
+                'endpoint_evidence': json.dumps(
+                    [get_inference_payload(pair.events[eid]) for eid in view.event_ids],
+                    sort_keys=True, ensure_ascii=False, separators=(',', ':')),
+            }
+    collections = {
+        'pairs.jsonl': [asdict(p) for p in ordered],
+        'events.jsonl': [asdict(events[k]) for k in sorted(events)],
+        'views.jsonl': [asdict(views[k]) for k in sorted(views)],
+        'ground_truth.jsonl': [asdict(truths[k]) for k in sorted(truths)],
+        'inference.jsonl': [inference[k] for k in sorted(inference)],
     }
-    
-    with open(dataset_manifest_path, 'w', encoding='utf-8') as f:
-        json.dump({
-            "schema_version": "1.0.0",
-            "files": manifest
-        }, f, indent=2)
-        
-    return manifest
+    for filename, records in collections.items():
+        with (output_dir / filename).open('w', encoding='utf-8', newline='\n') as output:
+            for record in records:
+                output.write(json.dumps(record, sort_keys=True, ensure_ascii=False,
+                                        separators=(',', ':')) + '\n')
+    (output_dir / 'split_manifest.json').write_bytes(
+        (json.dumps(splits, sort_keys=True, separators=(',', ':')) + '\n').encode('utf-8'))
+    hashes = {filename: _sha256_file(output_dir / filename)
+              for filename in sorted([*collections, 'split_manifest.json'])}
+    (output_dir / 'dataset_manifest.json').write_bytes(
+        (json.dumps({'schema_version': '1.1.0', 'files': hashes}, sort_keys=True,
+                    separators=(',', ':')) + '\n').encode('utf-8'))
+    return hashes
+
 
 def load_dataset(input_dir: Path) -> List[ScenarioPair]:
     """Load serialized dataset."""

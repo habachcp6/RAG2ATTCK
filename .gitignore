@@ -24,7 +24,12 @@ htmlcov/
 # Large datasets & immutable raw data (tracked via manifests & checksums)
 data/raw/
 attack/raw/
-data/ground_truth/
+data/ground_truth/*
+!data/ground_truth/synthetic/
+data/ground_truth/synthetic/*
+!data/ground_truth/synthetic/*.json
+!data/ground_truth/synthetic/*.jsonl
+!data/ground_truth/synthetic/manual_spotcheck.md
 data/processed/
 
 # Historical context archive (canonical docs tracked in docs/context/)

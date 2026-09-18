@@ -15,7 +15,7 @@ from src.llm.client import LLMClient
 from src.llm.schemas import ExecutionRecord, get_workspace_root
 from src.rag.pipeline import RAGPipeline, format_rag_prompt, SUPPORTED_K
 from src.rag.schemas import RAGExecutionRecord, RetrievalMetadata
-from src.retrieval.retriever import RetrievalResult
+from src.retrieval.retriever import FAISSRetriever, RetrievalResult
 from tests.test_llm_client import create_mock_responses_api_response
 
 
@@ -56,15 +56,18 @@ def test_prompt_symmetry_rag_vs_baseline():
 def _create_mock_retriever():
     mock_retriever = MagicMock()
     mock_retriever.config = {
-        'corpus_sha256': 'abc123',
+        'corpus_sha256': 'a' * 64,
         'embedding_model_id': 'sentence-transformers/all-MiniLM-L6-v2',
         'embedding_model_revision': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        'index_sha256': 'def456',
+        'index_sha256': 'b' * 64,
     }
-    mock_retriever.retrieve.return_value = [
-        RetrievalResult(technique_id='T1059.001', score=0.95, document={'name': 'PowerShell', 'technique_id': 'T1059.001', 'retrieval_text': 'PowerShell technique'}, rank=1),
+    mock_retriever.retrieve.side_effect = lambda query, k: [
+        RetrievalResult(technique_id=tid, score=0.95 - i * 0.05,
+                        document={'name': tid, 'technique_id': tid, 'retrieval_text': 'ATT&CK reference'}, rank=i + 1)
+        for i, tid in enumerate(['T1059.001', 'T1059', 'T1053.005', 'T1136.001', 'T1105',
+                                 'T1543.003', 'T1078', 'T1003', 'T1001', 'T1027'][:k])
     ]
-    mock_retriever.format_retrieved_context.return_value = 'Candidate 1: [T1059.001] PowerShell (Similarity Score: 0.9500)\nPowerShell technique'
+    mock_retriever.format_retrieved_context.side_effect = lambda results: FAISSRetriever.format_retrieved_context(mock_retriever, results)
     return mock_retriever
 
 def _create_mock_client():
@@ -102,10 +105,10 @@ def test_rag_pipeline_run_sample_mocked():
     assert rec.execution.predicted_technique_id == "T1059.001"
     
     assert rec.retrieval.k == 5
-    assert rec.retrieval.technique_ids == ["T1059.001"]
-    assert rec.retrieval.ranks == [1]
-    assert rec.retrieval.scores == [0.95]
-    assert rec.retrieval.corpus_sha256 == "abc123"
+    assert rec.retrieval.technique_ids == ["T1059.001", "T1059", "T1053.005", "T1136.001", "T1105"]
+    assert rec.retrieval.ranks == [1, 2, 3, 4, 5]
+    assert rec.retrieval.scores == [0.95 - i * 0.05 for i in range(5)]
+    assert rec.retrieval.corpus_sha256 == 'a' * 64
 
 # Test 5: RAGPipeline.run_batch with input-field isolation
 def test_rag_pipeline_run_batch_isolates_input_fields():
@@ -183,15 +186,15 @@ def test_retrieval_metadata_schema():
         technique_ids=["T1059.001", "T1059", "T1059.003"],
         ranks=[1, 2, 3],
         scores=[0.9, 0.8, 0.7],
-        corpus_sha256='c_sha',
+        corpus_sha256='a' * 64,
         embedding_model_id='model',
-        embedding_model_revision='rev',
-        index_sha256='i_sha'
+        embedding_model_revision='c' * 40,
+        index_sha256='b' * 64
     )
     d = meta.to_dict()
     assert d['k'] == 3
     assert d['technique_ids'] == ["T1059.001", "T1059", "T1059.003"]
-    assert d['index_sha256'] == 'i_sha'
+    assert d['index_sha256'] == 'b' * 64
 
 # Test 9: RAGExecutionRecord composition
 def test_rag_execution_record_composition():
@@ -201,7 +204,7 @@ def test_rag_execution_record_composition():
     
     meta = RetrievalMetadata(
         k=1, technique_ids=["T1059.001"], ranks=[1], scores=[0.9],
-        corpus_sha256='a', embedding_model_id='b', embedding_model_revision='c', index_sha256='d'
+        corpus_sha256='a' * 64, embedding_model_id='b', embedding_model_revision='c' * 40, index_sha256='d' * 64
     )
     
     rag_rec = RAGExecutionRecord(execution=exec_rec, retrieval=meta)
@@ -261,3 +264,35 @@ def test_ground_truth_never_in_prompt():
     assert "T1234" not in final_prompt
     assert "ground_truth" not in final_prompt
     assert "technique_label" not in final_prompt
+
+
+def test_controlled_comparison_actual_requests_and_saved_provenance(tmp_path):
+    client = _create_mock_client()
+    retriever = _create_mock_retriever()
+    baseline = BaselinePipeline(client=client)
+    rag = RAGPipeline(client=client, retriever=retriever)
+    evidence = "  EventID 1: powershell.exe\n"
+    sample = {"sample_id": "paired-1", "endpoint_evidence": evidence,
+              "ground_truth": "SECRET_GT", "technique_id": "SECRET_LABEL",
+              "expected_answer": "SECRET_ANSWER"}
+    baseline_record = baseline.run_batch([sample])[0]
+    rag_record = rag.run_batch([sample], k=3)[0]
+    no_rag_request, rag_request = [call.kwargs.copy() for call in client.client.responses.create.call_args_list]
+    context = retriever.format_retrieved_context.call_args.args[0]
+    context_text = FAISSRetriever.format_retrieved_context(retriever, context)
+    assert rag_request.pop("input") == rag.format_prompt(evidence, context_text)
+    assert no_rag_request.pop("input") == baseline.prompt_template.replace("{RETRIEVED_CONTEXT}", "").replace("{ENDPOINT_EVIDENCE}", evidence)
+    # Provider request fields: model, reasoning, schema, output cap, timeout.
+    assert no_rag_request == rag_request
+    assert baseline.prompt_template == rag.prompt_template
+    retriever.retrieve.assert_called_once_with(query=evidence, k=3)
+    for call in client.client.responses.create.call_args_list:
+        assert "SECRET_" not in call.kwargs["input"]
+    record_file = tmp_path / "prediction.json"
+    record_file.write_text(rag_record.to_json(), encoding="utf-8")
+    saved = json.loads(record_file.read_text(encoding="utf-8"))
+    assert saved["execution"]["sample_id"] == baseline_record.sample_id == "paired-1"
+    assert saved["execution"]["condition"] == "rag"
+    assert saved["retrieval"] == rag_record.retrieval.to_dict()
+    assert set(saved["retrieval"]) == {"k", "technique_ids", "ranks", "scores", "corpus_sha256",
+                                      "index_sha256", "embedding_model_id", "embedding_model_revision"}

@@ -7,7 +7,7 @@ Implements:
 - 7 mutually exclusive parse statuses:
   VALID, INVALID_ID, MALFORMED_RESPONSE, REFUSAL, INCOMPLETE, API_FAILURE, TIMEOUT
 - Strict post-hoc two-layer ATT&CK ID validation (syntax regex + v19.2 registry)
-- Global live-request budget enforcement (max 5 actual live requests including retries)
+- Bounded smoke requests by default; explicit shared experiment budgets including retries
 - Precision wall-clock latency measurement including retries and backoff
 - Runtime No-RAG context isolation invariant
 - Fail-fast on missing API key (no placeholder credentials)
@@ -43,19 +43,22 @@ logger = logging.getLogger("rag2attck.llm.client")
 # ---------------------------------------------------------------------------
 
 class LiveBudgetExceededError(RuntimeError):
-    """Raised when the global live API request budget is exhausted."""
+    """Raised when the selected live API request budget is exhausted."""
     pass
 
 
 class LiveBudget:
     """
     Thread-safe live request budget tracker.
-    Per-process smoke-test live request cap. Resets when the process restarts.
+    Inject one shared instance into all clients/conditions for an experiment.
+    Omission selects the five-request per-process smoke cap.
     The external OpenAI/project spend limit is the true cross-process safeguard.
     Every actual outbound OpenAI API request must consume exactly one unit.
     """
 
     def __init__(self, max_requests: int = 5) -> None:
+        if type(max_requests) is not int or max_requests < 0:
+            raise ValueError("max_requests must be a finite non-negative integer")
         self.max_requests = max_requests
         self._count = 0
         self._lock = threading.Lock()
@@ -68,7 +71,7 @@ class LiveBudget:
         with self._lock:
             if self._count >= self.max_requests:
                 raise LiveBudgetExceededError(
-                    f"Global live request budget exhausted: attempted call exceeds limit of {self.max_requests} requests."
+                    f"Live request budget exhausted: attempted call exceeds limit of {self.max_requests} requests."
                 )
             self._count += 1
             return self._count
@@ -163,7 +166,7 @@ class LLMClient:
         self.stix_path = stix_path
 
         # Live budget tracker
-        self.live_budget = live_budget or GLOBAL_LIVE_BUDGET
+        self.live_budget = live_budget if live_budget is not None else GLOBAL_LIVE_BUDGET
         self.sleep_fn = sleep_fn or time.sleep
 
         # Client setup — fail fast on missing credentials
@@ -176,6 +179,8 @@ class LLMClient:
             self.is_live = False if is_live is None else is_live
         else:
             # Real OpenAI client — API key is mandatory
+            if is_live is False:
+                raise ValueError("A real OpenAI client cannot disable live request accounting")
             if not resolved_key:
                 raise ValueError(
                     f"{secret_env_var} environment variable is required to construct a real OpenAI client. "
@@ -184,6 +189,8 @@ class LLMClient:
             self.client = openai.OpenAI(
                 api_key=resolved_key,
                 timeout=self.timeout_seconds,
+                # All retries belong to our loop so every network call is budgeted.
+                max_retries=0,
             )
             self.is_live = True if is_live is None else is_live
 

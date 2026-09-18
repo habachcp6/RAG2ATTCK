@@ -1,4 +1,4 @@
-﻿"""
+"""
 RAG2ATTCK - Deterministic FAISS Retriever with Pinned Embeddings (Task T18)
 Provides deterministic vector indexing and retrieval over the Windows ATT&CK v19.2 corpus.
 """
@@ -19,7 +19,7 @@ import numpy as np
 # Ensure HF symlink warnings are suppressed on Windows without Developer Mode
 os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
 
-DEFAULT_CONFIG_PATH = Path("config/retrieval.json")
+DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[2] / "config" / "retrieval.json"
 HEX_40_PATTERN = re.compile(r"^[0-9a-f]{40}$", re.IGNORECASE)
 
 
@@ -309,6 +309,7 @@ class FAISSRetriever:
         docmap_path: Union[str, Path],
         manifest_path: Union[str, Path],
         embedder: Optional[Embedder] = None,
+        expected_config: Optional[Dict[str, Any]] = None,
     ) -> FAISSRetriever:
         """Loads serialized retriever after verifying SHA-256 integrity."""
         import faiss
@@ -321,6 +322,20 @@ class FAISSRetriever:
             raise FileNotFoundError(f"Manifest not found: {man_p}")
         with open(man_p, "r", encoding="utf-8") as f:
             manifest = json.load(f)
+
+        if expected_config is not None:
+            for field in (
+                "corpus_sha256", "embedding_model_id", "embedding_model_revision",
+                "embedding_dimension", "faiss_index_type", "normalization",
+                "similarity_metric", "faiss_version",
+            ):
+                if field not in expected_config or field not in manifest:
+                    raise ValueError(f"Missing required config/manifest field: {field}")
+                if expected_config[field] != manifest[field]:
+                    raise ValueError(
+                        f"{field} mismatch: config={expected_config[field]!r} "
+                        f"manifest={manifest[field]!r}"
+                    )
 
         if not idx_p.exists():
             raise FileNotFoundError(f"Index file not found: {idx_p}")
@@ -344,6 +359,21 @@ class FAISSRetriever:
         with open(dmap_p, "r", encoding="utf-8") as f:
             docmap = json.load(f)
 
+        if not isinstance(docmap, list):
+            raise ValueError("docmap must be a list of documents")
+        if index.ntotal != len(docmap):
+            raise ValueError(f"index.ntotal/docmap count mismatch: index={index.ntotal} docmap={len(docmap)}")
+        if len(docmap) != manifest.get("document_count"):
+            raise ValueError(f"document_count mismatch: docmap={len(docmap)} manifest={manifest.get('document_count')!r}")
+        if index.d != manifest.get("embedding_dimension"):
+            raise ValueError(f"embedding_dimension mismatch: index={index.d} manifest={manifest.get('embedding_dimension')!r}")
+        if manifest.get("faiss_index_type") != "IndexFlatIP" or not isinstance(index, faiss.IndexFlatIP):
+            raise ValueError(f"faiss_index_type mismatch: index={type(index).__name__} manifest={manifest.get('faiss_index_type')!r}; required IndexFlatIP")
+        if index.metric_type != faiss.METRIC_INNER_PRODUCT:
+            raise ValueError("FAISS metric mismatch: required inner product")
+        if manifest.get("normalization") != "L2" or manifest.get("similarity_metric") != "cosine":
+            raise ValueError("normalization/similarity_metric mismatch: required L2/cosine")
+
         if embedder is None and manifest.get("embedding_model_id") and manifest.get("embedding_model_revision"):
             embedder = SentenceTransformerEmbedder(
                 model_id=manifest["embedding_model_id"],
@@ -364,15 +394,24 @@ class FAISSRetriever:
         embedder: Optional[Embedder] = None,
     ) -> FAISSRetriever:
         """Loads pre-built index and mapping using paths defined in configuration."""
-        cfg_p = Path(config_path)
+        cfg_p = Path(config_path).resolve()
         with open(cfg_p, "r", encoding="utf-8") as f:
             cfg = json.load(f)
 
+        # Canonical config/ entries are repository-relative; standalone configs
+        # resolve against their own directory. Explicit absolute paths stay absolute.
+        root = cfg_p.parent.parent if cfg_p.parent.name == "config" else cfg_p.parent
+
+        def artifact_path(key: str) -> Path:
+            path = Path(cfg[key])
+            return (path if path.is_absolute() else root / path).resolve()
+
         return cls.load(
-            index_path=cfg["faiss_index_path"],
-            docmap_path=cfg["document_mapping_path"],
-            manifest_path=cfg["manifest_path"],
+            index_path=artifact_path("faiss_index_path"),
+            docmap_path=artifact_path("document_mapping_path"),
+            manifest_path=artifact_path("manifest_path"),
             embedder=embedder,
+            expected_config=cfg,
         )
 
 

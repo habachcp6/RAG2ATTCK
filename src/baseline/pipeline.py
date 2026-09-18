@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
 from src.llm.client import LLMClient
+from src.llm.inputs import validate_benchmark_batch
 from src.llm.schemas import ExecutionRecord, get_workspace_root, validate_condition
 
 
@@ -75,6 +76,9 @@ class BaselinePipeline:
         """
         # Runtime condition enum validation
         validate_condition(condition)
+        [(sample_id, endpoint_evidence)] = validate_benchmark_batch([
+            {"sample_id": sample_id, "endpoint_evidence": endpoint_evidence}
+        ])
 
         # No-RAG context isolation invariant (enforced at pipeline level too)
         if condition == "no_rag" and retrieved_context is not None and retrieved_context.strip():
@@ -101,14 +105,15 @@ class BaselinePipeline:
         Executes baseline predictions sequentially across an iterable of samples.
         Each sample dict must provide 'sample_id' and 'endpoint_evidence' (or 'evidence').
         """
+        validate_condition(condition)
+        samples = list(samples)
+        validated = validate_benchmark_batch(samples)
         records: List[ExecutionRecord] = []
-        for sample in samples:
-            s_id = sample.get("sample_id") or sample.get("id", "unknown_sample")
-            evidence = sample.get("endpoint_evidence") or sample.get("evidence", "")
+        for sample, (s_id, evidence) in zip(samples, validated):
             retrieved = sample.get("retrieved_context")
             record = self.run_sample(
-                sample_id=str(s_id),
-                endpoint_evidence=str(evidence),
+                sample_id=s_id,
+                endpoint_evidence=evidence,
                 retrieved_context=retrieved,
                 condition=condition,
             )

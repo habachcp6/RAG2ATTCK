@@ -311,6 +311,20 @@ class TestFAISSRetrieverIntegration:
         assert manifest["faiss_index_type"] == "IndexFlatIP"
         assert manifest["document_count"] == 474
 
+        # Prove real retrieval reaches the shared RAG request and serializable
+        # provenance; model generation remains mocked and incurs no API charge.
+        from src.rag.pipeline import RAGPipeline
+        from tests.test_rag_pipeline import _create_mock_client
+        client = _create_mock_client()
+        pipeline = RAGPipeline(retriever=retriever, client=client)
+        record = pipeline.run_sample("real-retrieval", "powershell.exe -enc SQBFAFgA", k=3)
+        assert len(record.retrieval.technique_ids) == 3
+        assert record.retrieval.index_sha256 == manifest["index_sha256"]
+        prompt = client.client.responses.create.call_args.kwargs["input"]
+        for technique_id in record.retrieval.technique_ids:
+            assert technique_id in prompt
+        assert json.loads(record.to_json())["execution"]["condition"] == "rag"
+
     def test_real_index_attribution_queries(self):
         retriever = FAISSRetriever.from_saved()
 

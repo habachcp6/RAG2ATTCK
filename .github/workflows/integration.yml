@@ -1,0 +1,58 @@
+name: Real Retrieval Integration
+
+'on':
+  workflow_dispatch:
+  # Bootstrap dispatch is available before this new workflow reaches main.
+  push:
+    branches: [fix/t18-t19-hardening]
+    paths: [.github/workflows/integration.yml]
+
+permissions:
+  contents: read
+
+env:
+  UV_VERSION: "0.11.24"
+  UV_NO_PROGRESS: "1"
+  HF_HOME: ${{ github.workspace }}/.cache/huggingface
+
+jobs:
+  real-retrieval:
+    name: Real Retrieval Integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version-file: .python-version
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.1.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-suffix: real-retrieval
+          cache-dependency-glob: |
+            pyproject.toml
+            uv.lock
+
+      - name: Validate lockfile
+        run: uv lock --check --offline
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Check installed dependencies
+        run: uv pip check
+
+      - name: Acquire ATT&CK v19.2 reference
+        run: uv run python -c "from pathlib import Path; from src.attack_loader import download_attack_reference; download_attack_reference(Path('.'))"
+
+      - name: Run real retrieval integration tests
+        run: uv run pytest -m integration -q

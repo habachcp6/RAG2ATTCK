@@ -40,6 +40,7 @@ jobs:
         with:
           version: "${{ env.UV_VERSION }}"
           enable-cache: true
+          cache-suffix: registry-validation
           cache-dependency-glob: |
             pyproject.toml
             uv.lock
@@ -76,6 +77,7 @@ jobs:
         with:
           version: "${{ env.UV_VERSION }}"
           enable-cache: true
+          cache-suffix: synthetic-tests
           cache-dependency-glob: |
             pyproject.toml
             uv.lock
@@ -112,6 +114,7 @@ jobs:
         with:
           version: "${{ env.UV_VERSION }}"
           enable-cache: true
+          cache-suffix: full-test-suite
           cache-dependency-glob: |
             pyproject.toml
             uv.lock

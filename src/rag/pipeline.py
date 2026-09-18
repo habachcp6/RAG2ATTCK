@@ -1,4 +1,4 @@
-﻿"""
+"""
 RAG2ATTCK - RAG Pipeline with Controlled-Comparison Invariant (Task T19)
 Implements deterministic retrieval-augmented generation for ATT&CK threat attribution:
 - Enforces controlled comparison: identical prompt template, model, reasoning effort, and schemas.
@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Set, Union
 
 from src.llm.client import LLMClient
+from src.llm.inputs import validate_benchmark_batch
 from src.llm.schemas import ExecutionRecord, get_workspace_root, validate_condition
 from src.rag.schemas import RAGExecutionRecord, RetrievalMetadata
 from src.retrieval.retriever import Embedder, FAISSRetriever, RetrievalResult
@@ -111,10 +112,13 @@ class RAGPipeline:
         1. Validates retrieval depth k in SUPPORTED_K {1, 3, 5, 10}.
         2. Retrieves top-k candidates using ONLY endpoint_evidence as query.
         3. Deterministically formats retrieved context string.
-        4. Dispatches prediction via LLMClient with condition='rag'.
-        5. Assembles RetrievalMetadata provenance.
+        4. Validates RetrievalMetadata provenance before model dispatch.
+        5. Dispatches prediction via LLMClient with condition='rag'.
         6. Returns composite RAGExecutionRecord.
         """
+        [(sample_id, endpoint_evidence)] = validate_benchmark_batch([
+            {"sample_id": sample_id, "endpoint_evidence": endpoint_evidence}
+        ])
         retrieval_k = k if k is not None else self.default_k
         if retrieval_k not in SUPPORTED_K:
             raise ValueError(
@@ -130,7 +134,19 @@ class RAGPipeline:
         # 2. Format retrieved context using retriever helper
         retrieved_context_str = self.retriever.format_retrieved_context(results)
 
-        # 3. Predict via shared LLMClient using condition="rag"
+        # Validate provenance before any model request can be dispatched.
+        cfg = getattr(self.retriever, "config", {}) or {}
+        retrieval_meta = RetrievalMetadata(
+            k=retrieval_k,
+            technique_ids=[r.technique_id for r in results],
+            ranks=[r.rank for r in results],
+            scores=[r.score for r in results],
+            corpus_sha256=cfg.get("corpus_sha256"),
+            embedding_model_id=cfg.get("embedding_model_id"),
+            embedding_model_revision=cfg.get("embedding_model_revision"),
+            index_sha256=cfg.get("index_sha256"),
+        )
+
         exec_record: ExecutionRecord = self.client.predict(
             sample_id=sample_id,
             endpoint_evidence=endpoint_evidence,
@@ -138,19 +154,6 @@ class RAGPipeline:
             condition="rag",
             prompt_template=self.prompt_template,
             prompt_version=self.prompt_version,
-        )
-
-        # 4. Extract retrieval provenance from retriever config and results
-        cfg = getattr(self.retriever, "config", {}) or {}
-        retrieval_meta = RetrievalMetadata(
-            k=retrieval_k,
-            technique_ids=[r.technique_id for r in results],
-            ranks=[r.rank for r in results],
-            scores=[float(r.score) for r in results],
-            corpus_sha256=str(cfg.get("corpus_sha256", "")),
-            embedding_model_id=str(cfg.get("embedding_model_id", "")),
-            embedding_model_revision=str(cfg.get("embedding_model_revision", "")),
-            index_sha256=str(cfg.get("index_sha256", "")),
         )
 
         # 5. Return composition wrapper
@@ -173,12 +176,10 @@ class RAGPipeline:
         attack_label, expected_technique), or extraneous dictionary keys are discarded.
         """
         records: List[RAGExecutionRecord] = []
-        for sample in samples:
-            s_id = sample.get("sample_id") or sample.get("id", "unknown_sample")
-            evidence = sample.get("endpoint_evidence") or sample.get("evidence", "")
+        for s_id, evidence in validate_benchmark_batch(samples):
             rec = self.run_sample(
-                sample_id=str(s_id),
-                endpoint_evidence=str(evidence),
+                sample_id=s_id,
+                endpoint_evidence=evidence,
                 k=k,
             )
             records.append(rec)

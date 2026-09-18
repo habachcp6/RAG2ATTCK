@@ -97,6 +97,7 @@ jobs:
   full-test-suite:
     name: Full Test Suite (${{ matrix.os }})
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-24.04, windows-latest]
     runs-on: ${{ matrix.os }}
@@ -131,5 +132,8 @@ jobs:
       - name: Check installed dependencies
         run: uv pip check
 
+      - name: Acquire ATT&CK v19.2 reference
+        run: uv run python -c "from pathlib import Path; from src.attack_loader import download_attack_reference; download_attack_reference(Path('.'))"
+
       - name: Run Full Test Suite
-        run: uv run pytest -q
+        run: uv run pytest -m "not integration" -q

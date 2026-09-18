@@ -22,7 +22,7 @@ concurrency:
 jobs:
   registry-validation:
     name: Registry Validation
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout repository
@@ -59,7 +59,7 @@ jobs:
 
   synthetic-tests:
     name: Synthetic Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout repository
@@ -96,7 +96,7 @@ jobs:
 
   full-test-suite:
     name: Full Test Suite
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout repository

@@ -131,9 +131,36 @@ def cmd_audit_gt(args):
         return 1
 
 
+def cmd_synthetic(args):
+    from src.synthetic_pipeline import prepare_synthetic, validate_synthetic, freeze_synthetic, verify_synthetic
+    import json
+    ws = Path(args.workspace).resolve() if args.workspace else get_default_workspace_root()
+    try:
+        if args.command == "prepare-synthetic":
+            result = prepare_synthetic(ws, args.output_dir)
+        elif args.command == "validate-synthetic":
+            result = validate_synthetic(ws, args.candidate_dir)
+        elif args.command == "freeze-synthetic":
+            result = freeze_synthetic(ws, args.candidate_dir, args.output_dir)
+        else:
+            result = verify_synthetic(ws, args.output_dir)
+        print(json.dumps(result, ensure_ascii=True, indent=2, sort_keys=True))
+        return 0
+    except (ValueError, OSError, KeyError, TypeError) as exc:
+        print(f"Synthetic gate FAILED: {exc}")
+        return 1
+
+
 def main():
     parser = argparse.ArgumentParser(description="RAG2ATTCK Data & Ground Truth Pipeline CLI")
     subparsers = parser.add_subparsers(dest="command", help="Pipeline task command")
+
+    for command in ("prepare-synthetic", "validate-synthetic", "freeze-synthetic", "verify-synthetic"):
+        sub = subparsers.add_parser(command, help="Independent synthetic Stage B gate")
+        sub.add_argument("--workspace", "-w", default=None, help="Workspace root")
+        sub.add_argument("--output-dir", type=Path, default=None, help="Candidate/frozen directory for this stage")
+        sub.add_argument("--candidate-dir", type=Path, default=None, help="Prepared candidate directory")
+        sub.set_defaults(func=cmd_synthetic)
 
     # Preflight
     p_preflight = subparsers.add_parser("preflight", help="Execute Task 0 Preflight check")

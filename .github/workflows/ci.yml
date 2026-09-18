@@ -95,8 +95,11 @@ jobs:
         run: uv run pytest tests/test_synthetic.py -q
 
   full-test-suite:
-    name: Full Test Suite
-    runs-on: ubuntu-24.04
+    name: Full Test Suite (${{ matrix.os }})
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
       - name: Checkout repository
@@ -114,7 +117,7 @@ jobs:
         with:
           version: "${{ env.UV_VERSION }}"
           enable-cache: true
-          cache-suffix: full-test-suite
+          cache-suffix: full-test-suite-${{ matrix.os }}
           cache-dependency-glob: |
             pyproject.toml
             uv.lock

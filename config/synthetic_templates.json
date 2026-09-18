@@ -6645,7 +6645,7 @@
         "selection_rule": "backupsvc created by Administrator; select the concrete provider fields that contain backupsvc, Administrator, backup"
       },
       "single_ground_truth": {
-        "status": "unmapped",
+        "status": "ambiguous",
         "technique_ids": [],
         "technique_names": [],
         "evidence_predicate": {
@@ -6670,7 +6670,7 @@
             }
           ]
         },
-        "rationale": "The service account is created by the approved administrator provisioning identity without immediate group escalation."
+        "rationale": "EID 4720 identifies the account and creator but does not prove that provisioning was authorized in the single view."
       },
       "contextual_ground_truth": {
         "status": "unmapped",
@@ -6706,13 +6706,19 @@
                   "event": "context_1",
                   "field": "NewProcessName",
                   "op": "endswith_ci",
-                  "value": "\\net.exe"
+                  "value": "\\account-provisioner.exe"
                 },
                 {
                   "event": "context_1",
                   "field": "CommandLine",
                   "op": "contains_ci",
-                  "value": "net user backupsvc /add"
+                  "value": "--create backupsvc --role backup"
+                },
+                {
+                  "event": "context_1",
+                  "field": "ParentProcessName",
+                  "op": "endswith_ci",
+                  "value": "\\management-agent.exe"
                 },
                 {
                   "event": "context_1",
@@ -6723,17 +6729,29 @@
               ]
             },
             {
+              "relation": "temporal_before",
+              "before": "context_1",
+              "after": "anchor"
+            },
+            {
               "relation": "same_host",
               "events": [
-                "anchor",
-                "context_1"
+                "context_1",
+                "anchor"
+              ]
+            },
+            {
+              "relation": "same_logon",
+              "events": [
+                "context_1",
+                "anchor"
               ]
             }
           ]
         },
-        "rationale": "Context confirms the same benign normal local backup-account provisioning workflow with an explicit maintenance process or actor."
+        "rationale": "The linked Contoso account-provisioner process, approved management parent, explicit role, ordering, host, and logon establish an affirmative synthetic provisioning workflow."
       },
-      "expected_transition": "unmapped->unmapped",
+      "expected_transition": "ambiguous->unmapped",
       "contextual_event_descriptions": [
         "A related event confirms the approved workflow for normal local backup-account provisioning with affirmative benign telemetry."
       ],
@@ -6743,7 +6761,7 @@
           "provider": "Microsoft-Windows-Security-Auditing",
           "channel": "Security",
           "windows_event_id": 4688,
-          "selection_rule": "Administrator net user provisioning command"
+          "selection_rule": "Contoso account-provisioner process under the approved management agent"
         }
       ],
       "counter_evidence": "A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.",
@@ -6970,37 +6988,68 @@
             },
             {
               "event": "context_1",
-              "field": "NewProcessName",
-              "op": "endswith_ci",
-              "value": "\\wevtutil.exe"
+              "field": "TaskName",
+              "op": "contains_ci",
+              "value": "\\Contoso\\SecurityLogRetention"
             },
             {
               "event": "context_1",
+              "field": "TaskContent",
+              "op": "contains_ci",
+              "value": "C:\\Program Files\\Contoso\\LogMaintenance\\logrotate.exe"
+            },
+            {
+              "event": "context_2",
+              "field": "Image",
+              "op": "endswith_ci",
+              "value": "\\logrotate.exe"
+            },
+            {
+              "event": "context_2",
+              "field": "ParentImage",
+              "op": "endswith_ci",
+              "value": "\\taskeng.exe"
+            },
+            {
+              "event": "context_2",
               "field": "CommandLine",
               "op": "contains_ci",
-              "value": " cl Security"
+              "value": "--clear Security"
             },
             {
-              "event": "context_1",
-              "field": "SubjectUserName",
-              "op": "contains_ci",
-              "value": "SYSTEM"
+              "relation": "process_then_task",
+              "process": "context_2",
+              "task": "context_1"
             },
             {
               "relation": "temporal_before",
               "before": "context_1",
+              "after": "context_2"
+            },
+            {
+              "relation": "temporal_before",
+              "before": "context_2",
               "after": "anchor"
+            },
+            {
+              "relation": "same_host",
+              "events": [
+                "context_1",
+                "context_2",
+                "anchor"
+              ]
             },
             {
               "relation": "same_logon",
               "events": [
                 "context_1",
+                "context_2",
                 "anchor"
               ]
             }
           ]
         },
-        "rationale": "The linked SYSTEM maintenance process and same-logon ordering provide affirmative authorization context for the EID 1102 outcome."
+        "rationale": "The approved synthetic SecurityLogRetention task, protected logrotate.exe path, taskeng parent, ordering, host, and logon jointly establish a benign maintenance workflow."
       },
       "expected_transition": "ambiguous->unmapped",
       "contextual_event_descriptions": [
@@ -7011,8 +7060,15 @@
           "event_key": "context_1",
           "provider": "Microsoft-Windows-Security-Auditing",
           "channel": "Security",
-          "windows_event_id": 4688,
-          "selection_rule": "SYSTEM wevtutil process in the approved log-rotation workflow"
+          "windows_event_id": 4698,
+          "selection_rule": "Approved synthetic Security log-retention scheduled task"
+        },
+        {
+          "event_key": "context_2",
+          "provider": "Microsoft-Windows-Sysmon",
+          "channel": "Microsoft-Windows-Sysmon/Operational",
+          "windows_event_id": 1,
+          "selection_rule": "Contoso logrotate.exe launched by taskeng.exe"
         }
       ],
       "counter_evidence": "A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.",
@@ -7042,9 +7098,17 @@
           "provider": "Microsoft-Windows-Security-Auditing",
           "channel": "Security",
           "event_ids": [
-            4688
+            4698
           ],
-          "reference": "https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4688"
+          "reference": "https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4698"
+        },
+        {
+          "provider": "Microsoft-Windows-Sysmon",
+          "channel": "Microsoft-Windows-Sysmon/Operational",
+          "event_ids": [
+            1
+          ],
+          "reference": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-1-process-create"
         }
       ],
       "planned_instances": 12

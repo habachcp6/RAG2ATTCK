@@ -868,7 +868,40 @@ class TestSemanticRegistryValidator:
         assert family["single_ground_truth"]["status"] == "ambiguous"
         assert family["contextual_ground_truth"]["status"] == "unmapped"
         assert family["expected_transition"] == "ambiguous->unmapped"
-        assert family["contextual_event_specs"][0]["windows_event_id"] == 4688
+        assert [item["windows_event_id"] for item in family["contextual_event_specs"]] == [4698, 1]
+
+    def test_eid_1102_system_wevtutil_without_workflow_is_rejected(self, registry):
+        candidate = copy.deepcopy(registry)
+        family = self.family(candidate, "TF_UNMAP_EVTCLR")
+        family["contextual_event_specs"] = [{
+            "event_key": "context_1",
+            "provider": "Microsoft-Windows-Security-Auditing",
+            "channel": "Security",
+            "windows_event_id": 4688,
+            "selection_rule": "wevtutil process only",
+        }]
+        family["contextual_ground_truth"]["evidence_predicate"] = {"all": [
+            {"event": "anchor", "field": "EventID", "op": "eq", "value": 1102},
+            {"event": "context_1", "field": "NewProcessName", "op": "endswith_ci", "value": "\\wevtutil.exe"},
+            {"event": "context_1", "field": "CommandLine", "op": "contains_ci", "value": " cl Security"},
+        ]}
+        result = self.validate(candidate)
+        assert any("SYSTEM+wevtutil is insufficient" in e for e in result.errors)
+
+    def test_eid_4720_account_only_unmapped_is_rejected(self, registry):
+        candidate = copy.deepcopy(registry)
+        family = self.family(candidate, "TF_UNMAP_ACCT")
+        family["single_ground_truth"]["status"] = "unmapped"
+        family["expected_transition"] = "unmapped->unmapped"
+        result = self.validate(candidate)
+        assert any("cannot establish authorized provisioning" in e for e in result.errors)
+
+    def test_account_context_has_affirmative_provisioning_workflow(self, registry):
+        family = self.family(registry, "TF_UNMAP_ACCT")
+        assert family["category"] == "unmapped"
+        assert family["single_ground_truth"]["status"] == "ambiguous"
+        assert family["contextual_ground_truth"]["status"] == "unmapped"
+        assert any("account-provisioner" in str(item) for item in family["contextual_ground_truth"]["evidence_predicate"]["all"])
 
     def test_relation_signature_rejects_wrong_operand_name(self):
         result = ValidationResult()

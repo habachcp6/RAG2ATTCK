@@ -2,7 +2,7 @@
 
 This package is generated from `config/synthetic_templates.json`. It is a human semantic-review artifact for Stage A. Stage B generation and final dataset freezing are intentionally not performed.
 
-- Registry SHA-256: `ff0562cd1893812fc00782fc00f63176b6bd2851d31e79f627dbb0ebe5bb3274`
+- Registry SHA-256: `1fbe27edd7b20d0f520c13a409a0faa539e52b6e28afb513dfcd6d35b2da483c`
 - Total families: `64` (`test=52`, `dev=12`)
 - Planned pairs: `670`
 - ATT&CK catalog: pinned Enterprise v19.2; names are checked against the local STIX snapshot.
@@ -4959,7 +4959,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 - Windows documentation: EID 4720 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4720]; EID 4688 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4688]
 - Telemetry combinations covered: `2` registry event specifications
 ### Single-view ground truth
-- Status: `unmapped`
+- Status: `ambiguous`
 - Technique(s): none
 - Evidence predicate:
 ```json
@@ -4986,7 +4986,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The service account is created by the approved administrator provisioning identity without immediate group escalation.
+- Rationale: EID 4720 identifies the account and creator but does not prove that provisioning was authorized in the single view.
 ### Contextual ground truth
 - Status: `unmapped`
 - Technique(s): none
@@ -5022,13 +5022,19 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
           "event": "context_1",
           "field": "NewProcessName",
           "op": "endswith_ci",
-          "value": "\\net.exe"
+          "value": "\\account-provisioner.exe"
         },
         {
           "event": "context_1",
           "field": "CommandLine",
           "op": "contains_ci",
-          "value": "net user backupsvc /add"
+          "value": "--create backupsvc --role backup"
+        },
+        {
+          "event": "context_1",
+          "field": "ParentProcessName",
+          "op": "endswith_ci",
+          "value": "\\management-agent.exe"
         },
         {
           "event": "context_1",
@@ -5039,17 +5045,29 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       ]
     },
     {
+      "relation": "temporal_before",
+      "before": "context_1",
+      "after": "anchor"
+    },
+    {
       "relation": "same_host",
       "events": [
-        "anchor",
-        "context_1"
+        "context_1",
+        "anchor"
+      ]
+    },
+    {
+      "relation": "same_logon",
+      "events": [
+        "context_1",
+        "anchor"
       ]
     }
   ]
 }
 ```
-- Rationale: Context confirms the same benign normal local backup-account provisioning workflow with an explicit maintenance process or actor.
-- Expected transition: `unmapped->unmapped`
+- Rationale: The linked Contoso account-provisioner process, approved management parent, explicit role, ordering, host, and logon establish an affirmative synthetic provisioning workflow.
+- Expected transition: `ambiguous->unmapped`
 - Contextual event descriptions: ["A related event confirms the approved workflow for normal local backup-account provisioning with affirmative benign telemetry."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: normal local backup-account provisioning.
@@ -5184,10 +5202,10 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 - Category: `unmapped`
 - Behavior description: Authorized log-retention maintenance
 - Anchor telemetry: `Microsoft-Windows-Eventlog` / `Security` / EID `1102`
-- Context telemetry: `context_1` = `Microsoft-Windows-Security-Auditing` / `Security` / EID `4688`
+- Context telemetry: `context_1` = `Microsoft-Windows-Security-Auditing` / `Security` / EID `4698`; `context_2` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
 - Anchor selection rule: Security log rotation by SYSTEM; select the concrete provider fields that contain SYSTEM, maintenance, rotation
-- Windows documentation: EID 1102 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-1102]; EID 4688 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4688]
-- Telemetry combinations covered: `2` registry event specifications
+- Windows documentation: EID 1102 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-1102]; EID 4698 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4698]; EID 1 [https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-1-process-create]
+- Telemetry combinations covered: `3` registry event specifications
 ### Single-view ground truth
 - Status: `ambiguous`
 - Technique(s): none
@@ -5226,38 +5244,69 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
     },
     {
       "event": "context_1",
-      "field": "NewProcessName",
-      "op": "endswith_ci",
-      "value": "\\wevtutil.exe"
+      "field": "TaskName",
+      "op": "contains_ci",
+      "value": "\\Contoso\\SecurityLogRetention"
     },
     {
       "event": "context_1",
+      "field": "TaskContent",
+      "op": "contains_ci",
+      "value": "C:\\Program Files\\Contoso\\LogMaintenance\\logrotate.exe"
+    },
+    {
+      "event": "context_2",
+      "field": "Image",
+      "op": "endswith_ci",
+      "value": "\\logrotate.exe"
+    },
+    {
+      "event": "context_2",
+      "field": "ParentImage",
+      "op": "endswith_ci",
+      "value": "\\taskeng.exe"
+    },
+    {
+      "event": "context_2",
       "field": "CommandLine",
       "op": "contains_ci",
-      "value": " cl Security"
+      "value": "--clear Security"
     },
     {
-      "event": "context_1",
-      "field": "SubjectUserName",
-      "op": "contains_ci",
-      "value": "SYSTEM"
+      "relation": "process_then_task",
+      "process": "context_2",
+      "task": "context_1"
     },
     {
       "relation": "temporal_before",
       "before": "context_1",
+      "after": "context_2"
+    },
+    {
+      "relation": "temporal_before",
+      "before": "context_2",
       "after": "anchor"
+    },
+    {
+      "relation": "same_host",
+      "events": [
+        "context_1",
+        "context_2",
+        "anchor"
+      ]
     },
     {
       "relation": "same_logon",
       "events": [
         "context_1",
+        "context_2",
         "anchor"
       ]
     }
   ]
 }
 ```
-- Rationale: The linked SYSTEM maintenance process and same-logon ordering provide affirmative authorization context for the EID 1102 outcome.
+- Rationale: The approved synthetic SecurityLogRetention task, protected logrotate.exe path, taskeng parent, ordering, host, and logon jointly establish a benign maintenance workflow.
 - Expected transition: `ambiguous->unmapped`
 - Contextual event descriptions: ["A related event confirms the approved workflow for authorized log-retention maintenance with affirmative benign telemetry."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.

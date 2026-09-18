@@ -383,6 +383,49 @@ def _registry_structure_signature(family: Dict[str, Any]) -> str:
     return json.dumps(signature, sort_keys=True, ensure_ascii=False)
 
 
+def _validate_special_benign_workflow(
+    family: Dict[str, Any],
+    contextual_gt: Dict[str, Any],
+    context_specs: List[Dict[str, Any]],
+    result: ValidationResult,
+) -> None:
+    """Apply narrow authorization guards for the two human-audit families."""
+    fid = family.get("template_family_id")
+    status = contextual_gt.get("status")
+    leaves = _registry_predicate_leaves(contextual_gt.get("evidence_predicate"))
+    values = " ".join(str(item.get("value", "")).casefold() for item in leaves)
+    event_ids = {item.get("windows_event_id") for item in context_specs if isinstance(item, dict)}
+
+    if fid == "TF_UNMAP_EVTCLR" and status == "unmapped":
+        has_task = 4698 in event_ids
+        has_process = bool({1, 4688}.intersection(event_ids))
+        has_workflow_signal = any(
+            marker in values
+            for marker in ("securitylogretention", "logrotate", "logmaintenance", "program files", "taskeng", "contoso")
+        )
+        if not (has_task and has_process and has_workflow_signal):
+            result.add_error(
+                f"{fid}: contextual unmapped decision requires a concrete maintenance task/process workflow; SYSTEM+wevtutil is insufficient"
+            )
+
+    if fid == "TF_UNMAP_ACCT":
+        single = family.get("single_ground_truth") or {}
+        if single.get("status") == "unmapped":
+            result.add_error(
+                f"{fid}: EID 4720 account/creator fields alone cannot establish authorized provisioning"
+            )
+        if status == "unmapped":
+            has_process = bool({1, 4688}.intersection(event_ids))
+            has_workflow_signal = any(
+                marker in values
+                for marker in ("account-provisioner", "provision", "management-agent", "--create backupsvc", "contoso")
+            )
+            if not (has_process and has_workflow_signal):
+                result.add_error(
+                    f"{fid}: contextual unmapped decision requires affirmative provisioning-process evidence"
+                )
+
+
 def _validate_registry_field_roles(family: Dict[str, Any], result: ValidationResult) -> None:
     """Reject predicates that use a valid telemetry field for the wrong role."""
     fid = family.get("template_family_id", "<missing>")
@@ -566,6 +609,7 @@ def validate_template_registry(
         _registry_ground_truth(family, "single_ground_truth", {"anchor": event_schemas.get("anchor", ())}, stix_names, result)
         _registry_ground_truth(family, "contextual_ground_truth", event_schemas, stix_names, result)
         _validate_registry_field_roles(family, result)
+        _validate_special_benign_workflow(family, contextual_gt, context_specs, result)
 
         single = family.get("single_ground_truth") or {}
         single_status = single.get("status")

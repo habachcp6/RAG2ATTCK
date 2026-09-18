@@ -643,7 +643,7 @@ def build() -> dict[str, Any]:
         "TF_UNMAP_CMD": [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "interactive explorer.exe process")],
         "TF_UNMAP_SCHTASK": [ctx("context_1", SYSMON, SYSMON_CHANNEL, 1, "signed updater.exe launched by taskeng.exe")],
         "TF_UNMAP_SVC": [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "MSI service deployment process")],
-        "TF_UNMAP_ACCT": [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "Administrator net user provisioning command")],
+        "TF_UNMAP_ACCT": [ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "Contoso account-provisioner process under the approved management agent")],
         "TF_UNMAP_REG": [ctx("context_1", SYSMON, SYSMON_CHANNEL, 1, "OneDrive startup application process")],
     }
     benign_context_predicates = {
@@ -656,30 +656,47 @@ def build() -> dict[str, Any]:
         "TF_UNMAP_CMD": all_of(leaf("context_1", "NewProcessName", "endswith_ci", "\\explorer.exe"), leaf("context_1", "SubjectUserName", "contains_ci", "helpdesk")),
         "TF_UNMAP_SCHTASK": all_of(leaf("context_1", "Image", "endswith_ci", "\\updater.exe"), leaf("context_1", "ParentImage", "endswith_ci", "\\taskeng.exe")),
         "TF_UNMAP_SVC": all_of(leaf("context_1", "NewProcessName", "endswith_ci", "\\msiexec.exe"), leaf("context_1", "SubjectUserName", "contains_ci", "Administrator")),
-        "TF_UNMAP_ACCT": all_of(leaf("context_1", "NewProcessName", "endswith_ci", "\\net.exe"), leaf("context_1", "CommandLine", "contains_ci", "net user backupsvc /add"), leaf("context_1", "SubjectUserName", "eq", "Administrator")),
+        "TF_UNMAP_ACCT": all_of(leaf("context_1", "NewProcessName", "endswith_ci", "\\account-provisioner.exe"), leaf("context_1", "CommandLine", "contains_ci", "--create backupsvc --role backup"), leaf("context_1", "ParentProcessName", "endswith_ci", "\\management-agent.exe"), leaf("context_1", "SubjectUserName", "eq", "Administrator")),
         "TF_UNMAP_REG": all_of(leaf("context_1", "Image", "endswith_ci", "\\OneDrive.exe"), leaf("context_1", "ParentImage", "endswith_ci", "\\explorer.exe")),
     }
     for fid, behavior, provider, channel, eid, rule, indicators, rationale in benign_specs:
         anchor = a(provider, channel, eid, f"{rule}; select the concrete provider fields that contain {', '.join(indicators)}")
         event = ctx("context_1", provider, channel, eid, f"Related authorized maintenance event for {fid}")
+        context_specs = benign_context_specs.get(fid, [event])
         benign_pred = benign_predicates[fid]
         if fid == "TF_UNMAP_EVTCLR":
-            event = ctx("context_1", SECURITY, SECURITY_CHANNEL, 4688, "SYSTEM wevtutil process in the approved log-rotation workflow")
+            context_specs = [
+                ctx("context_1", SECURITY, SECURITY_CHANNEL, 4698, "Approved synthetic Security log-retention scheduled task"),
+                ctx("context_2", SYSMON, SYSMON_CHANNEL, 1, "Contoso logrotate.exe launched by taskeng.exe"),
+            ]
             single = gt("ambiguous", [], benign_pred, "EID 1102 and subject metadata show a log clear, but the single view does not establish authorization or mechanism.")
             contextual = gt("unmapped", [], all_of(
                 leaf("anchor", "EventID", "eq", 1102),
-                leaf("context_1", "NewProcessName", "endswith_ci", "\\wevtutil.exe"),
-                leaf("context_1", "CommandLine", "contains_ci", " cl Security"),
-                leaf("context_1", "SubjectUserName", "contains_ci", "SYSTEM"),
+                leaf("context_1", "TaskName", "contains_ci", "\\Contoso\\SecurityLogRetention"),
+                leaf("context_1", "TaskContent", "contains_ci", "C:\\Program Files\\Contoso\\LogMaintenance\\logrotate.exe"),
+                leaf("context_2", "Image", "endswith_ci", "\\logrotate.exe"),
+                leaf("context_2", "ParentImage", "endswith_ci", "\\taskeng.exe"),
+                leaf("context_2", "CommandLine", "contains_ci", "--clear Security"),
+                relation("process_then_task", "process", "context_2", "task", "context_1"),
+                relation("temporal_before", "before", "context_1", "after", "context_2"),
+                relation("temporal_before", "before", "context_2", "after", "anchor"),
+                relation("same_host", "events", ["context_1", "context_2", "anchor"]),
+                relation("same_logon", "events", ["context_1", "context_2", "anchor"]),
+            ), "The approved synthetic SecurityLogRetention task, protected logrotate.exe path, taskeng parent, ordering, host, and logon jointly establish a benign maintenance workflow.")
+        elif fid == "TF_UNMAP_ACCT":
+            single = gt("ambiguous", [], benign_pred, "EID 4720 identifies the account and creator but does not prove that provisioning was authorized in the single view.")
+            contextual = gt("unmapped", [], all_of(
+                benign_pred,
+                benign_context_predicates[fid],
                 relation("temporal_before", "before", "context_1", "after", "anchor"),
+                relation("same_host", "events", ["context_1", "anchor"]),
                 relation("same_logon", "events", ["context_1", "anchor"]),
-            ), "The linked SYSTEM maintenance process and same-logon ordering provide affirmative authorization context for the EID 1102 outcome.")
+            ), "The linked Contoso account-provisioner process, approved management parent, explicit role, ordering, host, and logon establish an affirmative synthetic provisioning workflow.")
         else:
             single = gt("unmapped", [], benign_pred, rationale)
-            event = benign_context_specs[fid][0]
             contextual = gt("unmapped", [], all_of(benign_pred, benign_context_predicates[fid], relation("same_host", "events", ["anchor", "context_1"])), f"Context confirms the same benign {behavior.lower()} workflow with an explicit maintenance process or actor.")
         families.append(spec(fid, "unmapped", "test", behavior, anchor, single, contextual,
-                             [f"A related event confirms the approved workflow for {behavior.lower()} with affirmative benign telemetry."], [event],
+                             [f"A related event confirms the approved workflow for {behavior.lower()} with affirmative benign telemetry."], context_specs,
                              "A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.",
                              f"The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: {behavior.lower()}.",
                              ["Keep the provider-specific benign fields visible."], ["Do not reduce the family to label_status only or use unrelated negative text."], old[fid], comparison_ids=["T1059.001"] if "PowerShell" in behavior else None))

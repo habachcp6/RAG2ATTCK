@@ -212,3 +212,26 @@ Frozen artifacts: `data/ground_truth/synthetic/`. Commands and review gates:
 `reports/T05_T10_synthetic_dataset_freeze.md`. The historical Windows-APT gate
 status in sections 2-4 remains unchanged; this record concerns only the synthetic
 benchmark. No T20 or live model experiment is included.
+
+## 7. Independent PR audit and corrective regeneration (2026-09-19)
+
+Read-only audit of PR #4 at `cace430be63cc1071b033b90418f1e2e56aa82f0` found a
+visible-parent `ParentCommandLine` mismatch in 13 Word-to-PowerShell pairs, a
+fixed `Contoso` lexical cue in 105 contextual unmapped examples, and rationale
+wording that exceeded the recorded evidence for signer authenticity and runtime
+execution. The freeze report also understated the freeze and full-suite test
+counts. The orchestrator authorized bounded corrections while preserving the
+ATT&CK v19.2 catalog, technique labels, seed, quotas, family split, and experiment
+settings.
+
+Corrective source commit: `3dec6925b2a9b2c91e7e9381230207f27d0615b1`.
+Corrected registry SHA-256: `0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2`.
+The regenerated package remains 670 pairs, 1,340 views, and 1,434 events.
+Registry validation passes; synthetic, generation, and freeze tests pass 116,
+24, and 15 tests respectively; verify-synthetic reports zero artifact and
+reproduction mismatches; the full non-integration suite passes 468 tests with
+four deselected. An independent second freeze reproduced all 14 artifacts byte
+for byte. CI and main-branch verification remain required before roadmap closure.
+
+Historical Windows-APT blockers remain separate. No T20 or live model experiment
+is included.

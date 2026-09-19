@@ -64,7 +64,7 @@ Transition: ambiguous -> ambiguous
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_AMBIG_A/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_AMBIG_A/single",
   "evidence_refs": {
     "decision": [
       {
@@ -185,7 +185,7 @@ Transition: ambiguous -> ambiguous
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_AMBIG_A/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_AMBIG_A/contextual",
   "evidence_refs": {
     "decision": [
       {
@@ -265,7 +265,7 @@ Transition: ambiguous -> ambiguous
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_AMBIG_B/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_AMBIG_B/single",
   "evidence_refs": {
     "decision": [
       {
@@ -370,7 +370,7 @@ Transition: ambiguous -> ambiguous
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_AMBIG_B/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_AMBIG_B/contextual",
   "evidence_refs": {
     "decision": [
       {
@@ -442,7 +442,7 @@ Transition: ambiguous -> ambiguous
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_AMBIG_C/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_AMBIG_C/single",
   "evidence_refs": {
     "decision": [
       {
@@ -531,7 +531,7 @@ Transition: ambiguous -> ambiguous
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_AMBIG_C/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_AMBIG_C/contextual",
   "evidence_refs": {
     "decision": [
       {
@@ -609,7 +609,7 @@ Transition: ambiguous -> ambiguous
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_AMBIG_D/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_AMBIG_D/single",
   "evidence_refs": {
     "decision": [
       {
@@ -710,7 +710,7 @@ Transition: ambiguous -> ambiguous
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_AMBIG_D/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_AMBIG_D/contextual",
   "evidence_refs": {
     "decision": [
       {
@@ -790,7 +790,7 @@ Transition: ambiguous -> ambiguous
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_AMBIG_DEV/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_AMBIG_DEV/single",
   "evidence_refs": {
     "decision": [
       {
@@ -895,7 +895,7 @@ Transition: ambiguous -> ambiguous
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_AMBIG_DEV/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_AMBIG_DEV/contextual",
   "evidence_refs": {
     "decision": [
       {
@@ -975,7 +975,7 @@ Transition: ambiguous -> ambiguous
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_AMBIG_DEV/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_AMBIG_DEV/single",
   "evidence_refs": {
     "decision": [
       {
@@ -1080,7 +1080,7 @@ Transition: ambiguous -> ambiguous
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_AMBIG_DEV/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_AMBIG_DEV/contextual",
   "evidence_refs": {
     "decision": [
       {
@@ -1168,7 +1168,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_MULTI_A/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_MULTI_A/single",
   "evidence_refs": {
     "T1059.001": [
       {
@@ -1306,7 +1306,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_MULTI_A/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_MULTI_A/contextual",
   "evidence_refs": {
     "T1053.005": [
       {
@@ -1427,7 +1427,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_MULTI_B/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_MULTI_B/single",
   "evidence_refs": {
     "T1543.003": [
       {
@@ -1559,7 +1559,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_MULTI_B/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_MULTI_B/contextual",
   "evidence_refs": {
     "T1543.003": [
       {
@@ -1659,7 +1659,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_MULTI_C/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_MULTI_C/single",
   "evidence_refs": {
     "T1136.001": [
       {
@@ -1756,7 +1756,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_MULTI_C/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_MULTI_C/contextual",
   "evidence_refs": {
     "T1136.001": [
       {
@@ -1861,7 +1861,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_MULTI_D/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_MULTI_D/single",
   "evidence_refs": {
     "T1059.003": [
       {
@@ -1964,7 +1964,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_MULTI_D/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_MULTI_D/contextual",
   "evidence_refs": {
     "T1059.003": [
       {
@@ -2061,7 +2061,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_MULTI_DEV_A/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_MULTI_DEV_A/single",
   "evidence_refs": {
     "T1547.001": [
       {
@@ -2168,7 +2168,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_MULTI_DEV_A/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_MULTI_DEV_A/contextual",
   "evidence_refs": {
     "T1543.003": [
       {
@@ -2255,7 +2255,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_MULTI_DEV_B/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_MULTI_DEV_B/single",
   "evidence_refs": {
     "T1053.005": [
       {
@@ -2393,7 +2393,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_MULTI_DEV_B/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_MULTI_DEV_B/contextual",
   "evidence_refs": {
     "T1053.005": [
       {
@@ -2505,7 +2505,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1053_005_A/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1053_005_A/single",
   "evidence_refs": {
     "T1053.005": [
       {
@@ -2614,7 +2614,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1053_005_A/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1053_005_A/contextual",
   "evidence_refs": {
     "T1053.005": [
       {
@@ -2637,7 +2637,7 @@ Transition: mapped -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "The contextual PowerShell execution is linked back to the created task and confirms execution of the scheduled task payload.",
+  "rationale": "The later process-creation record matches the executable and arguments configured in the task. This is consistent with payload invocation, but these records alone do not establish that Task Scheduler launched it or that the payload completed.",
   "technique_ids": [
     "T1053.005"
   ],
@@ -2693,7 +2693,7 @@ Transition: ambiguous -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1053_005_B/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1053_005_B/single",
   "evidence_refs": {
     "decision": [
       {
@@ -2798,7 +2798,7 @@ Transition: ambiguous -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1053_005_B/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1053_005_B/contextual",
   "evidence_refs": {
     "T1053.005": [
       {
@@ -2821,7 +2821,7 @@ Transition: ambiguous -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "The contextual process execution is linked to the task object and establishes scheduled execution of the suspicious payload.",
+  "rationale": "The later process-creation record matches the executable and arguments configured in the task. This is consistent with payload invocation, but these records alone do not establish that Task Scheduler launched it or that the payload completed.",
   "technique_ids": [
     "T1053.005"
   ],
@@ -2877,7 +2877,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1053_005_D/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1053_005_D/single",
   "evidence_refs": {
     "T1053.005": [
       {
@@ -2890,7 +2890,7 @@ Transition: mapped -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "The scheduled-task record exposes a misleading name, hidden trigger, and public DLL execution payload.",
+  "rationale": "The scheduled-task record exposes a misleading name, hidden trigger, and a configured DLL target under Public.",
   "technique_ids": [
     "T1053.005"
   ],
@@ -2986,7 +2986,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1053_005_D/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1053_005_D/contextual",
   "evidence_refs": {
     "T1053.005": [
       {
@@ -3009,7 +3009,7 @@ Transition: mapped -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "The contextual rundll32 process is linked to the task content and confirms task-based execution.",
+  "rationale": "The process-creation record shows rundll32 invoked with the DLL path configured in the task; it does not establish that DLL loading succeeded or that the task triggered the process.",
   "technique_ids": [
     "T1053.005"
   ],
@@ -3065,7 +3065,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1053_005_DEV/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1053_005_DEV/single",
   "evidence_refs": {
     "T1053.005": [
       {
@@ -3077,7 +3077,7 @@ Transition: mapped -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "The DEV-only hidden scheduled task launching rundll32 dll entry point has concrete technique-specific evidence in its anchor event.",
+  "rationale": "The task event records a hidden action configured to invoke rundll32 on a DLL entry point; this is configuration evidence.",
   "technique_ids": [
     "T1053.005"
   ],
@@ -3173,7 +3173,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1053_005_DEV/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1053_005_DEV/contextual",
   "evidence_refs": {
     "T1053.005": [
       {
@@ -3192,7 +3192,7 @@ Transition: mapped -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "Context confirms the DEV-only hidden scheduled task launching rundll32 dll entry point behavior through a related telemetry event.",
+  "rationale": "A process-creation record shows rundll32 invoked with the DLL configured in the task; it does not establish task causality or successful DLL loading.",
   "technique_ids": [
     "T1053.005"
   ],
@@ -3248,7 +3248,7 @@ Transition: ambiguous -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1053_005_E/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1053_005_E/single",
   "evidence_refs": {
     "decision": [
       {
@@ -3389,7 +3389,7 @@ Transition: ambiguous -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1053_005_E/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1053_005_E/contextual",
   "evidence_refs": {
     "T1053.005": [
       {
@@ -3421,7 +3421,7 @@ Transition: ambiguous -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "The contextual PowerShell execution and outbound connection are both linked to the task, resolving the task mechanism.",
+  "rationale": "The task configuration matches a later PowerShell process-creation record and related outbound activity. These records support a task-payload invocation but do not prove the task caused the process start or that execution completed.",
   "technique_ids": [
     "T1053.005"
   ],
@@ -3451,7 +3451,7 @@ Transition: mapped -> mapped
       "Image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
       "LogonGuid": "{c0bb1156-100e-3d16-541e-cb613d506d9a}",
       "LogonId": "0xd045",
-      "ParentCommandLine": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "ParentCommandLine": "\"C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE\" \"C:\\Users\\Public\\holly_alder_aspen_00929d\\agenda.docx\"",
       "ParentImage": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
       "ParentProcessGuid": "{e181967d-6ccc-5784-a115-5728ff2c0159}",
       "ParentProcessId": 53320,
@@ -3478,7 +3478,7 @@ Transition: mapped -> mapped
     "Image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
     "LogonGuid": "{c0bb1156-100e-3d16-541e-cb613d506d9a}",
     "LogonId": "0xd045",
-    "ParentCommandLine": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+    "ParentCommandLine": "\"C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE\" \"C:\\Users\\Public\\holly_alder_aspen_00929d\\agenda.docx\"",
     "ParentImage": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
     "ParentProcessGuid": "{e181967d-6ccc-5784-a115-5728ff2c0159}",
     "ParentProcessId": 53320,
@@ -3493,7 +3493,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1059_001_A/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1059_001_A/single",
   "evidence_refs": {
     "T1059.001": [
       {
@@ -3507,7 +3507,7 @@ Transition: mapped -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "Sysmon exposes PowerShell execution, an encoded command, and Office as the parent process in the single view.",
+  "rationale": "The Sysmon process-creation record shows PowerShell with an encoded command line and an Office parent.",
   "technique_ids": [
     "T1059.001"
   ],
@@ -3560,7 +3560,7 @@ Transition: mapped -> mapped
       "Image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
       "LogonGuid": "{c0bb1156-100e-3d16-541e-cb613d506d9a}",
       "LogonId": "0xd045",
-      "ParentCommandLine": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "ParentCommandLine": "\"C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE\" \"C:\\Users\\Public\\holly_alder_aspen_00929d\\agenda.docx\"",
       "ParentImage": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
       "ParentProcessGuid": "{e181967d-6ccc-5784-a115-5728ff2c0159}",
       "ParentProcessId": 53320,
@@ -3604,7 +3604,7 @@ Transition: mapped -> mapped
     "Image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
     "LogonGuid": "{c0bb1156-100e-3d16-541e-cb613d506d9a}",
     "LogonId": "0xd045",
-    "ParentCommandLine": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+    "ParentCommandLine": "\"C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE\" \"C:\\Users\\Public\\holly_alder_aspen_00929d\\agenda.docx\"",
     "ParentImage": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
     "ParentProcessGuid": "{e181967d-6ccc-5784-a115-5728ff2c0159}",
     "ParentProcessId": 53320,
@@ -3619,7 +3619,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1059_001_A/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1059_001_A/contextual",
   "evidence_refs": {
     "T1059.001": [
       {
@@ -3712,7 +3712,7 @@ Transition: ambiguous -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1059_001_C/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1059_001_C/single",
   "evidence_refs": {
     "decision": [
       {
@@ -3725,7 +3725,7 @@ Transition: ambiguous -> mapped
     ]
   },
   "label_status": "ambiguous",
-  "rationale": "WMI-launched PowerShell is observable, but that execution path is dual-use and the single view lacks intent evidence.",
+  "rationale": "A WMI-parented PowerShell process is observable, but the invocation is dual-use and the single view lacks intent evidence.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_cb4efff5"
@@ -3827,7 +3827,7 @@ Transition: ambiguous -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1059_001_C/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1059_001_C/contextual",
   "evidence_refs": {
     "T1059.001": [
       {
@@ -3853,7 +3853,7 @@ Transition: ambiguous -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "The WMI parent, non-interactive PowerShell invocation, and related RPC connection provide defensible contextual evidence for PowerShell execution.",
+  "rationale": "The WMI parent, non-interactive PowerShell invocation, and related RPC connection provide contextual evidence for this process lineage.",
   "technique_ids": [
     "T1059.001"
   ],
@@ -3925,7 +3925,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1059_001_DEV/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1059_001_DEV/single",
   "evidence_refs": {
     "T1059.001": [
       {
@@ -4045,7 +4045,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1059_001_DEV/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1059_001_DEV/contextual",
   "evidence_refs": {
     "T1059.001": [
       {
@@ -4138,7 +4138,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1059_001_E/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1059_001_E/single",
   "evidence_refs": {
     "T1059.001": [
       {
@@ -4151,7 +4151,7 @@ Transition: mapped -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "PowerShell execution with explicit dynamic evaluation and decoded content is directly visible in the anchor.",
+  "rationale": "The process-creation record contains a PowerShell command line with dynamic-evaluation and decoding expressions; it does not establish command success.",
   "technique_ids": [
     "T1059.001"
   ],
@@ -4257,7 +4257,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1059_001_E/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1059_001_E/contextual",
   "evidence_refs": {
     "T1059.001": [
       {
@@ -4279,7 +4279,7 @@ Transition: mapped -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "The contextual event is the same process identity and confirms the obfuscated PowerShell command rather than introducing a new label.",
+  "rationale": "The contextual event has the same process identity and repeats the obfuscated PowerShell invocation without introducing a new label.",
   "technique_ids": [
     "T1059.001"
   ],
@@ -4351,7 +4351,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1059_001_F/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1059_001_F/single",
   "evidence_refs": {
     "T1059.001": [
       {
@@ -4364,7 +4364,7 @@ Transition: mapped -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "The anchor directly records PowerShell performing reflective assembly loading.",
+  "rationale": "The process-creation record contains a PowerShell reflective-loading invocation; it does not establish that the assembly loaded successfully.",
   "technique_ids": [
     "T1059.001"
   ],
@@ -4470,7 +4470,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1059_001_F/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1059_001_F/contextual",
   "evidence_refs": {
     "T1059.001": [
       {
@@ -4557,7 +4557,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1059_003_A/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1059_003_A/single",
   "evidence_refs": {
     "T1059.003": [
       {
@@ -4570,7 +4570,7 @@ Transition: mapped -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "The Security process-creation record shows a command-shell interpreter executing a chained command and redirecting output.",
+  "rationale": "The Security process-creation record shows cmd.exe invoked with a chained command and output redirection.",
   "technique_ids": [
     "T1059.003"
   ],
@@ -4666,7 +4666,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1059_003_A/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1059_003_A/contextual",
   "evidence_refs": {
     "T1059.003": [
       {
@@ -4754,7 +4754,7 @@ Transition: ambiguous -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1059_003_B/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1059_003_B/single",
   "evidence_refs": {
     "decision": [
       {
@@ -4767,7 +4767,7 @@ Transition: ambiguous -> mapped
     ]
   },
   "label_status": "ambiguous",
-  "rationale": "A service-launched command shell is observable, but the single view does not establish whether the action is administration or adversarial.",
+  "rationale": "A cmd.exe process with a services.exe parent is observable, but the single view does not establish whether the action is administrative or adversarial.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_83007aae"
@@ -4853,7 +4853,7 @@ Transition: ambiguous -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1059_003_B/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1059_003_B/contextual",
   "evidence_refs": {
     "T1059.003": [
       {
@@ -4879,7 +4879,7 @@ Transition: ambiguous -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "The service parent, explicit command-shell execution of certutil staging, and linked file creation provide the contextual threshold.",
+  "rationale": "The services.exe parent, cmd.exe command line containing certutil staging syntax, and related file-creation record provide contextual evidence; the records do not establish command completion.",
   "technique_ids": [
     "T1059.003"
   ],
@@ -4943,7 +4943,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1059_003_C/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1059_003_C/single",
   "evidence_refs": {
     "T1059.003": [
       {
@@ -4956,7 +4956,7 @@ Transition: mapped -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "The anchor identifies cmd.exe and a concrete batch-script execution with shell-specific delayed expansion.",
+  "rationale": "The process-creation record identifies cmd.exe invoking a batch script with shell-specific delayed expansion.",
   "technique_ids": [
     "T1059.003"
   ],
@@ -5046,7 +5046,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1059_003_C/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1059_003_C/contextual",
   "evidence_refs": {
     "T1059.003": [
       {
@@ -5069,7 +5069,7 @@ Transition: mapped -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "A linked batch-file creation event confirms the command shell is executing the staged script.",
+  "rationale": "A related batch-file creation event shares the command-shell process identity; this supports the recorded script invocation but does not establish successful completion.",
   "technique_ids": [
     "T1059.003"
   ],
@@ -5133,7 +5133,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1059_003_DEV/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1059_003_DEV/single",
   "evidence_refs": {
     "T1059.003": [
       {
@@ -5243,7 +5243,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1059_003_DEV/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1059_003_DEV/contextual",
   "evidence_refs": {
     "T1059.003": [
       {
@@ -5328,7 +5328,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1059_003_E/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1059_003_E/single",
   "evidence_refs": {
     "T1059.003": [
       {
@@ -5431,7 +5431,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1059_003_E/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1059_003_E/contextual",
   "evidence_refs": {
     "T1059.003": [
       {
@@ -5456,7 +5456,7 @@ Transition: mapped -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "The contextual file event confirms the command-shell pipeline wrote its output to the staged destination.",
+  "rationale": "The related file-creation event records the staged destination under the same process identity as the command-shell pipeline.",
   "technique_ids": [
     "T1059.003"
   ],
@@ -5528,7 +5528,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1105_A/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1105_A/single",
   "evidence_refs": {
     "T1105": [
       {
@@ -5639,7 +5639,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1105_A/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1105_A/contextual",
   "evidence_refs": {
     "T1105": [
       {
@@ -5736,7 +5736,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1105_B/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1105_B/single",
   "evidence_refs": {
     "T1105": [
       {
@@ -5847,7 +5847,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1105_B/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1105_B/contextual",
   "evidence_refs": {
     "T1105": [
       {
@@ -5872,7 +5872,7 @@ Transition: mapped -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "The resulting file event establishes that the BITS transfer produced a local file.",
+  "rationale": "The file-creation event records a local file at the requested destination; it does not independently prove BITS produced its contents.",
   "technique_ids": [
     "T1105"
   ],
@@ -5944,7 +5944,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1105_C/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1105_C/single",
   "evidence_refs": {
     "T1105": [
       {
@@ -6055,7 +6055,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1105_C/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1105_C/contextual",
   "evidence_refs": {
     "T1105": [
       {
@@ -6146,7 +6146,7 @@ Transition: ambiguous -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1105_D/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1105_D/single",
   "evidence_refs": {
     "decision": [
       {
@@ -6290,7 +6290,7 @@ Transition: ambiguous -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1105_D/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1105_D/contextual",
   "evidence_refs": {
     "T1105": [
       {
@@ -6323,7 +6323,7 @@ Transition: ambiguous -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "The contextual process command exposes download syntax and the linked file event confirms the transfer result.",
+  "rationale": "The process-creation record contains download syntax, and a related file event records a local file at the requested destination.",
   "technique_ids": [
     "T1105"
   ],
@@ -6395,7 +6395,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1105_DEV/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1105_DEV/single",
   "evidence_refs": {
     "T1105": [
       {
@@ -6506,7 +6506,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1105_DEV/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1105_DEV/contextual",
   "evidence_refs": {
     "T1105": [
       {
@@ -6590,7 +6590,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1136_001_A/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1136_001_A/single",
   "evidence_refs": {
     "T1136.001": [
       {
@@ -6689,7 +6689,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1136_001_A/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1136_001_A/contextual",
   "evidence_refs": {
     "T1136.001": [
       {
@@ -6764,7 +6764,7 @@ Transition: ambiguous -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1136_001_B/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1136_001_B/single",
   "evidence_refs": {
     "decision": [
       {
@@ -6859,7 +6859,7 @@ Transition: ambiguous -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1136_001_B/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1136_001_B/contextual",
   "evidence_refs": {
     "T1136.001": [
       {
@@ -6951,7 +6951,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1136_001_C/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1136_001_C/single",
   "evidence_refs": {
     "T1136.001": [
       {
@@ -7058,7 +7058,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1136_001_C/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1136_001_C/contextual",
   "evidence_refs": {
     "T1136.001": [
       {
@@ -7151,7 +7151,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1136_001_DEV/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1136_001_DEV/single",
   "evidence_refs": {
     "T1136.001": [
       {
@@ -7258,7 +7258,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1136_001_DEV/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1136_001_DEV/contextual",
   "evidence_refs": {
     "T1136.001": [
       {
@@ -7332,7 +7332,7 @@ Transition: ambiguous -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1136_001_E/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1136_001_E/single",
   "evidence_refs": {
     "decision": [
       {
@@ -7427,7 +7427,7 @@ Transition: ambiguous -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1136_001_E/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1136_001_E/contextual",
   "evidence_refs": {
     "T1136.001": [
       {
@@ -7511,7 +7511,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1543_003_A/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1543_003_A/single",
   "evidence_refs": {
     "T1543.003": [
       {
@@ -7629,7 +7629,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1543_003_A/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1543_003_A/contextual",
   "evidence_refs": {
     "T1543.003": [
       {
@@ -7654,7 +7654,7 @@ Transition: mapped -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "The service manager process is linked to the 4697 installation and confirms the service creation path.",
+  "rationale": "The 4697 event records the service installation fields; a services.exe process record supplies related host and chronology context.",
   "technique_ids": [
     "T1543.003"
   ],
@@ -7718,7 +7718,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1543_003_B/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1543_003_B/single",
   "evidence_refs": {
     "T1543.003": [
       {
@@ -7731,7 +7731,7 @@ Transition: mapped -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "The 4697 record shows service installation whose image launches a command-shell payload from ProgramData.",
+  "rationale": "The 4697 record stores a service image field containing a cmd.exe invocation with a ProgramData path; this is configuration evidence, not command completion.",
   "technique_ids": [
     "T1543.003"
   ],
@@ -7835,7 +7835,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1543_003_B/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1543_003_B/contextual",
   "evidence_refs": {
     "T1543.003": [
       {
@@ -7858,7 +7858,7 @@ Transition: mapped -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "A linked cmd.exe process confirms that the installed service executes its command-shell image.",
+  "rationale": "A later process-creation event records cmd.exe with the configured service command line; the available records do not establish that the service launched it or that the command completed.",
   "technique_ids": [
     "T1543.003"
   ],
@@ -7922,7 +7922,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1543_003_D/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1543_003_D/single",
   "evidence_refs": {
     "T1543.003": [
       {
@@ -7935,7 +7935,7 @@ Transition: mapped -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "The service-install event records a service-hosted DLL path in a user-writable location under LocalSystem.",
+  "rationale": "The service-install event records a LocalSystem service configuration containing a DLL path in a user-writable location; it does not show that svchost loaded the DLL.",
   "technique_ids": [
     "T1543.003"
   ],
@@ -8025,7 +8025,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1543_003_D/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1543_003_D/contextual",
   "evidence_refs": {
     "T1543.003": [
       {
@@ -8045,7 +8045,7 @@ Transition: mapped -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "The related DLL file event corroborates the installed service image and service-hosted execution.",
+  "rationale": "The related DLL file event corroborates the installed service image path; it does not establish that svchost loaded the DLL.",
   "technique_ids": [
     "T1543.003"
   ],
@@ -8109,7 +8109,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1543_003_DEV/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1543_003_DEV/single",
   "evidence_refs": {
     "T1543.003": [
       {
@@ -8212,7 +8212,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1543_003_DEV/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1543_003_DEV/contextual",
   "evidence_refs": {
     "T1543.003": [
       {
@@ -8296,7 +8296,7 @@ Transition: ambiguous -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1543_003_E/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1543_003_E/single",
   "evidence_refs": {
     "decision": [
       {
@@ -8308,7 +8308,7 @@ Transition: ambiguous -> mapped
     ]
   },
   "label_status": "ambiguous",
-  "rationale": "A service-hosted DLL under ProgramData is suspicious but the single service-install record does not prove abuse.",
+  "rationale": "The 4697 record configures a service image that references a DLL under ProgramData; it does not establish runtime loading or abuse.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_cd970690"
@@ -8437,7 +8437,7 @@ Transition: ambiguous -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1543_003_E/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1543_003_E/contextual",
   "evidence_refs": {
     "T1543.003": [
       {
@@ -8465,7 +8465,7 @@ Transition: ambiguous -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "The DLL creation and subsequent service-host process together establish service-based execution of the staged image.",
+  "rationale": "The DLL creation and later svchost process-creation record corroborate the configured service image path; they do not establish that the service loaded the staged image.",
   "technique_ids": [
     "T1543.003"
   ],
@@ -8527,7 +8527,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1547_001_A/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1547_001_A/single",
   "evidence_refs": {
     "T1547.001": [
       {
@@ -8642,7 +8642,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1547_001_A/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1547_001_A/contextual",
   "evidence_refs": {
     "T1547.001": [
       {
@@ -8725,7 +8725,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1547_001_B/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1547_001_B/single",
   "evidence_refs": {
     "T1547.001": [
       {
@@ -8836,7 +8836,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1547_001_B/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1547_001_B/contextual",
   "evidence_refs": {
     "T1547.001": [
       {
@@ -8918,7 +8918,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1547_001_C/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1547_001_C/single",
   "evidence_refs": {
     "T1547.001": [
       {
@@ -9020,7 +9020,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1547_001_C/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1547_001_C/contextual",
   "evidence_refs": {
     "T1547.001": [
       {
@@ -9101,7 +9101,7 @@ Transition: mapped -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1547_001_DEV/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1547_001_DEV/single",
   "evidence_refs": {
     "T1547.001": [
       {
@@ -9212,7 +9212,7 @@ Transition: mapped -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1547_001_DEV/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1547_001_DEV/contextual",
   "evidence_refs": {
     "T1547.001": [
       {
@@ -9294,7 +9294,7 @@ Transition: ambiguous -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1547_001_E/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1547_001_E/single",
   "evidence_refs": {
     "decision": [
       {
@@ -9434,7 +9434,7 @@ Transition: ambiguous -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1547_001_E/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1547_001_E/contextual",
   "evidence_refs": {
     "T1547.001": [
       {
@@ -9463,7 +9463,7 @@ Transition: ambiguous -> mapped
     ]
   },
   "label_status": "mapped",
-  "rationale": "File creation at the target path followed by execution of the RunOnce payload establishes startup persistence in context.",
+  "rationale": "The RunOnce value names the target path and a later process-creation record matches that image. Together they support an auto-start configuration, though they do not prove the logon trigger caused that process start.",
   "technique_ids": [
     "T1547.001"
   ],
@@ -9515,7 +9515,7 @@ Transition: ambiguous -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1685_005_A/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1685_005_A/single",
   "evidence_refs": {
     "decision": [
       {
@@ -9608,7 +9608,7 @@ Transition: ambiguous -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1685_005_A/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1685_005_A/contextual",
   "evidence_refs": {
     "T1685.005": [
       {
@@ -9685,7 +9685,7 @@ Transition: ambiguous -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1685_005_B/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1685_005_B/single",
   "evidence_refs": {
     "decision": [
       {
@@ -9786,7 +9786,7 @@ Transition: ambiguous -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1685_005_B/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1685_005_B/contextual",
   "evidence_refs": {
     "T1685.005": [
       {
@@ -9863,7 +9863,7 @@ Transition: ambiguous -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1685_005_C/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1685_005_C/single",
   "evidence_refs": {
     "decision": [
       {
@@ -9956,7 +9956,7 @@ Transition: ambiguous -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1685_005_C/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1685_005_C/contextual",
   "evidence_refs": {
     "T1685.005": [
       {
@@ -10033,7 +10033,7 @@ Transition: ambiguous -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1685_005_DEV/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1685_005_DEV/single",
   "evidence_refs": {
     "decision": [
       {
@@ -10126,7 +10126,7 @@ Transition: ambiguous -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1685_005_DEV/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1685_005_DEV/contextual",
   "evidence_refs": {
     "T1685.005": [
       {
@@ -10202,7 +10202,7 @@ Transition: ambiguous -> mapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1685_005_E/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1685_005_E/single",
   "evidence_refs": {
     "decision": [
       {
@@ -10332,7 +10332,7 @@ Transition: ambiguous -> mapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_T1685_005_E/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_T1685_005_E/contextual",
   "evidence_refs": {
     "T1685.005": [
       {
@@ -10388,7 +10388,7 @@ Transition: unmapped -> unmapped
     "event_id": "evt_1c8b917e",
     "event_record_id": 114561629516018,
     "fields": {
-      "CommandLine": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoProfile -File \"C:\\Program Files\\Contoso\\maintenance.ps1\" -Resource aspen_elm_spruce_0057e7",
+      "CommandLine": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoProfile -File \"C:\\ProgramData\\aspen_elm_spruce_0057e7\\run.ps1\" -Resource aspen_elm_spruce_0057e7",
       "Computer": "WEB01",
       "EventID": 1,
       "Hashes": "SHA256=c515e8e7d219f83538d2b67a22458dcf00e518f53376ac1706c83df3948be2ed",
@@ -10415,7 +10415,7 @@ Transition: unmapped -> unmapped
 ```json
 [
   {
-    "CommandLine": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoProfile -File \"C:\\Program Files\\Contoso\\maintenance.ps1\" -Resource aspen_elm_spruce_0057e7",
+    "CommandLine": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoProfile -File \"C:\\ProgramData\\aspen_elm_spruce_0057e7\\run.ps1\" -Resource aspen_elm_spruce_0057e7",
     "Computer": "WEB01",
     "EventID": 1,
     "Hashes": "SHA256=c515e8e7d219f83538d2b67a22458dcf00e518f53376ac1706c83df3948be2ed",
@@ -10437,7 +10437,7 @@ Transition: unmapped -> unmapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_A/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_A/single",
   "evidence_refs": {
     "decision": [
       {
@@ -10451,7 +10451,7 @@ Transition: unmapped -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "The signed maintenance script is under Program Files and has no encoded, download, persistence, or account-creation indicator.",
+  "rationale": "The maintenance script is under ProgramData and has no encoded, download, persistence, or account-creation indicator.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_5f49a5b2"
@@ -10493,7 +10493,7 @@ Transition: unmapped -> unmapped
     "event_id": "evt_1c8b917e",
     "event_record_id": 114561629516018,
     "fields": {
-      "CommandLine": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoProfile -File \"C:\\Program Files\\Contoso\\maintenance.ps1\" -Resource aspen_elm_spruce_0057e7",
+      "CommandLine": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoProfile -File \"C:\\ProgramData\\aspen_elm_spruce_0057e7\\run.ps1\" -Resource aspen_elm_spruce_0057e7",
       "Computer": "WEB01",
       "EventID": 1,
       "Hashes": "SHA256=c515e8e7d219f83538d2b67a22458dcf00e518f53376ac1706c83df3948be2ed",
@@ -10537,7 +10537,7 @@ Transition: unmapped -> unmapped
     "UtcTime": "2026-01-08T12:07:57Z"
   },
   {
-    "CommandLine": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoProfile -File \"C:\\Program Files\\Contoso\\maintenance.ps1\" -Resource aspen_elm_spruce_0057e7",
+    "CommandLine": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoProfile -File \"C:\\ProgramData\\aspen_elm_spruce_0057e7\\run.ps1\" -Resource aspen_elm_spruce_0057e7",
     "Computer": "WEB01",
     "EventID": 1,
     "Hashes": "SHA256=c515e8e7d219f83538d2b67a22458dcf00e518f53376ac1706c83df3948be2ed",
@@ -10559,7 +10559,7 @@ Transition: unmapped -> unmapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_A/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_A/contextual",
   "evidence_refs": {
     "decision": [
       {
@@ -10582,7 +10582,7 @@ Transition: unmapped -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "Context confirms the same benign routine signed powershell maintenance workflow with an explicit maintenance process or actor.",
+  "rationale": "Context confirms the same routine PowerShell maintenance workflow with an explicit maintenance process or actor.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_eb94725a"
@@ -10632,7 +10632,7 @@ Transition: ambiguous -> unmapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_ACCT/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_ACCT/single",
   "evidence_refs": {
     "decision": [
       {
@@ -10662,12 +10662,12 @@ Transition: ambiguous -> unmapped
     "event_id": "evt_5b6ccda0",
     "event_record_id": 7826572170638,
     "fields": {
-      "CommandLine": "\"C:\\Program Files\\Contoso\\account-provisioner.exe\" --create backupsvc --role backup --scope cedar_spruce_elm_105c48",
+      "CommandLine": "C:\\ProgramData\\IAM\\account-provisioner.exe --create backupsvc --role backup --scope cedar_spruce_elm_105c48",
       "Computer": "WORKSTATION01",
       "EventID": 4688,
       "NewProcessId": "0x94e8",
-      "NewProcessName": "C:\\Program Files\\Contoso\\account-provisioner.exe",
-      "ParentProcessName": "C:\\Program Files\\Contoso\\management-agent.exe",
+      "NewProcessName": "C:\\ProgramData\\IAM\\account-provisioner.exe",
+      "ParentProcessName": "C:\\ProgramData\\IAM\\management-agent.exe",
       "ProcessId": "0x94e0",
       "SubjectLogonId": "0x94e5",
       "SubjectUserName": "Administrator",
@@ -10702,12 +10702,12 @@ Transition: ambiguous -> unmapped
 ```json
 [
   {
-    "CommandLine": "\"C:\\Program Files\\Contoso\\account-provisioner.exe\" --create backupsvc --role backup --scope cedar_spruce_elm_105c48",
+    "CommandLine": "C:\\ProgramData\\IAM\\account-provisioner.exe --create backupsvc --role backup --scope cedar_spruce_elm_105c48",
     "Computer": "WORKSTATION01",
     "EventID": 4688,
     "NewProcessId": "0x94e8",
-    "NewProcessName": "C:\\Program Files\\Contoso\\account-provisioner.exe",
-    "ParentProcessName": "C:\\Program Files\\Contoso\\management-agent.exe",
+    "NewProcessName": "C:\\ProgramData\\IAM\\account-provisioner.exe",
+    "ParentProcessName": "C:\\ProgramData\\IAM\\management-agent.exe",
     "ProcessId": "0x94e0",
     "SubjectLogonId": "0x94e5",
     "SubjectUserName": "Administrator",
@@ -10728,7 +10728,7 @@ Transition: ambiguous -> unmapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_ACCT/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_ACCT/contextual",
   "evidence_refs": {
     "decision": [
       {
@@ -10756,7 +10756,7 @@ Transition: ambiguous -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "The linked Contoso account-provisioner process, approved management parent, explicit role, ordering, host, and logon establish an affirmative synthetic provisioning workflow.",
+  "rationale": "The linked account-provisioning process, management parent, explicit role, ordering, host, and logon match the approved synthetic provisioning case; external authorization is not independently recorded.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_be2291d1"
@@ -10816,7 +10816,7 @@ Transition: unmapped -> unmapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_B/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_B/single",
   "evidence_refs": {
     "decision": [
       {
@@ -10923,7 +10923,7 @@ Transition: unmapped -> unmapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_B/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_B/contextual",
   "evidence_refs": {
     "decision": [
       {
@@ -10948,7 +10948,7 @@ Transition: unmapped -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "Context confirms the same benign normal cmd-based dns administration workflow with an explicit maintenance process or actor.",
+  "rationale": "The helpdesk DNS-diagnostic invocation and related cmd.exe context match the approved synthetic local-maintenance case; external authorization is not independently recorded.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_01441243"
@@ -11000,7 +11000,7 @@ Transition: unmapped -> unmapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_C/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_C/single",
   "evidence_refs": {
     "decision": [
       {
@@ -11106,7 +11106,7 @@ Transition: unmapped -> unmapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_C/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_C/contextual",
   "evidence_refs": {
     "decision": [
       {
@@ -11129,7 +11129,7 @@ Transition: unmapped -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "Context confirms the same benign standard scheduled disk-maintenance task workflow with an explicit maintenance process or actor.",
+  "rationale": "The task configuration and related cleanmgr process-creation record match the approved synthetic disk-maintenance case; the task trigger is not directly observed.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_6e4915f7"
@@ -11148,7 +11148,7 @@ Transition: unmapped -> unmapped
     "event_id": "evt_cbaa3e78",
     "event_record_id": 6296078374082,
     "fields": {
-      "CommandLine": "C:\\Windows\\System32\\cmd.exe /c dir C:\\Program Files\\Contoso\\beech_aspen_holly_01bc89",
+      "CommandLine": "C:\\Windows\\System32\\cmd.exe /c dir C:\\ProgramData\\beech_aspen_holly_01bc89",
       "Computer": "DB01",
       "EventID": 4688,
       "NewProcessId": "0x9598",
@@ -11171,7 +11171,7 @@ Transition: unmapped -> unmapped
 ```json
 [
   {
-    "CommandLine": "C:\\Windows\\System32\\cmd.exe /c dir C:\\Program Files\\Contoso\\beech_aspen_holly_01bc89",
+    "CommandLine": "C:\\Windows\\System32\\cmd.exe /c dir C:\\ProgramData\\beech_aspen_holly_01bc89",
     "Computer": "DB01",
     "EventID": 4688,
     "NewProcessId": "0x9598",
@@ -11189,7 +11189,7 @@ Transition: unmapped -> unmapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_CMD/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_CMD/single",
   "evidence_refs": {
     "decision": [
       {
@@ -11203,7 +11203,7 @@ Transition: unmapped -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "The command shell lists a managed software directory and does not stage or execute a payload.",
+  "rationale": "The command shell records a directory listing under a maintenance path; no selected ATT&CK behavior is visible in this view.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_3045d83b"
@@ -11241,7 +11241,7 @@ Transition: unmapped -> unmapped
     "event_id": "evt_cbaa3e78",
     "event_record_id": 6296078374082,
     "fields": {
-      "CommandLine": "C:\\Windows\\System32\\cmd.exe /c dir C:\\Program Files\\Contoso\\beech_aspen_holly_01bc89",
+      "CommandLine": "C:\\Windows\\System32\\cmd.exe /c dir C:\\ProgramData\\beech_aspen_holly_01bc89",
       "Computer": "DB01",
       "EventID": 4688,
       "NewProcessId": "0x9598",
@@ -11277,7 +11277,7 @@ Transition: unmapped -> unmapped
     "TimeCreated": "2026-05-12T07:09:17Z"
   },
   {
-    "CommandLine": "C:\\Windows\\System32\\cmd.exe /c dir C:\\Program Files\\Contoso\\beech_aspen_holly_01bc89",
+    "CommandLine": "C:\\Windows\\System32\\cmd.exe /c dir C:\\ProgramData\\beech_aspen_holly_01bc89",
     "Computer": "DB01",
     "EventID": 4688,
     "NewProcessId": "0x9598",
@@ -11295,7 +11295,7 @@ Transition: unmapped -> unmapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_CMD/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_CMD/contextual",
   "evidence_refs": {
     "decision": [
       {
@@ -11318,7 +11318,7 @@ Transition: unmapped -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "Context confirms the same benign routine cmd directory listing workflow with an explicit maintenance process or actor.",
+  "rationale": "The Explorer selection and cmd.exe directory-listing invocation share the host and helpdesk context expected by the synthetic maintenance case; authorization is not independently recorded.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_537e907a"
@@ -11340,8 +11340,8 @@ Transition: unmapped -> unmapped
       "Computer": "WORKSTATION01",
       "EventID": 4697,
       "ServiceAccount": "LocalSystem",
-      "ServiceFileName": "\"C:\\Program Files\\Contoso\\ContosoAgent.exe\" --instance larch_spruce_elm_00ccae",
-      "ServiceName": "Contoso_larch_spruce_elm_00ccae",
+      "ServiceFileName": "C:\\ProgramData\\larch_spruce_elm_00ccae\\agent.exe --instance larch_spruce_elm_00ccae",
+      "ServiceName": "Agent_larch_spruce_elm_00ccae",
       "ServiceStartType": "2",
       "ServiceType": "0x10",
       "SubjectDomainName": "WORKSTATION01",
@@ -11363,8 +11363,8 @@ Transition: unmapped -> unmapped
     "Computer": "WORKSTATION01",
     "EventID": 4697,
     "ServiceAccount": "LocalSystem",
-    "ServiceFileName": "\"C:\\Program Files\\Contoso\\ContosoAgent.exe\" --instance larch_spruce_elm_00ccae",
-    "ServiceName": "Contoso_larch_spruce_elm_00ccae",
+    "ServiceFileName": "C:\\ProgramData\\larch_spruce_elm_00ccae\\agent.exe --instance larch_spruce_elm_00ccae",
+    "ServiceName": "Agent_larch_spruce_elm_00ccae",
     "ServiceStartType": "2",
     "ServiceType": "0x10",
     "SubjectDomainName": "WORKSTATION01",
@@ -11378,7 +11378,7 @@ Transition: unmapped -> unmapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_D/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_D/single",
   "evidence_refs": {
     "decision": [
       {
@@ -11393,7 +11393,7 @@ Transition: unmapped -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "The service binary is in a protected vendor directory and its deployment is a normal managed installation.",
+  "rationale": "The 4697 event records an image path under ProgramData and an Administrator actor; this alone does not establish signer authenticity or deployment authorization.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_58e94747"
@@ -11412,8 +11412,8 @@ Transition: unmapped -> unmapped
       "Computer": "WORKSTATION01",
       "EventID": 4697,
       "ServiceAccount": "LocalSystem",
-      "ServiceFileName": "\"C:\\Program Files\\Contoso\\ContosoAgent.exe\" --instance larch_spruce_elm_00ccae",
-      "ServiceName": "Contoso_larch_spruce_elm_00ccae",
+      "ServiceFileName": "C:\\ProgramData\\larch_spruce_elm_00ccae\\agent.exe --instance larch_spruce_elm_00ccae",
+      "ServiceName": "Agent_larch_spruce_elm_00ccae",
       "ServiceStartType": "2",
       "ServiceType": "0x10",
       "SubjectDomainName": "WORKSTATION01",
@@ -11431,11 +11431,11 @@ Transition: unmapped -> unmapped
     "event_id": "evt_aca61472",
     "event_record_id": 21452330890772,
     "fields": {
-      "CommandLine": "\"C:\\Program Files\\Contoso\\ContosoAgent.exe\" --instance larch_spruce_elm_00ccae",
+      "CommandLine": "C:\\ProgramData\\larch_spruce_elm_00ccae\\agent.exe --instance larch_spruce_elm_00ccae",
       "Computer": "WORKSTATION01",
       "EventID": 1,
-      "Hashes": "SHA256=8edc26ada7c28faf078a9c2bfb4b5b6450b100c1ee27889f7501ae6db22a70f8",
-      "Image": "C:\\Program Files\\Contoso\\ContosoAgent.exe",
+      "Hashes": "SHA256=8b4a2219aab6c03ed48dcf2160d407cc5e6917dd6864d0959fba4fb5b14e0adf",
+      "Image": "C:\\ProgramData\\larch_spruce_elm_00ccae\\agent.exe",
       "LogonGuid": "{50d277cd-ebfc-4809-e41f-c5f0e181578a}",
       "LogonId": "0x1d3d",
       "ParentCommandLine": "C:\\Windows\\System32\\services.exe",
@@ -11461,8 +11461,8 @@ Transition: unmapped -> unmapped
     "Computer": "WORKSTATION01",
     "EventID": 4697,
     "ServiceAccount": "LocalSystem",
-    "ServiceFileName": "\"C:\\Program Files\\Contoso\\ContosoAgent.exe\" --instance larch_spruce_elm_00ccae",
-    "ServiceName": "Contoso_larch_spruce_elm_00ccae",
+    "ServiceFileName": "C:\\ProgramData\\larch_spruce_elm_00ccae\\agent.exe --instance larch_spruce_elm_00ccae",
+    "ServiceName": "Agent_larch_spruce_elm_00ccae",
     "ServiceStartType": "2",
     "ServiceType": "0x10",
     "SubjectDomainName": "WORKSTATION01",
@@ -11471,11 +11471,11 @@ Transition: unmapped -> unmapped
     "TimeCreated": "2026-03-27T17:03:56Z"
   },
   {
-    "CommandLine": "\"C:\\Program Files\\Contoso\\ContosoAgent.exe\" --instance larch_spruce_elm_00ccae",
+    "CommandLine": "C:\\ProgramData\\larch_spruce_elm_00ccae\\agent.exe --instance larch_spruce_elm_00ccae",
     "Computer": "WORKSTATION01",
     "EventID": 1,
-    "Hashes": "SHA256=8edc26ada7c28faf078a9c2bfb4b5b6450b100c1ee27889f7501ae6db22a70f8",
-    "Image": "C:\\Program Files\\Contoso\\ContosoAgent.exe",
+    "Hashes": "SHA256=8b4a2219aab6c03ed48dcf2160d407cc5e6917dd6864d0959fba4fb5b14e0adf",
+    "Image": "C:\\ProgramData\\larch_spruce_elm_00ccae\\agent.exe",
     "LogonGuid": "{50d277cd-ebfc-4809-e41f-c5f0e181578a}",
     "LogonId": "0x1d3d",
     "ParentCommandLine": "C:\\Windows\\System32\\services.exe",
@@ -11493,7 +11493,7 @@ Transition: unmapped -> unmapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_D/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_D/contextual",
   "evidence_refs": {
     "decision": [
       {
@@ -11517,7 +11517,7 @@ Transition: unmapped -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "Context confirms the same benign legitimate signed service deployment workflow with an explicit maintenance process or actor.",
+  "rationale": "Context contains matching service-installation and process-creation records for the same image and arguments; this is consistent with the approved synthetic deployment case but does not prove that the service launched the process.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_17de1bac"
@@ -11540,7 +11540,7 @@ Transition: unmapped -> unmapped
       "DestinationIp": "198.51.100.20",
       "DestinationPort": 443,
       "EventID": 3,
-      "Image": "C:\\Program Files\\Contoso\\ContosoUpdater.exe",
+      "Image": "C:\\ProgramData\\holly_maple_spruce_075e78\\updater.exe",
       "ProcessGuid": "{f20c913f-07b9-4f4c-2035-811cffc82e2d}",
       "ProcessId": 69568,
       "Protocol": "tcp",
@@ -11564,7 +11564,7 @@ Transition: unmapped -> unmapped
     "DestinationIp": "198.51.100.20",
     "DestinationPort": 443,
     "EventID": 3,
-    "Image": "C:\\Program Files\\Contoso\\ContosoUpdater.exe",
+    "Image": "C:\\ProgramData\\holly_maple_spruce_075e78\\updater.exe",
     "ProcessGuid": "{f20c913f-07b9-4f4c-2035-811cffc82e2d}",
     "ProcessId": 69568,
     "Protocol": "tcp",
@@ -11579,7 +11579,7 @@ Transition: unmapped -> unmapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_DEV/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_DEV/single",
   "evidence_refs": {
     "decision": [
       {
@@ -11592,7 +11592,7 @@ Transition: unmapped -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "The network event is paired with a signed vendor updater and an allowlisted endpoint, supporting a benign update workflow.",
+  "rationale": "The network event is paired with an updater process and a documentation-only endpoint; telemetry does not establish signer authenticity or downloaded file contents.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_0bec9523"
@@ -11612,7 +11612,7 @@ Transition: unmapped -> unmapped
       "DestinationIp": "198.51.100.20",
       "DestinationPort": 443,
       "EventID": 3,
-      "Image": "C:\\Program Files\\Contoso\\ContosoUpdater.exe",
+      "Image": "C:\\ProgramData\\holly_maple_spruce_075e78\\updater.exe",
       "ProcessGuid": "{f20c913f-07b9-4f4c-2035-811cffc82e2d}",
       "ProcessId": 69568,
       "Protocol": "tcp",
@@ -11633,10 +11633,10 @@ Transition: unmapped -> unmapped
     "fields": {
       "Computer": "APPSVR01",
       "EventID": 11,
-      "Image": "C:\\Program Files\\Contoso\\ContosoUpdater.exe",
+      "Image": "C:\\ProgramData\\holly_maple_spruce_075e78\\updater.exe",
       "ProcessGuid": "{f20c913f-07b9-4f4c-2035-811cffc82e2d}",
       "ProcessId": 69568,
-      "TargetFilename": "C:\\Program Files\\Contoso\\Cache\\holly_maple_spruce_075e78.dat",
+      "TargetFilename": "C:\\ProgramData\\holly_maple_spruce_075e78\\Cache\\holly_maple_spruce_075e78.dat",
       "User": "wlee",
       "UtcTime": "2026-02-28T10:30:19Z"
     },
@@ -11655,7 +11655,7 @@ Transition: unmapped -> unmapped
     "DestinationIp": "198.51.100.20",
     "DestinationPort": 443,
     "EventID": 3,
-    "Image": "C:\\Program Files\\Contoso\\ContosoUpdater.exe",
+    "Image": "C:\\ProgramData\\holly_maple_spruce_075e78\\updater.exe",
     "ProcessGuid": "{f20c913f-07b9-4f4c-2035-811cffc82e2d}",
     "ProcessId": 69568,
     "Protocol": "tcp",
@@ -11667,10 +11667,10 @@ Transition: unmapped -> unmapped
   {
     "Computer": "APPSVR01",
     "EventID": 11,
-    "Image": "C:\\Program Files\\Contoso\\ContosoUpdater.exe",
+    "Image": "C:\\ProgramData\\holly_maple_spruce_075e78\\updater.exe",
     "ProcessGuid": "{f20c913f-07b9-4f4c-2035-811cffc82e2d}",
     "ProcessId": 69568,
-    "TargetFilename": "C:\\Program Files\\Contoso\\Cache\\holly_maple_spruce_075e78.dat",
+    "TargetFilename": "C:\\ProgramData\\holly_maple_spruce_075e78\\Cache\\holly_maple_spruce_075e78.dat",
     "User": "wlee",
     "UtcTime": "2026-02-28T10:30:19Z"
   }
@@ -11680,7 +11680,7 @@ Transition: unmapped -> unmapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_DEV/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_DEV/contextual",
   "evidence_refs": {
     "decision": [
       {
@@ -11704,7 +11704,7 @@ Transition: unmapped -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "The contextual cache file confirms ordinary updater activity without suspicious payload or persistence evidence.",
+  "rationale": "The related cache-file event shares the updater process identity; the available evidence does not establish file contents or signer authenticity.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_a4ea38f3"
@@ -11727,7 +11727,7 @@ Transition: unmapped -> unmapped
       "DestinationIp": "203.0.113.20",
       "DestinationPort": 443,
       "EventID": 3,
-      "Image": "C:\\Program Files\\Contoso\\ContosoUpdater.exe",
+      "Image": "C:\\ProgramData\\cedar_maple_fir_164235\\updater.exe",
       "ProcessGuid": "{9f5e85ab-8113-fc43-6d61-69d970c9bac8}",
       "ProcessId": 61888,
       "Protocol": "tcp",
@@ -11751,7 +11751,7 @@ Transition: unmapped -> unmapped
     "DestinationIp": "203.0.113.20",
     "DestinationPort": 443,
     "EventID": 3,
-    "Image": "C:\\Program Files\\Contoso\\ContosoUpdater.exe",
+    "Image": "C:\\ProgramData\\cedar_maple_fir_164235\\updater.exe",
     "ProcessGuid": "{9f5e85ab-8113-fc43-6d61-69d970c9bac8}",
     "ProcessId": 61888,
     "Protocol": "tcp",
@@ -11766,7 +11766,7 @@ Transition: unmapped -> unmapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_DEV/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_DEV/single",
   "evidence_refs": {
     "decision": [
       {
@@ -11779,7 +11779,7 @@ Transition: unmapped -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "The network event is paired with a signed vendor updater and an allowlisted endpoint, supporting a benign update workflow.",
+  "rationale": "The network event is paired with an updater process and a documentation-only endpoint; telemetry does not establish signer authenticity or downloaded file contents.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_5311b0eb"
@@ -11799,7 +11799,7 @@ Transition: unmapped -> unmapped
       "DestinationIp": "203.0.113.20",
       "DestinationPort": 443,
       "EventID": 3,
-      "Image": "C:\\Program Files\\Contoso\\ContosoUpdater.exe",
+      "Image": "C:\\ProgramData\\cedar_maple_fir_164235\\updater.exe",
       "ProcessGuid": "{9f5e85ab-8113-fc43-6d61-69d970c9bac8}",
       "ProcessId": 61888,
       "Protocol": "tcp",
@@ -11820,10 +11820,10 @@ Transition: unmapped -> unmapped
     "fields": {
       "Computer": "DB01",
       "EventID": 11,
-      "Image": "C:\\Program Files\\Contoso\\ContosoUpdater.exe",
+      "Image": "C:\\ProgramData\\cedar_maple_fir_164235\\updater.exe",
       "ProcessGuid": "{9f5e85ab-8113-fc43-6d61-69d970c9bac8}",
       "ProcessId": 61888,
-      "TargetFilename": "C:\\Program Files\\Contoso\\Cache\\cedar_maple_fir_164235.dat",
+      "TargetFilename": "C:\\ProgramData\\cedar_maple_fir_164235\\Cache\\cedar_maple_fir_164235.dat",
       "User": "agarcia",
       "UtcTime": "2026-01-13T06:22:47Z"
     },
@@ -11842,7 +11842,7 @@ Transition: unmapped -> unmapped
     "DestinationIp": "203.0.113.20",
     "DestinationPort": 443,
     "EventID": 3,
-    "Image": "C:\\Program Files\\Contoso\\ContosoUpdater.exe",
+    "Image": "C:\\ProgramData\\cedar_maple_fir_164235\\updater.exe",
     "ProcessGuid": "{9f5e85ab-8113-fc43-6d61-69d970c9bac8}",
     "ProcessId": 61888,
     "Protocol": "tcp",
@@ -11854,10 +11854,10 @@ Transition: unmapped -> unmapped
   {
     "Computer": "DB01",
     "EventID": 11,
-    "Image": "C:\\Program Files\\Contoso\\ContosoUpdater.exe",
+    "Image": "C:\\ProgramData\\cedar_maple_fir_164235\\updater.exe",
     "ProcessGuid": "{9f5e85ab-8113-fc43-6d61-69d970c9bac8}",
     "ProcessId": 61888,
-    "TargetFilename": "C:\\Program Files\\Contoso\\Cache\\cedar_maple_fir_164235.dat",
+    "TargetFilename": "C:\\ProgramData\\cedar_maple_fir_164235\\Cache\\cedar_maple_fir_164235.dat",
     "User": "agarcia",
     "UtcTime": "2026-01-13T06:22:47Z"
   }
@@ -11867,7 +11867,7 @@ Transition: unmapped -> unmapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_DEV/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_DEV/contextual",
   "evidence_refs": {
     "decision": [
       {
@@ -11891,7 +11891,7 @@ Transition: unmapped -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "The contextual cache file confirms ordinary updater activity without suspicious payload or persistence evidence.",
+  "rationale": "The related cache-file event shares the updater process identity; the available evidence does not establish file contents or signer authenticity.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_3a7b7e4d"
@@ -11941,7 +11941,7 @@ Transition: ambiguous -> unmapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_E/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_E/single",
   "evidence_refs": {
     "decision": [
       {
@@ -11976,7 +11976,7 @@ Transition: ambiguous -> unmapped
       "EventID": 4688,
       "NewProcessId": "0x7fb4",
       "NewProcessName": "C:\\Windows\\System32\\net.exe",
-      "ParentProcessName": "C:\\Program Files\\Contoso\\IAM\\Provisioner.exe",
+      "ParentProcessName": "C:\\ProgramData\\IAM\\Provisioner.exe",
       "ProcessId": "0x7fac",
       "SubjectLogonId": "0x7fb1",
       "SubjectUserName": "helpdesk",
@@ -12016,7 +12016,7 @@ Transition: ambiguous -> unmapped
     "EventID": 4688,
     "NewProcessId": "0x7fb4",
     "NewProcessName": "C:\\Windows\\System32\\net.exe",
-    "ParentProcessName": "C:\\Program Files\\Contoso\\IAM\\Provisioner.exe",
+    "ParentProcessName": "C:\\ProgramData\\IAM\\Provisioner.exe",
     "ProcessId": "0x7fac",
     "SubjectLogonId": "0x7fb1",
     "SubjectUserName": "helpdesk",
@@ -12037,7 +12037,7 @@ Transition: ambiguous -> unmapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_E/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_E/contextual",
   "evidence_refs": {
     "decision": [
       {
@@ -12063,7 +12063,7 @@ Transition: ambiguous -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "The enterprise provisioning parent process (Provisioner.exe), expected net.exe child, explicit command (net user jdoe /add), temporal ordering, and host linkage establish an authorized employee onboarding workflow.",
+  "rationale": "The Provisioner.exe parent, net.exe process-creation record, explicit account-add command, temporal order, and host linkage are consistent with the approved synthetic onboarding case; external authorization is not independently recorded.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_c9914392"
@@ -12111,7 +12111,7 @@ Transition: ambiguous -> unmapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_EVTCLR/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_EVTCLR/single",
   "evidence_refs": {
     "decision": [
       {
@@ -12144,8 +12144,8 @@ Transition: ambiguous -> unmapped
       "EventID": 4698,
       "SubjectLogonId": "0x12939",
       "SubjectUserName": "SYSTEM",
-      "TaskContent": "<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\"><Triggers><BootTrigger><Enabled>true</Enabled></BootTrigger></Triggers><Settings><Hidden>false</Hidden></Settings><Actions><Exec><Command>C:\\Program Files\\Contoso\\LogMaintenance\\logrotate.exe</Command><Arguments>--clear Security --archive C:\\ProgramData\\oak_yew_alder_2d4a2c\\retention.evtx</Arguments></Exec></Actions></Task>",
-      "TaskName": "\\Contoso\\SecurityLogRetention_oak_yew_alder_2d4a2c",
+      "TaskContent": "<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\"><Triggers><BootTrigger><Enabled>true</Enabled></BootTrigger></Triggers><Settings><Hidden>false</Hidden></Settings><Actions><Exec><Command>C:\\ProgramData\\oak_yew_alder_2d4a2c\\logrotate.exe</Command><Arguments>--clear Security --archive C:\\ProgramData\\oak_yew_alder_2d4a2c\\retention.evtx</Arguments></Exec></Actions></Task>",
+      "TaskName": "\\LogRetention_oak_yew_alder_2d4a2c",
       "TimeCreated": "2026-04-23T01:49:32Z"
     },
     "provider": "Microsoft-Windows-Security-Auditing",
@@ -12158,11 +12158,11 @@ Transition: ambiguous -> unmapped
     "event_id": "evt_3d3a8f91",
     "event_record_id": 256057981831155,
     "fields": {
-      "CommandLine": "\"C:\\Program Files\\Contoso\\LogMaintenance\\logrotate.exe\" --clear Security --archive C:\\ProgramData\\oak_yew_alder_2d4a2c\\retention.evtx",
+      "CommandLine": "C:\\ProgramData\\oak_yew_alder_2d4a2c\\logrotate.exe --clear Security --archive C:\\ProgramData\\oak_yew_alder_2d4a2c\\retention.evtx",
       "Computer": "DB01",
       "EventID": 1,
-      "Hashes": "SHA256=8f9c660527713b3522aaa984076a1196bbe07e925f108cc5d06bbf08a42c9562",
-      "Image": "C:\\Program Files\\Contoso\\LogMaintenance\\logrotate.exe",
+      "Hashes": "SHA256=e8c112a6885eb75e604c6403e6ac1eed623cb2c87448a3f731df05ffd642a409",
+      "Image": "C:\\ProgramData\\oak_yew_alder_2d4a2c\\logrotate.exe",
       "LogonGuid": "{9ede764d-7d53-5673-b5d5-501e8f94e508}",
       "LogonId": "0x12939",
       "ParentCommandLine": "C:\\Windows\\System32\\taskeng.exe",
@@ -12205,16 +12205,16 @@ Transition: ambiguous -> unmapped
     "EventID": 4698,
     "SubjectLogonId": "0x12939",
     "SubjectUserName": "SYSTEM",
-    "TaskContent": "<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\"><Triggers><BootTrigger><Enabled>true</Enabled></BootTrigger></Triggers><Settings><Hidden>false</Hidden></Settings><Actions><Exec><Command>C:\\Program Files\\Contoso\\LogMaintenance\\logrotate.exe</Command><Arguments>--clear Security --archive C:\\ProgramData\\oak_yew_alder_2d4a2c\\retention.evtx</Arguments></Exec></Actions></Task>",
-    "TaskName": "\\Contoso\\SecurityLogRetention_oak_yew_alder_2d4a2c",
+    "TaskContent": "<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\"><Triggers><BootTrigger><Enabled>true</Enabled></BootTrigger></Triggers><Settings><Hidden>false</Hidden></Settings><Actions><Exec><Command>C:\\ProgramData\\oak_yew_alder_2d4a2c\\logrotate.exe</Command><Arguments>--clear Security --archive C:\\ProgramData\\oak_yew_alder_2d4a2c\\retention.evtx</Arguments></Exec></Actions></Task>",
+    "TaskName": "\\LogRetention_oak_yew_alder_2d4a2c",
     "TimeCreated": "2026-04-23T01:49:32Z"
   },
   {
-    "CommandLine": "\"C:\\Program Files\\Contoso\\LogMaintenance\\logrotate.exe\" --clear Security --archive C:\\ProgramData\\oak_yew_alder_2d4a2c\\retention.evtx",
+    "CommandLine": "C:\\ProgramData\\oak_yew_alder_2d4a2c\\logrotate.exe --clear Security --archive C:\\ProgramData\\oak_yew_alder_2d4a2c\\retention.evtx",
     "Computer": "DB01",
     "EventID": 1,
-    "Hashes": "SHA256=8f9c660527713b3522aaa984076a1196bbe07e925f108cc5d06bbf08a42c9562",
-    "Image": "C:\\Program Files\\Contoso\\LogMaintenance\\logrotate.exe",
+    "Hashes": "SHA256=e8c112a6885eb75e604c6403e6ac1eed623cb2c87448a3f731df05ffd642a409",
+    "Image": "C:\\ProgramData\\oak_yew_alder_2d4a2c\\logrotate.exe",
     "LogonGuid": "{9ede764d-7d53-5673-b5d5-501e8f94e508}",
     "LogonId": "0x12939",
     "ParentCommandLine": "C:\\Windows\\System32\\taskeng.exe",
@@ -12239,7 +12239,7 @@ Transition: ambiguous -> unmapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_EVTCLR/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_EVTCLR/contextual",
   "evidence_refs": {
     "decision": [
       {
@@ -12275,7 +12275,7 @@ Transition: ambiguous -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "The approved synthetic SecurityLogRetention task, protected logrotate.exe path, taskeng parent, ordering, host, and logon jointly establish a benign maintenance workflow.",
+  "rationale": "The synthetic SecurityLogRetention task configuration, logrotate.exe process-creation record, taskeng parent, ordering, host, and logon are consistent with the approved maintenance case; authorization is not independently established.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_be77c37d"
@@ -12343,7 +12343,7 @@ Transition: unmapped -> unmapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_PS/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_PS/single",
   "evidence_refs": {
     "decision": [
       {
@@ -12465,7 +12465,7 @@ Transition: unmapped -> unmapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_PS/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_PS/contextual",
   "evidence_refs": {
     "decision": [
       {
@@ -12488,7 +12488,7 @@ Transition: unmapped -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "Context confirms the same benign routine powershell service inventory workflow with an explicit maintenance process or actor.",
+  "rationale": "The taskeng parent and routine Get-Service invocation match the approved synthetic service-inventory case; external authorization is not independently recorded.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_262c8cb7"
@@ -12546,7 +12546,7 @@ Transition: unmapped -> unmapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_REG/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_REG/single",
   "evidence_refs": {
     "decision": [
       {
@@ -12560,7 +12560,7 @@ Transition: unmapped -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "A signed startup application under Program Files is an affirmative benign startup scenario.",
+  "rationale": "The Run key names the OneDrive application path; signer authenticity is not established by the available telemetry.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_83ec835f"
@@ -12658,7 +12658,7 @@ Transition: unmapped -> unmapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_REG/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_REG/contextual",
   "evidence_refs": {
     "decision": [
       {
@@ -12681,7 +12681,7 @@ Transition: unmapped -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "Context confirms the same benign legitimate startup application registration workflow with an explicit maintenance process or actor.",
+  "rationale": "The Run-key value and related OneDrive process-creation record share the target path; signer authenticity and authorized ownership are not established.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_fbbdc084"
@@ -12704,8 +12704,8 @@ Transition: unmapped -> unmapped
       "EventID": 4698,
       "SubjectLogonId": "0xfb15",
       "SubjectUserName": "SYSTEM",
-      "TaskContent": "<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\"><Triggers><BootTrigger><Enabled>true</Enabled></BootTrigger></Triggers><Settings><Hidden>false</Hidden></Settings><Actions><Exec><Command>C:\\Program Files\\Contoso\\updater.exe</Command><Arguments>--package willow_birch_pine_0e95e1</Arguments></Exec></Actions></Task>",
-      "TaskName": "\\Contoso\\UpdateMaintenance_willow_birch_pine_0e95e1",
+      "TaskContent": "<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\"><Triggers><BootTrigger><Enabled>true</Enabled></BootTrigger></Triggers><Settings><Hidden>false</Hidden></Settings><Actions><Exec><Command>C:\\ProgramData\\willow_birch_pine_0e95e1\\updater.exe</Command><Arguments>--package willow_birch_pine_0e95e1</Arguments></Exec></Actions></Task>",
+      "TaskName": "\\UpdateCheck_willow_birch_pine_0e95e1",
       "TimeCreated": "2026-06-09T00:50:28Z"
     },
     "provider": "Microsoft-Windows-Security-Auditing",
@@ -12723,8 +12723,8 @@ Transition: unmapped -> unmapped
     "EventID": 4698,
     "SubjectLogonId": "0xfb15",
     "SubjectUserName": "SYSTEM",
-    "TaskContent": "<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\"><Triggers><BootTrigger><Enabled>true</Enabled></BootTrigger></Triggers><Settings><Hidden>false</Hidden></Settings><Actions><Exec><Command>C:\\Program Files\\Contoso\\updater.exe</Command><Arguments>--package willow_birch_pine_0e95e1</Arguments></Exec></Actions></Task>",
-    "TaskName": "\\Contoso\\UpdateMaintenance_willow_birch_pine_0e95e1",
+    "TaskContent": "<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\"><Triggers><BootTrigger><Enabled>true</Enabled></BootTrigger></Triggers><Settings><Hidden>false</Hidden></Settings><Actions><Exec><Command>C:\\ProgramData\\willow_birch_pine_0e95e1\\updater.exe</Command><Arguments>--package willow_birch_pine_0e95e1</Arguments></Exec></Actions></Task>",
+    "TaskName": "\\UpdateCheck_willow_birch_pine_0e95e1",
     "TimeCreated": "2026-06-09T00:50:28Z"
   }
 ]
@@ -12733,7 +12733,7 @@ Transition: unmapped -> unmapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_SCHTASK/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_SCHTASK/single",
   "evidence_refs": {
     "decision": [
       {
@@ -12747,7 +12747,7 @@ Transition: unmapped -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "The task content is a signed vendor updater in a protected path and is tied to maintenance context.",
+  "rationale": "The task content records an updater invocation under ProgramData tied to maintenance context; no signer telemetry is present.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_d1e36f24"
@@ -12767,8 +12767,8 @@ Transition: unmapped -> unmapped
       "EventID": 4698,
       "SubjectLogonId": "0xfb15",
       "SubjectUserName": "SYSTEM",
-      "TaskContent": "<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\"><Triggers><BootTrigger><Enabled>true</Enabled></BootTrigger></Triggers><Settings><Hidden>false</Hidden></Settings><Actions><Exec><Command>C:\\Program Files\\Contoso\\updater.exe</Command><Arguments>--package willow_birch_pine_0e95e1</Arguments></Exec></Actions></Task>",
-      "TaskName": "\\Contoso\\UpdateMaintenance_willow_birch_pine_0e95e1",
+      "TaskContent": "<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\"><Triggers><BootTrigger><Enabled>true</Enabled></BootTrigger></Triggers><Settings><Hidden>false</Hidden></Settings><Actions><Exec><Command>C:\\ProgramData\\willow_birch_pine_0e95e1\\updater.exe</Command><Arguments>--package willow_birch_pine_0e95e1</Arguments></Exec></Actions></Task>",
+      "TaskName": "\\UpdateCheck_willow_birch_pine_0e95e1",
       "TimeCreated": "2026-06-09T00:50:28Z"
     },
     "provider": "Microsoft-Windows-Security-Auditing",
@@ -12781,11 +12781,11 @@ Transition: unmapped -> unmapped
     "event_id": "evt_11077910",
     "event_record_id": 59175289972607,
     "fields": {
-      "CommandLine": "\"C:\\Program Files\\Contoso\\updater.exe\" --package willow_birch_pine_0e95e1",
+      "CommandLine": "C:\\ProgramData\\willow_birch_pine_0e95e1\\updater.exe --package willow_birch_pine_0e95e1",
       "Computer": "FILESVR01",
       "EventID": 1,
-      "Hashes": "SHA256=a802aa925ee81a11ecd7a68431fb41f88ca4ba51aacd06f61e9aefe304bbcbcc",
-      "Image": "C:\\Program Files\\Contoso\\updater.exe",
+      "Hashes": "SHA256=00f1287872fa28d7f160d3c1016172f13aa59dd12cf19d9d1b160dc7d4861321",
+      "Image": "C:\\ProgramData\\willow_birch_pine_0e95e1\\updater.exe",
       "LogonGuid": "{0af16bb3-40a0-5c64-5445-abe9538ec205}",
       "LogonId": "0xfb15",
       "ParentCommandLine": "C:\\Windows\\System32\\taskeng.exe",
@@ -12812,16 +12812,16 @@ Transition: unmapped -> unmapped
     "EventID": 4698,
     "SubjectLogonId": "0xfb15",
     "SubjectUserName": "SYSTEM",
-    "TaskContent": "<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\"><Triggers><BootTrigger><Enabled>true</Enabled></BootTrigger></Triggers><Settings><Hidden>false</Hidden></Settings><Actions><Exec><Command>C:\\Program Files\\Contoso\\updater.exe</Command><Arguments>--package willow_birch_pine_0e95e1</Arguments></Exec></Actions></Task>",
-    "TaskName": "\\Contoso\\UpdateMaintenance_willow_birch_pine_0e95e1",
+    "TaskContent": "<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\"><Triggers><BootTrigger><Enabled>true</Enabled></BootTrigger></Triggers><Settings><Hidden>false</Hidden></Settings><Actions><Exec><Command>C:\\ProgramData\\willow_birch_pine_0e95e1\\updater.exe</Command><Arguments>--package willow_birch_pine_0e95e1</Arguments></Exec></Actions></Task>",
+    "TaskName": "\\UpdateCheck_willow_birch_pine_0e95e1",
     "TimeCreated": "2026-06-09T00:50:28Z"
   },
   {
-    "CommandLine": "\"C:\\Program Files\\Contoso\\updater.exe\" --package willow_birch_pine_0e95e1",
+    "CommandLine": "C:\\ProgramData\\willow_birch_pine_0e95e1\\updater.exe --package willow_birch_pine_0e95e1",
     "Computer": "FILESVR01",
     "EventID": 1,
-    "Hashes": "SHA256=a802aa925ee81a11ecd7a68431fb41f88ca4ba51aacd06f61e9aefe304bbcbcc",
-    "Image": "C:\\Program Files\\Contoso\\updater.exe",
+    "Hashes": "SHA256=00f1287872fa28d7f160d3c1016172f13aa59dd12cf19d9d1b160dc7d4861321",
+    "Image": "C:\\ProgramData\\willow_birch_pine_0e95e1\\updater.exe",
     "LogonGuid": "{0af16bb3-40a0-5c64-5445-abe9538ec205}",
     "LogonId": "0xfb15",
     "ParentCommandLine": "C:\\Windows\\System32\\taskeng.exe",
@@ -12839,7 +12839,7 @@ Transition: unmapped -> unmapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_SCHTASK/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_SCHTASK/contextual",
   "evidence_refs": {
     "decision": [
       {
@@ -12862,7 +12862,7 @@ Transition: unmapped -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "Context confirms the same benign scheduled windows update maintenance workflow with an explicit maintenance process or actor.",
+  "rationale": "The task configuration and matching updater process-creation record are consistent with the synthetic maintenance case; these records do not establish task causality or signer authenticity.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_2cd470d3"
@@ -12884,8 +12884,8 @@ Transition: ambiguous -> unmapped
       "Computer": "WORKSTATION02",
       "EventID": 4697,
       "ServiceAccount": "LocalService",
-      "ServiceFileName": "\"C:\\Program Files\\Contoso\\patch.exe\" --package yew_fir_spruce_095669",
-      "ServiceName": "ContosoPatch_yew_fir_spruce_095669",
+      "ServiceFileName": "C:\\ProgramData\\yew_fir_spruce_095669\\patch.exe --package yew_fir_spruce_095669",
+      "ServiceName": "PatchService_yew_fir_spruce_095669",
       "ServiceStartType": "2",
       "ServiceType": "0x10",
       "SubjectDomainName": "WORKSTATION02",
@@ -12907,8 +12907,8 @@ Transition: ambiguous -> unmapped
     "Computer": "WORKSTATION02",
     "EventID": 4697,
     "ServiceAccount": "LocalService",
-    "ServiceFileName": "\"C:\\Program Files\\Contoso\\patch.exe\" --package yew_fir_spruce_095669",
-    "ServiceName": "ContosoPatch_yew_fir_spruce_095669",
+    "ServiceFileName": "C:\\ProgramData\\yew_fir_spruce_095669\\patch.exe --package yew_fir_spruce_095669",
+    "ServiceName": "PatchService_yew_fir_spruce_095669",
     "ServiceStartType": "2",
     "ServiceType": "0x10",
     "SubjectDomainName": "WORKSTATION02",
@@ -12922,7 +12922,7 @@ Transition: ambiguous -> unmapped
 ### single: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_SVC/single",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_SVC/single",
   "evidence_refs": {
     "decision": [
       {
@@ -12936,7 +12936,7 @@ Transition: ambiguous -> unmapped
     ]
   },
   "label_status": "ambiguous",
-  "rationale": "EID 4697 records a service installation from Program Files under LocalService, but a protected path alone does not establish authorization without deployment workflow context.",
+  "rationale": "EID 4697 records a LocalService service configuration pointing under ProgramData; the single event does not identify deployment authorization or runtime execution.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_f9b0869f"
@@ -12952,7 +12952,7 @@ Transition: ambiguous -> unmapped
     "event_id": "evt_da42d151",
     "event_record_id": 199208067870074,
     "fields": {
-      "CommandLine": "msiexec.exe /i C:\\Packages\\yew_fir_spruce_095669\\ContosoPatch.msi /qn",
+      "CommandLine": "msiexec.exe /i C:\\Packages\\yew_fir_spruce_095669\\PatchService.msi /qn",
       "Computer": "WORKSTATION02",
       "EventID": 4688,
       "NewProcessId": "0x8fcc",
@@ -12977,8 +12977,8 @@ Transition: ambiguous -> unmapped
       "Computer": "WORKSTATION02",
       "EventID": 4697,
       "ServiceAccount": "LocalService",
-      "ServiceFileName": "\"C:\\Program Files\\Contoso\\patch.exe\" --package yew_fir_spruce_095669",
-      "ServiceName": "ContosoPatch_yew_fir_spruce_095669",
+      "ServiceFileName": "C:\\ProgramData\\yew_fir_spruce_095669\\patch.exe --package yew_fir_spruce_095669",
+      "ServiceName": "PatchService_yew_fir_spruce_095669",
       "ServiceStartType": "2",
       "ServiceType": "0x10",
       "SubjectDomainName": "WORKSTATION02",
@@ -12997,7 +12997,7 @@ Transition: ambiguous -> unmapped
 ```json
 [
   {
-    "CommandLine": "msiexec.exe /i C:\\Packages\\yew_fir_spruce_095669\\ContosoPatch.msi /qn",
+    "CommandLine": "msiexec.exe /i C:\\Packages\\yew_fir_spruce_095669\\PatchService.msi /qn",
     "Computer": "WORKSTATION02",
     "EventID": 4688,
     "NewProcessId": "0x8fcc",
@@ -13013,8 +13013,8 @@ Transition: ambiguous -> unmapped
     "Computer": "WORKSTATION02",
     "EventID": 4697,
     "ServiceAccount": "LocalService",
-    "ServiceFileName": "\"C:\\Program Files\\Contoso\\patch.exe\" --package yew_fir_spruce_095669",
-    "ServiceName": "ContosoPatch_yew_fir_spruce_095669",
+    "ServiceFileName": "C:\\ProgramData\\yew_fir_spruce_095669\\patch.exe --package yew_fir_spruce_095669",
+    "ServiceName": "PatchService_yew_fir_spruce_095669",
     "ServiceStartType": "2",
     "ServiceType": "0x10",
     "SubjectDomainName": "WORKSTATION02",
@@ -13028,7 +13028,7 @@ Transition: ambiguous -> unmapped
 ### contextual: ground truth and evidence references
 ```json
 {
-  "approval_reference": "registry-sha256:8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c#TF_UNMAP_SVC/contextual",
+  "approval_reference": "registry-sha256:0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2#TF_UNMAP_SVC/contextual",
   "evidence_refs": {
     "decision": [
       {
@@ -13054,7 +13054,7 @@ Transition: ambiguous -> unmapped
     ]
   },
   "label_status": "unmapped",
-  "rationale": "The enterprise deployment agent parent process (CcmExec.exe), msiexec installer execution with approved package path, temporal ordering, and host linkage establish an authorized service deployment workflow independent of user identity.",
+  "rationale": "The CcmExec.exe parent, msiexec process-creation record referencing a package path, temporal order, and host linkage are consistent with an enterprise deployment workflow; they do not independently prove authorization.",
   "technique_ids": [],
   "technique_names": [],
   "view_id": "view_1098fdc1"

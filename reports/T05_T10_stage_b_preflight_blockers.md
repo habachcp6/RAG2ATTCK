@@ -1,5 +1,7 @@
 # Stage B semantic preflight: generation stopped
 
+> Historical preflight checkpoint. The user later approved the bounded telemetry/relation corrections below and Stage B was executed. A subsequent independent PR audit found and resolved additional issues. Current evidence and status are in `reports/T05_T10_synthetic_dataset_freeze.md`.
+
 > Historical preflight record. On 2026-09-19 the user explicitly approved the
 > listed telemetry/relation corrections and continuation of Stage B. They are
 > implemented in the registry and `docs/synthetic/relation_contract.md`.
@@ -108,5 +110,6 @@ registry hash. Resume all Stage B work from that hash. Keep ATT&CK v19.2, the ei
 techniques, seed 20260915, 670 pairs, 640/30 split, quotas, view-level label policy,
 and family holdout unchanged. Historical Windows-APT blockers remain separate.
 
-Status: **STAGE B INCOMPLETE**. No freeze, reproduction, Stage B CI, PR, or Data &
-Ground Truth completion is claimed.
+Status at this preflight checkpoint: **STAGE B INCOMPLETE**. This historical
+checkpoint predates the freeze, independent PR audit, and corrective regeneration.
+It does not describe current completion status; see the final freeze report.

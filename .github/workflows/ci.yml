@@ -138,3 +138,6 @@ jobs:
 
       - name: Run Full Test Suite
         run: uv run pytest -m "not integration" -q
+
+      - name: Verify frozen synthetic benchmark and same-seed reproduction
+        run: uv run python -m src.data_ground_truth verify-synthetic

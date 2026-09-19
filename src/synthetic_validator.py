@@ -87,10 +87,17 @@ PREDICATE_RELATIONS = {
     "same_process_guid", "same_process", "temporal_before",
     "temporal_within", "network_then_file", "process_then_file", "process_then_network",
     "process_then_registry", "process_then_task", "process_then_service",
+    "task_then_process", "service_then_process", "registry_then_process",
+    "file_then_process", "parent_network_before_child",
 }
 GENERIC_METADATA_PLACEHOLDERS = {"dev", "benign", "ambiguous", "any", "multi", "ps", "reg", "svc", "net"}
 
 RELATION_SCHEMAS = {
+    "task_then_process": {"required": {"task", "process"}, "allowed": {"task", "process"}},
+    "service_then_process": {"required": {"service", "process"}, "allowed": {"service", "process"}},
+    "registry_then_process": {"required": {"registry", "process"}, "allowed": {"registry", "process"}},
+    "file_then_process": {"required": {"file", "process"}, "allowed": {"file", "process"}},
+    "parent_network_before_child": {"required": {"network", "child"}, "allowed": {"network", "child"}},
     "parent_child": {"required": {"parent", "child"}, "allowed": {"parent", "child"}},
     "same_host": {"required": {"events"}, "allowed": {"events"}},
     "same_user": {"required": {"events"}, "allowed": {"events"}},
@@ -228,6 +235,11 @@ def _validate_registry_dsl(
             if relation_name == "temporal_within" and not isinstance(predicate.get("within_seconds"), (int, float)):
                 result.add_error(f"{path}: temporal_within.within_seconds must be numeric")
             relation_classes = {
+                "task_then_process": ("task", "process"),
+                "service_then_process": ("service", "process"),
+                "registry_then_process": ("registry", "process"),
+                "file_then_process": ("file", "process"),
+                "parent_network_before_child": ("network", "child"),
                 "network_then_file": ("network", "file"),
                 "process_then_file": ("process", "file"),
                 "process_then_network": ("process", "network"),
@@ -238,6 +250,7 @@ def _validate_registry_dsl(
             expected_classes = relation_classes.get(relation_name)
             if expected_classes:
                 class_fields = {
+                    "child": {"Image", "NewProcessName"},
                     "process": {"Image", "NewProcessName"},
                     "file": {"TargetFilename"},
                     "network": {"DestinationIp", "DestinationPort"},
@@ -787,6 +800,12 @@ def validate_template_registry(
             if family["planned_instances"] > max_instances:
                 result.add_error(f"[REGISTRY] {family['template_family_id']} exceeds diversity bound {max_instances}")
 
+    if not result.errors:
+        from src.synthetic_predicates import validate_relation_contract
+        for family in families:
+            for error in validate_relation_contract(family):
+                result.add_error(f"[REGISTRY] {family['template_family_id']}: {error}")
+
     result.statistics.update({
         "total_families": len(families),
         "test_families": sum(1 for family in families if isinstance(family, dict) and family.get("split") == "test"),
@@ -1233,8 +1252,9 @@ def _check_27_local_account_host(pair: ScenarioPair, result: ValidationResult) -
 def _check_28_near_duplicates(pairs: List[ScenarioPair], result: ValidationResult) -> None:
     """Check 28: Unexpected cross-pair duplicates."""
     dups = find_near_duplicates(pairs)
+    result.statistics["near_duplicates"] = [list(item) for item in dups]
     for id_a, id_b, sim in dups:
-        result.add_warning(f"[28] Near-duplicate: {id_a} <-> {id_b} (Jaccard={sim:.3f})")
+        result.add_error(f"[28] Near-duplicate: {id_a} <-> {id_b} (Jaccard={sim:.3f})")
 
 
 def _check_29_reproduction(workspace: Path, reproduction_dir: Optional[Path],
@@ -1353,7 +1373,9 @@ def validate_synthetic_dataset(
         _check_29_reproduction(workspace_root, reproduction_dir, result)
         _check_30_approval_hash(registry_path, expected_registry_hash, result)
 
-    result.statistics = compute_statistics(pairs)
+    if not pairs:
+        result.add_error("Empty synthetic dataset")
+    result.statistics.update(compute_statistics(pairs))
     return result
 
 

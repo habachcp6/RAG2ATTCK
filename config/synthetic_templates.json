@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0.0",
-  "registry_status": "awaiting_human_semantic_approval",
+  "registry_status": "approved_for_stage_b",
   "benchmark_catalog": {
     "attack_version": "19.2",
     "snapshot_commit": "6cda5ad8462c79e14fbb872f4e09059b18e0cfc4",
@@ -23,7 +23,7 @@
       "technique_ids": [
         "T1059.001"
       ],
-      "behavior_description": "Encoded PowerShell launched by an Office document",
+      "behavior_description": "Encoded PowerShell process with an Office parent",
       "anchor": {
         "provider": "Microsoft-Windows-Sysmon",
         "channel": "Microsoft-Windows-Sysmon/Operational",
@@ -70,7 +70,7 @@
             }
           ]
         },
-        "rationale": "Sysmon exposes PowerShell execution, an encoded command, and Office as the parent process in the single view."
+        "rationale": "The Sysmon process-creation record shows PowerShell with an encoded command line and an Office parent."
       },
       "contextual_ground_truth": {
         "status": "mapped",
@@ -192,7 +192,7 @@
             }
           ]
         },
-        "rationale": "WMI-launched PowerShell is observable, but that execution path is dual-use and the single view lacks intent evidence."
+        "rationale": "A WMI-parented PowerShell process is observable, but the invocation is dual-use and the single view lacks intent evidence."
       },
       "contextual_ground_truth": {
         "status": "mapped",
@@ -229,13 +229,13 @@
               "value": 135
             },
             {
-              "relation": "process_then_network",
-              "process": "anchor",
-              "network": "context_1"
+              "relation": "parent_network_before_child",
+              "network": "context_1",
+              "child": "anchor"
             }
           ]
         },
-        "rationale": "The WMI parent, non-interactive PowerShell invocation, and related RPC connection provide defensible contextual evidence for PowerShell execution."
+        "rationale": "The WMI parent, non-interactive PowerShell invocation, and related RPC connection provide contextual evidence for this process lineage."
       },
       "expected_transition": "ambiguous->mapped",
       "contextual_event_descriptions": [
@@ -336,7 +336,7 @@
             }
           ]
         },
-        "rationale": "PowerShell execution with explicit dynamic evaluation and decoded content is directly visible in the anchor."
+        "rationale": "The process-creation record contains a PowerShell command line with dynamic-evaluation and decoding expressions; it does not establish command success."
       },
       "contextual_ground_truth": {
         "status": "mapped",
@@ -375,7 +375,7 @@
             }
           ]
         },
-        "rationale": "The contextual event is the same process identity and confirms the obfuscated PowerShell command rather than introducing a new label."
+        "rationale": "The contextual event has the same process identity and repeats the obfuscated PowerShell invocation without introducing a new label."
       },
       "expected_transition": "mapped->mapped",
       "contextual_event_descriptions": [
@@ -439,7 +439,7 @@
       "technique_ids": [
         "T1059.001"
       ],
-      "behavior_description": "PowerShell reflective assembly loading in memory",
+      "behavior_description": "PowerShell invocation of reflective assembly loading",
       "anchor": {
         "provider": "Microsoft-Windows-Sysmon",
         "channel": "Microsoft-Windows-Sysmon/Operational",
@@ -476,7 +476,7 @@
             }
           ]
         },
-        "rationale": "The anchor directly records PowerShell performing reflective assembly loading."
+        "rationale": "The process-creation record contains a PowerShell reflective-loading invocation; it does not establish that the assembly loaded successfully."
       },
       "contextual_ground_truth": {
         "status": "mapped",
@@ -515,23 +515,23 @@
             }
           ]
         },
-        "rationale": "The follow-on event shares the process identity and confirms the in-memory PowerShell execution chain."
+        "rationale": "The command line establishes the reflective-loading invocation; later same-process network activity corroborates process continuity, not successful assembly loading."
       },
       "expected_transition": "mapped->mapped",
       "contextual_event_descriptions": [
-        "A same-process Sysmon event follows the reflective load."
+        "A Sysmon network connection follows the PowerShell creation event with the same ProcessGuid."
       ],
       "contextual_event_specs": [
         {
           "event_key": "context_1",
           "provider": "Microsoft-Windows-Sysmon",
           "channel": "Microsoft-Windows-Sysmon/Operational",
-          "windows_event_id": 1,
-          "selection_rule": "Same PowerShell process after the reflective load"
+          "windows_event_id": 3,
+          "selection_rule": "Follow-on network connection from the same PowerShell process after its creation"
         }
       ],
       "counter_evidence": "A signed application compatibility shim may load an assembly reflectively; approved publisher and path are counter-evidence.",
-      "benign_near_miss": "PowerShell loading a normal module from a trusted module directory.",
+      "benign_near_miss": "PowerShell invocation of a normal module from a trusted module directory.",
       "allowed_variations": [
         "Keep Reflection.Assembly and Assembly.Load as visible indicators."
       ],
@@ -560,6 +560,14 @@
             1
           ],
           "reference": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-1-process-create"
+        },
+        {
+          "provider": "Microsoft-Windows-Sysmon",
+          "channel": "Microsoft-Windows-Sysmon/Operational",
+          "event_ids": [
+            3
+          ],
+          "reference": "https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-3-network-connection"
         }
       ],
       "planned_instances": 12
@@ -614,7 +622,7 @@
             }
           ]
         },
-        "rationale": "The Security process-creation record shows a command-shell interpreter executing a chained command and redirecting output."
+        "rationale": "The Security process-creation record shows cmd.exe invoked with a chained command and output redirection."
       },
       "contextual_ground_truth": {
         "status": "mapped",
@@ -645,19 +653,17 @@
               "value": "&&"
             },
             {
-              "relation": "same_process",
-              "events": [
-                "anchor",
-                "context_1"
-              ]
+              "relation": "parent_child",
+              "parent": "anchor",
+              "child": "context_1"
             }
           ]
         },
-        "rationale": "The same process is confirmed by a later Security process record, preserving the command-shell evidence."
+        "rationale": "The child process is linked to the command-shell parent through creator/new-process identifiers, preserving the command-shell evidence."
       },
       "expected_transition": "mapped->mapped",
       "contextual_event_descriptions": [
-        "A related child process is recorded under the same command-shell process identity."
+        "A distinct child process is created by the command-shell anchor; the child creator PID equals the anchor new-process PID."
       ],
       "contextual_event_specs": [
         {
@@ -709,7 +715,7 @@
       "technique_ids": [
         "T1059.003"
       ],
-      "behavior_description": "Windows Command Shell launched by a service with transfer staging resolved by context",
+      "behavior_description": "Windows Command Shell process with a services.exe parent and transfer-staging invocation",
       "anchor": {
         "provider": "Microsoft-Windows-Security-Auditing",
         "channel": "Security",
@@ -736,7 +742,7 @@
             }
           ]
         },
-        "rationale": "A service-launched command shell is observable, but the single view does not establish whether the action is administration or adversarial."
+        "rationale": "A cmd.exe process with a services.exe parent is observable, but the single view does not establish whether the action is administrative or adversarial."
       },
       "contextual_ground_truth": {
         "status": "mapped",
@@ -779,7 +785,7 @@
             }
           ]
         },
-        "rationale": "The service parent, explicit command-shell execution of certutil staging, and linked file creation provide the contextual threshold."
+        "rationale": "The services.exe parent, cmd.exe command line containing certutil staging syntax, and related file-creation record provide contextual evidence; the records do not establish command completion."
       },
       "expected_transition": "ambiguous->mapped",
       "contextual_event_descriptions": [
@@ -843,7 +849,7 @@
       "technique_ids": [
         "T1059.003"
       ],
-      "behavior_description": "Windows Command Shell executing a batch file from a public staging path",
+      "behavior_description": "Windows Command Shell invocation of a batch file from a public path",
       "anchor": {
         "provider": "Microsoft-Windows-Security-Auditing",
         "channel": "Security",
@@ -886,7 +892,7 @@
             }
           ]
         },
-        "rationale": "The anchor identifies cmd.exe and a concrete batch-script execution with shell-specific delayed expansion."
+        "rationale": "The process-creation record identifies cmd.exe invoking a batch script with shell-specific delayed expansion."
       },
       "contextual_ground_truth": {
         "status": "mapped",
@@ -917,13 +923,13 @@
               "value": ".bat"
             },
             {
-              "relation": "process_then_file",
-              "process": "anchor",
-              "file": "context_1"
+              "relation": "file_then_process",
+              "file": "context_1",
+              "process": "anchor"
             }
           ]
         },
-        "rationale": "A linked batch-file creation event confirms the command shell is executing the staged script."
+        "rationale": "A related batch-file creation event shares the command-shell process identity; this supports the recorded script invocation but does not establish successful completion."
       },
       "expected_transition": "mapped->mapped",
       "contextual_event_descriptions": [
@@ -939,7 +945,7 @@
         }
       ],
       "counter_evidence": "Enterprise deployment systems also run batch files; a signed package and managed software directory are counter-evidence.",
-      "benign_near_miss": "cmd.exe executing a batch file from C:\\Program Files\\Contoso.",
+      "benign_near_miss": "cmd.exe listing a resource directory under C:\\ProgramData.",
       "allowed_variations": [
         "Retain the shell-specific /v:on and batch-file indicators."
       ],
@@ -1073,7 +1079,7 @@
             }
           ]
         },
-        "rationale": "The contextual file event confirms the command-shell pipeline wrote its output to the staged destination."
+        "rationale": "The related file-creation event records the staged destination under the same process identity as the command-shell pipeline."
       },
       "expected_transition": "mapped->mapped",
       "contextual_event_descriptions": [
@@ -1137,7 +1143,7 @@
       "technique_ids": [
         "T1053.005"
       ],
-      "behavior_description": "Scheduled task creation with hidden PowerShell payload",
+      "behavior_description": "Scheduled task configuration with a hidden PowerShell action",
       "anchor": {
         "provider": "Microsoft-Windows-Security-Auditing",
         "channel": "Security",
@@ -1211,17 +1217,17 @@
               "value": "\\powershell.exe"
             },
             {
-              "relation": "process_then_task",
-              "process": "context_1",
-              "task": "anchor"
+              "relation": "task_then_process",
+              "task": "anchor",
+              "process": "context_1"
             }
           ]
         },
-        "rationale": "The contextual PowerShell execution is linked back to the created task and confirms execution of the scheduled task payload."
+        "rationale": "The later process-creation record matches the executable and arguments configured in the task. This is consistent with payload invocation, but these records alone do not establish that Task Scheduler launched it or that the payload completed."
       },
       "expected_transition": "mapped->mapped",
       "contextual_event_descriptions": [
-        "A Sysmon PowerShell process event executes the task content after task creation."
+        "A later Sysmon process-creation event records a PowerShell invocation matching the task executable and arguments."
       ],
       "contextual_event_specs": [
         {
@@ -1229,7 +1235,7 @@
           "provider": "Microsoft-Windows-Sysmon",
           "channel": "Microsoft-Windows-Sysmon/Operational",
           "windows_event_id": 1,
-          "selection_rule": "PowerShell process started by the scheduled task"
+          "selection_rule": "PowerShell process creation matching the configured task action"
         }
       ],
       "counter_evidence": "A centrally managed software updater may create a hidden task; signed content, an approved task owner, and a Program Files path are counter-evidence.",
@@ -1281,7 +1287,7 @@
       "technique_ids": [
         "T1053.005"
       ],
-      "behavior_description": "Scheduled task created through COM with suspicious executable execution resolved by context",
+      "behavior_description": "COM-created task with a configured ProgramData executable and matching process creation in context",
       "anchor": {
         "provider": "Microsoft-Windows-Security-Auditing",
         "channel": "Security",
@@ -1339,17 +1345,17 @@
               "value": "C:\\ProgramData\\"
             },
             {
-              "relation": "process_then_task",
-              "process": "context_1",
-              "task": "anchor"
+              "relation": "task_then_process",
+              "task": "anchor",
+              "process": "context_1"
             }
           ]
         },
-        "rationale": "The contextual process execution is linked to the task object and establishes scheduled execution of the suspicious payload."
+        "rationale": "The later process-creation record matches the executable and arguments configured in the task. This is consistent with payload invocation, but these records alone do not establish that Task Scheduler launched it or that the payload completed."
       },
       "expected_transition": "ambiguous->mapped",
       "contextual_event_descriptions": [
-        "A process-create event runs the executable named in TaskContent after registration."
+        "A later process-creation event matches the executable and arguments named in TaskContent."
       ],
       "contextual_event_specs": [
         {
@@ -1409,7 +1415,7 @@
       "technique_ids": [
         "T1053.005"
       ],
-      "behavior_description": "Scheduled task with hidden boot trigger and public DLL payload",
+      "behavior_description": "Scheduled task with hidden boot trigger and configured public DLL target",
       "anchor": {
         "provider": "Microsoft-Windows-Security-Auditing",
         "channel": "Security",
@@ -1452,7 +1458,7 @@
             }
           ]
         },
-        "rationale": "The scheduled-task record exposes a misleading name, hidden trigger, and public DLL execution payload."
+        "rationale": "The scheduled-task record exposes a misleading name, hidden trigger, and a configured DLL target under Public."
       },
       "contextual_ground_truth": {
         "status": "mapped",
@@ -1483,17 +1489,17 @@
               "value": "\\rundll32.exe"
             },
             {
-              "relation": "process_then_task",
-              "process": "context_1",
-              "task": "anchor"
+              "relation": "task_then_process",
+              "task": "anchor",
+              "process": "context_1"
             }
           ]
         },
-        "rationale": "The contextual rundll32 process is linked to the task content and confirms task-based execution."
+        "rationale": "The process-creation record shows rundll32 invoked with the DLL path configured in the task; it does not establish that DLL loading succeeded or that the task triggered the process."
       },
       "expected_transition": "mapped->mapped",
       "contextual_event_descriptions": [
-        "A rundll32 process is created from the task content after registration."
+        "A process-creation event records rundll32 invoked with the DLL path in task content."
       ],
       "contextual_event_specs": [
         {
@@ -1501,7 +1507,7 @@
           "provider": "Microsoft-Windows-Sysmon",
           "channel": "Microsoft-Windows-Sysmon/Operational",
           "windows_event_id": 1,
-          "selection_rule": "rundll32.exe launched by the task"
+          "selection_rule": "rundll32 process creation matching the task DLL path"
         }
       ],
       "counter_evidence": "A legitimate product may use a hidden boot task, but a signed DLL in a vendor directory is required for the benign interpretation.",
@@ -1553,7 +1559,7 @@
       "technique_ids": [
         "T1053.005"
       ],
-      "behavior_description": "Scheduled task invokes PowerShell with intent resolved by a file and network chain",
+      "behavior_description": "Scheduled task configuration with matching PowerShell process and related network activity",
       "anchor": {
         "provider": "Microsoft-Windows-Security-Auditing",
         "channel": "Security",
@@ -1617,9 +1623,9 @@
               "value": 443
             },
             {
-              "relation": "process_then_task",
-              "process": "context_1",
-              "task": "anchor"
+              "relation": "task_then_process",
+              "task": "anchor",
+              "process": "context_1"
             },
             {
               "relation": "process_then_network",
@@ -1628,11 +1634,11 @@
             }
           ]
         },
-        "rationale": "The contextual PowerShell execution and outbound connection are both linked to the task, resolving the task mechanism."
+        "rationale": "The task configuration matches a later PowerShell process-creation record and related outbound activity. These records support a task-payload invocation but do not prove the task caused the process start or that execution completed."
       },
       "expected_transition": "ambiguous->mapped",
       "contextual_event_descriptions": [
-        "PowerShell executes the task script and opens a related outbound connection."
+        "A process-creation record contains the configured PowerShell invocation, and a related Sysmon 3 record captures outbound activity."
       ],
       "contextual_event_specs": [
         {
@@ -1640,14 +1646,14 @@
           "provider": "Microsoft-Windows-Sysmon",
           "channel": "Microsoft-Windows-Sysmon/Operational",
           "windows_event_id": 1,
-          "selection_rule": "PowerShell process started by task"
+          "selection_rule": "PowerShell process creation matching the configured task action"
         },
         {
           "event_key": "context_2",
           "provider": "Microsoft-Windows-Sysmon",
           "channel": "Microsoft-Windows-Sysmon/Operational",
           "windows_event_id": 3,
-          "selection_rule": "Network connection from task-launched PowerShell"
+          "selection_rule": "Network event sharing the PowerShell process identity"
         }
       ],
       "counter_evidence": "A scheduled compliance job may invoke PowerShell and contact an approved update endpoint; signed script and allowlisted destination are counter-evidence.",
@@ -1781,7 +1787,7 @@
             }
           ]
         },
-        "rationale": "The service manager process is linked to the 4697 installation and confirms the service creation path."
+        "rationale": "The 4697 event records the service installation fields; a services.exe process record supplies related host and chronology context."
       },
       "expected_transition": "mapped->mapped",
       "contextual_event_descriptions": [
@@ -1797,7 +1803,7 @@
         }
       ],
       "counter_evidence": "A portable enterprise agent may be installed from a controlled staging directory; signer, ACL, and deployment ticket are counter-evidence.",
-      "benign_near_miss": "A signed service installed under C:\\Program Files\\Contoso with a managed start type.",
+      "benign_near_miss": "A service installed with an image path under C:\\ProgramData and a managed start type.",
       "allowed_variations": [
         "Use ServiceFileName, ServiceStartType, and ServiceAccount."
       ],
@@ -1845,7 +1851,7 @@
       "technique_ids": [
         "T1543.003"
       ],
-      "behavior_description": "Windows service installed to launch a command shell payload",
+      "behavior_description": "Windows service configuration contains a command-shell invocation",
       "anchor": {
         "provider": "Microsoft-Windows-Security-Auditing",
         "channel": "Security",
@@ -1882,7 +1888,7 @@
             }
           ]
         },
-        "rationale": "The 4697 record shows service installation whose image launches a command-shell payload from ProgramData."
+        "rationale": "The 4697 record stores a service image field containing a cmd.exe invocation with a ProgramData path; this is configuration evidence, not command completion."
       },
       "contextual_ground_truth": {
         "status": "mapped",
@@ -1913,13 +1919,13 @@
               "value": "\\cmd.exe"
             },
             {
-              "relation": "process_then_service",
-              "process": "context_1",
-              "service": "anchor"
+              "relation": "service_then_process",
+              "service": "anchor",
+              "process": "context_1"
             }
           ]
         },
-        "rationale": "A linked cmd.exe process confirms that the installed service executes its command-shell image."
+        "rationale": "A later process-creation event records cmd.exe with the configured service command line; the available records do not establish that the service launched it or that the command completed."
       },
       "expected_transition": "mapped->mapped",
       "contextual_event_descriptions": [
@@ -1983,7 +1989,7 @@
       "technique_ids": [
         "T1543.003"
       ],
-      "behavior_description": "Windows service installed with a DLL entry point and LocalSystem account",
+      "behavior_description": "Windows service configuration with a DLL path and LocalSystem account",
       "anchor": {
         "provider": "Microsoft-Windows-Security-Auditing",
         "channel": "Security",
@@ -2020,7 +2026,7 @@
             }
           ]
         },
-        "rationale": "The service-install event records a service-hosted DLL path in a user-writable location under LocalSystem."
+        "rationale": "The service-install event records a LocalSystem service configuration containing a DLL path in a user-writable location; it does not show that svchost loaded the DLL."
       },
       "contextual_ground_truth": {
         "status": "mapped",
@@ -2059,11 +2065,11 @@
             }
           ]
         },
-        "rationale": "The related DLL file event corroborates the installed service image and service-hosted execution."
+        "rationale": "The related DLL file event corroborates the installed service image path; it does not establish that svchost loaded the DLL."
       },
       "expected_transition": "mapped->mapped",
       "contextual_event_descriptions": [
-        "A DLL file is created at the service image path before the service starts."
+        "A DLL file is created at the configured service path before the service-installation event."
       ],
       "contextual_event_specs": [
         {
@@ -2123,12 +2129,12 @@
       "technique_ids": [
         "T1543.003"
       ],
-      "behavior_description": "Windows service DLL sideload with execution resolved by context",
+      "behavior_description": "Windows service configuration references a DLL path; context contains a DLL file and svchost process record",
       "anchor": {
         "provider": "Microsoft-Windows-Security-Auditing",
         "channel": "Security",
         "windows_event_id": 4697,
-        "selection_rule": "Security 4697 where a service loads an unsigned-looking DLL from ProgramData"
+        "selection_rule": "Security 4697 where the configured service image references a DLL path under ProgramData"
       },
       "single_ground_truth": {
         "status": "ambiguous",
@@ -2150,7 +2156,7 @@
             }
           ]
         },
-        "rationale": "A service-hosted DLL under ProgramData is suspicious but the single service-install record does not prove abuse."
+        "rationale": "The 4697 record configures a service image that references a DLL under ProgramData; it does not establish runtime loading or abuse."
       },
       "contextual_ground_truth": {
         "status": "mapped",
@@ -2187,17 +2193,17 @@
               "value": "\\svchost.exe"
             },
             {
-              "relation": "process_then_service",
-              "process": "context_2",
-              "service": "anchor"
+              "relation": "service_then_process",
+              "service": "anchor",
+              "process": "context_2"
             }
           ]
         },
-        "rationale": "The DLL creation and subsequent service-host process together establish service-based execution of the staged image."
+        "rationale": "The DLL creation and later svchost process-creation record corroborate the configured service image path; they do not establish that the service loaded the staged image."
       },
       "expected_transition": "ambiguous->mapped",
       "contextual_event_descriptions": [
-        "A DLL is created at the service path and svchost.exe later starts the service."
+        "A DLL file is created at the configured service path, followed by a svchost.exe process-creation record."
       ],
       "contextual_event_specs": [
         {
@@ -2854,7 +2860,7 @@
       "technique_ids": [
         "T1547.001"
       ],
-      "behavior_description": "Run key set to execute a user-writable executable",
+      "behavior_description": "Run key configured to reference a user-writable executable",
       "anchor": {
         "provider": "Microsoft-Windows-Sysmon",
         "channel": "Microsoft-Windows-Sysmon/Operational",
@@ -3072,7 +3078,7 @@
       },
       "expected_transition": "mapped->mapped",
       "contextual_event_descriptions": [
-        "Explorer processes the Startup-folder shortcut at the next logon."
+        "An Explorer process record selects the Startup-folder shortcut; these events do not show a later user logon processing it."
       ],
       "contextual_event_specs": [
         {
@@ -3278,7 +3284,7 @@
       "technique_ids": [
         "T1547.001"
       ],
-      "behavior_description": "RunOnce mutation with persistence intent resolved by follow-on execution",
+      "behavior_description": "RunOnce mutation with a later process-creation record for the configured target",
       "anchor": {
         "provider": "Microsoft-Windows-Sysmon",
         "channel": "Microsoft-Windows-Sysmon/Operational",
@@ -3348,13 +3354,13 @@
               "value": ".exe"
             },
             {
-              "relation": "process_then_registry",
-              "process": "context_2",
-              "registry": "anchor"
+              "relation": "registry_then_process",
+              "registry": "anchor",
+              "process": "context_2"
             }
           ]
         },
-        "rationale": "File creation at the target path followed by execution of the RunOnce payload establishes startup persistence in context."
+        "rationale": "The RunOnce value names the target path and a later process-creation record matches that image. Together they support an auto-start configuration, though they do not prove the logon trigger caused that process start."
       },
       "expected_transition": "ambiguous->mapped",
       "contextual_event_descriptions": [
@@ -3653,7 +3659,7 @@
       },
       "expected_transition": "ambiguous->mapped",
       "contextual_event_descriptions": [
-        "PowerShell executes Clear-EventLog under the same subject logon before EID 1102."
+        "A PowerShell process-creation record contains Clear-EventLog syntax under the same logon before EID 1102; chronology does not prove exclusive causation."
       ],
       "contextual_event_specs": [
         {
@@ -4239,7 +4245,7 @@
             }
           ]
         },
-        "rationale": "The resulting file event establishes that the BITS transfer produced a local file."
+        "rationale": "The file-creation event records a local file at the requested destination; it does not independently prove BITS produced its contents."
       },
       "expected_transition": "mapped->mapped",
       "contextual_event_descriptions": [
@@ -4303,7 +4309,7 @@
       "technique_ids": [
         "T1105"
       ],
-      "behavior_description": "Curl downloads a remote executable to a local path",
+      "behavior_description": "Curl invocation names a remote executable and local destination",
       "anchor": {
         "provider": "Microsoft-Windows-Sysmon",
         "channel": "Microsoft-Windows-Sysmon/Operational",
@@ -4525,7 +4531,7 @@
             }
           ]
         },
-        "rationale": "The contextual process command exposes download syntax and the linked file event confirms the transfer result."
+        "rationale": "The process-creation record contains download syntax, and a related file event records a local file at the requested destination."
       },
       "expected_transition": "ambiguous->mapped",
       "contextual_event_descriptions": [
@@ -5327,12 +5333,12 @@
       "category": "unmapped",
       "split": "test",
       "technique_ids": [],
-      "behavior_description": "Routine signed PowerShell maintenance",
+      "behavior_description": "Routine PowerShell maintenance",
       "anchor": {
         "provider": "Microsoft-Windows-Sysmon",
         "channel": "Microsoft-Windows-Sysmon/Operational",
         "windows_event_id": 1,
-        "selection_rule": "PowerShell -NoProfile -File C:\\Program Files\\Contoso\\maintenance.ps1; select the concrete provider fields that contain PowerShell, -NoProfile, maintenance.ps1"
+        "selection_rule": "PowerShell -NoProfile -File <ProgramData resource>\\run.ps1; select the provider fields that contain PowerShell, -NoProfile, run.ps1"
       },
       "single_ground_truth": {
         "status": "unmapped",
@@ -5356,7 +5362,7 @@
               "event": "anchor",
               "field": "CommandLine",
               "op": "contains_ci",
-              "value": "C:\\Program Files\\Contoso\\maintenance.ps1"
+              "value": "run.ps1"
             },
             {
               "event": "anchor",
@@ -5366,7 +5372,7 @@
             }
           ]
         },
-        "rationale": "The signed maintenance script is under Program Files and has no encoded, download, persistence, or account-creation indicator."
+        "rationale": "The maintenance script is under ProgramData and has no encoded, download, persistence, or account-creation indicator."
       },
       "contextual_ground_truth": {
         "status": "unmapped",
@@ -5392,7 +5398,7 @@
                   "event": "anchor",
                   "field": "CommandLine",
                   "op": "contains_ci",
-                  "value": "C:\\Program Files\\Contoso\\maintenance.ps1"
+                  "value": "run.ps1"
                 },
                 {
                   "event": "anchor",
@@ -5427,11 +5433,11 @@
             }
           ]
         },
-        "rationale": "Context confirms the same benign routine signed powershell maintenance workflow with an explicit maintenance process or actor."
+        "rationale": "Context confirms the same routine PowerShell maintenance workflow with an explicit maintenance process or actor."
       },
       "expected_transition": "unmapped->unmapped",
       "contextual_event_descriptions": [
-        "A related event confirms the approved workflow for routine signed powershell maintenance with affirmative benign telemetry."
+        "A related event adds the approved maintenance process context to the routine PowerShell invocation."
       ],
       "contextual_event_specs": [
         {
@@ -5581,11 +5587,11 @@
             }
           ]
         },
-        "rationale": "Context confirms the same benign normal cmd-based dns administration workflow with an explicit maintenance process or actor."
+        "rationale": "The helpdesk DNS-diagnostic invocation and related cmd.exe context match the approved synthetic local-maintenance case; external authorization is not independently recorded."
       },
       "expected_transition": "unmapped->unmapped",
       "contextual_event_descriptions": [
-        "A related event confirms the approved workflow for normal cmd-based dns administration with affirmative benign telemetry."
+        "A related event adds cmd.exe and helpdesk DNS-diagnostic context to the local command invocation."
       ],
       "contextual_event_specs": [
         {
@@ -5727,11 +5733,11 @@
             }
           ]
         },
-        "rationale": "Context confirms the same benign standard scheduled disk-maintenance task workflow with an explicit maintenance process or actor."
+        "rationale": "The task configuration and related cleanmgr process-creation record match the approved synthetic disk-maintenance case; the task trigger is not directly observed."
       },
       "expected_transition": "unmapped->unmapped",
       "contextual_event_descriptions": [
-        "A related event confirms the approved workflow for standard scheduled disk-maintenance task with affirmative benign telemetry."
+        "A related event records a cleanmgr process-creation record matching the scheduled task action."
       ],
       "contextual_event_specs": [
         {
@@ -5781,12 +5787,12 @@
       "category": "unmapped",
       "split": "test",
       "technique_ids": [],
-      "behavior_description": "Legitimate signed service deployment",
+      "behavior_description": "Service deployment",
       "anchor": {
         "provider": "Microsoft-Windows-Security-Auditing",
         "channel": "Security",
         "windows_event_id": 4697,
-        "selection_rule": "ContosoAgent.exe from C:\\Program Files\\Contoso; select the concrete provider fields that contain ContosoAgent.exe, Program Files, LocalSystem"
+        "selection_rule": "Agent.exe from a ProgramData resource path; select the provider fields that contain Agent.exe and LocalSystem"
       },
       "single_ground_truth": {
         "status": "unmapped",
@@ -5798,7 +5804,7 @@
               "event": "anchor",
               "field": "ServiceFileName",
               "op": "contains_ci",
-              "value": "C:\\Program Files\\Contoso\\ContosoAgent.exe"
+              "value": "agent.exe"
             },
             {
               "event": "anchor",
@@ -5820,7 +5826,7 @@
             }
           ]
         },
-        "rationale": "The service binary is in a protected vendor directory and its deployment is a normal managed installation."
+        "rationale": "The 4697 event records an image path under ProgramData and an Administrator actor; this alone does not establish signer authenticity or deployment authorization."
       },
       "contextual_ground_truth": {
         "status": "unmapped",
@@ -5834,7 +5840,7 @@
                   "event": "anchor",
                   "field": "ServiceFileName",
                   "op": "contains_ci",
-                  "value": "C:\\Program Files\\Contoso\\ContosoAgent.exe"
+                  "value": "agent.exe"
                 },
                 {
                   "event": "anchor",
@@ -5862,7 +5868,7 @@
                   "event": "context_1",
                   "field": "Image",
                   "op": "endswith_ci",
-                  "value": "\\ContosoAgent.exe"
+                  "value": "\\Agent.exe"
                 },
                 {
                   "event": "context_1",
@@ -5881,11 +5887,11 @@
             }
           ]
         },
-        "rationale": "Context confirms the same benign legitimate signed service deployment workflow with an explicit maintenance process or actor."
+        "rationale": "Context contains matching service-installation and process-creation records for the same image and arguments; this is consistent with the approved synthetic deployment case but does not prove that the service launched the process."
       },
       "expected_transition": "unmapped->unmapped",
       "contextual_event_descriptions": [
-        "A related event confirms the approved workflow for legitimate signed service deployment with affirmative benign telemetry."
+        "A related event adds the approved deployment-process context to the service installation record."
       ],
       "contextual_event_specs": [
         {
@@ -5893,7 +5899,7 @@
           "provider": "Microsoft-Windows-Sysmon",
           "channel": "Microsoft-Windows-Sysmon/Operational",
           "windows_event_id": 1,
-          "selection_rule": "ContosoAgent.exe started after managed installation"
+          "selection_rule": "Agent.exe started after managed installation"
         }
       ],
       "counter_evidence": "A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.",
@@ -6034,11 +6040,11 @@
             }
           ]
         },
-        "rationale": "The enterprise provisioning parent process (Provisioner.exe), expected net.exe child, explicit command (net user jdoe /add), temporal ordering, and host linkage establish an authorized employee onboarding workflow."
+        "rationale": "The Provisioner.exe parent, net.exe process-creation record, explicit account-add command, temporal order, and host linkage are consistent with the approved synthetic onboarding case; external authorization is not independently recorded."
       },
       "expected_transition": "ambiguous->unmapped",
       "contextual_event_descriptions": [
-        "A related event confirms the approved workflow for expected employee local-account provisioning with affirmative benign telemetry."
+        "A related event adds the account-provisioning parent and net.exe command context to the 4720 record."
       ],
       "contextual_event_specs": [
         {
@@ -6176,11 +6182,11 @@
             }
           ]
         },
-        "rationale": "Context confirms the same benign routine powershell service inventory workflow with an explicit maintenance process or actor."
+        "rationale": "The taskeng parent and routine Get-Service invocation match the approved synthetic service-inventory case; external authorization is not independently recorded."
       },
       "expected_transition": "unmapped->unmapped",
       "contextual_event_descriptions": [
-        "A related event confirms the approved workflow for routine powershell service inventory with affirmative benign telemetry."
+        "A related event adds taskeng process context to the PowerShell service-inventory invocation."
       ],
       "contextual_event_specs": [
         {
@@ -6229,7 +6235,7 @@
         "provider": "Microsoft-Windows-Security-Auditing",
         "channel": "Security",
         "windows_event_id": 4688,
-        "selection_rule": "cmd.exe /c dir C:\\Program Files\\Contoso; select the concrete provider fields that contain cmd.exe, dir, Program Files"
+        "selection_rule": "cmd.exe /c dir C:\\ProgramData\\<resource>; select the provider fields that contain cmd.exe and the ProgramData target"
       },
       "single_ground_truth": {
         "status": "unmapped",
@@ -6247,7 +6253,7 @@
               "event": "anchor",
               "field": "CommandLine",
               "op": "contains_ci",
-              "value": "dir C:\\Program Files\\Contoso"
+              "value": "dir C:\\ProgramData\\"
             },
             {
               "event": "anchor",
@@ -6257,7 +6263,7 @@
             }
           ]
         },
-        "rationale": "The command shell lists a managed software directory and does not stage or execute a payload."
+        "rationale": "The command shell records a directory listing under a maintenance path; no selected ATT&CK behavior is visible in this view."
       },
       "contextual_ground_truth": {
         "status": "unmapped",
@@ -6277,7 +6283,7 @@
                   "event": "anchor",
                   "field": "CommandLine",
                   "op": "contains_ci",
-                  "value": "dir C:\\Program Files\\Contoso"
+                  "value": "dir C:\\ProgramData\\"
                 },
                 {
                   "event": "anchor",
@@ -6312,11 +6318,11 @@
             }
           ]
         },
-        "rationale": "Context confirms the same benign routine cmd directory listing workflow with an explicit maintenance process or actor."
+        "rationale": "The Explorer selection and cmd.exe directory-listing invocation share the host and helpdesk context expected by the synthetic maintenance case; authorization is not independently recorded."
       },
       "expected_transition": "unmapped->unmapped",
       "contextual_event_descriptions": [
-        "A related event confirms the approved workflow for routine cmd directory listing with affirmative benign telemetry."
+        "A related event records an Explorer selection under the same host and user context as the directory listing."
       ],
       "contextual_event_specs": [
         {
@@ -6363,7 +6369,7 @@
         "provider": "Microsoft-Windows-Security-Auditing",
         "channel": "Security",
         "windows_event_id": 4698,
-        "selection_rule": "\\Contoso\\UpdateMaintenance runs signed updater.exe; select the concrete provider fields that contain UpdateMaintenance, updater.exe, Program Files"
+        "selection_rule": "\\UpdateCheck task configured with updater.exe; select the task path and executable fields"
       },
       "single_ground_truth": {
         "status": "unmapped",
@@ -6375,13 +6381,13 @@
               "event": "anchor",
               "field": "TaskName",
               "op": "contains_ci",
-              "value": "\\Contoso\\UpdateMaintenance"
+              "value": "\\UpdateCheck"
             },
             {
               "event": "anchor",
               "field": "TaskContent",
               "op": "contains_ci",
-              "value": "C:\\Program Files\\Contoso\\updater.exe"
+              "value": "updater.exe"
             },
             {
               "event": "anchor",
@@ -6391,7 +6397,7 @@
             }
           ]
         },
-        "rationale": "The task content is a signed vendor updater in a protected path and is tied to maintenance context."
+        "rationale": "The task content records an updater invocation under ProgramData tied to maintenance context; no signer telemetry is present."
       },
       "contextual_ground_truth": {
         "status": "unmapped",
@@ -6405,13 +6411,13 @@
                   "event": "anchor",
                   "field": "TaskName",
                   "op": "contains_ci",
-                  "value": "\\Contoso\\UpdateMaintenance"
+                  "value": "\\UpdateCheck"
                 },
                 {
                   "event": "anchor",
                   "field": "TaskContent",
                   "op": "contains_ci",
-                  "value": "C:\\Program Files\\Contoso\\updater.exe"
+                  "value": "updater.exe"
                 },
                 {
                   "event": "anchor",
@@ -6446,11 +6452,11 @@
             }
           ]
         },
-        "rationale": "Context confirms the same benign scheduled windows update maintenance workflow with an explicit maintenance process or actor."
+        "rationale": "The task configuration and matching updater process-creation record are consistent with the synthetic maintenance case; these records do not establish task causality or signer authenticity."
       },
       "expected_transition": "unmapped->unmapped",
       "contextual_event_descriptions": [
-        "A related event confirms the approved workflow for scheduled windows update maintenance with affirmative benign telemetry."
+        "A related event records an updater process-creation event matching the configured task executable and arguments."
       ],
       "contextual_event_specs": [
         {
@@ -6458,7 +6464,7 @@
           "provider": "Microsoft-Windows-Sysmon",
           "channel": "Microsoft-Windows-Sysmon/Operational",
           "windows_event_id": 1,
-          "selection_rule": "signed updater.exe launched by taskeng.exe"
+          "selection_rule": "updater.exe process created with taskeng.exe parent"
         }
       ],
       "counter_evidence": "A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.",
@@ -6505,7 +6511,7 @@
         "provider": "Microsoft-Windows-Security-Auditing",
         "channel": "Security",
         "windows_event_id": 4697,
-        "selection_rule": "ContosoPatch service installation from Program Files; select the concrete provider fields that contain ContosoPatch, Program Files, LocalService"
+        "selection_rule": "PatchService service installation from Program Files; select the concrete provider fields that contain PatchService, Program Files, LocalService"
       },
       "single_ground_truth": {
         "status": "ambiguous",
@@ -6517,13 +6523,13 @@
               "event": "anchor",
               "field": "ServiceName",
               "op": "contains_ci",
-              "value": "ContosoPatch"
+              "value": "PatchService"
             },
             {
               "event": "anchor",
               "field": "ServiceFileName",
               "op": "contains_ci",
-              "value": "C:\\Program Files\\Contoso\\"
+              "value": "C:\\ProgramData\\"
             },
             {
               "event": "anchor",
@@ -6533,7 +6539,7 @@
             }
           ]
         },
-        "rationale": "EID 4697 records a service installation from Program Files under LocalService, but a protected path alone does not establish authorization without deployment workflow context."
+        "rationale": "EID 4697 records a LocalService service configuration pointing under ProgramData; the single event does not identify deployment authorization or runtime execution."
       },
       "contextual_ground_truth": {
         "status": "unmapped",
@@ -6547,13 +6553,13 @@
                   "event": "anchor",
                   "field": "ServiceName",
                   "op": "contains_ci",
-                  "value": "ContosoPatch"
+                  "value": "PatchService"
                 },
                 {
                   "event": "anchor",
                   "field": "ServiceFileName",
                   "op": "contains_ci",
-                  "value": "C:\\Program Files\\Contoso\\"
+                  "value": "C:\\ProgramData\\"
                 },
                 {
                   "event": "anchor",
@@ -6587,7 +6593,7 @@
                   "event": "context_1",
                   "field": "CommandLine",
                   "op": "contains_ci",
-                  "value": "ContosoPatch.msi"
+                  "value": "PatchService.msi"
                 }
               ]
             },
@@ -6605,7 +6611,7 @@
             }
           ]
         },
-        "rationale": "The enterprise deployment agent parent process (CcmExec.exe), msiexec installer execution with approved package path, temporal ordering, and host linkage establish an authorized service deployment workflow independent of user identity."
+        "rationale": "The CcmExec.exe parent, msiexec process-creation record referencing a package path, temporal order, and host linkage are consistent with an enterprise deployment workflow; they do not independently prove authorization."
       },
       "expected_transition": "ambiguous->unmapped",
       "contextual_event_descriptions": [
@@ -6771,11 +6777,11 @@
             }
           ]
         },
-        "rationale": "The linked Contoso account-provisioner process, approved management parent, explicit role, ordering, host, and logon establish an affirmative synthetic provisioning workflow."
+        "rationale": "The linked account-provisioning process, management parent, explicit role, ordering, host, and logon match the approved synthetic provisioning case; external authorization is not independently recorded."
       },
       "expected_transition": "ambiguous->unmapped",
       "contextual_event_descriptions": [
-        "A related event confirms the approved workflow for normal local backup-account provisioning with affirmative benign telemetry."
+        "A related event links the account-provisioning process context to the 4720 record."
       ],
       "contextual_event_specs": [
         {
@@ -6783,7 +6789,7 @@
           "provider": "Microsoft-Windows-Security-Auditing",
           "channel": "Security",
           "windows_event_id": 4688,
-          "selection_rule": "Contoso account-provisioner process under the approved management agent"
+          "selection_rule": "Account-provisioning process under the approved management agent"
         }
       ],
       "counter_evidence": "A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.",
@@ -6858,7 +6864,7 @@
             }
           ]
         },
-        "rationale": "A signed startup application under Program Files is an affirmative benign startup scenario."
+        "rationale": "The Run key names the OneDrive application path; signer authenticity is not established by the available telemetry."
       },
       "contextual_ground_truth": {
         "status": "unmapped",
@@ -6913,11 +6919,11 @@
             }
           ]
         },
-        "rationale": "Context confirms the same benign legitimate startup application registration workflow with an explicit maintenance process or actor."
+        "rationale": "The Run-key value and related OneDrive process-creation record share the target path; signer authenticity and authorized ownership are not established."
       },
       "expected_transition": "unmapped->unmapped",
       "contextual_event_descriptions": [
-        "A related event confirms the approved workflow for legitimate startup application registration with affirmative benign telemetry."
+        "A related event records a process-creation event whose image matches the Run-key target."
       ],
       "contextual_event_specs": [
         {
@@ -7012,13 +7018,13 @@
               "event": "context_1",
               "field": "TaskName",
               "op": "contains_ci",
-              "value": "\\Contoso\\SecurityLogRetention"
+              "value": "\\LogRetention"
             },
             {
               "event": "context_1",
               "field": "TaskContent",
               "op": "contains_ci",
-              "value": "C:\\Program Files\\Contoso\\LogMaintenance\\logrotate.exe"
+              "value": "logrotate.exe"
             },
             {
               "event": "context_2",
@@ -7039,9 +7045,9 @@
               "value": "--clear Security"
             },
             {
-              "relation": "process_then_task",
-              "process": "context_2",
-              "task": "context_1"
+              "relation": "task_then_process",
+              "task": "context_1",
+              "process": "context_2"
             },
             {
               "relation": "temporal_before",
@@ -7071,11 +7077,11 @@
             }
           ]
         },
-        "rationale": "The approved synthetic SecurityLogRetention task, protected logrotate.exe path, taskeng parent, ordering, host, and logon jointly establish a benign maintenance workflow."
+        "rationale": "The synthetic SecurityLogRetention task configuration, logrotate.exe process-creation record, taskeng parent, ordering, host, and logon are consistent with the approved maintenance case; authorization is not independently established."
       },
       "expected_transition": "ambiguous->unmapped",
       "contextual_event_descriptions": [
-        "A related event confirms the approved workflow for authorized log-retention maintenance with affirmative benign telemetry."
+        "A related event records a scheduled log-retention task and matching logrotate process context before the EID 1102 outcome; authorization is not independently verified."
       ],
       "contextual_event_specs": [
         {
@@ -7090,7 +7096,7 @@
           "provider": "Microsoft-Windows-Sysmon",
           "channel": "Microsoft-Windows-Sysmon/Operational",
           "windows_event_id": 1,
-          "selection_rule": "Contoso logrotate.exe launched by taskeng.exe"
+          "selection_rule": "logrotate.exe launched by taskeng.exe"
         }
       ],
       "counter_evidence": "A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.",
@@ -7860,7 +7866,7 @@
       "technique_ids": [
         "T1053.005"
       ],
-      "behavior_description": "Hidden scheduled task launching rundll32 DLL entry point",
+      "behavior_description": "Hidden scheduled task configured with a rundll32 DLL invocation",
       "anchor": {
         "provider": "Microsoft-Windows-Security-Auditing",
         "channel": "Security",
@@ -7897,7 +7903,7 @@
             }
           ]
         },
-        "rationale": "The DEV-only hidden scheduled task launching rundll32 dll entry point has concrete technique-specific evidence in its anchor event."
+        "rationale": "The task event records a hidden action configured to invoke rundll32 on a DLL entry point; this is configuration evidence."
       },
       "contextual_ground_truth": {
         "status": "mapped",
@@ -7940,11 +7946,11 @@
             }
           ]
         },
-        "rationale": "Context confirms the DEV-only hidden scheduled task launching rundll32 dll entry point behavior through a related telemetry event."
+        "rationale": "A process-creation record shows rundll32 invoked with the DLL configured in the task; it does not establish task causality or successful DLL loading."
       },
       "expected_transition": "mapped->mapped",
       "contextual_event_descriptions": [
-        "A structurally distinct DEV context event corroborates hidden scheduled task launching rundll32 dll entry point."
+        "A structurally distinct DEV process-creation event matches the task's configured rundll32 invocation."
       ],
       "contextual_event_specs": [
         {
@@ -8719,7 +8725,7 @@
         "T1547.001",
         "T1543.003"
       ],
-      "behavior_description": "Run-key startup persistence followed by service installation",
+      "behavior_description": "Run-key configuration followed by a service-installation event",
       "anchor": {
         "provider": "Microsoft-Windows-Sysmon",
         "channel": "Microsoft-Windows-Sysmon/Operational",
@@ -8807,7 +8813,7 @@
       },
       "expected_transition": "mapped->mapped",
       "contextual_event_descriptions": [
-        "The DEV payload is registered for startup and then installed as a service under a separate service event."
+        "The DEV Run-key value is recorded before a separate service-installation event; neither record alone establishes runtime execution."
       ],
       "contextual_event_specs": [
         {
@@ -8875,7 +8881,7 @@
         "T1059.001",
         "T1105"
       ],
-      "behavior_description": "Scheduled task launches PowerShell which downloads a package",
+      "behavior_description": "Scheduled task configuration with a PowerShell process-creation and file-transfer context",
       "anchor": {
         "provider": "Microsoft-Windows-Security-Auditing",
         "channel": "Security",
@@ -8952,9 +8958,9 @@
                 "value": "-File"
               },
               {
-                "relation": "process_then_task",
-                "process": "context_1",
-                "task": "anchor"
+                "relation": "task_then_process",
+                "task": "anchor",
+                "process": "context_1"
               }
             ]
           },
@@ -8984,7 +8990,7 @@
       },
       "expected_transition": "mapped->mapped",
       "contextual_event_descriptions": [
-        "The DEV task starts pwsh.exe, which downloads a package and writes the cache file."
+        "The DEV task configuration matches a later pwsh.exe process-creation record, while separate network and file events record transfer-related activity."
       ],
       "contextual_event_specs": [
         {
@@ -9069,7 +9075,7 @@
       "category": "unmapped",
       "split": "dev",
       "technique_ids": [],
-      "behavior_description": "Signed vendor updater writes an ordinary cache file",
+      "behavior_description": "Updater process writes an ordinary cache file",
       "anchor": {
         "provider": "Microsoft-Windows-Sysmon",
         "channel": "Microsoft-Windows-Sysmon/Operational",
@@ -9086,7 +9092,7 @@
               "event": "anchor",
               "field": "Image",
               "op": "endswith_ci",
-              "value": "\\ContosoUpdater.exe"
+              "value": "\\Updater.exe"
             },
             {
               "event": "anchor",
@@ -9107,7 +9113,7 @@
             }
           ]
         },
-        "rationale": "The network event is paired with a signed vendor updater and an allowlisted endpoint, supporting a benign update workflow."
+        "rationale": "The network event is paired with an updater process and a documentation-only endpoint; telemetry does not establish signer authenticity or downloaded file contents."
       },
       "contextual_ground_truth": {
         "status": "unmapped",
@@ -9119,13 +9125,13 @@
               "event": "anchor",
               "field": "Image",
               "op": "endswith_ci",
-              "value": "\\ContosoUpdater.exe"
+              "value": "\\Updater.exe"
             },
             {
               "event": "context_1",
               "field": "TargetFilename",
               "op": "contains_ci",
-              "value": "\\Contoso\\Cache\\"
+              "value": "\\Cache\\"
             },
             {
               "not": {
@@ -9142,11 +9148,11 @@
             }
           ]
         },
-        "rationale": "The contextual cache file confirms ordinary updater activity without suspicious payload or persistence evidence."
+        "rationale": "The related cache-file event shares the updater process identity; the available evidence does not establish file contents or signer authenticity."
       },
       "expected_transition": "unmapped->unmapped",
       "contextual_event_descriptions": [
-        "The signed updater creates a cache file under its protected vendor directory."
+        "The updater process creates a cache file under ProgramData."
       ],
       "contextual_event_specs": [
         {
@@ -9293,5 +9299,16 @@
       ],
       "planned_instances": 4
     }
-  ]
+  ],
+  "semantic_correction_approval": {
+    "reference": "reports/T05_T10_stage_b_preflight_blockers.md",
+    "decision": "User explicitly approved the listed telemetry and relation corrections and continuation of Stage B on 2026-09-19.",
+    "preserved": [
+      "labels",
+      "technique_catalog",
+      "seed",
+      "quotas",
+      "family_splits"
+    ]
+  }
 }

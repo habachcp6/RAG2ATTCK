@@ -113,6 +113,8 @@ Run A is data/ground_truth/synthetic. Run B was independently prepared, validate
 
 - Same GPT-5.6 Luna, xhigh reasoning, baseline prompt, output schema, API client and retrieval depths 1/3/5/10 remain untouched. No model requests, retrieval diagnostics or T20 experiments were run.
 - Synthetic paired reference annotations are evidence-conditioned and closed-world; they are not independent real-world event labels. Family holdout reduces template overlap but cannot establish generalization to real incidents.
+- The final adversarial review found the exact `updater.exe` token in 18 of 156 contextual unmapped views and no mapped or ambiguous contextual views. This is a limited family-specific lexical cue; results should be reported within this synthetic closed-world benchmark, not as evidence of real-world generalization.
+- Sample IDs can be reversed with the public seed and template registry to recover family metadata. The current production prompt path treats `sample_id` as metadata and formats model input from `endpoint_evidence` only; keep that boundary in any future evaluation runner.
 - Recorded command/configuration evidence does not establish successful execution. Existing approved DLL-service strings express synthetic configuration/invocation; they are not a verified runtime svchost loading trace. Vendor paths/names are not cryptographic signer proof.
 - Safe synthetic indicators and placeholder credentials are not live infrastructure or real secrets. No telemetry command was executed.
 - Only inference.jsonl is intended for model input. pairs.jsonl includes ground truth and must remain evaluation-only.

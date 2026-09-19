@@ -18,6 +18,11 @@ PID and must not be mistaken for the newly created process. A parent-child edge
 matches the child's parent GUID or creator PID to its parent. A parent network
 event preceding a child matches ProcessGuid to ParentProcessGuid.
 
+When a Sysmon 1 event's ParentProcessGuid matches another visible Sysmon 1
+ProcessGuid, ParentCommandLine must equal that parent's recorded CommandLine.
+If the parent event is absent, ParentCommandLine is not independently checked
+against another record.
+
 `process_then_network/registry` and `network_then_file` require same process
 identity. `process_then_file` requires either direct same-process identity or a
 same-host, same-actor invocation containing the exact destination filename (for
@@ -29,3 +34,10 @@ requires the pre-existing filename in the later process command line.
 never TargetUserName (the new account). `same_logon` compares SubjectLogonId or
 LogonId. `same_host` compares Computer. Ground truth is copied from the approved
 registry per view; predicate execution validates evidence and never predicts labels.
+
+Task, service, and Run-key records establish configured paths and arguments.
+A matching later process-creation record establishes that the process was created
+with that invocation; temporal and path correlation alone do not establish that a
+task or service caused the process start. Sysmon process creation also does not
+establish that a script completed or that a referenced DLL loaded successfully.
+Event 4697 records service installation, not service restart or runtime execution.

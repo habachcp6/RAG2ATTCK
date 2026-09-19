@@ -2,8 +2,8 @@
   "approved": true,
   "base_main_sha": "827eb8b147efc756146261649399ee9e40a1e634",
   "config_sha256": "edc14bfbadeb4c532c306aefd2f3036d65d815c6d79332e867c2937db64cf4c9",
-  "decision": "User approved Stage B execution and the bounded telemetry/relation corrections in reports/T05_T10_stage_b_preflight_blockers.md on 2026-09-19.",
+  "decision": "User approved Stage B execution and the bounded telemetry/relation corrections in reports/T05_T10_stage_b_preflight_blockers.md on 2026-09-19. After independent audits of cace430be63cc1071b033b90418f1e2e56aa82f0, the orchestrator authorized corrective telemetry lineage, removal of the observed unmapped vendor shortcut, and evidence-bounded rationale updates while preserving labels, quotas, split, seed, catalog, and experiment settings.",
   "prior_registry_sha256": "ce9e3d79b827f59a2975be356f0430ebe6939f8012519b476c191360b36b3b7a",
-  "registry_sha256": "8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c",
+  "registry_sha256": "0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2",
   "schema_version": "1.0.0"
 }

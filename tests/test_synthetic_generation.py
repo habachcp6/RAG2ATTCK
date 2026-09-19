@@ -46,6 +46,42 @@ def test_exact_generated_quotas_and_all_structural_gates(generated, tmp_path):
         assert not any(check_leakage(get_inference_payload(e)) for e in pair.events.values())
 
 
+def test_parent_command_line_matches_visible_parent_and_rejects_mismatch(generated):
+    registry, digest, pairs = generated
+    pair = copy.deepcopy(next(p for p in pairs if p.template_family_id == "TF_T1059_001_A"))
+    family = next(f for f in registry["families"] if f["template_family_id"] == pair.template_family_id)
+    visible_processes = {
+        event.fields["ProcessGuid"]: event
+        for event in pair.events.values()
+        if event.windows_event_id == 1
+    }
+    child = next(
+        event for event in pair.events.values()
+        if event.windows_event_id == 1 and event.fields.get("ParentProcessGuid") in visible_processes
+    )
+    parent = visible_processes[child.fields["ParentProcessGuid"]]
+    assert child.fields["ParentCommandLine"] == parent.fields["CommandLine"]
+    assert audit_pair(pair, family, digest) == []
+
+    pair.events[child.event_id] = replace(
+        child,
+        fields={**child.fields, "ParentCommandLine": "C:\\Windows\\explorer.exe"},
+    )
+    assert any(
+        "ParentCommandLine disagrees with visible parent process" in error
+        for error in audit_pair(pair, family, digest)
+    )
+
+
+def test_inference_has_no_fixed_unmapped_vendor_or_maintenance_shortcut(generated):
+    pairs = generated[2]
+    for pair in pairs:
+        for event in pair.events.values():
+            payload = json.dumps(get_inference_payload(event), ensure_ascii=False)
+            assert "contoso" not in payload.casefold()
+            assert "maintenance" not in payload.casefold()
+
+
 def test_same_seed_serialization_roundtrip_and_different_instances(generated, tmp_path):
     registry, digest, pairs = generated
     other = generate_dataset(registry, digest)

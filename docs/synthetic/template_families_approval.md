@@ -2,7 +2,7 @@
 
 This package is generated from `config/synthetic_templates.json`. It is a human semantic-review artifact for Stage A. Stage B generation and final dataset freezing are intentionally not performed.
 
-- Registry SHA-256: `8495842d24b6a4635e125a1d21dfad811d776efcc8ba138f5441f88457f3350c`
+- Registry SHA-256: `0f4db1c62ab3bc59a6da6647bf91f65428d3fe2d86881530d36497544084b8b2`
 - Total families: `64` (`test=52`, `dev=12`)
 - Planned pairs: `670`
 - ATT&CK catalog: pinned Enterprise v19.2; names are checked against the local STIX snapshot.
@@ -45,7 +45,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `test`
 - Category: `mapped_single`
-- Behavior description: Encoded PowerShell launched by an Office document
+- Behavior description: Encoded PowerShell process with an Office parent
 - Anchor telemetry: `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
 - Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
 - Anchor selection rule: Sysmon process creation where Image is powershell.exe, CommandLine contains -EncodedCommand, and ParentImage is an Office application
@@ -89,7 +89,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Sysmon exposes PowerShell execution, an encoded command, and Office as the parent process in the single view.
+- Rationale: The Sysmon process-creation record shows PowerShell with an encoded command line and an Office parent.
 ### Contextual ground truth
 - Status: `mapped`
 - Technique(s): `T1059.001` (PowerShell)
@@ -183,7 +183,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: WMI-launched PowerShell is observable, but that execution path is dual-use and the single view lacks intent evidence.
+- Rationale: A WMI-parented PowerShell process is observable, but the invocation is dual-use and the single view lacks intent evidence.
 ### Contextual ground truth
 - Status: `mapped`
 - Technique(s): `T1059.001` (PowerShell)
@@ -223,7 +223,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The WMI parent, non-interactive PowerShell invocation, and related RPC connection provide defensible contextual evidence for PowerShell execution.
+- Rationale: The WMI parent, non-interactive PowerShell invocation, and related RPC connection provide contextual evidence for this process lineage.
 - Expected transition: `ambiguous->mapped`
 - Contextual event descriptions: ["A Sysmon network event to TCP/135 is linked to the WMI process before the PowerShell child."]
 - Counter-evidence: Remote administration by an authorized operator using WMI and PowerShell remains a benign near-miss.
@@ -287,7 +287,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: PowerShell execution with explicit dynamic evaluation and decoded content is directly visible in the anchor.
+- Rationale: The process-creation record contains a PowerShell command line with dynamic-evaluation and decoding expressions; it does not establish command success.
 ### Contextual ground truth
 - Status: `mapped`
 - Technique(s): `T1059.001` (PowerShell)
@@ -323,7 +323,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The contextual event is the same process identity and confirms the obfuscated PowerShell command rather than introducing a new label.
+- Rationale: The contextual event has the same process identity and repeats the obfuscated PowerShell invocation without introducing a new label.
 - Expected transition: `mapped->mapped`
 - Contextual event descriptions: ["A follow-on Sysmon event carries the same ProcessGuid as the obfuscated PowerShell anchor."]
 - Counter-evidence: An authorized incident-response script can use dynamic evaluation; a documented runbook and signed script are counter-evidence.
@@ -353,7 +353,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `test`
 - Category: `mapped_single`
-- Behavior description: PowerShell reflective assembly loading in memory
+- Behavior description: PowerShell invocation of reflective assembly loading
 - Anchor telemetry: `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
 - Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `3`
 - Anchor selection rule: PowerShell command line contains Reflection.Assembly and Assembly.Load
@@ -387,7 +387,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The anchor directly records PowerShell performing reflective assembly loading.
+- Rationale: The process-creation record contains a PowerShell reflective-loading invocation; it does not establish that the assembly loaded successfully.
 ### Contextual ground truth
 - Status: `mapped`
 - Technique(s): `T1059.001` (PowerShell)
@@ -427,7 +427,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 - Expected transition: `mapped->mapped`
 - Contextual event descriptions: ["A Sysmon network connection follows the PowerShell creation event with the same ProcessGuid."]
 - Counter-evidence: A signed application compatibility shim may load an assembly reflectively; approved publisher and path are counter-evidence.
-- Benign near-miss: PowerShell loading a normal module from a trusted module directory.
+- Benign near-miss: PowerShell invocation of a normal module from a trusted module directory.
 - Allowed variations: ["Keep Reflection.Assembly and Assembly.Load as visible indicators."]
 - Disallowed variations: ["Do not claim a fileless technique from Image alone."]
 - ATT&CK source:
@@ -493,7 +493,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The Security process-creation record shows a command-shell interpreter executing a chained command and redirecting output.
+- Rationale: The Security process-creation record shows cmd.exe invoked with a chained command and output redirection.
 ### Contextual ground truth
 - Status: `mapped`
 - Technique(s): `T1059.003` (Windows Command Shell)
@@ -557,7 +557,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `test`
 - Category: `mapped_single`
-- Behavior description: Windows Command Shell launched by a service with transfer staging resolved by context
+- Behavior description: Windows Command Shell process with a services.exe parent and transfer-staging invocation
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4688`
 - Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `11`
 - Anchor selection rule: Security 4688 where cmd.exe is a child of services.exe
@@ -585,7 +585,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: A service-launched command shell is observable, but the single view does not establish whether the action is administration or adversarial.
+- Rationale: A cmd.exe process with a services.exe parent is observable, but the single view does not establish whether the action is administrative or adversarial.
 ### Contextual ground truth
 - Status: `mapped`
 - Technique(s): `T1059.003` (Windows Command Shell)
@@ -625,7 +625,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The service parent, explicit command-shell execution of certutil staging, and linked file creation provide the contextual threshold.
+- Rationale: The services.exe parent, cmd.exe command line containing certutil staging syntax, and related file-creation record provide contextual evidence; the records do not establish command completion.
 - Expected transition: `ambiguous->mapped`
 - Contextual event descriptions: ["A Sysmon file-create event is linked to the cmd.exe ProcessId after the certutil command."]
 - Counter-evidence: A software deployment service may invoke cmd.exe and certutil for an approved package; publisher and managed destination are counter-evidence.
@@ -655,7 +655,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `test`
 - Category: `mapped_single`
-- Behavior description: Windows Command Shell executing a batch file from a public staging path
+- Behavior description: Windows Command Shell invocation of a batch file from a public path
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4688`
 - Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `11`
 - Anchor selection rule: Security 4688 where cmd.exe executes a .bat file with delayed expansion and a public staging path
@@ -695,7 +695,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The anchor identifies cmd.exe and a concrete batch-script execution with shell-specific delayed expansion.
+- Rationale: The process-creation record identifies cmd.exe invoking a batch script with shell-specific delayed expansion.
 ### Contextual ground truth
 - Status: `mapped`
 - Technique(s): `T1059.003` (Windows Command Shell)
@@ -729,11 +729,11 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: A linked batch-file creation event confirms the command shell is executing the staged script.
+- Rationale: A related batch-file creation event shares the command-shell process identity; this supports the recorded script invocation but does not establish successful completion.
 - Expected transition: `mapped->mapped`
 - Contextual event descriptions: ["The batch file is created immediately before the cmd.exe process record."]
 - Counter-evidence: Enterprise deployment systems also run batch files; a signed package and managed software directory are counter-evidence.
-- Benign near-miss: cmd.exe executing a batch file from C:\Program Files\Contoso.
+- Benign near-miss: cmd.exe listing a resource directory under C:\ProgramData.
 - Allowed variations: ["Retain the shell-specific /v:on and batch-file indicators."]
 - Disallowed variations: ["Do not use only a filename or PID variation."]
 - ATT&CK source:
@@ -839,7 +839,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The contextual file event confirms the command-shell pipeline wrote its output to the staged destination.
+- Rationale: The related file-creation event records the staged destination under the same process identity as the command-shell pipeline.
 - Expected transition: `mapped->mapped`
 - Contextual event descriptions: ["A Sysmon file-create event follows the command-shell pipeline and uses the same process identity."]
 - Counter-evidence: A diagnostic script can pipe output to a managed report file; approved script ownership and destination are counter-evidence.
@@ -869,7 +869,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `test`
 - Category: `mapped_single`
-- Behavior description: Scheduled task creation with hidden PowerShell payload
+- Behavior description: Scheduled task configuration with a hidden PowerShell action
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4698`
 - Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
 - Anchor selection rule: Security 4698 where TaskContent contains a hidden PowerShell encoded command and a public payload path
@@ -943,9 +943,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The contextual PowerShell execution is linked back to the created task and confirms execution of the scheduled task payload.
+- Rationale: The later process-creation record matches the executable and arguments configured in the task. This is consistent with payload invocation, but these records alone do not establish that Task Scheduler launched it or that the payload completed.
 - Expected transition: `mapped->mapped`
-- Contextual event descriptions: ["A Sysmon PowerShell process event executes the task content after task creation."]
+- Contextual event descriptions: ["A later Sysmon process-creation event records a PowerShell invocation matching the task executable and arguments."]
 - Counter-evidence: A centrally managed software updater may create a hidden task; signed content, an approved task owner, and a Program Files path are counter-evidence.
 - Benign near-miss: A visible Microsoft maintenance task running cleanmgr.exe from System32.
 - Allowed variations: ["Use TaskName and TaskContent as separate observable fields."]
@@ -973,7 +973,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `test`
 - Category: `mapped_single`
-- Behavior description: Scheduled task created through COM with suspicious executable execution resolved by context
+- Behavior description: COM-created task with a configured ProgramData executable and matching process creation in context
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4698`
 - Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
 - Anchor selection rule: Security 4698 for a COM-created task whose content points to ProgramData
@@ -1035,9 +1035,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The contextual process execution is linked to the task object and establishes scheduled execution of the suspicious payload.
+- Rationale: The later process-creation record matches the executable and arguments configured in the task. This is consistent with payload invocation, but these records alone do not establish that Task Scheduler launched it or that the payload completed.
 - Expected transition: `ambiguous->mapped`
-- Contextual event descriptions: ["A process-create event runs the executable named in TaskContent after registration."]
+- Contextual event descriptions: ["A later process-creation event matches the executable and arguments named in TaskContent."]
 - Counter-evidence: A vendor cache task may use ProgramData; a signed publisher and an approved maintenance window are counter-evidence.
 - Benign near-miss: A task registered for a known Microsoft component with a System32 executable.
 - Allowed variations: ["Keep the task content and follow-on process linked."]
@@ -1065,7 +1065,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `test`
 - Category: `mapped_single`
-- Behavior description: Scheduled task with hidden boot trigger and public DLL payload
+- Behavior description: Scheduled task with hidden boot trigger and configured public DLL target
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4698`
 - Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
 - Anchor selection rule: Security 4698 where TaskName is a misleading update name and TaskContent has a hidden boot trigger and rundll32 public DLL
@@ -1105,7 +1105,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The scheduled-task record exposes a misleading name, hidden trigger, and public DLL execution payload.
+- Rationale: The scheduled-task record exposes a misleading name, hidden trigger, and a configured DLL target under Public.
 ### Contextual ground truth
 - Status: `mapped`
 - Technique(s): `T1053.005` (Scheduled Task)
@@ -1139,9 +1139,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The contextual rundll32 process is linked to the task content and confirms task-based execution.
+- Rationale: The process-creation record shows rundll32 invoked with the DLL path configured in the task; it does not establish that DLL loading succeeded or that the task triggered the process.
 - Expected transition: `mapped->mapped`
-- Contextual event descriptions: ["A rundll32 process is created from the task content after registration."]
+- Contextual event descriptions: ["A process-creation event records rundll32 invoked with the DLL path in task content."]
 - Counter-evidence: A legitimate product may use a hidden boot task, but a signed DLL in a vendor directory is required for the benign interpretation.
 - Benign near-miss: A Microsoft task with a canonical name and a System32 executable.
 - Allowed variations: ["Require both task metadata and a concrete payload indicator."]
@@ -1169,7 +1169,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `test`
 - Category: `mapped_single`
-- Behavior description: Scheduled task invokes PowerShell with intent resolved by a file and network chain
+- Behavior description: Scheduled task configuration with matching PowerShell process and related network activity
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4698`
 - Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`; `context_2` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `3`
 - Anchor selection rule: Security 4698 where TaskContent invokes PowerShell from an unknown path
@@ -1242,9 +1242,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The contextual PowerShell execution and outbound connection are both linked to the task, resolving the task mechanism.
+- Rationale: The task configuration matches a later PowerShell process-creation record and related outbound activity. These records support a task-payload invocation but do not prove the task caused the process start or that execution completed.
 - Expected transition: `ambiguous->mapped`
-- Contextual event descriptions: ["PowerShell executes the task script and opens a related outbound connection."]
+- Contextual event descriptions: ["A process-creation record contains the configured PowerShell invocation, and a related Sysmon 3 record captures outbound activity."]
 - Counter-evidence: A scheduled compliance job may invoke PowerShell and contact an approved update endpoint; signed script and allowlisted destination are counter-evidence.
 - Benign near-miss: A task running a documented PowerShell compliance script without network activity.
 - Allowed variations: ["Keep the task content and process relationship explicit."]
@@ -1340,11 +1340,11 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The service manager process is linked to the 4697 installation and confirms the service creation path.
+- Rationale: The 4697 event records the service installation fields; a services.exe process record supplies related host and chronology context.
 - Expected transition: `mapped->mapped`
 - Contextual event descriptions: ["A services.exe process event is linked to the service installation event."]
 - Counter-evidence: A portable enterprise agent may be installed from a controlled staging directory; signer, ACL, and deployment ticket are counter-evidence.
-- Benign near-miss: A signed service installed under C:\Program Files\Contoso with a managed start type.
+- Benign near-miss: A service installed with an image path under C:\ProgramData and a managed start type.
 - Allowed variations: ["Use ServiceFileName, ServiceStartType, and ServiceAccount."]
 - Disallowed variations: ["Do not map the mere existence of a service."]
 - ATT&CK source:
@@ -1370,7 +1370,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `test`
 - Category: `mapped_single`
-- Behavior description: Windows service installed to launch a command shell payload
+- Behavior description: Windows service configuration contains a command-shell invocation
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4697`
 - Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
 - Anchor selection rule: Security 4697 where ServiceFileName contains cmd.exe and a ProgramData payload
@@ -1404,7 +1404,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The 4697 record shows service installation whose image launches a command-shell payload from ProgramData.
+- Rationale: The 4697 record stores a service image field containing a cmd.exe invocation with a ProgramData path; this is configuration evidence, not command completion.
 ### Contextual ground truth
 - Status: `mapped`
 - Technique(s): `T1543.003` (Windows Service)
@@ -1438,7 +1438,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: A linked cmd.exe process confirms that the installed service executes its command-shell image.
+- Rationale: A later process-creation event records cmd.exe with the configured service command line; the available records do not establish that the service launched it or that the command completed.
 - Expected transition: `mapped->mapped`
 - Contextual event descriptions: ["A cmd.exe process is created by the service manager after installation."]
 - Counter-evidence: An installer may register a command-shell wrapper; signed wrapper, Program Files path, and installer provenance are counter-evidence.
@@ -1468,7 +1468,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `test`
 - Category: `mapped_single`
-- Behavior description: Windows service installed with a DLL entry point and LocalSystem account
+- Behavior description: Windows service configuration with a DLL path and LocalSystem account
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4697`
 - Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `11`
 - Anchor selection rule: Security 4697 where ServiceFileName uses svchost -k with an unusual DLL path and LocalSystem
@@ -1502,7 +1502,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The service-install event records a service-hosted DLL path in a user-writable location under LocalSystem.
+- Rationale: The service-install event records a LocalSystem service configuration containing a DLL path in a user-writable location; it does not show that svchost loaded the DLL.
 ### Contextual ground truth
 - Status: `mapped`
 - Technique(s): `T1543.003` (Windows Service)
@@ -1538,9 +1538,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The related DLL file event corroborates the installed service image and service-hosted execution.
+- Rationale: The related DLL file event corroborates the installed service image path; it does not establish that svchost loaded the DLL.
 - Expected transition: `mapped->mapped`
-- Contextual event descriptions: ["A DLL file is created at the service image path before the service starts."]
+- Contextual event descriptions: ["A DLL file is created at the configured service path before the service-installation event."]
 - Counter-evidence: A vendor service may use svchost hosting, but the DLL must be signed and installed in a protected vendor directory.
 - Benign near-miss: A signed Windows service DLL under System32 with a Microsoft service name.
 - Allowed variations: ["Preserve ServiceFileName, ServiceAccount, and the linked DLL path."]
@@ -1568,10 +1568,10 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `test`
 - Category: `mapped_single`
-- Behavior description: Windows service DLL sideload with execution resolved by context
+- Behavior description: Windows service configuration references a DLL path; context contains a DLL file and svchost process record
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4697`
 - Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `11`; `context_2` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
-- Anchor selection rule: Security 4697 where a service loads an unsigned-looking DLL from ProgramData
+- Anchor selection rule: Security 4697 where the configured service image references a DLL path under ProgramData
 - Windows documentation: EID 4697 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4697]; EID 11 [https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-11-file-create]; EID 1 [https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-1-process-create]
 - Telemetry combinations covered: `3` registry event specifications
 ### Single-view ground truth
@@ -1596,7 +1596,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: A service-hosted DLL under ProgramData is suspicious but the single service-install record does not prove abuse.
+- Rationale: The 4697 record configures a service image that references a DLL under ProgramData; it does not establish runtime loading or abuse.
 ### Contextual ground truth
 - Status: `mapped`
 - Technique(s): `T1543.003` (Windows Service)
@@ -1636,9 +1636,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The DLL creation and subsequent service-host process together establish service-based execution of the staged image.
+- Rationale: The DLL creation and later svchost process-creation record corroborate the configured service image path; they do not establish that the service loaded the staged image.
 - Expected transition: `ambiguous->mapped`
-- Contextual event descriptions: ["A DLL is created at the service path and svchost.exe later starts the service."]
+- Contextual event descriptions: ["A DLL file is created at the configured service path, followed by a svchost.exe process-creation record."]
 - Counter-evidence: A signed vendor service can use ProgramData; signature and an approved deployment record are required for the benign interpretation.
 - Benign near-miss: A service installation with no follow-on file creation or service start evidence.
 - Allowed variations: ["Retain the service image path and both contextual corroborators."]
@@ -2108,7 +2108,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `test`
 - Category: `mapped_single`
-- Behavior description: Run key set to execute a user-writable executable
+- Behavior description: Run key configured to reference a user-writable executable
 - Anchor telemetry: `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `13`
 - Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
 - Anchor selection rule: Sysmon 13 where TargetObject is a Run key and Details points to Users/Public executable
@@ -2278,7 +2278,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 ```
 - Rationale: A related explorer.exe event for the same user confirms the Startup-folder artifact is in the user startup path.
 - Expected transition: `mapped->mapped`
-- Contextual event descriptions: ["Explorer processes the Startup-folder shortcut at the next logon."]
+- Contextual event descriptions: ["An Explorer process record selects the Startup-folder shortcut; these events do not show a later user logon processing it."]
 - Counter-evidence: Enterprise login software may install a signed Startup shortcut; publisher and protected target path are counter-evidence.
 - Benign near-miss: A shortcut created in Downloads or Desktop rather than the Startup folder.
 - Allowed variations: ["Require the Startup-folder path and shortcut/file evidence."]
@@ -2412,7 +2412,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `test`
 - Category: `mapped_single`
-- Behavior description: RunOnce mutation with persistence intent resolved by follow-on execution
+- Behavior description: RunOnce mutation with a later process-creation record for the configured target
 - Anchor telemetry: `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `13`
 - Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `11`; `context_2` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
 - Anchor selection rule: Sysmon 13 where an unknown user process writes RunOnce to an AppData executable
@@ -2486,7 +2486,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: File creation at the target path followed by execution of the RunOnce payload establishes startup persistence in context.
+- Rationale: The RunOnce value names the target path and a later process-creation record matches that image. Together they support an auto-start configuration, though they do not prove the logon trigger caused that process start.
 - Expected transition: `ambiguous->mapped`
 - Contextual event descriptions: ["The AppData executable is created and then executed after the RunOnce registry mutation."]
 - Counter-evidence: A signed per-user updater may use RunOnce; verified signer and an installer parent are counter-evidence.
@@ -2696,7 +2696,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 ```
 - Rationale: PowerShell Clear-EventLog or equivalent log-clear syntax is visible in the linked process event, so T1685.005 is supported.
 - Expected transition: `ambiguous->mapped`
-- Contextual event descriptions: ["PowerShell executes Clear-EventLog under the same subject logon before EID 1102."]
+- Contextual event descriptions: ["A PowerShell process-creation record contains Clear-EventLog syntax under the same logon before EID 1102; chronology does not prove exclusive causation."]
 - Counter-evidence: A compliance script may clear a test log during rotation; maintenance identity and an approved rotation record are counter-evidence.
 - Benign near-miss: EID 1102 with no process event capable of identifying the mechanism.
 - Allowed variations: ["Use Eventlog provider, Security channel, and EID 1102 for the anchor."]
@@ -3117,7 +3117,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The resulting file event establishes that the BITS transfer produced a local file.
+- Rationale: The file-creation event records a local file at the requested destination; it does not independently prove BITS produced its contents.
 - Expected transition: `mapped->mapped`
 - Contextual event descriptions: ["A file is created at the BITS output path after the transfer process."]
 - Counter-evidence: Enterprise software distribution may use BITS; an approved update URL, signed installer, and managed destination are counter-evidence.
@@ -3147,7 +3147,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `test`
 - Category: `mapped_single`
-- Behavior description: Curl downloads a remote executable to a local path
+- Behavior description: Curl invocation names a remote executable and local destination
 - Anchor telemetry: `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
 - Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `11`
 - Anchor selection rule: Sysmon process creation where curl uses a URL and -o output path
@@ -3327,7 +3327,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The contextual process command exposes download syntax and the linked file event confirms the transfer result.
+- Rationale: The process-creation record contains download syntax, and a related file event records a local file at the requested destination.
 - Expected transition: `ambiguous->mapped`
 - Contextual event descriptions: ["A process-create event with source and destination is followed by file creation at the destination."]
 - Counter-evidence: An authorized browser or updater can make the connection and download a file; signed process and allowlisted endpoint are counter-evidence.
@@ -3880,10 +3880,10 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `test`
 - Category: `unmapped`
-- Behavior description: Routine signed PowerShell maintenance
+- Behavior description: Routine PowerShell maintenance
 - Anchor telemetry: `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
 - Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
-- Anchor selection rule: PowerShell -NoProfile -File C:\Program Files\Contoso\maintenance.ps1; select the concrete provider fields that contain PowerShell, -NoProfile, maintenance.ps1
+- Anchor selection rule: PowerShell -NoProfile -File <ProgramData resource>\run.ps1; select the provider fields that contain PowerShell, -NoProfile, run.ps1
 - Windows documentation: EID 1 [https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-1-process-create]
 - Telemetry combinations covered: `2` registry event specifications
 ### Single-view ground truth
@@ -3909,7 +3909,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "event": "anchor",
       "field": "CommandLine",
       "op": "contains_ci",
-      "value": "C:\\Program Files\\Contoso\\maintenance.ps1"
+      "value": "run.ps1"
     },
     {
       "event": "anchor",
@@ -3920,7 +3920,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The signed maintenance script is under Program Files and has no encoded, download, persistence, or account-creation indicator.
+- Rationale: The maintenance script is under ProgramData and has no encoded, download, persistence, or account-creation indicator.
 ### Contextual ground truth
 - Status: `unmapped`
 - Technique(s): none
@@ -3946,7 +3946,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
           "event": "anchor",
           "field": "CommandLine",
           "op": "contains_ci",
-          "value": "C:\\Program Files\\Contoso\\maintenance.ps1"
+          "value": "run.ps1"
         },
         {
           "event": "anchor",
@@ -3982,9 +3982,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Context confirms the same benign routine signed powershell maintenance workflow with an explicit maintenance process or actor.
+- Rationale: Context confirms the same routine PowerShell maintenance workflow with an explicit maintenance process or actor.
 - Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for routine signed powershell maintenance with affirmative benign telemetry."]
+- Contextual event descriptions: ["A related event adds the approved maintenance process context to the routine PowerShell invocation."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: routine signed powershell maintenance.
 - Allowed variations: ["Keep the provider-specific benign fields visible."]
@@ -4114,9 +4114,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Context confirms the same benign normal cmd-based dns administration workflow with an explicit maintenance process or actor.
+- Rationale: The helpdesk DNS-diagnostic invocation and related cmd.exe context match the approved synthetic local-maintenance case; external authorization is not independently recorded.
 - Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for normal cmd-based dns administration with affirmative benign telemetry."]
+- Contextual event descriptions: ["A related event adds cmd.exe and helpdesk DNS-diagnostic context to the local command invocation."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: normal cmd-based dns administration.
 - Allowed variations: ["Keep the provider-specific benign fields visible."]
@@ -4238,9 +4238,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Context confirms the same benign standard scheduled disk-maintenance task workflow with an explicit maintenance process or actor.
+- Rationale: The task configuration and related cleanmgr process-creation record match the approved synthetic disk-maintenance case; the task trigger is not directly observed.
 - Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for standard scheduled disk-maintenance task with affirmative benign telemetry."]
+- Contextual event descriptions: ["A related event records a cleanmgr process-creation record matching the scheduled task action."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: standard scheduled disk-maintenance task.
 - Allowed variations: ["Keep the provider-specific benign fields visible."]
@@ -4260,10 +4260,10 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `test`
 - Category: `unmapped`
-- Behavior description: Legitimate signed service deployment
+- Behavior description: Service deployment
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4697`
 - Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
-- Anchor selection rule: ContosoAgent.exe from C:\Program Files\Contoso; select the concrete provider fields that contain ContosoAgent.exe, Program Files, LocalSystem
+- Anchor selection rule: Agent.exe from a ProgramData resource path; select the provider fields that contain Agent.exe and LocalSystem
 - Windows documentation: EID 4697 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4697]; EID 1 [https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-1-process-create]
 - Telemetry combinations covered: `2` registry event specifications
 ### Single-view ground truth
@@ -4277,7 +4277,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "event": "anchor",
       "field": "ServiceFileName",
       "op": "contains_ci",
-      "value": "C:\\Program Files\\Contoso\\ContosoAgent.exe"
+      "value": "agent.exe"
     },
     {
       "event": "anchor",
@@ -4300,7 +4300,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The service binary is in a protected vendor directory and its deployment is a normal managed installation.
+- Rationale: The 4697 event records an image path under ProgramData and an Administrator actor; this alone does not establish signer authenticity or deployment authorization.
 ### Contextual ground truth
 - Status: `unmapped`
 - Technique(s): none
@@ -4314,7 +4314,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
           "event": "anchor",
           "field": "ServiceFileName",
           "op": "contains_ci",
-          "value": "C:\\Program Files\\Contoso\\ContosoAgent.exe"
+          "value": "agent.exe"
         },
         {
           "event": "anchor",
@@ -4342,7 +4342,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
           "event": "context_1",
           "field": "Image",
           "op": "endswith_ci",
-          "value": "\\ContosoAgent.exe"
+          "value": "\\Agent.exe"
         },
         {
           "event": "context_1",
@@ -4362,9 +4362,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Context confirms the same benign legitimate signed service deployment workflow with an explicit maintenance process or actor.
+- Rationale: Context contains matching service-installation and process-creation records for the same image and arguments; this is consistent with the approved synthetic deployment case but does not prove that the service launched the process.
 - Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for legitimate signed service deployment with affirmative benign telemetry."]
+- Contextual event descriptions: ["A related event adds the approved deployment-process context to the service installation record."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: legitimate signed service deployment.
 - Allowed variations: ["Keep the provider-specific benign fields visible."]
@@ -4485,9 +4485,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The enterprise provisioning parent process (Provisioner.exe), expected net.exe child, explicit command (net user jdoe /add), temporal ordering, and host linkage establish an authorized employee onboarding workflow.
+- Rationale: The Provisioner.exe parent, net.exe process-creation record, explicit account-add command, temporal order, and host linkage are consistent with the approved synthetic onboarding case; external authorization is not independently recorded.
 - Expected transition: `ambiguous->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for expected employee local-account provisioning with affirmative benign telemetry."]
+- Contextual event descriptions: ["A related event adds the account-provisioning parent and net.exe command context to the 4720 record."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: expected employee local-account provisioning.
 - Allowed variations: ["Keep the provider-specific benign fields visible."]
@@ -4597,9 +4597,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Context confirms the same benign routine powershell service inventory workflow with an explicit maintenance process or actor.
+- Rationale: The taskeng parent and routine Get-Service invocation match the approved synthetic service-inventory case; external authorization is not independently recorded.
 - Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for routine powershell service inventory with affirmative benign telemetry."]
+- Contextual event descriptions: ["A related event adds taskeng process context to the PowerShell service-inventory invocation."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: routine powershell service inventory.
 - Allowed variations: ["Keep the provider-specific benign fields visible."]
@@ -4624,7 +4624,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 - Behavior description: Routine cmd directory listing
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4688`
 - Context telemetry: `context_1` = `Microsoft-Windows-Security-Auditing` / `Security` / EID `4688`
-- Anchor selection rule: cmd.exe /c dir C:\Program Files\Contoso; select the concrete provider fields that contain cmd.exe, dir, Program Files
+- Anchor selection rule: cmd.exe /c dir C:\ProgramData\<resource>; select the provider fields that contain cmd.exe and the ProgramData target
 - Windows documentation: EID 4688 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4688]
 - Telemetry combinations covered: `2` registry event specifications
 ### Single-view ground truth
@@ -4644,7 +4644,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "event": "anchor",
       "field": "CommandLine",
       "op": "contains_ci",
-      "value": "dir C:\\Program Files\\Contoso"
+      "value": "dir C:\\ProgramData\\"
     },
     {
       "event": "anchor",
@@ -4655,7 +4655,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The command shell lists a managed software directory and does not stage or execute a payload.
+- Rationale: The command shell records a directory listing under a maintenance path; no selected ATT&CK behavior is visible in this view.
 ### Contextual ground truth
 - Status: `unmapped`
 - Technique(s): none
@@ -4675,7 +4675,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
           "event": "anchor",
           "field": "CommandLine",
           "op": "contains_ci",
-          "value": "dir C:\\Program Files\\Contoso"
+          "value": "dir C:\\ProgramData\\"
         },
         {
           "event": "anchor",
@@ -4711,9 +4711,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Context confirms the same benign routine cmd directory listing workflow with an explicit maintenance process or actor.
+- Rationale: The Explorer selection and cmd.exe directory-listing invocation share the host and helpdesk context expected by the synthetic maintenance case; authorization is not independently recorded.
 - Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for routine cmd directory listing with affirmative benign telemetry."]
+- Contextual event descriptions: ["A related event records an Explorer selection under the same host and user context as the directory listing."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: routine cmd directory listing.
 - Allowed variations: ["Keep the provider-specific benign fields visible."]
@@ -4736,7 +4736,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 - Behavior description: Scheduled Windows update maintenance
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4698`
 - Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
-- Anchor selection rule: \Contoso\UpdateMaintenance runs signed updater.exe; select the concrete provider fields that contain UpdateMaintenance, updater.exe, Program Files
+- Anchor selection rule: \UpdateCheck task configured with updater.exe; select the task path and executable fields
 - Windows documentation: EID 4698 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4698]; EID 1 [https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-1-process-create]
 - Telemetry combinations covered: `2` registry event specifications
 ### Single-view ground truth
@@ -4750,13 +4750,13 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "event": "anchor",
       "field": "TaskName",
       "op": "contains_ci",
-      "value": "\\Contoso\\UpdateMaintenance"
+      "value": "\\UpdateCheck"
     },
     {
       "event": "anchor",
       "field": "TaskContent",
       "op": "contains_ci",
-      "value": "C:\\Program Files\\Contoso\\updater.exe"
+      "value": "updater.exe"
     },
     {
       "event": "anchor",
@@ -4767,7 +4767,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The task content is a signed vendor updater in a protected path and is tied to maintenance context.
+- Rationale: The task content records an updater invocation under ProgramData tied to maintenance context; no signer telemetry is present.
 ### Contextual ground truth
 - Status: `unmapped`
 - Technique(s): none
@@ -4781,13 +4781,13 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
           "event": "anchor",
           "field": "TaskName",
           "op": "contains_ci",
-          "value": "\\Contoso\\UpdateMaintenance"
+          "value": "\\UpdateCheck"
         },
         {
           "event": "anchor",
           "field": "TaskContent",
           "op": "contains_ci",
-          "value": "C:\\Program Files\\Contoso\\updater.exe"
+          "value": "updater.exe"
         },
         {
           "event": "anchor",
@@ -4823,9 +4823,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Context confirms the same benign scheduled windows update maintenance workflow with an explicit maintenance process or actor.
+- Rationale: The task configuration and matching updater process-creation record are consistent with the synthetic maintenance case; these records do not establish task causality or signer authenticity.
 - Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for scheduled windows update maintenance with affirmative benign telemetry."]
+- Contextual event descriptions: ["A related event records an updater process-creation event matching the configured task executable and arguments."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: scheduled windows update maintenance.
 - Allowed variations: ["Keep the provider-specific benign fields visible."]
@@ -4848,7 +4848,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 - Behavior description: Approved enterprise service deployment
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4697`
 - Context telemetry: `context_1` = `Microsoft-Windows-Security-Auditing` / `Security` / EID `4688`
-- Anchor selection rule: ContosoPatch service installation from Program Files; select the concrete provider fields that contain ContosoPatch, Program Files, LocalService
+- Anchor selection rule: PatchService service installation from Program Files; select the concrete provider fields that contain PatchService, Program Files, LocalService
 - Windows documentation: EID 4697 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4697]; EID 4688 [https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4688]
 - Telemetry combinations covered: `2` registry event specifications
 ### Single-view ground truth
@@ -4862,13 +4862,13 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "event": "anchor",
       "field": "ServiceName",
       "op": "contains_ci",
-      "value": "ContosoPatch"
+      "value": "PatchService"
     },
     {
       "event": "anchor",
       "field": "ServiceFileName",
       "op": "contains_ci",
-      "value": "C:\\Program Files\\Contoso\\"
+      "value": "C:\\ProgramData\\"
     },
     {
       "event": "anchor",
@@ -4879,7 +4879,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: EID 4697 records a service installation from Program Files under LocalService, but a protected path alone does not establish authorization without deployment workflow context.
+- Rationale: EID 4697 records a LocalService service configuration pointing under ProgramData; the single event does not identify deployment authorization or runtime execution.
 ### Contextual ground truth
 - Status: `unmapped`
 - Technique(s): none
@@ -4893,13 +4893,13 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
           "event": "anchor",
           "field": "ServiceName",
           "op": "contains_ci",
-          "value": "ContosoPatch"
+          "value": "PatchService"
         },
         {
           "event": "anchor",
           "field": "ServiceFileName",
           "op": "contains_ci",
-          "value": "C:\\Program Files\\Contoso\\"
+          "value": "C:\\ProgramData\\"
         },
         {
           "event": "anchor",
@@ -4933,7 +4933,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
           "event": "context_1",
           "field": "CommandLine",
           "op": "contains_ci",
-          "value": "ContosoPatch.msi"
+          "value": "PatchService.msi"
         }
       ]
     },
@@ -4952,7 +4952,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The enterprise deployment agent parent process (CcmExec.exe), msiexec installer execution with approved package path, temporal ordering, and host linkage establish an authorized service deployment workflow independent of user identity.
+- Rationale: The CcmExec.exe parent, msiexec process-creation record referencing a package path, temporal order, and host linkage are consistent with an enterprise deployment workflow; they do not independently prove authorization.
 - Expected transition: `ambiguous->unmapped`
 - Contextual event descriptions: ["A related event confirms the approved workflow for approved enterprise service deployment with affirmative benign telemetry."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
@@ -5088,9 +5088,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The linked Contoso account-provisioner process, approved management parent, explicit role, ordering, host, and logon establish an affirmative synthetic provisioning workflow.
+- Rationale: The linked account-provisioning process, management parent, explicit role, ordering, host, and logon match the approved synthetic provisioning case; external authorization is not independently recorded.
 - Expected transition: `ambiguous->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for normal local backup-account provisioning with affirmative benign telemetry."]
+- Contextual event descriptions: ["A related event links the account-provisioning process context to the 4720 record."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: normal local backup-account provisioning.
 - Allowed variations: ["Keep the provider-specific benign fields visible."]
@@ -5144,7 +5144,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: A signed startup application under Program Files is an affirmative benign startup scenario.
+- Rationale: The Run key names the OneDrive application path; signer authenticity is not established by the available telemetry.
 ### Contextual ground truth
 - Status: `unmapped`
 - Technique(s): none
@@ -5200,9 +5200,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Context confirms the same benign legitimate startup application registration workflow with an explicit maintenance process or actor.
+- Rationale: The Run-key value and related OneDrive process-creation record share the target path; signer authenticity and authorized ownership are not established.
 - Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for legitimate startup application registration with affirmative benign telemetry."]
+- Contextual event descriptions: ["A related event records a process-creation event whose image matches the Run-key target."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: legitimate startup application registration.
 - Allowed variations: ["Keep the provider-specific benign fields visible."]
@@ -5268,13 +5268,13 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "event": "context_1",
       "field": "TaskName",
       "op": "contains_ci",
-      "value": "\\Contoso\\SecurityLogRetention"
+      "value": "\\LogRetention"
     },
     {
       "event": "context_1",
       "field": "TaskContent",
       "op": "contains_ci",
-      "value": "C:\\Program Files\\Contoso\\LogMaintenance\\logrotate.exe"
+      "value": "logrotate.exe"
     },
     {
       "event": "context_2",
@@ -5328,9 +5328,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The approved synthetic SecurityLogRetention task, protected logrotate.exe path, taskeng parent, ordering, host, and logon jointly establish a benign maintenance workflow.
+- Rationale: The synthetic SecurityLogRetention task configuration, logrotate.exe process-creation record, taskeng parent, ordering, host, and logon are consistent with the approved maintenance case; authorization is not independently established.
 - Expected transition: `ambiguous->unmapped`
-- Contextual event descriptions: ["A related event confirms the approved workflow for authorized log-retention maintenance with affirmative benign telemetry."]
+- Contextual event descriptions: ["A related event records a scheduled log-retention task and matching logrotate process context before the EID 1102 outcome; authorization is not independently verified."]
 - Counter-evidence: A payload path, encoded interpreter command, suspicious persistence location, or unauthorized creator would change this interpretation.
 - Benign near-miss: The same primitive with an untrusted path or suspicious command would be ambiguous or mapped: authorized log-retention maintenance.
 - Allowed variations: ["Keep the provider-specific benign fields visible."]
@@ -5908,7 +5908,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `dev`
 - Category: `mapped_single`
-- Behavior description: Hidden scheduled task launching rundll32 DLL entry point
+- Behavior description: Hidden scheduled task configured with a rundll32 DLL invocation
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4698`
 - Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`
 - Anchor selection rule: TaskContent has a hidden trigger and rundll32.exe DLL entry point
@@ -5942,7 +5942,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The DEV-only hidden scheduled task launching rundll32 dll entry point has concrete technique-specific evidence in its anchor event.
+- Rationale: The task event records a hidden action configured to invoke rundll32 on a DLL entry point; this is configuration evidence.
 ### Contextual ground truth
 - Status: `mapped`
 - Technique(s): `T1053.005` (Scheduled Task)
@@ -5982,9 +5982,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: Context confirms the DEV-only hidden scheduled task launching rundll32 dll entry point behavior through a related telemetry event.
+- Rationale: A process-creation record shows rundll32 invoked with the DLL configured in the task; it does not establish task causality or successful DLL loading.
 - Expected transition: `mapped->mapped`
-- Contextual event descriptions: ["A structurally distinct DEV context event corroborates hidden scheduled task launching rundll32 dll entry point."]
+- Contextual event descriptions: ["A structurally distinct DEV process-creation event matches the task's configured rundll32 invocation."]
 - Counter-evidence: An approved signed tool or managed provisioning workflow would be benign counter-evidence.
 - Benign near-miss: A routine counterpart of hidden scheduled task launching rundll32 dll entry point with protected paths and approved ownership.
 - Allowed variations: ["Keep this family structurally distinct from TEST families."]
@@ -6533,7 +6533,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `dev`
 - Category: `mapped_multi`
-- Behavior description: Run-key startup persistence followed by service installation
+- Behavior description: Run-key configuration followed by a service-installation event
 - Anchor telemetry: `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `13`
 - Context telemetry: `context_1` = `Microsoft-Windows-Security-Auditing` / `Security` / EID `4697`
 - Anchor selection rule: Run key points to a protected DEV payload and is followed by a service install
@@ -6611,7 +6611,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 ```
 - Rationale: The DEV contextual view supplies separate Run-key and service-install evidence.
 - Expected transition: `mapped->mapped`
-- Contextual event descriptions: ["The DEV payload is registered for startup and then installed as a service under a separate service event."]
+- Contextual event descriptions: ["The DEV Run-key value is recorded before a separate service-installation event; neither record alone establishes runtime execution."]
 - Counter-evidence: A managed agent may use both startup and service registration during deployment; signed payload and change record are counter-evidence.
 - Benign near-miss: A single Run-key update with no service installation.
 - Allowed variations: ["Keep two independent contextual predicates."]
@@ -6645,7 +6645,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `dev`
 - Category: `mapped_multi`
-- Behavior description: Scheduled task launches PowerShell which downloads a package
+- Behavior description: Scheduled task configuration with a PowerShell process-creation and file-transfer context
 - Anchor telemetry: `Microsoft-Windows-Security-Auditing` / `Security` / EID `4698`
 - Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `1`; `context_2` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `11`
 - Anchor selection rule: DEV task content invokes pwsh.exe and references a remote package
@@ -6742,7 +6742,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 ```
 - Rationale: The DEV contextual view independently supports the task object, PowerShell execution, and transfer artifact.
 - Expected transition: `mapped->mapped`
-- Contextual event descriptions: ["The DEV task starts pwsh.exe, which downloads a package and writes the cache file."]
+- Contextual event descriptions: ["The DEV task configuration matches a later pwsh.exe process-creation record, while separate network and file events record transfer-related activity."]
 - Counter-evidence: A managed software updater may use this chain; signed script, trusted endpoint, and deployment ticket are counter-evidence.
 - Benign near-miss: A scheduled task with a local signed script and no transfer behavior.
 - Allowed variations: ["Use three independent contextual predicates."]
@@ -6782,7 +6782,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
 
 - Split: `dev`
 - Category: `unmapped`
-- Behavior description: Signed vendor updater writes an ordinary cache file
+- Behavior description: Updater process writes an ordinary cache file
 - Anchor telemetry: `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `3`
 - Context telemetry: `context_1` = `Microsoft-Windows-Sysmon` / `Microsoft-Windows-Sysmon/Operational` / EID `11`
 - Anchor selection rule: Sysmon EID 3 from a signed updater to an allowlisted update endpoint
@@ -6799,7 +6799,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "event": "anchor",
       "field": "Image",
       "op": "endswith_ci",
-      "value": "\\ContosoUpdater.exe"
+      "value": "\\Updater.exe"
     },
     {
       "event": "anchor",
@@ -6821,7 +6821,7 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The network event is paired with a signed vendor updater and an allowlisted endpoint, supporting a benign update workflow.
+- Rationale: The network event is paired with an updater process and a documentation-only endpoint; telemetry does not establish signer authenticity or downloaded file contents.
 ### Contextual ground truth
 - Status: `unmapped`
 - Technique(s): none
@@ -6833,13 +6833,13 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
       "event": "anchor",
       "field": "Image",
       "op": "endswith_ci",
-      "value": "\\ContosoUpdater.exe"
+      "value": "\\Updater.exe"
     },
     {
       "event": "context_1",
       "field": "TargetFilename",
       "op": "contains_ci",
-      "value": "\\Contoso\\Cache\\"
+      "value": "\\Cache\\"
     },
     {
       "not": {
@@ -6857,9 +6857,9 @@ This package is generated from `config/synthetic_templates.json`. It is a human 
   ]
 }
 ```
-- Rationale: The contextual cache file confirms ordinary updater activity without suspicious payload or persistence evidence.
+- Rationale: The related cache-file event shares the updater process identity; the available evidence does not establish file contents or signer authenticity.
 - Expected transition: `unmapped->unmapped`
-- Contextual event descriptions: ["The signed updater creates a cache file under its protected vendor directory."]
+- Contextual event descriptions: ["The updater process creates a cache file under ProgramData."]
 - Counter-evidence: An untrusted process, non-allowlisted endpoint, or executable written to a user-writable path would change the interpretation.
 - Benign near-miss: A network-only event without signer, endpoint, or cache-path evidence would be ambiguous.
 - Allowed variations: ["Keep signer/path/endpoint evidence."]

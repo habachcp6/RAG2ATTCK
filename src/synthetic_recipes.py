@@ -228,37 +228,37 @@ def realize_family(fid, v):
     elif fid.startswith("TF_UNMAP_"):
         kind = fid[len("TF_UNMAP_"):]
         if kind in {"A", "PS"}:
-            args = f'-NoProfile -File "C:\\Program Files\\Contoso\\maintenance.ps1" -Resource {name}' if kind == "A" else f'-NoProfile -Command "Get-Service -Name {name}"'
+            args = f'-NoProfile -File "{pd}\\run.ps1" -Resource {name}' if kind == "A" else f'-NoProfile -Command "Get-Service -Name {name}"'
             a = proc(ps, ps + ' ' + args, taskeng)
             c = proc(taskeng, taskeng, SYSTEM + r"\svchost.exe")
             order = ["context_1", "anchor"]
         elif kind in {"B", "CMD"}:
-            args = f'/c ipconfig /flushdns && nslookup {name}.example.invalid' if kind == "B" else f'/c dir C:\\Program Files\\Contoso\\{name}'
+            args = f'/c ipconfig /flushdns && nslookup {name}.example.invalid' if kind == "B" else f'/c dir {pd}'
             a = proc(cmd, cmd + ' ' + args, explorer, "helpdesk")
             c = proc(SYSTEM + r"\ipconfig.exe", f'ipconfig /flushdns', cmd, "helpdesk") if kind == "B" else proc(explorer, f'{explorer} /select,{pd}', user="helpdesk")
             if kind == "CMD": order = ["context_1", "anchor"]
         elif kind in {"C", "SCHTASK"}:
-            executable = SYSTEM + r"\cleanmgr.exe" if kind == "C" else r"C:\Program Files\Contoso\updater.exe"
-            taskname = r"\Microsoft\Windows\DiskCleanup_" if kind == "C" else r"\Contoso\UpdateMaintenance_"
+            executable = SYSTEM + r"\cleanmgr.exe" if kind == "C" else pd + r"\updater.exe"
+            taskname = r"\Microsoft\Windows\DiskCleanup_" if kind == "C" else r"\UpdateCheck_"
             args = f'/sagerun:{v["job_number"]}' if kind == "C" else f'--package {name}'
             a = {**task(taskname + name, executable, args), "SubjectUserName": "SYSTEM"}
             c = proc(executable, executable + ' ' + args, taskeng, "SYSTEM")
         elif kind == "D":
-            executable = r"C:\Program Files\Contoso\ContosoAgent.exe"
-            a = {"ServiceName": "Contoso_" + name, "ServiceFileName": executable + f' --instance {name}', "ServiceAccount": "LocalSystem", "ServiceStartType": "2", "SubjectUserName": "Administrator"}
+            executable = pd + r"\agent.exe"
+            a = {"ServiceName": "Agent_" + name, "ServiceFileName": executable + f' --instance {name}', "ServiceAccount": "LocalSystem", "ServiceStartType": "2", "SubjectUserName": "Administrator"}
             c = proc(executable, executable + f' --instance {name}', services, "SYSTEM")
         elif kind == "E":
             a = {"TargetUserName": "jdoe", "SubjectUserName": "helpdesk"}
-            c = proc(SYSTEM + r"\net.exe", f'net user jdoe /add /fullname:"{name}" /comment:"Employee onboarding {name}"', r"C:\Program Files\Contoso\IAM\Provisioner.exe", "helpdesk")
+            c = proc(SYSTEM + r"\net.exe", f'net user jdoe /add /fullname:"{name}" /comment:"Employee onboarding {name}"', r"C:\ProgramData\IAM\Provisioner.exe", "helpdesk")
             order = ["context_1", "anchor"]
         elif kind == "SVC":
-            a = {"ServiceName": "ContosoPatch_" + name, "ServiceFileName": r"C:\Program Files\Contoso\patch.exe" + f' --package {name}', "ServiceAccount": "LocalService"}
-            c = proc(SYSTEM + r"\msiexec.exe", f'msiexec.exe /i C:\\Packages\\{name}\\ContosoPatch.msi /qn', r"C:\Windows\CCM\CcmExec.exe")
+            a = {"ServiceName": "PatchService_" + name, "ServiceFileName": pd + r"\patch.exe" + f' --package {name}', "ServiceAccount": "LocalService"}
+            c = proc(SYSTEM + r"\msiexec.exe", f'msiexec.exe /i C:\\Packages\\{name}\\PatchService.msi /qn', r"C:\Windows\CCM\CcmExec.exe")
             order = ["context_1", "anchor"]
         elif kind == "ACCT":
             a = {"TargetUserName": "backupsvc", "SubjectUserName": "Administrator"}
-            executable = r"C:\Program Files\Contoso\account-provisioner.exe"
-            c = proc(executable, executable + f' --create backupsvc --role backup --scope {name}', r"C:\Program Files\Contoso\management-agent.exe", "Administrator")
+            executable = r"C:\ProgramData\IAM\account-provisioner.exe"
+            c = proc(executable, executable + f' --create backupsvc --role backup --scope {name}', r"C:\ProgramData\IAM\management-agent.exe", "Administrator")
             order = ["context_1", "anchor"]
         elif kind == "REG":
             executable = r"C:\Program Files\OneDrive\OneDrive.exe"
@@ -266,15 +266,15 @@ def realize_family(fid, v):
             c = proc(executable, executable + f' /profile {name}', explorer)
             order = ["context_1", "anchor"]
         elif kind == "EVTCLR":
-            executable = r"C:\Program Files\Contoso\LogMaintenance\logrotate.exe"
+            executable = pd + r"\logrotate.exe"
             a = {"SubjectUserName": "SYSTEM"}
-            c = {**task(r"\Contoso\SecurityLogRetention_" + name, executable, f'--clear Security --archive {pd}\\retention.evtx'), "SubjectUserName": "SYSTEM"}
+            c = {**task(r"\LogRetention_" + name, executable, f'--clear Security --archive {pd}\\retention.evtx'), "SubjectUserName": "SYSTEM"}
             d = proc(executable, executable + f' --clear Security --archive {pd}\\retention.evtx', taskeng, "SYSTEM")
             order = ["context_1", "context_2", "anchor"]
         elif kind == "DEV":
-            executable = r"C:\Program Files\Contoso\ContosoUpdater.exe"
+            executable = pd + r"\updater.exe"
             a = {"Image": executable, "DestinationIp": v["limited_ip"]}
-            c = {"Image": executable, "TargetFilename": rf"C:\Program Files\Contoso\Cache\{name}.dat"}
+            c = {"Image": executable, "TargetFilename": pd + rf"\Cache\{name}.dat"}
     elif fid.startswith("TF_AMBIG_"):
         kind = fid[len("TF_AMBIG_"):]
         if kind == "A":

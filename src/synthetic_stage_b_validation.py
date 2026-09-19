@@ -31,6 +31,19 @@ def audit_pair(pair, family, registry_hash):
     need(set(keys) == set(specs), "event key set differs from registry")
     need(len(set(keys.values())) == len(keys) and set(keys.values()) == set(pair.events), "event key mapping is not bijective")
     events = {k: pair.events[eid] for k, eid in keys.items() if eid in pair.events}
+    visible_processes = {
+        event.fields.get("ProcessGuid"): event
+        for event in pair.events.values()
+        if event.windows_event_id == 1 and event.fields.get("ProcessGuid")
+    }
+    for event in pair.events.values():
+        if event.windows_event_id == 1:
+            parent = visible_processes.get(event.fields.get("ParentProcessGuid"))
+            if parent:
+                need(
+                    event.fields.get("ParentCommandLine") == parent.fields.get("CommandLine"),
+                    "ParentCommandLine disagrees with visible parent process",
+                )
     for key, event in events.items():
         need(event.event_id == generate_deterministic_id("evt", SEED, fid, str(index), key), "deterministic event_id mismatch")
         if key not in specs: continue

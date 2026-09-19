@@ -11,7 +11,7 @@ from src import synthetic as model
 from src.synthetic_predicates import evaluate_predicate, walk_predicate
 from src.synthetic_recipes import realize_family, SYSTEM
 
-GENERATOR_VERSION = "1.0.0"
+GENERATOR_VERSION = "1.0.1"
 SEED = 20260915
 
 BUILDERS = {
@@ -180,6 +180,10 @@ def generate_pair(family, seed, instance_index, registry_sha256):
         fields = _make_fields(specs[key], recipes[key], v, timestamp, pids[key], guids[key],
                               pids[parent] if parent else v["pid"] - 4,
                               guids[parent] if parent else guid(v["material"] + "external-parent"), actor)
+        if specs[key]["windows_event_id"] == 1 and parent:
+            parent_command = recipes[parent].get("CommandLine") or recipes[parent].get("Image")
+            if parent_command:
+                fields["ParentCommandLine"] = parent_command
         eid = model.generate_deterministic_id("evt", seed, fid, str(instance_index), key)
         events[key] = model.SyntheticEvent(eid, specs[key]["provider"], specs[key]["channel"],
                                           int(digest(v["material"] + key)[:12], 16), specs[key]["windows_event_id"], v["host"], timestamp, fields)

@@ -969,7 +969,7 @@ class TestSemanticRegistryValidator:
         family = self.family(candidate, "TF_UNMAP_SVC")
         # Strip deployment agent and MSI command, leaving only Administrator identity and msiexec
         family["contextual_ground_truth"]["evidence_predicate"]["all"] = [
-            {"event": "anchor", "field": "ServiceName", "op": "contains_ci", "value": "ContosoPatch"},
+            {"event": "anchor", "field": "ServiceName", "op": "contains_ci", "value": "PatchService"},
             {"event": "context_1", "field": "NewProcessName", "op": "endswith_ci", "value": "\\msiexec.exe"},
             {"event": "context_1", "field": "SubjectUserName", "op": "contains_ci", "value": "Administrator"},
             {"relation": "same_host", "events": ["context_1", "anchor"]},

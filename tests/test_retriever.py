@@ -221,6 +221,24 @@ class TestFAISSRetrieverOffline:
         assert [r.technique_id for r in res_orig] == [r.technique_id for r in res_loaded]
         assert [r.score for r in res_orig] == [r.score for r in res_loaded]
 
+    def test_from_saved_rejects_corpus_hash_mismatch(self, tmp_path):
+        repo_root = Path(__file__).resolve().parents[1]
+        config = json.loads((repo_root / "config/retrieval.json").read_text(encoding="utf-8"))
+
+        corpus_path = tmp_path / "enterprise-windows-v19.2.jsonl"
+        source_corpus = repo_root / config["corpus_path"]
+        corpus_path.write_bytes(source_corpus.read_bytes() + b"\n")
+        config["corpus_path"] = str(corpus_path)
+
+        for key in ("faiss_index_path", "document_mapping_path", "manifest_path"):
+            config[key] = str((repo_root / config[key]).resolve())
+
+        config_path = tmp_path / "retrieval.json"
+        config_path.write_text(json.dumps(config), encoding="utf-8")
+
+        with pytest.raises(ValueError, match="Corpus hash mismatch"):
+            FAISSRetriever.from_saved(config_path=config_path, embedder=StubEmbedder(dimension=384))
+
     def test_manifest_tamper_rejection(self, tmp_path):
         import faiss
 

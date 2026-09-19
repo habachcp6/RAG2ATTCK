@@ -21,6 +21,7 @@ def artifacts(tmp_path):
     cfg = json.loads(Path("config/retrieval.json").read_text())
     corpus = root / "corpus.jsonl"
     corpus.write_text(json.dumps({"technique_id": "T1059.001", "retrieval_text": "PowerShell"}) + "\n")
+    cfg["corpus_path"] = "corpus.jsonl"
     cfg["corpus_sha256"] = hashlib.sha256(corpus.read_bytes()).hexdigest()
     config = root / "config" / "retrieval.json"
     write_json(config, cfg)

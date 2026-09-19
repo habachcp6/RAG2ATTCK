@@ -406,6 +406,19 @@ class FAISSRetriever:
             path = Path(cfg[key])
             return (path if path.is_absolute() else root / path).resolve()
 
+        for key in ("corpus_path", "corpus_sha256"):
+            if key not in cfg:
+                raise ValueError(f"Missing required config field: {key}")
+
+        corpus_p = artifact_path("corpus_path")
+        if not corpus_p.is_file():
+            raise FileNotFoundError(f"Corpus file not found: {corpus_p}")
+        corpus_sha = hashlib.sha256(corpus_p.read_bytes()).hexdigest()
+        if corpus_sha != cfg.get("corpus_sha256"):
+            raise ValueError(
+                f"Corpus hash mismatch! Expected {cfg.get('corpus_sha256')}, got {corpus_sha}"
+            )
+
         return cls.load(
             index_path=artifact_path("faiss_index_path"),
             docmap_path=artifact_path("document_mapping_path"),

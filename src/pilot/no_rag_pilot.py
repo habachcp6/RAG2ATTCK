@@ -32,9 +32,9 @@ OPERATIONAL_EXCEPTIONS: tuple[type[Exception], ...] = (
     openai.APIError,
     TimeoutError,
     ConnectionError,
-    OSError,
     OperationalProviderError,
 )
+
 
 MAX_PILOT_SAMPLES = 20
 REQUIRED_SOURCE_FIELDS = (
@@ -261,7 +261,7 @@ def _record_to_dict(sample: PilotSample, record: Any) -> dict[str, Any]:
 
 def _exception_record(sample: PilotSample, exc: Exception) -> dict[str, Any]:
     error_type = type(exc).__name__
-    is_timeout = isinstance(exc, TimeoutError) or "timeout" in error_type.lower()
+    is_timeout = isinstance(exc, (TimeoutError, openai.APITimeoutError)) or "timeout" in error_type.lower()
     parse_status = (
         "INCOMPLETE"
         if isinstance(exc, LiveBudgetExceededError)

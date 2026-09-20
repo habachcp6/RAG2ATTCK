@@ -327,6 +327,32 @@ def test_expected_provider_timeout_normalized_as_timeout():
     assert run.records[0]["error_type"] == "TimeoutError"
 
 
+def test_openai_api_timeout_normalized_as_timeout():
+    class APITimeoutPipeline:
+        def run_sample(self, **kwargs):
+            raise openai.APITimeoutError(request=MagicMock())
+
+    run = run_no_rag_pilot([PilotSample("s1", "source-1", "EventID 1")], APITimeoutPipeline())
+    assert run.processed_samples == 1
+    assert run.records[0]["parse_status"] == "TIMEOUT"
+    assert run.records[0]["error_type"] == "APITimeoutError"
+
+
+@pytest.mark.parametrize("exc", [
+    PermissionError("permission denied"),
+    FileNotFoundError("file missing"),
+    RuntimeError("unexpected runtime failure"),
+    TypeError("unexpected type defect"),
+])
+def test_filesystem_oserror_is_not_masked(exc: Exception):
+    class DefectPipeline:
+        def run_sample(self, **kwargs):
+            raise exc
+
+    with pytest.raises(type(exc)):
+        run_no_rag_pilot([PilotSample("s1", "source-1", "EventID 1")], DefectPipeline())
+
+
 @pytest.mark.parametrize("missing_field", [
     "dataset_id",
     "source_id",

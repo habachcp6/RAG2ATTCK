@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import ClassVar
 
 import pytest
 
@@ -183,7 +184,7 @@ def test_record_rejects_non_contiguous_ranks():
 
 def test_negative_has_no_recall_semantics():
     negative_view = BenchmarkView(
-        "view_1", "cmd.exe", "view_1", "pair_1", "TEST", "single", "unmapped", "unmapped", tuple()
+        "view_1", "cmd.exe", "view_1", "pair_1", "TEST", "single", "unmapped", "unmapped", ()
     )
     record = make_diagnostic_record(negative_view, [_result(1, "T1105")], {})
     assert record["ground_truth_best_rank"] is None
@@ -219,7 +220,7 @@ def test_metrics_known_rank_four():
 
 def test_negative_diagnostic_name_describes_counted_value():
     negative_view = BenchmarkView(
-        "view_1", "cmd.exe", "view_1", "pair_1", "TEST", "single", "unmapped", "unmapped", tuple()
+        "view_1", "cmd.exe", "view_1", "pair_1", "TEST", "single", "unmapped", "unmapped", ()
     )
     record = make_diagnostic_record(negative_view, [_result(1, "T1105")], {})
     diagnostics = calculate_metrics([record])["negative_diagnostics"]
@@ -262,7 +263,7 @@ def test_run_is_semantically_deterministic(tmp_path: Path):
     views = [_view()]
 
     class FakeRetriever:
-        config = {"corpus_sha256": "c", "index_sha256": "i", "embedding_model_revision": "r"}
+        config: ClassVar[dict] = {"corpus_sha256": "c", "index_sha256": "i", "embedding_model_revision": "r"}
 
         def retrieve(self, query: str, k: int):
             assert query == "cmd.exe"
@@ -282,7 +283,6 @@ def test_run_is_semantically_deterministic(tmp_path: Path):
 def test_retrieval_prefix_consistency():
     """The retriever's supported k values must be prefixes of one ranking."""
     faiss = pytest.importorskip("faiss")
-    import numpy as np
 
     from src.retrieval.retriever import FAISSRetriever, StubEmbedder, normalize_l2
 

@@ -14,9 +14,10 @@ import json
 import re
 import subprocess
 from collections import Counter
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Collection, Iterable, Mapping, Protocol, Sequence
+from typing import Any, Protocol
 
 import openai
 

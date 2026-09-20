@@ -8,18 +8,17 @@ retriever receives only ``endpoint_evidence``; labels are joined afterwards by
 from __future__ import annotations
 
 import argparse
-from collections import Counter, defaultdict
-from dataclasses import dataclass
 import hashlib
 import json
+from collections import Counter, defaultdict
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass
 from pathlib import Path
-import re
 from statistics import mean, median
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
 
 from src.llm.schemas import validate_attack_id_syntax
 from src.retrieval.retriever import FAISSRetriever, RetrievalResult, StubEmbedder
-
 
 SUPPORTED_K = (1, 3, 5, 10)
 _LABEL_STATUSES = {"mapped", "ambiguous", "unmapped"}

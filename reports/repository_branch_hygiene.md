@@ -1,8 +1,9 @@
 # Repository Branch Hygiene Audit
 
 ## Overview
-Audit of all legacy, fix, and task branches in `habachcp6/RAG2ATTCK` against canonical
-`main` at `5d12ee1` (current HEAD after coordinator corrections pass, 2026-09-20).
+Audit baseline commit: 5d12ee1
+This branch classification was evaluated against main at commit 5d12ee1.
+Later commits may advance canonical main without invalidating the historical audit.
 
 No branches were deleted, merged, or force-pushed during this audit.
 

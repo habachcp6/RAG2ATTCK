@@ -7,7 +7,7 @@ This report documents an empirical investigation into the retrieval failure mode
 The investigation reveals that the observed retrieval performance ($Hit@1 = 4.23\%$, $Hit@10 = 45.11\%$, $54.89\%$ ground truth absent from Top-10) is driven by three primary structural mechanisms rather than random error:
 1. **Severe Lexical and Representation Gap:** Raw Windows telemetry (JSON structures, Event IDs, CLI flags, process paths) does not align well with the descriptive, natural language prose of MITRE ATT&CK STIX documents when projected through a general-domain embedding model (`all-MiniLM-L6-v2`).
 2. **Taxonomic Overlap & Competing Hard Negatives:** Multi-stage attack procedures (e.g., LOLBin-assisted tool downloads or command shell execution) trigger strong semantic matches to adjacent ATT&CK techniques (e.g., `T1218.012` Certutil or `T1574.009` Hijack Execution Flow), crowding out the designated ground truth (e.g., `T1105` or `T1059.003`).
-3. **Contextual Event Dilution:** Contrary to the intuition that additional surrounding context improves retrieval, multi-event contextual views actually degraded retrieval ranking compared to single-event views in 22.0% of evaluated pairs (versus improving it in only 7.8%), as background process logs (`services.exe`, `explorer.exe`, `svchost.exe`) acted as semantic noise.
+3. **Contextual Event Dilution:** Contrary to the intuition that additional surrounding context improves retrieval, multi-event contextual views actually degraded retrieval ranking compared to single-event views in 20.6% of evaluated pairs (61/296) (versus improving it in 17.6%, 52/296), as background process logs (`services.exe`, `explorer.exe`, `svchost.exe`) acted as semantic noise.
 
 Crucially, **no methodology or retrieval algorithm changes are applied in this branch**. All analysis is based strictly on frozen artifacts and empirical query diagnostics.
 
@@ -135,11 +135,12 @@ One of the key empirical findings from T20 is the divergence between `single` an
 | **Contextual-Event** | 460 | **0.0348** | 0.1804 | 0.2565 | **0.4435** | **256 (55.7%)** |
 
 ### 5.2. Scenario-Pair Ranking Analysis
-Evaluating identical scenario pairs ($N = 296$) across both representations reveals:
-- **Single-Event Produced Better GT Rank:** **65 pairs (22.0%)**
-- **Contextual-Event Produced Better GT Rank:** **23 pairs (7.8%)**
-- **Both Produced Identical Rank:** **208 pairs (70.3%)**
-  - *(Including 147 pairs where GT was absent from Top-10 in both views)*
+Evaluating identical scenario pairs ($N = 296$ comparable positive pairs where the single view category is in `mapped_single` or `mapped_multi`) using the formal absent-rank rule (`comparison_rank = rank if rank is not None else 11`) reveals:
+- **Single-Event Produced Better GT Rank (single_rank < contextual_rank):** **61 pairs (20.61%)**
+- **Contextual-Event Produced Better GT Rank (contextual_rank < single_rank):** **52 pairs (17.57%)**
+- **Both Produced Identical Rank (single_rank == contextual_rank):** **183 pairs (61.82%)**
+  - *Equal breakdown:* **130 pairs (43.92%)** had ground truth absent from Top-10 in **both** representations (both ranks `None`, yielding comparison rank 11), while **53 pairs (17.91%)** tied at identical retrieved ranks within Top-10.
+  - *Explicit subset relationship:* The 130 pairs where ground truth was absent from Top-10 in both views form an explicit subset of the 183 equal pairs ($130 + 53 = 183$). Across all 296 pairs, the breakdown partitions completely and deterministically: $61 + 52 + 183 = 296$ pairs ($100.0\%$).
 
 ### 5.3. Qualitative Dilution Mechanism
 In contextual views, the critical suspicious event is accompanied by 1–2 background events (e.g., normal parent process spawning `explorer.exe`, subsequent benign network traffic, or `svchost.exe` RPC calls). 
@@ -168,9 +169,9 @@ A rigorous inspection of `attack/corpus/enterprise-windows-v19.2.jsonl` demonstr
 | Rank | Hypothesis | Description | Evidence Strength |
 |---|---|---|---|
 | **1** | **H1: Lexical Mismatch** | Raw telemetry tokens (CLI syntax, Event IDs) do not match ATT&CK narrative prose. | **Extremely Strong:** High-performing classes (`T1547.001`, `T1685.005`) have exact token overlaps; low-performing classes (`T1136.001`) have zero token overlap. |
-| **2** | **H10: Hard Negatives & Semantic Overlap** | Living-off-the-land actions trigger dual-attribution techniques (e.g. `T1218.012` vs `T1105`), crowding out single-label ground truth. | **Extremely Strong:** In `T1105`, `certutil` ranked #1 in 72/114 cases due to `T1218.012` receiving scores $>0.55$. |
+| **2** | **H10: Hard Negatives & Semantic Overlap** | Living-off-the-land actions trigger dual-attribution techniques (e.g. `T1218.012` vs `T1105`), crowding out single-label ground truth. | **Extremely Strong:** In `T1105` ($N=114$), `T1218.012` (Certutil) ranked #1 in 48/114 cases (42.11%) due to receiving similarity scores $>0.55$, with `T1003.002` taking #1 in 26 cases (22.81%). |
 | **3** | **H4: General-Domain Embedding Model** | `all-MiniLM-L6-v2` lacks cyber domain pretraining for raw logs. | **Strong:** Pretrained on general sentence pairs, weighting natural syntax over technical command arguments. |
-| **4** | **H6: Contextual Dilution** | Multi-event logs introduce semantic noise that worsens dense retrieval ranks. | **Strong:** 22% of pairs degraded when context was added vs only 7.8% improved. |
+| **4** | **H6: Contextual Dilution** | Multi-event logs introduce semantic noise that worsens dense retrieval ranks. | **Strong:** 20.6% of pairs (61/296) degraded when context was added vs 17.6% (52/296) improved. |
 | **5** | **H8: Missing Procedure Tokens in Corpus** | Corpus chunks for specific techniques lack command-line invocations. | **Strong:** `T1136.001` text has no mention of `net user`, resulting in near-total retrieval failure. |
 | **6** | **H3: Corpus Header & Boilerplate Noise** | Platform and tactic boilerplate consumes vector representation capacity. | **Moderate:** Common across all 474 corpus chunks. |
 | **7** | **H5: Multi-Label Metric Asymmetry** | Mapped-multi scenarios increase hit probability but penalize macro recall. | **Moderate:** Multi-label views achieve 72.7% Hit@10 vs 43.4% for single-label, but macro recall is capped. |
@@ -204,3 +205,28 @@ To preserve scientific rigor, the following practices are **strictly prohibited*
 - ❌ **Ground Truth Mutation:** Re-labeling hard negatives (e.g. changing `T1105` ground truth to `T1218.012`) merely to inflate retrieval scores.
 - ❌ **Excluding Difficult Classes:** Removing `T1136.001` or `T1105` from the benchmark to produce an artificially high aggregate metric.
 - ❌ **Overfitting Retrieval k:** Arbitrarily expanding $k$ to 50 or 100, which introduces unacceptable noise and token cost to downstream LLM inference.
+
+---
+
+## 10. Reproducing this analysis
+
+The quantitative findings in this report are fully reproducible from the frozen canonical retrieval artifacts (`artifacts/retrieval/retrieval_diagnostics.jsonl` and `artifacts/retrieval/retrieval_metrics.json`) without rerunning dense retrieval or invoking external APIs.
+
+To execute the deterministic analysis script and regenerate the machine-readable summary:
+
+```bash
+uv run python scripts/analyze_retrieval_failures.py
+```
+
+Output artifact:
+- `artifacts/analysis/t20_retrieval_failure_summary.json`
+
+To inspect a specific sample's retrieval diagnostics post-hoc:
+```bash
+uv run python scripts/analyze_retrieval_failures.py --sample view_02aac5b1
+```
+
+To run the full unit test suite:
+```bash
+uv run pytest tests/test_retrieval_failure_analysis.py -vv
+```

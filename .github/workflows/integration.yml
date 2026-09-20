@@ -2,10 +2,42 @@ name: Real Retrieval Integration
 
 'on':
   workflow_dispatch:
-  # Bootstrap dispatch is available before this new workflow reaches main.
   push:
-    branches: [fix/t18-t19-hardening]
-    paths: [.github/workflows/integration.yml]
+    branches: [main]
+    paths:
+      - "src/retrieval/**"
+      - "src/rag/**"
+      - "src/evaluation/**"
+      - "config/retrieval.json"
+      - "attack/corpus/**"
+      - "attack/index/**"
+      - "tests/test_retriever.py"
+      - "tests/test_retrieval_integrity.py"
+      - "tests/test_rag_pipeline.py"
+      - "tests/test_retrieval_diagnostics.py"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".python-version"
+      - "src/attack_loader.py"
+      - ".github/workflows/integration.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/retrieval/**"
+      - "src/rag/**"
+      - "src/evaluation/**"
+      - "config/retrieval.json"
+      - "attack/corpus/**"
+      - "attack/index/**"
+      - "tests/test_retriever.py"
+      - "tests/test_retrieval_integrity.py"
+      - "tests/test_rag_pipeline.py"
+      - "tests/test_retrieval_diagnostics.py"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".python-version"
+      - "src/attack_loader.py"
+      - ".github/workflows/integration.yml"
 
 permissions:
   contents: read

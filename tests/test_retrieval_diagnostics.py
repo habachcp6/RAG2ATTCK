@@ -131,8 +131,13 @@ def test_multi_label_metrics_distinguish_query_hit_recall_and_specific_rank():
     assert record["recall_at_1"] == 0.5
     assert metrics["overall_positive"]["hit_rate_at_1"] == 1.0
     assert metrics["overall_positive"]["macro_recall_at_1"] == 0.5
+    assert metrics["overall_positive"]["gt_absent_from_top10_count"] == 0
     assert metrics["per_technique"]["T1059.003"]["hit_rate_at_1"] == 1.0
+    assert metrics["per_technique"]["T1059.003"]["gt_absent_from_top10_count"] == 0
     assert metrics["per_technique"]["T1059.001"]["hit_rate_at_1"] == 0.0
+    assert metrics["per_technique"]["T1059.001"]["hit_rate_at_10"] == 0.0
+    assert metrics["per_technique"]["T1059.001"]["gt_absent_from_top10_count"] == 1
+    assert metrics["per_technique"]["T1059.001"]["gt_absent_from_top10_rate"] == 1.0
 
 
 def test_record_rejects_non_contiguous_ranks():

@@ -10,7 +10,7 @@ import openai
 import pytest
 
 from src.baseline.pipeline import BaselinePipeline
-from src.llm.client import LLMClient, LiveBudget
+from src.llm.client import LiveBudget, LLMClient
 from src.pilot.no_rag_pilot import (
     MAX_PILOT_SAMPLES,
     DataUnavailableError,

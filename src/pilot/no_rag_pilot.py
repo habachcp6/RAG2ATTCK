@@ -9,15 +9,32 @@ execute it through the frozen ``BaselinePipeline`` with ``condition=no_rag``.
 from __future__ import annotations
 
 import argparse
-from collections import Counter
-from dataclasses import dataclass
 import hashlib
 import json
-from pathlib import Path
 import re
 import subprocess
+from collections import Counter
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Collection, Iterable, Mapping, Protocol, Sequence
 
+import openai
+
+from src.llm.client import LiveBudgetExceededError
+
+
+class OperationalProviderError(Exception):
+    """Operational or provider failure during live pilot execution."""
+
+
+OPERATIONAL_EXCEPTIONS: tuple[type[Exception], ...] = (
+    LiveBudgetExceededError,
+    openai.APIError,
+    TimeoutError,
+    ConnectionError,
+    OSError,
+    OperationalProviderError,
+)
 
 MAX_PILOT_SAMPLES = 20
 REQUIRED_SOURCE_FIELDS = (
@@ -244,6 +261,12 @@ def _record_to_dict(sample: PilotSample, record: Any) -> dict[str, Any]:
 
 def _exception_record(sample: PilotSample, exc: Exception) -> dict[str, Any]:
     error_type = type(exc).__name__
+    is_timeout = isinstance(exc, TimeoutError) or "timeout" in error_type.lower()
+    parse_status = (
+        "INCOMPLETE"
+        if isinstance(exc, LiveBudgetExceededError)
+        else ("TIMEOUT" if is_timeout else "API_FAILURE")
+    )
     return {
         "sample_id": sample.sample_id,
         "source_id": sample.source_id,
@@ -254,7 +277,7 @@ def _exception_record(sample: PilotSample, exc: Exception) -> dict[str, Any]:
         "prompt_version": None,
         "prediction": {"technique_id": None},
         "valid_attack_id": False,
-        "parse_status": "INCOMPLETE" if error_type == "LiveBudgetExceededError" else "API_FAILURE",
+        "parse_status": parse_status,
         "latency_ms": 0.0,
         "input_tokens": None,
         "output_tokens": None,
@@ -289,7 +312,7 @@ def run_no_rag_pilot(
                 condition="no_rag",
             )
             row = _record_to_dict(sample, record)
-        except Exception as exc:  # preserve per-sample failures for engineering analysis
+        except OPERATIONAL_EXCEPTIONS as exc:  # preserve expected operational failures
             row = _exception_record(sample, exc)
         output.append(row)
 
@@ -424,7 +447,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         raise ValueError("--max-live-requests is required in live mode")
     validate_pilot_limit(args.limit)
 
-    from src.llm.client import LLMClient, LiveBudget
+    from src.llm.client import LiveBudget, LLMClient
     from src.llm.schemas import get_workspace_root, load_attack_registry
 
     workspace = get_workspace_root()

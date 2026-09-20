@@ -35,7 +35,7 @@ Retrieval effectiveness varies dramatically across the 8 evaluated technique cla
 
 | Technique ID | Technique Name | Positive Views | Specific Hit@1 | Specific Hit@5 | Specific Hit@10 | Absent Top-10 Count (%) | Median Rank |
 |---|---|---:|---:|---:|---:|---:|---:|
-| **T1136.001** | Local Account | 99 | 0.0000 | 0.0202 | **0.1010** | **89 (89.9%)** | 7.0 |
+| **T1136.001** | Local Account | 99 | 0.0000 | 0.0000 | **0.0000** | **99 (100.0%)** | n.a. |
 | **T1105** | Ingress Tool Transfer | 114 | 0.0000 | 0.0000 | **0.1579** | **96 (84.2%)** | 9.0 |
 | **T1059.003** | Windows Command Shell | 111 | 0.0180 | 0.0270 | **0.1712** | **92 (82.9%)** | 8.0 |
 | **T1543.003** | Windows Service | 114 | 0.0000 | 0.0351 | **0.3070** | **79 (69.3%)** | 8.0 |
@@ -44,7 +44,7 @@ Retrieval effectiveness varies dramatically across the 8 evaluated technique cla
 | **T1547.001** | Registry Run Keys / Startup | 106 | 0.1509 | 0.5755 | **0.9245** | **8 (7.5%)** | 4.5 |
 | **T1685.005** | Clear Windows Event Logs | 62 | 0.0806 | 0.7903 | **0.9839** | **1 (1.6%)** | 3.0 |
 
-*Note: In the per-technique metrics calculation, `T1136.001` had 0 Top-10 hits in pure single-label positive views, yielding 100% absence in `retrieval_metrics.json` ($0/99$), and only achieves marginal rank 7–10 hits in multi-label scenarios where another technique is also present.*
+*Note: T1136.001 shows complete retrieval failure — the ground-truth technique was not retrieved in the Top-10 for any of its 99 positive views (0.0% Hit@10). The per-technique metric calculation in `retrieval_metrics.json` confirms `hit_rate_at_10 = 0.0` and `median_ground_truth_rank_when_retrieved = null`. This is confirmed by the canonical artifact and represents the most severe retrieval failure observed.*
 
 ---
 

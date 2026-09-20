@@ -2,7 +2,10 @@
 
 Analyzes stored scientific artifacts without rerunning retrieval:
 - Recomputes per-technique metrics and cross-checks against retrieval_metrics.json.
-- Analyzes Single vs Contextual pair rankings (comparison_rank = rank if rank is not None else 11).
+- Analyzes Single vs Contextual pair rankings using same-technique anchor comparison.
+  Anchor rule: use the single-event view's single ground-truth technique ID and compare
+  THAT SAME technique's retrieval rank in the corresponding contextual view.
+  comparison_rank = rank if rank is not None else 11.
 - Analyzes T1105 hard-negative competitors (Top-1 competitor distribution).
 - Analyzes T1136.001 complete retrieval failure.
 - Provides sample inspection CLI (`--sample <sample_id>`).
@@ -21,7 +24,7 @@ from pathlib import Path
 from statistics import mean, median
 from typing import Any
 
-ANALYSIS_VERSION = "1.0.0"
+ANALYSIS_VERSION = "1.1.0"
 SUPPORTED_K = (1, 3, 5, 10)
 DEFAULT_DIAGNOSTICS_PATH = "artifacts/retrieval/retrieval_diagnostics.jsonl"
 DEFAULT_METRICS_PATH = "artifacts/retrieval/retrieval_metrics.json"
@@ -112,7 +115,7 @@ def recompute_per_technique_metrics(
         tech_rows = [r for r in positive_rows if tid in r.get("ground_truth_technique_ids", ())]
         n_pos = len(tech_rows)
         ranks: list[int | None] = [_get_technique_rank(r, tid) for r in tech_rows]
-        retrieved_ranks = [r for r in ranks if r is not None]
+        retrieved_ranks = [r for r in ranks if r is not None and r <= 10]
 
         hit_1 = sum(1 for r in ranks if r is not None and r <= 1)
         hit_3 = sum(1 for r in ranks if r is not None and r <= 3)
@@ -122,8 +125,11 @@ def recompute_per_technique_metrics(
         absent_count = sum(1 for r in ranks if r is None or r > 10)
         absent_rate = absent_count / n_pos if n_pos > 0 else None
 
+        # Median rank: only among retrieved (rank <= 10) samples
         med_rank = median(retrieved_ranks) if retrieved_ranks else None
-        mean_rank = mean(retrieved_ranks) if retrieved_ranks else None
+        # Mean rank: only among all non-None ranks (may exceed 10)
+        all_retrieved = [r for r in ranks if r is not None]
+        mean_rank = mean(all_retrieved) if all_retrieved else None
 
         per_technique[tid] = {
             "evaluated_positive_samples": n_pos,
@@ -155,6 +161,9 @@ def recompute_overall_positive_metrics(
             "hit_rate_at_3": None,
             "hit_rate_at_5": None,
             "hit_rate_at_10": None,
+            "macro_recall_at_1": None,
+            "macro_recall_at_3": None,
+            "macro_recall_at_5": None,
             "macro_recall_at_10": None,
             "mean_ground_truth_rank_when_retrieved": None,
             "median_ground_truth_rank_when_retrieved": None,
@@ -171,16 +180,20 @@ def recompute_overall_positive_metrics(
     absent_count = sum(1 for r in best_ranks if r is None or r > 10)
     absent_rate = absent_count / n_pos
 
-    # Calculate macro recall@10
-    recalls_10: list[float] = []
-    for r in positive_rows:
-        gt_ids = r.get("ground_truth_technique_ids", [])
-        if not gt_ids:
-            continue
-        ranks_dict = r.get("ground_truth_technique_ranks", {})
-        hits = sum(1 for tid in gt_ids if ranks_dict.get(tid) is not None and ranks_dict[tid] <= 10)
-        recalls_10.append(hits / len(gt_ids))
-    macro_recall_10 = mean(recalls_10) if recalls_10 else None
+    # Calculate macro recall@k for k in {1, 3, 5, 10}
+    def _macro_recall_at_k(k: int) -> float | None:
+        recalls: list[float] = []
+        for r in positive_rows:
+            gt_ids = r.get("ground_truth_technique_ids", [])
+            if not gt_ids:
+                continue
+            ranks_dict = r.get("ground_truth_technique_ranks", {})
+            hits = sum(
+                1 for tid in gt_ids
+                if ranks_dict.get(tid) is not None and ranks_dict[tid] <= k
+            )
+            recalls.append(hits / len(gt_ids))
+        return mean(recalls) if recalls else None
 
     return {
         "evaluated_positive_samples": n_pos,
@@ -190,7 +203,10 @@ def recompute_overall_positive_metrics(
         "hit_rate_at_3": hit_3 / n_pos,
         "hit_rate_at_5": hit_5 / n_pos,
         "hit_rate_at_10": hit_10 / n_pos,
-        "macro_recall_at_10": macro_recall_10,
+        "macro_recall_at_1": _macro_recall_at_k(1),
+        "macro_recall_at_3": _macro_recall_at_k(3),
+        "macro_recall_at_5": _macro_recall_at_k(5),
+        "macro_recall_at_10": _macro_recall_at_k(10),
         "mean_ground_truth_rank_when_retrieved": mean(retrieved_ranks) if retrieved_ranks else None,
         "median_ground_truth_rank_when_retrieved": median(retrieved_ranks) if retrieved_ranks else None,
     }
@@ -203,15 +219,24 @@ def verify_canonical_metric_consistency(
 ) -> None:
     """Verify consistency between recomputed metrics and canonical retrieval_metrics.json.
 
-    Fails closed (raises ValueError) if counts differ or rates exceed float tolerance.
+    Enforces exact technique-set equality and fails closed (raises ValueError) if
+    counts differ or rates exceed float tolerance.
     """
     canon_per_tech = canonical_metrics.get("per_technique", {})
     if not isinstance(canon_per_tech, Mapping):
         raise TypeError("Canonical metrics missing 'per_technique' mapping")
 
-    missing_techs = sorted(set(recomputed_per_technique) - set(canon_per_tech))
-    if missing_techs:
-        raise ValueError(f"Techniques missing from canonical metrics: {missing_techs}")
+    # Enforce exact technique set equality (bidirectional)
+    recomputed_ids = set(recomputed_per_technique)
+    canonical_ids = set(canon_per_tech)
+    if recomputed_ids != canonical_ids:
+        missing_from_recomputed = sorted(canonical_ids - recomputed_ids)
+        extra_in_recomputed = sorted(recomputed_ids - canonical_ids)
+        raise ValueError(
+            f"Technique set mismatch: "
+            f"missing_from_recomputed={missing_from_recomputed}, "
+            f"extra_in_recomputed={extra_in_recomputed}"
+        )
 
     for tid, recomputed in sorted(recomputed_per_technique.items()):
         canon = canon_per_tech.get(tid)
@@ -263,18 +288,85 @@ def verify_canonical_metric_consistency(
             )
 
 
+def verify_overall_metric_consistency(
+    recomputed_overall: Mapping[str, Any],
+    canonical_metrics: Mapping[str, Any],
+    tolerance: float = 1e-9,
+) -> None:
+    """Verify overall positive metrics against canonical retrieval_metrics.json.
+
+    Fails closed if counts or rates disagree.
+    """
+    canon_overall = canonical_metrics.get("overall_positive", {})
+    if not isinstance(canon_overall, Mapping):
+        raise TypeError("Canonical metrics missing 'overall_positive' mapping")
+
+    # Exact integer fields
+    int_fields = ("evaluated_positive_samples", "gt_absent_from_top10_count")
+    for field in int_fields:
+        c_val = canon_overall.get(field)
+        r_val = recomputed_overall.get(field)
+        if c_val != r_val:
+            raise ValueError(
+                f"Overall metric mismatch on {field}: recomputed={r_val} != canonical={c_val}"
+            )
+
+    # Float fields with tolerance
+    float_fields = (
+        "gt_absent_from_top10_rate",
+        "hit_rate_at_1",
+        "hit_rate_at_3",
+        "hit_rate_at_5",
+        "hit_rate_at_10",
+        "macro_recall_at_1",
+        "macro_recall_at_3",
+        "macro_recall_at_5",
+        "macro_recall_at_10",
+        "median_ground_truth_rank_when_retrieved",
+        "mean_ground_truth_rank_when_retrieved",
+    )
+    for field in float_fields:
+        c_val = canon_overall.get(field)
+        r_val = recomputed_overall.get(field)
+        if c_val is None or r_val is None:
+            if c_val != r_val:
+                raise ValueError(
+                    f"Overall metric mismatch on {field}: recomputed={r_val} != canonical={c_val}"
+                )
+        elif abs(float(r_val) - float(c_val)) > tolerance:
+            raise ValueError(
+                f"Overall metric mismatch on {field}: recomputed={r_val} != canonical={c_val}"
+            )
+
+
 def analyze_single_vs_contextual_pairs(
     diagnostics_rows: Sequence[Mapping[str, Any]],
 ) -> dict[str, Any]:
     """Perform pairwise ranking comparison across comparable positive scenario pairs.
 
-    Semantics:
-    - Target pairs: N=296 pairs where single view category in ('mapped_single', 'mapped_multi').
+    Methodology:
+    - Anchor rule: the single-event view's single ground-truth technique ID is selected
+      as the anchor technique. Only pairs where the single view has exactly one GT technique
+      (mapped_single) are eligible.
+    - The anchor technique's retrieval rank is compared across both representations:
+        single_rank = single_view["ground_truth_technique_ranks"][anchor]
+        contextual_rank = contextual_view["ground_truth_technique_ranks"][anchor]
     - comparison_rank = rank if rank is not None else 11.
-    - Single better: single_rank < contextual_rank
-    - Contextual better: contextual_rank < single_rank
-    - Equal: single_rank == contextual_rank
-    - Both absent Top-10: single_rank > 10 and contextual_rank > 10 (i.e. both rank is None)
+    - This ensures apples-to-apples comparison: we measure whether adding contextual events
+      improves or degrades retrieval of the SAME ATT&CK technique.
+    - If contextual view contains extra GT labels (mapped_multi), only the anchor
+      technique's rank in the contextual view is used for comparison.
+    - If anchor technique is not present in contextual view's GT rank mapping, the pair
+      is excluded with reason "anchor_missing_from_contextual_ranks".
+
+    Counts:
+    - single_better: single anchor rank < contextual anchor rank (under absent=11 rule)
+    - contextual_better: contextual anchor rank < single anchor rank
+    - equal: same rank under absent=11 rule
+      - both_absent_top10 (subset of equal): both ranks are None/absent
+      - top10_equal (subset of equal): both ranks within Top-10 and tied
+
+    Partition invariant: single_better + contextual_better + equal == eligible_pairs
     """
     pairs_map: dict[str, dict[str, Mapping[str, Any]]] = defaultdict(dict)
     for row in diagnostics_rows:
@@ -283,26 +375,51 @@ def analyze_single_vs_contextual_pairs(
         if pair_id and view_type:
             pairs_map[pair_id][view_type] = row
 
-    comparable_pair_ids = sorted(
+    candidate_pair_ids = sorted(
         pid
         for pid, views in pairs_map.items()
-        if "single" in views
-        and "contextual" in views
-        and views["single"].get("category") in ("mapped_single", "mapped_multi")
+        if "single" in views and "contextual" in views
     )
 
-    n_pairs = len(comparable_pair_ids)
+    n_candidates = len(candidate_pair_ids)
     single_better = 0
     contextual_better = 0
     equal = 0
     both_absent_top10 = 0
+    excluded = 0
+    excluded_reasons: Counter[str] = Counter()
 
-    for pid in comparable_pair_ids:
+    for pid in candidate_pair_ids:
         s_view = pairs_map[pid]["single"]
         c_view = pairs_map[pid]["contextual"]
 
-        s_rank = s_view.get("ground_truth_best_rank")
-        c_rank = c_view.get("ground_truth_best_rank")
+        s_gt_ids = s_view.get("ground_truth_technique_ids", [])
+
+        # Only eligible if single view has exactly one GT technique (unambiguous anchor)
+        if len(s_gt_ids) != 1:
+            excluded += 1
+            excluded_reasons["single_not_mapped_single"] += 1
+            continue
+
+        anchor = s_gt_ids[0]
+
+        s_ranks = s_view.get("ground_truth_technique_ranks", {})
+        c_ranks = c_view.get("ground_truth_technique_ranks", {})
+
+        # Anchor must exist in single view's rank mapping
+        if anchor not in s_ranks:
+            excluded += 1
+            excluded_reasons["anchor_missing_from_single_ranks"] += 1
+            continue
+
+        # Anchor must exist in contextual view's rank mapping (fail closed, no substitution)
+        if anchor not in c_ranks:
+            excluded += 1
+            excluded_reasons["anchor_missing_from_contextual_ranks"] += 1
+            continue
+
+        s_rank = s_ranks[anchor]
+        c_rank = c_ranks[anchor]
 
         s_comp = resolve_comparison_rank(s_rank)
         c_comp = resolve_comparison_rank(c_rank)
@@ -313,27 +430,37 @@ def analyze_single_vs_contextual_pairs(
             contextual_better += 1
         else:
             equal += 1
+            if s_comp > 10 and c_comp > 10:
+                both_absent_top10 += 1
 
-        if s_comp > 10 and c_comp > 10:
-            both_absent_top10 += 1
-
+    eligible = n_candidates - excluded
     top10_equal = equal - both_absent_top10
 
     return {
+        "anchor_rule": (
+            "Use single-event view's single GT technique as anchor. "
+            "Compare anchor technique rank in both views. "
+            "comparison_rank = rank if rank is not None else 11."
+        ),
         "both_absent": both_absent_top10,
-        "both_absent_rate": both_absent_top10 / n_pairs if n_pairs else 0.0,
+        "both_absent_rate": both_absent_top10 / eligible if eligible else 0.0,
         "both_absent_top10": both_absent_top10,
-        "both_absent_top10_rate": both_absent_top10 / n_pairs if n_pairs else 0.0,
-        "comparable_pairs": n_pairs,
+        "both_absent_top10_rate": both_absent_top10 / eligible if eligible else 0.0,
+        "candidate_pairs": n_candidates,
+        "comparable_pairs": eligible,
+        "comparison_mode": "same_technique_anchor",
         "comparison_rule": "comparison_rank = rank if rank is not None else 11",
         "contextual_better": contextual_better,
-        "contextual_better_rate": contextual_better / n_pairs if n_pairs else 0.0,
+        "contextual_better_rate": contextual_better / eligible if eligible else 0.0,
+        "eligible_pairs": eligible,
         "equal": equal,
-        "equal_rate": equal / n_pairs if n_pairs else 0.0,
+        "equal_rate": equal / eligible if eligible else 0.0,
+        "excluded_pairs": excluded,
+        "excluded_reasons": dict(sorted(excluded_reasons.items())),
         "single_better": single_better,
-        "single_better_rate": single_better / n_pairs if n_pairs else 0.0,
+        "single_better_rate": single_better / eligible if eligible else 0.0,
         "top10_equal": top10_equal,
-        "top10_equal_rate": top10_equal / n_pairs if n_pairs else 0.0,
+        "top10_equal_rate": top10_equal / eligible if eligible else 0.0,
     }
 
 
@@ -388,7 +515,11 @@ def analyze_t1105_hard_negatives(
 def analyze_t1136_001_failure(
     diagnostics_rows: Sequence[Mapping[str, Any]],
 ) -> dict[str, Any]:
-    """Analyze retrieval performance for T1136.001 positive views."""
+    """Analyze retrieval performance for T1136.001 positive views.
+
+    The median rank is dynamically calculated from retrieved (rank <= 10) samples.
+    If no samples are retrieved in Top-10, median is None.
+    """
     t1136_views = [
         r
         for r in diagnostics_rows
@@ -400,11 +531,15 @@ def analyze_t1136_001_failure(
     hit_10_count = sum(1 for r in ranks if r is not None and r <= 10)
     absent_count = sum(1 for r in ranks if r is None or r > 10)
 
+    # Dynamic median: computed from retrieved (rank <= 10) samples only
+    retrieved_ranks = [r for r in ranks if r is not None and r <= 10]
+    median_rank = median(retrieved_ranks) if retrieved_ranks else None
+
     return {
         "absent_top10_count": absent_count,
         "absent_top10_rate": absent_count / n_views if n_views else 0.0,
         "evaluated_positive_views": n_views,
-        "median_ground_truth_rank_when_retrieved": None,
+        "median_ground_truth_rank_when_retrieved": median_rank,
         "top10_hit_count": hit_10_count,
         "top10_hit_rate": hit_10_count / n_views if n_views else 0.0,
     }
@@ -472,6 +607,8 @@ def build_failure_analysis_summary(
     verify_canonical_metric_consistency(per_technique, canonical_metrics)
 
     overall_positive = recompute_overall_positive_metrics(diagnostics_rows)
+    verify_overall_metric_consistency(overall_positive, canonical_metrics)
+
     single_vs_contextual = analyze_single_vs_contextual_pairs(diagnostics_rows)
     t1105 = analyze_t1105_hard_negatives(diagnostics_rows)
     t1136 = analyze_t1136_001_failure(diagnostics_rows)
@@ -595,16 +732,24 @@ def main(argv: Sequence[str] | None = None) -> int:
     args.output.write_text(serialized, encoding="utf-8", newline="\n")
 
     if not args.quiet:
+        svc = summary["single_vs_contextual"]
         print("Deterministic retrieval failure analysis completed.")
         print(f"  Diagnostics: {args.diagnostics}")
         print(f"  Output:      {args.output}")
         print("  Key results:")
         print(f"    Positive samples:      {summary['overall_positive']['evaluated_positive_samples']}")
-        print(f"    Comparable pairs:      {summary['single_vs_contextual']['comparable_pairs']}")
-        print(f"    Single better:         {summary['single_vs_contextual']['single_better']} ({summary['single_vs_contextual']['single_better_rate']:.1%})")
-        print(f"    Contextual better:     {summary['single_vs_contextual']['contextual_better']} ({summary['single_vs_contextual']['contextual_better_rate']:.1%})")
-        print(f"    Equal:                 {summary['single_vs_contextual']['equal']} ({summary['single_vs_contextual']['equal_rate']:.1%}) [both absent Top-10: {summary['single_vs_contextual']['both_absent_top10']} ({summary['single_vs_contextual']['both_absent_top10_rate']:.1%}), tied within Top-10: {summary['single_vs_contextual']['top10_equal']} ({summary['single_vs_contextual']['top10_equal_rate']:.1%})]")
-        print(f"    Both absent Top-10:    {summary['single_vs_contextual']['both_absent_top10']} ({summary['single_vs_contextual']['both_absent_top10_rate']:.1%})")
+        print(f"    Candidate pairs:       {svc['candidate_pairs']}")
+        print(f"    Eligible pairs:        {svc['eligible_pairs']}")
+        print(f"    Excluded pairs:        {svc['excluded_pairs']}")
+        if svc["excluded_pairs"] > 0:
+            for reason, count in svc["excluded_reasons"].items():
+                print(f"      {reason}: {count}")
+        print(f"    Single better:         {svc['single_better']} ({svc['single_better_rate']:.1%})")
+        print(f"    Contextual better:     {svc['contextual_better']} ({svc['contextual_better_rate']:.1%})")
+        print(f"    Equal:                 {svc['equal']} ({svc['equal_rate']:.1%}) "
+              f"[both absent Top-10: {svc['both_absent_top10']} ({svc['both_absent_top10_rate']:.1%}), "
+              f"tied within Top-10: {svc['top10_equal']} ({svc['top10_equal_rate']:.1%})]")
+        print(f"    Both absent Top-10:    {svc['both_absent_top10']} ({svc['both_absent_top10_rate']:.1%})")
         print(f"    T1105 views:           {summary['t1105_hard_negatives']['evaluated_positive_views']}")
         print(f"    T1218.012 Top-1 count: {summary['t1105_hard_negatives']['t1218_012_top1_count']} ({summary['t1105_hard_negatives']['t1218_012_top1_rate']:.1%})")
         print(f"    T1136.001 absent:      {summary['t1136_001_failure']['absent_top10_count']}/{summary['t1136_001_failure']['evaluated_positive_views']}")

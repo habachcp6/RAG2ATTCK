@@ -1,4 +1,13 @@
-"""Unit tests for deterministic retrieval failure analysis."""
+"""Unit tests for deterministic retrieval failure analysis (v1.1.0).
+
+Tests cover:
+- Pairwise anchor-based comparison semantics (Tests 1-8)
+- Exact technique-set consistency (Test 9)
+- Overall metric mismatch detection (Test 10)
+- T1136 dynamic median (Test 11)
+- Canonical end-to-end verification (Test 12)
+- Determinism / CLI execution
+"""
 
 from __future__ import annotations
 
@@ -25,6 +34,7 @@ from scripts.analyze_retrieval_failures import (
     resolve_comparison_rank,
     serialize_summary_deterministic,
     verify_canonical_metric_consistency,
+    verify_overall_metric_consistency,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -35,10 +45,34 @@ CANONICAL_PAIRS = REPO_ROOT / "data/ground_truth/synthetic/pairs.jsonl"
 CANONICAL_GROUND_TRUTH = REPO_ROOT / "data/ground_truth/synthetic/ground_truth.jsonl"
 
 
+# ---------------------------------------------------------------------------
+# Utility helpers
+# ---------------------------------------------------------------------------
+
+def _make_row(
+    pair_id: str,
+    view_type: str,
+    category: str,
+    gt_ids: list[str],
+    gt_ranks: dict[str, int | None],
+) -> dict:
+    """Build a minimal diagnostics row for pairwise tests."""
+    return {
+        "pair_id": pair_id,
+        "view_type": view_type,
+        "category": category,
+        "ground_truth_technique_ids": gt_ids,
+        "ground_truth_technique_ranks": gt_ranks,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Basic utility tests
+# ---------------------------------------------------------------------------
+
 def test_compute_file_sha256(tmp_path: Path) -> None:
     test_file = tmp_path / "hello.txt"
     test_file.write_bytes(b"hello world\n")
-    # sha256("hello world\n") = a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447
     expected_hash = "a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447"
     assert compute_file_sha256(test_file) == expected_hash
 
@@ -159,49 +193,423 @@ def test_recompute_overall_positive_metrics_synthetic() -> None:
     assert overall["gt_absent_from_top10_count"] == 1
     assert overall["gt_absent_from_top10_rate"] == 0.5
     assert overall["median_ground_truth_rank_when_retrieved"] == 1.0
+    # macro recall fields present
+    assert "macro_recall_at_1" in overall
+    assert "macro_recall_at_3" in overall
+    assert "macro_recall_at_5" in overall
+    assert "macro_recall_at_10" in overall
 
 
-def test_single_vs_contextual_pair_comparison_synthetic() -> None:
-    # 4 pairs:
-    # pair_1: single rank 2, contextual rank 5 -> single_better
-    # pair_2: single rank 8, contextual rank 3 -> contextual_better
-    # pair_3: single rank 4, contextual rank 4 -> equal
-    # pair_4: single rank None, contextual rank None -> equal & both_absent_top10
-    # pair_5: unmapped category -> should NOT be included in comparable pairs
+# ---------------------------------------------------------------------------
+# TEST 1 — Contextual additional label must NOT hijack the comparison
+# The most important regression test.
+# ---------------------------------------------------------------------------
+
+def test_pairwise_contextual_extra_label_does_not_hijack() -> None:
+    """Test 1: Contextual extra label must not hijack single-anchor comparison.
+
+    Scenario:
+      single GT = [T1059.003], rank = 5
+      contextual GT = [T1059.003, T1105], T1059.003 rank = 8, T1105 rank = 2
+
+    Old (buggy) best_rank method would compare 5 vs 2 -> contextual_better.
+    Correct anchor method compares T1059.003: 5 vs 8 -> single_better.
+    """
     records = [
-        # pair_1
-        {"pair_id": "p1", "view_type": "single", "category": "mapped_single", "ground_truth_best_rank": 2},
-        {"pair_id": "p1", "view_type": "contextual", "category": "mapped_single", "ground_truth_best_rank": 5},
-        # pair_2
-        {"pair_id": "p2", "view_type": "single", "category": "mapped_single", "ground_truth_best_rank": 8},
-        {"pair_id": "p2", "view_type": "contextual", "category": "mapped_single", "ground_truth_best_rank": 3},
-        # pair_3
-        {"pair_id": "p3", "view_type": "single", "category": "mapped_single", "ground_truth_best_rank": 4},
-        {"pair_id": "p3", "view_type": "contextual", "category": "mapped_single", "ground_truth_best_rank": 4},
-        # pair_4
-        {"pair_id": "p4", "view_type": "single", "category": "mapped_single", "ground_truth_best_rank": None},
-        {"pair_id": "p4", "view_type": "contextual", "category": "mapped_single", "ground_truth_best_rank": None},
-        # pair_5 (non-positive)
-        {"pair_id": "p5", "view_type": "single", "category": "unmapped", "ground_truth_best_rank": None},
-        {"pair_id": "p5", "view_type": "contextual", "category": "unmapped", "ground_truth_best_rank": None},
+        _make_row("p1", "single", "mapped_single",
+                  ["T1059.003"], {"T1059.003": 5}),
+        _make_row("p1", "contextual", "mapped_multi",
+                  ["T1059.003", "T1105"], {"T1059.003": 8, "T1105": 2}),
     ]
+    result = analyze_single_vs_contextual_pairs(records)
+    assert result["eligible_pairs"] == 1
+    assert result["excluded_pairs"] == 0
+    assert result["single_better"] == 1, (
+        "Expected single_better=1 (anchor T1059.003: rank 5 < rank 8), "
+        "but contextual extra label T1105@rank2 must NOT hijack the comparison"
+    )
+    assert result["contextual_better"] == 0
+    assert result["equal"] == 0
 
-    analysis = analyze_single_vs_contextual_pairs(records)
-    assert analysis["comparable_pairs"] == 4
-    assert analysis["single_better"] == 1
-    assert analysis["contextual_better"] == 1
-    assert analysis["equal"] == 2
-    assert analysis["both_absent_top10"] == 1
-    assert analysis["both_absent"] == 1
-    assert analysis["top10_equal"] == 1
-    assert analysis["single_better_rate"] == 0.25
-    assert analysis["contextual_better_rate"] == 0.25
-    assert analysis["equal_rate"] == 0.5
-    assert analysis["both_absent_top10_rate"] == 0.25
-    assert analysis["top10_equal_rate"] == 0.25
-    assert analysis["both_absent_top10"] + analysis["top10_equal"] == analysis["equal"]
-    assert "comparison_rank = rank if rank is not None else 11" in analysis["comparison_rule"]
 
+# ---------------------------------------------------------------------------
+# TEST 2 — Same anchor technique improves in contextual view
+# ---------------------------------------------------------------------------
+
+def test_pairwise_same_technique_improves_in_contextual() -> None:
+    """Test 2: Correctly identifies contextual_better when anchor rank improves."""
+    records = [
+        _make_row("p1", "single", "mapped_single",
+                  ["T1059.003"], {"T1059.003": 8}),
+        _make_row("p1", "contextual", "mapped_multi",
+                  ["T1059.003", "T1105"], {"T1059.003": 3, "T1105": 1}),
+    ]
+    result = analyze_single_vs_contextual_pairs(records)
+    assert result["eligible_pairs"] == 1
+    assert result["contextual_better"] == 1, (
+        "T1059.003: single rank=8, contextual rank=3 -> contextual_better"
+    )
+    assert result["single_better"] == 0
+    assert result["equal"] == 0
+
+
+# ---------------------------------------------------------------------------
+# TEST 3 — Same anchor technique ranks equal within Top-10
+# ---------------------------------------------------------------------------
+
+def test_pairwise_same_technique_equal_in_top10() -> None:
+    """Test 3: Equal outcome when anchor ranks match within Top-10."""
+    records = [
+        _make_row("p1", "single", "mapped_single", ["T1059.003"], {"T1059.003": 4}),
+        _make_row("p1", "contextual", "mapped_single", ["T1059.003"], {"T1059.003": 4}),
+    ]
+    result = analyze_single_vs_contextual_pairs(records)
+    assert result["eligible_pairs"] == 1
+    assert result["equal"] == 1
+    assert result["top10_equal"] == 1
+    assert result["both_absent_top10"] == 0
+    assert result["single_better"] == 0
+    assert result["contextual_better"] == 0
+
+
+# ---------------------------------------------------------------------------
+# TEST 4 — Both absent Top-10
+# ---------------------------------------------------------------------------
+
+def test_pairwise_both_absent() -> None:
+    """Test 4: Both absent -> equal with both_absent_top10 += 1."""
+    records = [
+        _make_row("p1", "single", "mapped_single", ["T1059.003"], {"T1059.003": None}),
+        _make_row("p1", "contextual", "mapped_single", ["T1059.003"], {"T1059.003": None}),
+    ]
+    result = analyze_single_vs_contextual_pairs(records)
+    assert result["eligible_pairs"] == 1
+    assert result["equal"] == 1
+    assert result["both_absent_top10"] == 1
+    assert result["top10_equal"] == 0
+    assert result["single_better"] == 0
+    assert result["contextual_better"] == 0
+
+
+# ---------------------------------------------------------------------------
+# TEST 5 — Single absent, contextual retrieved
+# ---------------------------------------------------------------------------
+
+def test_pairwise_single_absent_contextual_retrieved() -> None:
+    """Test 5: Single absent, contextual retrieved -> contextual_better."""
+    records = [
+        _make_row("p1", "single", "mapped_single", ["T1059.003"], {"T1059.003": None}),
+        _make_row("p1", "contextual", "mapped_single", ["T1059.003"], {"T1059.003": 3}),
+    ]
+    result = analyze_single_vs_contextual_pairs(records)
+    assert result["eligible_pairs"] == 1
+    assert result["contextual_better"] == 1
+    assert result["single_better"] == 0
+    assert result["equal"] == 0
+
+
+# ---------------------------------------------------------------------------
+# TEST 6 — Single retrieved, contextual absent
+# ---------------------------------------------------------------------------
+
+def test_pairwise_single_retrieved_contextual_absent() -> None:
+    """Test 6: Single retrieved, contextual absent -> single_better."""
+    records = [
+        _make_row("p1", "single", "mapped_single", ["T1059.003"], {"T1059.003": 2}),
+        _make_row("p1", "contextual", "mapped_single", ["T1059.003"], {"T1059.003": None}),
+    ]
+    result = analyze_single_vs_contextual_pairs(records)
+    assert result["eligible_pairs"] == 1
+    assert result["single_better"] == 1
+    assert result["contextual_better"] == 0
+    assert result["equal"] == 0
+
+
+# ---------------------------------------------------------------------------
+# TEST 7 — Anchor missing from contextual GT (fail-closed / explicit exclusion)
+# ---------------------------------------------------------------------------
+
+def test_pairwise_anchor_missing_from_contextual_ranks() -> None:
+    """Test 7: Anchor not in contextual GT -> excluded with specific reason.
+
+    single GT = [T1059.003]
+    contextual GT = [T1105] (no T1059.003 in ranks)
+    Must NOT silently compare T1105. Must exclude explicitly.
+    """
+    records = [
+        _make_row("p1", "single", "mapped_single", ["T1059.003"], {"T1059.003": 3}),
+        _make_row("p1", "contextual", "mapped_single", ["T1105"], {"T1105": 1}),
+    ]
+    result = analyze_single_vs_contextual_pairs(records)
+    assert result["eligible_pairs"] == 0
+    assert result["excluded_pairs"] == 1
+    assert result["excluded_reasons"]["anchor_missing_from_contextual_ranks"] == 1
+    # No comparison outcome was produced
+    assert result["single_better"] == 0
+    assert result["contextual_better"] == 0
+    assert result["equal"] == 0
+
+
+# ---------------------------------------------------------------------------
+# TEST 8 — Multi-label single view is excluded
+# ---------------------------------------------------------------------------
+
+def test_pairwise_multi_label_single_view_excluded() -> None:
+    """Test 8: Single view with multiple GT techniques -> excluded with reason."""
+    records = [
+        _make_row("p1", "single", "mapped_multi",
+                  ["T1059.003", "T1105"], {"T1059.003": 3, "T1105": 5}),
+        _make_row("p1", "contextual", "mapped_multi",
+                  ["T1059.003", "T1105"], {"T1059.003": 3, "T1105": 5}),
+    ]
+    result = analyze_single_vs_contextual_pairs(records)
+    assert result["eligible_pairs"] == 0
+    assert result["excluded_pairs"] == 1
+    assert result["excluded_reasons"]["single_not_mapped_single"] == 1
+
+
+# ---------------------------------------------------------------------------
+# TEST 8b — Partition invariant across mixed pairs
+# ---------------------------------------------------------------------------
+
+def test_pairwise_partition_invariant() -> None:
+    """Verify partition: single_better + contextual_better + equal == eligible_pairs."""
+    records = [
+        # eligible: single_better
+        _make_row("p1", "single", "mapped_single", ["T1059.003"], {"T1059.003": 2}),
+        _make_row("p1", "contextual", "mapped_single", ["T1059.003"], {"T1059.003": 5}),
+        # eligible: contextual_better
+        _make_row("p2", "single", "mapped_single", ["T1059.003"], {"T1059.003": 8}),
+        _make_row("p2", "contextual", "mapped_single", ["T1059.003"], {"T1059.003": 3}),
+        # eligible: equal (both absent)
+        _make_row("p3", "single", "mapped_single", ["T1059.003"], {"T1059.003": None}),
+        _make_row("p3", "contextual", "mapped_single", ["T1059.003"], {"T1059.003": None}),
+        # excluded: multi-label single
+        _make_row("p4", "single", "mapped_multi", ["T1", "T2"], {"T1": 1, "T2": 2}),
+        _make_row("p4", "contextual", "mapped_multi", ["T1", "T2"], {"T1": 1, "T2": 2}),
+        # excluded: anchor missing from contextual
+        _make_row("p5", "single", "mapped_single", ["T1059.003"], {"T1059.003": 4}),
+        _make_row("p5", "contextual", "mapped_single", ["T1105"], {"T1105": 1}),
+        # no GT (non-positive) — pair_id with single but no GT -> excluded
+        {"pair_id": "p6", "view_type": "single", "category": "unmapped",
+         "ground_truth_technique_ids": [], "ground_truth_technique_ranks": {}},
+        {"pair_id": "p6", "view_type": "contextual", "category": "unmapped",
+         "ground_truth_technique_ids": [], "ground_truth_technique_ranks": {}},
+    ]
+    result = analyze_single_vs_contextual_pairs(records)
+
+    sb = result["single_better"]
+    cb = result["contextual_better"]
+    eq = result["equal"]
+    eligible = result["eligible_pairs"]
+
+    assert sb + cb + eq == eligible, (
+        f"Partition violated: {sb}+{cb}+{eq}={sb+cb+eq} != eligible={eligible}"
+    )
+    assert result["both_absent_top10"] + result["top10_equal"] == result["equal"]
+    assert result["candidate_pairs"] == result["eligible_pairs"] + result["excluded_pairs"]
+
+    # Specific expectations
+    assert sb == 1
+    assert cb == 1
+    assert eq == 1
+    assert eligible == 3
+    assert result["excluded_pairs"] == 3  # p4, p5, p6
+
+
+# ---------------------------------------------------------------------------
+# TEST 9 — Exact technique set consistency
+# ---------------------------------------------------------------------------
+
+def test_exact_technique_set_consistency_missing_from_recomputed() -> None:
+    """Test 9a: Canonical has technique missing from recomputed -> ValueError."""
+    canonical = {
+        "per_technique": {
+            "T1": {"evaluated_positive_samples": 5, "gt_absent_from_top10_count": 0,
+                   "gt_absent_from_top10_rate": 0.0,
+                   "hit_rate_at_1": 1.0, "hit_rate_at_3": 1.0,
+                   "hit_rate_at_5": 1.0, "hit_rate_at_10": 1.0,
+                   "median_ground_truth_rank_when_retrieved": 1.0},
+            "T2": {"evaluated_positive_samples": 3, "gt_absent_from_top10_count": 0,
+                   "gt_absent_from_top10_rate": 0.0,
+                   "hit_rate_at_1": 1.0, "hit_rate_at_3": 1.0,
+                   "hit_rate_at_5": 1.0, "hit_rate_at_10": 1.0,
+                   "median_ground_truth_rank_when_retrieved": 1.0},
+        }
+    }
+    # Recomputed only has T1 — missing T2
+    recomputed = {
+        "T1": {"evaluated_positive_samples": 5, "gt_absent_from_top10_count": 0,
+               "gt_absent_from_top10_rate": 0.0,
+               "hit_rate_at_1": 1.0, "hit_rate_at_3": 1.0,
+               "hit_rate_at_5": 1.0, "hit_rate_at_10": 1.0,
+               "median_ground_truth_rank_when_retrieved": 1.0},
+    }
+    with pytest.raises(ValueError, match="Technique set mismatch"):
+        verify_canonical_metric_consistency(recomputed, canonical)
+
+
+def test_exact_technique_set_consistency_extra_in_recomputed() -> None:
+    """Test 9b: Recomputed has extra technique not in canonical -> ValueError."""
+    canonical = {
+        "per_technique": {
+            "T1": {"evaluated_positive_samples": 5, "gt_absent_from_top10_count": 0,
+                   "gt_absent_from_top10_rate": 0.0,
+                   "hit_rate_at_1": 1.0, "hit_rate_at_3": 1.0,
+                   "hit_rate_at_5": 1.0, "hit_rate_at_10": 1.0,
+                   "median_ground_truth_rank_when_retrieved": 1.0},
+        }
+    }
+    # Recomputed has T1 + extra T2
+    recomputed = {
+        "T1": {"evaluated_positive_samples": 5, "gt_absent_from_top10_count": 0,
+               "gt_absent_from_top10_rate": 0.0,
+               "hit_rate_at_1": 1.0, "hit_rate_at_3": 1.0,
+               "hit_rate_at_5": 1.0, "hit_rate_at_10": 1.0,
+               "median_ground_truth_rank_when_retrieved": 1.0},
+        "T2": {"evaluated_positive_samples": 3, "gt_absent_from_top10_count": 0,
+               "gt_absent_from_top10_rate": 0.0,
+               "hit_rate_at_1": 1.0, "hit_rate_at_3": 1.0,
+               "hit_rate_at_5": 1.0, "hit_rate_at_10": 1.0,
+               "median_ground_truth_rank_when_retrieved": 1.0},
+    }
+    with pytest.raises(ValueError, match="Technique set mismatch"):
+        verify_canonical_metric_consistency(recomputed, canonical)
+
+
+def test_exact_technique_set_consistency_match_passes() -> None:
+    """Test 9c: Exact matching technique sets should not raise."""
+    canonical = {
+        "per_technique": {
+            "T1059.001": {
+                "evaluated_positive_samples": 10,
+                "gt_absent_from_top10_count": 2,
+                "gt_absent_from_top10_rate": 0.2,
+                "hit_rate_at_1": 0.1,
+                "hit_rate_at_3": 0.5,
+                "hit_rate_at_5": 0.7,
+                "hit_rate_at_10": 0.8,
+                "median_ground_truth_rank_when_retrieved": 3.0,
+            }
+        }
+    }
+    matching = {
+        "T1059.001": {
+            "evaluated_positive_samples": 10,
+            "gt_absent_from_top10_count": 2,
+            "gt_absent_from_top10_rate": 0.2,
+            "hit_rate_at_1": 0.1,
+            "hit_rate_at_3": 0.5,
+            "hit_rate_at_5": 0.7,
+            "hit_rate_at_10": 0.8,
+            "median_ground_truth_rank_when_retrieved": 3,
+        }
+    }
+    # Should not raise
+    verify_canonical_metric_consistency(matching, canonical)
+
+    # Count mismatch -> fails closed
+    bad_count = {**matching, "T1059.001": {**matching["T1059.001"], "evaluated_positive_samples": 11}}
+    with pytest.raises(ValueError, match="metric mismatch on evaluated_positive_samples"):
+        verify_canonical_metric_consistency(bad_count, canonical)
+
+    # Rate mismatch -> fails closed
+    bad_rate = {**matching, "T1059.001": {**matching["T1059.001"], "hit_rate_at_1": 0.25}}
+    with pytest.raises(ValueError, match="rate mismatch on hit_rate_at_1"):
+        verify_canonical_metric_consistency(bad_rate, canonical)
+
+
+# ---------------------------------------------------------------------------
+# TEST 10 — Overall metric mismatch detection
+# ---------------------------------------------------------------------------
+
+def test_overall_metric_mismatch_hit_rate() -> None:
+    """Test 10: Overall Hit@10 mismatch -> fail closed."""
+    canonical = {
+        "overall_positive": {
+            "evaluated_positive_samples": 100,
+            "gt_absent_from_top10_count": 50,
+            "gt_absent_from_top10_rate": 0.5,
+            "hit_rate_at_1": 0.1,
+            "hit_rate_at_3": 0.2,
+            "hit_rate_at_5": 0.3,
+            "hit_rate_at_10": 0.5,
+            "macro_recall_at_1": 0.09,
+            "macro_recall_at_3": 0.18,
+            "macro_recall_at_5": 0.27,
+            "macro_recall_at_10": 0.45,
+            "mean_ground_truth_rank_when_retrieved": 5.0,
+            "median_ground_truth_rank_when_retrieved": 5,
+        }
+    }
+    # Matching should not raise
+    verify_overall_metric_consistency(dict(canonical["overall_positive"]), canonical)
+
+    # Hit@10 mismatch
+    bad = {**canonical["overall_positive"], "hit_rate_at_10": 0.6}
+    with pytest.raises(ValueError, match="mismatch on hit_rate_at_10"):
+        verify_overall_metric_consistency(bad, canonical)
+
+    # Count mismatch
+    bad_count = {**canonical["overall_positive"], "evaluated_positive_samples": 99}
+    with pytest.raises(ValueError, match="mismatch on evaluated_positive_samples"):
+        verify_overall_metric_consistency(bad_count, canonical)
+
+
+# ---------------------------------------------------------------------------
+# TEST 11 — T1136 dynamic median (not hardcoded None)
+# ---------------------------------------------------------------------------
+
+def test_t1136_median_dynamic_with_some_retrieved() -> None:
+    """Test 11a: Median computed dynamically when some views ARE retrieved."""
+    records = [
+        {
+            "sample_id": "v1",
+            "ground_truth_technique_ids": ["T1136.001"],
+            "ground_truth_technique_ranks": {"T1136.001": 2},
+        },
+        {
+            "sample_id": "v2",
+            "ground_truth_technique_ids": ["T1136.001"],
+            "ground_truth_technique_ranks": {"T1136.001": 6},
+        },
+        {
+            "sample_id": "v3",
+            "ground_truth_technique_ids": ["T1136.001"],
+            "ground_truth_technique_ranks": {"T1136.001": None},
+        },
+    ]
+    result = analyze_t1136_001_failure(records)
+    assert result["evaluated_positive_views"] == 3
+    assert result["top10_hit_count"] == 2
+    assert result["absent_top10_count"] == 1
+    # Median of [2, 6] = 4.0
+    assert result["median_ground_truth_rank_when_retrieved"] == pytest.approx(4.0)
+
+
+def test_t1136_median_dynamic_all_absent() -> None:
+    """Test 11b: Median is None when all views are absent from Top-10."""
+    records = [
+        {
+            "sample_id": f"view_{i}",
+            "ground_truth_technique_ids": ["T1136.001"],
+            "ground_truth_technique_ranks": {"T1136.001": None},
+        }
+        for i in range(5)
+    ]
+    result = analyze_t1136_001_failure(records)
+    assert result["evaluated_positive_views"] == 5
+    assert result["absent_top10_count"] == 5
+    assert result["absent_top10_rate"] == 1.0
+    assert result["top10_hit_count"] == 0
+    assert result["top10_hit_rate"] == 0.0
+    # Dynamic median: no retrieved ranks -> None
+    assert result["median_ground_truth_rank_when_retrieved"] is None
+
+
+# ---------------------------------------------------------------------------
+# T1105 hard negatives
+# ---------------------------------------------------------------------------
 
 def test_t1105_hard_negatives_distribution_sorting() -> None:
     records = [
@@ -240,7 +648,6 @@ def test_t1105_hard_negatives_distribution_sorting() -> None:
 
     dist = t1105_analysis["top1_competitor_distribution"]
     assert len(dist) == 3
-    # First must be T1218.012 with count 4
     assert dist[0]["technique_id"] == "T1218.012"
     assert dist[0]["count"] == 4
     # Tie between T1003.002 and T1053.005 (both count 2): sorted alphabetically
@@ -250,22 +657,9 @@ def test_t1105_hard_negatives_distribution_sorting() -> None:
     assert dist[2]["count"] == 2
 
 
-def test_t1136_001_failure_synthetic() -> None:
-    records = [
-        {
-            "sample_id": f"view_{i}",
-            "ground_truth_technique_ids": ["T1136.001"],
-            "ground_truth_technique_ranks": {"T1136.001": None},
-        }
-        for i in range(5)
-    ]
-    res = analyze_t1136_001_failure(records)
-    assert res["evaluated_positive_views"] == 5
-    assert res["absent_top10_count"] == 5
-    assert res["absent_top10_rate"] == 1.0
-    assert res["top10_hit_count"] == 0
-    assert res["top10_hit_rate"] == 0.0
-
+# ---------------------------------------------------------------------------
+# Serialization
+# ---------------------------------------------------------------------------
 
 def test_deterministic_json_serialization() -> None:
     data = {
@@ -275,7 +669,6 @@ def test_deterministic_json_serialization() -> None:
     }
     serialized = serialize_summary_deterministic(data)
     assert serialized.endswith("\n")
-    # Verify sorted keys: "a" appears before "m", "m" before "z"
     lines = serialized.splitlines()
     assert '  "a": [' in lines[1]
     assert '  "m": {' in lines[6]
@@ -287,65 +680,9 @@ def test_deterministic_json_serialization() -> None:
     assert serialize_summary_deterministic(data) == serialized
 
 
-def test_verify_canonical_metric_consistency_checks() -> None:
-    canonical = {
-        "per_technique": {
-            "T1059.001": {
-                "evaluated_positive_samples": 10,
-                "gt_absent_from_top10_count": 2,
-                "gt_absent_from_top10_rate": 0.2,
-                "hit_rate_at_1": 0.1,
-                "hit_rate_at_3": 0.5,
-                "hit_rate_at_5": 0.7,
-                "hit_rate_at_10": 0.8,
-                "median_ground_truth_rank_when_retrieved": 3.0,
-            }
-        }
-    }
-
-    matching = {
-        "T1059.001": {
-            "evaluated_positive_samples": 10,
-            "gt_absent_from_top10_count": 2,
-            "gt_absent_from_top10_rate": 0.2,
-            "hit_rate_at_1": 0.1,
-            "hit_rate_at_3": 0.5,
-            "hit_rate_at_5": 0.7,
-            "hit_rate_at_10": 0.8,
-            "median_ground_truth_rank_when_retrieved": 3,
-        }
-    }
-    # Should not raise
-    verify_canonical_metric_consistency(matching, canonical)
-
-    # Count mismatch -> fails closed
-    bad_count = {
-        "T1059.001": {
-            **matching["T1059.001"],
-            "evaluated_positive_samples": 11,
-        }
-    }
-    with pytest.raises(ValueError, match="metric mismatch on evaluated_positive_samples"):
-        verify_canonical_metric_consistency(bad_count, canonical)
-
-    # Rate mismatch -> fails closed
-    bad_rate = {
-        "T1059.001": {
-            **matching["T1059.001"],
-            "hit_rate_at_1": 0.25,
-        }
-    }
-    with pytest.raises(ValueError, match="rate mismatch on hit_rate_at_1"):
-        verify_canonical_metric_consistency(bad_rate, canonical)
-
-    # Missing technique -> fails closed
-    missing_tech = {
-        "T1059.001": matching["T1059.001"],
-        "T9999": matching["T1059.001"],
-    }
-    with pytest.raises(ValueError, match="missing from canonical metrics"):
-        verify_canonical_metric_consistency(missing_tech, canonical)
-
+# ---------------------------------------------------------------------------
+# inspect_sample
+# ---------------------------------------------------------------------------
 
 def test_inspect_sample() -> None:
     records = [
@@ -383,9 +720,28 @@ def test_inspect_sample() -> None:
         inspect_sample(records, "non_existent")
 
 
+# ---------------------------------------------------------------------------
+# TEST 12 — Canonical end-to-end (corrected expected values)
+# ---------------------------------------------------------------------------
+
 @pytest.mark.skipif(not CANONICAL_DIAGNOSTICS.exists(), reason="Canonical diagnostics missing")
 def test_canonical_analysis_end_to_end() -> None:
-    """Verify end-to-end failure analysis against canonical repo artifacts."""
+    """Test 12: End-to-end verification against canonical repo artifacts.
+
+    Pairwise results are the CORRECTED anchor-based values:
+    - Candidate pairs: 670 (all pairs with both single+contextual views)
+    - Eligible pairs: 296 (single-view mapped_single with exactly 1 GT technique)
+    - Excluded: 374 (non-positive rows: unmapped/ambiguous with empty GT)
+    - single_better: 65
+    - contextual_better: 23
+    - equal: 208
+    - both_absent_top10: 147 (subset of equal=208)
+    - top10_equal: 61 (subset of equal=208)
+
+    These are the methodologically correct anchor-based values, where anchor
+    = single-event view's single GT technique, compared at the same rank in
+    the contextual view.
+    """
     diagnostics_rows = load_jsonl(CANONICAL_DIAGNOSTICS)
     canonical_metrics = load_json(CANONICAL_METRICS)
 
@@ -410,39 +766,55 @@ def test_canonical_analysis_end_to_end() -> None:
     assert overall["gt_absent_from_top10_count"] == 415
     assert overall["hit_rate_at_1"] == pytest.approx(0.0423280423)
     assert overall["hit_rate_at_10"] == pytest.approx(0.4510582010)
+    # All macro recall fields present and match canonical
+    assert "macro_recall_at_1" in overall
+    assert "macro_recall_at_3" in overall
+    assert "macro_recall_at_5" in overall
+    assert "macro_recall_at_10" in overall
+    assert overall["macro_recall_at_10"] == pytest.approx(0.43143738977072316, rel=1e-6)
 
-    # Single vs Contextual verification
+    # Single vs Contextual verification — CORRECTED anchor-based values
     svc = summary["single_vs_contextual"]
-    assert svc["comparable_pairs"] == 296
-    assert svc["single_better"] == 61
-    assert svc["contextual_better"] == 52
-    assert svc["equal"] == 183
-    assert svc["both_absent_top10"] == 130
-    assert svc["both_absent"] == 130
-    assert svc["top10_equal"] == 53
-    assert svc["top10_equal_rate"] == pytest.approx(53 / 296)
+    assert svc["comparison_mode"] == "same_technique_anchor"
+    assert svc["candidate_pairs"] == 670
+    assert svc["eligible_pairs"] == 296
+    assert svc["excluded_pairs"] == 374
+    assert svc["excluded_reasons"]["single_not_mapped_single"] == 374
+    assert svc["comparable_pairs"] == 296  # alias for eligible_pairs
+    assert svc["single_better"] == 65
+    assert svc["contextual_better"] == 23
+    assert svc["equal"] == 208
+    assert svc["both_absent_top10"] == 147
+    assert svc["both_absent"] == 147
+    assert svc["top10_equal"] == 61
+    assert svc["top10_equal_rate"] == pytest.approx(61 / 296)
     assert svc["both_absent_top10"] + svc["top10_equal"] == svc["equal"]
     assert svc["single_better"] + svc["contextual_better"] + svc["equal"] == 296
 
-    # T1105 verification
+    # T1105 verification (T1105 analysis is not affected by pairwise fix)
     t1105 = summary["t1105_hard_negatives"]
     assert t1105["evaluated_positive_views"] == 114
     assert t1105["t1218_012_top1_count"] == 48
     assert t1105["t1218_012_top1_rate"] == pytest.approx(48 / 114)
-    # Competitor distribution top item
     dist = t1105["top1_competitor_distribution"]
     assert dist[0]["technique_id"] == "T1218.012"
     assert dist[0]["count"] == 48
     assert dist[1]["technique_id"] == "T1003.002"
     assert dist[1]["count"] == 26
 
-    # T1136.001 verification
+    # T1136.001 verification — dynamic median
     t1136 = summary["t1136_001_failure"]
     assert t1136["evaluated_positive_views"] == 99
     assert t1136["top10_hit_count"] == 0
     assert t1136["absent_top10_count"] == 99
     assert t1136["absent_top10_rate"] == 1.0
+    # Dynamic median: all absent -> None
+    assert t1136["median_ground_truth_rank_when_retrieved"] is None
 
+
+# ---------------------------------------------------------------------------
+# Determinism test
+# ---------------------------------------------------------------------------
 
 @pytest.mark.skipif(not CANONICAL_DIAGNOSTICS.exists(), reason="Canonical diagnostics missing")
 def test_cli_execution_and_repeat_determinism(tmp_path: Path) -> None:

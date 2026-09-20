@@ -156,6 +156,8 @@ def load_benchmark_views(
             for value in technique_ids
         ):
             raise ValueError(f"malformed ATT&CK IDs for view_id {view_id!r}")
+        if len(technique_ids) != len(set(technique_ids)):
+            raise ValueError(f"duplicate ATT&CK technique IDs for view_id {view_id!r}")
         if label_status not in _LABEL_STATUSES:
             raise ValueError(f"invalid label_status for view_id {view_id!r}: {label_status!r}")
         if label_status == "mapped" and not technique_ids:
@@ -187,6 +189,10 @@ def load_benchmark_views(
             raise ValueError(f"Duplicate pair_id: {pair_id!r}")
         pair_by_id[pair_id] = row
 
+    for vid, vrow in views_by_id.items():
+        if vrow["pair_id"] not in pair_by_id:
+            raise ValueError(f"view {vid!r} references unknown pair_id {vrow['pair_id']!r}")
+
     if split_manifest_path is not None:
         manifest = _read_json(Path(split_manifest_path))
         if not isinstance(manifest, Mapping):
@@ -198,6 +204,13 @@ def load_benchmark_views(
         missing_gt = sorted(set(inference_by_id) - set(ground_truth_by_view))
         missing_input = sorted(set(ground_truth_by_view) - set(inference_by_id))
         raise ValueError(f"benchmark join mismatch: missing_gt={missing_gt[:3]} missing_input={missing_input[:3]}")
+
+    if set(inference_by_id) != set(views_by_id):
+        missing_views = sorted(set(inference_by_id) - set(views_by_id))
+        orphan_views = sorted(set(views_by_id) - set(inference_by_id))
+        raise ValueError(
+            f"benchmark view join mismatch: missing_views={missing_views[:3]} orphan_views={orphan_views[:3]}"
+        )
 
     result: list[BenchmarkView] = []
     for sample_id, input_row in inference_by_id.items():

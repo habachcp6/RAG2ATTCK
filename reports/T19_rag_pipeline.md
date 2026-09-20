@@ -26,5 +26,8 @@ The `RetrievalMetadata` securely tracks the provenance of information provided i
 - `embedding_model_revision`
 - `index_sha256`
 
-## Remaining Blockers
-Dataset generation, pipeline integration, and end-to-end evaluation are blocked by Tasks T10 (Dataset Leakage Audit) and T20 (End-to-End Evaluation).
+## Status and Next Steps
+- T20 retrieval diagnostics completed.
+- End-to-end live evaluation remains pending.
+- T15 real-data pilot remains blocked by approved real telemetry availability.
+

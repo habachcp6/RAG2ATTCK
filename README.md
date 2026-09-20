@@ -1,10 +1,10 @@
-﻿# RAG2ATT&CK
+# RAG2ATT&CK
 
 **Evaluating MITRE ATT&CK-Grounded Retrieval-Augmented Generation for Technique Attribution from Windows Endpoint Logs**
 
 *Tiêu đề tiếng Việt:* **Đánh giá tác động của Retrieval-Augmented Generation dựa trên MITRE ATT&CK đối với việc ánh xạ Windows Endpoint Logs sang ATT&CK Techniques**
 
-[![Status: Research design / early development](https://img.shields.io/badge/Status-Research%20design%20%2F%20early%20development-blue.svg)](#project-status)
+[![Status: Pipeline Implemented & Retrieval Diagnosed](https://img.shields.io/badge/Status-Pipeline%20Implemented%20%26%20Retrieval%20Diagnosed-blue.svg)](#project-status)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](#license)
 
 ---
@@ -104,10 +104,11 @@ MITRE ATT&CK Technique
 
 To preserve experimental validity, all parameters outside the retrieval mechanism remain strictly identical:
 * **Dataset & Samples:** Same test split and telemetry instances across both arms.
-* **Language Model:** Same frozen LLM checkpoint, provider, and model version.
-* **Inference Parameters:** Fixed temperature (e.g., $T = 0.0$), top_p, and seed configuration.
-* **Prompt Schema:** Standardized prompt template, differing only by the conditional injection of the retrieved context block.
-* **Output Constraint:** Identical JSON output schema enforcing strict exact-match technique ID generation.
+* **Language Model & Provider:** Same frozen LLM checkpoint and provider (`openai`, `gpt-5.6-luna`, `reasoning_effort=xhigh`, `api_interface=responses`).
+* **Inference Parameters:** Fixed interface, reasoning effort, and output constraints. Note that parameters such as temperature, top_p, and seed are not exposed or configurable for this model/interface in the current implementation, and thus are not treatment variables.
+* **Prompt Schema:** Standardized prompt template (`prompts/baseline_v1.txt`), differing only by the conditional injection of the retrieved context block.
+* **Output Constraint:** Identical JSON output schema enforcing strict exact-match technique ID syntax.
+* **Experimental Input:** Exact same telemetry input (`endpoint_evidence`) across both arms.
 
 The sole experimental variable is:
 ```text
@@ -168,55 +169,38 @@ Permitted Telemetry Whitelist:
 
 ## Dataset Strategy
 
-The evaluation pipeline distinguishes between two stages of data usage:
+The evaluation pipeline strictly separates synthetic benchmark evaluation from real telemetry validation:
 
-### 1. Synthetic Development Data
-A minimal set of handcrafted Windows/Sysmon-style telemetry events paired with verified ground-truth techniques is used solely for development, unit testing, schema verification, and pipeline sanity checks:
-```json
-{
-  "EventID": 1,
-  "Image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
-  "CommandLine": "powershell.exe -NoP -NonI -W Hidden -enc SQBFAFgA...",
-  "ParentImage": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
-  "User": "CORP\\jdoe",
-  "UtcTime": "2026-03-01 10:14:22.120"
-}
-```
-*Ground Truth:* `T1059.001` (Command and Scripting Interpreter: PowerShell).
+### 1. Stage B Synthetic Benchmark (Development & Diagnostic Evaluation)
+A frozen synthetic benchmark comprising 670 scenario pairs (1,340 views partitioned into 1,280 TEST views and 60 DEV views, spanning single-event and contextual-event representations).
+- Used strictly for pipeline integrity verification, parser and schema validation, anti-leakage auditing, and retrieval diagnostics (T20).
+- Covers 8 representative target technique classes alongside unmapped/ambiguous negative controls.
+- *The synthetic benchmark is strictly an engineering and diagnostic evaluation artifact. It is not real telemetry and is not used to claim real-world empirical performance.*
 
-*Synthetic logs are strictly used to test the parser, sanitizer, LLM API, retriever, and evaluation logic. They are not used as the primary dataset to draw empirical research conclusions.*
-
-### 2. Public ATT&CK-Labeled Benchmark Telemetry
-The final empirical evaluation will be conducted on real-world, publicly available Windows endpoint telemetry containing verified MITRE ATT&CK ground truth:
-
-> *The final evaluation dataset will be selected from publicly available Windows endpoint telemetry with MITRE ATT&CK ground-truth labels.*
-
-A dataset currently under consideration is **Windows-APT 2025**, which features labeled Windows telemetry traces. The final selection will be confirmed based on label quality and distribution during experimental setup.
-
-### Target Evaluation Scope (Planned)
-* **Technique Coverage:** 8–10 representative Enterprise ATT&CK Techniques / Sub-techniques.
-* **Sample Density:** Approximately 40–50 samples per technique class to mitigate class imbalance.
-* **Evaluation Corpus:** Planned test set of approximately 400–500 evaluation instances.
+### 2. Real Telemetry (Pilot & Eventual Empirical Evaluation)
+The final empirical validation and the T15 pilot require legitimate, sanitized real-world Windows endpoint telemetry traces with verified MITRE ATT&CK ground-truth labels.
+- While candidate collections (such as Windows-APT 2025 traces) have been considered, approved real telemetry remains **currently unavailable / not finalized** in the repository.
+- Accordingly, the T15 real-data No-RAG pilot is status `PARTIAL / BLOCKED — DATA_UNAVAILABLE` until an approved real-data source meeting all provenance and sanitization criteria is integrated.
 
 ---
 
 ## MITRE ATT&CK Knowledge Base & Retrieval
 
 ### Knowledge Corpus
-* Grounded directly in official MITRE ATT&CK Enterprise STIX/JSON data.
-* > *The experiment will pin a specific MITRE ATT&CK Enterprise version for reproducibility.*
+* Grounded directly in official MITRE ATT&CK Enterprise STIX/JSON data, pinned to **v19.2** (`attack/corpus/enterprise-windows-v19.2.jsonl`, 474 documents).
 * Extracted document chunks incorporate:
   * Technique ID
   * Technique Name
   * Detailed Description
-  * Target Platforms
+  * Target Platforms (Windows-scoped)
   * Detection-related information
   * Selected Procedure examples (strictly curated to avoid near-duplicate leakage against evaluation logs).
 
 ### Lightweight Retrieval Engine
 To maintain experimental reproducibility without heavy infrastructure overhead:
-* **Embedding Model:** Dense representations via `sentence-transformers`.
-* **Vector Index:** Flat / L2 vector indexing managed by `FAISS`.
+* **Embedding Model:** Dense representations via `sentence-transformers/all-MiniLM-L6-v2` (pinned revision `1110a243fdf4706b3f48f1d95db1a4f5529b4d41`, dimension 384, L2 normalized).
+* **Vector Index:** Flat inner product vector indexing (`IndexFlatIP`, cosine similarity) managed by `FAISS` (`attack/index/enterprise-windows-v19.2.index`).
+* **Retrieval Limits:** Canonical candidate depths $k \in \{1, 3, 5, 10\}$ (default: 5).
 * *Zero heavyweight dependencies:* No external vector database servers (Pinecone, Milvus), no knowledge graphs, and no Elasticsearch clusters required.
 
 #### Document Processing Flow:
@@ -236,7 +220,7 @@ Sanitized Windows Log
          ↓
   Embedding Model
          ↓
-   FAISS Search
+    FAISS Search
          ↓
 Top-k ATT&CK Candidates
          ↓
@@ -247,8 +231,12 @@ Top-k ATT&CK Candidates
 
 ## Language Model & Inference Protocol
 
-* **Model Usage:** A single, frozen LLM provider API endpoint is utilized across both baseline and experimental arms.
-* **Generic Model Positioning:** The same LLM is used for both No-RAG and RAG conditions. A specific model and version will be documented in experiment configurations once finalized.
+* **Model Usage:** A single, frozen LLM provider API endpoint is utilized across both baseline and experimental arms:
+  * Provider: `openai`
+  * Model: `gpt-5.6-luna`
+  * Reasoning Effort: `xhigh`
+  * API Interface: `responses`
+  * Structured Output: Strict JSON schema enforcing exact `technique_id` syntax.
 * **No Fine-Tuning:** The research focuses purely on in-context retrieval augmentation without modifying model weights.
 
 ---
@@ -288,38 +276,41 @@ The expected deliverable is a self-contained, reproducible **Python research pro
 
 ---
 
-## Planned Project Structure
+## Current Repository Structure
 
 ```text
 RAG2ATTCK/
-├── README.md
-├── requirements.txt
-├── configs/
+├── .github/workflows/          # CI and Real Retrieval Integration workflows
+├── attack/
+│   ├── corpus/                 # Enterprise Windows ATT&CK v19.2 corpus
+│   └── index/                  # FAISS index, docmap, and provenance manifests
+├── config/                     # Canonical model, retrieval, and benchmark configs
 ├── data/
-│   ├── synthetic/
-│   ├── raw/
-│   └── processed/
+│   ├── ground_truth/synthetic/ # Frozen Stage B benchmark (1,340 views, 670 pairs)
+│   └── synthetic/              # Smoke test cases
+├── prompts/                    # Frozen baseline prompt template
+├── reports/                    # Task reports (T15, T19, T20, etc.)
 ├── src/
-│   ├── data_loader.py
-│   ├── sanitizer.py
-│   ├── attack_kb.py
-│   ├── retriever.py
-│   ├── llm_mapper.py
-│   └── evaluation.py
-├── experiments/
-├── results/
-├── notebooks/
-├── tests/
-└── docs/
+│   ├── baseline/               # Baseline No-RAG pipeline
+│   ├── evaluation/             # Retrieval diagnostics and metric calculation
+│   ├── llm/                    # OpenAI client, schemas, live budget management
+│   ├── pilot/                  # T15 bounded No-RAG pilot runner and provenance
+│   ├── rag/                    # RAG pipeline with controlled-treatment invariants
+│   └── retrieval/              # FAISS retriever, embedders, and corpus loader
+└── tests/                      # Unit, contract, and integration test suites
 ```
 
 ---
 
 ## Project Status
 
-**Status:** `Research design / early development`
+**Current Engineering Status:** Stage B synthetic benchmark, frozen MITRE ATT&CK v19.2 knowledge corpus, FAISS retriever, RAG/No-RAG pipelines, T20 retrieval diagnostics, and T15 bounded No-RAG pilot infrastructure have been implemented and verified with full CI test suites (Linux + Windows) and real retrieval integration tests.
 
-The project is currently establishing baseline experimental specifications, data sanitization protocols, and evaluation tooling. Specific dataset choices and pinned ATT&CK versions will be committed as experiments transition to execution.
+**Current Research & Empirical Status:**
+- **Synthetic Benchmark:** Stage B synthetic benchmark (670 scenario pairs, 1,340 views partitioned into 1,280 TEST views and 60 DEV views) is fully frozen and verified for development, schema integrity, and retrieval diagnostics (T20).
+- **Retrieval Diagnostics (T20):** Evaluated independently on the 756 positive views of the synthetic benchmark ($Hit@1 \approx 0.0423$, $Hit@10 \approx 0.4511$).
+- **End-to-End Evaluation:** The live end-to-end comparative experiment (RAG vs. No-RAG) remains pending.
+- **Real Telemetry Availability:** The T15 real-data pilot remains blocked (`DATA_UNAVAILABLE`) pending an approved, legitimate, sanitized real-world Windows telemetry dataset. The synthetic benchmark is explicitly not treated as real telemetry.
 
 ---
 

@@ -22,11 +22,20 @@ No live API requests were made.
 
 ## Required source metadata
 
-Before a live pilot can start, the source manifest must document `source`,
-`license`, `version`, `acquisition_date`, `schema`, `sanitization_status`, and
-`is_real_data=true`. Raw telemetry must not be committed where licensing or
-privacy rules prohibit it; a manifest, hash and sanitized derived input are
-acceptable project artifacts.
+Before a live pilot can start, the source manifest must document all 11 canonical fields defined in `REQUIRED_SOURCE_FIELDS`:
+- `dataset_id`
+- `source_id`
+- `source_reference`
+- `license`
+- `version`
+- `acquisition_date`
+- `schema`
+- `sanitization_status`
+- `is_real_data` (must be `true`)
+- `input_sha256`
+- `expected_record_count`
+
+The manifest and source allowlist establish that source provenance is declared and integrity-checked (verifying declared source identity, expected source ID, exact input bytes SHA-256, expected record count, and recorded sanitization state); they do not independently prove source authenticity without an external verification mechanism. Raw telemetry must not be committed where licensing or privacy rules prohibit it; a manifest, hash and sanitized derived input are acceptable project artifacts.
 
 ## Execution boundary
 

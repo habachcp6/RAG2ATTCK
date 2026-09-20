@@ -31,3 +31,8 @@ addopts = "-v --tb=short"
 markers = [
     "integration: tests requiring external model downloads or heavy runtime dependencies",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.8",
+]

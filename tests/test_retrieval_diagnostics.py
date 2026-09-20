@@ -106,6 +106,42 @@ def test_loader_rejects_malformed_attack_id(tmp_path: Path):
         load_benchmark_views(paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"])
 
 
+def test_orphan_view_is_rejected(tmp_path: Path):
+    paths = _fixture_paths(tmp_path)
+    views_rows = [json.loads(line) for line in paths["views"].read_text(encoding="utf-8").splitlines() if line]
+    views_rows.append({"view_id": "view_orphan", "pair_id": "pair_1", "view_type": "single"})
+    _write_jsonl(paths["views"], views_rows)
+    with pytest.raises(ValueError, match="orphan_views"):
+        load_benchmark_views(paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"])
+
+
+def test_missing_view_is_rejected(tmp_path: Path):
+    paths = _fixture_paths(tmp_path)
+    views_rows = [json.loads(line) for line in paths["views"].read_text(encoding="utf-8").splitlines() if line]
+    _write_jsonl(paths["views"], views_rows[:1])
+    with pytest.raises(ValueError, match="missing_views"):
+        load_benchmark_views(paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"])
+
+
+def test_duplicate_ground_truth_technique_is_rejected(tmp_path: Path):
+    paths = _fixture_paths(tmp_path)
+    gt_rows = [json.loads(line) for line in paths["ground_truth"].read_text(encoding="utf-8").splitlines() if line]
+    gt_rows[0]["technique_ids"] = ["T1059.001", "T1059.001"]
+    _write_jsonl(paths["ground_truth"], gt_rows)
+    with pytest.raises(ValueError, match="duplicate ATT&CK technique IDs"):
+        load_benchmark_views(paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"])
+
+
+def test_view_referencing_unknown_pair_is_rejected(tmp_path: Path):
+    paths = _fixture_paths(tmp_path)
+    views_rows = [json.loads(line) for line in paths["views"].read_text(encoding="utf-8").splitlines() if line]
+    views_rows[0]["pair_id"] = "unknown_pair"
+    _write_jsonl(paths["views"], views_rows)
+    with pytest.raises(ValueError, match="references unknown pair_id"):
+        load_benchmark_views(paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"])
+
+
+
 def test_record_uses_retrieval_only_and_multi_label_query_hit_is_any_match():
     view = _view(("T1059.003", "T1059.001"))
     record = make_diagnostic_record(view, [_result(1, "T1105"), _result(2, "T1059.001")], {})

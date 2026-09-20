@@ -1,0 +1,217 @@
+{
+  "analysis_version": "1.0.0",
+  "overall_positive": {
+    "evaluated_positive_samples": 756,
+    "gt_absent_from_top10_count": 415,
+    "gt_absent_from_top10_rate": 0.548941798941799,
+    "hit_rate_at_1": 0.042328042328042326,
+    "hit_rate_at_10": 0.45105820105820105,
+    "hit_rate_at_3": 0.167989417989418,
+    "hit_rate_at_5": 0.24206349206349206,
+    "macro_recall_at_10": 0.4314373897707231,
+    "mean_ground_truth_rank_when_retrieved": 5.205278592375366,
+    "median_ground_truth_rank_when_retrieved": 5
+  },
+  "per_technique": {
+    "T1053.005": {
+      "evaluated_positive_samples": 93,
+      "gt_absent_from_top10_count": 51,
+      "gt_absent_from_top10_rate": 0.5483870967741935,
+      "hit_rate_at_1": 0.07526881720430108,
+      "hit_rate_at_10": 0.45161290322580644,
+      "hit_rate_at_3": 0.15053763440860216,
+      "hit_rate_at_5": 0.17204301075268819,
+      "mean_ground_truth_rank_when_retrieved": 6.023809523809524,
+      "median_ground_truth_rank_when_retrieved": 7.0,
+      "positive_sample_count": 93
+    },
+    "T1059.001": {
+      "evaluated_positive_samples": 113,
+      "gt_absent_from_top10_count": 36,
+      "gt_absent_from_top10_rate": 0.3185840707964602,
+      "hit_rate_at_1": 0.017699115044247787,
+      "hit_rate_at_10": 0.6814159292035398,
+      "hit_rate_at_3": 0.3893805309734513,
+      "hit_rate_at_5": 0.49557522123893805,
+      "mean_ground_truth_rank_when_retrieved": 4.077922077922078,
+      "median_ground_truth_rank_when_retrieved": 3,
+      "positive_sample_count": 113
+    },
+    "T1059.003": {
+      "evaluated_positive_samples": 111,
+      "gt_absent_from_top10_count": 92,
+      "gt_absent_from_top10_rate": 0.8288288288288288,
+      "hit_rate_at_1": 0.018018018018018018,
+      "hit_rate_at_10": 0.17117117117117117,
+      "hit_rate_at_3": 0.018018018018018018,
+      "hit_rate_at_5": 0.02702702702702703,
+      "mean_ground_truth_rank_when_retrieved": 7.052631578947368,
+      "median_ground_truth_rank_when_retrieved": 8,
+      "positive_sample_count": 111
+    },
+    "T1105": {
+      "evaluated_positive_samples": 114,
+      "gt_absent_from_top10_count": 96,
+      "gt_absent_from_top10_rate": 0.8421052631578947,
+      "hit_rate_at_1": 0.0,
+      "hit_rate_at_10": 0.15789473684210525,
+      "hit_rate_at_3": 0.0,
+      "hit_rate_at_5": 0.0,
+      "mean_ground_truth_rank_when_retrieved": 8.88888888888889,
+      "median_ground_truth_rank_when_retrieved": 9.0,
+      "positive_sample_count": 114
+    },
+    "T1136.001": {
+      "evaluated_positive_samples": 99,
+      "gt_absent_from_top10_count": 99,
+      "gt_absent_from_top10_rate": 1.0,
+      "hit_rate_at_1": 0.0,
+      "hit_rate_at_10": 0.0,
+      "hit_rate_at_3": 0.0,
+      "hit_rate_at_5": 0.0,
+      "mean_ground_truth_rank_when_retrieved": null,
+      "median_ground_truth_rank_when_retrieved": null,
+      "positive_sample_count": 99
+    },
+    "T1543.003": {
+      "evaluated_positive_samples": 114,
+      "gt_absent_from_top10_count": 79,
+      "gt_absent_from_top10_rate": 0.6929824561403509,
+      "hit_rate_at_1": 0.0,
+      "hit_rate_at_10": 0.30701754385964913,
+      "hit_rate_at_3": 0.0,
+      "hit_rate_at_5": 0.03508771929824561,
+      "mean_ground_truth_rank_when_retrieved": 8.028571428571428,
+      "median_ground_truth_rank_when_retrieved": 8,
+      "positive_sample_count": 114
+    },
+    "T1547.001": {
+      "evaluated_positive_samples": 106,
+      "gt_absent_from_top10_count": 8,
+      "gt_absent_from_top10_rate": 0.07547169811320754,
+      "hit_rate_at_1": 0.1509433962264151,
+      "hit_rate_at_10": 0.9245283018867925,
+      "hit_rate_at_3": 0.3490566037735849,
+      "hit_rate_at_5": 0.5754716981132075,
+      "mean_ground_truth_rank_when_retrieved": 4.571428571428571,
+      "median_ground_truth_rank_when_retrieved": 4.5,
+      "positive_sample_count": 106
+    },
+    "T1685.005": {
+      "evaluated_positive_samples": 62,
+      "gt_absent_from_top10_count": 1,
+      "gt_absent_from_top10_rate": 0.016129032258064516,
+      "hit_rate_at_1": 0.08064516129032258,
+      "hit_rate_at_10": 0.9838709677419355,
+      "hit_rate_at_3": 0.5483870967741935,
+      "hit_rate_at_5": 0.7903225806451613,
+      "mean_ground_truth_rank_when_retrieved": 3.7049180327868854,
+      "median_ground_truth_rank_when_retrieved": 3,
+      "positive_sample_count": 62
+    }
+  },
+  "provenance": {
+    "analysis_version": "1.0.0",
+    "diagnostics_sha256": "a78377b66db09f23088fc4da73570b06d69c2413a67ad5c789e9808953c24777",
+    "ground_truth_sha256": "8f3d73bac7e81336a3e90bfa5a5d0850a51ac5588385ee53ad940bcbc3612608",
+    "metrics_sha256": "3e40e18f0d8c430b2f27aa4415f7b2df4b0f45289576be21f34c36dc8d3683be",
+    "pairs_sha256": "079e57a441b18d127739f610e7f62c263d943eefa19ca4ea5c6eab8b8a07665d",
+    "views_sha256": "1e6b0d3bd525b8fe9f97ba9e5656905597a3939e47c130a9e6f74535e2cd421d"
+  },
+  "single_vs_contextual": {
+    "both_absent": 130,
+    "both_absent_rate": 0.4391891891891892,
+    "both_absent_top10": 130,
+    "both_absent_top10_rate": 0.4391891891891892,
+    "comparable_pairs": 296,
+    "comparison_rule": "comparison_rank = rank if rank is not None else 11",
+    "contextual_better": 52,
+    "contextual_better_rate": 0.17567567567567569,
+    "equal": 183,
+    "equal_rate": 0.6182432432432432,
+    "single_better": 61,
+    "single_better_rate": 0.20608108108108109,
+    "top10_equal": 53,
+    "top10_equal_rate": 0.17905405405405406
+  },
+  "t1105_hard_negatives": {
+    "evaluated_positive_views": 114,
+    "t1218_012_top1_count": 48,
+    "t1218_012_top1_rate": 0.42105263157894735,
+    "top1_competitor_distribution": [
+      {
+        "count": 48,
+        "rate": 0.42105263157894735,
+        "technique_id": "T1218.012"
+      },
+      {
+        "count": 26,
+        "rate": 0.22807017543859648,
+        "technique_id": "T1003.002"
+      },
+      {
+        "count": 10,
+        "rate": 0.08771929824561403,
+        "technique_id": "T1574.009"
+      },
+      {
+        "count": 9,
+        "rate": 0.07894736842105263,
+        "technique_id": "T1546.012"
+      },
+      {
+        "count": 7,
+        "rate": 0.06140350877192982,
+        "technique_id": "T1053.005"
+      },
+      {
+        "count": 3,
+        "rate": 0.02631578947368421,
+        "technique_id": "T1216.001"
+      },
+      {
+        "count": 3,
+        "rate": 0.02631578947368421,
+        "technique_id": "T1218.007"
+      },
+      {
+        "count": 2,
+        "rate": 0.017543859649122806,
+        "technique_id": "T1547.001"
+      },
+      {
+        "count": 2,
+        "rate": 0.017543859649122806,
+        "technique_id": "T1547.004"
+      },
+      {
+        "count": 1,
+        "rate": 0.008771929824561403,
+        "technique_id": "T1059.001"
+      },
+      {
+        "count": 1,
+        "rate": 0.008771929824561403,
+        "technique_id": "T1218.005"
+      },
+      {
+        "count": 1,
+        "rate": 0.008771929824561403,
+        "technique_id": "T1218.010"
+      },
+      {
+        "count": 1,
+        "rate": 0.008771929824561403,
+        "technique_id": "T1546.009"
+      }
+    ]
+  },
+  "t1136_001_failure": {
+    "absent_top10_count": 99,
+    "absent_top10_rate": 1.0,
+    "evaluated_positive_views": 99,
+    "median_ground_truth_rank_when_retrieved": null,
+    "top10_hit_count": 0,
+    "top10_hit_rate": 0.0
+  }
+}

@@ -361,9 +361,11 @@ def _metric_rows(
         ranks = [rank for rank in ranks if rank is not None]
     metrics["mean_ground_truth_rank_when_retrieved"] = mean(ranks) if ranks else None
     metrics["median_ground_truth_rank_when_retrieved"] = median(ranks) if ranks else None
-    metrics["gt_absent_from_top10_count"] = sum(
-        1 for row in positive if row["ground_truth_best_rank"] is None or row["ground_truth_best_rank"] > 10
-    )
+    absence_ranks = [
+        row["ground_truth_best_rank"] if technique_id is None else technique_rank(row, technique_id)
+        for row in positive
+    ]
+    metrics["gt_absent_from_top10_count"] = sum(rank is None or rank > 10 for rank in absence_ranks)
     metrics["gt_absent_from_top10_rate"] = (
         metrics["gt_absent_from_top10_count"] / len(positive) if positive else None
     )

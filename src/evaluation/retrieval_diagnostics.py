@@ -77,6 +77,39 @@ def _hash_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _validate_split_manifest(
+    manifest: Mapping[str, Any],
+    pair_by_id: Mapping[str, Mapping[str, Any]],
+) -> None:
+    """Require the manifest to be an exact TEST/DEV partition of canonical pairs."""
+
+    declared: dict[str, str] = {}
+    for manifest_key, expected_split in (("test", "TEST"), ("dev", "DEV")):
+        ids = manifest.get(manifest_key)
+        if not isinstance(ids, list) or any(not isinstance(pair_id, str) for pair_id in ids):
+            raise ValueError(f"split manifest missing string list: {manifest_key}")
+        _require_unique(ids, f"{expected_split} split pair_id")
+        for pair_id in ids:
+            if pair_id in declared:
+                raise ValueError(f"pair_id appears in both TEST and DEV: {pair_id!r}")
+            declared[pair_id] = expected_split
+
+    canonical = set(pair_by_id)
+    declared_ids = set(declared)
+    missing = sorted(canonical - declared_ids)
+    unknown = sorted(declared_ids - canonical)
+    if missing or unknown:
+        raise ValueError(f"split manifest is not an exact partition: missing={missing[:3]}, unknown={unknown[:3]}")
+
+    disagreements = sorted(
+        pair_id
+        for pair_id, row in pair_by_id.items()
+        if str(row.get("split", "")).upper() != declared[pair_id]
+    )
+    if disagreements:
+        raise ValueError(f"split manifest disagrees with pair metadata: {disagreements[:3]}")
+
+
 def load_benchmark_views(
     inference_path: Path | str,
     ground_truth_path: Path | str,
@@ -156,15 +189,9 @@ def load_benchmark_views(
 
     if split_manifest_path is not None:
         manifest = _read_json(Path(split_manifest_path))
-        for split in ("test", "dev"):
-            ids = manifest.get(split)
-            if not isinstance(ids, list):
-                raise ValueError(f"split manifest missing list: {split}")
-            if any(pair_id not in pair_by_id for pair_id in ids):
-                raise ValueError(f"split manifest references unknown pair in {split}")
-            expected = split.upper()
-            if any(str(pair_by_id[pair_id].get("split", "")).upper() != expected for pair_id in ids):
-                raise ValueError(f"split manifest disagrees with pair metadata for {split}")
+        if not isinstance(manifest, Mapping):
+            raise ValueError("split manifest must be an object")
+        _validate_split_manifest(manifest, pair_by_id)
 
     _require_unique(inference_by_id, "sample_id")
     if set(inference_by_id) != set(ground_truth_by_view):
@@ -226,6 +253,22 @@ def _candidate_dict(results: Sequence[RetrievalResult]) -> list[dict[str, Any]]:
     ]
 
 
+def technique_rank(record: Mapping[str, Any], technique_id: str) -> int | None:
+    """Return the retrieved rank for one specific ground-truth technique."""
+
+    ranks = record.get("ground_truth_technique_ranks")
+    if isinstance(ranks, Mapping) and technique_id in ranks:
+        rank = ranks[technique_id]
+        return int(rank) if isinstance(rank, int) else None
+
+    # Keep scoring robust for hand-built/legacy records used by callers.
+    for candidate in record.get("retrieved_candidates", ()):
+        if candidate.get("technique_id") == technique_id:
+            rank = candidate.get("rank")
+            return int(rank) if isinstance(rank, int) else None
+    return None
+
+
 def make_diagnostic_record(
     view: BenchmarkView,
     results: Sequence[RetrievalResult],
@@ -234,10 +277,16 @@ def make_diagnostic_record(
     """Create one deterministic diagnostic record from retrieval results."""
 
     candidates = _candidate_dict(results)
-    ranked_ids = [candidate["technique_id"] for candidate in candidates]
     gt_ids = set(view.ground_truth_technique_ids)
+    technique_ranks = {
+        technique_id: next(
+            (candidate["rank"] for candidate in candidates if candidate["technique_id"] == technique_id),
+            None,
+        )
+        for technique_id in view.ground_truth_technique_ids
+    }
     best_rank = min(
-        (candidate["rank"] for candidate in candidates if candidate["technique_id"] in gt_ids),
+        (rank for rank in technique_ranks.values() if rank is not None),
         default=None,
     ) if gt_ids else None
     record: dict[str, Any] = {
@@ -248,12 +297,29 @@ def make_diagnostic_record(
         "label_status": view.label_status,
         "category": view.category,
         "ground_truth_technique_ids": list(view.ground_truth_technique_ids),
+        "ground_truth_technique_ranks": technique_ranks,
         "retrieved_candidates": candidates,
         "ground_truth_best_rank": best_rank,
         "hit_at_1": (bool(best_rank is not None and best_rank <= 1) if gt_ids else None),
         "hit_at_3": (bool(best_rank is not None and best_rank <= 3) if gt_ids else None),
         "hit_at_5": (bool(best_rank is not None and best_rank <= 5) if gt_ids else None),
         "hit_at_10": (bool(best_rank is not None and best_rank <= 10) if gt_ids else None),
+        "recall_at_1": (
+            sum(rank is not None and rank <= 1 for rank in technique_ranks.values()) / len(gt_ids)
+            if gt_ids else None
+        ),
+        "recall_at_3": (
+            sum(rank is not None and rank <= 3 for rank in technique_ranks.values()) / len(gt_ids)
+            if gt_ids else None
+        ),
+        "recall_at_5": (
+            sum(rank is not None and rank <= 5 for rank in technique_ranks.values()) / len(gt_ids)
+            if gt_ids else None
+        ),
+        "recall_at_10": (
+            sum(rank is not None and rank <= 10 for rank in technique_ranks.values()) / len(gt_ids)
+            if gt_ids else None
+        ),
         "corpus_sha256": provenance.get("corpus_sha256"),
         "index_sha256": provenance.get("index_sha256"),
         "embedding_model_id": provenance.get("embedding_model_id"),
@@ -263,7 +329,11 @@ def make_diagnostic_record(
     return record
 
 
-def _metric_rows(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+def _metric_rows(
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    technique_id: str | None = None,
+) -> dict[str, Any]:
     positive = [row for row in rows if row["ground_truth_technique_ids"]]
     metrics: dict[str, Any] = {
         "total_samples": len(rows),
@@ -271,9 +341,24 @@ def _metric_rows(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         "non_positive_samples": len(rows) - len(positive),
     }
     for k in SUPPORTED_K:
-        hits = [bool(row[f"hit_at_{k}"]) for row in positive]
-        metrics[f"recall_at_{k}"] = (sum(hits) / len(hits)) if hits else None
-    ranks = [row["ground_truth_best_rank"] for row in positive if row["ground_truth_best_rank"] is not None]
+        if technique_id is None:
+            hits = [bool(row[f"hit_at_{k}"]) for row in positive]
+            recalls = [float(row[f"recall_at_{k}"]) for row in positive]
+        else:
+            ranks_for_technique = [technique_rank(row, technique_id) for row in positive]
+            hits = [rank is not None and rank <= k for rank in ranks_for_technique]
+            recalls = [float(hit) for hit in hits]
+        hit_rate = (sum(hits) / len(hits)) if hits else None
+        macro_recall = (sum(recalls) / len(recalls)) if recalls else None
+        metrics[f"hit_rate_at_{k}"] = hit_rate
+        metrics[f"macro_recall_at_{k}"] = macro_recall
+        # Compatibility key: it now has true multi-label recall semantics.
+        metrics[f"recall_at_{k}"] = macro_recall
+    if technique_id is None:
+        ranks = [row["ground_truth_best_rank"] for row in positive if row["ground_truth_best_rank"] is not None]
+    else:
+        ranks = [technique_rank(row, technique_id) for row in positive]
+        ranks = [rank for rank in ranks if rank is not None]
     metrics["mean_ground_truth_rank_when_retrieved"] = mean(ranks) if ranks else None
     metrics["median_ground_truth_rank_when_retrieved"] = median(ranks) if ranks else None
     metrics["gt_absent_from_top10_count"] = sum(
@@ -300,7 +385,8 @@ def calculate_metrics(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     techniques = sorted({tid for record in positive for tid in record["ground_truth_technique_ids"]})
     for technique_id in techniques:
         per_technique[technique_id] = _metric_rows(
-            [record for record in positive if technique_id in record["ground_truth_technique_ids"]]
+            [record for record in positive if technique_id in record["ground_truth_technique_ids"]],
+            technique_id=technique_id,
         )
 
     return {
@@ -315,7 +401,7 @@ def calculate_metrics(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         "per_technique": per_technique,
         "negative_diagnostics": {
             "samples": len(negatives),
-            "top10_candidate_count": sum(bool(row["retrieved_candidates"]) for row in negatives),
+            "negative_samples_with_candidates": sum(bool(row["retrieved_candidates"]) for row in negatives),
             "no_positive_ground_truth_for_recall": True,
         },
     }

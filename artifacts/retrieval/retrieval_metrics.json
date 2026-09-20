@@ -231,8 +231,8 @@
     },
     "T1059.001": {
       "evaluated_positive_samples": 113,
-      "gt_absent_from_top10_count": 34,
-      "gt_absent_from_top10_rate": 0.3008849557522124,
+      "gt_absent_from_top10_count": 36,
+      "gt_absent_from_top10_rate": 0.3185840707964602,
       "hit_rate_at_1": 0.017699115044247787,
       "hit_rate_at_10": 0.6814159292035398,
       "hit_rate_at_3": 0.3893805309734513,
@@ -273,8 +273,8 @@
     },
     "T1105": {
       "evaluated_positive_samples": 114,
-      "gt_absent_from_top10_count": 85,
-      "gt_absent_from_top10_rate": 0.7456140350877193,
+      "gt_absent_from_top10_count": 96,
+      "gt_absent_from_top10_rate": 0.8421052631578947,
       "hit_rate_at_1": 0.0,
       "hit_rate_at_10": 0.15789473684210525,
       "hit_rate_at_3": 0.0,
@@ -294,8 +294,8 @@
     },
     "T1136.001": {
       "evaluated_positive_samples": 99,
-      "gt_absent_from_top10_count": 89,
-      "gt_absent_from_top10_rate": 0.898989898989899,
+      "gt_absent_from_top10_count": 99,
+      "gt_absent_from_top10_rate": 1.0,
       "hit_rate_at_1": 0.0,
       "hit_rate_at_10": 0.0,
       "hit_rate_at_3": 0.0,
@@ -315,8 +315,8 @@
     },
     "T1543.003": {
       "evaluated_positive_samples": 114,
-      "gt_absent_from_top10_count": 68,
-      "gt_absent_from_top10_rate": 0.5964912280701754,
+      "gt_absent_from_top10_count": 79,
+      "gt_absent_from_top10_rate": 0.6929824561403509,
       "hit_rate_at_1": 0.0,
       "hit_rate_at_10": 0.30701754385964913,
       "hit_rate_at_3": 0.0,

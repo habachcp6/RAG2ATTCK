@@ -267,3 +267,81 @@ def test_valid_source_manifest_and_sidecar_metadata(tmp_path: Path):
     assert sidecar["condition"] == "no_rag"
     assert sidecar["attack_version"] == "19.2"
     assert sidecar["run_completion_status"] == "INCOMPLETE"
+
+
+def test_unexpected_programming_error_is_not_masked_as_api_failure():
+    class FailingPipeline:
+        def run_sample(self, **kwargs):
+            raise TypeError("internal programming defect")
+
+    with pytest.raises(TypeError, match="internal programming defect"):
+        run_no_rag_pilot([PilotSample("s1", "source-1", "EventID 1")], FailingPipeline())
+
+
+def test_expected_provider_error_normalized_without_aborting_run():
+    class ProviderFailingPipeline:
+        def __init__(self):
+            self.count = 0
+
+        def run_sample(self, **kwargs):
+            self.count += 1
+            if self.count == 1:
+                raise openai.APIConnectionError(message="Connection failed", request=MagicMock())
+            return SimpleNamespace(
+                predicted_technique_id="T1059.001",
+                is_valid=True,
+                parse_status="VALID",
+                condition="no_rag",
+                provider="openai",
+                model="gpt-5.6-luna",
+                reasoning_effort="xhigh",
+                prompt_version="baseline_v1",
+                latency_ms=10.0,
+                input_tokens=10,
+                output_tokens=5,
+                retry_count=0,
+                invalid_reason=None,
+                error_type=None,
+            )
+
+    samples = [
+        PilotSample("s1", "source-1", "EventID 1"),
+        PilotSample("s2", "source-1", "EventID 2"),
+    ]
+    run = run_no_rag_pilot(samples, ProviderFailingPipeline())
+    assert run.processed_samples == 2
+    assert run.complete is True
+    assert run.records[0]["parse_status"] == "API_FAILURE"
+    assert run.records[0]["error_type"] == "APIConnectionError"
+    assert run.records[1]["parse_status"] == "VALID"
+
+
+def test_expected_provider_timeout_normalized_as_timeout():
+    class TimeoutPipeline:
+        def run_sample(self, **kwargs):
+            raise TimeoutError("Network request timed out")
+
+    run = run_no_rag_pilot([PilotSample("s1", "source-1", "EventID 1")], TimeoutPipeline())
+    assert run.processed_samples == 1
+    assert run.records[0]["parse_status"] == "TIMEOUT"
+    assert run.records[0]["error_type"] == "TimeoutError"
+
+
+@pytest.mark.parametrize("missing_field", [
+    "dataset_id",
+    "source_id",
+    "source_reference",
+    "license",
+    "version",
+    "acquisition_date",
+    "schema",
+    "sanitization_status",
+    "is_real_data",
+    "input_sha256",
+    "expected_record_count",
+])
+def test_manifest_contract_validates_all_canonical_fields(tmp_path: Path, missing_field: str):
+    _, _, manifest = _write_inputs(tmp_path)
+    del manifest[missing_field]
+    with pytest.raises(ValueError, match="source manifest missing required fields"):
+        validate_source_manifest(manifest, approved_source_ids={"approved-source"})

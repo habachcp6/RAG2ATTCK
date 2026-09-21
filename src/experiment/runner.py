@@ -21,9 +21,11 @@ from src.experiment.config import (
     digest,
     parse_json,
     parse_jsonl,
+    registry_ids_from_bytes,
 )
 from src.experiment.schemas import CONDITIONS, ExperimentConfig, ExperimentRecord
 from src.llm.client import LiveBudget, LiveBudgetExceededError, LLMClient
+from src.llm.schemas import validate_technique_id
 from src.rag.pipeline import RAGPipeline
 from src.retrieval.retriever import FAISSRetriever, StubEmbedder
 
@@ -113,7 +115,7 @@ class JournalBudget(LiveBudget):
         raise ValueError("persisted experiment request spending cannot be reset")
 
 
-def _validate_record_binding(record, manifest, manifest_sha):
+def _validate_record_binding(record, manifest, manifest_sha, registry_ids):
     samples = {s["sample_id"]: s for s in manifest["samples"]}
     metadata = samples.get(record.sample_id)
     if metadata is None or (record.pair_id, record.view_type) != (metadata["pair_id"], metadata["view_type"]):
@@ -131,9 +133,15 @@ def _validate_record_binding(record, manifest, manifest_sha):
         expected[field] = manifest["artifacts"][artifact]["sha256"]
     if any(getattr(record, key) != value for key, value in expected.items()):
         raise ValueError("resume record provenance does not match manifest")
+    if record.parse_status in {"VALID", "INVALID_ID"}:
+        _, status, _ = validate_technique_id(record.parsed_technique_ids[0], registry_ids=registry_ids)
+        if status.value != record.parse_status:
+            raise ValueError("record parse status disagrees with captured ATT&CK registry")
+    if record.request_attempt_count > manifest["execution"]["retries"] + 1:
+        raise ValueError("record exceeds bound retry policy")
 
 
-def _resume_state(directory, manifest, manifest_sha, cap):
+def _resume_state(directory, manifest, manifest_sha, cap, registry_ids):
     expected_files = {"manifest.json", "request_journal.jsonl", "run_summary.json", ".run.lock"}
     expected_files.update(f"{c}_predictions.jsonl" for c in CONDITIONS)
     if any(path.name not in expected_files or not path.is_file() for path in directory.iterdir()):
@@ -145,7 +153,7 @@ def _resume_state(directory, manifest, manifest_sha, cap):
             continue
         for row in parse_jsonl(path.read_bytes()):
             record = ExperimentRecord.model_validate(row)
-            _validate_record_binding(record, manifest, manifest_sha)
+            _validate_record_binding(record, manifest, manifest_sha, registry_ids)
             key = (record.sample_id, record.condition)
             if key in records or record.condition != condition:
                 raise ValueError("duplicate sample-condition or wrong prediction file")
@@ -237,8 +245,10 @@ def run_mock_experiment(plan: ValidatedPlan, directory: Path | str, provider: Mo
     snapshot_config = ExperimentConfig.model_validate(parse_json(plan.snapshots["experiment_config"]))
     snapshot_model = parse_json(plan.snapshots["model_config"])
     snapshot_prompt = plan.snapshots["prompt"].decode("utf-8")
+    snapshot_registry = registry_ids_from_bytes(plan.snapshots["attack_registry"])
     if (plan.config != snapshot_config or plan.model_config != snapshot_model
             or plan.prompt_template != snapshot_prompt
+            or plan.registry_ids != snapshot_registry
             or plan.samples != _validate_dataset(snapshot_config, plan.snapshots)):
         raise ValueError("derived execution inputs differ from validated artifact snapshots")
     directory = Path(directory).resolve()
@@ -265,7 +275,7 @@ def run_mock_experiment(plan: ValidatedPlan, directory: Path | str, provider: Mo
         if resume:
             if parse_json(manifest_file.read_bytes()) != manifest:
                 raise ValueError("immutable manifest drift")
-            records, spent = _resume_state(directory, manifest, manifest_sha, max_requests)
+            records, spent = _resume_state(directory, manifest, manifest_sha, max_requests, snapshot_registry)
         else:
             with manifest_file.open("xb") as stream:
                 stream.write(canonical_bytes(manifest) + b"\n")
@@ -280,7 +290,7 @@ def run_mock_experiment(plan: ValidatedPlan, directory: Path | str, provider: Mo
             return {"complete": True, "record_count": len(records), "requests_consumed": spent, "new_records": 0}
         budget = JournalBudget(max_requests, journal_file, consumed=spent)
         client = LLMClient(config_dict=snapshot_model, openai_client=provider,
-                           registry_ids=set(plan.registry_ids), live_budget=budget, is_live=True, sleep_fn=lambda _: None)
+                           registry_ids=set(snapshot_registry), live_budget=budget, is_live=True, sleep_fn=lambda _: None)
         import faiss
         import numpy as np
 
@@ -311,7 +321,7 @@ def run_mock_experiment(plan: ValidatedPlan, directory: Path | str, provider: Mo
                     result = rag.run_sample(sample.sample_id, sample.endpoint_evidence, k=int(condition[5:]))
                     execution, retrieval = result.execution, result.retrieval
                 record = _record(plan, manifest, manifest_sha, sample, condition, execution, retrieval, budget.count - before)
-                _validate_record_binding(record, manifest, manifest_sha)
+                _validate_record_binding(record, manifest, manifest_sha, snapshot_registry)
                 _append(directory / f"{condition}_predictions.jsonl", record.model_dump())
                 _append(journal_file, {"event": "complete", "key": list(key), "record_sha256": digest(canonical_bytes(record.model_dump()))})
                 budget.key = None

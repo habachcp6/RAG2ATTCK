@@ -138,6 +138,18 @@ def _read_bound(root: Path, reference: Artifact) -> bytes:
     return data
 
 
+def registry_ids_from_bytes(data: bytes) -> frozenset[str]:
+    """Match the existing registry loader's technique extraction without rereads."""
+    bundle = parse_json(data)
+    registry = frozenset(
+        ref["external_id"] for obj in bundle["objects"] if obj.get("type") == "attack-pattern"
+        for ref in obj.get("external_references", []) if ref.get("source_name") == "mitre-attack" and "external_id" in ref
+    )
+    if not registry:
+        raise ValueError("empty ATT&CK registry")
+    return registry
+
+
 def _validate_dataset(config, snapshots):
     manifest = parse_json(snapshots["dataset_manifest"])
     if (manifest.get("state"), manifest.get("benchmark_version"), manifest.get("attack_version")) != (
@@ -300,13 +312,7 @@ def load_plan(config_path: Path | str, *, root: Path | str | None = None) -> Val
     prompt = snapshots["prompt"].decode("utf-8")
     if any(prompt.count(placeholder) != 1 for placeholder in ("{ENDPOINT_EVIDENCE}", "{RETRIEVED_CONTEXT}")):
         raise ValueError("base prompt must have exactly one instance of each inference placeholder")
-    bundle = parse_json(snapshots["attack_registry"])
-    registry = frozenset(
-        ref["external_id"] for obj in bundle["objects"] if obj.get("type") == "attack-pattern"
-        for ref in obj.get("external_references", []) if ref.get("source_name") == "mitre-attack" and "external_id" in ref
-    )
-    if not registry:
-        raise ValueError("empty ATT&CK registry")
+    registry = registry_ids_from_bytes(snapshots["attack_registry"])
     expected_requests = len(samples) * len(CONDITIONS)
     if config.execution.max_requests is not None and config.execution.max_requests < expected_requests:
         raise ValueError("expected request count exceeds explicit max_requests")

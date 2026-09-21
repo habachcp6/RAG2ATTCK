@@ -305,13 +305,14 @@ def test_cannot_write_into_a_sibling_worktree(bundle):
     assert not sibling.exists()
 
 
-@pytest.mark.parametrize("field", ["model_config", "prompt_template", "samples"])
+@pytest.mark.parametrize("field", ["model_config", "prompt_template", "samples", "registry_ids"])
 def test_derived_input_mutations_fail_before_dispatch(bundle, tmp_path, field):
     plan = load_plan(bundle[1])
     replacement = {
         "model_config": {**plan.model_config, "model": "different-model"},
         "prompt_template": plan.prompt_template + " altered",
         "samples": (replace(plan.samples[0], endpoint_evidence="SECRET_GT"), plan.samples[1]),
+        "registry_ids": frozenset({"T9999"}),
     }[field]
     altered = replace(plan, **{field: replacement})
     fake = MockProvider()
@@ -358,6 +359,24 @@ def test_zero_tokens_preserved_through_actual_client(bundle, tmp_path):
     run_mock_experiment(plan, output, provider, max_requests=10, stop_after=1)
     row = parse_json((output / "no_rag_predictions.jsonl").read_bytes())
     assert (row["prompt_tokens"], row["completion_tokens"], row["total_tokens"]) == (0, 0, 0)
+
+
+def test_resume_revalidates_claimed_parse_status_against_captured_registry(bundle, tmp_path):
+    plan = load_plan(bundle[1])
+    output = tmp_path / "forged-status"
+    run_mock_experiment(plan, output, MockProvider(), max_requests=10, stop_after=1)
+    prediction = output / "no_rag_predictions.jsonl"
+    row = parse_json(prediction.read_bytes())
+    row["parsed_technique_ids"] = ["T9999"]
+    prediction.write_bytes(canonical_bytes(row) + b"\n")
+    journal_path = output / "request_journal.jsonl"
+    journal = [parse_json(line) for line in journal_path.read_bytes().splitlines()]
+    journal[-1]["record_sha256"] = digest(canonical_bytes(row))
+    journal_path.write_bytes(b"".join(canonical_bytes(event) + b"\n" for event in journal))
+    fake = MockProvider()
+    with pytest.raises(ValueError, match="captured ATT&CK registry"):
+        run_mock_experiment(plan, output, fake, max_requests=10, resume=True)
+    assert not fake.calls
 
 
 def test_budget_exhaustion_and_resume_cannot_reset_allowance(bundle, tmp_path):

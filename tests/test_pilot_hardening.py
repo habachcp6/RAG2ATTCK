@@ -35,8 +35,12 @@ def _pipeline(*, budget, is_live=True, config=None):
         '{"technique_id":"T1059.001"}',
     )
     client = LLMClient(
-        openai_client=provider, live_budget=budget, is_live=is_live,
-        config_dict=config, registry_ids={"T1059.001"}, sleep_fn=lambda _: None,
+        openai_client=provider,
+        live_budget=budget,
+        is_live=is_live,
+        config_dict=config,
+        registry_ids={"T1059.001"},
+        sleep_fn=lambda _: None,
     )
     return BaselinePipeline(client=client), provider
 
@@ -45,12 +49,15 @@ def _samples(count=2):
     return [PilotSample(f"s{index}", "source", f"EventID {index}") for index in range(count)]
 
 
-@pytest.mark.parametrize("error", [
-    TypeError("internal programming defect"),
-    RuntimeError("500 timeout internal bug"),
-    PermissionError("permission denied"),
-    FileNotFoundError("missing internal file"),
-])
+@pytest.mark.parametrize(
+    "error",
+    [
+        TypeError("internal programming defect"),
+        RuntimeError("500 timeout internal bug"),
+        PermissionError("permission denied"),
+        FileNotFoundError("missing internal file"),
+    ],
+)
 def test_internal_error_propagates_through_actual_client_and_stops_batch(error):
     budget = LiveBudget(2)
     pipeline, provider = _pipeline(budget=budget)
@@ -79,18 +86,24 @@ def test_expected_provider_error_preserves_metadata_and_next_sample_runs():
     assert provider.responses.create.call_count == budget.count == 2
 
 
-@pytest.mark.parametrize("samples,match", [
-    (_samples(21), "1 to 20"),
-    (_samples() + [_samples()[0]], "Duplicate sample_id"),
-    (_samples() + [PilotSample("bad", "source", "\x00")], "visible evidence"),
-])
+@pytest.mark.parametrize(
+    "samples,match",
+    [
+        (_samples(21), "1 to 20"),
+        (_samples() + [_samples()[0]], "Duplicate sample_id"),
+        (_samples() + [PilotSample("bad", "source", "\x00")], "visible evidence"),
+    ],
+)
 def test_bad_batch_is_rejected_before_first_request(samples, match):
     budget = LiveBudget(21)
     pipeline, provider = _pipeline(budget=budget)
     with pytest.raises(ValueError, match=match):
         run_no_rag_pilot(
-            iter(samples), pipeline, live_budget=budget,
-            source_snapshot=_fixture_source_snapshot(_samples()), approved_source_ids={"source"},
+            iter(samples),
+            pipeline,
+            live_budget=budget,
+            source_snapshot=_fixture_source_snapshot(_samples()),
+            approved_source_ids={"source"},
         )
     provider.responses.create.assert_not_called()
     assert budget.count == 0
@@ -106,27 +119,37 @@ def test_infinite_input_is_bounded_before_dispatch():
     pipeline, provider = _pipeline(budget=budget)
     with pytest.raises(ValueError, match="1 to 20"):
         run_no_rag_pilot(
-            samples(), pipeline, live_budget=budget,
-            source_snapshot=_fixture_source_snapshot(_samples()), approved_source_ids={"source"},
+            samples(),
+            pipeline,
+            live_budget=budget,
+            source_snapshot=_fixture_source_snapshot(_samples()),
+            approved_source_ids={"source"},
         )
     provider.responses.create.assert_not_called()
 
 
-@pytest.mark.parametrize("kind,match", [
-    ("missing", "explicit finite"),
-    ("global", "explicit finite"),
-    ("mismatch", "same LiveBudget"),
-    ("disabled", "enable request accounting"),
-    ("zero", "positive integer"),
-    ("oversized", "pilot envelope"),
-])
+@pytest.mark.parametrize(
+    "kind,match",
+    [
+        ("missing", "explicit finite"),
+        ("global", "explicit finite"),
+        ("mismatch", "same LiveBudget"),
+        ("disabled", "enable request accounting"),
+        ("zero", "positive integer"),
+        ("oversized", "pilot envelope"),
+    ],
+)
 def test_pilot_cannot_fall_back_or_bypass_budget(kind, match):
-    client_budget = GLOBAL_LIVE_BUDGET if kind == "global" else LiveBudget(
-        0 if kind == "zero" else (100 if kind == "oversized" else 2),
+    client_budget = (
+        GLOBAL_LIVE_BUDGET
+        if kind == "global"
+        else LiveBudget(
+            0 if kind == "zero" else (100 if kind == "oversized" else 2),
+        )
     )
     pipeline, provider = _pipeline(budget=client_budget, is_live=kind != "disabled")
-    runner_budget = None if kind == "missing" else (
-        LiveBudget(2) if kind == "mismatch" else client_budget
+    runner_budget = (
+        None if kind == "missing" else (LiveBudget(2) if kind == "mismatch" else client_budget)
     )
     with pytest.raises(ValueError, match=match):
         _run_fixture_samples(_samples(), pipeline, live_budget=runner_budget)
@@ -150,7 +173,9 @@ def test_budget_denial_on_last_sample_is_incomplete_and_not_a_dispatched_retry()
     budget = LiveBudget(1)
     pipeline, provider = _pipeline(budget=budget)
     provider.responses.create.side_effect = openai.RateLimitError(
-        "retryable", response=MagicMock(), body=None,
+        "retryable",
+        response=MagicMock(),
+        body=None,
     )
     run = _run_fixture_samples(_samples(1), pipeline, live_budget=budget)
     assert not run.complete
@@ -186,19 +211,29 @@ def test_snapshot_binds_actual_prompt_config_and_sidecar_without_reread(tmp_path
     prompt_path = tmp_path / "prompt.txt"
     model_path = tmp_path / "model.json"
     prompt_path.write_text("frozen {ENDPOINT_EVIDENCE} {RETRIEVED_CONTEXT}", encoding="utf-8")
-    model_path.write_text(json.dumps({"model": "fixture-model", "max_retries": 0}), encoding="utf-8")
+    model_path.write_text(
+        json.dumps({"model": "fixture-model", "max_retries": 0}), encoding="utf-8"
+    )
     snapshot = capture_execution_snapshot(
-        inputs=prepared, prompt_path=prompt_path, model_config_path=model_path,
-        attack_version="19.2", workspace=Path.cwd(),
+        inputs=prepared,
+        prompt_path=prompt_path,
+        model_config_path=model_path,
+        attack_version="19.2",
+        workspace=Path.cwd(),
     )
     for path in (input_path, manifest_path, prompt_path, model_path):
         path.write_text("CHANGED AFTER CAPTURE", encoding="utf-8")
     budget = LiveBudget(1)
     provider = MagicMock()
-    provider.responses.create.return_value = create_mock_responses_api_response('{"technique_id":"T1059.001"}')
+    provider.responses.create.return_value = create_mock_responses_api_response(
+        '{"technique_id":"T1059.001"}'
+    )
     client = LLMClient(
-        config_dict=snapshot.model_config, openai_client=provider, is_live=True,
-        live_budget=budget, registry_ids={"T1059.001"},
+        config_dict=snapshot.model_config,
+        openai_client=provider,
+        is_live=True,
+        live_budget=budget,
+        registry_ids={"T1059.001"},
     )
 
     def forbid_read(*args, **kwargs):
@@ -208,8 +243,11 @@ def test_snapshot_binds_actual_prompt_config_and_sidecar_without_reread(tmp_path
     monkeypatch.setattr(Path, "read_bytes", forbid_read)
     pipeline = BaselinePipeline(client=client, prompt_template=snapshot.prompt_template)
     run = run_no_rag_pilot(
-        prepared.samples, pipeline, live_budget=budget,
-        source_snapshot=prepared, approved_source_ids={"approved-source"},
+        prepared.samples,
+        pipeline,
+        live_budget=budget,
+        source_snapshot=prepared,
+        approved_source_ids={"approved-source"},
     )
     sidecar = build_sidecar_metadata(snapshot=snapshot, run=run, sample_limit=1, live_budget=budget)
     assert provider.responses.create.call_args.kwargs["input"] == "frozen EventID 0 "
@@ -241,14 +279,18 @@ def test_public_runner_requires_provenance_snapshot_and_explicit_allowlist():
         run_no_rag_pilot(_samples(), pipeline, live_budget=budget)
     with pytest.raises(TypeError, match="approved_source_ids"):
         run_no_rag_pilot(
-            _samples(), pipeline, live_budget=budget,
+            _samples(),
+            pipeline,
+            live_budget=budget,
             source_snapshot=_fixture_source_snapshot(_samples()),
         )
     provider.responses.create.assert_not_called()
     assert budget.count == 0
 
 
-@pytest.mark.parametrize("malformed", ["missing_snapshot", "mutable_bytes", "mutable_samples", "manifest_array"])
+@pytest.mark.parametrize(
+    "malformed", ["missing_snapshot", "mutable_bytes", "mutable_samples", "manifest_array"]
+)
 def test_public_runner_rejects_malformed_or_mutable_snapshot(malformed):
     budget = LiveBudget(2)
     pipeline, provider = _pipeline(budget=budget)
@@ -263,23 +305,29 @@ def test_public_runner_rejects_malformed_or_mutable_snapshot(malformed):
         snapshot = replace(snapshot, manifest_bytes=b"[]")
     with pytest.raises((TypeError, ValueError), match="snapshot|immutable|JSON object"):
         run_no_rag_pilot(
-            _samples(), pipeline, live_budget=budget,
-            source_snapshot=snapshot, approved_source_ids={"source"},
+            _samples(),
+            pipeline,
+            live_budget=budget,
+            source_snapshot=snapshot,
+            approved_source_ids={"source"},
         )
     provider.responses.create.assert_not_called()
     assert budget.count == 0
 
 
-@pytest.mark.parametrize("tampering,expected_error", [
-    ("input_hash", "SHA-256 mismatch"),
-    ("snapshot_samples", "snapshot samples do not match"),
-    ("requested_samples", "requested pilot samples do not match"),
-    ("unapproved_source", "approved source allowlist"),
-    ("not_real", "is_real_data=true"),
-    ("not_sanitized", "sanitization_status"),
-    ("manifest_source", "does not match manifest source_id"),
-    ("manifest_count", "record count mismatch"),
-])
+@pytest.mark.parametrize(
+    "tampering,expected_error",
+    [
+        ("input_hash", "SHA-256 mismatch"),
+        ("snapshot_samples", "snapshot samples do not match"),
+        ("requested_samples", "requested pilot samples do not match"),
+        ("unapproved_source", "approved source allowlist"),
+        ("not_real", "is_real_data=true"),
+        ("not_sanitized", "sanitization_status"),
+        ("manifest_source", "does not match manifest source_id"),
+        ("manifest_count", "record count mismatch"),
+    ],
+)
 def test_public_runner_rechecks_manifest_hash_and_sample_binding(tampering, expected_error):
     budget = LiveBudget(2)
     pipeline, provider = _pipeline(budget=budget)
@@ -309,8 +357,11 @@ def test_public_runner_rechecks_manifest_hash_and_sample_binding(tampering, expe
         snapshot = replace(snapshot, manifest_bytes=json.dumps(manifest).encode("utf-8"))
     with pytest.raises((DataUnavailableError, ValueError), match=expected_error):
         run_no_rag_pilot(
-            samples, pipeline, live_budget=budget,
-            source_snapshot=snapshot, approved_source_ids=approved,
+            samples,
+            pipeline,
+            live_budget=budget,
+            source_snapshot=snapshot,
+            approved_source_ids=approved,
         )
     provider.responses.create.assert_not_called()
     assert budget.count == 0

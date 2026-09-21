@@ -45,25 +45,47 @@ def _fixture(tmp_path):
     fillers = [f"T{2000 + i}" for i in range(10)]
     registry_ids = [A, B, C, "T1059", *fillers]
     truth = [[A], [B], [A, B], [C], [], [], [A], [B], [A], [B]]
-    samples = [{"sample_id": f"s{i}", "pair_id": f"p{i // 2}",
-                "view_type": "single" if i % 2 == 0 else "contextual"} for i in range(10)]
+    samples = [
+        {
+            "sample_id": f"s{i}",
+            "pair_id": f"p{i // 2}",
+            "view_type": "single" if i % 2 == 0 else "contextual",
+        }
+        for i in range(10)
+    ]
     artifact_values = {
-        "inference": [{"sample_id": s["sample_id"], "endpoint_evidence": f"fixture event {i}"}
-                      for i, s in enumerate(samples)],
-        "ground_truth": [{"view_id": s["sample_id"], "technique_ids": truth[i],
-                          "label_status": "mapped" if truth[i] else ("unmapped" if i == 4 else "ambiguous")}
-                         for i, s in enumerate(samples)],
-        "views": [{"view_id": s["sample_id"], "pair_id": s["pair_id"], "view_type": s["view_type"],
-                   "event_ids": [f"e{i // 2}"] if i % 2 == 0 else [f"e{i // 2}", f"context{i // 2}"]}
-                  for i, s in enumerate(samples)],
+        "inference": [
+            {"sample_id": s["sample_id"], "endpoint_evidence": f"fixture event {i}"}
+            for i, s in enumerate(samples)
+        ],
+        "ground_truth": [
+            {
+                "view_id": s["sample_id"],
+                "technique_ids": truth[i],
+                "label_status": "mapped" if truth[i] else ("unmapped" if i == 4 else "ambiguous"),
+            }
+            for i, s in enumerate(samples)
+        ],
+        "views": [
+            {
+                "view_id": s["sample_id"],
+                "pair_id": s["pair_id"],
+                "view_type": s["view_type"],
+                "event_ids": [f"e{i // 2}"] if i % 2 == 0 else [f"e{i // 2}", f"context{i // 2}"],
+            }
+            for i, s in enumerate(samples)
+        ],
         "corpus": [{"technique_id": tid} for tid in registry_ids],
     }
     artifact_values["pairs"] = [
-        {"pair_id": f"p{i}", "split": "test" if i < 4 else "dev",
-         "single_view": artifact_values["views"][2 * i],
-         "contextual_view": artifact_values["views"][2 * i + 1],
-         "single_ground_truth": artifact_values["ground_truth"][2 * i],
-         "contextual_ground_truth": artifact_values["ground_truth"][2 * i + 1]}
+        {
+            "pair_id": f"p{i}",
+            "split": "test" if i < 4 else "dev",
+            "single_view": artifact_values["views"][2 * i],
+            "contextual_view": artifact_values["views"][2 * i + 1],
+            "single_ground_truth": artifact_values["ground_truth"][2 * i],
+            "contextual_ground_truth": artifact_values["ground_truth"][2 * i + 1],
+        }
         for i in range(5)
     ]
     specs = {}
@@ -78,34 +100,75 @@ def _fixture(tmp_path):
         specs[name] = {"path": path.name, "sha256": _digest(path.read_bytes())}
 
     artifact("split_manifest", {"test": [f"p{i}" for i in range(4)], "dev": ["p4"]})
-    artifact("attack_registry", {"objects": [
-        {"type": "attack-pattern", "external_references": [{"source_name": "mitre-attack", "external_id": tid}],
-         "x_mitre_deprecated": tid == "T1059"} for tid in registry_ids]})
+    artifact(
+        "attack_registry",
+        {
+            "objects": [
+                {
+                    "type": "attack-pattern",
+                    "external_references": [{"source_name": "mitre-attack", "external_id": tid}],
+                    "x_mitre_deprecated": tid == "T1059",
+                }
+                for tid in registry_ids
+            ]
+        },
+    )
     artifact("prompt", None, data=b"fixture prompt {ENDPOINT_EVIDENCE} {RETRIEVED_CONTEXT}")
-    model = {"provider": "fixture", "model": "fixture-model", "logging_policy": {"log_raw_response": False}}
+    model = {
+        "provider": "fixture",
+        "model": "fixture-model",
+        "logging_policy": {"log_raw_response": False},
+    }
     artifact("model_config", model)
     artifact("index", None, data=b"fixture index - never loaded")
     artifact("document_mapping", [{"technique_id": tid} for tid in registry_ids])
     retrieval = {"supported_k": [1, 3, 5, 10], "corpus_sha256": specs["corpus"]["sha256"]}
     artifact("retrieval_config", retrieval)
-    artifact("retrieval_manifest", {"corpus_sha256": specs["corpus"]["sha256"],
-                                    "index_sha256": specs["index"]["sha256"],
-                                    "document_mapping_sha256": specs["document_mapping"]["sha256"]})
-    artifact("experiment_config", {"schema_version": "1.0.0", "purpose": "known_answer_fixture_only"})
-    artifact("dataset_manifest", {
-        "benchmark_version": "fixture-only", "attack_version": "19.2", "state": "frozen",
-        "attack_source_sha256": specs["attack_registry"]["sha256"],
-        "files": {Path(specs[name]["path"]).name: specs[name]["sha256"]
-                  for name in ("inference", "ground_truth", "views", "pairs", "split_manifest")},
-    })
+    artifact(
+        "retrieval_manifest",
+        {
+            "corpus_sha256": specs["corpus"]["sha256"],
+            "index_sha256": specs["index"]["sha256"],
+            "document_mapping_sha256": specs["document_mapping"]["sha256"],
+        },
+    )
+    artifact(
+        "experiment_config", {"schema_version": "1.0.0", "purpose": "known_answer_fixture_only"}
+    )
+    artifact(
+        "dataset_manifest",
+        {
+            "benchmark_version": "fixture-only",
+            "attack_version": "19.2",
+            "state": "frozen",
+            "attack_source_sha256": specs["attack_registry"]["sha256"],
+            "files": {
+                Path(specs[name]["path"]).name: specs[name]["sha256"]
+                for name in ("inference", "ground_truth", "views", "pairs", "split_manifest")
+            },
+        },
+    )
     manifest = {
-        "schema_version": "1.0.0", "experiment_id": "known-answer-only", "status": "pre_freeze",
-        "execution_mode": "mock_fixture", "git_commit_sha": "1" * 40, "config_sha256": specs["experiment_config"]["sha256"],
-        "artifacts": specs, "model": model, "model_version": None,
-        "output_schema_sha256": _digest(canonical_json_bytes(TechniquePrediction.model_json_schema())),
-        "attack_release": "19.2", "benchmark_version": "fixture-only", "split": "test",
-        "conditions": list(CONDITIONS), "retrieval": retrieval, "sample_ids": [f"s{i}" for i in range(8)],
-        "samples": samples[:8], "expected_request_count": 40,
+        "schema_version": "1.0.0",
+        "experiment_id": "known-answer-only",
+        "status": "pre_freeze",
+        "execution_mode": "mock_fixture",
+        "git_commit_sha": "1" * 40,
+        "config_sha256": specs["experiment_config"]["sha256"],
+        "artifacts": specs,
+        "model": model,
+        "model_version": None,
+        "output_schema_sha256": _digest(
+            canonical_json_bytes(TechniquePrediction.model_json_schema())
+        ),
+        "attack_release": "19.2",
+        "benchmark_version": "fixture-only",
+        "split": "test",
+        "conditions": list(CONDITIONS),
+        "retrieval": retrieval,
+        "sample_ids": [f"s{i}" for i in range(8)],
+        "samples": samples[:8],
+        "expected_request_count": 40,
     }
     manifest_path = tmp_path / "manifest.json"
     _dump(manifest_path, manifest)
@@ -122,25 +185,60 @@ def _fixture(tmp_path):
                 candidates[2] = A
             # Eight records include invalid syntax, provider/parser failure,
             # multi-label GT, empty GT and retired-but-present registry ID.
-            statuses = ["VALID", "VALID", "VALID", "INVALID_ID", "API_FAILURE", "MALFORMED_RESPONSE", "VALID", "VALID"]
+            statuses = [
+                "VALID",
+                "VALID",
+                "VALID",
+                "INVALID_ID",
+                "API_FAILURE",
+                "MALFORMED_RESPONSE",
+                "VALID",
+                "VALID",
+            ]
             parsed = [[A], [C], [B], ["not-an-id"], [], [], [A], ["T1059"]]
             row = {
-                "schema_version": "1.0.0", "execution_mode": "mock_fixture", "experiment_id": manifest["experiment_id"],
-                "run_id": "fixture-run", "manifest_sha256": _digest(canonical_json_bytes(manifest)), **sample,
-                "condition": condition, "retrieval_k": k, "provider": model["provider"], "model": model["model"],
-                "model_version": None, "output_schema_sha256": manifest["output_schema_sha256"],
-                "ground_truth_version": "fixture-only", "attack_release": "19.2",
-                "retrieved_candidates": [{"technique_id": tid, "rank": rank, "score": 1.0 / rank}
-                                         for rank, tid in enumerate(candidates[:k], 1)],
-                "raw_response": None, "raw_response_logged": False, "parsed_technique_ids": parsed[i],
-                "parse_status": statuses[i], "prompt_tokens": 10, "completion_tokens": 2, "total_tokens": 12,
-                "latency_ms": 1.5, "retry_count": 0, "request_attempt_count": 1, "error_type": None,
-                "error_message": None, "success": statuses[i] == "VALID", "timestamp": "2026-09-22T00:00:00Z",
+                "schema_version": "1.0.0",
+                "execution_mode": "mock_fixture",
+                "experiment_id": manifest["experiment_id"],
+                "run_id": "fixture-run",
+                "manifest_sha256": _digest(canonical_json_bytes(manifest)),
+                **sample,
+                "condition": condition,
+                "retrieval_k": k,
+                "provider": model["provider"],
+                "model": model["model"],
+                "model_version": None,
+                "output_schema_sha256": manifest["output_schema_sha256"],
+                "ground_truth_version": "fixture-only",
+                "attack_release": "19.2",
+                "retrieved_candidates": [
+                    {"technique_id": tid, "rank": rank, "score": 1.0 / rank}
+                    for rank, tid in enumerate(candidates[:k], 1)
+                ],
+                "raw_response": None,
+                "raw_response_logged": False,
+                "parsed_technique_ids": parsed[i],
+                "parse_status": statuses[i],
+                "prompt_tokens": 10,
+                "completion_tokens": 2,
+                "total_tokens": 12,
+                "latency_ms": 1.5,
+                "retry_count": 0,
+                "request_attempt_count": 1,
+                "error_type": None,
+                "error_message": None,
+                "success": statuses[i] == "VALID",
+                "timestamp": "2026-09-22T00:00:00Z",
                 "terminal": True,
             }
-            for field, name in (("prompt_sha256", "prompt"), ("model_config_sha256", "model_config"),
-                                ("dataset_sha256", "inference"), ("ground_truth_sha256", "ground_truth"),
-                                ("corpus_sha256", "corpus"), ("index_sha256", "index")):
+            for field, name in (
+                ("prompt_sha256", "prompt"),
+                ("model_config_sha256", "model_config"),
+                ("dataset_sha256", "inference"),
+                ("ground_truth_sha256", "ground_truth"),
+                ("corpus_sha256", "corpus"),
+                ("index_sha256", "index"),
+            ):
                 row[field] = specs[name]["sha256"]
             rows.append(row)
         path = tmp_path / f"{condition}_predictions.jsonl"
@@ -150,7 +248,9 @@ def _fixture(tmp_path):
 
 
 def _load(tmp_path, fixture):
-    return _load_evaluation_inputs(fixture[0], fixture[1], repository_root=tmp_path, expected_sample_count=8)
+    return _load_evaluation_inputs(
+        fixture[0], fixture[1], repository_root=tmp_path, expected_sample_count=8
+    )
 
 
 def _change_row(fixture, field, value, condition="rag_k3", index=0):
@@ -191,7 +291,10 @@ def test_rehashed_sidecars_cannot_disagree_with_embedded_pair_authority(tmp_path
     if tamper == "replace_gt":
         rows[0]["technique_ids"] = [B]
     elif tamper == "swap_gt":
-        rows[0]["technique_ids"], rows[1]["technique_ids"] = rows[1]["technique_ids"], rows[0]["technique_ids"]
+        rows[0]["technique_ids"], rows[1]["technique_ids"] = (
+            rows[1]["technique_ids"],
+            rows[0]["technique_ids"],
+        )
     elif tamper == "alter_view":
         rows[0]["event_ids"] = ["different-evidence"]
     else:
@@ -201,7 +304,9 @@ def test_rehashed_sidecars_cannot_disagree_with_embedded_pair_authority(tmp_path
         _load(tmp_path, fixture)
 
 
-@pytest.mark.parametrize("field", ["single_view", "contextual_view", "single_ground_truth", "contextual_ground_truth"])
+@pytest.mark.parametrize(
+    "field", ["single_view", "contextual_view", "single_ground_truth", "contextual_ground_truth"]
+)
 def test_embedded_pair_fields_are_required_even_with_recomputed_hashes(tmp_path, field):
     fixture = _fixture(tmp_path)
     path = tmp_path / fixture[2]["artifacts"]["pairs"]["path"]
@@ -246,12 +351,19 @@ def test_known_answer_retrieval_and_separate_failure_observations(tmp_path):
     assert three["hit_rate"] == 5 / 6
     assert three["macro_recall"] == 3 / 4
     assert three["gt_absent_count"] == 1
-    assert one["parse_status_counts"] == {"API_FAILURE": 1, "INVALID_ID": 1, "MALFORMED_RESPONSE": 1, "VALID": 5}
+    assert one["parse_status_counts"] == {
+        "API_FAILURE": 1,
+        "INVALID_ID": 1,
+        "MALFORMED_RESPONSE": 1,
+        "VALID": 5,
+    }
     assert one["retired_id_observation_count"] == 1  # Does not redefine invalid IDs.
     assert "conditional_accuracy" not in one
     assert "invalid_id_rate" not in one
     # s6 is correct but k=1 misses its GT; the observations preserve both facts.
-    assert next(row for row in inputs.records if row["sample_id"] == "s6" and row["condition"] == "rag_k1")["parsed_technique_ids"] == [A]
+    assert next(
+        row for row in inputs.records if row["sample_id"] == "s6" and row["condition"] == "rag_k1"
+    )["parsed_technique_ids"] == [A]
 
 
 def test_no_positive_retrieval_denominator_is_explicitly_null(tmp_path):
@@ -264,7 +376,9 @@ def test_no_positive_retrieval_denominator_is_explicitly_null(tmp_path):
         assert row["gt_absent_count"] == 0
 
 
-@pytest.mark.parametrize("status", ["TIMEOUT", "REFUSAL", "INCOMPLETE", "API_FAILURE", "MALFORMED_RESPONSE"])
+@pytest.mark.parametrize(
+    "status", ["TIMEOUT", "REFUSAL", "INCOMPLETE", "API_FAILURE", "MALFORMED_RESPONSE"]
+)
 def test_execution_statuses_remain_observations_without_failure_precedence(tmp_path, status):
     fixture = _fixture(tmp_path)
     _change_row(fixture, "parse_status", status)
@@ -288,7 +402,19 @@ def test_canonical_loader_does_not_accept_a_smaller_or_gt_selected_cohort(tmp_pa
         load_evaluation_inputs(fixture[0], fixture[1], repository_root=tmp_path)
 
 
-@pytest.mark.parametrize("name", ["inference", "ground_truth", "prompt", "corpus", "index", "attack_registry", "document_mapping", "experiment_config"])
+@pytest.mark.parametrize(
+    "name",
+    [
+        "inference",
+        "ground_truth",
+        "prompt",
+        "corpus",
+        "index",
+        "attack_registry",
+        "document_mapping",
+        "experiment_config",
+    ],
+)
 def test_hashes_bind_actual_bytes(tmp_path, name):
     fixture = _fixture(tmp_path)
     path = tmp_path / fixture[2]["artifacts"][name]["path"]
@@ -297,30 +423,33 @@ def test_hashes_bind_actual_bytes(tmp_path, name):
         _load(tmp_path, fixture)
 
 
-@pytest.mark.parametrize(("field", "value", "message"), [
-    ("manifest_sha256", "0" * 64, "manifest_sha256"),
-    ("prompt_sha256", "0" * 64, "prompt_sha256"),
-    ("ground_truth_sha256", "0" * 64, "ground_truth_sha256"),
-    ("provider", "other", "provider"),
-    ("model", "other", "model"),
-    ("condition", "rag_k5", "condition"),
-    ("retrieval_k", 5, "retrieval_k"),
-    ("pair_id", "p9", "pair_id"),
-    ("terminal", False, "nonterminal"),
-    ("raw_response", "hidden raw output", "raw response"),
-    ("raw_response_logged", True, "raw response"),
-    ("parsed_technique_ids", [A, B], "single-ID"),
-    ("parsed_technique_ids", ["T9999"], "ID/status"),
-    ("success", False, "success/status"),
-    ("parse_status", "UNKNOWN", "unknown parse status"),
-    ("total_tokens", 999, "token accounting"),
-    ("prompt_tokens", -1, "prompt_tokens"),
-    ("retry_count", 2, "retry count"),
-    ("request_attempt_count", 0, "attempt accounting"),
-    ("latency_ms", -1.0, "latency"),
-    ("timestamp", "2026-09-22T00:00:00", "UTC"),
-    ("ground_truth_technique_ids", [A], "GT labels are forbidden"),
-])
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("manifest_sha256", "0" * 64, "manifest_sha256"),
+        ("prompt_sha256", "0" * 64, "prompt_sha256"),
+        ("ground_truth_sha256", "0" * 64, "ground_truth_sha256"),
+        ("provider", "other", "provider"),
+        ("model", "other", "model"),
+        ("condition", "rag_k5", "condition"),
+        ("retrieval_k", 5, "retrieval_k"),
+        ("pair_id", "p9", "pair_id"),
+        ("terminal", False, "nonterminal"),
+        ("raw_response", "hidden raw output", "raw response"),
+        ("raw_response_logged", True, "raw response"),
+        ("parsed_technique_ids", [A, B], "single-ID"),
+        ("parsed_technique_ids", ["T9999"], "ID/status"),
+        ("success", False, "success/status"),
+        ("parse_status", "UNKNOWN", "unknown parse status"),
+        ("total_tokens", 999, "token accounting"),
+        ("prompt_tokens", -1, "prompt_tokens"),
+        ("retry_count", 2, "retry count"),
+        ("request_attempt_count", 0, "attempt accounting"),
+        ("latency_ms", -1.0, "latency"),
+        ("timestamp", "2026-09-22T00:00:00", "UTC"),
+        ("ground_truth_technique_ids", [A], "GT labels are forbidden"),
+    ],
+)
 def test_rejects_envelope_and_provenance_tampering(tmp_path, field, value, message):
     fixture = _fixture(tmp_path)
     _change_row(fixture, field, value)
@@ -340,18 +469,28 @@ def test_missing_duplicate_and_unknown_matrix_rows(tmp_path):
 
 def test_no_rag_candidate_and_noncontiguous_rank_rejected(tmp_path):
     fixture = _fixture(tmp_path)
-    _change_row(fixture, "retrieved_candidates", [{"technique_id": A, "rank": 1, "score": 1.0}], "no_rag")
+    _change_row(
+        fixture, "retrieved_candidates", [{"technique_id": A, "rank": 1, "score": 1.0}], "no_rag"
+    )
     with pytest.raises(ValueError, match="candidate count"):
         _load(tmp_path, fixture)
     _change_row(fixture, "retrieved_candidates", [], "no_rag")
-    _change_row(fixture, "retrieved_candidates", [{"technique_id": A, "rank": rank, "score": 1.0} for rank in (1, 3, 2)])
+    _change_row(
+        fixture,
+        "retrieved_candidates",
+        [{"technique_id": A, "rank": rank, "score": 1.0} for rank in (1, 3, 2)],
+    )
     with pytest.raises(ValueError, match="noncontiguous"):
         _load(tmp_path, fixture)
 
 
 def test_duplicate_candidates_and_unbound_config_hash_rejected(tmp_path):
     fixture = _fixture(tmp_path)
-    _change_row(fixture, "retrieved_candidates", [{"technique_id": A, "rank": rank, "score": 1.0} for rank in (1, 2, 3)])
+    _change_row(
+        fixture,
+        "retrieved_candidates",
+        [{"technique_id": A, "rank": rank, "score": 1.0} for rank in (1, 2, 3)],
+    )
     with pytest.raises(ValueError, match="duplicate retrieved candidate"):
         _load(tmp_path, fixture)
     fixture[2]["config_sha256"] = "0" * 64
@@ -405,7 +544,9 @@ def test_shuffled_jsonl_has_identical_exports_and_no_overwrite(tmp_path):
 def test_fixture_export_cannot_write_outside_system_temp(tmp_path):
     fixture = _fixture(tmp_path)
     report = retrieval_observations(_load(tmp_path, fixture))
-    output = Path(__file__).resolve().parents[1] / "artifacts" / "evaluation" / "must-not-exist.json"
+    output = (
+        Path(__file__).resolve().parents[1] / "artifacts" / "evaluation" / "must-not-exist.json"
+    )
     with pytest.raises(ValueError, match="system temporary directory"):
         export_fixture_diagnostics(report, output)
     assert not output.exists()
@@ -431,7 +572,9 @@ def test_loader_parses_same_bytes_it_hashes(tmp_path, monkeypatch):
 
 
 def _policy(zero_division=0.0):
-    return FixtureOnlyPolicy((A, B, C), zero_division, "all_fixture_rows", "known_answer_fixture_only")
+    return FixtureOnlyPolicy(
+        (A, B, C), zero_division, "all_fixture_rows", "known_answer_fixture_only"
+    )
 
 
 def test_hand_calculated_single_label_fixture_metrics():
@@ -441,9 +584,23 @@ def test_hand_calculated_single_label_fixture_metrics():
     metrics = single_label_fixture_metrics(truth, predictions, policy=_policy())
     assert metrics["sample_count"] == 12
     assert metrics["exact_accuracy"] == 5 / 12
-    assert metrics["per_class"][A] == {"tp": 2, "fp": 1, "fn": 2, "precision": 2 / 3, "recall": 1 / 2, "f1": 4 / 7}
+    assert metrics["per_class"][A] == {
+        "tp": 2,
+        "fp": 1,
+        "fn": 2,
+        "precision": 2 / 3,
+        "recall": 1 / 2,
+        "f1": 4 / 7,
+    }
     assert metrics["per_class"][B] == metrics["per_class"][A]
-    assert metrics["per_class"][C] == {"tp": 1, "fp": 1, "fn": 3, "precision": 1 / 2, "recall": 1 / 4, "f1": 1 / 3}
+    assert metrics["per_class"][C] == {
+        "tp": 1,
+        "fp": 1,
+        "fn": 3,
+        "precision": 1 / 2,
+        "recall": 1 / 4,
+        "f1": 1 / 3,
+    }
     assert metrics["macro_precision"] == pytest.approx(11 / 18)
     assert metrics["macro_recall"] == pytest.approx(5 / 12)
     assert metrics["macro_f1"] == pytest.approx(31 / 63)

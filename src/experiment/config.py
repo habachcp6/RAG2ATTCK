@@ -14,7 +14,9 @@ from src.llm.schemas import TechniquePrediction
 
 
 def canonical_bytes(value: Any) -> bytes:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8")
+    return json.dumps(
+        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
+    ).encode("utf-8")
 
 
 def digest(data: bytes) -> str:
@@ -92,9 +94,12 @@ class ValidatedPlan:
             "condition_count": len(CONDITIONS),
             "expected_request_count": self.manifest["expected_request_count"],
             "maximum_attempts": self.manifest["maximum_attempts"],
-            "maximum_output_tokens": self.manifest["maximum_attempts"] * self.config.generation.max_output_tokens,
+            "maximum_output_tokens": self.manifest["maximum_attempts"]
+            * self.config.generation.max_output_tokens,
             "monetary_budget": None,
-            "monetary_budget_reason": "No approved provider prices or input-token ceiling; no cost claim is made.",
+            "monetary_budget_reason": (
+                "No approved provider prices or input-token ceiling; no cost claim is made."
+            ),
             "max_requests": self.config.execution.max_requests,
             "manifest_sha256": self.manifest_sha256,
             "human_decisions": self.manifest["human_decisions"],
@@ -142,8 +147,11 @@ def registry_ids_from_bytes(data: bytes) -> frozenset[str]:
     """Match the existing registry loader's technique extraction without rereads."""
     bundle = parse_json(data)
     registry = frozenset(
-        ref["external_id"] for obj in bundle["objects"] if obj.get("type") == "attack-pattern"
-        for ref in obj.get("external_references", []) if ref.get("source_name") == "mitre-attack" and "external_id" in ref
+        ref["external_id"]
+        for obj in bundle["objects"]
+        if obj.get("type") == "attack-pattern"
+        for ref in obj.get("external_references", [])
+        if ref.get("source_name") == "mitre-attack" and "external_id" in ref
     )
     if not registry:
         raise ValueError("empty ATT&CK registry")
@@ -152,9 +160,11 @@ def registry_ids_from_bytes(data: bytes) -> frozenset[str]:
 
 def _validate_dataset(config, snapshots):
     manifest = parse_json(snapshots["dataset_manifest"])
-    if (manifest.get("state"), manifest.get("benchmark_version"), manifest.get("attack_version")) != (
-        "frozen", config.dataset.benchmark, config.attack.release
-    ):
+    if (
+        manifest.get("state"),
+        manifest.get("benchmark_version"),
+        manifest.get("attack_version"),
+    ) != ("frozen", config.dataset.benchmark, config.attack.release):
         raise ValueError("dataset manifest is not the frozen configured benchmark/release")
     for name in ("inference", "ground_truth", "views", "pairs", "split_manifest"):
         ref = _references(config)[name]
@@ -203,11 +213,19 @@ def _validate_dataset(config, snapshots):
         raise ValueError("orphan view")
     selected_pairs = set(split[config.dataset.split])
     selected = tuple(
-        Sample(sample_id, views[sample_id]["pair_id"], views[sample_id]["view_type"], inference[sample_id]["endpoint_evidence"])
+        Sample(
+            sample_id,
+            views[sample_id]["pair_id"],
+            views[sample_id]["view_type"],
+            inference[sample_id]["endpoint_evidence"],
+        )
         for sample_id in sorted(inference)
         if views[sample_id]["pair_id"] in selected_pairs
     )
-    if len(selected) != config.dataset.expected_sample_count or len(selected_pairs) != config.dataset.expected_pair_count:
+    if (
+        len(selected) != config.dataset.expected_sample_count
+        or len(selected_pairs) != config.dataset.expected_pair_count
+    ):
         raise ValueError("selected sample/pair count mismatch")
     if len(selected) != 2 * len(selected_pairs):
         raise ValueError("each selected pair must have exactly two views")
@@ -236,8 +254,12 @@ def _validate_retrieval(root, config, snapshots):
         raise ValueError("retrieval depth binding mismatch")
     if retrieval.get("faiss_version") != manifest.get("faiss_version"):
         raise ValueError("FAISS version binding mismatch")
-    for field, name in (("corpus_path", "corpus"), ("faiss_index_path", "index"),
-                        ("document_mapping_path", "document_mapping"), ("manifest_path", "retrieval_manifest")):
+    for field, name in (
+        ("corpus_path", "corpus"),
+        ("faiss_index_path", "index"),
+        ("document_mapping_path", "document_mapping"),
+        ("manifest_path", "retrieval_manifest"),
+    ):
         retrieval_path = _resolve(root, retrieval[field])
         if retrieval_path != _resolve(root, _references(config)[name].path):
             raise ValueError(f"retrieval path binding mismatch: {field}")
@@ -255,7 +277,11 @@ def _validate_retrieval(root, config, snapshots):
     index = faiss.deserialize_index(np.frombuffer(snapshots["index"], dtype=np.uint8))
     if not isinstance(index, faiss.IndexFlatIP) or index.metric_type != faiss.METRIC_INNER_PRODUCT:
         raise ValueError("index must be IndexFlatIP/inner product")
-    if index.d != config.retrieval.embedding_dimension or index.ntotal != len(docmap) or len(docmap) != manifest["document_count"]:
+    if (
+        index.d != config.retrieval.embedding_dimension
+        or index.ntotal != len(docmap)
+        or len(docmap) != manifest["document_count"]
+    ):
         raise ValueError("index dimension/document count mismatch")
     if len(docmap) < max(config.retrieval.depths):
         raise ValueError("corpus cannot satisfy configured retrieval depths")
@@ -278,7 +304,12 @@ def _validate_model(config, snapshot):
         raise ValueError("provider-default temperature/seed must remain omitted")
     if model.get("logging_policy", {}).get("log_raw_response") is not False:
         raise ValueError("raw response logging policy changed")
-    expected_schema = {"format": "json_schema", "schema_name": "attack_technique_prediction", "strict": True, "target_field": "technique_id"}
+    expected_schema = {
+        "format": "json_schema",
+        "schema_name": "attack_technique_prediction",
+        "strict": True,
+        "target_field": "technique_id",
+    }
     if model.get("structured_output") != expected_schema:
         raise ValueError("canonical single-ID output schema changed")
     return model
@@ -297,34 +328,59 @@ def _validate_output_location(path: Path):
 def load_plan(config_path: Path | str, *, root: Path | str | None = None) -> ValidatedPlan:
     """Validate captured artifact bytes and return a candidate; perform zero writes."""
     config_path = Path(config_path).resolve()
-    root = Path(root).resolve() if root is not None else (config_path.parent.parent if config_path.parent.name == "config" else config_path.parent)
+    root = (
+        Path(root).resolve()
+        if root is not None
+        else (
+            config_path.parent.parent if config_path.parent.name == "config" else config_path.parent
+        )
+    )
     config_bytes = config_path.read_bytes()
     config = ExperimentConfig.model_validate(parse_json(config_bytes))
     references = _references(config)
     snapshots = {name: _read_bound(root, ref) for name, ref in references.items()}
     if not config_path.is_relative_to(root):
         raise ValueError("experiment config must stay inside its artifact root")
-    references["experiment_config"] = Artifact(path=config_path.relative_to(root).as_posix(), sha256=digest(config_bytes))
+    references["experiment_config"] = Artifact(
+        path=config_path.relative_to(root).as_posix(), sha256=digest(config_bytes)
+    )
     snapshots["experiment_config"] = config_bytes
     samples = _validate_dataset(config, snapshots)
     _validate_retrieval(root, config, snapshots)
     model = _validate_model(config, snapshots["model_config"])
     prompt = snapshots["prompt"].decode("utf-8")
-    if any(prompt.count(placeholder) != 1 for placeholder in ("{ENDPOINT_EVIDENCE}", "{RETRIEVED_CONTEXT}")):
+    if any(
+        prompt.count(placeholder) != 1
+        for placeholder in ("{ENDPOINT_EVIDENCE}", "{RETRIEVED_CONTEXT}")
+    ):
         raise ValueError("base prompt must have exactly one instance of each inference placeholder")
     registry = registry_ids_from_bytes(snapshots["attack_registry"])
     expected_requests = len(samples) * len(CONDITIONS)
-    if config.execution.max_requests is not None and config.execution.max_requests < expected_requests:
+    if (
+        config.execution.max_requests is not None
+        and config.execution.max_requests < expected_requests
+    ):
         raise ValueError("expected request count exceeds explicit max_requests")
     experiment_id = f"{config.experiment.name}-{config.experiment.version}"
     if Path(experiment_id).name != experiment_id or any(c in experiment_id for c in "/\\:"):
         raise ValueError("experiment ID must be a safe directory name")
     _validate_output_location(root / "artifacts" / "experiments" / experiment_id)
-    git = subprocess.run(["git", "rev-parse", "HEAD"], cwd=Path(__file__).resolve().parents[2], capture_output=True, text=True, check=True)
+    git = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=Path(__file__).resolve().parents[2],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
     git_sha = git.stdout.strip()
     if len(git_sha) != 40:
         raise ValueError("invalid Git commit SHA")
-    human = ["T15 external prerequisites and T21 dependency remain unresolved", "T20 human merge and exact-main CI closure required", "T21 scientific freeze and provider/API authorization required", "Canonical evaluator definitions require human decision"]
+    human = [
+        "T15 external prerequisites and T21 dependency remain unresolved",
+        "T20 human merge and exact-main CI closure required",
+        "T21 scientific freeze and provider/API authorization required",
+        "Canonical evaluator definitions require human decision",
+    ]
     if config.generation.model_version is None:
         human.append("Exact provider model version requires human freeze")
     if config.execution.concurrency is None:
@@ -332,16 +388,40 @@ def load_plan(config_path: Path | str, *, root: Path | str | None = None) -> Val
     if config.execution.max_requests is None:
         human.append("Explicit finite max_requests requires human approval")
     manifest = {
-        "schema_version": "1.0.0", "execution_mode": "pre_freeze", "experiment_id": experiment_id,
-        "status": "pre_freeze", "git_commit_sha": git_sha, "config_sha256": digest(config_bytes),
+        "schema_version": "1.0.0",
+        "execution_mode": "pre_freeze",
+        "experiment_id": experiment_id,
+        "status": "pre_freeze",
+        "git_commit_sha": git_sha,
+        "config_sha256": digest(config_bytes),
         "artifacts": {name: ref.model_dump() for name, ref in references.items()},
-        "model": model, "model_version": config.generation.model_version,
+        "model": model,
+        "model_version": config.generation.model_version,
         "output_schema_sha256": digest(canonical_bytes(TechniquePrediction.model_json_schema())),
-        "attack_release": config.attack.release, "benchmark_version": config.dataset.benchmark,
-        "split": config.dataset.split, "conditions": list(CONDITIONS),
-        "retrieval": parse_json(snapshots["retrieval_config"]), "sample_ids": [sample.sample_id for sample in samples],
-        "samples": [{"sample_id": s.sample_id, "pair_id": s.pair_id, "view_type": s.view_type} for s in samples],
-        "expected_request_count": expected_requests, "maximum_attempts": expected_requests * (config.execution.retries + 1),
-        "execution": config.execution.model_dump(), "logging": config.logging.model_dump(), "human_decisions": human,
+        "attack_release": config.attack.release,
+        "benchmark_version": config.dataset.benchmark,
+        "split": config.dataset.split,
+        "conditions": list(CONDITIONS),
+        "retrieval": parse_json(snapshots["retrieval_config"]),
+        "sample_ids": [sample.sample_id for sample in samples],
+        "samples": [
+            {"sample_id": s.sample_id, "pair_id": s.pair_id, "view_type": s.view_type}
+            for s in samples
+        ],
+        "expected_request_count": expected_requests,
+        "maximum_attempts": expected_requests * (config.execution.retries + 1),
+        "execution": config.execution.model_dump(),
+        "logging": config.logging.model_dump(),
+        "human_decisions": human,
     }
-    return ValidatedPlan(root, config, samples, manifest, digest(canonical_bytes(manifest)), prompt, model, registry, snapshots)
+    return ValidatedPlan(
+        root,
+        config,
+        samples,
+        manifest,
+        digest(canonical_bytes(manifest)),
+        prompt,
+        model,
+        registry,
+        snapshots,
+    )

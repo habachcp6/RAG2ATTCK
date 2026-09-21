@@ -67,8 +67,7 @@ class PilotPipeline(Protocol):
         endpoint_evidence: str,
         retrieved_context: None = None,
         condition: str = "no_rag",
-    ) -> Any:
-        ...
+    ) -> Any: ...
 
 
 @dataclass(frozen=True)
@@ -190,8 +189,12 @@ def validate_source_manifest(
         )
     source_id = manifest["source_id"]
     if not isinstance(source_id, str) or source_id not in set(approved_source_ids):
-        raise DataUnavailableError(f"source_id {source_id!r} is not in the approved source allowlist")
-    if not isinstance(manifest["input_sha256"], str) or not _SHA256_RE.fullmatch(manifest["input_sha256"]):
+        raise DataUnavailableError(
+            f"source_id {source_id!r} is not in the approved source allowlist"
+        )
+    if not isinstance(manifest["input_sha256"], str) or not _SHA256_RE.fullmatch(
+        manifest["input_sha256"]
+    ):
         raise ValueError("input_sha256 must be exactly 64 hexadecimal characters")
     expected_count = manifest["expected_record_count"]
     if type(expected_count) is not int or expected_count < 1:
@@ -205,7 +208,9 @@ def validate_source_manifest(
 
 
 def _validate_input_bytes(
-    manifest: Mapping[str, Any], content: bytes, source: str,
+    manifest: Mapping[str, Any],
+    content: bytes,
+    source: str,
 ) -> list[dict[str, Any]]:
     actual_hash = _sha256(content)
     if actual_hash.lower() != manifest["input_sha256"].lower():
@@ -215,7 +220,8 @@ def _validate_input_bytes(
     rows = _parse_jsonl(content, source)
     if len(rows) != manifest["expected_record_count"]:
         raise DataUnavailableError(
-            f"source record count mismatch: expected {manifest['expected_record_count']}, got {len(rows)}"
+            f"source record count mismatch: expected {manifest['expected_record_count']}, "
+            f"got {len(rows)}"
         )
     return rows
 
@@ -230,7 +236,9 @@ def load_pilot_samples(
 
 
 def _samples_from_rows(
-    rows: Sequence[Mapping[str, Any]], limit: int, expected_source_id: str | None,
+    rows: Sequence[Mapping[str, Any]],
+    limit: int,
+    expected_source_id: str | None,
 ) -> list[PilotSample]:
     validate_pilot_limit(limit)
     samples: list[PilotSample] = []
@@ -311,7 +319,10 @@ def _record_to_dict(sample: PilotSample, record: Any) -> dict[str, Any]:
 
 
 def _exception_record(
-    sample: PilotSample, exc: Exception, pipeline: PilotPipeline, latency_ms: float,
+    sample: PilotSample,
+    exc: Exception,
+    pipeline: PilotPipeline,
+    latency_ms: float,
 ) -> dict[str, Any]:
     client = pipeline.client
     error_type = type(exc).__name__
@@ -366,7 +377,9 @@ def run_no_rag_pilot(
         raise TypeError("source manifest must be a JSON object")
     validate_source_manifest(manifest, approved_source_ids=approved_source_ids)
     rows = _validate_input_bytes(manifest, source_snapshot.input_bytes, "pilot source snapshot")
-    rebound_samples = tuple(_samples_from_rows(rows, len(source_snapshot.samples), manifest["source_id"]))
+    rebound_samples = tuple(
+        _samples_from_rows(rows, len(source_snapshot.samples), manifest["source_id"])
+    )
     if source_snapshot.samples != rebound_samples:
         raise DataUnavailableError("source snapshot samples do not match validated input bytes")
 
@@ -375,11 +388,16 @@ def run_no_rag_pilot(
     validate_pilot_limit(len(sample_list))
     if any(not isinstance(sample, PilotSample) for sample in sample_list):
         raise ValueError("pilot runner requires PilotSample values")
-    validated = validate_benchmark_batch([
-        {"sample_id": sample.sample_id, "endpoint_evidence": sample.endpoint_evidence}
+    validated = validate_benchmark_batch(
+        [
+            {"sample_id": sample.sample_id, "endpoint_evidence": sample.endpoint_evidence}
+            for sample in sample_list
+        ]
+    )
+    if any(
+        not isinstance(sample.source_id, str) or not sample.source_id.strip()
         for sample in sample_list
-    ])
-    if any(not isinstance(sample.source_id, str) or not sample.source_id.strip() for sample in sample_list):
+    ):
         raise ValueError("pilot sample source_id is required")
     sample_list = [
         PilotSample(sample_id, sample.source_id.strip(), evidence)
@@ -445,8 +463,16 @@ def summarize_predictions(
         for record in records
         if isinstance(record.get("latency_ms"), (int, float))
     ]
-    input_tokens = [int(record["input_tokens"]) for record in records if isinstance(record.get("input_tokens"), int)]
-    output_tokens = [int(record["output_tokens"]) for record in records if isinstance(record.get("output_tokens"), int)]
+    input_tokens = [
+        int(record["input_tokens"])
+        for record in records
+        if isinstance(record.get("input_tokens"), int)
+    ]
+    output_tokens = [
+        int(record["output_tokens"])
+        for record in records
+        if isinstance(record.get("output_tokens"), int)
+    ]
     budget_exhausted = bool(run and run.budget_exhausted)
     if live_budget is not None:
         budget_exhausted = budget_exhausted or live_budget.is_exhausted()
@@ -475,7 +501,9 @@ def write_jsonl(path: Path | str, records: Sequence[Mapping[str, Any]]) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("w", encoding="utf-8", newline="\n") as handle:
         for record in records:
-            handle.write(json.dumps(dict(record), ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+            handle.write(
+                json.dumps(dict(record), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+            )
             handle.write("\n")
 
 
@@ -549,7 +577,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--source-manifest", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--limit", type=int, default=MAX_PILOT_SAMPLES)
-    parser.add_argument("--live", action="store_true", help="Enable explicitly authorized live API dispatch")
+    parser.add_argument(
+        "--live", action="store_true", help="Enable explicitly authorized live API dispatch"
+    )
     parser.add_argument("--max-live-requests", type=int)
     parser.add_argument(
         "--approved-source-id",
@@ -586,7 +616,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         workspace=workspace,
     )
     model_config = snapshot.model_config
-    validate_live_budget(args.max_live_requests, len(inputs.samples), model_config.get("max_retries", 3))
+    validate_live_budget(
+        args.max_live_requests, len(inputs.samples), model_config.get("max_retries", 3)
+    )
 
     budget = LiveBudget(max_requests=args.max_live_requests)
     client = LLMClient(
@@ -599,8 +631,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     pipeline = BaselinePipeline(client=client, prompt_template=snapshot.prompt_template)
     run = run_no_rag_pilot(
-        inputs.samples, pipeline, source_snapshot=inputs,
-        approved_source_ids=args.approved_source_id, live_budget=budget,
+        inputs.samples,
+        pipeline,
+        source_snapshot=inputs,
+        approved_source_ids=args.approved_source_id,
+        live_budget=budget,
     )
     summary = summarize_predictions(run.records, run=run, live_budget=budget)
     write_jsonl(args.output, run.records)

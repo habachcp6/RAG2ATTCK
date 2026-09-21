@@ -156,7 +156,15 @@ class ExperimentRecord(StrictModel):
     raw_response: None
     raw_response_logged: Literal[False]
     parsed_technique_ids: Annotated[list[str], Field(max_length=1)]
-    parse_status: Literal["VALID", "INVALID_ID", "MALFORMED_RESPONSE", "REFUSAL", "INCOMPLETE", "API_FAILURE", "TIMEOUT"]
+    parse_status: Literal[
+        "VALID",
+        "INVALID_ID",
+        "MALFORMED_RESPONSE",
+        "REFUSAL",
+        "INCOMPLETE",
+        "API_FAILURE",
+        "TIMEOUT",
+    ]
     prompt_tokens: Annotated[int, Field(ge=0)] | None
     completion_tokens: Annotated[int, Field(ge=0)] | None
     total_tokens: Annotated[int, Field(ge=0)] | None
@@ -185,7 +193,11 @@ class ExperimentRecord(StrictModel):
                 raise ValueError("parsed status requires one technique ID")
         elif self.parsed_technique_ids:
             raise ValueError("unparsed terminal status cannot have a technique ID")
-        total = None if self.prompt_tokens is None or self.completion_tokens is None else self.prompt_tokens + self.completion_tokens
+        total = (
+            None
+            if self.prompt_tokens is None or self.completion_tokens is None
+            else self.prompt_tokens + self.completion_tokens
+        )
         if self.total_tokens != total:
             raise ValueError("total_tokens must preserve unknown component usage")
         if datetime.fromisoformat(self.timestamp).utcoffset() != timedelta(0):

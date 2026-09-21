@@ -26,13 +26,19 @@ class FixtureOnlyPolicy:
             raise ValueError("fixture denominator must be explicitly all_fixture_rows")
         if self.zero_division not in (None, 0.0) or isinstance(self.zero_division, bool):
             raise ValueError("fixture zero denominator must explicitly be null or 0.0")
-        if (not self.class_ids or len(set(self.class_ids)) != len(self.class_ids)
-                or not all(validate_attack_id_syntax(tid) for tid in self.class_ids)):
+        if (
+            not self.class_ids
+            or len(set(self.class_ids)) != len(self.class_ids)
+            or not all(validate_attack_id_syntax(tid) for tid in self.class_ids)
+        ):
             raise ValueError("fixture classes must be explicit unique ATT&CK IDs")
 
 
 def single_label_fixture_metrics(
-    truth: Sequence[str], predictions: Sequence[str | None], *, policy: FixtureOnlyPolicy,
+    truth: Sequence[str],
+    predictions: Sequence[str | None],
+    *,
+    policy: FixtureOnlyPolicy,
 ) -> dict:
     """Per-class TP/FP/FN arithmetic with no implicit production policy.
 
@@ -56,11 +62,22 @@ def single_label_fixture_metrics(
         tp = sum(t == tid and p == tid for t, p in zip(truth, predictions, strict=True))
         fp = sum(t != tid and p == tid for t, p in zip(truth, predictions, strict=True))
         fn = sum(t == tid and p != tid for t, p in zip(truth, predictions, strict=True))
-        per_class[tid] = {"tp": tp, "fp": fp, "fn": fn,
-                          "precision": divide(tp, tp + fp), "recall": divide(tp, tp + fn),
-                          "f1": divide(2 * tp, 2 * tp + fp + fn)}
-    result = {"purpose": policy.purpose, "sample_count": len(truth), "per_class": per_class,
-              "exact_accuracy": divide(sum(t == p for t, p in zip(truth, predictions, strict=True)), len(truth))}
+        per_class[tid] = {
+            "tp": tp,
+            "fp": fp,
+            "fn": fn,
+            "precision": divide(tp, tp + fp),
+            "recall": divide(tp, tp + fn),
+            "f1": divide(2 * tp, 2 * tp + fp + fn),
+        }
+    result = {
+        "purpose": policy.purpose,
+        "sample_count": len(truth),
+        "per_class": per_class,
+        "exact_accuracy": divide(
+            sum(t == p for t, p in zip(truth, predictions, strict=True)), len(truth)
+        ),
+    }
     for metric in ("precision", "recall", "f1"):
         values = [row[metric] for row in per_class.values()]
         # Undefined fixture class metrics propagate; they are not silently

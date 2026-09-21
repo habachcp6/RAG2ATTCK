@@ -39,35 +39,96 @@ def bundle(tmp_path):
     snapshots = {}
 
     def store(name, value, *, jsonl=False, raw=False):
-        data = value if raw else (b"".join(canonical_bytes(row) + b"\n" for row in value) if jsonl else canonical_bytes(value) + b"\n")
+        data = (
+            value
+            if raw
+            else (
+                b"".join(canonical_bytes(row) + b"\n" for row in value)
+                if jsonl
+                else canonical_bytes(value) + b"\n"
+            )
+        )
         (root / name).write_bytes(data)
         snapshots[name] = data
         return {"path": name, "sha256": digest(data)}
 
-    views = [{"view_id": "s1", "pair_id": "p1", "view_type": "single", "event_ids": ["e1"]},
-             {"view_id": "s2", "pair_id": "p1", "view_type": "contextual", "event_ids": ["e1", "e2"]}]
-    truth = [{"view_id": "s1", "label_status": "mapped", "technique_ids": ["T1059.001"], "rationale": "SECRET_GT_METADATA"},
-             {"view_id": "s2", "label_status": "ambiguous", "technique_ids": [], "rationale": "SECRET_GT_METADATA"}]
-    pairs = [{"pair_id": "p1", "split": "test", "single_view": views[0], "contextual_view": views[1],
-              "single_ground_truth": truth[0], "contextual_ground_truth": truth[1]}]
-    registry = {"objects": [{"type": "attack-pattern", "external_references": [
-        {"source_name": "mitre-attack", "external_id": tid}]} for tid in ["T1059.001"] + [f"T10{i:02d}" for i in range(11)]]}
+    views = [
+        {"view_id": "s1", "pair_id": "p1", "view_type": "single", "event_ids": ["e1"]},
+        {"view_id": "s2", "pair_id": "p1", "view_type": "contextual", "event_ids": ["e1", "e2"]},
+    ]
+    truth = [
+        {
+            "view_id": "s1",
+            "label_status": "mapped",
+            "technique_ids": ["T1059.001"],
+            "rationale": "SECRET_GT_METADATA",
+        },
+        {
+            "view_id": "s2",
+            "label_status": "ambiguous",
+            "technique_ids": [],
+            "rationale": "SECRET_GT_METADATA",
+        },
+    ]
+    pairs = [
+        {
+            "pair_id": "p1",
+            "split": "test",
+            "single_view": views[0],
+            "contextual_view": views[1],
+            "single_ground_truth": truth[0],
+            "contextual_ground_truth": truth[1],
+        }
+    ]
+    registry = {
+        "objects": [
+            {
+                "type": "attack-pattern",
+                "external_references": [{"source_name": "mitre-attack", "external_id": tid}],
+            }
+            for tid in ["T1059.001"] + [f"T10{i:02d}" for i in range(11)]
+        ]
+    }
     config["attack"]["registry"] = store("registry.json", registry)
     for field, name, values in (
-        ("inference", "inference.jsonl", [{"sample_id": "s1", "endpoint_evidence": "  endpoint A\n"}, {"sample_id": "s2", "endpoint_evidence": "endpoint B"}]),
-        ("ground_truth", "ground_truth.jsonl", truth), ("views", "views.jsonl", views), ("pairs", "pairs.jsonl", pairs),
+        (
+            "inference",
+            "inference.jsonl",
+            [
+                {"sample_id": "s1", "endpoint_evidence": "  endpoint A\n"},
+                {"sample_id": "s2", "endpoint_evidence": "endpoint B"},
+            ],
+        ),
+        ("ground_truth", "ground_truth.jsonl", truth),
+        ("views", "views.jsonl", views),
+        ("pairs", "pairs.jsonl", pairs),
     ):
         config["dataset"][field] = store(name, values, jsonl=True)
     config["dataset"]["split_manifest"] = store("split_manifest.json", {"dev": [], "test": ["p1"]})
-    dataset_manifest = {"state": "frozen", "benchmark_version": "synthetic-paired-v1", "attack_version": "19.2",
-                        "view_count": 2, "pair_count": 1, "split_counts": {"dev": 0, "test": 1},
-                        "attack_source_sha256": config["attack"]["registry"]["sha256"],
-                        "files": {name: digest(data) for name, data in snapshots.items() if name != "registry.json"}}
+    dataset_manifest = {
+        "state": "frozen",
+        "benchmark_version": "synthetic-paired-v1",
+        "attack_version": "19.2",
+        "view_count": 2,
+        "pair_count": 1,
+        "split_counts": {"dev": 0, "test": 1},
+        "attack_source_sha256": config["attack"]["registry"]["sha256"],
+        "files": {
+            name: digest(data) for name, data in snapshots.items() if name != "registry.json"
+        },
+    }
     config["dataset"]["manifest"] = store("dataset_manifest.json", dataset_manifest)
     config["dataset"]["expected_sample_count"] = 2
     config["dataset"]["expected_pair_count"] = 1
-    corpus = [{"technique_id": tid, "name": tid, "retrieval_text": "reference " + tid, "source_version": "19.2"}
-              for tid in ["T1059.001"] + [f"T10{i:02d}" for i in range(11)]]
+    corpus = [
+        {
+            "technique_id": tid,
+            "name": tid,
+            "retrieval_text": "reference " + tid,
+            "source_version": "19.2",
+        }
+        for tid in ["T1059.001"] + [f"T10{i:02d}" for i in range(11)]
+    ]
     config["attack"]["corpus"] = store("corpus.jsonl", corpus, jsonl=True)
     config["attack"]["document_mapping"] = store("docmap.json", corpus)
     index = faiss.IndexFlatIP(4)
@@ -75,16 +136,41 @@ def bundle(tmp_path):
     index.add(vectors)
     config["attack"]["index"] = store("index.bin", faiss.serialize_index(index).tobytes(), raw=True)
     retrieval = json.loads((ROOT / "config" / "retrieval.json").read_bytes())
-    retrieval.update(corpus_path="corpus.jsonl", corpus_sha256=config["attack"]["corpus"]["sha256"],
-                     faiss_index_path="index.bin", document_mapping_path="docmap.json", manifest_path="retrieval_manifest.json", embedding_dimension=4)
+    retrieval.update(
+        corpus_path="corpus.jsonl",
+        corpus_sha256=config["attack"]["corpus"]["sha256"],
+        faiss_index_path="index.bin",
+        document_mapping_path="docmap.json",
+        manifest_path="retrieval_manifest.json",
+        embedding_dimension=4,
+    )
     config["retrieval"]["embedding_dimension"] = 4
     config["retrieval"]["config"] = store("retrieval.json", retrieval)
-    retrieval_manifest = {key: retrieval[key] for key in ("corpus_sha256", "embedding_model_id", "embedding_model_revision", "embedding_dimension",
-                                                         "faiss_index_type", "normalization", "similarity_metric", "faiss_version")}
-    retrieval_manifest.update(index_sha256=config["attack"]["index"]["sha256"], document_mapping_sha256=config["attack"]["document_mapping"]["sha256"], document_count=12)
+    retrieval_manifest = {
+        key: retrieval[key]
+        for key in (
+            "corpus_sha256",
+            "embedding_model_id",
+            "embedding_model_revision",
+            "embedding_dimension",
+            "faiss_index_type",
+            "normalization",
+            "similarity_metric",
+            "faiss_version",
+        )
+    }
+    retrieval_manifest.update(
+        index_sha256=config["attack"]["index"]["sha256"],
+        document_mapping_sha256=config["attack"]["document_mapping"]["sha256"],
+        document_count=12,
+    )
     config["attack"]["retrieval_manifest"] = store("retrieval_manifest.json", retrieval_manifest)
-    config["generation"]["config"] = store("model.json", (ROOT / "config" / "model.json").read_bytes(), raw=True)
-    config["prompt"]["template"] = store("baseline.txt", (ROOT / "prompts" / "baseline_v1.txt").read_bytes(), raw=True)
+    config["generation"]["config"] = store(
+        "model.json", (ROOT / "config" / "model.json").read_bytes(), raw=True
+    )
+    config["prompt"]["template"] = store(
+        "baseline.txt", (ROOT / "prompts" / "baseline_v1.txt").read_bytes(), raw=True
+    )
     config_path = root / "experiment.json"
     config_path.write_bytes(canonical_bytes(config))
     return root, config_path, config
@@ -99,8 +185,12 @@ def change_config(bundle, mutate):
 
 
 def records_in(directory):
-    return [parse_json(line) for condition in CONDITIONS for line in (directory / f"{condition}_predictions.jsonl").read_bytes().splitlines()
-            if (directory / f"{condition}_predictions.jsonl").is_file()]
+    return [
+        parse_json(line)
+        for condition in CONDITIONS
+        for line in (directory / f"{condition}_predictions.jsonl").read_bytes().splitlines()
+        if (directory / f"{condition}_predictions.jsonl").is_file()
+    ]
 
 
 def test_canonical_dry_run_counts_and_no_writes(monkeypatch):
@@ -120,7 +210,9 @@ def test_canonical_dry_run_counts_and_no_writes(monkeypatch):
     assert plan.report()["status"] == "HUMAN_DECISION_REQUIRED"
     assert plan.manifest["status"] == "pre_freeze"
     assert len(plan.snapshots) == 15
-    assert plan.manifest["artifacts"]["experiment_config"]["sha256"] == plan.manifest["config_sha256"]
+    assert (
+        plan.manifest["artifacts"]["experiment_config"]["sha256"] == plan.manifest["config_sha256"]
+    )
 
 
 def test_cli_only_dry_run_and_human_gate(bundle, capsys):
@@ -134,17 +226,20 @@ def test_cli_only_dry_run_and_human_gate(bundle, capsys):
         main(["--config", str(path)])
 
 
-@pytest.mark.parametrize("mutate", [
-    lambda c: c["execution"].pop("max_requests"),
-    lambda c: c["generation"].pop("model"),
-    lambda c: c["conditions"].append("unknown"),
-    lambda c: c["conditions"].append("no_rag"),
-    lambda c: c["retrieval"].update(depths=[1, 3, 5]),
-    lambda c: c["generation"].update(temperature=0),
-    lambda c: c["logging"].update(raw_response=True),
-    lambda c: c["execution"].update(max_requests=True),
-    lambda c: c.update(condition_overrides={"rag_k1": {"model": "different"}}),
-])
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda c: c["execution"].pop("max_requests"),
+        lambda c: c["generation"].pop("model"),
+        lambda c: c["conditions"].append("unknown"),
+        lambda c: c["conditions"].append("no_rag"),
+        lambda c: c["retrieval"].update(depths=[1, 3, 5]),
+        lambda c: c["generation"].update(temperature=0),
+        lambda c: c["logging"].update(raw_response=True),
+        lambda c: c["execution"].update(max_requests=True),
+        lambda c: c.update(condition_overrides={"rag_k1": {"model": "different"}}),
+    ],
+)
 def test_strict_config_rejections(bundle, mutate):
     with pytest.raises(ValueError):
         load_plan(change_config(bundle, mutate))
@@ -164,8 +259,25 @@ def test_inherited_model_cannot_be_overridden(bundle):
         load_plan(change_config(bundle, lambda c: c["generation"].update(model="replacement")))
 
 
-@pytest.mark.parametrize("name", ["inference.jsonl", "ground_truth.jsonl", "dataset_manifest.json", "views.jsonl", "pairs.jsonl", "split_manifest.json",
-                                 "baseline.txt", "model.json", "retrieval.json", "corpus.jsonl", "index.bin", "docmap.json", "retrieval_manifest.json", "registry.json"])
+@pytest.mark.parametrize(
+    "name",
+    [
+        "inference.jsonl",
+        "ground_truth.jsonl",
+        "dataset_manifest.json",
+        "views.jsonl",
+        "pairs.jsonl",
+        "split_manifest.json",
+        "baseline.txt",
+        "model.json",
+        "retrieval.json",
+        "corpus.jsonl",
+        "index.bin",
+        "docmap.json",
+        "retrieval_manifest.json",
+        "registry.json",
+    ],
+)
 def test_every_bound_artifact_rejects_tampering(bundle, name):
     root, path, _ = bundle
     target = root / name
@@ -215,7 +327,9 @@ def test_fixture_runner_real_client_pipeline_wiring_and_no_leakage(bundle, tmp_p
         assert row["raw_response"] is None and not row["raw_response_logged"]
         assert row["request_attempt_count"] == 1
         assert row["parsed_technique_ids"] == ["T1059.001"]
-        assert row["retrieval_k"] == (0 if row["condition"] == "no_rag" else int(row["condition"][5:]))
+        assert row["retrieval_k"] == (
+            0 if row["condition"] == "no_rag" else int(row["condition"][5:])
+        )
     common = None
     for (sample_id, condition), kwargs in provider.calls:
         payload = kwargs.copy()
@@ -225,7 +339,9 @@ def test_fixture_runner_real_client_pipeline_wiring_and_no_leakage(bundle, tmp_p
         sample = next(s for s in plan.samples if s.sample_id == sample_id)
         assert sample.endpoint_evidence in text
         if condition == "no_rag":
-            assert text == plan.prompt_template.replace("{RETRIEVED_CONTEXT}", "").replace("{ENDPOINT_EVIDENCE}", sample.endpoint_evidence)
+            assert text == plan.prompt_template.replace("{RETRIEVED_CONTEXT}", "").replace(
+                "{ENDPOINT_EVIDENCE}", sample.endpoint_evidence
+            )
         common = payload if common is None else common
         assert payload == common
     assert parse_json((output / "manifest.json").read_bytes())["execution_mode"] == "mock_fixture"
@@ -245,11 +361,15 @@ def test_resume_skips_terminal_failures_and_preserves_spending(bundle, tmp_path)
     assert ("s1", "no_rag") not in [key for key, _ in second.calls]
     assert (output / "no_rag_predictions.jsonl").read_bytes().startswith(before)
     third = MockProvider()
-    assert run_mock_experiment(plan, output, third, max_requests=13, resume=True)["new_records"] == 0
+    assert (
+        run_mock_experiment(plan, output, third, max_requests=13, resume=True)["new_records"] == 0
+    )
     assert not third.calls
 
 
-@pytest.mark.parametrize("damage", ["duplicate", "truncated", "manifest", "journal", "lock", "foreign"])
+@pytest.mark.parametrize(
+    "damage", ["duplicate", "truncated", "manifest", "journal", "lock", "foreign"]
+)
 def test_resume_rejects_corruption_and_no_double_call(bundle, tmp_path, damage):
     plan = load_plan(bundle[1])
     output = tmp_path / "resume-corrupt"
@@ -278,7 +398,9 @@ def test_inflight_crash_fails_closed_on_resume(bundle, tmp_path):
     plan = load_plan(bundle[1])
     output = tmp_path / "interrupted"
     with pytest.raises(KeyboardInterrupt):
-        run_mock_experiment(plan, output, MockProvider({("s1", "no_rag"): [KeyboardInterrupt()]}), max_requests=10)
+        run_mock_experiment(
+            plan, output, MockProvider({("s1", "no_rag"): [KeyboardInterrupt()]}), max_requests=10
+        )
     fake = MockProvider()
     with pytest.raises(ValueError, match="in-flight"):
         run_mock_experiment(plan, output, fake, max_requests=10, resume=True)
@@ -290,7 +412,12 @@ def test_no_overwrite_or_scientific_output_and_no_network_provider(bundle, tmp_p
     with pytest.raises(ValueError, match="MockProvider"):
         run_mock_experiment(plan, tmp_path / "x", object(), max_requests=10)
     with pytest.raises(ValueError, match=".tmp"):
-        run_mock_experiment(plan, plan.root / "artifacts" / "experiments" / "fixture", MockProvider(), max_requests=10)
+        run_mock_experiment(
+            plan,
+            plan.root / "artifacts" / "experiments" / "fixture",
+            MockProvider(),
+            max_requests=10,
+        )
     output = tmp_path / "existing"
     run_mock_experiment(plan, output, MockProvider(), max_requests=10, stop_after=1)
     with pytest.raises(ValueError, match="already exists"):
@@ -333,7 +460,9 @@ def test_record_rejects_impossible_timestamp_and_retry_accounting(bundle, tmp_pa
         ExperimentRecord.model_validate({**row, "retry_count": 1, "request_attempt_count": 1})
 
 
-def test_pipeline_execution_consumes_snapshots_without_reopening_artifacts(bundle, tmp_path, monkeypatch):
+def test_pipeline_execution_consumes_snapshots_without_reopening_artifacts(
+    bundle, tmp_path, monkeypatch
+):
     plan = load_plan(bundle[1])
     original = Path.read_bytes
     for file in bundle[0].iterdir():

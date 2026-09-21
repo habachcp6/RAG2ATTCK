@@ -345,11 +345,33 @@ def run_no_rag_pilot(
     samples: Iterable[PilotSample],
     pipeline: PilotPipeline,
     *,
+    source_snapshot: PilotInputs,
+    approved_source_ids: Collection[str],
     live_budget: LiveBudget | None = None,
 ) -> PilotRun:
-    """Run No-RAG samples and stop immediately when the finite budget is exhausted."""
+    """Revalidate provenance and the whole selected batch before any dispatch."""
+
+    if not isinstance(source_snapshot, PilotInputs):
+        raise TypeError("pilot runner requires a PilotInputs source snapshot")
+    if (
+        type(source_snapshot.input_bytes) is not bytes
+        or type(source_snapshot.manifest_bytes) is not bytes
+        or type(source_snapshot.samples) is not tuple
+    ):
+        raise ValueError("pilot source snapshot must contain immutable bytes and samples")
+    if isinstance(approved_source_ids, (str, bytes)):
+        raise TypeError("approved_source_ids must be an explicit collection of source IDs")
+    manifest = source_snapshot.manifest
+    if not isinstance(manifest, dict):
+        raise TypeError("source manifest must be a JSON object")
+    validate_source_manifest(manifest, approved_source_ids=approved_source_ids)
+    rows = _validate_input_bytes(manifest, source_snapshot.input_bytes, "pilot source snapshot")
+    rebound_samples = tuple(_samples_from_rows(rows, len(source_snapshot.samples), manifest["source_id"]))
+    if source_snapshot.samples != rebound_samples:
+        raise DataUnavailableError("source snapshot samples do not match validated input bytes")
 
     sample_list = list(islice(samples, MAX_PILOT_SAMPLES + 1))
+    requested_samples = tuple(sample_list)
     validate_pilot_limit(len(sample_list))
     if any(not isinstance(sample, PilotSample) for sample in sample_list):
         raise ValueError("pilot runner requires PilotSample values")
@@ -363,6 +385,8 @@ def run_no_rag_pilot(
         PilotSample(sample_id, sample.source_id.strip(), evidence)
         for sample, (sample_id, evidence) in zip(sample_list, validated)
     ]
+    if requested_samples != rebound_samples:
+        raise DataUnavailableError("requested pilot samples do not match validated source snapshot")
     if not isinstance(live_budget, LiveBudget) or live_budget is GLOBAL_LIVE_BUDGET:
         raise ValueError("pilot runner requires an explicit finite non-global LiveBudget")
     client = getattr(pipeline, "client", None)
@@ -574,7 +598,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     from src.baseline.pipeline import BaselinePipeline
 
     pipeline = BaselinePipeline(client=client, prompt_template=snapshot.prompt_template)
-    run = run_no_rag_pilot(inputs.samples, pipeline, live_budget=budget)
+    run = run_no_rag_pilot(
+        inputs.samples, pipeline, source_snapshot=inputs,
+        approved_source_ids=args.approved_source_id, live_budget=budget,
+    )
     summary = summarize_predictions(run.records, run=run, live_budget=budget)
     write_jsonl(args.output, run.records)
 

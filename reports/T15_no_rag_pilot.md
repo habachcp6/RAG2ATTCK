@@ -26,7 +26,16 @@ No live API requests were made.
 ## Pilot execution gates
 
 The public runner validates the complete selected batch before dispatch. It
-requires 1–20 unique samples with visible evidence and non-empty source IDs, plus
+requires a `PilotInputs` source snapshot and an explicit approved-source ID
+allowlist on every call. It revalidates the captured manifest's real-data and
+sanitization declarations, source approval, input SHA-256 and record count, then
+re-parses the same immutable bytes and checks that both the snapshot samples and
+requested samples match the validated selection. Calling the runner directly
+cannot bypass provenance preparation. Test providers follow the identical gate
+using explicitly labelled test-only provenance fixtures.
+
+The selected batch must contain 1–20 unique samples with visible evidence and
+non-empty source IDs, plus
 an explicit positive finite `LiveBudget` shared by identity with the client.
 The process-global smoke budget is rejected. Request accounting must be enabled
 even when a test injects a fake provider. The configured budget must not exceed

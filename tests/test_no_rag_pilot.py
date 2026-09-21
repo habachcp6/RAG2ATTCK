@@ -14,6 +14,7 @@ from src.llm.client import LiveBudget, LLMClient
 from src.pilot.no_rag_pilot import (
     MAX_PILOT_SAMPLES,
     DataUnavailableError,
+    PilotInputs,
     PilotRun,
     PilotSample,
     build_sidecar_metadata,
@@ -29,6 +30,39 @@ from src.pilot.no_rag_pilot import (
 from tests.test_llm_client import create_mock_responses_api_response
 
 
+def _fixture_source_snapshot(samples):
+    """TEST ONLY: explicit provenance stand-in, never an approved real source."""
+    rows = [
+        {"sample_id": sample.sample_id, "source_id": sample.source_id,
+         "endpoint_evidence": sample.endpoint_evidence}
+        for sample in samples
+    ]
+    content = ("\n".join(json.dumps(row) for row in rows) + "\n").encode("utf-8")
+    manifest = {
+        "dataset_id": "pytest-fixture-not-real-telemetry",
+        "source_id": samples[0].source_id,
+        "source_reference": "https://example.invalid/pytest-provenance-fixture",
+        "license": "test-only",
+        "version": "test-fixture-v1",
+        "acquisition_date": "2026-09-22",
+        "schema": {"format": "jsonl"},
+        "sanitization_status": "sanitized",
+        "is_real_data": True,
+        "input_sha256": hashlib.sha256(content).hexdigest(),
+        "expected_record_count": len(samples),
+    }
+    return PilotInputs(content, json.dumps(manifest).encode("utf-8"), tuple(samples))
+
+
+def _run_fixture_samples(samples, pipeline, *, live_budget):
+    """Call the real public runner with explicit fixture provenance and allowlist."""
+    return run_no_rag_pilot(
+        samples, pipeline, live_budget=live_budget,
+        source_snapshot=_fixture_source_snapshot(samples),
+        approved_source_ids={samples[0].source_id},
+    )
+
+
 def _run_fake_pipeline(samples, pipeline):
     """Unit-only pipeline stubs still declare the runner's accounting contract."""
     budget = LiveBudget(len(samples) * 4)
@@ -37,7 +71,7 @@ def _run_fake_pipeline(samples, pipeline):
         provider="openai", model="gpt-5.6-luna", reasoning_effort="xhigh",
     )
     pipeline.prompt_version = "baseline_v1"
-    return run_no_rag_pilot(samples, pipeline, live_budget=budget)
+    return _run_fixture_samples(samples, pipeline, live_budget=budget)
 
 
 def _write_inputs(tmp_path: Path, *, source_id: str = "approved-source", count: int = 2):
@@ -170,7 +204,7 @@ def test_actual_llm_client_budget_pipeline_runner_wiring_without_network():
         sleep_fn=lambda _: None,
     )
     pipeline = BaselinePipeline(client=client)
-    run = run_no_rag_pilot(
+    run = _run_fixture_samples(
         [PilotSample("s1", "source-1", "EventID 1"), PilotSample("s2", "source-1", "EventID 2")],
         pipeline,
         live_budget=budget,
@@ -195,7 +229,7 @@ def test_budget_exhaustion_stops_dispatch_and_marks_run_incomplete():
             registry_ids={"T1059.001"},
         )
     )
-    run = run_no_rag_pilot(
+    run = _run_fixture_samples(
         [PilotSample("s1", "source-1", "EventID 1"), PilotSample("s2", "source-1", "EventID 2")],
         pipeline,
         live_budget=budget,
@@ -225,7 +259,7 @@ def test_retry_accounting_consumes_two_budget_units():
             sleep_fn=lambda _: None,
         )
     )
-    run = run_no_rag_pilot([PilotSample("s1", "source-1", "EventID 1")], pipeline, live_budget=budget)
+    run = _run_fixture_samples([PilotSample("s1", "source-1", "EventID 1")], pipeline, live_budget=budget)
     summary = summarize_predictions(run.records, run=run, live_budget=budget)
     assert run.complete is True
     assert budget.count == 2

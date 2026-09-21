@@ -53,10 +53,19 @@ def _fixture(tmp_path):
         "ground_truth": [{"view_id": s["sample_id"], "technique_ids": truth[i],
                           "label_status": "mapped" if truth[i] else ("unmapped" if i == 4 else "ambiguous")}
                          for i, s in enumerate(samples)],
-        "views": [{"view_id": s["sample_id"], "pair_id": s["pair_id"], "view_type": s["view_type"]} for s in samples],
-        "pairs": [{"pair_id": f"p{i}", "split": "test" if i < 4 else "dev"} for i in range(5)],
+        "views": [{"view_id": s["sample_id"], "pair_id": s["pair_id"], "view_type": s["view_type"],
+                   "event_ids": [f"e{i // 2}"] if i % 2 == 0 else [f"e{i // 2}", f"context{i // 2}"]}
+                  for i, s in enumerate(samples)],
         "corpus": [{"technique_id": tid} for tid in registry_ids],
     }
+    artifact_values["pairs"] = [
+        {"pair_id": f"p{i}", "split": "test" if i < 4 else "dev",
+         "single_view": artifact_values["views"][2 * i],
+         "contextual_view": artifact_values["views"][2 * i + 1],
+         "single_ground_truth": artifact_values["ground_truth"][2 * i],
+         "contextual_ground_truth": artifact_values["ground_truth"][2 * i + 1]}
+        for i in range(5)
+    ]
     specs = {}
     for name, rows in artifact_values.items():
         path = tmp_path / f"{name}.jsonl"
@@ -149,6 +158,76 @@ def _change_row(fixture, field, value, condition="rag_k3", index=0):
     rows = [json.loads(line) for line in path.read_text().splitlines()]
     rows[index][field] = value
     _dump_rows(path, rows)
+
+
+def _rebind_dataset_artifact(tmp_path, fixture, name, rows):
+    """Rehash all external references; leave the other authoritative bytes intact."""
+    manifest = fixture[2]
+    spec = manifest["artifacts"][name]
+    path = tmp_path / spec["path"]
+    _dump_rows(path, rows)
+    spec["sha256"] = _digest(path.read_bytes())
+    dataset_spec = manifest["artifacts"]["dataset_manifest"]
+    dataset_path = tmp_path / dataset_spec["path"]
+    dataset = json.loads(dataset_path.read_bytes())
+    dataset["files"][path.name] = spec["sha256"]
+    _dump(dataset_path, dataset)
+    dataset_spec["sha256"] = _digest(dataset_path.read_bytes())
+    _dump(fixture[0], manifest)
+    for prediction_path in fixture[1].values():
+        predictions = [json.loads(line) for line in prediction_path.read_bytes().splitlines()]
+        for prediction in predictions:
+            prediction["manifest_sha256"] = _digest(canonical_json_bytes(manifest))
+            prediction["ground_truth_sha256"] = manifest["artifacts"]["ground_truth"]["sha256"]
+        _dump_rows(prediction_path, predictions)
+
+
+@pytest.mark.parametrize("tamper", ["replace_gt", "swap_gt", "alter_view", "swap_view"])
+def test_rehashed_sidecars_cannot_disagree_with_embedded_pair_authority(tmp_path, tamper):
+    fixture = _fixture(tmp_path)
+    name = "ground_truth" if tamper.endswith("gt") else "views"
+    path = tmp_path / fixture[2]["artifacts"][name]["path"]
+    rows = [json.loads(line) for line in path.read_bytes().splitlines()]
+    if tamper == "replace_gt":
+        rows[0]["technique_ids"] = [B]
+    elif tamper == "swap_gt":
+        rows[0]["technique_ids"], rows[1]["technique_ids"] = rows[1]["technique_ids"], rows[0]["technique_ids"]
+    elif tamper == "alter_view":
+        rows[0]["event_ids"] = ["different-evidence"]
+    else:
+        rows[0]["pair_id"], rows[2]["pair_id"] = rows[2]["pair_id"], rows[0]["pair_id"]
+    _rebind_dataset_artifact(tmp_path, fixture, name, rows)
+    with pytest.raises(ValueError, match="embedded pair .* disagrees with sidecar"):
+        _load(tmp_path, fixture)
+
+
+@pytest.mark.parametrize("field", ["single_view", "contextual_view", "single_ground_truth", "contextual_ground_truth"])
+def test_embedded_pair_fields_are_required_even_with_recomputed_hashes(tmp_path, field):
+    fixture = _fixture(tmp_path)
+    path = tmp_path / fixture[2]["artifacts"]["pairs"]["path"]
+    rows = [json.loads(line) for line in path.read_bytes().splitlines()]
+    del rows[0][field]
+    _rebind_dataset_artifact(tmp_path, fixture, "pairs", rows)
+    with pytest.raises(ValueError, match="missing embedded pair"):
+        _load(tmp_path, fixture)
+
+
+@pytest.mark.parametrize("tamper", ["wrong_pair", "wrong_type", "reused_view", "unknown_view"])
+def test_embedded_view_metadata_and_unique_coverage_are_required(tmp_path, tamper):
+    fixture = _fixture(tmp_path)
+    path = tmp_path / fixture[2]["artifacts"]["pairs"]["path"]
+    rows = [json.loads(line) for line in path.read_bytes().splitlines()]
+    if tamper == "wrong_pair":
+        rows[0]["single_view"]["pair_id"] = "p1"
+    elif tamper == "wrong_type":
+        rows[0]["single_view"]["view_type"] = "contextual"
+    elif tamper == "reused_view":
+        rows[1]["single_view"]["view_id"] = "s0"
+    else:
+        rows[0]["single_view"]["view_id"] = "unknown"
+    _rebind_dataset_artifact(tmp_path, fixture, "pairs", rows)
+    with pytest.raises(ValueError, match="embedded pair view"):
+        _load(tmp_path, fixture)
 
 
 def test_known_answer_retrieval_and_separate_failure_observations(tmp_path):

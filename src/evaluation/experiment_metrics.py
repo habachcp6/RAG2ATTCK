@@ -221,8 +221,23 @@ def _load_evaluation_inputs(
             _require(isinstance(pair_id, str) and pair_id not in split_pairs, "duplicate/invalid split pair")
             split_pairs[pair_id] = split
     _require(set(split_pairs) == set(pairs), "split manifest is not an exact partition")
+    embedded_view_ids: set[str] = set()
     for pair_id, pair in pairs.items():
         _require(pair.get("split") == split_pairs[pair_id], "pair split disagreement")
+        for view_type in ("single", "contextual"):
+            embedded_view = pair.get(f"{view_type}_view")
+            embedded_truth = pair.get(f"{view_type}_ground_truth")
+            _require(isinstance(embedded_view, dict), f"missing embedded pair {view_type}_view")
+            _require(isinstance(embedded_truth, dict), f"missing embedded pair {view_type}_ground_truth")
+            view_id = embedded_view.get("view_id")
+            _require(isinstance(view_id, str) and view_id in views and view_id not in embedded_view_ids,
+                     "embedded pair view must reference one unique known view")
+            _require(embedded_view.get("pair_id") == pair_id and embedded_view.get("view_type") == view_type,
+                     "embedded pair view metadata disagrees with its owning pair")
+            _require(embedded_view == views[view_id], "embedded pair view disagrees with sidecar")
+            _require(embedded_truth == truth_rows[view_id], "embedded pair ground truth disagrees with sidecar")
+            embedded_view_ids.add(view_id)
+    _require(embedded_view_ids == set(views), "embedded pair view coverage mismatch")
     expected_samples: dict[str, dict[str, str]] = {}
     pair_views: dict[str, list[str]] = defaultdict(list)
     ground_truth = {}

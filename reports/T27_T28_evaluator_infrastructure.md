@@ -12,6 +12,10 @@ execution-record mappings. It reads each artifact once, verifies its SHA-256,
 then parses those same captured bytes. Dataset-manifest bindings, TEST/DEV pair
 partition, two views per pair, sample/GT/view joins, registry/corpus membership,
 output-schema identity, and complete sample-by-condition coverage must agree.
+Each pair's embedded single/contextual view and ground-truth objects must equal
+the corresponding captured sidecars in full. Embedded views must have the
+correct owning pair/type and cover every sidecar view exactly once; recomputing
+external hashes cannot hide disagreement between these authoritative copies.
 Records bind to the canonical manifest hash and its model, schema, prompt,
 dataset, GT, corpus, index and sample metadata. GT enters only this evaluator
 join, never a prediction record or inference payload. Duplicate, missing,
@@ -64,12 +68,14 @@ the study. Tests cover exact sub-technique strings, perfect/all-wrong cases,
 per-class/macro arithmetic, partial multi-label retrieval, negatives, unknown
 and retired IDs, provider/parser failure, actual-byte hash tampering, malformed
 JSON and envelopes, complete matrix joins, row-order determinism, no-overwrite,
-and hash/read-race prevention. All outputs are temporary fixture diagnostics.
+and hash/read-race prevention. Rehashed sidecar GT/view changes, swaps, missing
+embedded fields and reused/unknown embedded views are regression-tested against
+the unchanged pair authority. All outputs are temporary fixture diagnostics.
 
 Local validation on the implementation tree:
 
-- Evaluator tests: **51 passed**; full non-integration regression: **604 passed,
-  4 deselected**; real-retrieval integration: **4 passed, 604 deselected**.
+- Evaluator tests: **63 passed**; full non-integration regression: **616 passed,
+  4 deselected**; real-retrieval integration: **4 passed, 616 deselected**.
 - Every Python test run above used `scripts/run_offline_tests.py` and reported
   `OFFLINE_GUARD: installed=True attempted_egress=0`.
 - `verify-synthetic`: `passed=true`, `artifact_hash_mismatches=0`, and
@@ -77,11 +83,15 @@ Local validation on the implementation tree:
 - Scoped Ruff and `git diff --check` passed. `uv lock --check --offline` resolved
   the existing 108-package lock; `uv pip check` found all 87 installed packages
   compatible. No dependencies changed.
-- Serialized C-to-D interoperability smoke used the current T21 fixture
-  builder, config validator and concrete mock runner, then loaded its actual
-  manifest and five JSONL files through this evaluator: **2 samples, 5
+- Serialized C-to-D interoperability smoke used separate Python processes in
+  the C and D checkouts. The C process used its fixture builder, config validator
+  and concrete mock runner; D independently loaded the actual manifest and five
+  JSONL files: **2 samples, 5
   conditions, 10 fixture records, 10 mock calls, 0 real calls**. The canonical
   scoring gate remained closed even with a caller-supplied approval flag.
+- D also validated the real frozen TEST1280 metadata and complete embedded
+  pair/view/GT equality, stopping at the expected missing-prediction-file error.
+  This metadata check created no canonical predictions or evaluation results.
 
 These are local infrastructure checks, not research findings or final-SHA
 GitHub Actions evidence. Human scientific decisions and later PR/main CI remain

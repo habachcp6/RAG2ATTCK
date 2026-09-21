@@ -92,7 +92,7 @@ jobs:
         run: uv pip check
 
       - name: Run Synthetic Tests
-        run: uv run pytest tests/test_synthetic.py -q
+        run: uv run python scripts/run_offline_tests.py -m pytest tests/test_synthetic.py -q
 
   full-test-suite:
     name: Full Test Suite (${{ matrix.os }})
@@ -140,7 +140,7 @@ jobs:
         run: uv run ruff check scripts/analyze_retrieval_failures.py tests/test_retrieval_failure_analysis.py
 
       - name: Run Full Test Suite
-        run: uv run pytest -m "not integration" -q
+        run: uv run python scripts/run_offline_tests.py -m pytest -m "not integration" -q
 
       - name: Verify frozen synthetic benchmark and same-seed reproduction
-        run: uv run python -m src.data_ground_truth verify-synthetic
+        run: uv run python scripts/run_offline_tests.py -m src.data_ground_truth verify-synthetic

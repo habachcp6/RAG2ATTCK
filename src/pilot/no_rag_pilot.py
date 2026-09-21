@@ -16,26 +16,20 @@ import subprocess
 from collections import Counter
 from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from itertools import islice
 from pathlib import Path
+from time import perf_counter
 from typing import Any, Protocol
 
 import openai
 
-from src.llm.client import LiveBudgetExceededError
-
-
-class OperationalProviderError(Exception):
-    """Operational or provider failure during live pilot execution."""
-
-
-OPERATIONAL_EXCEPTIONS: tuple[type[Exception], ...] = (
+from src.llm.client import (
+    GLOBAL_LIVE_BUDGET,
+    OPERATIONAL_EXCEPTIONS,
+    LiveBudget,
     LiveBudgetExceededError,
-    openai.APIError,
-    TimeoutError,
-    ConnectionError,
-    OperationalProviderError,
 )
-
+from src.llm.inputs import validate_benchmark_batch
 
 MAX_PILOT_SAMPLES = 20
 REQUIRED_SOURCE_FIELDS = (
@@ -64,6 +58,9 @@ _SHA256_RE = re.compile(r"^[0-9a-fA-F]{64}$")
 
 
 class PilotPipeline(Protocol):
+    client: Any
+    prompt_version: str
+
     def run_sample(
         self,
         sample_id: str,
@@ -90,25 +87,63 @@ class PilotRun:
     budget_exhausted: bool
 
 
+@dataclass(frozen=True)
+class PilotInputs:
+    """The exact bytes validated before dispatch, plus their selected samples."""
+
+    input_bytes: bytes
+    manifest_bytes: bytes
+    samples: tuple[PilotSample, ...]
+
+    @property
+    def manifest(self) -> dict[str, Any]:
+        return json.loads(self.manifest_bytes)
+
+
+@dataclass(frozen=True)
+class PilotExecutionSnapshot:
+    """Execution inputs captured once; reporting never reopens these files."""
+
+    inputs: PilotInputs
+    model_config_bytes: bytes
+    prompt_bytes: bytes
+    attack_version: str | None
+    repository_commit_sha: str | None
+
+    @property
+    def model_config(self) -> dict[str, Any]:
+        value = json.loads(self.model_config_bytes)
+        if not isinstance(value, dict):
+            raise TypeError("model configuration must be a JSON object")
+        return value
+
+    @property
+    def prompt_template(self) -> str:
+        return self.prompt_bytes.decode("utf-8")
+
+
 class DataUnavailableError(RuntimeError):
     """Raised when no approved real-data source is available."""
 
 
 def load_jsonl(path: Path | str) -> list[dict[str, Any]]:
+    return _parse_jsonl(Path(path).read_bytes(), str(path))
+
+
+def _parse_jsonl(content: bytes, source: str) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
-    with Path(path).open("r", encoding="utf-8") as handle:
-        for line_number, line in enumerate(handle, start=1):
-            if not line.strip():
-                continue
-            value = json.loads(line)
-            if not isinstance(value, dict):
-                raise ValueError(f"{path}:{line_number}: expected a JSON object")
-            rows.append(value)
+    for line_number, line in enumerate(content.decode("utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        value = json.loads(line)
+        if not isinstance(value, dict):
+            raise ValueError(f"{source}:{line_number}: expected a JSON object")
+        rows.append(value)
     return rows
 
 
-def _sha256_file(path: Path | str) -> str:
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+def _sha256(content: bytes) -> str:
+    return hashlib.sha256(content).hexdigest()
 
 
 def validate_pilot_limit(limit: int) -> None:
@@ -166,16 +201,23 @@ def validate_source_manifest(
         source_path = Path(input_path)
         if not source_path.is_file():
             raise DataUnavailableError(f"approved input is missing: {source_path}")
-        actual_hash = _sha256_file(source_path)
-        if actual_hash.lower() != manifest["input_sha256"].lower():
-            raise DataUnavailableError(
-                f"source input SHA-256 mismatch: expected {manifest['input_sha256']}, got {actual_hash}"
-            )
-        actual_count = len(load_jsonl(source_path))
-        if actual_count != expected_count:
-            raise DataUnavailableError(
-                f"source record count mismatch: expected {expected_count}, got {actual_count}"
-            )
+        _validate_input_bytes(manifest, source_path.read_bytes(), str(source_path))
+
+
+def _validate_input_bytes(
+    manifest: Mapping[str, Any], content: bytes, source: str,
+) -> list[dict[str, Any]]:
+    actual_hash = _sha256(content)
+    if actual_hash.lower() != manifest["input_sha256"].lower():
+        raise DataUnavailableError(
+            f"source input SHA-256 mismatch: expected {manifest['input_sha256']}, got {actual_hash}"
+        )
+    rows = _parse_jsonl(content, source)
+    if len(rows) != manifest["expected_record_count"]:
+        raise DataUnavailableError(
+            f"source record count mismatch: expected {manifest['expected_record_count']}, got {len(rows)}"
+        )
+    return rows
 
 
 def load_pilot_samples(
@@ -184,8 +226,13 @@ def load_pilot_samples(
     *,
     expected_source_id: str | None = None,
 ) -> list[PilotSample]:
+    return _samples_from_rows(load_jsonl(path), limit, expected_source_id)
+
+
+def _samples_from_rows(
+    rows: Sequence[Mapping[str, Any]], limit: int, expected_source_id: str | None,
+) -> list[PilotSample]:
     validate_pilot_limit(limit)
-    rows = load_jsonl(path)
     samples: list[PilotSample] = []
     seen: set[str] = set()
     for index, row in enumerate(rows):
@@ -208,9 +255,8 @@ def load_pilot_samples(
                 f"does not match manifest source_id {expected_source_id!r}"
             )
         seen.add(normalized_id)
-        samples.append(PilotSample(normalized_id, normalized_source_id, evidence))
-        if len(samples) >= limit:
-            break
+        if len(samples) < limit:
+            samples.append(PilotSample(normalized_id, normalized_source_id, evidence))
     if not samples:
         raise ValueError("pilot input contains no samples")
     return samples
@@ -221,17 +267,21 @@ def prepare_pilot_inputs(
     source_manifest_path: Path | str,
     limit: int,
     approved_source_ids: Collection[str],
-) -> tuple[dict[str, Any], list[PilotSample]]:
+) -> PilotInputs:
+    validate_pilot_limit(limit)
     manifest_path = Path(source_manifest_path)
     input_file = Path(input_path)
     if not manifest_path.is_file() or not input_file.is_file():
         raise DataUnavailableError("DATA_UNAVAILABLE: approved input or source manifest is missing")
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest_bytes = manifest_path.read_bytes()
+    manifest = json.loads(manifest_bytes)
     if not isinstance(manifest, dict):
         raise ValueError("source manifest must be a JSON object")
-    validate_source_manifest(manifest, input_path=input_file, approved_source_ids=approved_source_ids)
-    samples = load_pilot_samples(input_file, limit, expected_source_id=manifest["source_id"])
-    return manifest, samples
+    validate_source_manifest(manifest, approved_source_ids=approved_source_ids)
+    input_bytes = input_file.read_bytes()
+    rows = _validate_input_bytes(manifest, input_bytes, str(input_file))
+    samples = _samples_from_rows(rows, limit, manifest["source_id"])
+    return PilotInputs(input_bytes, manifest_bytes, tuple(samples))
 
 
 def _record_to_dict(sample: PilotSample, record: Any) -> dict[str, Any]:
@@ -260,9 +310,12 @@ def _record_to_dict(sample: PilotSample, record: Any) -> dict[str, Any]:
     }
 
 
-def _exception_record(sample: PilotSample, exc: Exception) -> dict[str, Any]:
+def _exception_record(
+    sample: PilotSample, exc: Exception, pipeline: PilotPipeline, latency_ms: float,
+) -> dict[str, Any]:
+    client = pipeline.client
     error_type = type(exc).__name__
-    is_timeout = isinstance(exc, (TimeoutError, openai.APITimeoutError)) or "timeout" in error_type.lower()
+    is_timeout = isinstance(exc, (TimeoutError, openai.APITimeoutError))
     parse_status = (
         "INCOMPLETE"
         if isinstance(exc, LiveBudgetExceededError)
@@ -272,39 +325,82 @@ def _exception_record(sample: PilotSample, exc: Exception) -> dict[str, Any]:
         "sample_id": sample.sample_id,
         "source_id": sample.source_id,
         "condition": "no_rag",
-        "provider": None,
-        "model": None,
-        "reasoning_effort": None,
-        "prompt_version": None,
+        "provider": client.provider,
+        "model": client.model,
+        "reasoning_effort": client.reasoning_effort,
+        "prompt_version": pipeline.prompt_version,
         "prediction": {"technique_id": None},
         "valid_attack_id": False,
         "parse_status": parse_status,
-        "latency_ms": 0.0,
+        "latency_ms": latency_ms,
         "input_tokens": None,
         "output_tokens": None,
-        "retry_count": 0,
+        "retry_count": None,
         "error_type": error_type,
         "error": f"{error_type}: {exc}",
     }
-
-
-def _pipeline_budget(pipeline: PilotPipeline) -> Any:
-    return getattr(getattr(pipeline, "client", None), "live_budget", None)
 
 
 def run_no_rag_pilot(
     samples: Iterable[PilotSample],
     pipeline: PilotPipeline,
     *,
-    live_budget: Any = None,
+    source_snapshot: PilotInputs,
+    approved_source_ids: Collection[str],
+    live_budget: LiveBudget | None = None,
 ) -> PilotRun:
-    """Run No-RAG samples and stop immediately when the finite budget is exhausted."""
+    """Revalidate provenance and the whole selected batch before any dispatch."""
 
-    sample_list = list(samples)
-    budget = live_budget if live_budget is not None else _pipeline_budget(pipeline)
+    if not isinstance(source_snapshot, PilotInputs):
+        raise TypeError("pilot runner requires a PilotInputs source snapshot")
+    if (
+        type(source_snapshot.input_bytes) is not bytes
+        or type(source_snapshot.manifest_bytes) is not bytes
+        or type(source_snapshot.samples) is not tuple
+    ):
+        raise ValueError("pilot source snapshot must contain immutable bytes and samples")
+    if isinstance(approved_source_ids, (str, bytes)):
+        raise TypeError("approved_source_ids must be an explicit collection of source IDs")
+    manifest = source_snapshot.manifest
+    if not isinstance(manifest, dict):
+        raise TypeError("source manifest must be a JSON object")
+    validate_source_manifest(manifest, approved_source_ids=approved_source_ids)
+    rows = _validate_input_bytes(manifest, source_snapshot.input_bytes, "pilot source snapshot")
+    rebound_samples = tuple(_samples_from_rows(rows, len(source_snapshot.samples), manifest["source_id"]))
+    if source_snapshot.samples != rebound_samples:
+        raise DataUnavailableError("source snapshot samples do not match validated input bytes")
+
+    sample_list = list(islice(samples, MAX_PILOT_SAMPLES + 1))
+    requested_samples = tuple(sample_list)
+    validate_pilot_limit(len(sample_list))
+    if any(not isinstance(sample, PilotSample) for sample in sample_list):
+        raise ValueError("pilot runner requires PilotSample values")
+    validated = validate_benchmark_batch([
+        {"sample_id": sample.sample_id, "endpoint_evidence": sample.endpoint_evidence}
+        for sample in sample_list
+    ])
+    if any(not isinstance(sample.source_id, str) or not sample.source_id.strip() for sample in sample_list):
+        raise ValueError("pilot sample source_id is required")
+    sample_list = [
+        PilotSample(sample_id, sample.source_id.strip(), evidence)
+        for sample, (sample_id, evidence) in zip(sample_list, validated)
+    ]
+    if requested_samples != rebound_samples:
+        raise DataUnavailableError("requested pilot samples do not match validated source snapshot")
+    if not isinstance(live_budget, LiveBudget) or live_budget is GLOBAL_LIVE_BUDGET:
+        raise ValueError("pilot runner requires an explicit finite non-global LiveBudget")
+    client = getattr(pipeline, "client", None)
+    if getattr(client, "live_budget", None) is not live_budget:
+        raise ValueError("pilot runner and client must share the same LiveBudget instance")
+    if getattr(client, "is_live", None) is not True:
+        raise ValueError("pilot client must enable request accounting (is_live=True)")
+    validate_live_budget(live_budget.max_requests, len(sample_list), client.max_retries)
+    budget = live_budget
     output: list[dict[str, Any]] = []
     budget_exhausted = False
+    budget_denied = False
     for sample in sample_list:
+        started = perf_counter()
         try:
             record = pipeline.run_sample(
                 sample_id=sample.sample_id,
@@ -314,12 +410,13 @@ def run_no_rag_pilot(
             )
             row = _record_to_dict(sample, record)
         except OPERATIONAL_EXCEPTIONS as exc:  # preserve expected operational failures
-            row = _exception_record(sample, exc)
+            row = _exception_record(sample, exc, pipeline, (perf_counter() - started) * 1000)
         output.append(row)
 
         if row.get("error_type") == "LiveBudgetExceededError":
             row["parse_status"] = "INCOMPLETE"
             budget_exhausted = True
+            budget_denied = True
             break
         if budget is not None and budget.is_exhausted() and len(output) < len(sample_list):
             budget_exhausted = True
@@ -329,7 +426,7 @@ def run_no_rag_pilot(
         records=output,
         requested_samples=len(sample_list),
         processed_samples=len(output),
-        complete=len(output) == len(sample_list),
+        complete=len(output) == len(sample_list) and not budget_denied,
         budget_exhausted=budget_exhausted or bool(budget is not None and budget.is_exhausted()),
     )
 
@@ -362,6 +459,7 @@ def summarize_predictions(
         "total_input_tokens": sum(input_tokens) if input_tokens else None,
         "total_output_tokens": sum(output_tokens) if output_tokens else None,
         "total_retries": sum(int(record.get("retry_count") or 0) for record in records),
+        "unknown_retry_count_records": sum(record.get("retry_count") is None for record in records),
         "budget_exhausted": budget_exhausted,
         "configured_max_live_requests": getattr(live_budget, "max_requests", None),
         "live_requests_consumed": getattr(live_budget, "count", None),
@@ -392,37 +490,56 @@ def _git_head(workspace: Path) -> str | None:
     return result.stdout.strip() if result.returncode == 0 else None
 
 
-def build_sidecar_metadata(
+def capture_execution_snapshot(
     *,
-    input_path: Path | str,
-    source_manifest_path: Path | str,
+    inputs: PilotInputs,
     prompt_path: Path | str,
     model_config_path: Path | str,
-    manifest: Mapping[str, Any],
-    run: PilotRun,
-    sample_limit: int,
-    live_budget: Any,
     attack_version: str | None,
     workspace: Path,
+) -> PilotExecutionSnapshot:
+    snapshot = PilotExecutionSnapshot(
+        inputs=inputs,
+        model_config_bytes=Path(model_config_path).read_bytes(),
+        prompt_bytes=Path(prompt_path).read_bytes(),
+        attack_version=attack_version,
+        repository_commit_sha=_git_head(workspace),
+    )
+    # Decode/validate before any client can dispatch.
+    _ = snapshot.model_config
+    if not snapshot.prompt_template.strip():
+        raise ValueError("pilot prompt template must not be empty")
+    return snapshot
+
+
+def build_sidecar_metadata(
+    *,
+    snapshot: PilotExecutionSnapshot,
+    run: PilotRun,
+    sample_limit: int,
+    live_budget: LiveBudget,
 ) -> dict[str, Any]:
-    """Build deterministic run-level provenance without including secrets."""
+    """Bind reporting to the exact pre-dispatch bytes, without reopening files."""
 
     return {
-        "input_sha256": manifest["input_sha256"],
-        "source_manifest_sha256": _sha256_file(source_manifest_path),
-        "prompt_sha256": _sha256_file(prompt_path),
-        "model_config_sha256": _sha256_file(model_config_path),
+        "input_sha256": _sha256(snapshot.inputs.input_bytes),
+        "source_manifest_sha256": _sha256(snapshot.inputs.manifest_bytes),
+        "prompt_sha256": _sha256(snapshot.prompt_bytes),
+        "model_config_sha256": _sha256(snapshot.model_config_bytes),
+        "sample_ids": [sample.sample_id for sample in snapshot.inputs.samples],
+        "source_id": snapshot.inputs.manifest["source_id"],
+        "source_version": snapshot.inputs.manifest["version"],
         "sample_limit": sample_limit,
         "requested_sample_count": run.requested_samples,
         "processed_sample_count": run.processed_samples,
         "condition": "no_rag",
-        "attack_version": attack_version,
+        "attack_version": snapshot.attack_version,
         "live_budget_configured": live_budget.max_requests,
         "live_requests_consumed": live_budget.count,
         "remaining_budget": live_budget.remaining,
         "budget_exhausted": run.budget_exhausted,
         "run_completion_status": "COMPLETE" if run.complete else "INCOMPLETE",
-        "repository_commit_sha": _git_head(workspace),
+        "repository_commit_sha": snapshot.repository_commit_sha,
     }
 
 
@@ -448,46 +565,51 @@ def main(argv: Sequence[str] | None = None) -> int:
         raise ValueError("--max-live-requests is required in live mode")
     validate_pilot_limit(args.limit)
 
-    from src.llm.client import LiveBudget, LLMClient
+    from src.llm.client import LLMClient
     from src.llm.schemas import get_workspace_root, load_attack_registry
 
     workspace = get_workspace_root()
     model_config_path = workspace / "config" / "model.json"
-    model_config = json.loads(model_config_path.read_text(encoding="utf-8"))
-    validate_live_budget(args.max_live_requests, args.limit, int(model_config.get("max_retries", 3)))
-    manifest, samples = prepare_pilot_inputs(
+    inputs = prepare_pilot_inputs(
         args.input,
         args.source_manifest,
         args.limit,
         args.approved_source_id,
     )
+    prompt_path = workspace / "prompts" / "baseline_v1.txt"
+    scope = json.loads((workspace / "config" / "benchmark_scope.json").read_text(encoding="utf-8"))
+    snapshot = capture_execution_snapshot(
+        inputs=inputs,
+        prompt_path=prompt_path,
+        model_config_path=model_config_path,
+        attack_version=scope.get("attack_version"),
+        workspace=workspace,
+    )
+    model_config = snapshot.model_config
+    validate_live_budget(args.max_live_requests, len(inputs.samples), model_config.get("max_retries", 3))
 
     budget = LiveBudget(max_requests=args.max_live_requests)
     client = LLMClient(
+        config_dict=model_config,
         registry_ids=load_attack_registry(),
         live_budget=budget,
         is_live=True,
     )
     from src.baseline.pipeline import BaselinePipeline
 
-    pipeline = BaselinePipeline(client=client)
-    run = run_no_rag_pilot(samples, pipeline, live_budget=budget)
+    pipeline = BaselinePipeline(client=client, prompt_template=snapshot.prompt_template)
+    run = run_no_rag_pilot(
+        inputs.samples, pipeline, source_snapshot=inputs,
+        approved_source_ids=args.approved_source_id, live_budget=budget,
+    )
     summary = summarize_predictions(run.records, run=run, live_budget=budget)
     write_jsonl(args.output, run.records)
 
-    prompt_path = workspace / "prompts" / "baseline_v1.txt"
-    scope = json.loads((workspace / "config" / "benchmark_scope.json").read_text(encoding="utf-8"))
     sidecar = build_sidecar_metadata(
-        input_path=args.input,
-        source_manifest_path=args.source_manifest,
-        prompt_path=prompt_path,
-        model_config_path=model_config_path,
-        manifest=manifest,
+        snapshot=snapshot,
         run=run,
         sample_limit=args.limit,
         live_budget=budget,
-        attack_version=scope.get("attack_version"),
-        workspace=workspace,
     )
     sidecar_path = Path(f"{args.output}.meta.json")
     sidecar_path.parent.mkdir(parents=True, exist_ok=True)

@@ -25,9 +25,11 @@ from __future__ import annotations
 
 import json
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import MagicMock, call
-import pytest
+
 import openai
+import pytest
 
 from src.llm.client import (
     LiveBudget,
@@ -36,7 +38,6 @@ from src.llm.client import (
     reset_live_budget,
 )
 from src.llm.schemas import ParseStatus
-
 
 # ---------------------------------------------------------------------------
 # Test Fixtures & Mock Response Helpers
@@ -336,14 +337,12 @@ def test_no_fallback_when_responses_api_fails():
     mock_openai.responses.create.side_effect = NotImplementedError("Responses API not available")
 
     client = LLMClient(openai_client=mock_openai, sleep_fn=mock_sleep)
-    record = client.predict(
-        sample_id="sample_no_fallback",
-        endpoint_evidence="test log",
-    )
-
-    # Should be API_FAILURE, NOT a successful Chat Completions response
-    assert record.parse_status == ParseStatus.API_FAILURE.value
-    assert record.error_type == "NotImplementedError"
+    # An unsupported client interface is an integration defect, not a result.
+    with pytest.raises(NotImplementedError, match="Responses API not available"):
+        client.predict(
+            sample_id="sample_no_fallback",
+            endpoint_evidence="test log",
+        )
     # Chat Completions should NEVER be called
     assert not hasattr(mock_openai.chat, "completions") or not mock_openai.chat.completions.create.called
 
@@ -804,7 +803,9 @@ def test_no_hidden_fallback_bypasses_budget():
     mock_sleep = MagicMock()
 
     # Responses API raises a non-retryable error
-    mock_openai.responses.create.side_effect = NotImplementedError("Not available")
+    mock_openai.responses.create.side_effect = openai.AuthenticationError(
+        "Not authorized", response=MagicMock(), body=None,
+    )
 
     budget = LiveBudget(max_requests=1)
     client = LLMClient(

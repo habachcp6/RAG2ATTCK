@@ -7,6 +7,20 @@ name: Real Retrieval Integration
     paths:
       - "src/retrieval/**"
       - "src/rag/**"
+      - "src/experiment/**"
+      - "src/llm/**"
+      - "src/baseline/**"
+      - "src/pilot/**"
+      - "config/experiment_config.json"
+      - "config/model.json"
+      - "scripts/run_offline_tests.py"
+      - "scripts/offline_guard/**"
+      - "tests/test_experiment*.py"
+      - "tests/test_pilot_hardening.py"
+      - "tests/test_llm_client.py"
+      - "tests/test_live_budget.py"
+      - "tests/test_no_rag_pilot.py"
+      - "tests/test_baseline_pipeline.py"
       - "src/evaluation/**"
       - "config/retrieval.json"
       - "attack/corpus/**"
@@ -25,6 +39,20 @@ name: Real Retrieval Integration
     paths:
       - "src/retrieval/**"
       - "src/rag/**"
+      - "src/experiment/**"
+      - "src/llm/**"
+      - "src/baseline/**"
+      - "src/pilot/**"
+      - "config/experiment_config.json"
+      - "config/model.json"
+      - "scripts/run_offline_tests.py"
+      - "scripts/offline_guard/**"
+      - "tests/test_experiment*.py"
+      - "tests/test_pilot_hardening.py"
+      - "tests/test_llm_client.py"
+      - "tests/test_live_budget.py"
+      - "tests/test_no_rag_pilot.py"
+      - "tests/test_baseline_pipeline.py"
       - "src/evaluation/**"
       - "config/retrieval.json"
       - "attack/corpus/**"
@@ -86,5 +114,11 @@ jobs:
       - name: Acquire ATT&CK v19.2 reference
         run: uv run python -c "from pathlib import Path; from src.attack_loader import download_attack_reference; download_attack_reference(Path('.'))"
 
-      - name: Run real retrieval integration tests
-        run: uv run pytest -m integration -q
+      - name: Acquire pinned embedding model before offline checks
+        run: >-
+          uv run python -c "import json; from sentence_transformers import SentenceTransformer;
+          c=json.load(open('config/retrieval.json', encoding='utf-8'));
+          SentenceTransformer(c['embedding_model_id'], revision=c['embedding_model_revision'])"
+
+      - name: Run real retrieval integration tests without provider access
+        run: uv run python scripts/run_offline_tests.py -m pytest -m integration -q

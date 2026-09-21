@@ -32,6 +32,9 @@ data/ground_truth/synthetic/*
 !data/ground_truth/synthetic/manual_spotcheck.md
 data/processed/
 
+# Provider responses and execution journals are local-only scientific outputs.
+/artifacts/experiments/
+
 # Historical context archive (canonical docs tracked in docs/context/)
 /Context/
 

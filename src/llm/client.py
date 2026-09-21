@@ -18,13 +18,15 @@ from __future__ import annotations
 import json
 import logging
 import os
-from pathlib import Path
 import threading
 import time
+from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Set, Tuple
 
 import openai
+from pydantic import ValidationError
 
+from src.llm.logging import WallClockTimer
 from src.llm.schemas import (
     ExecutionRecord,
     ParseStatus,
@@ -33,7 +35,6 @@ from src.llm.schemas import (
     validate_condition,
     validate_technique_id,
 )
-from src.llm.logging import WallClockTimer
 
 logger = logging.getLogger("rag2attck.llm.client")
 
@@ -45,6 +46,16 @@ logger = logging.getLogger("rag2attck.llm.client")
 class LiveBudgetExceededError(RuntimeError):
     """Raised when the selected live API request budget is exhausted."""
     pass
+
+
+# Only errors from the provider/transport boundary may become execution failures.
+# Programming and filesystem errors must propagate instead of looking like results.
+OPERATIONAL_EXCEPTIONS = (
+    LiveBudgetExceededError,
+    openai.APIError,
+    TimeoutError,
+    ConnectionError,
+)
 
 
 class LiveBudget:
@@ -202,14 +213,10 @@ class LLMClient:
         if isinstance(exc, (openai.APITimeoutError, TimeoutError)):
             return True
 
-        if isinstance(exc, (openai.RateLimitError, openai.InternalServerError, openai.APIConnectionError)):
-            return True
-
-        err_str = str(exc).lower()
-        if any(term in err_str for term in ["timeout", "timed out", "rate limit", "connection reset", "503", "502", "500"]):
-            return True
-
-        return False
+        return isinstance(exc, (
+            openai.RateLimitError, openai.InternalServerError,
+            openai.APIConnectionError, ConnectionError,
+        ))
 
     def _call_responses_api(self, prompt: str) -> Any:
         """Execute request using the frozen Responses API interface."""
@@ -247,8 +254,12 @@ class LLMClient:
         # Extract token usage if available
         usage = getattr(response, "usage", None)
         if usage is not None:
-            input_tokens = getattr(usage, "input_tokens", None) or getattr(usage, "prompt_tokens", None)
-            output_tokens = getattr(usage, "output_tokens", None) or getattr(usage, "completion_tokens", None)
+            input_tokens = getattr(usage, "input_tokens", None)
+            output_tokens = getattr(usage, "output_tokens", None)
+            if input_tokens is None:
+                input_tokens = getattr(usage, "prompt_tokens", None)
+            if output_tokens is None:
+                output_tokens = getattr(usage, "completion_tokens", None)
 
         resp_status = getattr(response, "status", None)
 
@@ -338,7 +349,7 @@ class LLMClient:
         # Step 1: Parse JSON
         try:
             payload = json.loads(raw_text)
-        except Exception as e:
+        except json.JSONDecodeError as e:
             return ParseStatus.MALFORMED_RESPONSE, None, f"Response is not valid JSON: {str(e)}"
 
         if not isinstance(payload, dict):
@@ -350,7 +361,7 @@ class LLMClient:
         # Step 2: Validate Pydantic Schema
         try:
             pred = TechniquePrediction.model_validate(payload)
-        except Exception as e:
+        except ValidationError as e:
             return ParseStatus.MALFORMED_RESPONSE, None, f"Schema validation failed: {str(e)}"
 
         extracted_id = pred.technique_id
@@ -419,6 +430,7 @@ class LLMClient:
         retry_count = 0
         error_type: Optional[str] = None
         last_error_msg: Optional[str] = None
+        last_error: Exception | None = None
         response_obj: Any = None
 
         with WallClockTimer() as timer:
@@ -429,13 +441,16 @@ class LLMClient:
                     if self.is_live:
                         self.live_budget.consume()
 
+                    retry_count = attempt
+
                     # Execute via the frozen Responses API interface — no fallback.
                     response_obj = self._call_responses_api(formatted_prompt)
 
                     # Successfully received response
                     break
 
-                except Exception as exc:
+                except OPERATIONAL_EXCEPTIONS as exc:
+                    last_error = exc
                     error_type = type(exc).__name__
                     last_error_msg = str(exc)
 
@@ -444,7 +459,6 @@ class LLMClient:
                         break
 
                     if self._is_retryable_error(exc) and attempt < self.max_retries:
-                        retry_count += 1
                         delay = min(
                             self.retry_initial_delay * (self.retry_backoff_factor ** attempt),
                             self.retry_max_delay
@@ -454,7 +468,7 @@ class LLMClient:
                             attempt + 1,
                             exc,
                             delay,
-                            retry_count,
+                            attempt + 1,
                             self.max_retries
                         )
                         self.sleep_fn(delay)
@@ -469,10 +483,7 @@ class LLMClient:
         # Determine terminal status
         if response_obj is None:
             # Check if failure was caused by timeout
-            is_timeout = (
-                error_type in ("APITimeoutError", "TimeoutError")
-                or (last_error_msg and "timeout" in last_error_msg.lower())
-            )
+            is_timeout = isinstance(last_error, (openai.APITimeoutError, TimeoutError))
             final_status = ParseStatus.TIMEOUT if is_timeout else ParseStatus.API_FAILURE
             return ExecutionRecord(
                 sample_id=sample_id,

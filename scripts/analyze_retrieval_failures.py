@@ -123,6 +123,51 @@ def validate_rank_value(value: Any, field_context: str = "") -> int | None:
     return value
 
 
+def _validate_technique_ids(value: Any, context: str) -> list[str]:
+    """Require a JSON list of unique, nonempty technique IDs."""
+    if not isinstance(value, list) or any(
+        not isinstance(tid, str) or not tid.strip() for tid in value
+    ):
+        raise ValueError(f"{context}: technique IDs must be a list of nonempty strings")
+    if len(value) != len(set(value)):
+        raise ValueError(f"{context}: duplicate technique IDs")
+    return value
+
+
+def validate_diagnostic_ground_truth(row: Mapping[str, Any]) -> None:
+    """Validate GT structure before eligibility, following the frozen Stage B contract.
+
+    synthetic_validator requires both ambiguous and unmapped GT to have zero
+    techniques; retrieval_diagnostics derives mapped_single/multi from GT count.
+    """
+    context = f"Sample {row.get('sample_id')!r}, pair {row.get('pair_id')!r}"
+    ids = _validate_technique_ids(row.get("ground_truth_technique_ids"), context)
+    category = row.get("category")
+    valid_count = {
+        "mapped_single": len(ids) == 1,
+        "mapped_multi": len(ids) >= 2,
+        "unmapped": len(ids) == 0,
+        "ambiguous": len(ids) == 0,
+    }
+    if not isinstance(category, str) or category not in valid_count:
+        raise ValueError(f"{context}: invalid category {category!r}")
+    if not valid_count[category]:
+        raise ValueError(
+            f"{context}: Category/GT count inconsistency: {category!r}, {len(ids)} GT IDs"
+        )
+    ranks = row.get("ground_truth_technique_ranks")
+    if not isinstance(ranks, Mapping):
+        raise ValueError(f"{context}: ground_truth_technique_ranks must be a mapping")
+    if set(ids) != set(ranks):
+        raise ValueError(
+            f"{context}: GT/rank keys integrity violation: "
+            f"missing={sorted(set(ids) - set(ranks))}, "
+            f"extra={sorted(set(ranks) - set(ids), key=str)}"
+        )
+    for tid, rank in ranks.items():
+        validate_rank_value(rank, field_context=f"{context}/{tid}")
+
+
 def _get_technique_rank(record: Mapping[str, Any], technique_id: str) -> int | None:
     """Extract and validate rank for a specific technique from record ground-truth ranks."""
     ranks = record.get("ground_truth_technique_ranks")
@@ -444,15 +489,19 @@ def analyze_single_vs_contextual_pairs(
     """
     pairs_map: dict[str, dict[str, Mapping[str, Any]]] = defaultdict(dict)
     for row in diagnostics_rows:
+        validate_diagnostic_ground_truth(row)
         pair_id = row.get("pair_id")
         view_type = row.get("view_type")
-        if pair_id and view_type:
-            if view_type in pairs_map[pair_id]:
-                raise ValueError(
-                    f"Duplicate (pair_id={pair_id!r}, view_type={view_type!r}) detected. "
-                    f"Each pair must have at most one row per view type."
-                )
-            pairs_map[pair_id][view_type] = row
+        if not isinstance(pair_id, str) or not pair_id.strip():
+            raise ValueError(f"Diagnostic record has invalid pair_id: {pair_id!r}")
+        if view_type not in ("single", "contextual"):
+            raise ValueError(f"Pair {pair_id!r}: invalid view_type {view_type!r}")
+        if view_type in pairs_map[pair_id]:
+            raise ValueError(
+                f"Duplicate (pair_id={pair_id!r}, view_type={view_type!r}) detected. "
+                f"Each pair must have at most one row per view type."
+            )
+        pairs_map[pair_id][view_type] = row
 
     candidate_pair_ids = sorted(
         pid
@@ -480,28 +529,12 @@ def analyze_single_vs_contextual_pairs(
             excluded_reasons["single_not_mapped_single"] += 1
             continue
 
-        # Validate category consistency: mapped_single must have exactly 1 GT ID
-        s_category = s_view.get("category", "")
-        if s_category == "mapped_single" and len(s_gt_ids) != 1:
-            raise ValueError(
-                f"Pair {pid}: category='mapped_single' but len(gt_ids)={len(s_gt_ids)}. "
-                f"Category/GT count inconsistency."
-            )
-
         anchor = s_gt_ids[0]
 
         s_ranks = s_view.get("ground_truth_technique_ranks", {})
         c_ranks = c_view.get("ground_truth_technique_ranks", {})
 
-        # Anchor MUST exist in single view's rank mapping — integrity violation if missing
-        if anchor not in s_ranks:
-            raise ValueError(
-                f"Pair {pid}: anchor technique {anchor!r} is in single view's GT IDs "
-                f"but missing from its ground_truth_technique_ranks. "
-                f"This is an artifact integrity violation, not a methodological exclusion."
-            )
-
-        # Anchor must exist in contextual view's rank mapping (fail closed, no substitution)
+        # Schema is valid: an anchor absent from contextual GT is a legitimate exclusion.
         if anchor not in c_ranks:
             excluded += 1
             excluded_reasons["anchor_missing_from_contextual_ranks"] += 1
@@ -691,60 +724,61 @@ def format_sample_inspection(data: Mapping[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _index_records(
+    rows: Sequence[Mapping[str, Any]], key: str, artifact: str,
+) -> dict[str, Mapping[str, Any]]:
+    """Index canonical records without silently overwriting duplicate identifiers."""
+    indexed: dict[str, Mapping[str, Any]] = {}
+    for row in rows:
+        identifier = row.get(key)
+        if not isinstance(identifier, str) or not identifier.strip():
+            raise ValueError(f"{artifact}: invalid or missing {key}: {identifier!r}")
+        if identifier in indexed:
+            raise ValueError(f"Duplicate {key} in {artifact}: {identifier!r}")
+        indexed[identifier] = row
+    return indexed
+
+
 def validate_canonical_input_consistency(
     diagnostics_rows: Sequence[Mapping[str, Any]],
     views_rows: Sequence[Mapping[str, Any]],
     pairs_rows: Sequence[Mapping[str, Any]],
     ground_truth_rows: Sequence[Mapping[str, Any]],
 ) -> None:
-    """Cross-validate that canonical input artifacts are relationally consistent.
+    """Validate the frozen Stage B join before any eligibility or metric calculation.
 
-    Verifies:
-    - Every diagnostic sample_id matches a view_id in views
-    - Pair IDs agree between diagnostics and pairs
-    - View types agree between diagnostics and views
-    - GT technique IDs agree between diagnostics and ground_truth
-    - No extra diagnostic samples exist beyond canonical views
-    - All canonical views are represented exactly once in diagnostics
+    serialize_dataset emits one GT and diagnostic source view per single/contextual
+    view; validate_stage_b requires unique pair/view IDs and matching GT linkage.
+    Each pair's embedded views must agree with the standalone views artifact.
     """
-    # Build lookup maps from canonical source artifacts
-    view_by_id: dict[str, Mapping[str, Any]] = {}
-    for v in views_rows:
-        vid = v.get("view_id")
-        if vid is None:
-            raise ValueError("View record missing 'view_id'")
-        if vid in view_by_id:
-            raise ValueError(f"Duplicate view_id in views: {vid!r}")
-        view_by_id[vid] = v
+    view_by_id = _index_records(views_rows, "view_id", "views")
+    gt_by_view = _index_records(ground_truth_rows, "view_id", "ground_truth")
+    pair_by_id = _index_records(pairs_rows, "pair_id", "pairs")
+    diag_by_id = _index_records(diagnostics_rows, "sample_id", "diagnostics")
 
-    gt_by_view: dict[str, Mapping[str, Any]] = {}
-    for gt in ground_truth_rows:
-        vid = gt.get("view_id")
-        if vid is None:
-            raise ValueError("Ground truth record missing 'view_id'")
-        if vid in gt_by_view:
-            raise ValueError(f"Duplicate view_id in ground_truth: {vid!r}")
-        gt_by_view[vid] = gt
+    view_ids = set(view_by_id)
+    if set(gt_by_view) != view_ids:
+        raise ValueError(
+            "Ground truth/view ID set mismatch: "
+            f"missing_GT={sorted(view_ids - set(gt_by_view))[:5]}, "
+            f"unknown_GT={sorted(set(gt_by_view) - view_ids)[:5]}"
+        )
+    unknown_samples = set(diag_by_id) - view_ids
+    if unknown_samples:
+        raise ValueError(
+            f"Diagnostic samples not found in canonical views: {sorted(unknown_samples)[:5]}"
+        )
+    missing_samples = view_ids - set(diag_by_id)
+    if missing_samples:
+        raise ValueError(
+            f"{len(missing_samples)} canonical views missing from diagnostics: "
+            f"{sorted(missing_samples)[:5]}"
+        )
 
-    pair_ids_from_pairs = {p.get("pair_id") for p in pairs_rows}
-
-    diag_sample_ids: set[str] = set()
-    for row in diagnostics_rows:
-        sid = row.get("sample_id")
-        if sid is None:
-            raise ValueError("Diagnostic record missing 'sample_id'")
-        if sid in diag_sample_ids:
-            raise ValueError(f"Duplicate sample_id in diagnostics: {sid!r}")
-        diag_sample_ids.add(sid)
-
-        # Check sample_id exists in views
-        if sid not in view_by_id:
-            raise ValueError(
-                f"Diagnostic sample_id={sid!r} not found in canonical views"
-            )
-
-        # Check view_type agreement
-        canon_view = view_by_id[sid]
+    views_by_pair: dict[str, dict[str, str]] = defaultdict(dict)
+    for sid, canon_view in view_by_id.items():
+        row = diag_by_id[sid]
+        validate_diagnostic_ground_truth(row)
         diag_vtype = row.get("view_type")
         canon_vtype = canon_view.get("view_type")
         if diag_vtype != canon_vtype:
@@ -752,41 +786,49 @@ def validate_canonical_input_consistency(
                 f"View type mismatch for {sid!r}: "
                 f"diagnostic={diag_vtype!r} != canonical view={canon_vtype!r}"
             )
+        if canon_vtype not in ("single", "contextual"):
+            raise ValueError(f"View {sid!r}: invalid view_type {canon_vtype!r}")
 
-        # Check pair_id agreement
         diag_pid = row.get("pair_id")
         canon_pid = canon_view.get("pair_id")
+        for source, pid in (("diagnostic", diag_pid), ("view", canon_pid)):
+            if not isinstance(pid, str) or pid not in pair_by_id:
+                raise ValueError(
+                    f"Pair ID {pid!r} from {source} {sid!r} not found in canonical pairs"
+                )
         if diag_pid != canon_pid:
             raise ValueError(
                 f"Pair ID mismatch for {sid!r}: "
                 f"diagnostic={diag_pid!r} != canonical view={canon_pid!r}"
             )
+        if canon_vtype in views_by_pair[canon_pid]:
+            raise ValueError(f"Duplicate view_type {canon_vtype!r} for pair_id {canon_pid!r}")
+        views_by_pair[canon_pid][canon_vtype] = sid
 
-        # Check pair_id exists in pairs
-        if diag_pid and diag_pid not in pair_ids_from_pairs:
-            raise ValueError(
-                f"Pair ID {diag_pid!r} from diagnostic {sid!r} "
-                f"not found in canonical pairs"
-            )
-
-        # Check GT technique IDs agreement
-        if sid in gt_by_view:
-            canon_gt = gt_by_view[sid]
-            diag_gt_ids = set(row.get("ground_truth_technique_ids", []))
-            canon_gt_ids = set(canon_gt.get("technique_ids", []))
-            if diag_gt_ids != canon_gt_ids:
-                raise ValueError(
-                    f"GT technique IDs mismatch for {sid!r}: "
-                    f"diagnostic={sorted(diag_gt_ids)} != canonical={sorted(canon_gt_ids)}"
-                )
-
-    # Check all canonical views are represented
-    missing_views = set(view_by_id.keys()) - diag_sample_ids
-    if missing_views:
-        raise ValueError(
-            f"{len(missing_views)} canonical views missing from diagnostics: "
-            f"{sorted(missing_views)[:5]}{'...' if len(missing_views) > 5 else ''}"
+        canon_gt = gt_by_view[sid]
+        canon_gt_ids = _validate_technique_ids(canon_gt.get("technique_ids"), f"GT {sid!r}")
+        if set(row["ground_truth_technique_ids"]) != set(canon_gt_ids):
+            raise ValueError(f"GT technique IDs mismatch for {sid!r}")
+        expected_status = (
+            "mapped" if row["category"] in ("mapped_single", "mapped_multi") else row["category"]
         )
+        if canon_gt.get("label_status") != expected_status:
+            raise ValueError(f"GT label_status/category mismatch for {sid!r}")
+
+    for pid, pair in pair_by_id.items():
+        if set(views_by_pair[pid]) != {"single", "contextual"}:
+            raise ValueError(f"Pair {pid!r} must have exactly one single and one contextual view")
+        for kind in ("single", "contextual"):
+            embedded = pair.get(f"{kind}_view")
+            if not isinstance(embedded, Mapping):
+                raise ValueError(f"Pair {pid!r}: missing or invalid {kind}_view")
+            expected_id = views_by_pair[pid][kind]
+            if (
+                embedded.get("view_id") != expected_id
+                or embedded.get("pair_id") != pid
+                or embedded.get("view_type") != kind
+            ):
+                raise ValueError(f"Pair {pid!r}: {kind}_view linkage mismatch")
 
 
 def build_failure_analysis_summary(
@@ -798,7 +840,11 @@ def build_failure_analysis_summary(
     ground_truth_rows: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Assemble complete, deterministic failure analysis summary."""
-    # Cross-validate provenance if canonical source artifacts are provided
+    sources = (views_rows, pairs_rows, ground_truth_rows)
+    if any(source is not None for source in sources) and any(source is None for source in sources):
+        raise ValueError("Canonical provenance requires views, pairs and ground_truth together")
+    for row in diagnostics_rows:
+        validate_diagnostic_ground_truth(row)
     if views_rows is not None and pairs_rows is not None and ground_truth_rows is not None:
         validate_canonical_input_consistency(
             diagnostics_rows, views_rows, pairs_rows, ground_truth_rows

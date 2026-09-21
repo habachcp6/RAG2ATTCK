@@ -1062,89 +1062,204 @@ class TestAnchorIntegrityViolation:
             analyze_single_vs_contextual_pairs(records)
 
 
+@pytest.fixture
+def canonical_inputs() -> tuple[list[dict], list[dict], list[dict], list[dict]]:
+    """Minimal valid Stage B linkage, including the pair's embedded views."""
+    diag = [
+        {"sample_id": "v1", **_make_row("p1", "single", "mapped_single", ["T1"], {"T1": 1})},
+        {"sample_id": "v2", **_make_row("p1", "contextual", "mapped_single", ["T1"], {"T1": 2})},
+    ]
+    views = [
+        {"view_id": "v1", "pair_id": "p1", "view_type": "single"},
+        {"view_id": "v2", "pair_id": "p1", "view_type": "contextual"},
+    ]
+    pairs = [{"pair_id": "p1", "single_view": dict(views[0]), "contextual_view": dict(views[1])}]
+    gt = [
+        {"view_id": "v1", "label_status": "mapped", "technique_ids": ["T1"]},
+        {"view_id": "v2", "label_status": "mapped", "technique_ids": ["T1"]},
+    ]
+    return diag, views, pairs, gt
+
+
 class TestProvenanceCrossValidation:
-    """§1.8: Cross-validate provenance artifacts."""
+    """Every mutation starts with a valid join and must fail with an explicit reason."""
 
-    def test_valid_provenance_passes(self) -> None:
-        diag = [
-            {"sample_id": "v1", "pair_id": "p1", "view_type": "single",
-             "ground_truth_technique_ids": ["T1"], "ground_truth_technique_ranks": {"T1": 1}},
-            {"sample_id": "v2", "pair_id": "p1", "view_type": "contextual",
-             "ground_truth_technique_ids": ["T1"], "ground_truth_technique_ranks": {"T1": 2}},
-        ]
-        views = [
-            {"view_id": "v1", "pair_id": "p1", "view_type": "single"},
-            {"view_id": "v2", "pair_id": "p1", "view_type": "contextual"},
-        ]
-        pairs = [{"pair_id": "p1"}]
-        gt = [
-            {"view_id": "v1", "technique_ids": ["T1"]},
-            {"view_id": "v2", "technique_ids": ["T1"]},
-        ]
-        # Should not raise
-        validate_canonical_input_consistency(diag, views, pairs, gt)
+    def test_valid_provenance_passes(self, canonical_inputs) -> None:
+        validate_canonical_input_consistency(*canonical_inputs)
 
-    def test_diagnostic_sample_missing_from_views_raises(self) -> None:
-        diag = [{"sample_id": "v_missing", "pair_id": "p1", "view_type": "single",
-                 "ground_truth_technique_ids": [], "ground_truth_technique_ranks": {}}]
-        views = [{"view_id": "v1", "pair_id": "p1", "view_type": "single"}]
-        pairs = [{"pair_id": "p1"}]
-        gt = [{"view_id": "v1", "technique_ids": []}]
+    def test_diagnostic_sample_missing_from_views_raises(self, canonical_inputs) -> None:
+        canonical_inputs[0][0]["sample_id"] = "v_missing"
         with pytest.raises(ValueError, match="not found in canonical views"):
-            validate_canonical_input_consistency(diag, views, pairs, gt)
+            validate_canonical_input_consistency(*canonical_inputs)
 
-    def test_view_type_mismatch_raises(self) -> None:
-        diag = [{"sample_id": "v1", "pair_id": "p1", "view_type": "contextual",
-                 "ground_truth_technique_ids": [], "ground_truth_technique_ranks": {}}]
-        views = [{"view_id": "v1", "pair_id": "p1", "view_type": "single"}]
-        pairs = [{"pair_id": "p1"}]
-        gt = [{"view_id": "v1", "technique_ids": []}]
+    def test_view_type_mismatch_raises(self, canonical_inputs) -> None:
+        canonical_inputs[0][0]["view_type"] = "contextual"
         with pytest.raises(ValueError, match="View type mismatch"):
-            validate_canonical_input_consistency(diag, views, pairs, gt)
+            validate_canonical_input_consistency(*canonical_inputs)
 
-    def test_pair_id_mismatch_raises(self) -> None:
-        diag = [{"sample_id": "v1", "pair_id": "p_wrong", "view_type": "single",
-                 "ground_truth_technique_ids": [], "ground_truth_technique_ranks": {}}]
-        views = [{"view_id": "v1", "pair_id": "p1", "view_type": "single"}]
-        pairs = [{"pair_id": "p1"}, {"pair_id": "p_wrong"}]
-        gt = [{"view_id": "v1", "technique_ids": []}]
+    def test_pair_id_mismatch_raises(self, canonical_inputs) -> None:
+        canonical_inputs[0][0]["pair_id"] = "p_wrong"
+        canonical_inputs[2].append({"pair_id": "p_wrong"})
         with pytest.raises(ValueError, match="Pair ID mismatch"):
-            validate_canonical_input_consistency(diag, views, pairs, gt)
+            validate_canonical_input_consistency(*canonical_inputs)
 
-    def test_gt_technique_ids_mismatch_raises(self) -> None:
-        diag = [{"sample_id": "v1", "pair_id": "p1", "view_type": "single",
-                 "ground_truth_technique_ids": ["T1", "T2"],
-                 "ground_truth_technique_ranks": {"T1": 1, "T2": 3}}]
-        views = [{"view_id": "v1", "pair_id": "p1", "view_type": "single"}]
-        pairs = [{"pair_id": "p1"}]
-        gt = [{"view_id": "v1", "technique_ids": ["T1"]}]  # Missing T2
+    def test_gt_technique_ids_mismatch_raises(self, canonical_inputs) -> None:
+        canonical_inputs[3][0]["technique_ids"] = ["T2"]
         with pytest.raises(ValueError, match="GT technique IDs mismatch"):
-            validate_canonical_input_consistency(diag, views, pairs, gt)
+            validate_canonical_input_consistency(*canonical_inputs)
 
-    def test_missing_canonical_views_raises(self) -> None:
-        diag = [{"sample_id": "v1", "pair_id": "p1", "view_type": "single",
-                 "ground_truth_technique_ids": [], "ground_truth_technique_ranks": {}}]
-        views = [
-            {"view_id": "v1", "pair_id": "p1", "view_type": "single"},
-            {"view_id": "v2", "pair_id": "p1", "view_type": "contextual"},
-        ]
-        pairs = [{"pair_id": "p1"}]
-        gt = [
-            {"view_id": "v1", "technique_ids": []},
-            {"view_id": "v2", "technique_ids": []},
-        ]
+    def test_missing_canonical_views_raises(self, canonical_inputs) -> None:
+        canonical_inputs[0].pop()
         with pytest.raises(ValueError, match="canonical views missing"):
-            validate_canonical_input_consistency(diag, views, pairs, gt)
+            validate_canonical_input_consistency(*canonical_inputs)
 
-    def test_duplicate_sample_id_raises(self) -> None:
-        diag = [
-            {"sample_id": "v1", "pair_id": "p1", "view_type": "single",
-             "ground_truth_technique_ids": [], "ground_truth_technique_ranks": {}},
-            {"sample_id": "v1", "pair_id": "p1", "view_type": "single",
-             "ground_truth_technique_ids": [], "ground_truth_technique_ranks": {}},
-        ]
-        views = [{"view_id": "v1", "pair_id": "p1", "view_type": "single"}]
-        pairs = [{"pair_id": "p1"}]
-        gt = [{"view_id": "v1", "technique_ids": []}]
-        with pytest.raises(ValueError, match="Duplicate sample_id"):
-            validate_canonical_input_consistency(diag, views, pairs, gt)
+    @pytest.mark.parametrize("index,key", [(0, "sample_id"), (1, "view_id"),
+                                          (2, "pair_id"), (3, "view_id")])
+    def test_duplicate_identifiers_raise(self, canonical_inputs, index, key) -> None:
+        canonical_inputs[index].append(dict(canonical_inputs[index][0]))
+        with pytest.raises(ValueError, match=f"Duplicate {key}"):
+            validate_canonical_input_consistency(*canonical_inputs)
+
+    def test_view_missing_gt_raises(self, canonical_inputs) -> None:
+        canonical_inputs[3].pop()
+        with pytest.raises(ValueError, match=r"missing_GT=\['v2'\]"):
+            validate_canonical_input_consistency(*canonical_inputs)
+
+    def test_extra_gt_raises(self, canonical_inputs) -> None:
+        canonical_inputs[3].append({"view_id": "v_extra", "technique_ids": []})
+        with pytest.raises(ValueError, match=r"unknown_GT=\['v_extra'\]"):
+            validate_canonical_input_consistency(*canonical_inputs)
+
+    @pytest.mark.parametrize("index", [0, 1])
+    def test_unknown_pair_raises(self, canonical_inputs, index) -> None:
+        canonical_inputs[index][0]["pair_id"] = "unknown"
+        with pytest.raises(ValueError, match="not found in canonical pairs"):
+            validate_canonical_input_consistency(*canonical_inputs)
+
+    def test_both_sources_reference_unknown_pair_raises(self, canonical_inputs) -> None:
+        for index in (0, 1):
+            canonical_inputs[index][0]["pair_id"] = "unknown"
+        with pytest.raises(ValueError, match="not found in canonical pairs"):
+            validate_canonical_input_consistency(*canonical_inputs)
+
+    def test_pair_missing_contextual_view_raises(self, canonical_inputs) -> None:
+        for index in (0, 1, 3):
+            canonical_inputs[index].pop()
+        with pytest.raises(ValueError, match="exactly one single and one contextual"):
+            validate_canonical_input_consistency(*canonical_inputs)
+
+    def test_pair_without_views_raises(self, canonical_inputs) -> None:
+        canonical_inputs[2].append({"pair_id": "orphan"})
+        with pytest.raises(ValueError, match="exactly one single and one contextual"):
+            validate_canonical_input_consistency(*canonical_inputs)
+
+    def test_duplicate_pair_view_type_raises(self, canonical_inputs) -> None:
+        for index in (0, 1):
+            canonical_inputs[index][1]["view_type"] = "single"
+        with pytest.raises(ValueError, match="Duplicate view_type"):
+            validate_canonical_input_consistency(*canonical_inputs)
+
+    @pytest.mark.parametrize("field,value", [
+        ("view_id", "v2"), ("pair_id", "unknown"), ("view_type", "contextual"),
+    ])
+    def test_embedded_view_linkage_mismatch_raises(self, canonical_inputs, field, value) -> None:
+        canonical_inputs[2][0]["single_view"][field] = value
+        with pytest.raises(ValueError, match="single_view linkage mismatch"):
+            validate_canonical_input_consistency(*canonical_inputs)
+
+    def test_missing_embedded_view_raises(self, canonical_inputs) -> None:
+        del canonical_inputs[2][0]["contextual_view"]
+        with pytest.raises(ValueError, match="missing or invalid contextual_view"):
+            validate_canonical_input_consistency(*canonical_inputs)
+
+    def test_gt_status_mismatch_raises(self, canonical_inputs) -> None:
+        canonical_inputs[3][0]["label_status"] = "ambiguous"
+        with pytest.raises(ValueError, match="GT label_status/category mismatch"):
+            validate_canonical_input_consistency(*canonical_inputs)
+
+    @pytest.mark.parametrize("index,key", [(0, "sample_id"), (1, "view_id"),
+                                          (2, "pair_id"), (3, "view_id")])
+    @pytest.mark.parametrize("value", [None, "", [], 1])
+    def test_malformed_identifiers_raise(self, canonical_inputs, index, key, value) -> None:
+        canonical_inputs[index][0][key] = value
+        with pytest.raises(ValueError, match=f"invalid or missing {key}"):
+            validate_canonical_input_consistency(*canonical_inputs)
+
+    def test_partial_provenance_must_not_bypass_validation(self, canonical_inputs) -> None:
+        with pytest.raises(ValueError, match="requires views, pairs and ground_truth together"):
+            build_failure_analysis_summary(
+                canonical_inputs[0], {}, {}, views_rows=canonical_inputs[1]
+            )
+
+
+@pytest.mark.parametrize("view_type", ["single", "contextual"])
+@pytest.mark.parametrize("category,ids", [
+    ("mapped_single", []), ("mapped_single", ["T1", "T2"]),
+    ("mapped_multi", []), ("mapped_multi", ["T1"]),
+    ("unmapped", ["T1"]), ("ambiguous", ["T1"]), ("ambiguous", ["T1", "T2"]),
+])
+def test_category_gt_inconsistency_raises_before_exclusion(view_type, category, ids) -> None:
+    # The other view has no GT, so eligibility must never hide this corruption.
+    other_type = "contextual" if view_type == "single" else "single"
+    rows = [
+        _make_row("p1", other_type, "unmapped", [], {}),
+        _make_row("p1", view_type, category, ids, dict.fromkeys(ids, None)),
+    ]
+    with pytest.raises(ValueError, match="Category/GT count inconsistency"):
+        analyze_single_vs_contextual_pairs(rows)
+
+
+@pytest.mark.parametrize("category,ids,eligible", [
+    ("mapped_single", ["T1"], 1), ("mapped_multi", ["T1", "T2"], 0),
+    ("unmapped", [], 0), ("ambiguous", [], 0),
+])
+def test_valid_category_gt_contract(category, ids, eligible) -> None:
+    rows = [_make_row("p1", kind, category, ids, dict.fromkeys(ids, None))
+            for kind in ("single", "contextual")]
+    result = analyze_single_vs_contextual_pairs(rows)
+    assert result["eligible_pairs"] == eligible
+    assert result["excluded_pairs"] == 1 - eligible
+    assert result["both_absent_top10"] == eligible
+
+
+@pytest.mark.parametrize("ids,ranks", [
+    (["T1"], {}), (["T1"], {"T1": 3, "T2": 1}),
+    (["T1", "T2"], {"T1": 2}), ([], {"T1": None}),
+])
+@pytest.mark.parametrize("view_type", ["single", "contextual"])
+def test_rank_keys_must_exactly_equal_gt_ids(ids, ranks, view_type) -> None:
+    category = "unmapped" if not ids else "mapped_single" if len(ids) == 1 else "mapped_multi"
+    row = _make_row("p1", view_type, category, ids, ranks)
+    with pytest.raises(ValueError, match="GT/rank keys integrity violation"):
+        analyze_single_vs_contextual_pairs([row])
+
+
+@pytest.mark.parametrize("rank", [0, -1, 11, True, False, "3", 3.0])
+@pytest.mark.parametrize("excluded", [False, True])
+def test_non_anchor_rank_validation_before_eligibility(rank, excluded) -> None:
+    single = (_make_row("p1", "single", "unmapped", [], {}) if excluded else
+              _make_row("p1", "single", "mapped_single", ["T1"], {"T1": 3}))
+    contextual = _make_row("p1", "contextual", "mapped_multi", ["T1", "T2"],
+                           {"T1": 2, "T2": rank})
+    with pytest.raises(ValueError, match="Rank"):
+        analyze_single_vs_contextual_pairs([single, contextual])
+
+
+@pytest.mark.parametrize("field,value,match", [
+    ("ground_truth_technique_ids", None, "must be a list"),
+    ("ground_truth_technique_ids", "T1", "must be a list"),
+    ("ground_truth_technique_ids", [None], "must be a list"),
+    ("ground_truth_technique_ids", [["T1"]], "must be a list"),
+    ("ground_truth_technique_ids", ["T1", "T1"], "duplicate technique IDs"),
+    ("ground_truth_technique_ranks", None, "must be a mapping"),
+    ("ground_truth_technique_ranks", [], "must be a mapping"),
+    ("category", None, "invalid category"),
+    ("category", "unknown", "invalid category"),
+    ("pair_id", None, "invalid pair_id"),
+    ("view_type", "unknown", "invalid view_type"),
+])
+def test_malformed_diagnostic_schema_raises(field, value, match) -> None:
+    row = _make_row("p1", "single", "mapped_single", ["T1"], {"T1": 3})
+    row[field] = value
+    with pytest.raises(ValueError, match=match):
+        analyze_single_vs_contextual_pairs([row])

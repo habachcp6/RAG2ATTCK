@@ -82,7 +82,11 @@ the immutable manifest, every record, journal sequence, sample-condition key and
 persisted request spending. Schema-valid terminal failures are skipped exactly
 like successful records. An incomplete journal, interrupted request, truncated
 row, duplicate, provenance mismatch, foreign file or stale lock fails closed.
-There is no automatic repair, silent overwrite, budget reset or `--force` bypass.
+Prediction records and the request journal are never automatically repaired or
+silently overwritten. A fully completed resume rebuilds only the derived summary
+from validated records/journal, without dispatch. There is no budget reset or
+`--force` bypass. Saved candidates must belong to the captured corpus and registry,
+even if a modified record has a newly computed journal checksum.
 
 An ambiguous interrupted request requires explicit human reconciliation; this
 implementation does not claim exactly-once network execution. The budget counts
@@ -99,8 +103,13 @@ byte/hash binding, resume across terminal failures, interrupted dispatch,
 locking, corruption rejection and the canonical 1,280-view dry-run. Scientific
 inference and evaluator execution remain unavailable.
 
-Local targeted validation: 127 passed across experiment, RAG, live-budget,
-baseline and LLM-client tests, with `OFFLINE_GUARD: attempted_egress=0`.
+Local verification of implementation commit `07bd81a`: **52 experiment tests**,
+**605 non-integration tests** and **4 real-retrieval integration tests** passed,
+with `OFFLINE_GUARD: installed=True attempted_egress=0`. Frozen verification
+reported `passed=true` and zero artifact/reproducibility hash mismatches; lockfile
+and installed-dependency checks also passed. These are infrastructure checks,
+not scientific results. The candidate-corruption and stale-summary regressions
+were observed failing before their implementation repair.
 Scoped Ruff passes for the new package and tests. The two minimally extended
 legacy pipeline files retain their existing 12/22 Ruff findings; comparison with
 base `cdb19719a179dd43c868a39ca158a662ad3a0eb9` found zero introduced findings.

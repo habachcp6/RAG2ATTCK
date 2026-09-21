@@ -136,6 +136,9 @@ jobs:
       - name: Acquire ATT&CK v19.2 reference
         run: uv run python -c "from pathlib import Path; from src.attack_loader import download_attack_reference; download_attack_reference(Path('.'))"
 
+      - name: Lint T20 critical code paths
+        run: uv run ruff check scripts/analyze_retrieval_failures.py tests/test_retrieval_failure_analysis.py
+
       - name: Run Full Test Suite
         run: uv run pytest -m "not integration" -q
 

@@ -1,5 +1,5 @@
 {
-  "analysis_version": "1.0.0",
+  "analysis_version": "1.1.0",
   "overall_positive": {
     "evaluated_positive_samples": 756,
     "gt_absent_from_top10_count": 415,
@@ -8,7 +8,10 @@
     "hit_rate_at_10": 0.45105820105820105,
     "hit_rate_at_3": 0.167989417989418,
     "hit_rate_at_5": 0.24206349206349206,
+    "macro_recall_at_1": 0.03461199294532628,
     "macro_recall_at_10": 0.4314373897707231,
+    "macro_recall_at_3": 0.15895061728395063,
+    "macro_recall_at_5": 0.2312610229276896,
     "mean_ground_truth_rank_when_retrieved": 5.205278592375366,
     "median_ground_truth_rank_when_retrieved": 5
   },
@@ -111,7 +114,7 @@
     }
   },
   "provenance": {
-    "analysis_version": "1.0.0",
+    "analysis_version": "1.1.0",
     "diagnostics_sha256": "a78377b66db09f23088fc4da73570b06d69c2413a67ad5c789e9808953c24777",
     "ground_truth_sha256": "8f3d73bac7e81336a3e90bfa5a5d0850a51ac5588385ee53ad940bcbc3612608",
     "metrics_sha256": "3e40e18f0d8c430b2f27aa4415f7b2df4b0f45289576be21f34c36dc8d3683be",
@@ -119,20 +122,28 @@
     "views_sha256": "1e6b0d3bd525b8fe9f97ba9e5656905597a3939e47c130a9e6f74535e2cd421d"
   },
   "single_vs_contextual": {
-    "both_absent": 130,
-    "both_absent_rate": 0.4391891891891892,
-    "both_absent_top10": 130,
-    "both_absent_top10_rate": 0.4391891891891892,
+    "anchor_rule": "Use single-event view's single GT technique as anchor. Compare anchor technique rank in both views. comparison_rank = rank if rank is not None else 11.",
+    "both_absent": 147,
+    "both_absent_rate": 0.4966216216216216,
+    "both_absent_top10": 147,
+    "both_absent_top10_rate": 0.4966216216216216,
+    "candidate_pairs": 670,
     "comparable_pairs": 296,
+    "comparison_mode": "same_technique_anchor",
     "comparison_rule": "comparison_rank = rank if rank is not None else 11",
-    "contextual_better": 52,
-    "contextual_better_rate": 0.17567567567567569,
-    "equal": 183,
-    "equal_rate": 0.6182432432432432,
-    "single_better": 61,
-    "single_better_rate": 0.20608108108108109,
-    "top10_equal": 53,
-    "top10_equal_rate": 0.17905405405405406
+    "contextual_better": 23,
+    "contextual_better_rate": 0.0777027027027027,
+    "eligible_pairs": 296,
+    "equal": 208,
+    "equal_rate": 0.7027027027027027,
+    "excluded_pairs": 374,
+    "excluded_reasons": {
+      "single_not_mapped_single": 374
+    },
+    "single_better": 65,
+    "single_better_rate": 0.2195945945945946,
+    "top10_equal": 61,
+    "top10_equal_rate": 0.20608108108108109
   },
   "t1105_hard_negatives": {
     "evaluated_positive_views": 114,

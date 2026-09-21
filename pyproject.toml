@@ -36,3 +36,10 @@ markers = [
 dev = [
     "ruff>=0.16.8",
 ]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]

@@ -20,6 +20,20 @@ as omitted parameters, not invented numeric settings. Raw response storage
 remains disabled. Ground-truth semantics and evaluator definitions are human
 decisions; the runner does not silently filter multi-label or negative views.
 
+### Unresolved raw-response policy
+
+Both the candidate manifest and dry-run report explicitly list
+`raw_response_logging_policy: HUMAN_DECISION_REQUIRED`. The repository's tracker
+snapshot (Roadmap, T22, cell F24) requests raw-response caching, while the inherited
+model/experiment policy disables persistence. These requirements need human
+reconciliation before scientific freeze. This change does not select a logging
+policy or edit the tracker: `logging.raw_response=false`, record `raw_response=null`
+and `raw_response_logged=false` remain unchanged.
+
+The dry-run report also exposes `live_execution_implemented=false`
+(`LIVE_EXECUTION_IMPLEMENTED=NO`). Filling other configuration placeholders does
+not resolve the raw-response decision, permit live execution, or freeze T21.
+
 Run the public, non-executing command:
 
 ```powershell

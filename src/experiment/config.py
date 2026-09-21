@@ -89,6 +89,7 @@ class ValidatedPlan:
             "status": "HUMAN_DECISION_REQUIRED",
             "infrastructure_validation": "PASS",
             "scientific_status": "NOT_FROZEN",
+            "live_execution_implemented": False,
             "experiment_id": self.manifest["experiment_id"],
             "sample_count": len(self.samples),
             "condition_count": len(CONDITIONS),
@@ -380,6 +381,12 @@ def load_plan(config_path: Path | str, *, root: Path | str | None = None) -> Val
         "T20 human merge and exact-main CI closure required",
         "T21 scientific freeze and provider/API authorization required",
         "Canonical evaluator definitions require human decision",
+        (
+            "raw_response_logging_policy: HUMAN_DECISION_REQUIRED. "
+            "Roadmap T22 requires raw-response caching, while the inherited "
+            "model/experiment policy disables persistence. Human reconciliation "
+            "is required before T21 scientific freeze."
+        ),
     ]
     if config.generation.model_version is None:
         human.append("Exact provider model version requires human freeze")

@@ -17,12 +17,19 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
+import re
 import sys
 from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from statistics import mean, median
 from typing import Any
+
+# Support both module imports and direct execution of this script.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from src.llm.schemas import validate_attack_id_syntax
 
 ANALYSIS_VERSION = "1.1.0"
 SUPPORTED_K = (1, 3, 5, 10)
@@ -48,6 +55,26 @@ def compute_file_sha256(path: Path | str) -> str:
     return hasher.hexdigest()
 
 
+def validate_diagnostics_artifact_hash(
+    path: Path | str, canonical_metrics: Mapping[str, Any],
+) -> str:
+    """Bind the diagnostics bytes to the fingerprint stored by the producer."""
+    if not isinstance(canonical_metrics, Mapping):
+        raise ValueError("Canonical metrics must contain diagnostic_jsonl_sha256")
+    expected = canonical_metrics.get("diagnostic_jsonl_sha256")
+    if not isinstance(expected, str) or re.fullmatch(r"[0-9a-fA-F]{64}", expected) is None:
+        raise ValueError(
+            "Canonical diagnostic_jsonl_sha256 must be a 64-character SHA-256 hex hash"
+        )
+    actual = compute_file_sha256(path)
+    if actual != expected.lower():
+        raise ValueError(
+            f"Diagnostics hash mismatch for {path}: "
+            f"actual SHA-256={actual}, canonical diagnostic_jsonl_sha256={expected}"
+        )
+    return actual
+
+
 def load_json(path: Path | str) -> Any:
     """Load and parse a JSON file."""
     target = Path(path)
@@ -57,26 +84,31 @@ def load_json(path: Path | str) -> Any:
         return json.load(handle)
 
 
-def load_jsonl(path: Path | str) -> list[dict[str, Any]]:
+def load_jsonl(
+    path: Path | str, *, expected_sha256: str | None = None,
+) -> list[dict[str, Any]]:
     """Load and validate records from a JSONL file."""
     target = Path(path)
     if not target.is_file():
         raise FileNotFoundError(f"File not found: {target}")
+    # Parse exactly the bytes whose fingerprint is checked, closing a hash/read race.
+    snapshot = target.read_bytes()
+    if expected_sha256 is not None and hashlib.sha256(snapshot).hexdigest() != expected_sha256:
+        raise ValueError(f"Diagnostics hash mismatch while loading {target}")
     records: list[dict[str, Any]] = []
-    with target.open("r", encoding="utf-8") as handle:
-        for line_number, line in enumerate(handle, start=1):
-            stripped = line.strip()
-            if not stripped:
-                continue
-            try:
-                obj = json.loads(stripped)
-            except json.JSONDecodeError as err:
-                raise ValueError(f"{target}:{line_number}: Invalid JSON: {err}") from err
-            if not isinstance(obj, dict):
-                raise TypeError(
-                    f"{target}:{line_number}: Expected JSON object, got {type(obj).__name__}"
-                )
-            records.append(obj)
+    for line_number, line in enumerate(snapshot.decode("utf-8").splitlines(), start=1):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        try:
+            obj = json.loads(stripped)
+        except json.JSONDecodeError as err:
+            raise ValueError(f"{target}:{line_number}: Invalid JSON: {err}") from err
+        if not isinstance(obj, dict):
+            raise TypeError(
+                f"{target}:{line_number}: Expected JSON object, got {type(obj).__name__}"
+            )
+        records.append(obj)
     return records
 
 
@@ -131,6 +163,8 @@ def _validate_technique_ids(value: Any, context: str) -> list[str]:
         raise ValueError(f"{context}: technique IDs must be a list of nonempty strings")
     if len(value) != len(set(value)):
         raise ValueError(f"{context}: duplicate technique IDs")
+    if any(not validate_attack_id_syntax(tid) for tid in value):
+        raise ValueError(f"{context}: invalid ATT&CK technique ID syntax")
     return value
 
 
@@ -168,6 +202,76 @@ def validate_diagnostic_ground_truth(row: Mapping[str, Any]) -> None:
         validate_rank_value(rank, field_context=f"{context}/{tid}")
 
 
+def validate_diagnostic_record(row: Mapping[str, Any]) -> None:
+    """Validate stored rankings against the canonical diagnostic producer contract.
+
+    _candidate_dict emits rank, technique_id and score with ranks in list order
+    1..N. The canonical corpus has one document per technique. Empty and short
+    rankings are legal; zero-GT rows may have candidates but have null hit flags.
+    """
+    if not isinstance(row, Mapping):
+        raise ValueError("Diagnostic record must be a mapping")
+    validate_diagnostic_ground_truth(row)
+    context = f"Sample {row.get('sample_id')!r}, pair {row.get('pair_id')!r}"
+    candidates = row.get("retrieved_candidates")
+    if not isinstance(candidates, list):
+        raise ValueError(f"{context}: retrieved_candidates must be a list")
+    candidate_ranks: dict[str, int] = {}
+    seen_ranks: set[int] = set()
+    for position, candidate in enumerate(candidates, start=1):
+        if not isinstance(candidate, Mapping):
+            raise ValueError(f"{context}: candidate {position} must be a mapping")
+        rank = validate_rank_value(candidate.get("rank"), f"{context}/candidate {position}")
+        if rank is None:
+            raise ValueError(f"{context}: candidate rank must be an integer, not None")
+        if rank in seen_ranks:
+            raise ValueError(f"{context}: duplicate candidate rank {rank}")
+        if rank != position:
+            raise ValueError(f"{context}: candidate ranks must be contiguous in list order from 1")
+        seen_ranks.add(rank)
+        tid = candidate.get("technique_id")
+        if not isinstance(tid, str) or not validate_attack_id_syntax(tid):
+            raise ValueError(f"{context}: invalid candidate technique_id {tid!r}")
+        if tid in candidate_ranks:
+            raise ValueError(f"{context}: duplicate candidate technique_id {tid!r}")
+        score = candidate.get("score")
+        if (
+            isinstance(score, bool)
+            or not isinstance(score, (int, float))
+            or (isinstance(score, float) and not math.isfinite(score))
+        ):
+            raise ValueError(f"{context}: candidate score must be a finite int or float")
+        candidate_ranks[tid] = rank
+
+    ranks = row["ground_truth_technique_ranks"]
+    for tid, rank in ranks.items():
+        if rank != candidate_ranks.get(tid):
+            raise ValueError(
+                f"{context}: GT rank/candidate inconsistency for {tid}: "
+                f"ground_truth_technique_ranks={rank!r}, "
+                f"candidate rank={candidate_ranks.get(tid)!r}"
+            )
+    best_rank = min((rank for rank in ranks.values() if rank is not None), default=None)
+    if "ground_truth_best_rank" not in row:
+        raise ValueError(f"{context}: missing ground_truth_best_rank")
+    cached_best = validate_rank_value(row["ground_truth_best_rank"], context)
+    if cached_best != best_rank:
+        raise ValueError(
+            f"{context}: ground_truth_best_rank inconsistent: "
+            f"stored={cached_best!r}, computed={best_rank!r}"
+        )
+    for k in SUPPORTED_K:
+        field = f"hit_at_{k}"
+        expected = compute_top_k_hits(best_rank, k) if ranks else None
+        if field not in row or row[field] is not expected:
+            raise ValueError(f"{context}: {field} inconsistent: expected {expected!r}")
+
+
+def _validate_diagnostic_rows(diagnostics_rows: Sequence[Mapping[str, Any]]) -> None:
+    for row in diagnostics_rows:
+        validate_diagnostic_record(row)
+
+
 def _get_technique_rank(record: Mapping[str, Any], technique_id: str) -> int | None:
     """Extract and validate rank for a specific technique from record ground-truth ranks."""
     ranks = record.get("ground_truth_technique_ranks")
@@ -185,6 +289,7 @@ def recompute_per_technique_metrics(
     diagnostics_rows: Sequence[Mapping[str, Any]],
 ) -> dict[str, dict[str, Any]]:
     """Recompute per-technique retrieval metrics for all mapped techniques."""
+    _validate_diagnostic_rows(diagnostics_rows)
     positive_rows = [r for r in diagnostics_rows if r.get("ground_truth_technique_ids")]
     technique_ids = sorted({
         tid for r in positive_rows for tid in r.get("ground_truth_technique_ids", ())
@@ -230,6 +335,7 @@ def recompute_overall_positive_metrics(
     diagnostics_rows: Sequence[Mapping[str, Any]],
 ) -> dict[str, Any]:
     """Recompute overall aggregate retrieval metrics across all positive samples."""
+    _validate_diagnostic_rows(diagnostics_rows)
     positive_rows = [r for r in diagnostics_rows if r.get("ground_truth_technique_ids")]
     n_pos = len(positive_rows)
     if n_pos == 0:
@@ -489,7 +595,7 @@ def analyze_single_vs_contextual_pairs(
     """
     pairs_map: dict[str, dict[str, Mapping[str, Any]]] = defaultdict(dict)
     for row in diagnostics_rows:
-        validate_diagnostic_ground_truth(row)
+        validate_diagnostic_record(row)
         pair_id = row.get("pair_id")
         view_type = row.get("view_type")
         if not isinstance(pair_id, str) or not pair_id.strip():
@@ -597,6 +703,7 @@ def analyze_t1105_hard_negatives(
 
     Deterministic sorting: count DESC, technique_id ASC.
     """
+    _validate_diagnostic_rows(diagnostics_rows)
     t1105_views = [
         r
         for r in diagnostics_rows
@@ -646,6 +753,7 @@ def analyze_t1136_001_failure(
     The median rank is dynamically calculated from retrieved (rank <= 10) samples.
     If no samples are retrieved in Top-10, median is None.
     """
+    _validate_diagnostic_rows(diagnostics_rows)
     t1136_views = [
         r
         for r in diagnostics_rows
@@ -676,6 +784,7 @@ def inspect_sample(
     sample_id: str,
 ) -> dict[str, Any]:
     """Retrieve structured diagnostic data for a specific sample ID."""
+    _validate_diagnostic_rows(diagnostics_rows)
     for row in diagnostics_rows:
         if row.get("sample_id") == sample_id:
             return {
@@ -698,6 +807,7 @@ def inspect_sample(
 
 def format_sample_inspection(data: Mapping[str, Any]) -> str:
     """Format sample inspection result as human-readable text."""
+    validate_diagnostic_record(data)
     lines = [
         f"Sample ID: {data.get('sample_id')}",
         f"Pair ID: {data.get('pair_id')}",
@@ -778,7 +888,7 @@ def validate_canonical_input_consistency(
     views_by_pair: dict[str, dict[str, str]] = defaultdict(dict)
     for sid, canon_view in view_by_id.items():
         row = diag_by_id[sid]
-        validate_diagnostic_ground_truth(row)
+        validate_diagnostic_record(row)
         diag_vtype = row.get("view_type")
         canon_vtype = canon_view.get("view_type")
         if diag_vtype != canon_vtype:
@@ -844,7 +954,7 @@ def build_failure_analysis_summary(
     if any(source is not None for source in sources) and any(source is None for source in sources):
         raise ValueError("Canonical provenance requires views, pairs and ground_truth together")
     for row in diagnostics_rows:
-        validate_diagnostic_ground_truth(row)
+        validate_diagnostic_record(row)
     if views_rows is not None and pairs_rows is not None and ground_truth_rows is not None:
         validate_canonical_input_consistency(
             diagnostics_rows, views_rows, pairs_rows, ground_truth_rows
@@ -946,7 +1056,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     """CLI execution entrypoint."""
     args = parse_args(argv)
 
-    diagnostics_rows = load_jsonl(args.diagnostics)
+    canonical_metrics = load_json(args.metrics)
+    diagnostics_sha256 = validate_diagnostics_artifact_hash(args.diagnostics, canonical_metrics)
+    diagnostics_rows = load_jsonl(args.diagnostics, expected_sha256=diagnostics_sha256)
 
     if args.sample:
         try:
@@ -960,14 +1072,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(format_sample_inspection(data))
         return 0
 
-    canonical_metrics = load_json(args.metrics)
-
     views_rows = load_jsonl(args.views)
     pairs_rows = load_jsonl(args.pairs)
     ground_truth_rows = load_jsonl(args.ground_truth)
 
     provenance_hashes = {
-        "diagnostics_sha256": compute_file_sha256(args.diagnostics),
+        "diagnostics_sha256": diagnostics_sha256,
         "ground_truth_sha256": compute_file_sha256(args.ground_truth),
         "metrics_sha256": compute_file_sha256(args.metrics),
         "pairs_sha256": compute_file_sha256(args.pairs),

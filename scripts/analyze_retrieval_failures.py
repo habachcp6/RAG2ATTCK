@@ -26,6 +26,8 @@ from typing import Any
 
 ANALYSIS_VERSION = "1.1.0"
 SUPPORTED_K = (1, 3, 5, 10)
+MAX_RETRIEVAL_K = max(SUPPORTED_K)
+ABSENT_COMPARISON_RANK = MAX_RETRIEVAL_K + 1
 DEFAULT_DIAGNOSTICS_PATH = "artifacts/retrieval/retrieval_diagnostics.jsonl"
 DEFAULT_METRICS_PATH = "artifacts/retrieval/retrieval_metrics.json"
 DEFAULT_VIEWS_PATH = "data/ground_truth/synthetic/views.jsonl"
@@ -83,21 +85,54 @@ def compute_top_k_hits(rank: int | None, k: int) -> bool:
     return rank is not None and rank <= k
 
 
-def resolve_comparison_rank(rank: int | None, default_absent: int = 11) -> int:
+def resolve_comparison_rank(rank: int | None, default_absent: int = ABSENT_COMPARISON_RANK) -> int:
     """Defined absent rank rule: comparison_rank = rank if rank is not None else 11."""
     return rank if rank is not None else default_absent
 
 
+def validate_rank_value(value: Any, field_context: str = "") -> int | None:
+    """Validate a ground-truth rank value from canonical Top-10 diagnostics.
+
+    Valid values:
+    - None (technique not retrieved in Top-k)
+    - int in range [1, MAX_RETRIEVAL_K]
+
+    Rejects: bool, zero, negative, float, string, rank > MAX_RETRIEVAL_K.
+    """
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        raise ValueError(
+            f"Rank must be int or None, got bool: {value!r}"
+            f"{f' ({field_context})' if field_context else ''}"
+        )
+    if not isinstance(value, int):
+        raise ValueError(
+            f"Rank must be int or None, got {type(value).__name__}: {value!r}"
+            f"{f' ({field_context})' if field_context else ''}"
+        )
+    if value < 1:
+        raise ValueError(
+            f"Rank must be >= 1, got {value}{f' ({field_context})' if field_context else ''}"
+        )
+    if value > MAX_RETRIEVAL_K:
+        raise ValueError(
+            f"Rank {value} exceeds MAX_RETRIEVAL_K={MAX_RETRIEVAL_K}"
+            f"{f' ({field_context})' if field_context else ''}"
+        )
+    return value
+
+
 def _get_technique_rank(record: Mapping[str, Any], technique_id: str) -> int | None:
-    """Extract rank for a specific technique from record ground-truth ranks or candidates."""
+    """Extract and validate rank for a specific technique from record ground-truth ranks."""
     ranks = record.get("ground_truth_technique_ranks")
     if isinstance(ranks, Mapping) and technique_id in ranks:
         val = ranks[technique_id]
-        return int(val) if isinstance(val, int) else None
+        return validate_rank_value(val, field_context=f"technique={technique_id}")
     for cand in record.get("retrieved_candidates", ()):
         if cand.get("technique_id") == technique_id:
             val = cand.get("rank")
-            return int(val) if isinstance(val, int) else None
+            return validate_rank_value(val, field_context=f"candidate technique={technique_id}")
     return None
 
 
@@ -169,7 +204,26 @@ def recompute_overall_positive_metrics(
             "median_ground_truth_rank_when_retrieved": None,
         }
 
-    best_ranks = [r.get("ground_truth_best_rank") for r in positive_rows]
+    # Recompute best rank from technique rank mapping rather than trusting cached field
+    best_ranks: list[int | None] = []
+    for r in positive_rows:
+        gt_rank_map = r.get("ground_truth_technique_ranks", {})
+        valid_ranks = [
+            validate_rank_value(v, field_context=f"sample={r.get('sample_id')}/{tid}")
+            for tid, v in gt_rank_map.items()
+            if v is not None
+        ]
+        recomputed_best = min(valid_ranks) if valid_ranks else None
+
+        # Cross-check against cached field
+        cached_best = r.get("ground_truth_best_rank")
+        if recomputed_best != cached_best:
+            raise ValueError(
+                f"Sample {r.get('sample_id')}: recomputed best_rank={recomputed_best} "
+                f"!= cached ground_truth_best_rank={cached_best}. "
+                f"Cached field is inconsistent with technique rank mapping."
+            )
+        best_ranks.append(recomputed_best)
     retrieved_ranks = [r for r in best_ranks if r is not None]
 
     hit_1 = sum(1 for r in best_ranks if r is not None and r <= 1)
@@ -207,8 +261,12 @@ def recompute_overall_positive_metrics(
         "macro_recall_at_3": _macro_recall_at_k(3),
         "macro_recall_at_5": _macro_recall_at_k(5),
         "macro_recall_at_10": _macro_recall_at_k(10),
-        "mean_ground_truth_rank_when_retrieved": mean(retrieved_ranks) if retrieved_ranks else None,
-        "median_ground_truth_rank_when_retrieved": median(retrieved_ranks) if retrieved_ranks else None,
+        "mean_ground_truth_rank_when_retrieved": (
+            mean(retrieved_ranks) if retrieved_ranks else None
+        ),
+        "median_ground_truth_rank_when_retrieved": (
+            median(retrieved_ranks) if retrieved_ranks else None
+        ),
     }
 
 
@@ -250,7 +308,8 @@ def verify_canonical_metric_consistency(
             r_val = recomputed.get(field)
             if c_val != r_val:
                 raise ValueError(
-                    f"Technique {tid} metric mismatch on {field}: recomputed={r_val} != canonical={c_val}"
+                    f"Technique {tid} metric mismatch on {field}: "
+                    f"recomputed={r_val} != canonical={c_val}"
                 )
 
         # Rate checks (tolerance)
@@ -267,11 +326,13 @@ def verify_canonical_metric_consistency(
             if c_val is None or r_val is None:
                 if c_val != r_val:
                     raise ValueError(
-                        f"Technique {tid} rate mismatch on {field}: recomputed={r_val} != canonical={c_val}"
+                        f"Technique {tid} rate mismatch on {field}: "
+                        f"recomputed={r_val} != canonical={c_val}"
                     )
             elif abs(float(r_val) - float(c_val)) > tolerance:
                 raise ValueError(
-                    f"Technique {tid} rate mismatch on {field}: recomputed={r_val} != canonical={c_val}"
+                    f"Technique {tid} rate mismatch on {field}: "
+                    f"recomputed={r_val} != canonical={c_val}"
                 )
 
         # Median rank check
@@ -285,6 +346,19 @@ def verify_canonical_metric_consistency(
         elif abs(float(r_med) - float(c_med)) > tolerance:
             raise ValueError(
                 f"Technique {tid} median rank mismatch: recomputed={r_med} != canonical={c_med}"
+            )
+
+        # Mean rank check
+        c_mean = canon.get("mean_ground_truth_rank_when_retrieved")
+        r_mean = recomputed.get("mean_ground_truth_rank_when_retrieved")
+        if c_mean is None or r_mean is None:
+            if c_mean != r_mean:
+                raise ValueError(
+                    f"Technique {tid} mean rank mismatch: recomputed={r_mean} != canonical={c_mean}"
+                )
+        elif abs(float(r_mean) - float(c_mean)) > tolerance:
+            raise ValueError(
+                f"Technique {tid} mean rank mismatch: recomputed={r_mean} != canonical={c_mean}"
             )
 
 
@@ -373,6 +447,11 @@ def analyze_single_vs_contextual_pairs(
         pair_id = row.get("pair_id")
         view_type = row.get("view_type")
         if pair_id and view_type:
+            if view_type in pairs_map[pair_id]:
+                raise ValueError(
+                    f"Duplicate (pair_id={pair_id!r}, view_type={view_type!r}) detected. "
+                    f"Each pair must have at most one row per view type."
+                )
             pairs_map[pair_id][view_type] = row
 
     candidate_pair_ids = sorted(
@@ -401,16 +480,26 @@ def analyze_single_vs_contextual_pairs(
             excluded_reasons["single_not_mapped_single"] += 1
             continue
 
+        # Validate category consistency: mapped_single must have exactly 1 GT ID
+        s_category = s_view.get("category", "")
+        if s_category == "mapped_single" and len(s_gt_ids) != 1:
+            raise ValueError(
+                f"Pair {pid}: category='mapped_single' but len(gt_ids)={len(s_gt_ids)}. "
+                f"Category/GT count inconsistency."
+            )
+
         anchor = s_gt_ids[0]
 
         s_ranks = s_view.get("ground_truth_technique_ranks", {})
         c_ranks = c_view.get("ground_truth_technique_ranks", {})
 
-        # Anchor must exist in single view's rank mapping
+        # Anchor MUST exist in single view's rank mapping — integrity violation if missing
         if anchor not in s_ranks:
-            excluded += 1
-            excluded_reasons["anchor_missing_from_single_ranks"] += 1
-            continue
+            raise ValueError(
+                f"Pair {pid}: anchor technique {anchor!r} is in single view's GT IDs "
+                f"but missing from its ground_truth_technique_ranks. "
+                f"This is an artifact integrity violation, not a methodological exclusion."
+            )
 
         # Anchor must exist in contextual view's rank mapping (fail closed, no substitution)
         if anchor not in c_ranks:
@@ -418,8 +507,12 @@ def analyze_single_vs_contextual_pairs(
             excluded_reasons["anchor_missing_from_contextual_ranks"] += 1
             continue
 
-        s_rank = s_ranks[anchor]
-        c_rank = c_ranks[anchor]
+        s_rank = validate_rank_value(
+            s_ranks[anchor], field_context=f"pair={pid}/single/{anchor}"
+        )
+        c_rank = validate_rank_value(
+            c_ranks[anchor], field_context=f"pair={pid}/contextual/{anchor}"
+        )
 
         s_comp = resolve_comparison_rank(s_rank)
         c_comp = resolve_comparison_rank(c_rank)
@@ -430,7 +523,7 @@ def analyze_single_vs_contextual_pairs(
             contextual_better += 1
         else:
             equal += 1
-            if s_comp > 10 and c_comp > 10:
+            if s_comp > MAX_RETRIEVAL_K and c_comp > MAX_RETRIEVAL_K:
                 both_absent_top10 += 1
 
     eligible = n_candidates - excluded
@@ -581,7 +674,8 @@ def format_sample_inspection(data: Mapping[str, Any]) -> str:
         f"Ground-Truth IDs: {data.get('ground_truth_technique_ids')}",
         f"Ground-Truth Technique Ranks: {data.get('ground_truth_technique_ranks')}",
         f"Ground-Truth Best Rank: {data.get('ground_truth_best_rank')}",
-        f"Hits: Hit@1={data.get('hit_at_1')}, Hit@3={data.get('hit_at_3')}, Hit@5={data.get('hit_at_5')}, Hit@10={data.get('hit_at_10')}",
+        f"Hits: Hit@1={data.get('hit_at_1')}, Hit@3={data.get('hit_at_3')}, "
+        f"Hit@5={data.get('hit_at_5')}, Hit@10={data.get('hit_at_10')}",
         "Top Candidates Retrieved:",
     ]
     candidates = data.get("retrieved_candidates", ())
@@ -597,12 +691,119 @@ def format_sample_inspection(data: Mapping[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def validate_canonical_input_consistency(
+    diagnostics_rows: Sequence[Mapping[str, Any]],
+    views_rows: Sequence[Mapping[str, Any]],
+    pairs_rows: Sequence[Mapping[str, Any]],
+    ground_truth_rows: Sequence[Mapping[str, Any]],
+) -> None:
+    """Cross-validate that canonical input artifacts are relationally consistent.
+
+    Verifies:
+    - Every diagnostic sample_id matches a view_id in views
+    - Pair IDs agree between diagnostics and pairs
+    - View types agree between diagnostics and views
+    - GT technique IDs agree between diagnostics and ground_truth
+    - No extra diagnostic samples exist beyond canonical views
+    - All canonical views are represented exactly once in diagnostics
+    """
+    # Build lookup maps from canonical source artifacts
+    view_by_id: dict[str, Mapping[str, Any]] = {}
+    for v in views_rows:
+        vid = v.get("view_id")
+        if vid is None:
+            raise ValueError("View record missing 'view_id'")
+        if vid in view_by_id:
+            raise ValueError(f"Duplicate view_id in views: {vid!r}")
+        view_by_id[vid] = v
+
+    gt_by_view: dict[str, Mapping[str, Any]] = {}
+    for gt in ground_truth_rows:
+        vid = gt.get("view_id")
+        if vid is None:
+            raise ValueError("Ground truth record missing 'view_id'")
+        if vid in gt_by_view:
+            raise ValueError(f"Duplicate view_id in ground_truth: {vid!r}")
+        gt_by_view[vid] = gt
+
+    pair_ids_from_pairs = {p.get("pair_id") for p in pairs_rows}
+
+    diag_sample_ids: set[str] = set()
+    for row in diagnostics_rows:
+        sid = row.get("sample_id")
+        if sid is None:
+            raise ValueError("Diagnostic record missing 'sample_id'")
+        if sid in diag_sample_ids:
+            raise ValueError(f"Duplicate sample_id in diagnostics: {sid!r}")
+        diag_sample_ids.add(sid)
+
+        # Check sample_id exists in views
+        if sid not in view_by_id:
+            raise ValueError(
+                f"Diagnostic sample_id={sid!r} not found in canonical views"
+            )
+
+        # Check view_type agreement
+        canon_view = view_by_id[sid]
+        diag_vtype = row.get("view_type")
+        canon_vtype = canon_view.get("view_type")
+        if diag_vtype != canon_vtype:
+            raise ValueError(
+                f"View type mismatch for {sid!r}: "
+                f"diagnostic={diag_vtype!r} != canonical view={canon_vtype!r}"
+            )
+
+        # Check pair_id agreement
+        diag_pid = row.get("pair_id")
+        canon_pid = canon_view.get("pair_id")
+        if diag_pid != canon_pid:
+            raise ValueError(
+                f"Pair ID mismatch for {sid!r}: "
+                f"diagnostic={diag_pid!r} != canonical view={canon_pid!r}"
+            )
+
+        # Check pair_id exists in pairs
+        if diag_pid and diag_pid not in pair_ids_from_pairs:
+            raise ValueError(
+                f"Pair ID {diag_pid!r} from diagnostic {sid!r} "
+                f"not found in canonical pairs"
+            )
+
+        # Check GT technique IDs agreement
+        if sid in gt_by_view:
+            canon_gt = gt_by_view[sid]
+            diag_gt_ids = set(row.get("ground_truth_technique_ids", []))
+            canon_gt_ids = set(canon_gt.get("technique_ids", []))
+            if diag_gt_ids != canon_gt_ids:
+                raise ValueError(
+                    f"GT technique IDs mismatch for {sid!r}: "
+                    f"diagnostic={sorted(diag_gt_ids)} != canonical={sorted(canon_gt_ids)}"
+                )
+
+    # Check all canonical views are represented
+    missing_views = set(view_by_id.keys()) - diag_sample_ids
+    if missing_views:
+        raise ValueError(
+            f"{len(missing_views)} canonical views missing from diagnostics: "
+            f"{sorted(missing_views)[:5]}{'...' if len(missing_views) > 5 else ''}"
+        )
+
+
 def build_failure_analysis_summary(
     diagnostics_rows: Sequence[Mapping[str, Any]],
     canonical_metrics: Mapping[str, Any],
     provenance_hashes: Mapping[str, str],
+    views_rows: Sequence[Mapping[str, Any]] | None = None,
+    pairs_rows: Sequence[Mapping[str, Any]] | None = None,
+    ground_truth_rows: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Assemble complete, deterministic failure analysis summary."""
+    # Cross-validate provenance if canonical source artifacts are provided
+    if views_rows is not None and pairs_rows is not None and ground_truth_rows is not None:
+        validate_canonical_input_consistency(
+            diagnostics_rows, views_rows, pairs_rows, ground_truth_rows
+        )
+
     per_technique = recompute_per_technique_metrics(diagnostics_rows)
     verify_canonical_metric_consistency(per_technique, canonical_metrics)
 
@@ -629,7 +830,9 @@ def build_failure_analysis_summary(
 
 
 def serialize_summary_deterministic(summary: Mapping[str, Any]) -> str:
-    """Serialize summary to byte-deterministic JSON with sort_keys=True, indent=2, and trailing newline."""
+    """Serialize summary to byte-deterministic JSON with sort_keys=True, indent=2,
+    and trailing newline.
+    """
     return json.dumps(summary, indent=2, sort_keys=True) + "\n"
 
 
@@ -713,6 +916,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     canonical_metrics = load_json(args.metrics)
 
+    views_rows = load_jsonl(args.views)
+    pairs_rows = load_jsonl(args.pairs)
+    ground_truth_rows = load_jsonl(args.ground_truth)
+
     provenance_hashes = {
         "diagnostics_sha256": compute_file_sha256(args.diagnostics),
         "ground_truth_sha256": compute_file_sha256(args.ground_truth),
@@ -725,6 +932,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         diagnostics_rows=diagnostics_rows,
         canonical_metrics=canonical_metrics,
         provenance_hashes=provenance_hashes,
+        views_rows=views_rows,
+        pairs_rows=pairs_rows,
+        ground_truth_rows=ground_truth_rows,
     )
 
     serialized = serialize_summary_deterministic(summary)
@@ -733,26 +943,37 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if not args.quiet:
         svc = summary["single_vs_contextual"]
+        pos = summary["overall_positive"]
+        t1105 = summary["t1105_hard_negatives"]
+        t1136 = summary["t1136_001_failure"]
+
         print("Deterministic retrieval failure analysis completed.")
         print(f"  Diagnostics: {args.diagnostics}")
         print(f"  Output:      {args.output}")
         print("  Key results:")
-        print(f"    Positive samples:      {summary['overall_positive']['evaluated_positive_samples']}")
+        print(f"    Positive samples:      {pos['evaluated_positive_samples']}")
         print(f"    Candidate pairs:       {svc['candidate_pairs']}")
         print(f"    Eligible pairs:        {svc['eligible_pairs']}")
         print(f"    Excluded pairs:        {svc['excluded_pairs']}")
         if svc["excluded_pairs"] > 0:
             for reason, count in svc["excluded_reasons"].items():
                 print(f"      {reason}: {count}")
-        print(f"    Single better:         {svc['single_better']} ({svc['single_better_rate']:.1%})")
-        print(f"    Contextual better:     {svc['contextual_better']} ({svc['contextual_better_rate']:.1%})")
+        sb = svc['single_better']
+        print(f"    Single better:         {sb} "
+              f"({svc['single_better_rate']:.1%})")
+        print(f"    Contextual better:     {svc['contextual_better']} "
+              f"({svc['contextual_better_rate']:.1%})")
         print(f"    Equal:                 {svc['equal']} ({svc['equal_rate']:.1%}) "
-              f"[both absent Top-10: {svc['both_absent_top10']} ({svc['both_absent_top10_rate']:.1%}), "
+              f"[both absent Top-10: {svc['both_absent_top10']} "
+              f"({svc['both_absent_top10_rate']:.1%}), "
               f"tied within Top-10: {svc['top10_equal']} ({svc['top10_equal_rate']:.1%})]")
-        print(f"    Both absent Top-10:    {svc['both_absent_top10']} ({svc['both_absent_top10_rate']:.1%})")
-        print(f"    T1105 views:           {summary['t1105_hard_negatives']['evaluated_positive_views']}")
-        print(f"    T1218.012 Top-1 count: {summary['t1105_hard_negatives']['t1218_012_top1_count']} ({summary['t1105_hard_negatives']['t1218_012_top1_rate']:.1%})")
-        print(f"    T1136.001 absent:      {summary['t1136_001_failure']['absent_top10_count']}/{summary['t1136_001_failure']['evaluated_positive_views']}")
+        print(f"    Both absent Top-10:    {svc['both_absent_top10']} "
+              f"({svc['both_absent_top10_rate']:.1%})")
+        print(f"    T1105 views:           {t1105['evaluated_positive_views']}")
+        print(f"    T1218.012 Top-1 count: {t1105['t1218_012_top1_count']} "
+              f"({t1105['t1218_012_top1_rate']:.1%})")
+        print(f"    T1136.001 absent:      {t1136['absent_top10_count']}/"
+              f"{t1136['evaluated_positive_views']}")
 
     return 0
 

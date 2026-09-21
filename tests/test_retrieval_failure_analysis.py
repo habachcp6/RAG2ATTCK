@@ -33,6 +33,8 @@ from scripts.analyze_retrieval_failures import (
     recompute_per_technique_metrics,
     resolve_comparison_rank,
     serialize_summary_deterministic,
+    validate_canonical_input_consistency,
+    validate_rank_value,
     verify_canonical_metric_consistency,
     verify_overall_metric_consistency,
 )
@@ -509,7 +511,10 @@ def test_exact_technique_set_consistency_match_passes() -> None:
     verify_canonical_metric_consistency(matching, canonical)
 
     # Count mismatch -> fails closed
-    bad_count = {**matching, "T1059.001": {**matching["T1059.001"], "evaluated_positive_samples": 11}}
+    bad_count = {
+        **matching,
+        "T1059.001": {**matching["T1059.001"], "evaluated_positive_samples": 11},
+    }
     with pytest.raises(ValueError, match="metric mismatch on evaluated_positive_samples"):
         verify_canonical_metric_consistency(bad_count, canonical)
 
@@ -847,3 +852,299 @@ def test_cli_execution_and_repeat_determinism(tmp_path: Path) -> None:
     hash_a = compute_file_sha256(out_a)
     hash_b = compute_file_sha256(out_b)
     assert hash_a == hash_b, f"Deterministic output mismatch: {hash_a} != {hash_b}"
+
+
+# ---------------------------------------------------------------------------
+# REGRESSION TESTS — Structural integrity hardening (Phase 1)
+# ---------------------------------------------------------------------------
+
+class TestDuplicatePairViewDetection:
+    """§1.1: Duplicate (pair_id, view_type) must raise ValueError."""
+
+    def test_duplicate_single_row_raises(self) -> None:
+        records = [
+            _make_row("p1", "single", "mapped_single", ["T1059.003"], {"T1059.003": 5}),
+            _make_row("p1", "single", "mapped_single", ["T1059.003"], {"T1059.003": 3}),
+            _make_row("p1", "contextual", "mapped_single", ["T1059.003"], {"T1059.003": 4}),
+        ]
+        with pytest.raises(ValueError, match="Duplicate.*pair_id.*view_type"):
+            analyze_single_vs_contextual_pairs(records)
+
+    def test_duplicate_contextual_row_raises(self) -> None:
+        records = [
+            _make_row("p1", "single", "mapped_single", ["T1059.003"], {"T1059.003": 5}),
+            _make_row("p1", "contextual", "mapped_single", ["T1059.003"], {"T1059.003": 4}),
+            _make_row("p1", "contextual", "mapped_single", ["T1059.003"], {"T1059.003": 3}),
+        ]
+        with pytest.raises(ValueError, match="Duplicate.*pair_id.*view_type"):
+            analyze_single_vs_contextual_pairs(records)
+
+    def test_duplicate_must_not_silently_change_counts(self) -> None:
+        """Ensure duplicate is caught before counts can be affected."""
+        records = [
+            _make_row("p1", "single", "mapped_single", ["T1059.003"], {"T1059.003": 5}),
+            _make_row("p1", "single", "mapped_single", ["T1059.003"], {"T1059.003": 1}),
+            _make_row("p1", "contextual", "mapped_single", ["T1059.003"], {"T1059.003": 4}),
+        ]
+        with pytest.raises(ValueError, match="Duplicate"):
+            analyze_single_vs_contextual_pairs(records)
+
+
+class TestRankSchemaValidation:
+    """§1.5: Malformed rank values must be rejected."""
+
+    def test_rank_zero_raises(self) -> None:
+        with pytest.raises(ValueError, match="must be >= 1"):
+            validate_rank_value(0)
+
+    def test_rank_negative_raises(self) -> None:
+        with pytest.raises(ValueError, match="must be >= 1"):
+            validate_rank_value(-1)
+
+    def test_rank_bool_true_raises(self) -> None:
+        with pytest.raises(ValueError, match="got bool"):
+            validate_rank_value(True)
+
+    def test_rank_bool_false_raises(self) -> None:
+        with pytest.raises(ValueError, match="got bool"):
+            validate_rank_value(False)
+
+    def test_rank_string_raises(self) -> None:
+        with pytest.raises(ValueError, match="got str"):
+            validate_rank_value("3")
+
+    def test_rank_float_raises(self) -> None:
+        with pytest.raises(ValueError, match="got float"):
+            validate_rank_value(3.0)
+
+    def test_rank_exceeds_max_k_raises(self) -> None:
+        with pytest.raises(ValueError, match="exceeds MAX_RETRIEVAL_K"):
+            validate_rank_value(11)
+
+    def test_valid_ranks_pass(self) -> None:
+        assert validate_rank_value(None) is None
+        for r in range(1, 11):
+            assert validate_rank_value(r) == r
+
+    def test_malformed_rank_in_pairwise_analysis(self) -> None:
+        """Malformed rank in actual pairwise data must propagate."""
+        records = [
+            _make_row("p1", "single", "mapped_single", ["T1059.003"], {"T1059.003": True}),
+            _make_row("p1", "contextual", "mapped_single", ["T1059.003"], {"T1059.003": 3}),
+        ]
+        with pytest.raises(ValueError, match="got bool"):
+            analyze_single_vs_contextual_pairs(records)
+
+
+class TestCachedBestRankVerification:
+    """§1.6: Recomputed best_rank must match cached field."""
+
+    def test_wrong_cached_best_rank_raises(self) -> None:
+        records = [
+            {
+                "sample_id": "s1",
+                "ground_truth_technique_ids": ["T1059.001"],
+                "ground_truth_technique_ranks": {"T1059.001": 3},
+                "ground_truth_best_rank": 1,  # Wrong! Should be 3
+            },
+        ]
+        with pytest.raises(ValueError, match="recomputed best_rank.*cached"):
+            recompute_overall_positive_metrics(records)
+
+    def test_multi_label_wrong_cached_best_raises(self) -> None:
+        records = [
+            {
+                "sample_id": "s1",
+                "ground_truth_technique_ids": ["T1059.001", "T1105"],
+                "ground_truth_technique_ranks": {"T1059.001": 5, "T1105": 2},
+                "ground_truth_best_rank": 5,  # Wrong! Should be min(5,2)=2
+            },
+        ]
+        with pytest.raises(ValueError, match="recomputed best_rank.*cached"):
+            recompute_overall_positive_metrics(records)
+
+    def test_correct_cached_best_rank_passes(self) -> None:
+        records = [
+            {
+                "sample_id": "s1",
+                "ground_truth_technique_ids": ["T1059.001", "T1105"],
+                "ground_truth_technique_ranks": {"T1059.001": 5, "T1105": 2},
+                "ground_truth_best_rank": 2,  # Correct: min(5,2)=2
+            },
+        ]
+        result = recompute_overall_positive_metrics(records)
+        assert result["evaluated_positive_samples"] == 1
+
+
+class TestMeanRankVerification:
+    """§1.7: Mean rank must be verified in canonical metric consistency."""
+
+    def test_missing_mean_field_in_canonical_raises(self) -> None:
+        canonical = {
+            "per_technique": {
+                "T1": {
+                    "evaluated_positive_samples": 5,
+                    "gt_absent_from_top10_count": 0,
+                    "gt_absent_from_top10_rate": 0.0,
+                    "hit_rate_at_1": 1.0,
+                    "hit_rate_at_3": 1.0,
+                    "hit_rate_at_5": 1.0,
+                    "hit_rate_at_10": 1.0,
+                    "median_ground_truth_rank_when_retrieved": 1.0,
+                    # mean_ground_truth_rank_when_retrieved intentionally missing
+                },
+            }
+        }
+        recomputed = {
+            "T1": {
+                "evaluated_positive_samples": 5,
+                "gt_absent_from_top10_count": 0,
+                "gt_absent_from_top10_rate": 0.0,
+                "hit_rate_at_1": 1.0,
+                "hit_rate_at_3": 1.0,
+                "hit_rate_at_5": 1.0,
+                "hit_rate_at_10": 1.0,
+                "median_ground_truth_rank_when_retrieved": 1.0,
+                "mean_ground_truth_rank_when_retrieved": 1.0,
+            },
+        }
+        with pytest.raises(ValueError, match="mean rank mismatch"):
+            verify_canonical_metric_consistency(recomputed, canonical)
+
+    def test_wrong_mean_field_raises(self) -> None:
+        canonical = {
+            "per_technique": {
+                "T1": {
+                    "evaluated_positive_samples": 5,
+                    "gt_absent_from_top10_count": 0,
+                    "gt_absent_from_top10_rate": 0.0,
+                    "hit_rate_at_1": 1.0,
+                    "hit_rate_at_3": 1.0,
+                    "hit_rate_at_5": 1.0,
+                    "hit_rate_at_10": 1.0,
+                    "median_ground_truth_rank_when_retrieved": 1.0,
+                    "mean_ground_truth_rank_when_retrieved": 2.5,
+                },
+            }
+        }
+        recomputed = {
+            "T1": {
+                "evaluated_positive_samples": 5,
+                "gt_absent_from_top10_count": 0,
+                "gt_absent_from_top10_rate": 0.0,
+                "hit_rate_at_1": 1.0,
+                "hit_rate_at_3": 1.0,
+                "hit_rate_at_5": 1.0,
+                "hit_rate_at_10": 1.0,
+                "median_ground_truth_rank_when_retrieved": 1.0,
+                "mean_ground_truth_rank_when_retrieved": 3.0,  # Wrong
+            },
+        }
+        with pytest.raises(ValueError, match="mean rank mismatch"):
+            verify_canonical_metric_consistency(recomputed, canonical)
+
+
+class TestAnchorIntegrityViolation:
+    """§1.3: Anchor missing from single ranks is an integrity violation, not exclusion."""
+
+    def test_anchor_missing_from_single_ranks_raises(self) -> None:
+        records = [
+            {
+                "pair_id": "p1",
+                "view_type": "single",
+                "category": "mapped_single",
+                "ground_truth_technique_ids": ["T1059.003"],
+                "ground_truth_technique_ranks": {},  # Anchor missing!
+            },
+            _make_row("p1", "contextual", "mapped_single", ["T1059.003"], {"T1059.003": 3}),
+        ]
+        with pytest.raises(ValueError, match="integrity violation"):
+            analyze_single_vs_contextual_pairs(records)
+
+
+class TestProvenanceCrossValidation:
+    """§1.8: Cross-validate provenance artifacts."""
+
+    def test_valid_provenance_passes(self) -> None:
+        diag = [
+            {"sample_id": "v1", "pair_id": "p1", "view_type": "single",
+             "ground_truth_technique_ids": ["T1"], "ground_truth_technique_ranks": {"T1": 1}},
+            {"sample_id": "v2", "pair_id": "p1", "view_type": "contextual",
+             "ground_truth_technique_ids": ["T1"], "ground_truth_technique_ranks": {"T1": 2}},
+        ]
+        views = [
+            {"view_id": "v1", "pair_id": "p1", "view_type": "single"},
+            {"view_id": "v2", "pair_id": "p1", "view_type": "contextual"},
+        ]
+        pairs = [{"pair_id": "p1"}]
+        gt = [
+            {"view_id": "v1", "technique_ids": ["T1"]},
+            {"view_id": "v2", "technique_ids": ["T1"]},
+        ]
+        # Should not raise
+        validate_canonical_input_consistency(diag, views, pairs, gt)
+
+    def test_diagnostic_sample_missing_from_views_raises(self) -> None:
+        diag = [{"sample_id": "v_missing", "pair_id": "p1", "view_type": "single",
+                 "ground_truth_technique_ids": [], "ground_truth_technique_ranks": {}}]
+        views = [{"view_id": "v1", "pair_id": "p1", "view_type": "single"}]
+        pairs = [{"pair_id": "p1"}]
+        gt = [{"view_id": "v1", "technique_ids": []}]
+        with pytest.raises(ValueError, match="not found in canonical views"):
+            validate_canonical_input_consistency(diag, views, pairs, gt)
+
+    def test_view_type_mismatch_raises(self) -> None:
+        diag = [{"sample_id": "v1", "pair_id": "p1", "view_type": "contextual",
+                 "ground_truth_technique_ids": [], "ground_truth_technique_ranks": {}}]
+        views = [{"view_id": "v1", "pair_id": "p1", "view_type": "single"}]
+        pairs = [{"pair_id": "p1"}]
+        gt = [{"view_id": "v1", "technique_ids": []}]
+        with pytest.raises(ValueError, match="View type mismatch"):
+            validate_canonical_input_consistency(diag, views, pairs, gt)
+
+    def test_pair_id_mismatch_raises(self) -> None:
+        diag = [{"sample_id": "v1", "pair_id": "p_wrong", "view_type": "single",
+                 "ground_truth_technique_ids": [], "ground_truth_technique_ranks": {}}]
+        views = [{"view_id": "v1", "pair_id": "p1", "view_type": "single"}]
+        pairs = [{"pair_id": "p1"}, {"pair_id": "p_wrong"}]
+        gt = [{"view_id": "v1", "technique_ids": []}]
+        with pytest.raises(ValueError, match="Pair ID mismatch"):
+            validate_canonical_input_consistency(diag, views, pairs, gt)
+
+    def test_gt_technique_ids_mismatch_raises(self) -> None:
+        diag = [{"sample_id": "v1", "pair_id": "p1", "view_type": "single",
+                 "ground_truth_technique_ids": ["T1", "T2"],
+                 "ground_truth_technique_ranks": {"T1": 1, "T2": 3}}]
+        views = [{"view_id": "v1", "pair_id": "p1", "view_type": "single"}]
+        pairs = [{"pair_id": "p1"}]
+        gt = [{"view_id": "v1", "technique_ids": ["T1"]}]  # Missing T2
+        with pytest.raises(ValueError, match="GT technique IDs mismatch"):
+            validate_canonical_input_consistency(diag, views, pairs, gt)
+
+    def test_missing_canonical_views_raises(self) -> None:
+        diag = [{"sample_id": "v1", "pair_id": "p1", "view_type": "single",
+                 "ground_truth_technique_ids": [], "ground_truth_technique_ranks": {}}]
+        views = [
+            {"view_id": "v1", "pair_id": "p1", "view_type": "single"},
+            {"view_id": "v2", "pair_id": "p1", "view_type": "contextual"},
+        ]
+        pairs = [{"pair_id": "p1"}]
+        gt = [
+            {"view_id": "v1", "technique_ids": []},
+            {"view_id": "v2", "technique_ids": []},
+        ]
+        with pytest.raises(ValueError, match="canonical views missing"):
+            validate_canonical_input_consistency(diag, views, pairs, gt)
+
+    def test_duplicate_sample_id_raises(self) -> None:
+        diag = [
+            {"sample_id": "v1", "pair_id": "p1", "view_type": "single",
+             "ground_truth_technique_ids": [], "ground_truth_technique_ranks": {}},
+            {"sample_id": "v1", "pair_id": "p1", "view_type": "single",
+             "ground_truth_technique_ids": [], "ground_truth_technique_ranks": {}},
+        ]
+        views = [{"view_id": "v1", "pair_id": "p1", "view_type": "single"}]
+        pairs = [{"pair_id": "p1"}]
+        gt = [{"view_id": "v1", "technique_ids": []}]
+        with pytest.raises(ValueError, match="Duplicate sample_id"):
+            validate_canonical_input_consistency(diag, views, pairs, gt)

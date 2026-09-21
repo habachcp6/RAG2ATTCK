@@ -27,14 +27,23 @@ def _workflow(name):
     return yaml.safe_load((ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8"))
 
 
+def _assert_mandatory(entry):
+    # Critical gates use GitHub's default success condition and fail the run.
+    # Expressions and explicit conditions need review rather than silent acceptance.
+    assert "if" not in entry, "critical gate must not be conditionally disabled"
+    assert entry.get("continue-on-error", False) is False, "critical gate must be blocking"
+
+
 def _step(steps, name):
     matches = [step for step in steps if step.get("name") == name]
     assert len(matches) == 1, f"missing or duplicate step: {name}"
+    _assert_mandatory(matches[0])
     return matches[0]
 
 
 def _assert_ci(workflow):
     job = workflow["jobs"]["full-test-suite"]
+    _assert_mandatory(job)
     assert set(job["strategy"]["matrix"]["os"]) == {"ubuntu-24.04", "windows-latest"}
     steps = job["steps"]
     assert shlex.split(_step(steps, "Lint T20 critical code paths")["run"]) == [
@@ -59,7 +68,9 @@ def _assert_ci(workflow):
 
 
 def _assert_integration(workflow):
-    steps = workflow["jobs"]["real-retrieval"]["steps"]
+    job = workflow["jobs"]["real-retrieval"]
+    _assert_mandatory(job)
+    steps = job["steps"]
     test_name = "Run real retrieval integration tests without provider access"
     assert shlex.split(_step(steps, test_name)["run"]) == (
         GUARDED_PYTHON + ["pytest", "-m", "integration", "-q"]
@@ -116,3 +127,34 @@ def test_guarded_execution_before_model_acquisition_is_detected():
     steps.append(model_step)
     with pytest.raises(AssertionError):
         _assert_integration(workflow)
+
+
+@pytest.mark.parametrize(
+    "workflow_name,job_name,step_name,validate",
+    [
+        ("ci.yml", "full-test-suite", "Lint T20 critical code paths", _assert_ci),
+        (
+            "integration.yml",
+            "real-retrieval",
+            "Run real retrieval integration tests without provider access",
+            _assert_integration,
+        ),
+    ],
+)
+@pytest.mark.parametrize("location", ["job", "step"])
+@pytest.mark.parametrize("key,value", [("if", False), ("continue-on-error", True)])
+def test_disabled_or_nonblocking_gate_is_detected(
+    workflow_name,
+    job_name,
+    step_name,
+    validate,
+    location,
+    key,
+    value,
+):
+    workflow = deepcopy(_workflow(workflow_name))
+    job = workflow["jobs"][job_name]
+    target = job if location == "job" else _step(job["steps"], step_name)
+    target[key] = value
+    with pytest.raises(AssertionError):
+        validate(workflow)

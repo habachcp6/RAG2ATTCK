@@ -115,7 +115,7 @@ class JournalBudget(LiveBudget):
         raise ValueError("persisted experiment request spending cannot be reset")
 
 
-def _validate_record_binding(record, manifest, manifest_sha, registry_ids):
+def _validate_record_binding(record, manifest, manifest_sha, registry_ids, corpus_ids):
     samples = {s["sample_id"]: s for s in manifest["samples"]}
     metadata = samples.get(record.sample_id)
     if metadata is None or (record.pair_id, record.view_type) != (metadata["pair_id"], metadata["view_type"]):
@@ -137,11 +137,14 @@ def _validate_record_binding(record, manifest, manifest_sha, registry_ids):
         _, status, _ = validate_technique_id(record.parsed_technique_ids[0], registry_ids=registry_ids)
         if status.value != record.parse_status:
             raise ValueError("record parse status disagrees with captured ATT&CK registry")
+    if any(c.technique_id not in corpus_ids or c.technique_id not in registry_ids
+           for c in record.retrieved_candidates):
+        raise ValueError("record candidate is absent from captured corpus/registry")
     if record.request_attempt_count > manifest["execution"]["retries"] + 1:
         raise ValueError("record exceeds bound retry policy")
 
 
-def _resume_state(directory, manifest, manifest_sha, cap, registry_ids):
+def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_ids):
     expected_files = {"manifest.json", "request_journal.jsonl", "run_summary.json", ".run.lock"}
     expected_files.update(f"{c}_predictions.jsonl" for c in CONDITIONS)
     if any(path.name not in expected_files or not path.is_file() for path in directory.iterdir()):
@@ -153,7 +156,7 @@ def _resume_state(directory, manifest, manifest_sha, cap, registry_ids):
             continue
         for row in parse_jsonl(path.read_bytes()):
             record = ExperimentRecord.model_validate(row)
-            _validate_record_binding(record, manifest, manifest_sha, registry_ids)
+            _validate_record_binding(record, manifest, manifest_sha, registry_ids, corpus_ids)
             key = (record.sample_id, record.condition)
             if key in records or record.condition != condition:
                 raise ValueError("duplicate sample-condition or wrong prediction file")
@@ -246,6 +249,7 @@ def run_mock_experiment(plan: ValidatedPlan, directory: Path | str, provider: Mo
     snapshot_model = parse_json(plan.snapshots["model_config"])
     snapshot_prompt = plan.snapshots["prompt"].decode("utf-8")
     snapshot_registry = registry_ids_from_bytes(plan.snapshots["attack_registry"])
+    corpus_ids = frozenset(row["technique_id"] for row in parse_jsonl(plan.snapshots["corpus"]))
     if (plan.config != snapshot_config or plan.model_config != snapshot_model
             or plan.prompt_template != snapshot_prompt
             or plan.registry_ids != snapshot_registry
@@ -275,7 +279,7 @@ def run_mock_experiment(plan: ValidatedPlan, directory: Path | str, provider: Mo
         if resume:
             if parse_json(manifest_file.read_bytes()) != manifest:
                 raise ValueError("immutable manifest drift")
-            records, spent = _resume_state(directory, manifest, manifest_sha, max_requests, snapshot_registry)
+            records, spent = _resume_state(directory, manifest, manifest_sha, max_requests, snapshot_registry, corpus_ids)
         else:
             with manifest_file.open("xb") as stream:
                 stream.write(canonical_bytes(manifest) + b"\n")
@@ -287,7 +291,10 @@ def run_mock_experiment(plan: ValidatedPlan, directory: Path | str, provider: Mo
         if max_requests - spent < remaining_jobs:
             raise ValueError("remaining explicit budget cannot cover unfinished matrix")
         if remaining_jobs == 0:
-            return {"complete": True, "record_count": len(records), "requests_consumed": spent, "new_records": 0}
+            summary = {"complete": True, "record_count": len(records), "requests_consumed": spent,
+                       "new_records": 0, "execution_mode": "mock_fixture"}
+            _write_summary(directory, summary)
+            return summary
         budget = JournalBudget(max_requests, journal_file, consumed=spent)
         client = LLMClient(config_dict=snapshot_model, openai_client=provider,
                            registry_ids=set(snapshot_registry), live_budget=budget, is_live=True, sleep_fn=lambda _: None)
@@ -321,7 +328,7 @@ def run_mock_experiment(plan: ValidatedPlan, directory: Path | str, provider: Mo
                     result = rag.run_sample(sample.sample_id, sample.endpoint_evidence, k=int(condition[5:]))
                     execution, retrieval = result.execution, result.retrieval
                 record = _record(plan, manifest, manifest_sha, sample, condition, execution, retrieval, budget.count - before)
-                _validate_record_binding(record, manifest, manifest_sha, snapshot_registry)
+                _validate_record_binding(record, manifest, manifest_sha, snapshot_registry, corpus_ids)
                 _append(directory / f"{condition}_predictions.jsonl", record.model_dump())
                 _append(journal_file, {"event": "complete", "key": list(key), "record_sha256": digest(canonical_bytes(record.model_dump()))})
                 budget.key = None
@@ -333,10 +340,15 @@ def run_mock_experiment(plan: ValidatedPlan, directory: Path | str, provider: Mo
                 break
         summary = {"complete": len(records) == len(plan.samples) * len(CONDITIONS), "record_count": len(records),
                    "requests_consumed": budget.count, "new_records": new_records, "execution_mode": "mock_fixture"}
-        temp = directory / "run_summary.json.tmp"
-        with temp.open("wb") as stream:
-            stream.write(canonical_bytes(summary) + b"\n")
-            stream.flush()
-            os.fsync(stream.fileno())
-        temp.replace(directory / "run_summary.json")
+        _write_summary(directory, summary)
         return summary
+
+
+def _write_summary(directory, summary):
+    """Rebuild derived summary atomically from the validated authoritative journal."""
+    temp = directory / "run_summary.json.tmp"
+    with temp.open("wb") as stream:
+        stream.write(canonical_bytes(summary) + b"\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+    temp.replace(directory / "run_summary.json")

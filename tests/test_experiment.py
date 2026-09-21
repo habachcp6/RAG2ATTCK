@@ -401,3 +401,33 @@ def test_schema_does_not_change_canonical_prediction_contract(bundle):
     from src.llm.schemas import TechniquePrediction
 
     assert set(TechniquePrediction.model_json_schema()["properties"]) == {"technique_id"}
+
+
+def test_resume_rejects_rehashed_candidate_outside_captured_corpus(bundle, tmp_path):
+    plan = load_plan(bundle[1])
+    output = tmp_path / "forged-candidate"
+    run_mock_experiment(plan, output, MockProvider(), max_requests=10, stop_after=2)
+    prediction = output / "rag_k1_predictions.jsonl"
+    row = parse_json(prediction.read_bytes())
+    row["retrieved_candidates"][0]["technique_id"] = "T9999"
+    prediction.write_bytes(canonical_bytes(row) + b"\n")
+    journal_path = output / "request_journal.jsonl"
+    journal = [parse_json(line) for line in journal_path.read_bytes().splitlines()]
+    journal[-1]["record_sha256"] = digest(canonical_bytes(row))
+    journal_path.write_bytes(b"".join(canonical_bytes(event) + b"\n" for event in journal))
+    fake = MockProvider()
+    with pytest.raises(ValueError, match="captured corpus"):
+        run_mock_experiment(plan, output, fake, max_requests=10, resume=True)
+    assert not fake.calls
+
+
+def test_complete_resume_repairs_stale_summary_without_dispatch(bundle, tmp_path):
+    plan = load_plan(bundle[1])
+    output = tmp_path / "stale-summary"
+    run_mock_experiment(plan, output, MockProvider(), max_requests=10)
+    (output / "run_summary.json").write_text('{"complete": false}', encoding="utf-8")
+    fake = MockProvider()
+    result = run_mock_experiment(plan, output, fake, max_requests=10, resume=True)
+    assert not fake.calls
+    assert result["complete"] and result["requests_consumed"] == 10
+    assert parse_json((output / "run_summary.json").read_bytes()) == result

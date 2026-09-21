@@ -139,6 +139,19 @@ jobs:
       - name: Lint T20 critical code paths
         run: uv run ruff check scripts/analyze_retrieval_failures.py tests/test_retrieval_failure_analysis.py
 
+      - name: Lint pre-experiment infrastructure
+        run: >-
+          uv run ruff check
+          src/experiment
+          src/evaluation/experiment_metrics.py
+          src/evaluation/fixture_metrics.py
+          src/pilot/no_rag_pilot.py
+          tests/test_experiment.py
+          tests/test_experiment_evaluation.py
+          tests/test_pilot_hardening.py
+          tests/test_pre_experiment_integration.py
+          tests/test_ci_contract.py
+
       - name: Run Full Test Suite
         run: uv run python scripts/run_offline_tests.py -m pytest -m "not integration" -q
 

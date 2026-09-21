@@ -17,6 +17,7 @@ from src.pilot.no_rag_pilot import (
     PilotRun,
     PilotSample,
     build_sidecar_metadata,
+    capture_execution_snapshot,
     load_pilot_samples,
     prepare_pilot_inputs,
     run_no_rag_pilot,
@@ -26,6 +27,17 @@ from src.pilot.no_rag_pilot import (
     validate_source_manifest,
 )
 from tests.test_llm_client import create_mock_responses_api_response
+
+
+def _run_fake_pipeline(samples, pipeline):
+    """Unit-only pipeline stubs still declare the runner's accounting contract."""
+    budget = LiveBudget(len(samples) * 4)
+    pipeline.client = SimpleNamespace(
+        live_budget=budget, is_live=True, max_retries=3,
+        provider="openai", model="gpt-5.6-luna", reasoning_effort="xhigh",
+    )
+    pipeline.prompt_version = "baseline_v1"
+    return run_no_rag_pilot(samples, pipeline, live_budget=budget)
 
 
 def _write_inputs(tmp_path: Path, *, source_id: str = "approved-source", count: int = 2):
@@ -128,7 +140,7 @@ def test_no_rag_runner_forwards_no_context_and_preserves_metadata():
                 error_type=None,
             )
 
-    run = run_no_rag_pilot([PilotSample("s1", "source-1", "EventID 1")], FakePipeline())
+    run = _run_fake_pipeline([PilotSample("s1", "source-1", "EventID 1")], FakePipeline())
     assert calls == [{
         "sample_id": "s1",
         "endpoint_evidence": "EventID 1",
@@ -251,17 +263,18 @@ def test_valid_source_manifest_and_sidecar_metadata(tmp_path: Path):
     model_path = tmp_path / "model.json"
     prompt_path.write_text("prompt", encoding="utf-8")
     model_path.write_text("{}", encoding="utf-8")
-    sidecar = build_sidecar_metadata(
-        input_path=input_path,
-        source_manifest_path=manifest_path,
+    snapshot = capture_execution_snapshot(
+        inputs=prepare_pilot_inputs(input_path, manifest_path, 1, {"approved-source"}),
         prompt_path=prompt_path,
         model_config_path=model_path,
-        manifest=manifest,
+        attack_version="19.2",
+        workspace=Path.cwd(),
+    )
+    sidecar = build_sidecar_metadata(
+        snapshot=snapshot,
         run=run,
         sample_limit=1,
         live_budget=budget,
-        attack_version="19.2",
-        workspace=Path.cwd(),
     )
     assert sidecar["input_sha256"] == manifest["input_sha256"]
     assert sidecar["condition"] == "no_rag"
@@ -275,7 +288,7 @@ def test_unexpected_programming_error_is_not_masked_as_api_failure():
             raise TypeError("internal programming defect")
 
     with pytest.raises(TypeError, match="internal programming defect"):
-        run_no_rag_pilot([PilotSample("s1", "source-1", "EventID 1")], FailingPipeline())
+        _run_fake_pipeline([PilotSample("s1", "source-1", "EventID 1")], FailingPipeline())
 
 
 def test_expected_provider_error_normalized_without_aborting_run():
@@ -308,7 +321,7 @@ def test_expected_provider_error_normalized_without_aborting_run():
         PilotSample("s1", "source-1", "EventID 1"),
         PilotSample("s2", "source-1", "EventID 2"),
     ]
-    run = run_no_rag_pilot(samples, ProviderFailingPipeline())
+    run = _run_fake_pipeline(samples, ProviderFailingPipeline())
     assert run.processed_samples == 2
     assert run.complete is True
     assert run.records[0]["parse_status"] == "API_FAILURE"
@@ -321,7 +334,7 @@ def test_expected_provider_timeout_normalized_as_timeout():
         def run_sample(self, **kwargs):
             raise TimeoutError("Network request timed out")
 
-    run = run_no_rag_pilot([PilotSample("s1", "source-1", "EventID 1")], TimeoutPipeline())
+    run = _run_fake_pipeline([PilotSample("s1", "source-1", "EventID 1")], TimeoutPipeline())
     assert run.processed_samples == 1
     assert run.records[0]["parse_status"] == "TIMEOUT"
     assert run.records[0]["error_type"] == "TimeoutError"
@@ -332,7 +345,7 @@ def test_openai_api_timeout_normalized_as_timeout():
         def run_sample(self, **kwargs):
             raise openai.APITimeoutError(request=MagicMock())
 
-    run = run_no_rag_pilot([PilotSample("s1", "source-1", "EventID 1")], APITimeoutPipeline())
+    run = _run_fake_pipeline([PilotSample("s1", "source-1", "EventID 1")], APITimeoutPipeline())
     assert run.processed_samples == 1
     assert run.records[0]["parse_status"] == "TIMEOUT"
     assert run.records[0]["error_type"] == "APITimeoutError"
@@ -350,7 +363,7 @@ def test_filesystem_oserror_is_not_masked(exc: Exception):
             raise exc
 
     with pytest.raises(type(exc)):
-        run_no_rag_pilot([PilotSample("s1", "source-1", "EventID 1")], DefectPipeline())
+        _run_fake_pipeline([PilotSample("s1", "source-1", "EventID 1")], DefectPipeline())
 
 
 @pytest.mark.parametrize("missing_field", [

@@ -92,7 +92,7 @@ jobs:
         run: uv pip check
 
       - name: Run Synthetic Tests
-        run: uv run pytest tests/test_synthetic.py -q
+        run: uv run python scripts/run_offline_tests.py -m pytest tests/test_synthetic.py -q
 
   full-test-suite:
     name: Full Test Suite (${{ matrix.os }})
@@ -137,7 +137,7 @@ jobs:
         run: uv run python -c "from pathlib import Path; from src.attack_loader import download_attack_reference; download_attack_reference(Path('.'))"
 
       - name: Run Full Test Suite
-        run: uv run pytest -m "not integration" -q
+        run: uv run python scripts/run_offline_tests.py -m pytest -m "not integration" -q
 
       - name: Verify frozen synthetic benchmark and same-seed reproduction
-        run: uv run python -m src.data_ground_truth verify-synthetic
+        run: uv run python scripts/run_offline_tests.py -m src.data_ground_truth verify-synthetic

@@ -1,0 +1,124 @@
+{
+  "schema_version": "1.0.0",
+  "experiment": {
+    "name": "synthetic-paired-test",
+    "version": "1",
+    "status": "pre_freeze"
+  },
+  "dataset": {
+    "benchmark": "synthetic-paired-v1",
+    "split": "test",
+    "expected_sample_count": 1280,
+    "expected_pair_count": 640,
+    "inference": {
+      "path": "data/ground_truth/synthetic/inference.jsonl",
+      "sha256": "90d5f59e64f669f95d5ddccd86f1f047e10ee3dc46e4b67a8cd13d1ddf2cd4b8"
+    },
+    "ground_truth": {
+      "path": "data/ground_truth/synthetic/ground_truth.jsonl",
+      "sha256": "8f3d73bac7e81336a3e90bfa5a5d0850a51ac5588385ee53ad940bcbc3612608"
+    },
+    "manifest": {
+      "path": "data/ground_truth/synthetic/dataset_manifest.json",
+      "sha256": "4576b793360d02b60d619d199fd34d4555ace33215303ee847715c162a50dcc2"
+    },
+    "views": {
+      "path": "data/ground_truth/synthetic/views.jsonl",
+      "sha256": "1e6b0d3bd525b8fe9f97ba9e5656905597a3939e47c130a9e6f74535e2cd421d"
+    },
+    "pairs": {
+      "path": "data/ground_truth/synthetic/pairs.jsonl",
+      "sha256": "079e57a441b18d127739f610e7f62c263d943eefa19ca4ea5c6eab8b8a07665d"
+    },
+    "split_manifest": {
+      "path": "data/ground_truth/synthetic/split_manifest.json",
+      "sha256": "37fce63ccaa6db8e13604b7e3783997a10635f58995881b5e41913e6f550f43f"
+    }
+  },
+  "attack": {
+    "release": "19.2",
+    "corpus": {
+      "path": "attack/corpus/enterprise-windows-v19.2.jsonl",
+      "sha256": "b219341154ddf2f12e97d622158a04ab7d57641df6a865559258d365852c3c75"
+    },
+    "index": {
+      "path": "attack/index/enterprise-windows-v19.2.index",
+      "sha256": "7e3b9944870860766ebd5ba76f19a420c1bbe57cebd4e4238b06fd31128578e5"
+    },
+    "document_mapping": {
+      "path": "attack/index/enterprise-windows-v19.2.docmap.json",
+      "sha256": "a7de3dfcf2b6e186e639d2922fcbc27766c160ae58bbafea74b5efc0faf30586"
+    },
+    "retrieval_manifest": {
+      "path": "attack/index/enterprise-windows-v19.2.manifest.json",
+      "sha256": "ad1fc8c8118ef897943597e30c3ab71cf30556f675b38bbeba6772537127ed0a"
+    },
+    "registry": {
+      "path": "attack/raw/enterprise-v19.2/enterprise-attack-19.2.json",
+      "sha256": "dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4"
+    }
+  },
+  "retrieval": {
+    "config": {
+      "path": "config/retrieval.json",
+      "sha256": "b33a93913e7f6de36f6f9021f77b2c9dcb1d426929162acb250a3c73ac8e6e25"
+    },
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "embedding_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+    "embedding_dimension": 384,
+    "index_type": "IndexFlatIP",
+    "normalization": "L2",
+    "metric": "cosine",
+    "depths": [
+      1,
+      3,
+      5,
+      10
+    ]
+  },
+  "conditions": [
+    "no_rag",
+    "rag_k1",
+    "rag_k3",
+    "rag_k5",
+    "rag_k10"
+  ],
+  "generation": {
+    "config": {
+      "path": "config/model.json",
+      "sha256": "846866b57a917cd5bd5df6db1f12e85a74957b785554b3c5c13df08e0ea65cdb"
+    },
+    "provider": "openai",
+    "model": "gpt-5.6-luna",
+    "model_version": null,
+    "reasoning_effort": "xhigh",
+    "api_interface": "responses",
+    "temperature": "provider_default",
+    "seed": "provider_default",
+    "max_output_tokens": 8192
+  },
+  "prompt": {
+    "template": {
+      "path": "prompts/baseline_v1.txt",
+      "sha256": "b751fde1ee33b03ec0bdc07cbba10267002d2086cf22b91a74bdfd123856f206"
+    },
+    "version": "baseline_v1"
+  },
+  "execution": {
+    "retries": 3,
+    "timeout_seconds": 120,
+    "concurrency": null,
+    "max_requests": null,
+    "resume": true,
+    "fail_closed": true
+  },
+  "logging": {
+    "raw_response": false,
+    "parsed_prediction": true,
+    "tokens": true,
+    "latency": true,
+    "retries": true,
+    "error_status": true,
+    "retrieval_candidates": true
+  }
+}

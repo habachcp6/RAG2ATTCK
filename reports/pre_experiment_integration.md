@@ -1,6 +1,8 @@
 # Pre-experiment integration verification
 
-This branch verifies the T20, T15, T21 and evaluator infrastructure together.
+This report records the original PR #18 integration at
+`58554917cec27de97a89c380345f1a32cbefd8f3`. Subsequent finalization
+evidence is recorded in `pre_experiment_final_audit.md`.
 It is an engineering candidate, not approval to freeze or run research.
 
 ## Traceable input stack
@@ -29,6 +31,8 @@ Original PR branches were not changed. PR #8 is excluded and remains draft.
   Human reconciliation is required; this branch does not choose a new policy.
 - The dry-run report exposes `live_execution_implemented=false`. Raw logging
   stays off; records retain `raw_response=null` and `raw_response_logged=false`.
+  Validation/refusal details can still place provider output excerpts in
+  `error_message`; the error-detail retention policy remains a human decision.
   T21 remains `NOT_FROZEN`; the public CLI is dry-run-only.
 - CI retains the T20 lint gate, adds scoped infrastructure lint and runs tests
   and frozen verification through the offline guard. Reference/model acquisition
@@ -47,7 +51,7 @@ The raw-response regressions were observed failing before the new decision
 reason was added. The CI suite detected the missing infrastructure lint step.
 Independent review then reproduced eight ways of disabling critical gates with
 `if: false` or `continue-on-error: true`; those regressions failed before the
-repair and passed afterward. Independent review passed the final code commit
+repair and passed afterward. Independent review passed the integration commit
 `be6ca06c5e43d6e98ea15ebc24da01d467f76793` with no remaining BLOCKER/MAJOR.
 
 The final code must pass scoped Ruff, all non-integration tests, real retrieval

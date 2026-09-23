@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Set, Tuple
 
 import openai
+from openai import OpenAI as OpenAISDKClient
 from pydantic import ValidationError
 
 from src.llm.logging import WallClockTimer
@@ -185,6 +186,13 @@ class LLMClient:
         resolved_key = api_key or os.environ.get(secret_env_var, "").strip() or None
 
         if openai_client is not None:
+            # SDK clients may retry internally, bypassing one-budget-unit-per-request
+            # accounting. Construct real clients here with SDK retries disabled.
+            if isinstance(openai_client, OpenAISDKClient):
+                raise ValueError(
+                    "A real OpenAI SDK client cannot be injected; omit openai_client "
+                    "so each outbound attempt uses the guarded constructor."
+                )
             # Injected mock/test client — no API key required
             self.client = openai_client
             self.is_live = False if is_live is None else is_live

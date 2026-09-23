@@ -130,7 +130,11 @@ def _json(data: bytes) -> Any:
 
 
 def _jsonl(data: bytes) -> list[dict[str, Any]]:
-    rows = [_json(line) for line in data.splitlines() if line.strip()]
+    if not data or not data.endswith(b"\n"):
+        raise ValueError("JSONL must be nonempty and end with a complete newline")
+    if any(not line.strip() for line in data.splitlines()):
+        raise ValueError("blank JSONL row")
+    rows = [_json(line) for line in data.splitlines()]
     if any(not isinstance(row, dict) for row in rows):
         raise ValueError("JSONL rows must be objects")
     return rows
@@ -186,6 +190,7 @@ def load_evaluation_inputs(
         prediction_paths,
         repository_root=repository_root,
         expected_sample_count=1280,
+        verify_journal=True,
     )
 
 
@@ -195,8 +200,9 @@ def _load_evaluation_inputs(
     *,
     repository_root: Path | str,
     expected_sample_count: int,
+    verify_journal: bool = True,
 ) -> EvaluationInputs:
-    """Internal fixture seam changes cardinality only; it cannot enable scoring."""
+    """Private fixture seam cannot enable scoring or certify a producer run."""
     root = Path(repository_root).resolve()
     manifest = _json(Path(manifest_path).read_bytes())
     _require(isinstance(manifest, dict), "manifest must be an object")
@@ -244,6 +250,8 @@ def _load_evaluation_inputs(
         path = Path(spec["path"])
         if not path.is_absolute():
             path = root / path
+        path = path.resolve()
+        _require(path.is_relative_to(root), f"artifact path escapes repository root: {name}")
         data = path.read_bytes()
         _require(
             hashlib.sha256(data).hexdigest() == spec["sha256"], f"artifact hash mismatch: {name}"
@@ -254,6 +262,22 @@ def _load_evaluation_inputs(
         manifest["config_sha256"] == artifacts["experiment_config"]["sha256"],
         "experiment config hash mismatch",
     )
+    experiment_config = _json(captured["experiment_config"])
+    _require(isinstance(experiment_config, dict), "experiment config must be an object")
+    execution = experiment_config.get("execution")
+    _require(
+        isinstance(execution, dict) and manifest.get("execution") == execution,
+        "execution configuration mismatch",
+    )
+    _require(_integer(execution.get("retries")), "invalid bound retry policy")
+    if not verify_journal:
+        _require(
+            expected_sample_count == 8
+            and experiment_config.get("purpose") == "known_answer_fixture_only"
+            and manifest.get("experiment_id") == "known-answer-only"
+            and manifest.get("benchmark_version") == "fixture-only",
+            "journal bypass is limited to the known-answer fixture",
+        )
 
     dataset = _json(captured["dataset_manifest"])
     _require(
@@ -308,14 +332,30 @@ def _load_evaluation_inputs(
                     "revoked": bool(obj.get("revoked", False)),
                 }
     _require(bool(registry), "empty ATT&CK registry")
-    corpus_ids = {row.get("technique_id") for row in _jsonl(captured["corpus"])}
+    corpus_rows = _jsonl(captured["corpus"])
+    corpus_ids = set(_unique(corpus_rows, "technique_id"))
     _require(bool(corpus_ids) and corpus_ids <= set(registry), "corpus IDs absent from registry")
+    _require(
+        _json(captured["document_mapping"]) == corpus_rows,
+        "document mapping differs from corpus",
+    )
 
     inputs = _unique(_jsonl(captured["inference"]), "sample_id")
+    _require(
+        all(set(row) == {"sample_id", "endpoint_evidence"} for row in inputs.values()),
+        "inference fields must contain only sample_id and endpoint_evidence",
+    )
     views = _unique(_jsonl(captured["views"]), "view_id")
     truth_rows = _unique(_jsonl(captured["ground_truth"]), "view_id")
     pairs = _unique(_jsonl(captured["pairs"]), "pair_id")
     _require(set(inputs) == set(views) == set(truth_rows), "dataset sample/GT/view join mismatch")
+    _require(
+        _integer(dataset.get("view_count"))
+        and dataset["view_count"] == len(views)
+        and _integer(dataset.get("pair_count"))
+        and dataset["pair_count"] == len(pairs),
+        "dataset manifest count mismatch",
+    )
     split_manifest = _json(captured["split_manifest"])
     split_pairs: dict[str, str] = {}
     for split in ("test", "dev"):
@@ -328,6 +368,14 @@ def _load_evaluation_inputs(
             )
             split_pairs[pair_id] = split
     _require(set(split_pairs) == set(pairs), "split manifest is not an exact partition")
+    split_counts = dataset.get("split_counts")
+    _require(
+        isinstance(split_counts, dict)
+        and set(split_counts) == {"test", "dev"}
+        and all(_integer(split_counts[split]) for split in ("test", "dev"))
+        and all(split_counts[split] == len(split_manifest[split]) for split in ("test", "dev")),
+        "dataset manifest count mismatch",
+    )
     embedded_view_ids: set[str] = set()
     for pair_id, pair in pairs.items():
         _require(pair.get("split") == split_pairs[pair_id], "pair split disagreement")
@@ -411,6 +459,11 @@ def _load_evaluation_inputs(
         manifest.get("expected_request_count") == len(sample_ids) * len(CONDITIONS),
         "request matrix count mismatch",
     )
+    _require(
+        manifest.get("maximum_attempts")
+        == manifest["expected_request_count"] * (execution["retries"] + 1),
+        "maximum attempt count mismatch",
+    )
     digest = hashlib.sha256(canonical_json_bytes(manifest)).hexdigest()
     _require(
         set(prediction_paths) == set(CONDITIONS),
@@ -442,6 +495,13 @@ def _load_evaluation_inputs(
             run_ids.add(row["run_id"])
             rows.append(row)
     _require(len(run_ids) == 1, "mixed run IDs are not one execution matrix")
+    if verify_journal:
+        _validate_journal(
+            Path(manifest_path).resolve().parent / "request_journal.jsonl",
+            manifest,
+            digest,
+            rows,
+        )
     return EvaluationInputs(
         digest,
         manifest["experiment_id"],
@@ -550,6 +610,10 @@ def _validate_record(row, condition, sample, manifest, digest, artifacts, regist
         row["retry_count"] <= max(row["request_attempt_count"] - 1, 0),
         "retry count exceeds attempts",
     )
+    _require(
+        row["request_attempt_count"] <= manifest["execution"]["retries"] + 1,
+        "record exceeds bound retry policy",
+    )
     for field in ("error_type", "error_message"):
         _require(row[field] is None or isinstance(row[field], str), f"invalid {field}")
     _require(isinstance(row["timestamp"], str), "timestamp must be ISO UTC")
@@ -558,6 +622,70 @@ def _validate_record(row, condition, sample, manifest, digest, artifacts, regist
         stamp.utcoffset() is not None and stamp.utcoffset().total_seconds() == 0,
         "timestamp must be UTC",
     )
+
+
+def _validate_journal(
+    path: Path,
+    manifest: Mapping[str, Any],
+    manifest_sha256: str,
+    records: Sequence[Mapping[str, Any]],
+) -> None:
+    """Require durable completion evidence for every recorded mock dispatch."""
+    _require(not path.is_symlink(), "journal cannot be a symlink")
+    events = _jsonl(path.read_bytes())
+    cap = manifest.get("fixture_max_requests")
+    _require(
+        _integer(cap, minimum=1) and cap >= len(records),
+        "invalid fixture request budget",
+    )
+    _require(
+        events[0]
+        == {"event": "header", "manifest_sha256": manifest_sha256, "max_requests": cap},
+        "journal header does not match manifest/budget",
+    )
+    by_key = {(row["sample_id"], row["condition"]): row for row in records}
+    _require(len(by_key) == len(records), "duplicate sample-condition record")
+    active: tuple[str, str] | None = None
+    completed: set[tuple[str, str]] = set()
+    consumed = 0
+    start = 0
+    for event in events[1:]:
+        key_fields = event.get("key")
+        _require(
+            isinstance(key_fields, list)
+            and len(key_fields) == 2
+            and all(isinstance(value, str) for value in key_fields),
+            "invalid journal key",
+        )
+        key = (key_fields[0], key_fields[1])
+        _require(key in by_key, "journal key outside prediction matrix")
+        kind = event.get("event")
+        if kind == "begin" and set(event) == {"event", "key"}:
+            _require(active is None and key not in completed, "duplicate/overlapping journal begin")
+            active, start = key, consumed
+        elif kind == "attempt" and set(event) == {"event", "key", "ordinal"}:
+            _require(
+                active == key
+                and type(event["ordinal"]) is int
+                and event["ordinal"] == consumed + 1,
+                "invalid attempt journal",
+            )
+            consumed += 1
+        elif kind == "complete" and set(event) == {"event", "key", "record_sha256"}:
+            row = by_key[key]
+            _require(active == key and consumed > start, "completed journal lacks execution")
+            _require(
+                event["record_sha256"] == hashlib.sha256(canonical_json_bytes(row)).hexdigest()
+                and row["request_attempt_count"] == consumed - start,
+                "record/journal hash or request accounting mismatch",
+            )
+            completed.add(key)
+            active = None
+        else:
+            raise ValueError("unknown or malformed journal event")
+    _require(active is None, "in-flight journal cannot certify a completed matrix")
+    _require(completed == set(by_key), "incomplete journal/prediction matrix")
+    _require(consumed <= cap, "journal request budget exceeded")
 
 
 def retrieval_observations(inputs: EvaluationInputs) -> dict[str, Any]:
@@ -610,6 +738,35 @@ def retrieval_observations(inputs: EvaluationInputs) -> dict[str, Any]:
         "canonical_scoring": "HUMAN_DECISION_REQUIRED",
         "unresolved_policies": list(UNRESOLVED_POLICIES),
         "by_condition": result,
+    }
+
+
+def usage_observations(inputs: EvaluationInputs) -> dict[str, Any]:
+    """Report observed resource totals without scientific denominators or cost claims."""
+    by_condition: dict[str, Any] = {}
+    for condition in CONDITIONS:
+        rows = sorted(
+            (row for row in inputs.records if row["condition"] == condition),
+            key=lambda row: row["sample_id"],
+        )
+        observed: dict[str, Any] = {"sample_count": len(rows)}
+        for field in ("prompt_tokens", "completion_tokens", "total_tokens", "latency_ms"):
+            values = [row[field] for row in rows if row[field] is not None]
+            observed[field] = {
+                "sum": math.fsum(values) if field == "latency_ms" else sum(values),
+                "present_count": len(values),
+                "missing_count": len(rows) - len(values),
+            }
+        by_condition[condition] = observed
+    return {
+        "schema_version": "1.0.0",
+        "experiment_id": inputs.experiment_id,
+        "execution_mode": inputs.execution_mode,
+        "manifest_sha256": inputs.manifest_sha256,
+        "status": "EVALUATOR_INFRA_PARTIAL",
+        "canonical_scoring": "HUMAN_DECISION_REQUIRED",
+        "unresolved_policies": list(UNRESOLVED_POLICIES),
+        "by_condition": by_condition,
     }
 
 

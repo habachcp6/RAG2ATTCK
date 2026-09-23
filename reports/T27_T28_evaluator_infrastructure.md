@@ -20,6 +20,12 @@ Records bind to the canonical manifest hash and its model, schema, prompt,
 dataset, GT, corpus, index and sample metadata. GT enters only this evaluator
 join, never a prediction record or inference payload. Duplicate, missing,
 unknown, nonterminal, inconsistent or corrupt records fail closed.
+The finalized public loader also requires the sibling request journal to
+certify a completed mock matrix with matching request counts and record
+hashes; blank or unterminated JSONL rows fail closed. Observation-only usage
+totals and present/missing counts are available without defining canonical
+efficiency denominators. The finalization evidence is in
+`pre_experiment_final_audit.md`.
 
 Only explicitly marked mock-fixture execution records are supported at this
 pre-freeze stage. The public loader always requires all 1,280 TEST views and all
@@ -72,7 +78,8 @@ and hash/read-race prevention. Rehashed sidecar GT/view changes, swaps, missing
 embedded fields and reused/unknown embedded views are regression-tested against
 the unchanged pair authority. All outputs are temporary fixture diagnostics.
 
-Local validation on the implementation tree:
+Historical local validation on the original PR #16 implementation tree
+(current finalization evidence appears in `pre_experiment_final_audit.md`):
 
 - Evaluator tests: **63 passed**; full non-integration regression: **616 passed,
   4 deselected**; real-retrieval integration: **4 passed, 616 deselected**.

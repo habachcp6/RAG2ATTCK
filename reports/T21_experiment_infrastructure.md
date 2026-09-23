@@ -29,6 +29,10 @@ model/experiment policy disables persistence. These requirements need human
 reconciliation before scientific freeze. This change does not select a logging
 policy or edit the tracker: `logging.raw_response=false`, record `raw_response=null`
 and `raw_response_logged=false` remain unchanged.
+These dedicated fields do not prove that provider output is absent from every
+persisted field: schema-validation and refusal details can appear in
+`error_message`. Whether to retain or redact such details is part of the
+unresolved human raw-response/error-detail policy.
 
 The dry-run report also exposes `live_execution_implemented=false`
 (`LIVE_EXECUTION_IMPLEMENTED=NO`). Filling other configuration placeholders does
@@ -74,8 +78,10 @@ all provenance hashes, exact retrieval depth and ranked candidates, the existing
 seven parse statuses, zero or one parsed technique ID, token usage, latency,
 retry and actual attempt counts, errors and a UTC timestamp. `success` means a
 validly parsed registry ID, not agreement with GT. Unknown token usage stays
-null; `raw_response` is null and `raw_response_logged` is false. No GT labels or
-rationales appear in inference inputs or execution records.
+null; `raw_response` is null and `raw_response_logged` is false. Frozen
+ground-truth annotations and dataset rationales are excluded from inference
+inputs and execution records; provider text in `error_message` is governed by
+the unresolved logging decision above.
 
 ## Mock-only execution and durable resume
 
@@ -102,6 +108,11 @@ from validated records/journal, without dispatch. There is no budget reset or
 `--force` bypass. Saved candidates must belong to the captured corpus and registry,
 even if a modified record has a newly computed journal checksum.
 
+An interrupted write of the derived `run_summary.json.tmp` can be recovered
+after validating the journal and records, without new provider calls. Resume
+rejects symlinked or hardlinked output entries before dispatch; rebuilding the
+summary removes a stale temporary entry before exclusive creation.
+
 An ambiguous interrupted request requires explicit human reconciliation; this
 implementation does not claim exactly-once network execution. The budget counts
 reservations before dispatch conservatively and never reconstructs spending from
@@ -115,7 +126,8 @@ an offline guard. It covers all five actual provider request shapes, condition
 and schema consistency, GT isolation, explicit budgets and retry accounting,
 byte/hash binding, resume across terminal failures, interrupted dispatch,
 locking, corruption rejection and the canonical 1,280-view dry-run. Scientific
-inference and evaluator execution remain unavailable.
+inference and canonical scientific scoring remain unavailable; the mock
+evaluator can load and inspect the same-checkout fixture records.
 
 Local verification of implementation commit `07bd81a`: **52 experiment tests**,
 **605 non-integration tests** and **4 real-retrieval integration tests** passed,

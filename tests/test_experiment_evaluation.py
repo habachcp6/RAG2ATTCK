@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+import src.evaluation.experiment_metrics as evaluator_metrics
 from src.evaluation.experiment_metrics import (
     CONDITIONS,
     HumanDecisionRequired,
@@ -23,7 +24,13 @@ from src.evaluation.fixture_metrics import (
     FixtureOnlyPolicy,
     single_label_fixture_metrics,
 )
+from src.experiment.config import load_plan
+from src.experiment.runner import MockProvider, run_mock_experiment
+from src.experiment.schemas import CONDITIONS as PRODUCER_CONDITIONS
 from src.llm.schemas import TechniquePrediction
+from tests import test_experiment as experiment_fixtures
+
+producer_bundle = experiment_fixtures.bundle
 
 A, B, C = "T1059.001", "T1105", "T1053.005"
 
@@ -132,8 +139,10 @@ def _fixture(tmp_path):
             "document_mapping_sha256": specs["document_mapping"]["sha256"],
         },
     )
+    execution = {"retries": 2}
     artifact(
-        "experiment_config", {"schema_version": "1.0.0", "purpose": "known_answer_fixture_only"}
+        "experiment_config",
+        {"schema_version": "1.0.0", "purpose": "known_answer_fixture_only", "execution": execution},
     )
     artifact(
         "dataset_manifest",
@@ -141,6 +150,9 @@ def _fixture(tmp_path):
             "benchmark_version": "fixture-only",
             "attack_version": "19.2",
             "state": "frozen",
+            "view_count": 10,
+            "pair_count": 5,
+            "split_counts": {"test": 4, "dev": 1},
             "attack_source_sha256": specs["attack_registry"]["sha256"],
             "files": {
                 Path(specs[name]["path"]).name: specs[name]["sha256"]
@@ -169,6 +181,8 @@ def _fixture(tmp_path):
         "sample_ids": [f"s{i}" for i in range(8)],
         "samples": samples[:8],
         "expected_request_count": 40,
+        "maximum_attempts": 120,
+        "execution": execution,
     }
     manifest_path = tmp_path / "manifest.json"
     _dump(manifest_path, manifest)
@@ -249,7 +263,11 @@ def _fixture(tmp_path):
 
 def _load(tmp_path, fixture):
     return _load_evaluation_inputs(
-        fixture[0], fixture[1], repository_root=tmp_path, expected_sample_count=8
+        fixture[0],
+        fixture[1],
+        repository_root=tmp_path,
+        expected_sample_count=8,
+        verify_journal=False,
     )
 
 
@@ -279,7 +297,173 @@ def _rebind_dataset_artifact(tmp_path, fixture, name, rows):
         for prediction in predictions:
             prediction["manifest_sha256"] = _digest(canonical_json_bytes(manifest))
             prediction["ground_truth_sha256"] = manifest["artifacts"]["ground_truth"]["sha256"]
+            prediction["dataset_sha256"] = manifest["artifacts"]["inference"]["sha256"]
         _dump_rows(prediction_path, predictions)
+
+
+def _rebind_manifest(fixture):
+    _dump(fixture[0], fixture[2])
+    for path in fixture[1].values():
+        rows = [json.loads(line) for line in path.read_bytes().splitlines()]
+        for row in rows:
+            row["manifest_sha256"] = _digest(canonical_json_bytes(fixture[2]))
+        _dump_rows(path, rows)
+
+
+def test_rehashed_inference_cannot_carry_ground_truth_fields(tmp_path):
+    fixture = _fixture(tmp_path)
+    path = tmp_path / fixture[2]["artifacts"]["inference"]["path"]
+    rows = [json.loads(line) for line in path.read_bytes().splitlines()]
+    rows[0]["technique_ids"] = [A]
+    _rebind_dataset_artifact(tmp_path, fixture, "inference", rows)
+    with pytest.raises(ValueError, match="inference fields"):
+        _load(tmp_path, fixture)
+
+
+@pytest.mark.parametrize("absolute", [False, True])
+def test_manifest_artifact_path_cannot_escape_repository_root(tmp_path, absolute):
+    root = tmp_path / "repo"
+    root.mkdir()
+    fixture = _fixture(root)
+    outside = tmp_path / "external"
+    outside.mkdir()
+    external_inference = outside / "inference.jsonl"
+    external_inference.write_bytes((root / "inference.jsonl").read_bytes())
+    fixture[2]["artifacts"]["inference"]["path"] = (
+        str(external_inference) if absolute else "../external/inference.jsonl"
+    )
+    _rebind_manifest(fixture)
+    with pytest.raises(ValueError, match="artifact path escapes repository root"):
+        _load(root, fixture)
+
+
+def test_rehashed_document_mapping_must_equal_corpus(tmp_path):
+    fixture = _fixture(tmp_path)
+    manifest = fixture[2]
+    mapping_spec = manifest["artifacts"]["document_mapping"]
+    mapping_path = tmp_path / mapping_spec["path"]
+    mapping = json.loads(mapping_path.read_bytes())
+    mapping[0], mapping[1] = mapping[1], mapping[0]
+    _dump(mapping_path, mapping)
+    mapping_spec["sha256"] = _digest(mapping_path.read_bytes())
+    retrieval_spec = manifest["artifacts"]["retrieval_manifest"]
+    retrieval_path = tmp_path / retrieval_spec["path"]
+    retrieval_manifest = json.loads(retrieval_path.read_bytes())
+    retrieval_manifest["document_mapping_sha256"] = mapping_spec["sha256"]
+    _dump(retrieval_path, retrieval_manifest)
+    retrieval_spec["sha256"] = _digest(retrieval_path.read_bytes())
+    _rebind_manifest(fixture)
+    with pytest.raises(ValueError, match="document mapping differs from corpus"):
+        _load(tmp_path, fixture)
+
+
+def test_dataset_manifest_counts_must_match_captured_rows(tmp_path):
+    fixture = _fixture(tmp_path)
+    manifest = fixture[2]
+    dataset_spec = manifest["artifacts"]["dataset_manifest"]
+    dataset_path = tmp_path / dataset_spec["path"]
+    dataset = json.loads(dataset_path.read_bytes())
+    dataset["view_count"] += 1
+    _dump(dataset_path, dataset)
+    dataset_spec["sha256"] = _digest(dataset_path.read_bytes())
+    _rebind_manifest(fixture)
+    with pytest.raises(ValueError, match="dataset manifest count mismatch"):
+        _load(tmp_path, fixture)
+
+
+def test_rehashed_manifest_cannot_raise_bound_retry_limit(tmp_path):
+    fixture = _fixture(tmp_path)
+    fixture[2]["execution"]["retries"] = 3
+    _rebind_manifest(fixture)
+    with pytest.raises(ValueError, match="execution configuration mismatch"):
+        _load(tmp_path, fixture)
+
+
+def test_record_attempts_cannot_exceed_bound_retry_limit(tmp_path):
+    fixture = _fixture(tmp_path)
+    _change_row(fixture, "request_attempt_count", 4)
+    _change_row(fixture, "retry_count", 3)
+    with pytest.raises(ValueError, match="exceeds bound retry policy"):
+        _load(tmp_path, fixture)
+
+
+def test_complete_producer_matrix_requires_complete_journal(producer_bundle, tmp_path):
+    root, config_path, _ = producer_bundle
+    plan = load_plan(config_path)
+    output = tmp_path / "producer-journal"
+    summary = run_mock_experiment(plan, output, MockProvider(), max_requests=10)
+    assert summary["complete"] and summary["record_count"] == 10
+    paths = {
+        condition: output / f"{condition}_predictions.jsonl"
+        for condition in PRODUCER_CONDITIONS
+    }
+    inputs = _load_evaluation_inputs(
+        output / "manifest.json", paths, repository_root=root, expected_sample_count=2
+    )
+    assert len(inputs.records) == 10
+    with pytest.raises(ValueError, match="journal bypass is limited"):
+        _load_evaluation_inputs(
+            output / "manifest.json",
+            paths,
+            repository_root=root,
+            expected_sample_count=2,
+            verify_journal=False,
+        )
+
+    journal_path = output / "request_journal.jsonl"
+    journal = journal_path.read_bytes().splitlines()
+    assert json.loads(journal[-1])["event"] == "complete"
+    journal_path.write_bytes(b"\n".join(journal[:-1]) + b"\n")
+    assert all(path.read_bytes().strip() for path in paths.values())
+    with pytest.raises(ValueError, match="in-flight|incomplete journal"):
+        _load_evaluation_inputs(
+            output / "manifest.json", paths, repository_root=root, expected_sample_count=2
+        )
+
+
+@pytest.mark.parametrize(
+    ("damage", "message"),
+    [
+        ("forged_hash", "record/journal hash"),
+        ("attempt_ordinal", "invalid attempt journal"),
+        ("missing_header", "journal header"),
+        ("duplicate_complete", "completed journal lacks execution"),
+    ],
+)
+def test_producer_journal_corruption_is_rejected(producer_bundle, tmp_path, damage, message):
+    root, config_path, _ = producer_bundle
+    plan = load_plan(config_path)
+    output = tmp_path / "producer-journal-corrupt"
+    run_mock_experiment(plan, output, MockProvider(), max_requests=10)
+    paths = {
+        condition: output / f"{condition}_predictions.jsonl"
+        for condition in PRODUCER_CONDITIONS
+    }
+    journal_path = output / "request_journal.jsonl"
+    events = [json.loads(line) for line in journal_path.read_bytes().splitlines()]
+    if damage == "forged_hash":
+        events[-1]["record_sha256"] = "0" * 64
+    elif damage == "attempt_ordinal":
+        events[2]["ordinal"] = 2
+    elif damage == "missing_header":
+        events.pop(0)
+    else:
+        events.append(events[-1])
+    _dump_rows(journal_path, events)
+    with pytest.raises(ValueError, match=message):
+        _load_evaluation_inputs(
+            output / "manifest.json", paths, repository_root=root, expected_sample_count=2
+        )
+
+
+@pytest.mark.parametrize("suffix", [b"", b"\n\n"])
+def test_prediction_jsonl_requires_complete_nonblank_rows(tmp_path, suffix):
+    fixture = _fixture(tmp_path)
+    path = fixture[1]["no_rag"]
+    original = path.read_bytes()
+    path.write_bytes(original.removesuffix(b"\n") + suffix)
+    with pytest.raises(ValueError, match="JSONL|blank"):
+        _load(tmp_path, fixture)
 
 
 @pytest.mark.parametrize("tamper", ["replace_gt", "swap_gt", "alter_view", "swap_view"])
@@ -364,6 +548,33 @@ def test_known_answer_retrieval_and_separate_failure_observations(tmp_path):
     assert next(
         row for row in inputs.records if row["sample_id"] == "s6" and row["condition"] == "rag_k1"
     )["parsed_technique_ids"] == [A]
+
+
+def test_known_answer_usage_observations_have_sums_and_presence_only(tmp_path):
+    inputs = _load(tmp_path, _fixture(tmp_path))
+    report = evaluator_metrics.usage_observations(inputs)
+    assert report["canonical_scoring"] == "HUMAN_DECISION_REQUIRED"
+    assert set(report["by_condition"]) == set(CONDITIONS)
+    for condition in CONDITIONS:
+        row = report["by_condition"][condition]
+        assert row["sample_count"] == 8
+        assert row["prompt_tokens"] == {"sum": 80, "present_count": 8, "missing_count": 0}
+        assert row["completion_tokens"] == {"sum": 16, "present_count": 8, "missing_count": 0}
+        assert row["total_tokens"] == {"sum": 96, "present_count": 8, "missing_count": 0}
+        assert row["latency_ms"] == {"sum": 12.0, "present_count": 8, "missing_count": 0}
+        assert not any("average" in key or "rate" in key or "cost" in key for key in row)
+
+
+def test_usage_observations_preserve_missing_tokens_and_zero_latency(tmp_path):
+    fixture = _fixture(tmp_path)
+    _change_row(fixture, "prompt_tokens", None)
+    _change_row(fixture, "total_tokens", None)
+    _change_row(fixture, "latency_ms", 0.0)
+    row = evaluator_metrics.usage_observations(_load(tmp_path, fixture))["by_condition"]["rag_k3"]
+    assert row["prompt_tokens"] == {"sum": 70, "present_count": 7, "missing_count": 1}
+    assert row["completion_tokens"] == {"sum": 16, "present_count": 8, "missing_count": 0}
+    assert row["total_tokens"] == {"sum": 84, "present_count": 7, "missing_count": 1}
+    assert row["latency_ms"] == {"sum": 10.5, "present_count": 8, "missing_count": 0}
 
 
 def test_no_positive_retrieval_denominator_is_explicitly_null(tmp_path):

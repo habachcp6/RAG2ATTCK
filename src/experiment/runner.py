@@ -171,10 +171,21 @@ def _validate_record_binding(record, manifest, manifest_sha, registry_ids, corpu
 
 
 def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_ids):
-    expected_files = {"manifest.json", "request_journal.jsonl", "run_summary.json", ".run.lock"}
+    expected_files = {
+        "manifest.json",
+        "request_journal.jsonl",
+        "run_summary.json",
+        "run_summary.json.tmp",
+        ".run.lock",
+    }
     expected_files.update(f"{c}_predictions.jsonl" for c in CONDITIONS)
-    if any(path.name not in expected_files or not path.is_file() for path in directory.iterdir()):
+    if any(
+        path.name not in expected_files or not path.is_file() or path.is_symlink()
+        for path in directory.iterdir()
+    ):
         raise ValueError("unexpected output-directory contents")
+    if any(path.stat().st_nlink > 1 for path in directory.iterdir()):
+        raise ValueError("hardlinked output-directory contents")
     records = {}
     for condition in CONDITIONS:
         path = directory / f"{condition}_predictions.jsonl"
@@ -462,7 +473,10 @@ def run_mock_experiment(
 def _write_summary(directory, summary):
     """Rebuild derived summary atomically from the validated authoritative journal."""
     temp = directory / "run_summary.json.tmp"
-    with temp.open("wb") as stream:
+    # A stale temp entry may be a hardlink. Remove only that directory entry so
+    # writing the replacement cannot truncate a file outside the run directory.
+    temp.unlink(missing_ok=True)
+    with temp.open("xb") as stream:
         stream.write(canonical_bytes(summary) + b"\n")
         stream.flush()
         os.fsync(stream.fileno())

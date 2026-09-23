@@ -20,6 +20,9 @@ if _journal:
         if event in {
             "socket.connect",
             "socket.getaddrinfo",
+            "socket.gethostbyname",
+            "socket.gethostbyaddr",
+            "socket.getnameinfo",
             "socket.sendto",
             "socket.sendmsg",
         }:

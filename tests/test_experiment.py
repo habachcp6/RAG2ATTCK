@@ -1,6 +1,7 @@
 """Known synthetic infrastructure fixtures; no scientific predictions or network."""
 
 import json
+import os
 from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
@@ -286,6 +287,33 @@ def test_every_bound_artifact_rejects_tampering(bundle, name):
         load_plan(path)
 
 
+def test_rehashed_inference_with_ground_truth_fields_fails_closed(bundle):
+    root, path, config = bundle
+    inference_path = root / "inference.jsonl"
+    rows = [parse_json(line) for line in inference_path.read_bytes().splitlines()]
+    rows[0].update(
+        ground_truth_technique_ids=["T1059.001"],
+        tactic_labels=["execution"],
+        rule_mitre_mapping=["T1059.001"],
+        pair_metadata={"answer": "T1059.001"},
+        evaluation_only="SECRET_GT_METADATA",
+    )
+    inference_bytes = b"".join(canonical_bytes(row) + b"\n" for row in rows)
+    inference_path.write_bytes(inference_bytes)
+    config["dataset"]["inference"]["sha256"] = digest(inference_bytes)
+
+    manifest_path = root / "dataset_manifest.json"
+    dataset_manifest = parse_json(manifest_path.read_bytes())
+    dataset_manifest["files"]["inference.jsonl"] = digest(inference_bytes)
+    manifest_bytes = canonical_bytes(dataset_manifest) + b"\n"
+    manifest_path.write_bytes(manifest_bytes)
+    config["dataset"]["manifest"]["sha256"] = digest(manifest_bytes)
+    path.write_bytes(canonical_bytes(config))
+
+    with pytest.raises(ValueError, match="inference rows must contain only"):
+        load_plan(path)
+
+
 def test_parse_uses_the_same_hashed_bytes_even_if_file_changes(bundle, monkeypatch):
     root, path, _ = bundle
     original_read = Path.read_bytes
@@ -560,3 +588,54 @@ def test_complete_resume_repairs_stale_summary_without_dispatch(bundle, tmp_path
     assert not fake.calls
     assert result["complete"] and result["requests_consumed"] == 10
     assert parse_json((output / "run_summary.json").read_bytes()) == result
+
+
+def test_complete_resume_repairs_interrupted_summary_replace_without_dispatch(bundle, tmp_path):
+    plan = load_plan(bundle[1])
+    output = tmp_path / "interrupted-summary"
+    run_mock_experiment(plan, output, MockProvider(), max_requests=10)
+    (output / "run_summary.json").unlink()
+    (output / "run_summary.json.tmp").write_bytes(b"{")
+
+    fake = MockProvider()
+    result = run_mock_experiment(plan, output, fake, max_requests=10, resume=True)
+
+    assert not fake.calls
+    assert result["complete"] and result["record_count"] == 10
+    assert parse_json((output / "run_summary.json").read_bytes()) == result
+    assert not (output / "run_summary.json.tmp").exists()
+
+
+def test_resume_summary_temp_hardlink_cannot_overwrite_external_file(bundle, tmp_path):
+    plan = load_plan(bundle[1])
+    output = tmp_path / "hardlinked-summary"
+    run_mock_experiment(plan, output, MockProvider(), max_requests=10)
+    sentinel = tmp_path / "external-sentinel.txt"
+    sentinel.write_bytes(b"do not overwrite me")
+    os.link(sentinel, output / "run_summary.json.tmp")
+
+    fake = MockProvider()
+    with pytest.raises(ValueError, match="hardlink"):
+        run_mock_experiment(plan, output, fake, max_requests=10, resume=True)
+
+    assert not fake.calls
+    assert sentinel.read_bytes() == b"do not overwrite me"
+
+
+@pytest.mark.parametrize("name", ["request_journal.jsonl", "rag_k1_predictions.jsonl"])
+def test_resume_rejects_hardlinked_mutable_outputs_before_dispatch(bundle, tmp_path, name):
+    plan = load_plan(bundle[1])
+    output = tmp_path / "hardlinked-output"
+    run_mock_experiment(plan, output, MockProvider(), max_requests=10, stop_after=2)
+    target = output / name
+    external = tmp_path / f"external-{name}"
+    original = target.read_bytes()
+    external.write_bytes(original)
+    target.unlink()
+    os.link(external, target)
+
+    fake = MockProvider()
+    with pytest.raises(ValueError, match="hardlink"):
+        run_mock_experiment(plan, output, fake, max_requests=10, resume=True)
+    assert not fake.calls
+    assert external.read_bytes() == original

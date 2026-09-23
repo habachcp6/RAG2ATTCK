@@ -137,7 +137,12 @@ jobs:
         run: uv run python -c "from pathlib import Path; from src.attack_loader import download_attack_reference; download_attack_reference(Path('.'))"
 
       - name: Lint T20 critical code paths
-        run: uv run ruff check scripts/analyze_retrieval_failures.py tests/test_retrieval_failure_analysis.py
+        run: >-
+          uv run ruff check
+          scripts/analyze_retrieval_failures.py
+          scripts/verify_t20_canonical_artifacts.py
+          tests/test_retrieval_failure_analysis.py
+          tests/test_t20_canonical_artifacts.py
 
       - name: Lint pre-experiment infrastructure
         run: >-

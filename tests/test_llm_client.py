@@ -167,6 +167,18 @@ def test_mock_client_needs_no_api_key(monkeypatch):
     assert client.is_live is False
 
 
+@pytest.mark.parametrize("is_live", [None, False, True])
+def test_injected_real_sdk_client_cannot_bypass_request_accounting(is_live):
+    """SDK clients supplied by callers may retry internally or skip our budget."""
+    sdk_client = openai.OpenAI(api_key="test-only", max_retries=2)
+    sdk_client.responses.create = MagicMock()
+    budget = LiveBudget(max_requests=0)
+    with pytest.raises(ValueError, match="real OpenAI SDK client"):
+        LLMClient(openai_client=sdk_client, live_budget=budget, is_live=is_live)
+    assert budget.count == 0
+    sdk_client.responses.create.assert_not_called()
+
+
 def test_no_placeholder_credential_created(monkeypatch):
     """Verify that no 'unauthenticated' placeholder is ever used."""
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)

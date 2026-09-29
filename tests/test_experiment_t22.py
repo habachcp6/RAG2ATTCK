@@ -14,6 +14,7 @@ Covers:
 import dataclasses
 import json
 import os
+import stat
 from pathlib import Path
 
 import faiss
@@ -49,6 +50,7 @@ from src.experiment.journal import (
 )
 from src.experiment.path_safety import (
     UnsafeOutputPathError,
+    is_symlink_or_junction,
     validate_untrusted_output_path,
 )
 from src.experiment.runner import (
@@ -2654,3 +2656,85 @@ def test_path_safety_inspection_error_fails_closed(bundle, tmp_path, monkeypatch
     assert provider_construct_count == 0
     assert provider_call_count == 0
     assert not list(output.glob("*.jsonl"))
+
+
+def test_path_safety_resolve_error_fails_closed(bundle, tmp_path, monkeypatch):
+    plan = load_plan(bundle[1])
+    proto = create_test_protocol_approval()
+    output = tmp_path / "resolve_fail_dir"
+    output.mkdir()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_RESOLVE_FAIL",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+
+    orig_resolve = Path.resolve
+
+    def failing_resolve(self, *args, **kwargs):
+        if self == output:
+            raise PermissionError("EACCES: permission denied during resolve")
+        return orig_resolve(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "resolve", failing_resolve)
+
+    with pytest.raises(UnsafeOutputPathError, match="cannot safely resolve path"):
+        validate_untrusted_output_path(output)
+
+    provider_construct_count = 0
+    provider_call_count = 0
+
+    class CountingMockProvider(MockProvider):
+        def create(self, *args, **kwargs):
+            nonlocal provider_call_count
+            provider_call_count += 1
+            return super().create(*args, **kwargs)
+
+    def counting_factory(cfg, b):
+        nonlocal provider_construct_count
+        provider_construct_count += 1
+        return CountingMockProvider()
+
+    with pytest.raises(UnsafeOutputPathError, match="cannot safely resolve path"):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=counting_factory,
+        )
+
+    assert provider_construct_count == 0
+    assert provider_call_count == 0
+    assert not list(output.glob("*.jsonl"))
+
+
+def test_path_safety_detects_arbitrary_reparse_tags_and_attributes(tmp_path, monkeypatch):
+    test_dir = tmp_path / "reparse_probe"
+    test_dir.mkdir()
+
+    # 1. Fake stat result with arbitrary non-zero st_reparse_tag
+    class FakeStatArbitraryReparseTag:
+        st_mode = stat.S_IFDIR | 0o755
+        st_reparse_tag = 0x0000002A  # Arbitrary non-zero reparse tag
+        st_file_attributes = 0
+
+    monkeypatch.setattr(os, "lstat", lambda path, *args, **kwargs: FakeStatArbitraryReparseTag())
+    assert is_symlink_or_junction(test_dir) is True
+    with pytest.raises(ValueError, match="symlink output directory rejected"):
+        validate_untrusted_output_path(test_dir)
+
+    # 2. Fake stat result with FILE_ATTRIBUTE_REPARSE_POINT attribute but st_reparse_tag = 0
+    reparse_attr = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+
+    class FakeStatReparseAttribute:
+        st_mode = stat.S_IFDIR | 0o755
+        st_reparse_tag = 0
+        st_file_attributes = reparse_attr
+
+    monkeypatch.setattr(os, "lstat", lambda path, *args, **kwargs: FakeStatReparseAttribute())
+    assert is_symlink_or_junction(test_dir) is True
+    with pytest.raises(ValueError, match="symlink output directory rejected"):
+        validate_untrusted_output_path(test_dir)
+

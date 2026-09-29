@@ -245,6 +245,12 @@ def validate_scientific_protocol(
 
     # If plan is provided, check compatibility
     if plan is not None:
+        # D1: Raw Response Policy
+        if protocol.d1_raw_response_policy == "LOG_SEPARATELY":
+            raise ProtocolNotFrozenError(
+                "LIVE_EXECUTION_BLOCKED: LOG_SEPARATELY raw-response storage is not implemented"
+            )
+
         # D3: Model Version Policy
         if protocol.d3_model_version_policy == "CAPTURED_SNAPSHOT_OR_FAIL":
             model_ver = plan.manifest.get("model_version") or plan.config.generation.model_version

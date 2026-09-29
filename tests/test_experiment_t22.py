@@ -47,6 +47,10 @@ from src.experiment.journal import (
     append_journal_event,
     read_journal_events,
 )
+from src.experiment.path_safety import (
+    UnsafeOutputPathError,
+    validate_untrusted_output_path,
+)
 from src.experiment.runner import (
     JournalBudget,
     MockProvider,
@@ -1496,11 +1500,16 @@ def test_d1_log_separately_blocks_until_storage_is_implemented(bundle, tmp_path)
     provider_construct_count = 0
     provider_call_count = 0
 
+    class CountingMockProvider(MockProvider):
+        def create(self, *args, **kwargs):
+            nonlocal provider_call_count
+            provider_call_count += 1
+            return super().create(*args, **kwargs)
+
     def counting_factory(cfg, budget):
         nonlocal provider_construct_count
         provider_construct_count += 1
-        p = MockProvider()
-        return p
+        return CountingMockProvider()
 
     with pytest.raises(
         ProtocolNotFrozenError,
@@ -2532,3 +2541,116 @@ def test_live_journal_requires_at_least_one_attempt_before_response_received(bun
             provider_factory=lambda cfg, b: MockProvider(),
             resume=True,
         )
+
+
+def test_live_journal_rejects_legacy_begin_bypass_of_reserved(bundle, tmp_path):
+    plan = load_plan(bundle[1])
+    proto = create_test_protocol_approval()
+    output = tmp_path / "live_begin_bypass"
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_LIVE_BEGIN",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    # Execute 2 records cleanly in live mode
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, b: MockProvider(),
+        stop_after=2,
+    )
+    journal_file = output / "request_journal.jsonl"
+    rows = [
+        json.loads(line)
+        for line in journal_file.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+
+    # Identify record 2 key: (plan.samples[0].sample_id, CONDITIONS[1])
+    key2 = [plan.samples[0].sample_id, CONDITIONS[1]]
+
+    # Rewrite rows: replace RESERVED and DISPATCH_STARTED for key2 with legacy 'begin'
+    new_rows = []
+    skipped_transitions = 0
+    for row in rows:
+        if row.get("key") == key2 and row.get("event") == "transition":
+            if row.get("state") in ("RESERVED", "DISPATCH_STARTED"):
+                if skipped_transitions == 0:
+                    new_rows.append({"event": "begin", "key": key2})
+                skipped_transitions += 1
+                continue
+        new_rows.append(row)
+
+    assert skipped_transitions == 2
+    journal_file.write_bytes(b"".join(canonical_bytes(r) + b"\n" for r in new_rows))
+
+    # Live resume MUST reject the legacy begin event fail-closed
+    with pytest.raises(
+        ValueError,
+        match="legacy begin event is forbidden in live journal; expected RESERVED transition",
+    ):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, b: MockProvider(),
+            resume=True,
+        )
+
+
+def test_path_safety_inspection_error_fails_closed(bundle, tmp_path, monkeypatch):
+    plan = load_plan(bundle[1])
+    proto = create_test_protocol_approval()
+    output = tmp_path / "probe_dir"
+    output.mkdir()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_INSPECT_FAIL",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+
+    orig_lstat = os.lstat
+
+    def failing_lstat(path, *args, **kwargs):
+        if Path(path) == output:
+            raise PermissionError("EACCES: permission denied")
+        return orig_lstat(path, *args, **kwargs)
+
+    monkeypatch.setattr(os, "lstat", failing_lstat)
+
+    # validate_untrusted_output_path directly raises UnsafeOutputPathError
+    with pytest.raises(UnsafeOutputPathError, match="cannot safely inspect path component"):
+        validate_untrusted_output_path(output)
+
+    # run_live_experiment fails closed before any provider instantiation or writes
+    provider_construct_count = 0
+    provider_call_count = 0
+
+    class CountingMockProvider(MockProvider):
+        def create(self, *args, **kwargs):
+            nonlocal provider_call_count
+            provider_call_count += 1
+            return super().create(*args, **kwargs)
+
+    def counting_factory(cfg, b):
+        nonlocal provider_construct_count
+        provider_construct_count += 1
+        return CountingMockProvider()
+
+    with pytest.raises(UnsafeOutputPathError, match="cannot safely inspect path component"):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=counting_factory,
+        )
+
+    assert provider_construct_count == 0
+    assert provider_call_count == 0
+    assert not list(output.glob("*.jsonl"))

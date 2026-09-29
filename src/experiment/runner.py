@@ -257,6 +257,11 @@ def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_i
         if key not in matrix:
             raise ValueError("journal key outside experiment matrix")
         if kind == "begin" and set(event) == {"event", "key"}:
+            if is_live:
+                raise ValueError(
+                    "legacy begin event is forbidden in live journal; "
+                    "expected RESERVED transition"
+                )
             if active is not None or key in completed:
                 raise ValueError("duplicate or overlapping journal begin")
             active, start = key, consumed

@@ -7,39 +7,53 @@ import stat
 from pathlib import Path
 
 
+class UnsafeOutputPathError(ValueError):
+    """Raised when an untrusted output path violates safety invariants or cannot be inspected."""
+
+
 def is_symlink_or_junction(target: Path | str) -> bool:
     """Detect whether a path is a symbolic link, directory junction, or reparse link.
 
     Covers POSIX symlinks as well as Windows symlinks, directory junctions,
-    and mount-point reparse tags. Handles non-existent targets and permission
-    errors safely without raising unhandled OS exceptions.
+    and all reparse point tags. Fails closed on any filesystem inspection error
+    (such as PermissionError), only treating non-existent components (FileNotFoundError)
+    as non-links.
+
+    Raises:
+        UnsafeOutputPathError: If inspecting the filesystem entry fails unexpectedly.
     """
     p = Path(target)
     try:
-        if p.is_symlink() or os.path.islink(p):
-            return True
-    except (OSError, ValueError):
-        pass
+        lst = os.lstat(p)
+    except FileNotFoundError:
+        return False
+    except OSError as exc:
+        raise UnsafeOutputPathError(f"cannot safely inspect path component: {p}") from exc
+
+    if stat.S_ISLNK(lst.st_mode):
+        return True
+
+    # Reject all Windows reparse tags (symlinks, junctions/mount-points, appexec links, etc.)
+    tag = getattr(lst, "st_reparse_tag", 0)
+    if tag != 0:
+        return True
+
+    reparse_attr = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+    file_attrs = getattr(lst, "st_file_attributes", 0)
+    if file_attrs & reparse_attr:
+        return True
 
     try:
+        if p.is_symlink() or os.path.islink(p):
+            return True
         if hasattr(p, "is_junction") and p.is_junction():
             return True
         if hasattr(os.path, "isjunction") and os.path.isjunction(p):
             return True
-    except (OSError, ValueError):
-        pass
-
-    try:
-        lst = os.lstat(p)
-        if stat.S_ISLNK(lst.st_mode):
-            return True
-        tag = getattr(lst, "st_reparse_tag", 0)
-        mount_point_tag = getattr(stat, "IO_REPARSE_TAG_MOUNT_POINT", 0xA0000003)
-        symlink_tag = getattr(stat, "IO_REPARSE_TAG_SYMLINK", 0xA000000C)
-        if tag in (mount_point_tag, symlink_tag):
-            return True
-    except (OSError, ValueError):
-        pass
+    except FileNotFoundError:
+        return False
+    except OSError as exc:
+        raise UnsafeOutputPathError(f"cannot safely inspect path component: {p}") from exc
 
     return False
 
@@ -47,14 +61,21 @@ def is_symlink_or_junction(target: Path | str) -> bool:
 def validate_untrusted_output_path(path: Path | str) -> Path:
     """Validate and canonicalize an untrusted experiment output directory path.
 
-    Defends against symlink and directory junction path traversal defects
-    by validating raw path components BEFORE resolution, followed by defensive
-    post-resolution checks.
+    Defends against symlink, directory junction, and reparse-point path traversal
+    defects by validating raw path components BEFORE resolution, followed by defensive
+    post-resolution checks. Fails closed on any inspection error.
+
+    Threat Model:
+        The path validator protects against pre-existing symlinks, directory
+        junctions, and reparse-point traversal in untrusted output path inputs.
+        Assumption: Concurrent hostile filesystem mutation (TOCTOU race by another
+        local process) is outside the single-tenant local execution threat model
+        of the research runner.
 
     Validation rules:
     1. Reject symlink root on raw path before resolution.
-    2. Reject existing symlink or junction ancestor components of the absolute raw path.
-    3. Reject existing symlink or junction ancestor components of the raw path.
+    2. Reject existing symlink, junction, or reparse ancestor components of the absolute raw path.
+    3. Reject existing symlink, junction, or reparse ancestor components of the raw path.
     4. Canonicalize/resolve only after pre-resolution checks succeed.
     5. Defensively verify resolved path and all resolved ancestor components are not symlinks.
 
@@ -65,7 +86,8 @@ def validate_untrusted_output_path(path: Path | str) -> Path:
         Canonicalized safe resolved Path.
 
     Raises:
-        ValueError: If the target path or any ancestor component is a symlink or junction.
+        ValueError / UnsafeOutputPathError: If the target path or any ancestor component
+            is a symlink, junction, reparse point, or fails inspection.
     """
     if isinstance(path, str) and not path.strip():
         raise ValueError("output directory path must not be empty")
@@ -90,7 +112,10 @@ def validate_untrusted_output_path(path: Path | str) -> Path:
             raise ValueError("symlink output directory rejected")
 
     # 3. Canonicalize / resolve only after pre-resolution checks pass
-    resolved = raw_path.resolve()
+    try:
+        resolved = raw_path.resolve()
+    except OSError as exc:
+        raise UnsafeOutputPathError(f"cannot safely resolve path: {raw_path}") from exc
 
     # 4. Defensive post-resolution checks
     if is_symlink_or_junction(resolved):
@@ -103,4 +128,4 @@ def validate_untrusted_output_path(path: Path | str) -> Path:
     return resolved
 
 
-__all__ = ["is_symlink_or_junction", "validate_untrusted_output_path"]
+__all__ = ["UnsafeOutputPathError", "is_symlink_or_junction", "validate_untrusted_output_path"]

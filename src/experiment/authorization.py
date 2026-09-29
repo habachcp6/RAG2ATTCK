@@ -7,7 +7,7 @@ and an immutable, hash-bound scientific protocol approval contract (D1-D7).
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import TYPE_CHECKING, Any
 
 from src.experiment.config import canonical_bytes, digest
@@ -113,6 +113,11 @@ def protocol_decision_dict(protocol: ScientificProtocolApproval) -> dict[str, An
     }
 
 
+def protocol_to_dict(protocol: ScientificProtocolApproval) -> dict[str, Any]:
+    """Extract complete canonical mapping of the protocol contract including protocol_sha256."""
+    return asdict(protocol)
+
+
 def compute_protocol_sha256(decisions: dict[str, Any]) -> str:
     """Compute deterministic SHA-256 over canonical JSON of protocol decisions."""
     return digest(canonical_bytes(decisions))
@@ -132,9 +137,9 @@ def create_test_protocol_approval(
     d2h_conditional_retrieval: str = "RANK_AT_K",
     d2i_failure_precedence: str = "API_ERROR_FIRST",
     d2j_zero_denominator: str = "ZERO",
-    d3_model_version_policy: str = "CAPTURED_SNAPSHOT_OR_FAIL",
+    d3_model_version_policy: str = "ALLOW_LATEST_WITH_TIMESTAMP_BINDING",
     d4_concurrency_policy: str = "SEQUENTIAL_ONLY",
-    d5_budget_policy: str = "HARD_CAP_WORST_CASE_ATTEMPTS",
+    d5_budget_policy: str = "LOGICAL_SAMPLES_CAP",
     d6_t15_prerequisite_policy: str = "NOT_REQUIRED_FOR_SYNTHETIC_BENCHMARK",
     d7_dataset_scope: str = "PAIRED_TEST",
     approval_timestamp: str = "2026-09-30T00:00:00+00:00",
@@ -240,10 +245,48 @@ def validate_scientific_protocol(
 
     # If plan is provided, check compatibility
     if plan is not None:
+        # D3: Model Version Policy
+        if protocol.d3_model_version_policy == "CAPTURED_SNAPSHOT_OR_FAIL":
+            model_ver = plan.manifest.get("model_version") or plan.config.generation.model_version
+            if not model_ver or not str(model_ver).strip():
+                raise ProtocolNotFrozenError(
+                    "LIVE_EXECUTION_BLOCKED: d3_model_version_policy CAPTURED_SNAPSHOT_OR_FAIL "
+                    "requires non-empty model_version in plan"
+                )
+        elif protocol.d3_model_version_policy == "ALLOW_LATEST_WITH_TIMESTAMP_BINDING":
+            pass
+
+        # D4: Concurrency Policy
         if protocol.d4_concurrency_policy == "SEQUENTIAL_ONLY":
             if plan.config.execution.concurrency not in (None, 1):
                 raise ProtocolNotFrozenError(
                     "LIVE_EXECUTION_BLOCKED: plan concurrency contradicts SEQUENTIAL_ONLY"
+                )
+        elif protocol.d4_concurrency_policy == "BOUNDED_POOL":
+            raise ProtocolNotFrozenError(
+                "LIVE_EXECUTION_BLOCKED: BOUNDED_POOL concurrency is not implemented; "
+                "runner supports SEQUENTIAL_ONLY"
+            )
+
+        # D6: T15 Prerequisite Policy
+        if protocol.d6_t15_prerequisite_policy == "PREREQUISITE_PILOT_SATISFIED":
+            raise ProtocolNotFrozenError(
+                "LIVE_EXECUTION_BLOCKED: T15 prerequisite pilot proof is not available"
+            )
+
+        # D7: Dataset Scope Policy
+        plan_split = plan.manifest.get("split") or plan.config.dataset.split
+        if protocol.d7_dataset_scope == "PAIRED_TEST":
+            if plan_split != "test":
+                raise ProtocolNotFrozenError(
+                    f"LIVE_EXECUTION_BLOCKED: d7_dataset_scope PAIRED_TEST requires 'test' split, "
+                    f"got '{plan_split}'"
+                )
+        elif protocol.d7_dataset_scope == "DEV_SMOKE":
+            if plan_split != "dev":
+                raise ProtocolNotFrozenError(
+                    f"LIVE_EXECUTION_BLOCKED: d7_dataset_scope DEV_SMOKE requires 'dev' split, "
+                    f"got '{plan_split}'"
                 )
 
 
@@ -282,44 +325,26 @@ def validate_live_authorization(
             f"Expected ExecutionAuthorization instance, got {type(authorization).__name__}"
         )
 
-    budget_cap = (
-        authorization.authorized_max_provider_attempts
-        if authorization.authorized_max_provider_attempts is not None
-        else authorization.authorized_max_requests
-    )
-
-    # Gate 1: Scientific Protocol Decisions (D1-D7)
+    # Gate 1: Scientific Protocol Decisions (D1-D7) are MANDATORY for live execution
     if protocol is None:
-        if not authorization.scientific_protocol_approved:
-            raise ProtocolNotFrozenError(
-                "LIVE_EXECUTION_BLOCKED: scientific protocol decisions (D1-D7) remain "
-                "HUMAN_DECISION_REQUIRED and are not frozen"
-            )
-        if authorization.d1_raw_response_policy_approved not in {
-            "RECORD_ONLY",
-            "DISCARD",
-            "LOG_SEPARATELY",
-        }:
-            raise ProtocolNotFrozenError(
-                "LIVE_EXECUTION_BLOCKED: D1 raw response policy must be explicitly approved "
-                "(RECORD_ONLY, DISCARD, LOG_SEPARATELY)"
-            )
-        if authorization.d7_dataset_scope_approved not in {
-            "FULL_BENCHMARK",
-            "DEV_SMOKE",
-            "PAIRED_TEST",
-        }:
-            raise ProtocolNotFrozenError(
-                "LIVE_EXECUTION_BLOCKED: D7 dataset scope must be explicitly approved "
-                "(FULL_BENCHMARK, DEV_SMOKE, PAIRED_TEST)"
-            )
-    else:
-        validate_scientific_protocol(protocol, plan)
-        if authorization.approved_protocol_sha256 is not None:
-            if authorization.approved_protocol_sha256 != protocol.protocol_sha256:
-                raise ProtocolNotFrozenError(
-                    "LIVE_EXECUTION_BLOCKED: authorized protocol SHA-256 does not match protocol"
-                )
+        raise ProtocolNotFrozenError(
+            "LIVE_EXECUTION_BLOCKED: full ScientificProtocolApproval contract is mandatory "
+            "for live execution; scientific protocol decisions (D1-D7) remain "
+            "HUMAN_DECISION_REQUIRED and are not frozen"
+        )
+
+    validate_scientific_protocol(protocol, plan)
+
+    if not authorization.approved_protocol_sha256:
+        raise ProtocolNotFrozenError(
+            "LIVE_EXECUTION_BLOCKED: explicit approved_protocol_sha256 matching the "
+            "frozen scientific protocol is required on execution authorization"
+        )
+
+    if authorization.approved_protocol_sha256 != protocol.protocol_sha256:
+        raise ProtocolNotFrozenError(
+            "LIVE_EXECUTION_BLOCKED: authorized protocol SHA-256 does not match protocol"
+        )
 
     # Gate 2: Explicit non-empty human authorization token
     if (
@@ -337,6 +362,12 @@ def validate_live_authorization(
         )
 
     # Gate 4: Explicit finite request budget (provider attempts)
+    budget_cap = (
+        authorization.authorized_max_provider_attempts
+        if authorization.authorized_max_provider_attempts is not None
+        else authorization.authorized_max_requests
+    )
+
     if budget_cap is None:
         raise LiveBudgetRequiredError(
             "LIVE_EXECUTION_BLOCKED: explicit finite request budget is required"
@@ -354,12 +385,23 @@ def validate_live_authorization(
 
     from src.experiment.schemas import CONDITIONS
 
-    required_calls = len(plan.samples) * len(CONDITIONS)
-    if budget_cap < required_calls:
-        raise LiveBudgetRequiredError(
-            f"LIVE_EXECUTION_BLOCKED: authorized budget ({budget_cap}) "
-            f"cannot cover the required matrix calls ({required_calls})"
+    if protocol.d5_budget_policy == "HARD_CAP_WORST_CASE_ATTEMPTS":
+        worst_case_attempts = (
+            len(plan.samples) * len(CONDITIONS) * (plan.config.execution.retries + 1)
         )
+        if budget_cap < worst_case_attempts:
+            raise LiveBudgetRequiredError(
+                f"LIVE_EXECUTION_BLOCKED: authorized budget ({budget_cap}) "
+                f"cannot cover worst-case attempts ({worst_case_attempts}) "
+                f"required by HARD_CAP_WORST_CASE_ATTEMPTS"
+            )
+    else:
+        required_calls = len(plan.samples) * len(CONDITIONS)
+        if budget_cap < required_calls:
+            raise LiveBudgetRequiredError(
+                f"LIVE_EXECUTION_BLOCKED: authorized budget ({budget_cap}) "
+                f"cannot cover the required matrix calls ({required_calls})"
+            )
 
 
 def check_live_execution_gates(

@@ -22,7 +22,9 @@ from src.experiment.authorization import (
     ExecutionAuthorization,
     LiveExecutionBlockedError,
     ScientificProtocolApproval,
+    compute_protocol_sha256,
     protocol_decision_dict,
+    protocol_to_dict,
     validate_live_authorization,
 )
 from src.experiment.config import (
@@ -654,6 +656,32 @@ def run_live_experiment(
             live_run_id = manifest["run_id"]
             if live_run_id.startswith("fixture-"):
                 raise ValueError("live run cannot use fixture run_id")
+
+            # Check protocol presence and integrity in stored manifest
+            manifest_proto = manifest.get("protocol")
+            manifest_proto_sha = manifest.get("protocol_sha256")
+            if not manifest_proto or not manifest_proto_sha:
+                raise ValueError("cannot resume live run without stored scientific protocol")
+            if manifest_proto.get("protocol_sha256") != manifest_proto_sha:
+                raise ValueError("manifest protocol SHA-256 mismatch; tampering detected")
+            proto_decisions = {k: v for k, v in manifest_proto.items() if k != "protocol_sha256"}
+            if compute_protocol_sha256(proto_decisions) != manifest_proto_sha:
+                raise ValueError("manifest protocol content has been tampered with")
+
+            # Block Protocol Drift: incoming protocol must match manifest protocol exactly
+            if protocol is None:
+                raise ValueError("cannot resume live run without incoming scientific protocol")
+            if protocol.protocol_sha256 != manifest_proto_sha:
+                raise ValueError(
+                    "cannot resume run under a different scientific protocol; "
+                    "provenance drift rejected"
+                )
+            if protocol_decision_dict(protocol) != proto_decisions:
+                raise ValueError(
+                    "cannot resume run under a different scientific protocol; "
+                    "decision drift rejected"
+                )
+
             manifest_sha = digest(canonical_bytes(manifest))
             records, spent = _resume_state(
                 directory, manifest, manifest_sha, cap, snapshot_registry, corpus_ids
@@ -665,9 +693,12 @@ def run_live_experiment(
             manifest["run_id"] = live_run_id
             manifest["authorized_max_provider_attempts"] = cap
             manifest["fixture_max_requests"] = cap
-            manifest["protocol"] = protocol_decision_dict(protocol) if protocol else {}
+            manifest["protocol"] = protocol_to_dict(protocol) if protocol else {}
             manifest["protocol_sha256"] = protocol.protocol_sha256 if protocol else None
-            manifest["human_authorization_token"] = authorization.human_approval_token
+            # Store only non-sensitive authorization reference (Defect 5)
+            manifest["human_authorization_reference"] = digest(
+                authorization.human_approval_token.encode("utf-8")
+            )[:16]
             manifest_sha = digest(canonical_bytes(manifest))
 
             with manifest_file.open("xb") as stream:
@@ -704,19 +735,24 @@ def run_live_experiment(
         budget = JournalBudget(cap, journal_file, consumed=spent)
         if provider_factory is not None:
             provider = provider_factory(snapshot_model, budget)
+            client = LLMClient(
+                config_dict=snapshot_model,
+                openai_client=provider,
+                registry_ids=set(snapshot_registry),
+                live_budget=budget,
+                is_live=True,
+                sleep_fn=lambda _: None,
+            )
         else:
-            from src.llm.client import OpenAISDKClient
-
-            provider = OpenAISDKClient(api_key=api_key)
-
-        client = LLMClient(
-            config_dict=snapshot_model,
-            openai_client=provider,
-            registry_ids=set(snapshot_registry),
-            live_budget=budget,
-            is_live=True,
-            sleep_fn=lambda _: None,
-        )
+            client = LLMClient(
+                config_dict=snapshot_model,
+                registry_ids=set(snapshot_registry),
+                live_budget=budget,
+                is_live=True,
+                sleep_fn=lambda _: None,
+                api_key=api_key,
+            )
+            provider = client.client
 
         import faiss
         import numpy as np

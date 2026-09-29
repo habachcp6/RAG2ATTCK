@@ -44,7 +44,7 @@ def _handle_dry_run(args: argparse.Namespace) -> int:
     return 2
 
 
-def _handle_live(args: argparse.Namespace) -> int:
+def _handle_live(args: argparse.Namespace, *, provider_factory=None) -> int:
     try:
         plan = load_plan(args.config)
     except (ValueError, TypeError, KeyError, OSError) as exc:
@@ -133,6 +133,7 @@ def _handle_live(args: argparse.Namespace) -> int:
             directory=args.output_dir,
             authorization=auth,
             protocol=protocol,
+            provider_factory=provider_factory,
             stop_after=args.stop_after,
         )
         print(json.dumps(summary, indent=2, sort_keys=True))
@@ -153,7 +154,7 @@ def _handle_live(args: argparse.Namespace) -> int:
         return 1
 
 
-def _handle_resume(args: argparse.Namespace) -> int:
+def _handle_resume(args: argparse.Namespace, *, provider_factory=None) -> int:
     output_dir = Path(args.output_dir).resolve()
     manifest_path = output_dir / "manifest.json"
     if not manifest_path.exists():
@@ -171,10 +172,42 @@ def _handle_resume(args: argparse.Namespace) -> int:
         )
         return 1
 
+    if not args.auth_token:
+        print(
+            json.dumps(
+                {
+                    "status": "LIVE_EXECUTION_BLOCKED",
+                    "reason": "--auth-token is required to resume live execution; "
+                    "re-authorization cannot be implicitly inherited from disk",
+                    "provider_calls": 0,
+                    "prediction_writes": 0,
+                },
+                sort_keys=True,
+            ),
+            file=sys.stderr,
+        )
+        return 1
+
+    if not args.allow_live_dispatch:
+        print(
+            json.dumps(
+                {
+                    "status": "LIVE_EXECUTION_BLOCKED",
+                    "reason": "--allow-live-dispatch is required to resume live execution",
+                    "provider_calls": 0,
+                    "prediction_writes": 0,
+                },
+                sort_keys=True,
+            ),
+            file=sys.stderr,
+        )
+        return 1
+
     try:
         manifest = parse_json(manifest_path.read_bytes())
         proto_data = manifest.get("protocol")
-        if not proto_data or not manifest.get("protocol_sha256"):
+        proto_sha = manifest.get("protocol_sha256")
+        if not proto_data or not proto_sha:
             print(
                 json.dumps(
                     {
@@ -184,24 +217,74 @@ def _handle_resume(args: argparse.Namespace) -> int:
                         "prediction_writes": 0,
                     },
                     sort_keys=True,
-                )
+                ),
+                file=sys.stderr,
             )
             return 1
+
+        if "protocol_sha256" not in proto_data:
+            proto_data = {**proto_data, "protocol_sha256": proto_sha}
+
         protocol = ScientificProtocolApproval(**proto_data)
-        token = manifest.get("human_authorization_token", "")
-        max_attempts = manifest.get("authorized_max_provider_attempts")
+
+        if args.protocol_file:
+            verify_proto = ScientificProtocolApproval(
+                **parse_json(Path(args.protocol_file).read_bytes())
+            )
+            if verify_proto.protocol_sha256 != protocol.protocol_sha256:
+                print(
+                    json.dumps(
+                        {
+                            "status": "LIVE_EXECUTION_BLOCKED",
+                            "reason": (
+                                "Provided --protocol-file does not match manifest protocol SHA-256"
+                            ),
+                            "provider_calls": 0,
+                            "prediction_writes": 0,
+                        },
+                        sort_keys=True,
+                    ),
+                    file=sys.stderr,
+                )
+                return 1
+
+        max_attempts = (
+            args.max_attempts
+            if args.max_attempts is not None
+            else manifest.get("authorized_max_provider_attempts")
+        )
+
         auth = ExecutionAuthorization(
-            human_approval_token=token,
+            human_approval_token=args.auth_token,
             approved_protocol_sha256=protocol.protocol_sha256,
             authorized_max_provider_attempts=max_attempts,
-            allow_live_dispatch=True,
+            allow_live_dispatch=args.allow_live_dispatch,
         )
+
         plan = load_plan(args.config)
+
+        gate_check = check_live_execution_gates(plan, auth, protocol=protocol)
+        if not gate_check["live_execution_permitted"]:
+            print(
+                json.dumps(
+                    {
+                        "status": "LIVE_EXECUTION_BLOCKED",
+                        "reason": gate_check.get("reason", "Live execution gates failed on resume"),
+                        "provider_calls": 0,
+                        "prediction_writes": 0,
+                    },
+                    sort_keys=True,
+                ),
+                file=sys.stderr,
+            )
+            return 1
+
         summary = run_live_experiment(
             plan=plan,
             directory=output_dir,
             authorization=auth,
             protocol=protocol,
+            provider_factory=provider_factory,
             resume=True,
             stop_after=args.stop_after,
         )
@@ -223,7 +306,7 @@ def _handle_resume(args: argparse.Namespace) -> int:
         return 1
 
 
-def main(argv=None) -> int:
+def main(argv=None, *, provider_factory=None) -> int:
     parser = argparse.ArgumentParser(
         description="RAG2ATT&CK Experiment CLI (dry-run preflight, live dispatch, resume)"
     )
@@ -289,6 +372,20 @@ def main(argv=None) -> int:
         "--output-dir", type=Path, required=True, help="Run directory to resume"
     )
     resume_parser.add_argument(
+        "--auth-token", type=str, help="Human authorization approval token required to resume"
+    )
+    resume_parser.add_argument(
+        "--allow-live-dispatch",
+        action="store_true",
+        help="Explicit live dispatch permission",
+    )
+    resume_parser.add_argument(
+        "--max-attempts", type=int, help="Authorized max provider attempts"
+    )
+    resume_parser.add_argument(
+        "--protocol-file", type=Path, help="Optional path to verify frozen D1-D7 protocol"
+    )
+    resume_parser.add_argument(
         "--stop-after", type=int, help="Optional stop-after limit for staged execution"
     )
 
@@ -297,9 +394,9 @@ def main(argv=None) -> int:
     if args.subcommand == "dry-run" or args.dry_run:
         return _handle_dry_run(args)
     if args.subcommand == "live":
-        return _handle_live(args)
+        return _handle_live(args, provider_factory=provider_factory)
     if args.subcommand == "resume":
-        return _handle_resume(args)
+        return _handle_resume(args, provider_factory=provider_factory)
 
     parser.error("a valid subcommand (dry-run, live, resume) or --dry-run is required")
 

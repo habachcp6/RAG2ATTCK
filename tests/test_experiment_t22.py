@@ -239,28 +239,26 @@ def test_authorization_d1_d7_unapproved_zero_calls(bundle, tmp_path):
     plan = load_plan(bundle[1])
     output = tmp_path / "live-d1-d7-unapproved"
     # D1 invalid
-    auth_bad_d1 = ExecutionAuthorization(
-        human_approval_token="TOKEN",
-        scientific_protocol_approved=True,
-        authorized_max_requests=100,
-        allow_live_dispatch=True,
-        d1_raw_response_policy_approved="UNKNOWN_POLICY",
-        d7_dataset_scope_approved="FULL_BENCHMARK",
-    )
-    with pytest.raises(ProtocolNotFrozenError, match="D1 raw response policy"):
-        run_live_experiment(plan, output, authorization=auth_bad_d1)
+    with pytest.raises(ProtocolNotFrozenError, match="d1_raw_response_policy"):
+        bad_d1_proto = create_test_protocol_approval(d1_raw_response_policy="UNKNOWN_POLICY")
+        auth = ExecutionAuthorization(
+            human_approval_token="TOKEN",
+            approved_protocol_sha256=bad_d1_proto.protocol_sha256,
+            authorized_max_requests=100,
+            allow_live_dispatch=True,
+        )
+        run_live_experiment(plan, output, authorization=auth, protocol=bad_d1_proto)
 
     # D7 invalid
-    auth_bad_d7 = ExecutionAuthorization(
-        human_approval_token="TOKEN",
-        scientific_protocol_approved=True,
-        authorized_max_requests=100,
-        allow_live_dispatch=True,
-        d1_raw_response_policy_approved="RECORD_ONLY",
-        d7_dataset_scope_approved="INVALID_SCOPE",
-    )
-    with pytest.raises(ProtocolNotFrozenError, match="D7 dataset scope"):
-        run_live_experiment(plan, output, authorization=auth_bad_d7)
+    with pytest.raises(ProtocolNotFrozenError, match="d7_dataset_scope"):
+        bad_d7_proto = create_test_protocol_approval(d7_dataset_scope="INVALID_SCOPE")
+        auth = ExecutionAuthorization(
+            human_approval_token="TOKEN",
+            approved_protocol_sha256=bad_d7_proto.protocol_sha256,
+            authorized_max_requests=100,
+            allow_live_dispatch=True,
+        )
+        run_live_experiment(plan, output, authorization=auth, protocol=bad_d7_proto)
     assert not output.exists()
 
 
@@ -268,17 +266,16 @@ def test_authorization_missing_human_token_zero_calls(bundle, tmp_path):
     """Live execution without a non-empty human authorization token is blocked."""
     plan = load_plan(bundle[1])
     output = tmp_path / "live-missing-token"
+    proto = create_test_protocol_approval()
     for invalid_token in ("", "   "):
         auth = ExecutionAuthorization(
             human_approval_token=invalid_token,
-            scientific_protocol_approved=True,
+            approved_protocol_sha256=proto.protocol_sha256,
             authorized_max_requests=100,
             allow_live_dispatch=True,
-            d1_raw_response_policy_approved="RECORD_ONLY",
-            d7_dataset_scope_approved="FULL_BENCHMARK",
         )
         with pytest.raises(HumanAuthorizationRequiredError, match="human approval token"):
-            run_live_experiment(plan, output, authorization=auth)
+            run_live_experiment(plan, output, authorization=auth, protocol=proto)
     assert not output.exists()
 
 
@@ -286,30 +283,27 @@ def test_authorization_missing_or_zero_budget_zero_calls(bundle, tmp_path):
     """Live execution without explicit positive request budget is blocked."""
     plan = load_plan(bundle[1])
     output = tmp_path / "live-budget-tests"
+    proto = create_test_protocol_approval()
 
     # Missing budget (None)
     auth_none = ExecutionAuthorization(
         human_approval_token="TOKEN",
-        scientific_protocol_approved=True,
+        approved_protocol_sha256=proto.protocol_sha256,
         authorized_max_requests=None,
         allow_live_dispatch=True,
-        d1_raw_response_policy_approved="RECORD_ONLY",
-        d7_dataset_scope_approved="FULL_BENCHMARK",
     )
     with pytest.raises(LiveBudgetRequiredError, match="explicit finite request budget"):
-        run_live_experiment(plan, output, authorization=auth_none)
+        run_live_experiment(plan, output, authorization=auth_none, protocol=proto)
 
     # Zero budget
     auth_zero = ExecutionAuthorization(
         human_approval_token="TOKEN",
-        scientific_protocol_approved=True,
+        approved_protocol_sha256=proto.protocol_sha256,
         authorized_max_requests=0,
         allow_live_dispatch=True,
-        d1_raw_response_policy_approved="RECORD_ONLY",
-        d7_dataset_scope_approved="FULL_BENCHMARK",
     )
     with pytest.raises(LiveBudgetRequiredError, match="cannot be zero"):
-        run_live_experiment(plan, output, authorization=auth_zero)
+        run_live_experiment(plan, output, authorization=auth_zero, protocol=proto)
     assert not output.exists()
 
 
@@ -317,16 +311,15 @@ def test_authorization_negative_budget_rejected(bundle, tmp_path):
     """Negative budget values are strictly rejected."""
     plan = load_plan(bundle[1])
     output = tmp_path / "live-neg-budget"
+    proto = create_test_protocol_approval()
     auth_neg = ExecutionAuthorization(
         human_approval_token="TOKEN",
-        scientific_protocol_approved=True,
+        approved_protocol_sha256=proto.protocol_sha256,
         authorized_max_requests=-10,
         allow_live_dispatch=True,
-        d1_raw_response_policy_approved="RECORD_ONLY",
-        d7_dataset_scope_approved="FULL_BENCHMARK",
     )
     with pytest.raises(LiveBudgetRequiredError, match="cannot be negative"):
-        run_live_experiment(plan, output, authorization=auth_neg)
+        run_live_experiment(plan, output, authorization=auth_neg, protocol=proto)
     assert not output.exists()
 
 
@@ -334,16 +327,15 @@ def test_authorization_insufficient_budget_rejected(bundle, tmp_path):
     """Budget smaller than complete matrix (2 samples * 5 conditions = 10) is rejected."""
     plan = load_plan(bundle[1])
     output = tmp_path / "live-insufficient-budget"
+    proto = create_test_protocol_approval()
     auth_small = ExecutionAuthorization(
         human_approval_token="TOKEN",
-        scientific_protocol_approved=True,
+        approved_protocol_sha256=proto.protocol_sha256,
         authorized_max_requests=9,  # Needs 10
         allow_live_dispatch=True,
-        d1_raw_response_policy_approved="RECORD_ONLY",
-        d7_dataset_scope_approved="FULL_BENCHMARK",
     )
     with pytest.raises(LiveBudgetRequiredError, match="cannot cover the required matrix calls"):
-        run_live_experiment(plan, output, authorization=auth_small)
+        run_live_experiment(plan, output, authorization=auth_small, protocol=proto)
     assert not output.exists()
 
 
@@ -357,22 +349,22 @@ def test_authorization_api_key_alone_does_not_permit_calls(bundle, monkeypatch, 
     assert not output.exists()
 
 
-def test_live_experiment_blocked_even_with_valid_authorization(bundle, tmp_path):
+def test_live_experiment_blocked_even_with_valid_authorization(bundle, monkeypatch, tmp_path):
     """Even if authorization is valid, live execution is blocked without credentials/provider."""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     plan = load_plan(bundle[1])
     output = tmp_path / "valid-auth-blocked"
+    proto = create_test_protocol_approval()
     auth = ExecutionAuthorization(
         human_approval_token="HUMAN_AUTH_TOKEN_TEST_VALID",
-        scientific_protocol_approved=True,
+        approved_protocol_sha256=proto.protocol_sha256,
         authorized_max_requests=10,
         allow_live_dispatch=True,
-        d1_raw_response_policy_approved="RECORD_ONLY",
-        d7_dataset_scope_approved="FULL_BENCHMARK",
     )
     with pytest.raises(
         LiveExecutionBlockedError, match="LIVE_EXECUTION_BLOCKED: OPENAI_API_KEY is not configured"
     ):
-        run_live_experiment(plan, output, auth)
+        run_live_experiment(plan, output, authorization=auth, protocol=proto)
     assert not output.exists()
 
 
@@ -386,16 +378,16 @@ def test_authorization_gate_check_reporting(bundle):
     assert report["live_execution_permitted"] is False
 
     # Check that negative budget or invalid types don't crash unhandled
+    proto = create_test_protocol_approval()
     report_neg = check_live_execution_gates(
         plan,
         ExecutionAuthorization(
             human_approval_token="TOKEN",
-            scientific_protocol_approved=True,
+            approved_protocol_sha256=proto.protocol_sha256,
             authorized_max_requests=-5,
             allow_live_dispatch=True,
-            d1_raw_response_policy_approved="RECORD_ONLY",
-            d7_dataset_scope_approved="FULL_BENCHMARK",
         ),
+        protocol=proto,
     )
     assert report_neg["status"] == "LIVE_EXECUTION_BLOCKED"
     assert "cannot be negative" in report_neg["reason"]
@@ -904,7 +896,8 @@ def test_fake_live_provider_factory_execution(bundle, tmp_path):
     assert manifest_data["execution_mode"] == "live"
     assert manifest_data["run_id"] == summary["run_id"]
     assert manifest_data["protocol_sha256"] == proto.protocol_sha256
-    assert manifest_data["human_authorization_token"] == "TOKEN_T22_E2E"
+    assert "human_authorization_token" not in manifest_data
+    assert manifest_data["human_authorization_reference"] == digest(b"TOKEN_T22_E2E")[:16]
 
     # Validate prediction files and depths
     for cond in CONDITIONS:
@@ -1486,3 +1479,440 @@ def test_raw_response_policy_record_only_and_discard(bundle, tmp_path):
     for row in no_rag_rows_rec:
         assert row["raw_response"] == '{"technique_id":"T1059.001"}'
         assert row["raw_response_logged"] is True
+
+
+def test_raw_response_policy_log_separately(bundle, tmp_path):
+    """LOG_SEPARATELY sets raw_response=None and raw_response_logged=True."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "d1-log-separately"
+    proto = create_test_protocol_approval(d1_raw_response_policy="LOG_SEPARATELY")
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_LOG_SEP",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: MockProvider(),
+        stop_after=2,
+    )
+    rows = [
+        parse_json(line)
+        for line in (output / "no_rag_predictions.jsonl").read_bytes().splitlines()
+        if line
+    ]
+    for row in rows:
+        assert row["raw_response"] is None
+        assert row["raw_response_logged"] is True
+
+
+def test_live_execution_requires_full_scientific_protocol_contract(bundle, tmp_path):
+    """Live execution without full ScientificProtocolApproval contract fails closed."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "live-no-protocol"
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_VALID",
+        scientific_protocol_approved=True,
+        authorized_max_requests=20,
+        allow_live_dispatch=True,
+        d1_raw_response_policy_approved="RECORD_ONLY",
+        d7_dataset_scope_approved="PAIRED_TEST",
+    )
+    with pytest.raises(
+        ProtocolNotFrozenError, match="full ScientificProtocolApproval contract is mandatory"
+    ):
+        run_live_experiment(plan, output, authorization=auth, protocol=None)
+    assert not output.exists()
+
+
+def test_cli_successful_staged_live_resume(bundle, tmp_path):
+    """CLI staged live execution can be resumed with fresh authorization and completes matrix."""
+    config_path = bundle[1]
+    output_dir = tmp_path / "cli-staged-run"
+    proto = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
+    proto_file = tmp_path / "protocol.json"
+    proto_file.write_bytes(canonical_bytes(dataclasses.asdict(proto)) + b"\n")
+
+    provider = MockProvider()
+
+    # Step 1: Start staged live run (stops after 5 records)
+    ret1 = main(
+        [
+            "live",
+            "--config",
+            str(config_path),
+            "--output-dir",
+            str(output_dir),
+            "--protocol-file",
+            str(proto_file),
+            "--auth-token",
+            "TOKEN_STAGE_1",
+            "--max-attempts",
+            "40",
+            "--allow-live-dispatch",
+            "--stop-after",
+            "5",
+        ],
+        provider_factory=lambda cfg, budget: provider,
+    )
+    assert ret1 == 0
+    assert (output_dir / "manifest.json").exists()
+    manifest_data = parse_json((output_dir / "manifest.json").read_bytes())
+    assert "human_authorization_token" not in manifest_data
+    assert manifest_data["human_authorization_reference"] == digest(b"TOKEN_STAGE_1")[:16]
+
+    # Verify 5 records completed in stage 1
+    summary1 = parse_json((output_dir / "run_summary.json").read_bytes())
+    assert summary1["record_count"] == 5
+    assert summary1["complete"] is False
+
+    # Step 2: Resume via CLI with fresh token
+    ret2 = main(
+        [
+            "resume",
+            "--config",
+            str(config_path),
+            "--output-dir",
+            str(output_dir),
+            "--auth-token",
+            "TOKEN_STAGE_2",
+            "--allow-live-dispatch",
+        ],
+        provider_factory=lambda cfg, budget: provider,
+    )
+    assert ret2 == 0
+
+    summary2 = parse_json((output_dir / "run_summary.json").read_bytes())
+    assert summary2["complete"] is True
+    assert summary2["record_count"] == 10
+    assert summary2["run_id"] == manifest_data["run_id"]
+
+    # Step 3: Rerunning complete experiment yields 0 new calls
+    calls_before = len(provider.calls)
+    ret3 = main(
+        [
+            "resume",
+            "--config",
+            str(config_path),
+            "--output-dir",
+            str(output_dir),
+            "--auth-token",
+            "TOKEN_STAGE_3",
+            "--allow-live-dispatch",
+        ],
+        provider_factory=lambda cfg, budget: provider,
+    )
+    assert ret3 == 0
+    assert len(provider.calls) == calls_before
+
+
+def test_cli_resume_requires_fresh_runtime_authorization(bundle, tmp_path, capsys):
+    """CLI resume fails closed if runtime auth token or allow_live_dispatch is missing."""
+    config_path = bundle[1]
+    output_dir = tmp_path / "cli-auth-required"
+    proto = create_test_protocol_approval()
+    proto_file = tmp_path / "protocol.json"
+    proto_file.write_bytes(canonical_bytes(dataclasses.asdict(proto)) + b"\n")
+
+    provider = MockProvider()
+    main(
+        [
+            "live",
+            "--config",
+            str(config_path),
+            "--output-dir",
+            str(output_dir),
+            "--protocol-file",
+            str(proto_file),
+            "--auth-token",
+            "TOKEN_ORIG",
+            "--max-attempts",
+            "20",
+            "--allow-live-dispatch",
+            "--stop-after",
+            "2",
+        ],
+        provider_factory=lambda cfg, budget: provider,
+    )
+
+    # 1. Missing auth-token
+    ret_no_token = main(
+        [
+            "resume",
+            "--config",
+            str(config_path),
+            "--output-dir",
+            str(output_dir),
+            "--allow-live-dispatch",
+        ],
+        provider_factory=lambda cfg, budget: provider,
+    )
+    assert ret_no_token == 1
+    captured = capsys.readouterr()
+    assert "auth-token is required" in captured.err
+
+    # 2. Missing allow-live-dispatch
+    ret_no_dispatch = main(
+        [
+            "resume",
+            "--config",
+            str(config_path),
+            "--output-dir",
+            str(output_dir),
+            "--auth-token",
+            "TOKEN_FRESH",
+        ],
+        provider_factory=lambda cfg, budget: provider,
+    )
+    assert ret_no_dispatch == 1
+    captured = capsys.readouterr()
+    assert "allow-live-dispatch is required" in captured.err
+
+
+def test_live_resume_rejects_protocol_drift(bundle, tmp_path):
+    """Resuming under a modified scientific protocol fails closed with provenance drift error."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "drift-output"
+    proto1 = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
+    auth1 = ExecutionAuthorization(
+        human_approval_token="TOKEN_DRIFT_1",
+        approved_protocol_sha256=proto1.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth1,
+        protocol=proto1,
+        provider_factory=lambda cfg, budget: MockProvider(),
+        stop_after=3,
+    )
+
+    # Attempt resume with different protocol (e.g. DISCARD instead of RECORD_ONLY)
+    proto2 = create_test_protocol_approval(d1_raw_response_policy="DISCARD")
+    auth2 = ExecutionAuthorization(
+        human_approval_token="TOKEN_DRIFT_2",
+        approved_protocol_sha256=proto2.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    with pytest.raises(ValueError, match="provenance drift rejected"):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth2,
+            protocol=proto2,
+            provider_factory=lambda cfg, budget: MockProvider(),
+            resume=True,
+        )
+
+
+def test_resume_rejects_tampered_manifest_protocol(bundle, tmp_path):
+    """Tampering with protocol or hash inside manifest.json causes resume to fail closed."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "tamper-manifest-proto"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_TAMPER",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: MockProvider(),
+        stop_after=2,
+    )
+
+    manifest_path = output / "manifest.json"
+    manifest_data = parse_json(manifest_path.read_bytes())
+
+    # Case A: Tamper hash
+    manifest_tampered_hash = dict(manifest_data)
+    manifest_tampered_hash["protocol_sha256"] = "00" * 32
+    manifest_path.write_bytes(canonical_bytes(manifest_tampered_hash) + b"\n")
+
+    with pytest.raises(ValueError, match="tampering detected|content has been tampered with"):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, budget: MockProvider(),
+            resume=True,
+        )
+
+    # Case B: Tamper decision content inside manifest
+    manifest_tampered_content = dict(manifest_data)
+    manifest_tampered_content["protocol"] = dict(manifest_data["protocol"])
+    manifest_tampered_content["protocol"]["d1_raw_response_policy"] = "DISCARD"
+    manifest_path.write_bytes(canonical_bytes(manifest_tampered_content) + b"\n")
+
+    with pytest.raises(ValueError, match="tampered with"):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, budget: MockProvider(),
+            resume=True,
+        )
+
+
+def test_resume_does_not_persist_raw_authorization_token(bundle, tmp_path):
+    """Run manifest must never persist the secret raw human approval token."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "token-privacy-check"
+    secret_token = "SUPER_SECRET_HUMAN_APPROVAL_TOKEN_XYZ_987"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token=secret_token,
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: MockProvider(),
+        stop_after=1,
+    )
+    manifest_bytes = (output / "manifest.json").read_bytes()
+    assert secret_token.encode("utf-8") not in manifest_bytes
+    manifest_data = parse_json(manifest_bytes)
+    assert "human_authorization_token" not in manifest_data
+    assert (
+        manifest_data["human_authorization_reference"]
+        == digest(secret_token.encode("utf-8"))[:16]
+    )
+
+
+def test_d3_captured_snapshot_policy_rejects_missing_model_version(bundle, tmp_path):
+    """CAPTURED_SNAPSHOT_OR_FAIL policy blocks execution if plan has no pinned model_version."""
+    plan = load_plan(bundle[1])
+    assert plan.manifest.get("model_version") is None
+    output = tmp_path / "d3-missing-ver"
+    proto = create_test_protocol_approval(d3_model_version_policy="CAPTURED_SNAPSHOT_OR_FAIL")
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_D3",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    with pytest.raises(
+        ProtocolNotFrozenError,
+        match="CAPTURED_SNAPSHOT_OR_FAIL requires non-empty model_version",
+    ):
+        run_live_experiment(plan, output, authorization=auth, protocol=proto)
+
+
+def test_d3_latest_timestamp_policy_accepts_valid_provenance(bundle, tmp_path):
+    """ALLOW_LATEST_WITH_TIMESTAMP_BINDING permits execution with unpinned model version."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "d3-latest-ts"
+    proto = create_test_protocol_approval(
+        d3_model_version_policy="ALLOW_LATEST_WITH_TIMESTAMP_BINDING"
+    )
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_D3_LATEST",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    summary = run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: MockProvider(),
+        stop_after=1,
+    )
+    assert summary["record_count"] == 1
+    record_row = parse_json((output / "no_rag_predictions.jsonl").read_bytes().splitlines()[0])
+    assert record_row["timestamp"] is not None
+
+
+def test_d4_sequential_policy_rejects_incompatible_concurrency(bundle, tmp_path):
+    """SEQUENTIAL_ONLY rejects plan with concurrency > 1."""
+    plan = load_plan(bundle[1])
+    object.__setattr__(plan.config.execution, "concurrency", 4)
+    proto = create_test_protocol_approval(d4_concurrency_policy="SEQUENTIAL_ONLY")
+    with pytest.raises(
+        ProtocolNotFrozenError, match="plan concurrency contradicts SEQUENTIAL_ONLY"
+    ):
+        validate_scientific_protocol(proto, plan)
+
+
+def test_d4_unimplemented_bounded_pool_blocks(bundle):
+    """BOUNDED_POOL concurrency is unimplemented in runner and must fail closed."""
+    plan = load_plan(bundle[1])
+    proto = create_test_protocol_approval(d4_concurrency_policy="BOUNDED_POOL")
+    with pytest.raises(ProtocolNotFrozenError, match="BOUNDED_POOL concurrency is not implemented"):
+        validate_scientific_protocol(proto, plan)
+
+
+def test_d5_worst_case_budget_policy_enforced(bundle, tmp_path):
+    """HARD_CAP_WORST_CASE_ATTEMPTS requires budget >= samples * conditions * (retries + 1)."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "d5-worst-case"
+    proto = create_test_protocol_approval(d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS")
+    # Worst case = 2 samples * 5 conditions * (3 retries + 1) = 40
+    # Insufficient budget: 20 < 40
+    auth_insufficient = ExecutionAuthorization(
+        human_approval_token="TOKEN_D5",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    with pytest.raises(LiveBudgetRequiredError, match="cannot cover worst-case attempts"):
+        run_live_experiment(plan, output, authorization=auth_insufficient, protocol=proto)
+
+    # Sufficient budget: 40 >= 40
+    auth_sufficient = ExecutionAuthorization(
+        human_approval_token="TOKEN_D5",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=40,
+        allow_live_dispatch=True,
+    )
+    summary = run_live_experiment(
+        plan,
+        output,
+        authorization=auth_sufficient,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: MockProvider(),
+        stop_after=1,
+    )
+    assert summary["record_count"] == 1
+
+
+def test_d6_prerequisite_policy_requires_verifiable_prerequisite(bundle):
+    """PREREQUISITE_PILOT_SATISFIED fails closed when pilot proof is not available."""
+    plan = load_plan(bundle[1])
+    proto = create_test_protocol_approval(
+        d6_t15_prerequisite_policy="PREREQUISITE_PILOT_SATISFIED"
+    )
+    with pytest.raises(
+        ProtocolNotFrozenError, match="T15 prerequisite pilot proof is not available"
+    ):
+        validate_scientific_protocol(proto, plan)
+
+
+def test_d7_dataset_scope_mismatch_rejected(bundle):
+    """Protocol approving DEV_SMOKE scope rejected when plan targets 'test' split."""
+    plan = load_plan(bundle[1])
+    assert plan.config.dataset.split == "test"
+    proto = create_test_protocol_approval(d7_dataset_scope="DEV_SMOKE")
+    with pytest.raises(
+        ProtocolNotFrozenError, match="d7_dataset_scope DEV_SMOKE requires 'dev' split"
+    ):
+        validate_scientific_protocol(proto, plan)

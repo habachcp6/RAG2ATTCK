@@ -36,7 +36,15 @@ from src.experiment.config import (
     parse_jsonl,
     registry_ids_from_bytes,
 )
-from src.experiment.journal import RequestState
+from src.experiment.journal import (
+    EVENT_RESERVATION_ABANDONED,
+    RequestState,
+    make_reservation_abandoned_event,
+    validate_attempt_event,
+    validate_live_transition,
+    validate_reservation_abandonment,
+)
+from src.experiment.path_safety import validate_untrusted_output_path
 from src.experiment.schemas import CONDITIONS, ExperimentConfig, ExperimentRecord
 from src.llm.client import LiveBudget, LiveBudgetExceededError, LLMClient
 from src.llm.schemas import validate_technique_id
@@ -242,6 +250,7 @@ def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_i
     consumed = 0
     start = 0
     matrix = {(s, c) for s in manifest["sample_ids"] for c in CONDITIONS}
+    is_live = manifest.get("execution_mode") == "live"
     for event in journal[1:]:
         key = tuple(event.get("key", []))
         kind = event.get("event")
@@ -254,33 +263,56 @@ def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_i
             active_state = RequestState.DISPATCH_STARTED
         elif kind == "transition" and set(event) == {"event", "key", "state"}:
             state_val = event["state"]
-            if state_val == RequestState.RESERVED.value:
+            try:
+                target_state = RequestState(state_val)
+            except (ValueError, TypeError) as exc:
+                raise ValueError(f"unknown transition state: {state_val}") from exc
+            if target_state == RequestState.RESERVED:
                 if active is not None or key in completed:
                     raise ValueError("duplicate or overlapping journal reservation")
+                if is_live:
+                    validate_live_transition(None, target_state, consumed, consumed)
                 active, start = key, consumed
                 active_state = RequestState.RESERVED
             else:
                 if active != key:
                     raise ValueError("transition event for inactive request")
-                if state_val == RequestState.DISPATCH_STARTED.value:
-                    active_state = RequestState.DISPATCH_STARTED
-                elif state_val == RequestState.RESPONSE_RECEIVED.value:
-                    active_state = RequestState.RESPONSE_RECEIVED
-                elif state_val == RequestState.PARSED.value:
-                    active_state = RequestState.PARSED
+                if is_live:
+                    active_state = validate_live_transition(
+                        active_state, target_state, consumed, start
+                    )
                 else:
-                    raise ValueError(f"unknown transition state: {state_val}")
+                    active_state = target_state
         elif kind == "attempt" and set(event) == {"event", "key", "ordinal"}:
-            if (
-                active != key
-                or type(event["ordinal"]) is not int
-                or event["ordinal"] != consumed + 1
-            ):
-                raise ValueError("invalid attempt journal")
+            if is_live:
+                if active != key:
+                    raise ValueError("invalid attempt journal")
+                validate_attempt_event(
+                    active_state, active, key, event["ordinal"], consumed + 1
+                )
+            else:
+                if (
+                    active != key
+                    or type(event["ordinal"]) is not int
+                    or event["ordinal"] != consumed + 1
+                ):
+                    raise ValueError("invalid attempt journal")
             consumed += 1
+        elif kind == EVENT_RESERVATION_ABANDONED and set(event) == {"event", "key"}:
+            if not is_live:
+                raise ValueError("reservation_abandoned event only permitted in live execution")
+            validate_reservation_abandonment(active_state, active, event["key"], consumed, start)
+            active = None
+            active_state = None
         elif kind == "complete" and set(event) == {"event", "key", "record_sha256"}:
+            if active != key:
+                raise ValueError("completed journal lacks a valid execution")
+            if is_live:
+                validate_live_transition(
+                    active_state, RequestState.RECORD_COMMITTED, consumed, start
+                )
             record = records.get(key)
-            if active != key or record is None or consumed == start:
+            if record is None or consumed == start:
                 raise ValueError("completed journal lacks a valid execution")
             if (
                 digest(canonical_bytes(record.model_dump())) != event["record_sha256"]
@@ -292,15 +324,17 @@ def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_i
             active_state = None
         else:
             raise ValueError("unknown or malformed journal event")
+    recoverable_reservation = None
     if active is not None:
         if active_state == RequestState.RESERVED and consumed == start:
+            recoverable_reservation = active
             active = None
             active_state = None
         else:
             raise ValueError("in-flight request state is ambiguous; human reconciliation required")
     if completed != set(records) or consumed > cap:
         raise ValueError("unjournaled prediction or request budget exceeded")
-    return records, consumed
+    return records, consumed, recoverable_reservation
 
 
 def _record(
@@ -324,8 +358,7 @@ def _record(
         raw_resp = getattr(execution, "raw_text", None)
         raw_logged = raw_resp is not None
     elif raw_response_policy == "LOG_SEPARATELY":
-        raw_logged = True
-        raw_resp = None
+        raise ValueError("LOG_SEPARATELY raw-response storage is not implemented")
     else:  # DISCARD
         raw_resp = None
         raw_logged = False
@@ -423,7 +456,7 @@ def run_mock_experiment(
         or plan.samples != _validate_dataset(snapshot_config, plan.snapshots)
     ):
         raise ValueError("derived execution inputs differ from validated artifact snapshots")
-    directory = Path(directory).resolve()
+    directory = validate_untrusted_output_path(directory)
     # Fake predictions must never appear in canonical scientific output/data paths.
     scratch_root = (plan.root / ".tmp").resolve()
     system_temp = Path(tempfile.gettempdir()).resolve()
@@ -447,7 +480,7 @@ def run_mock_experiment(
         if resume:
             if parse_json(manifest_file.read_bytes()) != manifest:
                 raise ValueError("immutable manifest drift")
-            records, spent = _resume_state(
+            records, spent, _ = _resume_state(
                 directory, manifest, manifest_sha, max_requests, snapshot_registry, corpus_ids
             )
         else:
@@ -626,9 +659,7 @@ def run_live_experiment(
     )
     assert cap is not None
 
-    directory = Path(directory).resolve()
-    if directory.is_symlink():
-        raise ValueError("symlink output directory rejected")
+    directory = validate_untrusted_output_path(directory)
 
     if provider_factory is None:
         api_key = os.environ.get("OPENAI_API_KEY")
@@ -683,9 +714,14 @@ def run_live_experiment(
                 )
 
             manifest_sha = digest(canonical_bytes(manifest))
-            records, spent = _resume_state(
+            records, spent, recoverable_reservation = _resume_state(
                 directory, manifest, manifest_sha, cap, snapshot_registry, corpus_ids
             )
+            if recoverable_reservation is not None:
+                _append(
+                    journal_file,
+                    make_reservation_abandoned_event(recoverable_reservation),
+                )
         else:
             live_run_id = f"live-{uuid.uuid4().hex[:16]}"
             manifest = json.loads(canonical_bytes(plan.manifest))

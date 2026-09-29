@@ -1426,11 +1426,9 @@ def test_cli_live_blocked_without_protocol(bundle, capsys, tmp_path):
     assert ret_resume == 1
 
 
-def test_raw_response_policy_record_only_and_discard(bundle, tmp_path):
-    """Approved D1 policy is strictly enforced: DISCARD has None, RECORD_ONLY has raw response."""
+def test_d1_discard_policy_supported(bundle, tmp_path):
+    """Approved D1 DISCARD policy sets raw_response=None and raw_response_logged=False."""
     plan = load_plan(bundle[1])
-
-    # 1. DISCARD policy
     out_discard = tmp_path / "d1-discard"
     proto_discard = create_test_protocol_approval(d1_raw_response_policy="DISCARD")
     auth_discard = ExecutionAuthorization(
@@ -1455,7 +1453,10 @@ def test_raw_response_policy_record_only_and_discard(bundle, tmp_path):
         assert row["raw_response"] is None
         assert row["raw_response_logged"] is False
 
-    # 2. RECORD_ONLY policy
+
+def test_d1_record_only_policy_supported(bundle, tmp_path):
+    """Approved D1 RECORD_ONLY policy captures raw_response and sets raw_response_logged=True."""
+    plan = load_plan(bundle[1])
     out_record = tmp_path / "d1-record"
     proto_record = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
     auth_record = ExecutionAuthorization(
@@ -1481,8 +1482,8 @@ def test_raw_response_policy_record_only_and_discard(bundle, tmp_path):
         assert row["raw_response_logged"] is True
 
 
-def test_raw_response_policy_log_separately(bundle, tmp_path):
-    """LOG_SEPARATELY sets raw_response=None and raw_response_logged=True."""
+def test_d1_log_separately_blocks_until_storage_is_implemented(bundle, tmp_path):
+    """LOG_SEPARATELY fails closed because separate storage is not yet implemented."""
     plan = load_plan(bundle[1])
     output = tmp_path / "d1-log-separately"
     proto = create_test_protocol_approval(d1_raw_response_policy="LOG_SEPARATELY")
@@ -1492,22 +1493,38 @@ def test_raw_response_policy_log_separately(bundle, tmp_path):
         authorized_max_provider_attempts=20,
         allow_live_dispatch=True,
     )
-    run_live_experiment(
-        plan,
-        output,
-        authorization=auth,
-        protocol=proto,
-        provider_factory=lambda cfg, budget: MockProvider(),
-        stop_after=2,
-    )
-    rows = [
-        parse_json(line)
-        for line in (output / "no_rag_predictions.jsonl").read_bytes().splitlines()
-        if line
-    ]
-    for row in rows:
-        assert row["raw_response"] is None
-        assert row["raw_response_logged"] is True
+    provider_construct_count = 0
+    provider_call_count = 0
+
+    def counting_factory(cfg, budget):
+        nonlocal provider_construct_count
+        provider_construct_count += 1
+        p = MockProvider()
+        return p
+
+    with pytest.raises(
+        ProtocolNotFrozenError,
+        match="LIVE_EXECUTION_BLOCKED: LOG_SEPARATELY raw-response storage is not implemented",
+    ):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=counting_factory,
+            stop_after=2,
+        )
+
+    assert provider_construct_count == 0
+    assert provider_call_count == 0
+    prediction_files = list(output.glob("*_predictions.jsonl")) if output.exists() else []
+    assert len(prediction_files) == 0
+
+    with pytest.raises(
+        ProtocolNotFrozenError,
+        match="LIVE_EXECUTION_BLOCKED: LOG_SEPARATELY raw-response storage is not implemented",
+    ):
+        validate_scientific_protocol(proto, plan)
 
 
 def test_live_execution_requires_full_scientific_protocol_contract(bundle, tmp_path):
@@ -1916,3 +1933,602 @@ def test_d7_dataset_scope_mismatch_rejected(bundle):
         ProtocolNotFrozenError, match="d7_dataset_scope DEV_SMOKE requires 'dev' split"
     ):
         validate_scientific_protocol(proto, plan)
+
+
+def test_live_output_root_symlink_rejected(bundle, tmp_path):
+    """Untrusted symlink output root is rejected before resolution."""
+    plan = load_plan(bundle[1])
+    real_dir = tmp_path / "real_live_output"
+    real_dir.mkdir()
+    link_dir = tmp_path / "live-link"
+    try:
+        link_dir.symlink_to(real_dir)
+    except OSError:
+        try:
+            import _winapi
+
+            _winapi.CreateJunction(str(real_dir), str(link_dir))
+        except Exception:
+            pytest.skip("Symlinks not permitted on this Windows environment")
+
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_SYMLINK",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    construct_count = 0
+
+    def factory(cfg, budget):
+        nonlocal construct_count
+        construct_count += 1
+        return MockProvider()
+
+    with pytest.raises(ValueError, match="symlink output directory rejected"):
+        run_live_experiment(
+            plan,
+            link_dir,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=factory,
+        )
+
+    assert construct_count == 0
+
+
+def test_live_output_parent_symlink_component_rejected(bundle, tmp_path):
+    """Untrusted symlink in parent path component is rejected before resolution."""
+    plan = load_plan(bundle[1])
+    real_parent = tmp_path / "real-parent"
+    real_parent.mkdir()
+    link_parent = tmp_path / "link-parent"
+    try:
+        link_parent.symlink_to(real_parent)
+    except OSError:
+        try:
+            import _winapi
+
+            _winapi.CreateJunction(str(real_parent), str(link_parent))
+        except Exception:
+            pytest.skip("Symlinks not permitted on this Windows environment")
+
+    output = link_parent / "experiment-1"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_PARENT_SYMLINK",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    construct_count = 0
+
+    def factory(cfg, budget):
+        nonlocal construct_count
+        construct_count += 1
+        return MockProvider()
+
+    with pytest.raises(ValueError, match="symlink output directory rejected"):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=factory,
+        )
+
+    assert construct_count == 0
+
+
+def test_reserved_crash_recovery_remains_resumable_after_completion(bundle, tmp_path):
+    """Safe RESERVED crash recovery writes explicit reservation_abandoned and remains resumable."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "reserved-crash-recovery"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_RESERVED_CRASH",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+
+    # 1. Run first record cleanly
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: MockProvider(),
+        stop_after=1,
+    )
+
+    # 2. Inject RESERVED for next key
+    first_record_sample = plan.samples[0].sample_id
+    next_key = [first_record_sample, CONDITIONS[1]]
+    journal_file = output / "request_journal.jsonl"
+    with journal_file.open("ab") as stream:
+        stream.write(
+            canonical_bytes(
+                {"event": "transition", "key": next_key, "state": "RESERVED"}
+            )
+            + b"\n"
+        )
+
+    # 3. Resume and finish complete matrix
+    summary1 = run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: MockProvider(),
+        resume=True,
+    )
+    assert summary1["complete"] is True
+
+    # 4. Verify reservation_abandoned event exists in journal exactly for next_key
+    events = [parse_json(line) for line in journal_file.read_bytes().splitlines() if line]
+    abandoned_events = [
+        e for e in events if e.get("event") == "reservation_abandoned" and e.get("key") == next_key
+    ]
+    assert len(abandoned_events) == 1
+
+    # 5. Create fresh provider with call counter and resume AGAIN
+    fresh_calls = 0
+
+    class CountingMockProvider(MockProvider):
+        def create(self, **kwargs):
+            nonlocal fresh_calls
+            fresh_calls += 1
+            return super().create(**kwargs)
+
+    summary2 = run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: CountingMockProvider(),
+        resume=True,
+    )
+
+    # 6. Verify second resume results
+    assert summary2["complete"] is True
+    assert summary2["new_records"] == 0
+    assert fresh_calls == 0
+
+
+def test_reservation_abandonment_does_not_consume_budget(bundle, tmp_path):
+    """reservation_abandoned event in journal does not consume authorized budget."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "abandonment-budget"
+    proto = create_test_protocol_approval()
+    # Matrix requires 2 samples * 5 conditions = 10 requests
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_ABANDON_BUDGET",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=10,
+        allow_live_dispatch=True,
+    )
+
+    # Run 1 record
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: MockProvider(),
+        stop_after=1,
+    )
+
+    # Inject RESERVED
+    first_record_sample = plan.samples[0].sample_id
+    next_key = [first_record_sample, CONDITIONS[1]]
+    journal_file = output / "request_journal.jsonl"
+    with journal_file.open("ab") as stream:
+        stream.write(
+            canonical_bytes(
+                {"event": "transition", "key": next_key, "state": "RESERVED"}
+            )
+            + b"\n"
+        )
+
+    # Resume with exact budget 10: if abandonment consumed budget, it would fail
+    summary = run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: MockProvider(),
+        resume=True,
+    )
+    assert summary["complete"] is True
+    assert summary["requests_consumed"] == 10
+
+
+def test_dispatched_reservation_cannot_be_abandoned(bundle, tmp_path):
+    """Reservation cannot be abandoned after DISPATCH_STARTED or attempts occurred."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "dispatched-abandon-fail"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_DISPATCH_ABANDON",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+
+    # Run 1 record
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: MockProvider(),
+        stop_after=1,
+    )
+
+    # Inject DISPATCH_STARTED and then reservation_abandoned
+    first_record_sample = plan.samples[0].sample_id
+    next_key = [first_record_sample, CONDITIONS[1]]
+    journal_file = output / "request_journal.jsonl"
+    with journal_file.open("ab") as stream:
+        stream.write(
+            canonical_bytes(
+                {"event": "transition", "key": next_key, "state": "RESERVED"}
+            )
+            + b"\n"
+        )
+        stream.write(
+            canonical_bytes(
+                {"event": "transition", "key": next_key, "state": "DISPATCH_STARTED"}
+            )
+            + b"\n"
+        )
+        stream.write(
+            canonical_bytes(
+                {"event": "reservation_abandoned", "key": next_key}
+            )
+            + b"\n"
+        )
+
+    # Resume must fail closed because dispatched state cannot be abandoned
+    with pytest.raises(ValueError, match="Cannot abandon reservation in state DISPATCH_STARTED"):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, budget: MockProvider(),
+            resume=True,
+        )
+
+
+def test_live_journal_rejects_reserved_to_response_received(bundle, tmp_path):
+    """Live journal rejects illegal direct transition from RESERVED to RESPONSE_RECEIVED."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "bad-trans-1"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_T1",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, b: MockProvider(),
+        stop_after=1,
+    )
+    journal_file = output / "request_journal.jsonl"
+    next_key = [plan.samples[0].sample_id, CONDITIONS[1]]
+    with journal_file.open("ab") as stream:
+        stream.write(
+            canonical_bytes({"event": "transition", "key": next_key, "state": "RESERVED"}) + b"\n"
+        )
+        stream.write(
+            canonical_bytes(
+                {"event": "transition", "key": next_key, "state": "RESPONSE_RECEIVED"}
+            )
+            + b"\n"
+        )
+
+    with pytest.raises(ValueError, match="expected DISPATCH_STARTED"):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, b: MockProvider(),
+            resume=True,
+        )
+
+
+def test_live_journal_rejects_reserved_to_parsed(bundle, tmp_path):
+    """Live journal rejects illegal direct transition from RESERVED to PARSED."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "bad-trans-2"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_T2",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, b: MockProvider(),
+        stop_after=1,
+    )
+    journal_file = output / "request_journal.jsonl"
+    next_key = [plan.samples[0].sample_id, CONDITIONS[1]]
+    with journal_file.open("ab") as stream:
+        stream.write(
+            canonical_bytes({"event": "transition", "key": next_key, "state": "RESERVED"}) + b"\n"
+        )
+        stream.write(
+            canonical_bytes({"event": "transition", "key": next_key, "state": "PARSED"}) + b"\n"
+        )
+
+    with pytest.raises(ValueError, match="expected RESPONSE_RECEIVED"):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, b: MockProvider(),
+            resume=True,
+        )
+
+
+def test_live_journal_rejects_dispatch_started_to_parsed(bundle, tmp_path):
+    """Live journal rejects illegal transition from DISPATCH_STARTED directly to PARSED."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "bad-trans-3"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_T3",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, b: MockProvider(),
+        stop_after=1,
+    )
+    journal_file = output / "request_journal.jsonl"
+    next_key = [plan.samples[0].sample_id, CONDITIONS[1]]
+    with journal_file.open("ab") as stream:
+        stream.write(
+            canonical_bytes({"event": "transition", "key": next_key, "state": "RESERVED"}) + b"\n"
+        )
+        stream.write(
+            canonical_bytes(
+                {"event": "transition", "key": next_key, "state": "DISPATCH_STARTED"}
+            )
+            + b"\n"
+        )
+        stream.write(
+            canonical_bytes({"event": "transition", "key": next_key, "state": "PARSED"}) + b"\n"
+        )
+
+    with pytest.raises(ValueError, match="expected RESPONSE_RECEIVED"):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, b: MockProvider(),
+            resume=True,
+        )
+
+
+def test_live_journal_rejects_response_received_to_complete(bundle, tmp_path):
+    """Live journal rejects completing a record without passing through PARSED."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "bad-trans-4"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_T4",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, b: MockProvider(),
+        stop_after=1,
+    )
+    journal_file = output / "request_journal.jsonl"
+    next_key = [plan.samples[0].sample_id, CONDITIONS[1]]
+    with journal_file.open("ab") as stream:
+        stream.write(
+            canonical_bytes({"event": "transition", "key": next_key, "state": "RESERVED"}) + b"\n"
+        )
+        stream.write(
+            canonical_bytes(
+                {"event": "transition", "key": next_key, "state": "DISPATCH_STARTED"}
+            )
+            + b"\n"
+        )
+        stream.write(
+            canonical_bytes({"event": "attempt", "key": next_key, "ordinal": 2}) + b"\n"
+        )
+        stream.write(
+            canonical_bytes(
+                {"event": "transition", "key": next_key, "state": "RESPONSE_RECEIVED"}
+            )
+            + b"\n"
+        )
+        stream.write(
+            canonical_bytes(
+                {"event": "complete", "key": next_key, "record_sha256": "fake_hash"}
+            )
+            + b"\n"
+        )
+
+    with pytest.raises(ValueError, match="expected PARSED"):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, b: MockProvider(),
+            resume=True,
+        )
+
+
+def test_live_journal_rejects_attempt_before_dispatch_started(bundle, tmp_path):
+    """Attempt event before DISPATCH_STARTED is rejected."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "bad-attempt-1"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_ATT1",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, b: MockProvider(),
+        stop_after=1,
+    )
+    journal_file = output / "request_journal.jsonl"
+    next_key = [plan.samples[0].sample_id, CONDITIONS[1]]
+    with journal_file.open("ab") as stream:
+        stream.write(
+            canonical_bytes({"event": "transition", "key": next_key, "state": "RESERVED"}) + b"\n"
+        )
+        stream.write(
+            canonical_bytes({"event": "attempt", "key": next_key, "ordinal": 2}) + b"\n"
+        )
+
+    with pytest.raises(ValueError, match="Attempt event not allowed in state RESERVED"):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, b: MockProvider(),
+            resume=True,
+        )
+
+
+def test_live_journal_rejects_attempt_after_response_received(bundle, tmp_path):
+    """Attempt event after RESPONSE_RECEIVED is rejected."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "bad-attempt-2"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_ATT2",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, b: MockProvider(),
+        stop_after=1,
+    )
+    journal_file = output / "request_journal.jsonl"
+    next_key = [plan.samples[0].sample_id, CONDITIONS[1]]
+    with journal_file.open("ab") as stream:
+        stream.write(
+            canonical_bytes({"event": "transition", "key": next_key, "state": "RESERVED"}) + b"\n"
+        )
+        stream.write(
+            canonical_bytes(
+                {"event": "transition", "key": next_key, "state": "DISPATCH_STARTED"}
+            )
+            + b"\n"
+        )
+        stream.write(
+            canonical_bytes({"event": "attempt", "key": next_key, "ordinal": 2}) + b"\n"
+        )
+        stream.write(
+            canonical_bytes(
+                {"event": "transition", "key": next_key, "state": "RESPONSE_RECEIVED"}
+            )
+            + b"\n"
+        )
+        stream.write(
+            canonical_bytes({"event": "attempt", "key": next_key, "ordinal": 3}) + b"\n"
+        )
+
+    with pytest.raises(ValueError, match="Attempt event not allowed in state RESPONSE_RECEIVED"):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, b: MockProvider(),
+            resume=True,
+        )
+
+
+def test_live_journal_requires_at_least_one_attempt_before_response_received(bundle, tmp_path):
+    """Transition to RESPONSE_RECEIVED without at least one attempt is rejected."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "bad-attempt-3"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_ATT3",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, b: MockProvider(),
+        stop_after=1,
+    )
+    journal_file = output / "request_journal.jsonl"
+    next_key = [plan.samples[0].sample_id, CONDITIONS[1]]
+    with journal_file.open("ab") as stream:
+        stream.write(
+            canonical_bytes({"event": "transition", "key": next_key, "state": "RESERVED"}) + b"\n"
+        )
+        stream.write(
+            canonical_bytes(
+                {"event": "transition", "key": next_key, "state": "DISPATCH_STARTED"}
+            )
+            + b"\n"
+        )
+        # No attempt!
+        stream.write(
+            canonical_bytes(
+                {"event": "transition", "key": next_key, "state": "RESPONSE_RECEIVED"}
+            )
+            + b"\n"
+        )
+
+    with pytest.raises(ValueError, match="at least one provider attempt required"):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, b: MockProvider(),
+            resume=True,
+        )

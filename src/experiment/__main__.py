@@ -20,6 +20,7 @@ from src.experiment.authorization import (
     check_live_execution_gates,
 )
 from src.experiment.config import load_plan, parse_json
+from src.experiment.path_safety import validate_untrusted_output_path
 from src.experiment.runner import run_live_experiment
 
 
@@ -155,7 +156,23 @@ def _handle_live(args: argparse.Namespace, *, provider_factory=None) -> int:
 
 
 def _handle_resume(args: argparse.Namespace, *, provider_factory=None) -> int:
-    output_dir = Path(args.output_dir).resolve()
+    try:
+        output_dir = validate_untrusted_output_path(args.output_dir)
+    except ValueError as exc:
+        print(
+            json.dumps(
+                {
+                    "status": "LIVE_EXECUTION_BLOCKED",
+                    "reason": str(exc),
+                    "provider_calls": 0,
+                    "prediction_writes": 0,
+                },
+                sort_keys=True,
+            ),
+            file=sys.stderr,
+        )
+        return 1
+
     manifest_path = output_dir / "manifest.json"
     if not manifest_path.exists():
         print(

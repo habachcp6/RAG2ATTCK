@@ -83,6 +83,7 @@ class ExecutionRecord(BaseModel):
     latency_ms: float
     retry_count: int = 0
     error_type: Optional[str] = None
+    raw_text: Optional[str] = None
 
     model_config = ConfigDict(
         extra="forbid",

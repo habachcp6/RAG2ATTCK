@@ -209,8 +209,8 @@ def _load_evaluation_inputs(
     _require(manifest.get("schema_version") == "1.0.0", "unsupported manifest version")
     _require(manifest.get("status") == "pre_freeze", "unsupported freeze status")
     _require(
-        manifest.get("execution_mode") == "mock_fixture",
-        "only mock_fixture records are supported before freeze",
+        manifest.get("execution_mode") in {"mock_fixture", "live"},
+        "only mock_fixture or live records are supported before freeze",
     )
     _require(manifest.get("split") == "test", "only complete TEST cohort is supported")
     _require(
@@ -546,10 +546,28 @@ def _validate_record(row, condition, sample, manifest, digest, artifacts, regist
         _require(type(row[key]) is type(value) and row[key] == value, f"record {key} mismatch")
     _require(isinstance(row["run_id"], str) and bool(row["run_id"].strip()), "missing run_id")
     _require(row["terminal"] is True, "nonterminal record")
-    _require(
-        row["raw_response"] is None and row["raw_response_logged"] is False,
-        "raw response logging is disabled",
-    )
+    d1_policy = manifest.get("protocol", {}).get("d1_raw_response_policy", "DISCARD")
+    if d1_policy == "DISCARD":
+        _require(
+            row["raw_response"] is None and row["raw_response_logged"] is False,
+            "raw response logging is disabled under DISCARD policy",
+        )
+    elif d1_policy == "RECORD_ONLY":
+        _require(
+            (row["raw_response"] is None or isinstance(row["raw_response"], str))
+            and isinstance(row["raw_response_logged"], bool),
+            "invalid raw response logging under RECORD_ONLY policy",
+        )
+    elif d1_policy == "LOG_SEPARATELY":
+        _require(
+            row["raw_response"] is None and row["raw_response_logged"] is True,
+            "raw response must be logged separately under LOG_SEPARATELY policy",
+        )
+    else:
+        _require(
+            row["raw_response"] is None and row["raw_response_logged"] is False,
+            "raw response logging is disabled",
+        )
     status = row["parse_status"]
     _require(status in {s.value for s in ParseStatus}, "unknown parse status")
     _require(row["success"] is (status == "VALID"), "success/status contradiction")
@@ -633,14 +651,13 @@ def _validate_journal(
     """Require durable completion evidence for every recorded mock dispatch."""
     _require(not path.is_symlink(), "journal cannot be a symlink")
     events = _jsonl(path.read_bytes())
-    cap = manifest.get("fixture_max_requests")
+    cap = manifest.get("fixture_max_requests") or manifest.get("authorized_max_provider_attempts")
     _require(
         _integer(cap, minimum=1) and cap >= len(records),
         "invalid fixture request budget",
     )
     _require(
-        events[0]
-        == {"event": "header", "manifest_sha256": manifest_sha256, "max_requests": cap},
+        events[0] == {"event": "header", "manifest_sha256": manifest_sha256, "max_requests": cap},
         "journal header does not match manifest/budget",
     )
     by_key = {(row["sample_id"], row["condition"]): row for row in records}
@@ -663,6 +680,15 @@ def _validate_journal(
         if kind == "begin" and set(event) == {"event", "key"}:
             _require(active is None and key not in completed, "duplicate/overlapping journal begin")
             active, start = key, consumed
+        elif kind == "transition" and set(event) == {"event", "key", "state"}:
+            if event["state"] == "RESERVED":
+                _require(
+                    active is None and key not in completed,
+                    "duplicate/overlapping journal reservation",
+                )
+                active, start = key, consumed
+            else:
+                _require(active == key, "transition for inactive key")
         elif kind == "attempt" and set(event) == {"event", "key", "ordinal"}:
             _require(
                 active == key

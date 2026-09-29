@@ -16,6 +16,7 @@ INFRASTRUCTURE_PATHS = {
     "src/pilot/no_rag_pilot.py",
     "tests/test_experiment.py",
     "tests/test_experiment_evaluation.py",
+    "tests/test_experiment_t22.py",
     "tests/test_pilot_hardening.py",
     "tests/test_pre_experiment_integration.py",
     "tests/test_ci_contract.py",
@@ -284,7 +285,10 @@ def test_ci_path_filter_is_detected(event):
 
 
 @pytest.mark.parametrize("event", ["push", "pull_request"])
-@pytest.mark.parametrize("path", ["src/retrieval/**", "src/rag/**", "src/evaluation/**"])
+@pytest.mark.parametrize(
+    "path",
+    ["src/retrieval/**", "src/rag/**", "src/evaluation/**", "src/experiment/**"],
+)
 def test_missing_integration_path_trigger_is_detected(event, path):
     workflow = deepcopy(_workflow("integration.yml"))
     workflow["on"][event]["paths"].remove(path)
@@ -375,6 +379,8 @@ def test_shallow_checkout_for_provenance_tests_is_detected(workflow_name, job_na
     "workflow_name,job_name,step_name,validate",
     [
         ("ci.yml", "full-test-suite", "Lint T20 critical code paths", _assert_ci),
+        ("ci.yml", "full-test-suite", "Lint pre-experiment infrastructure", _assert_ci),
+        ("ci.yml", "full-test-suite", "Run Full Test Suite", _assert_ci),
         (
             "integration.yml",
             "real-retrieval",
@@ -400,3 +406,30 @@ def test_disabled_or_nonblocking_gate_is_detected(
     target[key] = value
     with pytest.raises(AssertionError):
         validate(workflow)
+
+
+def test_missing_t22_lint_coverage_is_detected():
+    workflow = deepcopy(_workflow("ci.yml"))
+    step = _step(workflow["jobs"]["full-test-suite"]["steps"], "Lint pre-experiment infrastructure")
+    parts = shlex.split(step["run"])
+    parts = [p for p in parts if p != "tests/test_experiment_t22.py"]
+    step["run"] = " ".join(parts)
+    with pytest.raises(AssertionError):
+        _assert_ci(workflow)
+
+
+def test_incomplete_full_test_suite_subset_is_detected():
+    workflow = deepcopy(_workflow("ci.yml"))
+    _step(workflow["jobs"]["full-test-suite"]["steps"], "Run Full Test Suite")["run"] = (
+        "uv run python scripts/run_offline_tests.py -m pytest tests/test_experiment.py -q"
+    )
+    with pytest.raises(AssertionError):
+        _assert_ci(workflow)
+
+
+@pytest.mark.parametrize("job_name", ["registry-validation", "synthetic-tests", "full-test-suite"])
+def test_critical_job_with_needs_is_detected(job_name):
+    workflow = deepcopy(_workflow("ci.yml"))
+    workflow["jobs"][job_name]["needs"] = ["skippable-job"]
+    with pytest.raises(AssertionError):
+        _assert_ci(workflow)

@@ -11,12 +11,15 @@ Covers:
 - Evaluator compatibility & canonical scoring gate
 """
 
+import dataclasses
 import json
 import os
 from pathlib import Path
 
 import faiss
+import httpx
 import numpy as np
+import openai
 import pytest
 
 from src.evaluation.experiment_metrics import (
@@ -25,6 +28,7 @@ from src.evaluation.experiment_metrics import (
     evaluate_conditional_accuracy,
     evaluate_end_to_end,
 )
+from src.experiment.__main__ import main
 from src.experiment.authorization import (
     ExecutionAuthorization,
     HumanAuthorizationRequiredError,
@@ -32,9 +36,17 @@ from src.experiment.authorization import (
     LiveExecutionBlockedError,
     ProtocolNotFrozenError,
     check_live_execution_gates,
+    create_test_protocol_approval,
+    validate_live_authorization,
+    validate_scientific_protocol,
 )
 from src.experiment.config import canonical_bytes, digest, load_plan, parse_json
-from src.experiment.journal import RequestJournalStateMachine, RequestState
+from src.experiment.journal import (
+    RequestJournalStateMachine,
+    RequestState,
+    append_journal_event,
+    read_journal_events,
+)
 from src.experiment.runner import (
     JournalBudget,
     MockProvider,
@@ -151,9 +163,7 @@ def bundle(tmp_path):
     index = faiss.IndexFlatIP(4)
     vectors = np.eye(4, dtype=np.float32)[np.arange(12) % 4]
     index.add(vectors)
-    config["attack"]["index"] = store(
-        "index.bin", faiss.serialize_index(index).tobytes(), raw=True
-    )
+    config["attack"]["index"] = store("index.bin", faiss.serialize_index(index).tobytes(), raw=True)
     retrieval = json.loads((ROOT / "config" / "retrieval.json").read_bytes())
     retrieval.update(
         corpus_path="corpus.jsonl",
@@ -193,8 +203,6 @@ def bundle(tmp_path):
     config_path = root / "experiment.json"
     config_path.write_bytes(canonical_bytes(config))
     return root, config_path, config
-
-
 
 
 # ===========================================================================
@@ -350,7 +358,7 @@ def test_authorization_api_key_alone_does_not_permit_calls(bundle, monkeypatch, 
 
 
 def test_live_experiment_blocked_even_with_valid_authorization(bundle, tmp_path):
-    """Even if an authorization object has all valid fields, live execution remains blocked."""
+    """Even if authorization is valid, live execution is blocked without credentials/provider."""
     plan = load_plan(bundle[1])
     output = tmp_path / "valid-auth-blocked"
     auth = ExecutionAuthorization(
@@ -362,7 +370,7 @@ def test_live_experiment_blocked_even_with_valid_authorization(bundle, tmp_path)
         d7_dataset_scope_approved="FULL_BENCHMARK",
     )
     with pytest.raises(
-        LiveExecutionBlockedError, match="live experiment execution is not enabled in this session"
+        LiveExecutionBlockedError, match="LIVE_EXECUTION_BLOCKED: OPENAI_API_KEY is not configured"
     ):
         run_live_experiment(plan, output, auth)
     assert not output.exists()
@@ -785,3 +793,696 @@ def test_canonical_scoring_remains_blocked(bundle, tmp_path):
 
     with pytest.raises(HumanDecisionRequired, match="HUMAN_DECISION_REQUIRED"):
         evaluate_conditional_accuracy(eval_inputs)
+
+
+# ===========================================================================
+# 8. Protocol Approval Contract & Authorization Tampering Tests
+# ===========================================================================
+
+
+def test_protocol_approval_contract_tampering_rejected(bundle):
+    """Tampering with decisions in ScientificProtocolApproval breaks cryptographic hash check."""
+    plan = load_plan(bundle[1])
+    # 1. Tampered hash flag
+    tampered_hash_proto = create_test_protocol_approval(tamper_hash=True)
+    with pytest.raises(ProtocolNotFrozenError, match="protocol SHA-256 hash mismatch"):
+        validate_scientific_protocol(tampered_hash_proto, plan)
+
+    # 2. Decision modified without updating hash
+    valid_proto = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
+    tampered_field_proto = dataclasses.replace(valid_proto, d1_raw_response_policy="DISCARD")
+    with pytest.raises(ProtocolNotFrozenError, match="protocol SHA-256 hash mismatch"):
+        validate_scientific_protocol(tampered_field_proto, plan)
+
+
+@pytest.mark.parametrize(
+    ("field", "bad_value"),
+    [
+        ("d1_raw_response_policy", "INVALID_POLICY"),
+        ("d2a_ground_truth_semantics", "INVALID_SEMANTICS"),
+        ("d2b_empty_ground_truth", "INVALID_EMPTY"),
+        ("d2c_ambiguous_ground_truth", "INVALID_AMBIGUOUS"),
+        ("d2d_macro_f1_universe", "INVALID_UNIVERSE"),
+        ("d2e_invalid_id_denominator", "INVALID_DENOMINATOR"),
+        ("d2f_api_error_denominator", "INVALID_DENOMINATOR"),
+        ("d2g_retired_attack_id", "INVALID_RETIRED"),
+        ("d2h_conditional_retrieval", "INVALID_CONDITIONAL"),
+        ("d2i_failure_precedence", "INVALID_PRECEDENCE"),
+        ("d2j_zero_denominator", "INVALID_ZERO"),
+        ("d3_model_version_policy", "INVALID_VERSION_POLICY"),
+        ("d4_concurrency_policy", "INVALID_CONCURRENCY"),
+        ("d5_budget_policy", "INVALID_BUDGET"),
+        ("d6_t15_prerequisite_policy", "INVALID_PREREQUISITE"),
+        ("d7_dataset_scope", "INVALID_SCOPE"),
+        ("protocol_version", ""),
+        ("approval_reference", ""),
+        ("approval_timestamp", ""),
+    ],
+)
+def test_protocol_missing_or_unknown_decision_rejected(bundle, field, bad_value):
+    """Missing decisions or unknown decision values fail closed."""
+    plan = load_plan(bundle[1])
+    kwargs = {field: bad_value}
+    proto = create_test_protocol_approval(**kwargs)
+    with pytest.raises(ProtocolNotFrozenError):
+        validate_scientific_protocol(proto, plan)
+
+
+def test_protocol_authorization_hash_mismatch_rejected(bundle):
+    """Authorization with approved_protocol_sha256 mismatching protocol fails closed."""
+    plan = load_plan(bundle[1])
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="VALID_TOKEN",
+        approved_protocol_sha256="wrong" + "00" * 30,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    with pytest.raises(ProtocolNotFrozenError, match="authorized protocol SHA-256 does not match"):
+        validate_live_authorization(auth, plan, protocol=proto)
+
+
+# ===========================================================================
+# 9. Fake Live Provider Execution & Matrix Invariants
+# ===========================================================================
+
+
+def test_fake_live_provider_factory_execution(bundle, tmp_path):
+    """End-to-end 5-condition live matrix execution via provider_factory.
+
+    Validates complete live manifest, run_id starting with 'live-', correct depths,
+    token usage, budget accounting, and zero GT leakage.
+    """
+    plan = load_plan(bundle[1])
+    output = tmp_path / "live-factory-exec"
+    proto = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_T22_E2E",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    fake_provider = MockProvider()
+    summary = run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda model_cfg, budget: fake_provider,
+    )
+
+    # Validate summary
+    assert summary["complete"] is True
+    assert summary["record_count"] == 10
+    assert summary["requests_consumed"] == 10
+    assert summary["consumed_provider_attempts"] == 10
+    assert summary["execution_mode"] == "live"
+    assert summary["run_id"].startswith("live-")
+
+    # Validate manifest
+    manifest_data = parse_json((output / "manifest.json").read_bytes())
+    assert manifest_data["execution_mode"] == "live"
+    assert manifest_data["run_id"] == summary["run_id"]
+    assert manifest_data["protocol_sha256"] == proto.protocol_sha256
+    assert manifest_data["human_authorization_token"] == "TOKEN_T22_E2E"
+
+    # Validate prediction files and depths
+    for cond in CONDITIONS:
+        pred_file = output / f"{cond}_predictions.jsonl"
+        assert pred_file.exists()
+        rows = [parse_json(line) for line in pred_file.read_bytes().splitlines() if line]
+        assert len(rows) == 2
+        expected_k = 0 if cond == "no_rag" else int(cond[5:])
+        for row in rows:
+            assert row["execution_mode"] == "live"
+            assert row["run_id"] == summary["run_id"]
+            assert row["condition"] == cond
+            assert row["retrieval_k"] == expected_k
+            assert len(row["retrieved_candidates"]) == expected_k
+            assert row["raw_response_logged"] is True
+            assert row["raw_response"] == '{"technique_id":"T1059.001"}'
+
+    # Validate request journal
+    journal_events = read_journal_events(output / "request_journal.jsonl")
+    assert journal_events[0]["event"] == "header"
+    assert journal_events[0]["max_requests"] == 20
+    complete_events = [e for e in journal_events if e["event"] == "complete"]
+    assert len(complete_events) == 10
+
+    # Validate zero GT leakage into provider calls
+    assert len(fake_provider.calls) == 10
+    for key, kwargs in fake_provider.calls:
+        call_str = json.dumps(kwargs)
+        assert "SECRET_GT_METADATA" not in call_str
+        assert "mapped" not in call_str
+        assert "ambiguous" not in call_str
+
+
+def test_fake_live_provider_simulates_retries_and_errors(bundle, tmp_path):
+    """Fake provider simulating timeout retry, error, refusal, and malformed response."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "live-simulated-errors"
+    proto = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_SIMULATED_ERRORS",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+
+    resp = httpx.Response(400, request=httpx.Request("POST", "https://api.openai.com/v1/responses"))
+    bad_req_err = openai.BadRequestError(
+        "bad request", response=resp, body={"error": {"message": "invalid"}}
+    )
+
+    outcomes = {
+        # Timeout on attempt 1, success on attempt 2 -> consumes 2 attempts, status VALID
+        ("s1", "no_rag"): [
+            TimeoutError("gateway timeout"),
+            MockReply(raw_text='{"technique_id":"T1059.001"}'),
+        ],
+        # Non-retryable error -> consumes 1 attempt, status API_FAILURE
+        ("s1", "rag_k1"): [bad_req_err],
+        # Refusal -> consumes 1 attempt, status REFUSAL
+        ("s1", "rag_k3"): [MockReply(status="completed", refusal="Refused to attribute")],
+        # Malformed response -> consumes 1 attempt, status MALFORMED_RESPONSE
+        ("s1", "rag_k5"): [MockReply(raw_text="not valid json")],
+    }
+    fake_provider = MockProvider(outcomes=outcomes)
+    summary = run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda model_cfg, budget: fake_provider,
+    )
+    assert summary["complete"] is True
+    # Total attempts = 2 (retry) + 1 (err) + 1 (refusal) + 1 (malformed) + 6 others = 11
+    assert summary["consumed_provider_attempts"] == 11
+    assert summary["record_count"] == 10
+
+    # Verify specific statuses
+    no_rag_rows = [
+        parse_json(line)
+        for line in (output / "no_rag_predictions.jsonl").read_bytes().splitlines()
+        if line
+    ]
+    s1_no_rag = next(r for r in no_rag_rows if r["sample_id"] == "s1")
+    assert s1_no_rag["parse_status"] == "VALID"
+    assert s1_no_rag["request_attempt_count"] == 2
+
+    rag_k1_rows = [
+        parse_json(line)
+        for line in (output / "rag_k1_predictions.jsonl").read_bytes().splitlines()
+        if line
+    ]
+    s1_rag_k1 = next(r for r in rag_k1_rows if r["sample_id"] == "s1")
+    assert s1_rag_k1["parse_status"] == "API_FAILURE"
+    assert s1_rag_k1["request_attempt_count"] == 1
+
+    rag_k3_rows = [
+        parse_json(line)
+        for line in (output / "rag_k3_predictions.jsonl").read_bytes().splitlines()
+        if line
+    ]
+    s1_rag_k3 = next(r for r in rag_k3_rows if r["sample_id"] == "s1")
+    assert s1_rag_k3["parse_status"] == "REFUSAL"
+
+    rag_k5_rows = [
+        parse_json(line)
+        for line in (output / "rag_k5_predictions.jsonl").read_bytes().splitlines()
+        if line
+    ]
+    s1_rag_k5 = next(r for r in rag_k5_rows if r["sample_id"] == "s1")
+    assert s1_rag_k5["parse_status"] == "MALFORMED_RESPONSE"
+
+
+# ===========================================================================
+# 10. Crash Injection Tests Covering All Request States
+# ===========================================================================
+
+
+def test_crash_after_reserved_safely_resumes(bundle, tmp_path):
+    """Crash after RESERVED before dispatch started safely resumes without failing closed."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "crash-reserved"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_CRASH_TEST",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    # Run 1 record first
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda model_cfg, budget: MockProvider(),
+        stop_after=1,
+    )
+    # Simulate a crash right after next job is RESERVED
+    journal_path = output / "request_journal.jsonl"
+    append_journal_event(
+        journal_path, {"event": "transition", "key": ["s1", "rag_k1"], "state": "RESERVED"}
+    )
+
+    # Resuming should succeed because consumed == start for the in-flight key
+    summary = run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda model_cfg, budget: MockProvider(),
+        resume=True,
+    )
+    assert summary["complete"] is True
+    assert summary["record_count"] == 10
+
+
+def test_crash_after_dispatch_started_fails_closed(bundle, tmp_path):
+    """Crash after DISPATCH_STARTED is ambiguous and must fail closed on resume."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "crash-dispatch-started"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_CRASH_TEST",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda model_cfg, budget: MockProvider(),
+        stop_after=1,
+    )
+    journal_path = output / "request_journal.jsonl"
+    append_journal_event(
+        journal_path, {"event": "transition", "key": ["s1", "rag_k1"], "state": "RESERVED"}
+    )
+    append_journal_event(
+        journal_path, {"event": "transition", "key": ["s1", "rag_k1"], "state": "DISPATCH_STARTED"}
+    )
+
+    with pytest.raises(
+        ValueError, match="in-flight request state is ambiguous; human reconciliation required"
+    ):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda model_cfg, budget: MockProvider(),
+            resume=True,
+        )
+
+
+def test_crash_after_provider_response_fails_closed(bundle, tmp_path):
+    """Crash after provider attempt consumed but before record commit fails closed on resume."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "crash-provider-response"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_CRASH_TEST",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda model_cfg, budget: MockProvider(),
+        stop_after=1,
+    )
+    journal_path = output / "request_journal.jsonl"
+    append_journal_event(
+        journal_path, {"event": "transition", "key": ["s1", "rag_k1"], "state": "RESERVED"}
+    )
+    append_journal_event(
+        journal_path, {"event": "transition", "key": ["s1", "rag_k1"], "state": "DISPATCH_STARTED"}
+    )
+    append_journal_event(journal_path, {"event": "attempt", "key": ["s1", "rag_k1"], "ordinal": 2})
+
+    with pytest.raises(
+        ValueError, match="in-flight request state is ambiguous; human reconciliation required"
+    ):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda model_cfg, budget: MockProvider(),
+            resume=True,
+        )
+
+
+def test_crash_after_response_received_fails_closed(bundle, tmp_path):
+    """Crash at RESPONSE_RECEIVED without record commit fails closed on resume."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "crash-response-recv"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_CRASH_TEST",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda model_cfg, budget: MockProvider(),
+        stop_after=1,
+    )
+    journal_path = output / "request_journal.jsonl"
+    append_journal_event(
+        journal_path, {"event": "transition", "key": ["s1", "rag_k1"], "state": "RESERVED"}
+    )
+    append_journal_event(
+        journal_path, {"event": "transition", "key": ["s1", "rag_k1"], "state": "DISPATCH_STARTED"}
+    )
+    append_journal_event(journal_path, {"event": "attempt", "key": ["s1", "rag_k1"], "ordinal": 2})
+    append_journal_event(
+        journal_path, {"event": "transition", "key": ["s1", "rag_k1"], "state": "RESPONSE_RECEIVED"}
+    )
+
+    with pytest.raises(
+        ValueError, match="in-flight request state is ambiguous; human reconciliation required"
+    ):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda model_cfg, budget: MockProvider(),
+            resume=True,
+        )
+
+
+def test_crash_after_parsed_fails_closed(bundle, tmp_path):
+    """Crash at PARSED before record commit fails closed on resume."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "crash-parsed"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_CRASH_TEST",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda model_cfg, budget: MockProvider(),
+        stop_after=1,
+    )
+    journal_path = output / "request_journal.jsonl"
+    append_journal_event(
+        journal_path, {"event": "transition", "key": ["s1", "rag_k1"], "state": "RESERVED"}
+    )
+    append_journal_event(
+        journal_path, {"event": "transition", "key": ["s1", "rag_k1"], "state": "DISPATCH_STARTED"}
+    )
+    append_journal_event(journal_path, {"event": "attempt", "key": ["s1", "rag_k1"], "ordinal": 2})
+    append_journal_event(
+        journal_path, {"event": "transition", "key": ["s1", "rag_k1"], "state": "RESPONSE_RECEIVED"}
+    )
+    append_journal_event(
+        journal_path, {"event": "transition", "key": ["s1", "rag_k1"], "state": "PARSED"}
+    )
+
+    with pytest.raises(
+        ValueError, match="in-flight request state is ambiguous; human reconciliation required"
+    ):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda model_cfg, budget: MockProvider(),
+            resume=True,
+        )
+
+
+def test_crash_after_prediction_write_before_complete_fails_closed(bundle, tmp_path):
+    """Crash after record written but before journal commit fails closed on resume."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "crash-pred-write"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_CRASH_TEST",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    # Run 2 records cleanly first
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda model_cfg, budget: MockProvider(),
+        stop_after=2,
+    )
+
+    # Now remove the last 'complete' event from journal to simulate crash after file write
+    journal_lines = (output / "request_journal.jsonl").read_bytes().splitlines()
+    assert b'"complete"' in journal_lines[-1]
+    (output / "request_journal.jsonl").write_bytes(b"\n".join(journal_lines[:-1]) + b"\n")
+
+    # Resuming must fail closed
+    with pytest.raises(ValueError):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda model_cfg, budget: MockProvider(),
+            resume=True,
+        )
+
+
+def test_crash_after_record_committed_skips_dispatch(bundle, tmp_path):
+    """Committed records in the journal are never re-dispatched upon resume."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "crash-record-committed"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_SKIP_DISPATCH",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    provider1 = MockProvider()
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda model_cfg, budget: provider1,
+        stop_after=1,
+    )
+    assert len(provider1.calls) == 1
+    first_key = provider1.calls[0][0]
+
+    provider2 = MockProvider()
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda model_cfg, budget: provider2,
+        resume=True,
+        stop_after=1,
+    )
+    assert len(provider2.calls) == 1
+    assert provider2.calls[0][0] != first_key
+
+
+# ===========================================================================
+# 11. Staged Execution, Ground Truth Isolation, CLI, and D1 Policy Tests
+# ===========================================================================
+
+
+def test_staged_execution_and_resume_preserves_run_id_and_budget(bundle, tmp_path):
+    """Staged execution with stop_after and resume preserves live run_id and budget."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "staged-exec"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_STAGED",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+
+    prov1 = MockProvider()
+    summary1 = run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda model_cfg, budget: prov1,
+        stop_after=3,
+    )
+    assert summary1["complete"] is False
+    assert summary1["record_count"] == 3
+    assert summary1["requests_consumed"] == 3
+    assert len(prov1.calls) == 3
+    initial_run_id = summary1["run_id"]
+
+    prov2 = MockProvider()
+    summary2 = run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda model_cfg, budget: prov2,
+        resume=True,
+    )
+    assert summary2["complete"] is True
+    assert summary2["record_count"] == 10
+    assert summary2["requests_consumed"] == 10
+    assert summary2["new_records"] == 7
+    assert len(prov2.calls) == 7
+    assert summary2["run_id"] == initial_run_id
+
+
+def test_ground_truth_sentinel_leakage_prevented(bundle, tmp_path):
+    """Ground truth metadata sentinels are completely absent from prompt texts."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "gt-sentinel-leakage"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_SENTINEL_LEAKAGE",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+
+    fake_provider = MockProvider()
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda model_cfg, budget: fake_provider,
+    )
+    assert len(fake_provider.calls) == 10
+    for key, kwargs in fake_provider.calls:
+        prompt_input = kwargs.get("input", "")
+        assert "SECRET_GT_METADATA" not in prompt_input
+        assert "label_status" not in prompt_input
+        assert "single_ground_truth" not in prompt_input
+        assert "contextual_ground_truth" not in prompt_input
+
+
+def test_evaluator_compatibility_live_runner_output(bundle, tmp_path):
+    """Live runner output loads into evaluator; canonical scoring raises HumanDecisionRequired."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "live-evaluator-compat"
+    proto = create_test_protocol_approval()
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_EVAL_COMPAT",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda model_cfg, budget: MockProvider(),
+    )
+
+    paths = {c: output / f"{c}_predictions.jsonl" for c in CONDITIONS}
+    eval_inputs = _load_evaluation_inputs(
+        output / "manifest.json", paths, repository_root=bundle[0], expected_sample_count=2
+    )
+    assert len(eval_inputs.records) == 10
+    assert eval_inputs.execution_mode == "live"
+
+    with pytest.raises(HumanDecisionRequired, match="HUMAN_DECISION_REQUIRED"):
+        evaluate_end_to_end(eval_inputs)
+
+    with pytest.raises(HumanDecisionRequired, match="HUMAN_DECISION_REQUIRED"):
+        evaluate_conditional_accuracy(eval_inputs)
+
+
+def test_cli_live_blocked_without_protocol(bundle, capsys, tmp_path):
+    """CLI live and resume subcommands fail closed when protocol or auth is missing."""
+    _, path, _ = bundle
+    ret = main(["live", "--config", str(path)])
+    assert ret == 1
+    err_out = capsys.readouterr().err
+    assert "HUMAN_DECISION_REQUIRED" in err_out or "LIVE_EXECUTION_BLOCKED" in err_out
+    assert '"provider_calls": 0' in err_out
+
+    ret_resume = main(["resume", "--config", str(path), "--output-dir", str(tmp_path / "no_dir")])
+    assert ret_resume == 1
+
+
+def test_raw_response_policy_record_only_and_discard(bundle, tmp_path):
+    """Approved D1 policy is strictly enforced: DISCARD has None, RECORD_ONLY has raw response."""
+    plan = load_plan(bundle[1])
+
+    # 1. DISCARD policy
+    out_discard = tmp_path / "d1-discard"
+    proto_discard = create_test_protocol_approval(d1_raw_response_policy="DISCARD")
+    auth_discard = ExecutionAuthorization(
+        human_approval_token="TOKEN_DISCARD",
+        approved_protocol_sha256=proto_discard.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        out_discard,
+        authorization=auth_discard,
+        protocol=proto_discard,
+        provider_factory=lambda model_cfg, budget: MockProvider(),
+    )
+    no_rag_rows = [
+        parse_json(line)
+        for line in (out_discard / "no_rag_predictions.jsonl").read_bytes().splitlines()
+        if line
+    ]
+    for row in no_rag_rows:
+        assert row["raw_response"] is None
+        assert row["raw_response_logged"] is False
+
+    # 2. RECORD_ONLY policy
+    out_record = tmp_path / "d1-record"
+    proto_record = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
+    auth_record = ExecutionAuthorization(
+        human_approval_token="TOKEN_RECORD",
+        approved_protocol_sha256=proto_record.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        out_record,
+        authorization=auth_record,
+        protocol=proto_record,
+        provider_factory=lambda model_cfg, budget: MockProvider(),
+    )
+    no_rag_rows_rec = [
+        parse_json(line)
+        for line in (out_record / "no_rag_predictions.jsonl").read_bytes().splitlines()
+        if line
+    ]
+    for row in no_rag_rows_rec:
+        assert row["raw_response"] == '{"technique_id":"T1059.001"}'
+        assert row["raw_response_logged"] is True

@@ -13,8 +13,12 @@ do not blindly retry. That state is ambiguous and fails closed.
 
 from __future__ import annotations
 
+import os
 from enum import Enum
+from pathlib import Path
 from typing import Any
+
+from src.experiment.config import canonical_bytes, parse_jsonl
 
 
 class RequestState(str, Enum):
@@ -70,3 +74,16 @@ class RequestJournalStateMachine:
     @property
     def is_committed(self) -> bool:
         return self.state == RequestState.RECORD_COMMITTED
+
+
+def append_journal_event(journal_path: Path, event: dict[str, Any]) -> None:
+    """Durably append a canonical event row to the journal file with immediate fsync."""
+    with journal_path.open("ab") as stream:
+        stream.write(canonical_bytes(event) + b"\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+
+
+def read_journal_events(journal_path: Path) -> list[dict[str, Any]]:
+    """Read and parse all canonical events from a durable journal file."""
+    return parse_jsonl(journal_path.read_bytes())

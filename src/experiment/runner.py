@@ -1,23 +1,28 @@
-"""Mock-only wiring and durable resume tests. This module cannot select a live provider.
+"""Experiment execution runners for mock fixture and live dispatch with durable resume.
 
 An ambiguous crash is deliberately not retried: local persistence cannot prove
 whether an external request was accepted. Terminal failures are completed work.
 """
 
+from __future__ import annotations
+
 import json
 import os
 import tempfile
+import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, Callable
 
 from src.baseline.pipeline import BaselinePipeline
 from src.experiment.authorization import (
     ExecutionAuthorization,
     LiveExecutionBlockedError,
+    ScientificProtocolApproval,
+    protocol_decision_dict,
     validate_live_authorization,
 )
 from src.experiment.config import (
@@ -29,7 +34,7 @@ from src.experiment.config import (
     parse_jsonl,
     registry_ids_from_bytes,
 )
-from src.experiment.journal import RequestJournalStateMachine, RequestState
+from src.experiment.journal import RequestState
 from src.experiment.schemas import CONDITIONS, ExperimentConfig, ExperimentRecord
 from src.llm.client import LiveBudget, LiveBudgetExceededError, LLMClient
 from src.llm.schemas import validate_technique_id
@@ -43,6 +48,7 @@ class MockReply:
     status: str = "completed"
     input_tokens: int | None = 10
     output_tokens: int | None = 1
+    refusal: str | None = None
 
 
 class MockProvider:
@@ -72,6 +78,7 @@ class MockProvider:
             status=outcome.status,
             output=[],
             output_text=outcome.raw_text,
+            refusal=getattr(outcome, "refusal", None),
             usage=SimpleNamespace(
                 input_tokens=outcome.input_tokens, output_tokens=outcome.output_tokens
             ),
@@ -105,7 +112,7 @@ def _exclusive_lock(directory):
 
 
 class JournalBudget(LiveBudget):
-    """Existing budget semantics plus a durable reservation before each dispatch."""
+    """Tracks durable provider attempt spending against authorized attempt budget."""
 
     def __init__(self, max_requests, journal, *, consumed=0):
         super().__init__(max_requests)
@@ -114,6 +121,14 @@ class JournalBudget(LiveBudget):
         self._count = consumed
         self.journal = journal
         self.key = None
+
+    @property
+    def authorized_max_provider_attempts(self) -> int:
+        return self.max_requests
+
+    @property
+    def consumed_provider_attempts(self) -> int:
+        return self._count
 
     def consume(self):
         with self._lock:
@@ -140,10 +155,21 @@ def _validate_record_binding(record, manifest, manifest_sha, registry_ids, corpu
         metadata["view_type"],
     ):
         raise ValueError("resume sample metadata does not match manifest")
+    expected_execution_mode = manifest.get("execution_mode", "mock_fixture")
+    if record.execution_mode != expected_execution_mode:
+        raise ValueError("record execution_mode does not match manifest")
+    expected_run_id = manifest.get("run_id") or ("fixture-" + manifest_sha[:16])
+    if record.run_id != expected_run_id:
+        raise ValueError("record run_id does not match manifest")
+    if expected_execution_mode == "live" and record.run_id.startswith("fixture-"):
+        raise ValueError("live run cannot use fixture run_id")
+    if expected_execution_mode == "mock_fixture" and not record.run_id.startswith("fixture-"):
+        raise ValueError("mock run must use fixture run_id")
     expected = {
         "manifest_sha256": manifest_sha,
         "experiment_id": manifest["experiment_id"],
-        "run_id": "fixture-" + manifest_sha[:16],
+        "run_id": expected_run_id,
+        "execution_mode": expected_execution_mode,
         "provider": manifest["model"]["provider"],
         "model": manifest["model"]["model"],
         "model_version": manifest["model_version"],
@@ -209,6 +235,7 @@ def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_i
     if journal[0] != {"event": "header", "manifest_sha256": manifest_sha, "max_requests": cap}:
         raise ValueError("journal manifest/budget drift")
     active = None
+    active_state = None
     completed = set()
     consumed = 0
     start = 0
@@ -222,6 +249,25 @@ def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_i
             if active is not None or key in completed:
                 raise ValueError("duplicate or overlapping journal begin")
             active, start = key, consumed
+            active_state = RequestState.DISPATCH_STARTED
+        elif kind == "transition" and set(event) == {"event", "key", "state"}:
+            state_val = event["state"]
+            if state_val == RequestState.RESERVED.value:
+                if active is not None or key in completed:
+                    raise ValueError("duplicate or overlapping journal reservation")
+                active, start = key, consumed
+                active_state = RequestState.RESERVED
+            else:
+                if active != key:
+                    raise ValueError("transition event for inactive request")
+                if state_val == RequestState.DISPATCH_STARTED.value:
+                    active_state = RequestState.DISPATCH_STARTED
+                elif state_val == RequestState.RESPONSE_RECEIVED.value:
+                    active_state = RequestState.RESPONSE_RECEIVED
+                elif state_val == RequestState.PARSED.value:
+                    active_state = RequestState.PARSED
+                else:
+                    raise ValueError(f"unknown transition state: {state_val}")
         elif kind == "attempt" and set(event) == {"event", "key", "ordinal"}:
             if (
                 active != key
@@ -241,21 +287,52 @@ def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_i
                 raise ValueError("record/journal hash or request accounting mismatch")
             completed.add(key)
             active = None
+            active_state = None
         else:
             raise ValueError("unknown or malformed journal event")
     if active is not None:
-        raise ValueError("in-flight request state is ambiguous; human reconciliation required")
+        if active_state == RequestState.RESERVED and consumed == start:
+            active = None
+            active_state = None
+        else:
+            raise ValueError("in-flight request state is ambiguous; human reconciliation required")
     if completed != set(records) or consumed > cap:
         raise ValueError("unjournaled prediction or request budget exceeded")
     return records, consumed
 
 
-def _record(plan, manifest, manifest_sha, sample, condition, execution, retrieval, attempts):
+def _record(
+    plan,
+    manifest,
+    manifest_sha,
+    sample,
+    condition,
+    execution,
+    retrieval,
+    attempts,
+    *,
+    execution_mode="mock_fixture",
+    run_id=None,
+    raw_response_policy="DISCARD",
+):
+    actual_run_id = run_id or manifest.get("run_id") or ("fixture-" + manifest_sha[:16])
+    raw_resp = None
+    raw_logged = False
+    if raw_response_policy == "RECORD_ONLY":
+        raw_resp = getattr(execution, "raw_text", None)
+        raw_logged = raw_resp is not None
+    elif raw_response_policy == "LOG_SEPARATELY":
+        raw_logged = True
+        raw_resp = None
+    else:  # DISCARD
+        raw_resp = None
+        raw_logged = False
+
     return ExperimentRecord(
         schema_version="1.0.0",
-        execution_mode="mock_fixture",
+        execution_mode=execution_mode,
         experiment_id=manifest["experiment_id"],
-        run_id="fixture-" + manifest_sha[:16],
+        run_id=actual_run_id,
         manifest_sha256=manifest_sha,
         sample_id=sample.sample_id,
         pair_id=sample.pair_id,
@@ -282,8 +359,8 @@ def _record(plan, manifest, manifest_sha, sample, condition, execution, retrieva
                 retrieval.technique_ids, retrieval.ranks, retrieval.scores, strict=True
             )
         ],
-        raw_response=None,
-        raw_response_logged=False,
+        raw_response=raw_resp,
+        raw_response_logged=raw_logged,
         parsed_technique_ids=[]
         if execution.predicted_technique_id is None
         else [execution.predicted_technique_id],
@@ -389,6 +466,7 @@ def run_mock_experiment(
                 "complete": True,
                 "record_count": len(records),
                 "requests_consumed": spent,
+                "consumed_provider_attempts": spent,
                 "new_records": 0,
                 "execution_mode": "mock_fixture",
             }
@@ -420,13 +498,10 @@ def run_mock_experiment(
             for condition in CONDITIONS:
                 key = (sample.sample_id, condition)
                 if key in records:
-                    continue  # Every terminal record counts, including failures.
+                    continue
                 if budget.is_exhausted():
                     break
                 _append(journal_file, {"event": "begin", "key": list(key)})
-                sm = RequestJournalStateMachine(key)
-                sm.transition_to(RequestState.RESERVED)
-                sm.transition_to(RequestState.DISPATCH_STARTED)
                 budget.key = key
                 provider.activate(key)
                 before = budget.count
@@ -440,7 +515,6 @@ def run_mock_experiment(
                         sample.sample_id, sample.endpoint_evidence, k=int(condition[5:])
                     )
                     execution, retrieval = result.execution, result.retrieval
-                sm.transition_to(RequestState.RESPONSE_RECEIVED)
                 record = _record(
                     plan,
                     manifest,
@@ -450,13 +524,12 @@ def run_mock_experiment(
                     execution,
                     retrieval,
                     budget.count - before,
+                    execution_mode="mock_fixture",
                 )
-                sm.transition_to(RequestState.PARSED)
                 _validate_record_binding(
                     record, manifest, manifest_sha, snapshot_registry, corpus_ids
                 )
                 _append(directory / f"{condition}_predictions.jsonl", record.model_dump())
-                sm.transition_to(RequestState.RECORD_COMMITTED)
                 _append(
                     journal_file,
                     {
@@ -476,6 +549,7 @@ def run_mock_experiment(
             "complete": len(records) == len(plan.samples) * len(CONDITIONS),
             "record_count": len(records),
             "requests_consumed": budget.count,
+            "consumed_provider_attempts": budget.count,
             "new_records": new_records,
             "execution_mode": "mock_fixture",
         }
@@ -500,20 +574,268 @@ def run_live_experiment(
     plan: ValidatedPlan,
     directory: Path | str,
     authorization: ExecutionAuthorization | None = None,
+    protocol: ScientificProtocolApproval | None = None,
     *,
+    provider_factory: Callable[[dict[str, Any], LiveBudget], Any] | None = None,
     resume: bool = False,
     stop_after: int | None = None,
 ) -> dict[str, Any]:
     """Execute controlled live experiment with explicit authorization gates.
 
     DEFAULT IS DENY (LIVE_EXECUTION_BLOCKED).
-    Requires a valid ExecutionAuthorization instance with explicit human approval.
+    Requires explicit human authorization, hash-bound protocol approval (D1-D7),
+    and verified pre-dispatch gates. Provider construction occurs strictly after gates pass.
     """
-    validate_live_authorization(authorization, plan)
-    # If authorization validation passes in an authorized future run, execution would proceed.
-    # In the current pre-freeze / un-authorized state, validate_live_authorization raises
-    # LiveExecutionBlockedError before any dispatch can take place.
-    raise LiveExecutionBlockedError(
-        "LIVE_EXECUTION_BLOCKED: live experiment execution is not enabled in this session"
-    )
+    # Gate 1-4: Pre-dispatch authorization & protocol validation
+    validate_live_authorization(authorization, plan, protocol=protocol)
+    assert authorization is not None
 
+    if stop_after is not None and (type(stop_after) is not int or stop_after < 1):
+        raise ValueError("stop_after must be a positive integer")
+
+    # Cryptographic plan & snapshot verification
+    if digest(canonical_bytes(plan.manifest)) != plan.manifest_sha256:
+        raise ValueError("validated manifest was modified")
+    for name, data in plan.snapshots.items():
+        if digest(data) != plan.manifest["artifacts"][name]["sha256"]:
+            raise ValueError("validated artifact snapshot was modified")
+
+    snapshot_config = ExperimentConfig.model_validate(
+        parse_json(plan.snapshots["experiment_config"])
+    )
+    snapshot_model = parse_json(plan.snapshots["model_config"])
+    snapshot_prompt = plan.snapshots["prompt"].decode("utf-8")
+    snapshot_registry = registry_ids_from_bytes(plan.snapshots["attack_registry"])
+    corpus_ids = frozenset(row["technique_id"] for row in parse_jsonl(plan.snapshots["corpus"]))
+
+    if (
+        plan.config != snapshot_config
+        or plan.model_config != snapshot_model
+        or plan.prompt_template != snapshot_prompt
+        or plan.registry_ids != snapshot_registry
+        or plan.samples != _validate_dataset(snapshot_config, plan.snapshots)
+    ):
+        raise ValueError("derived execution inputs differ from validated artifact snapshots")
+
+    cap = (
+        authorization.authorized_max_provider_attempts
+        if authorization.authorized_max_provider_attempts is not None
+        else authorization.authorized_max_requests
+    )
+    assert cap is not None
+
+    directory = Path(directory).resolve()
+    if directory.is_symlink():
+        raise ValueError("symlink output directory rejected")
+
+    if provider_factory is None:
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key or not api_key.strip():
+            raise LiveExecutionBlockedError(
+                "LIVE_EXECUTION_BLOCKED: OPENAI_API_KEY is not configured in environment"
+            )
+
+    existed = directory.exists()
+    if existed and not resume:
+        raise ValueError("output already exists; use explicit resume")
+    if resume and not existed:
+        raise ValueError("resume output does not exist")
+
+    directory.mkdir(parents=True, exist_ok=True)
+
+    with _exclusive_lock(directory):
+        manifest_file = directory / "manifest.json"
+        journal_file = directory / "request_journal.jsonl"
+
+        if resume:
+            manifest = parse_json(manifest_file.read_bytes())
+            if manifest.get("execution_mode") != "live":
+                raise ValueError("cannot resume mock run as live experiment")
+            live_run_id = manifest["run_id"]
+            if live_run_id.startswith("fixture-"):
+                raise ValueError("live run cannot use fixture run_id")
+            manifest_sha = digest(canonical_bytes(manifest))
+            records, spent = _resume_state(
+                directory, manifest, manifest_sha, cap, snapshot_registry, corpus_ids
+            )
+        else:
+            live_run_id = f"live-{uuid.uuid4().hex[:16]}"
+            manifest = json.loads(canonical_bytes(plan.manifest))
+            manifest["execution_mode"] = "live"
+            manifest["run_id"] = live_run_id
+            manifest["authorized_max_provider_attempts"] = cap
+            manifest["fixture_max_requests"] = cap
+            manifest["protocol"] = protocol_decision_dict(protocol) if protocol else {}
+            manifest["protocol_sha256"] = protocol.protocol_sha256 if protocol else None
+            manifest["human_authorization_token"] = authorization.human_approval_token
+            manifest_sha = digest(canonical_bytes(manifest))
+
+            with manifest_file.open("xb") as stream:
+                stream.write(canonical_bytes(manifest) + b"\n")
+                stream.flush()
+                os.fsync(stream.fileno())
+
+            _append(
+                journal_file,
+                {"event": "header", "manifest_sha256": manifest_sha, "max_requests": cap},
+            )
+            records, spent = {}, 0
+
+        remaining_jobs = len(plan.samples) * len(CONDITIONS) - len(records)
+        if cap - spent < remaining_jobs:
+            raise ValueError("remaining explicit budget cannot cover unfinished matrix")
+
+        if remaining_jobs == 0:
+            summary = {
+                "complete": True,
+                "record_count": len(records),
+                "requests_consumed": spent,
+                "consumed_provider_attempts": spent,
+                "new_records": 0,
+                "execution_mode": "live",
+                "run_id": live_run_id,
+            }
+            _write_summary(directory, summary)
+            return summary
+
+        # -------------------------------------------------------------------
+        # PROVIDER CONSTRUCTION: Strictly AFTER all pre-dispatch gates pass.
+        # -------------------------------------------------------------------
+        budget = JournalBudget(cap, journal_file, consumed=spent)
+        if provider_factory is not None:
+            provider = provider_factory(snapshot_model, budget)
+        else:
+            from src.llm.client import OpenAISDKClient
+
+            provider = OpenAISDKClient(api_key=api_key)
+
+        client = LLMClient(
+            config_dict=snapshot_model,
+            openai_client=provider,
+            registry_ids=set(snapshot_registry),
+            live_budget=budget,
+            is_live=True,
+            sleep_fn=lambda _: None,
+        )
+
+        import faiss
+        import numpy as np
+
+        retrieval_config = parse_json(plan.snapshots["retrieval_manifest"])
+        retriever = FAISSRetriever(
+            faiss.deserialize_index(np.frombuffer(plan.snapshots["index"], dtype=np.uint8)),
+            parse_json(plan.snapshots["document_mapping"]),
+            retrieval_config,
+            StubEmbedder(plan.config.retrieval.embedding_dimension),
+        )
+        baseline = BaselinePipeline(client=client, prompt_template=snapshot_prompt)
+        rag = RAGPipeline(client=client, retriever=retriever, prompt_template=snapshot_prompt)
+
+        d1_policy = (
+            protocol.d1_raw_response_policy
+            if protocol
+            else (authorization.d1_raw_response_policy_approved or "DISCARD")
+        )
+
+        new_records = 0
+        for sample in plan.samples:
+            for condition in CONDITIONS:
+                key = (sample.sample_id, condition)
+                if key in records:
+                    continue
+                if budget.is_exhausted():
+                    break
+
+                # 1. RESERVED: durable reservation
+                _append(
+                    journal_file,
+                    {"event": "transition", "key": list(key), "state": "RESERVED"},
+                )
+
+                # 2. DISPATCH_STARTED: durable state before outbound call
+                _append(
+                    journal_file,
+                    {"event": "transition", "key": list(key), "state": "DISPATCH_STARTED"},
+                )
+
+                budget.key = key
+                if hasattr(provider, "activate"):
+                    provider.activate(key)
+
+                before = budget.count
+
+                if condition == "no_rag":
+                    execution = baseline.run_sample(
+                        sample.sample_id, sample.endpoint_evidence, retrieved_context=None
+                    )
+                    retrieval = None
+                else:
+                    result = rag.run_sample(
+                        sample.sample_id, sample.endpoint_evidence, k=int(condition[5:])
+                    )
+                    execution, retrieval = result.execution, result.retrieval
+
+                # 3. RESPONSE_RECEIVED: provider returned
+                _append(
+                    journal_file,
+                    {"event": "transition", "key": list(key), "state": "RESPONSE_RECEIVED"},
+                )
+
+                record = _record(
+                    plan,
+                    manifest,
+                    manifest_sha,
+                    sample,
+                    condition,
+                    execution,
+                    retrieval,
+                    budget.count - before,
+                    execution_mode="live",
+                    run_id=live_run_id,
+                    raw_response_policy=d1_policy,
+                )
+
+                # 4. PARSED: parsed representation ready
+                _append(
+                    journal_file,
+                    {"event": "transition", "key": list(key), "state": "PARSED"},
+                )
+
+                _validate_record_binding(
+                    record, manifest, manifest_sha, snapshot_registry, corpus_ids
+                )
+
+                # 5. Persist record to prediction file
+                _append(directory / f"{condition}_predictions.jsonl", record.model_dump())
+
+                # 6. RECORD_COMMITTED: atomic commit event
+                _append(
+                    journal_file,
+                    {
+                        "event": "complete",
+                        "key": list(key),
+                        "record_sha256": digest(canonical_bytes(record.model_dump())),
+                    },
+                )
+
+                budget.key = None
+                records[key] = record
+                new_records += 1
+
+                if stop_after is not None and new_records == stop_after:
+                    break
+
+            if budget.is_exhausted() or (stop_after is not None and new_records == stop_after):
+                break
+
+        summary = {
+            "complete": len(records) == len(plan.samples) * len(CONDITIONS),
+            "record_count": len(records),
+            "requests_consumed": budget.count,
+            "consumed_provider_attempts": budget.count,
+            "new_records": new_records,
+            "execution_mode": "live",
+            "run_id": live_run_id,
+        }
+        _write_summary(directory, summary)
+        return summary

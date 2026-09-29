@@ -531,6 +531,7 @@ class LLMClient:
                 latency_ms=latency_ms,
                 retry_count=retry_count,
                 error_type=None,
+                raw_text=raw_text,
             )
 
         # Post-hoc parsing and validation
@@ -551,4 +552,5 @@ class LLMClient:
             latency_ms=latency_ms,
             retry_count=retry_count,
             error_type=None,
+            raw_text=raw_text,
         )

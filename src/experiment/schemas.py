@@ -10,6 +10,7 @@ from src.llm.schemas import ParseStatus
 CONDITIONS = ("no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10")
 DEPTHS = (1, 3, 5, 10)
 Condition = Literal["no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10"]
+ExecutionMode = Literal["mock_fixture", "live"]
 SHA256 = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 Nonempty = Annotated[str, Field(min_length=1)]
 
@@ -131,7 +132,7 @@ class Candidate(StrictModel):
 
 class ExperimentRecord(StrictModel):
     schema_version: Literal["1.0.0"]
-    execution_mode: Literal["mock_fixture"]
+    execution_mode: ExecutionMode
     experiment_id: Nonempty
     run_id: Nonempty
     manifest_sha256: SHA256
@@ -153,8 +154,8 @@ class ExperimentRecord(StrictModel):
     corpus_sha256: SHA256
     index_sha256: SHA256
     retrieved_candidates: list[Candidate]
-    raw_response: None
-    raw_response_logged: Literal[False]
+    raw_response: str | None = None
+    raw_response_logged: bool = False
     parsed_technique_ids: Annotated[list[str], Field(max_length=1)]
     parse_status: Literal[
         "VALID",

@@ -153,6 +153,7 @@ jobs:
           src/pilot/no_rag_pilot.py
           tests/test_experiment.py
           tests/test_experiment_evaluation.py
+          tests/test_experiment_t22.py
           tests/test_pilot_hardening.py
           tests/test_pre_experiment_integration.py
           tests/test_ci_contract.py

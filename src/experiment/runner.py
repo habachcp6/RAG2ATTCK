@@ -12,8 +12,14 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 from src.baseline.pipeline import BaselinePipeline
+from src.experiment.authorization import (
+    ExecutionAuthorization,
+    LiveExecutionBlockedError,
+    validate_live_authorization,
+)
 from src.experiment.config import (
     ValidatedPlan,
     _validate_dataset,
@@ -23,6 +29,7 @@ from src.experiment.config import (
     parse_jsonl,
     registry_ids_from_bytes,
 )
+from src.experiment.journal import RequestJournalStateMachine, RequestState
 from src.experiment.schemas import CONDITIONS, ExperimentConfig, ExperimentRecord
 from src.llm.client import LiveBudget, LiveBudgetExceededError, LLMClient
 from src.llm.schemas import validate_technique_id
@@ -417,6 +424,9 @@ def run_mock_experiment(
                 if budget.is_exhausted():
                     break
                 _append(journal_file, {"event": "begin", "key": list(key)})
+                sm = RequestJournalStateMachine(key)
+                sm.transition_to(RequestState.RESERVED)
+                sm.transition_to(RequestState.DISPATCH_STARTED)
                 budget.key = key
                 provider.activate(key)
                 before = budget.count
@@ -430,6 +440,7 @@ def run_mock_experiment(
                         sample.sample_id, sample.endpoint_evidence, k=int(condition[5:])
                     )
                     execution, retrieval = result.execution, result.retrieval
+                sm.transition_to(RequestState.RESPONSE_RECEIVED)
                 record = _record(
                     plan,
                     manifest,
@@ -440,10 +451,12 @@ def run_mock_experiment(
                     retrieval,
                     budget.count - before,
                 )
+                sm.transition_to(RequestState.PARSED)
                 _validate_record_binding(
                     record, manifest, manifest_sha, snapshot_registry, corpus_ids
                 )
                 _append(directory / f"{condition}_predictions.jsonl", record.model_dump())
+                sm.transition_to(RequestState.RECORD_COMMITTED)
                 _append(
                     journal_file,
                     {
@@ -481,3 +494,26 @@ def _write_summary(directory, summary):
         stream.flush()
         os.fsync(stream.fileno())
     temp.replace(directory / "run_summary.json")
+
+
+def run_live_experiment(
+    plan: ValidatedPlan,
+    directory: Path | str,
+    authorization: ExecutionAuthorization | None = None,
+    *,
+    resume: bool = False,
+    stop_after: int | None = None,
+) -> dict[str, Any]:
+    """Execute controlled live experiment with explicit authorization gates.
+
+    DEFAULT IS DENY (LIVE_EXECUTION_BLOCKED).
+    Requires a valid ExecutionAuthorization instance with explicit human approval.
+    """
+    validate_live_authorization(authorization, plan)
+    # If authorization validation passes in an authorized future run, execution would proceed.
+    # In the current pre-freeze / un-authorized state, validate_live_authorization raises
+    # LiveExecutionBlockedError before any dispatch can take place.
+    raise LiveExecutionBlockedError(
+        "LIVE_EXECUTION_BLOCKED: live experiment execution is not enabled in this session"
+    )
+

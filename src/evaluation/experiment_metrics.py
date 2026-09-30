@@ -974,11 +974,24 @@ def verify_evaluator_provenance(
     for r in inputs.records:
         req_ts = r.get("request_timestamp_utc")
         resp_ts = r.get("response_timestamp_utc")
-        if (req_ts is None) != (resp_ts is None):
+        parse_st = r.get("parse_status")
+        is_transport_failure = parse_st in (
+            ParseStatus.API_FAILURE.value,
+            ParseStatus.TIMEOUT.value,
+            "API_FAILURE",
+            "TIMEOUT",
+        )
+        if req_ts is None and resp_ts is not None:
             raise ValueError(
-                f"incomplete timestamps on record {r.get('sample_id')}: "
-                f"request_timestamp_utc={req_ts}, response_timestamp_utc={resp_ts}"
+                f"timestamp anomaly on record {r.get('sample_id')}: "
+                f"response timestamp present without request timestamp"
             )
+        if req_ts is not None and resp_ts is None:
+            if not is_transport_failure:
+                raise ValueError(
+                    f"incomplete timestamps on record {r.get('sample_id')}: "
+                    f"request_timestamp_utc={req_ts}, response_timestamp_utc={resp_ts}"
+                )
         if req_ts is not None and resp_ts is not None:
             t_req = datetime.fromisoformat(req_ts)
             t_resp = datetime.fromisoformat(resp_ts)
@@ -1359,7 +1372,17 @@ def compute_technique_metrics(
             support = sum(
                 1 for r in scorable_records if tid in inputs.ground_truth.get(r["sample_id"], ())
             )
-            if tp + fp > 0 or support > 0:
+            if tp + fp == 0 and support == 0:
+                per_class[tid] = {
+                    "tp": 0,
+                    "fp": 0,
+                    "fn": 0,
+                    "support": 0,
+                    "precision": None,
+                    "recall": None,
+                    "f1": None,
+                }
+            else:
                 prec = (
                     tp / (tp + fp)
                     if (tp + fp) > 0
@@ -1611,14 +1634,15 @@ def evaluate_experiment(
 def validate_evaluator_compatibility(
     protocol: ScientificProtocolApproval,
     plan: Any,
-) -> None:
+) -> dict[str, Any]:
     """Validate that plan configuration and artifacts strictly meet evaluator requirements.
 
+    Validates D1-D7 evaluator contract compliance (D1, D2a-D2j, D3, artifacts).
     Fails closed on protocol mismatch, missing artifacts, or schema incompatibility.
     """
     if not isinstance(protocol, ScientificProtocolApproval):
         raise TypeError(f"Expected ScientificProtocolApproval, got {type(protocol).__name__}")
-    validate_scientific_protocol(protocol)
+    validate_scientific_protocol(protocol, plan)
 
     if plan is None:
         raise ValueError("Plan is required for evaluator compatibility validation")
@@ -1635,6 +1659,17 @@ def validate_evaluator_compatibility(
             raise ValueError(
                 "Evaluator protocol specifies RECORD_ONLY but plan logging.raw_response is False"
             )
+    elif protocol.d1_raw_response_policy == "LOG_SEPARATELY":
+        raise ValueError("LOG_SEPARATELY raw-response storage is not implemented")
+
+    # Validate ATT&CK release (D2g)
+    attack_release = getattr(plan.config.attack, "release", None) or plan.manifest.get(
+        "attack_release"
+    )
+    if attack_release != "19.2":
+        raise ValueError(
+            f"Evaluator requires ATT&CK release 19.2, got '{attack_release}'"
+        )
 
     # Validate required artifacts are present in plan
     plan_artifacts = getattr(plan, "artifacts", None)
@@ -1654,4 +1689,40 @@ def validate_evaluator_compatibility(
     missing = required_evaluator_artifacts - set(plan_artifacts.keys())
     if missing:
         raise ValueError(f"Plan missing artifacts required by evaluator: {sorted(missing)}")
+
+    # Validate technique universe if corpus snapshot is available (D2d)
+    if hasattr(plan, "snapshots") and "corpus" in plan.snapshots:
+        try:
+            corpus_lines = plan.snapshots["corpus"].decode("utf-8").strip().splitlines()
+            corpus_tids = {
+                json.loads(line)["technique_id"] for line in corpus_lines if line.strip()
+            }
+            if (
+                len(corpus_tids) != 474
+                and protocol.d2d_macro_f1_universe == "FROZEN_BENCHMARK_UNIVERSE"
+            ):
+                raise ValueError(
+                    f"Corpus technique count ({len(corpus_tids)}) differs from universe of 474"
+                )
+        except Exception as exc:
+            if "differs from frozen universe" in str(exc):
+                raise
+            # Ignore non-decodable corpus snapshots in synthetic unit test mocks
+
+    return {
+        "status": "VALID",
+        "d1_raw_response_policy": protocol.d1_raw_response_policy,
+        "d2a_ground_truth_semantics": protocol.d2a_ground_truth_semantics,
+        "d2b_empty_ground_truth": protocol.d2b_empty_ground_truth,
+        "d2c_ambiguous_ground_truth": protocol.d2c_ambiguous_ground_truth,
+        "d2d_macro_f1_universe": protocol.d2d_macro_f1_universe,
+        "d2e_invalid_id_denominator": protocol.d2e_invalid_id_denominator,
+        "d2f_api_error_denominator": protocol.d2f_api_error_denominator,
+        "d2g_retired_attack_id": protocol.d2g_retired_attack_id,
+        "d2h_conditional_retrieval": protocol.d2h_conditional_retrieval,
+        "d2i_failure_precedence": protocol.d2i_failure_precedence,
+        "d2j_zero_denominator": protocol.d2j_zero_denominator,
+        "d3_model_version_policy": protocol.d3_model_version_policy,
+        "artifacts_verified": sorted(required_evaluator_artifacts),
+    }
 

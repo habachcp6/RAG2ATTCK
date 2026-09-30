@@ -8,12 +8,55 @@ and an immutable, hash-bound scientific protocol approval contract (D1-D7).
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from src.experiment.config import canonical_bytes, digest
 
 if TYPE_CHECKING:
     from src.experiment.config import ValidatedPlan
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+CRITICAL_CODE_PATTERNS: tuple[str, ...] = (
+    "src/experiment",
+    "src/evaluation",
+    "src/llm",
+    "src/rag",
+    "src/baseline",
+    "prompts",
+    "config/model.json",
+    "config/retrieval.json",
+)
+
+
+def compute_code_manifest(repo_root: Path) -> dict[str, str]:
+    """Compute mapping of relative paths to SHA-256 digests for execution-critical code."""
+    manifest: dict[str, str] = {}
+    for item in sorted(CRITICAL_CODE_PATTERNS):
+        path = repo_root / item
+        if path.is_file():
+            rel = path.relative_to(repo_root).as_posix()
+            manifest[rel] = digest(path.read_bytes())
+        elif path.is_dir():
+            for child in sorted(path.rglob("*")):
+                if (
+                    child.is_file()
+                    and not child.name.endswith(".pyc")
+                    and "__pycache__" not in child.parts
+                    and ".pytest_cache" not in child.parts
+                ):
+                    rel = child.relative_to(repo_root).as_posix()
+                    manifest[rel] = digest(child.read_bytes())
+    return manifest
+
+
+def compute_code_manifest_sha256(repo_root: Path) -> str:
+    """Compute SHA-256 digest over the canonical JSON of the critical code manifest."""
+    manifest = compute_code_manifest(repo_root)
+    return digest(canonical_bytes(manifest))
+
 
 
 class LiveExecutionBlockedError(RuntimeError):
@@ -413,44 +456,67 @@ def validate_live_authorization(
                 f"cannot cover the required matrix calls ({required_calls})"
             )
 
-    # Gate 5: Canonical experiment lock enforcement for canonical TEST execution
-    validate_canonical_experiment_lock(plan, protocol, root=plan.root)
+    # Gate 5: Reject external self-signed lock or external plan root on TEST split
+    is_test_split = plan.manifest.get("split") == "test"
+    is_canonical_scale = len(getattr(plan, "samples", [])) == 1280
+    if is_test_split:
+        has_external_lock = (
+            hasattr(plan, "root")
+            and (plan.root / "config" / "canonical_experiment_lock_v1.json").exists()
+            and plan.root.resolve() != REPO_ROOT.resolve()
+        )
+        if has_external_lock:
+            raise ProtocolNotFrozenError(
+                "LIVE_EXECUTION_BLOCKED: canonical TEST execution must execute from repo root; "
+                "external plan root rejected"
+            )
+        if (
+            is_canonical_scale
+            and hasattr(plan, "root")
+            and plan.root.resolve() != REPO_ROOT.resolve()
+        ):
+            raise ProtocolNotFrozenError(
+                "LIVE_EXECUTION_BLOCKED: canonical TEST execution must execute from repo root; "
+                "external plan root rejected"
+            )
+
+    # Gate 6: Canonical experiment lock enforcement for canonical TEST execution
+    validate_canonical_experiment_lock(plan, protocol)
 
 
 def validate_canonical_experiment_lock(
     plan: ValidatedPlan,
     protocol: ScientificProtocolApproval,
     *,
+    repo_root: Any = None,
     root: Any = None,
 ) -> None:
     """Enforce that test split or canonical experiment binds strictly to the frozen lock artifact.
 
     Reject any alternate protocol or config even if internally self-consistent.
+    Ensures canonical lock is loaded from repository root, preventing external self-signed bypasses.
     """
-    from pathlib import Path
-
     from src.experiment.config import parse_json
 
     is_test_split = plan.manifest.get("split") == "test"
     is_canonical_scale = len(getattr(plan, "samples", [])) == 1280
-    default_repo_root = Path(__file__).resolve().parents[2]
+    default_repo_root = REPO_ROOT
 
-    # Determine repo root containing config/
-    repo_root = Path(root) if root else plan.root
-    lock_path = repo_root / "config" / "canonical_experiment_lock_v1.json"
+    # Determine target repository root containing config/
+    target_repo_root = Path(repo_root or root) if (repo_root or root) else default_repo_root
+    lock_path = target_repo_root / "config" / "canonical_experiment_lock_v1.json"
 
-    # If repo_root is the project repository root:
-    # only enforce canonical lock on TEST split or canonical scale cohort
+    plan_in_target = False
     try:
-        is_default_root = repo_root.resolve() == default_repo_root.resolve()
+        plan_in_target = hasattr(plan, "root") and plan.root.resolve() == target_repo_root.resolve()
     except Exception:
-        is_default_root = False
+        plan_in_target = False
 
-    if is_default_root:
-        should_enforce = is_test_split or is_canonical_scale
-    else:
-        should_enforce = lock_path.exists() or (is_test_split and is_canonical_scale)
-
+    should_enforce = (
+        (is_canonical_scale and is_test_split)
+        or (plan_in_target and is_test_split)
+        or (plan_in_target and lock_path.exists())
+    )
     if not should_enforce:
         return
 
@@ -481,6 +547,237 @@ def validate_canonical_experiment_lock(
                 f"LIVE_EXECUTION_BLOCKED: artifact '{name}' SHA-256 mismatch with canonical lock "
                 f"(expected {expected_hash}, got {actual_hash})"
             )
+
+    # Verify executable code manifest digest (BLOCKER-1)
+    expected_code_manifest = lock_data.get("code_manifest_sha256")
+    if expected_code_manifest:
+        actual_code_manifest = compute_code_manifest_sha256(target_repo_root)
+        if actual_code_manifest != expected_code_manifest:
+            raise ProtocolNotFrozenError(
+                f"LIVE_EXECUTION_BLOCKED: code manifest SHA-256 ({actual_code_manifest}) "
+                f"does not match canonical lock ({expected_code_manifest}); code drift detected"
+            )
+    elif is_test_split or is_canonical_scale:
+        raise ProtocolNotFrozenError(
+            "LIVE_EXECUTION_BLOCKED: canonical lock missing code_manifest_sha256 binding"
+        )
+
+    # Verify optional code freeze commit SHA if specified
+    expected_commit = lock_data.get("code_freeze_commit_sha")
+    if expected_commit:
+        try:
+            import subprocess
+
+            git_cwd = (
+                target_repo_root
+                if (target_repo_root / ".git").exists()
+                else REPO_ROOT
+            )
+            commit_res = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=git_cwd,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if commit_res.returncode == 0:
+                actual_commit = commit_res.stdout.strip()
+                if actual_commit != expected_commit:
+                    raise ProtocolNotFrozenError(
+                        f"LIVE_EXECUTION_BLOCKED: commit SHA ({actual_commit}) does not match "
+                        f"canonical lock freeze commit ({expected_commit})"
+                    )
+            else:
+                raise ProtocolNotFrozenError(
+                    "LIVE_EXECUTION_BLOCKED: failed to determine HEAD commit SHA to verify "
+                    f"canonical lock freeze commit ({expected_commit})"
+                )
+        except ProtocolNotFrozenError:
+            raise
+        except Exception:
+            pass
+
+
+def validate_experiment_readiness(
+    *,
+    plan: ValidatedPlan,
+    protocol: ScientificProtocolApproval | None,
+    authorization: ExecutionAuthorization | None = None,
+    repo_root: Path | None = None,
+    output_dir: Path | str | None = None,
+    max_attempts: int | None = None,
+    allow_dirty: bool = False,
+    is_live: bool = False,
+    is_resume: bool = False,
+) -> dict[str, Any]:
+    """Comprehensive shared non-provider readiness validator for preflight, live, and resume.
+
+    Mandatory gate across preflight, live dispatch, and resume.
+    Ensures clean source tree, canonical commit SHA, frozen protocol, canonical lock,
+    finite budget, sequential concurrency, output safety, and evaluator contract.
+    Canonical TEST live strictly prohibits any dirty source bypass.
+    Fails closed with strictly 0 provider calls, 0 prediction writes.
+    """
+    from src.experiment.path_safety import validate_untrusted_output_path
+    from src.experiment.schemas import CONDITIONS
+
+    root = Path(repo_root) if repo_root else REPO_ROOT
+    is_test_split = plan.manifest.get("split") == "test"
+    is_canonical_scale = len(getattr(plan, "samples", [])) == 1280
+
+    # Gate 1: Scientific protocol validation (mandatory)
+    if protocol is None:
+        raise ProtocolNotFrozenError(
+            "LIVE_EXECUTION_BLOCKED: scientific protocol decisions (D1-D7) remain "
+            "HUMAN_DECISION_REQUIRED and are not frozen"
+        )
+    validate_scientific_protocol(protocol, plan)
+
+    # Gate 2: Live authorization validation (mandatory when is_live is True)
+    if is_live:
+        validate_live_authorization(authorization, plan, protocol=protocol)
+
+    # Gate 3: Canonical experiment lock & code manifest validation
+    validate_canonical_experiment_lock(plan, protocol, repo_root=root)
+
+    # Gate 4: Sequential concurrency check
+    if (
+        protocol.d4_concurrency_policy != "SEQUENTIAL_ONLY"
+        or plan.config.execution.concurrency != 1
+    ):
+        raise LiveExecutionBlockedError(
+            "LIVE_EXECUTION_BLOCKED: Concurrency policy must be SEQUENTIAL_ONLY and "
+            "execution concurrency in config must be explicitly 1"
+        )
+
+    # Gate 5: Explicit finite request budget check
+    if not plan.config.execution.max_requests or plan.config.execution.max_requests <= 0:
+        raise LiveBudgetRequiredError(
+            "LIVE_EXECUTION_BLOCKED: Execution configuration must define an explicit "
+            "positive max_requests budget"
+        )
+
+    worst_case_attempts = (
+        len(plan.samples) * len(CONDITIONS) * (plan.config.execution.retries + 1)
+    )
+    plan_in_repo = False
+    try:
+        plan_in_repo = hasattr(plan, "root") and plan.root.resolve() == REPO_ROOT.resolve()
+    except Exception:
+        plan_in_repo = False
+    is_canonical_test = is_test_split and (is_canonical_scale or plan_in_repo)
+
+    if is_canonical_test or protocol.d5_budget_policy == "HARD_CAP_WORST_CASE_ATTEMPTS":
+        if protocol.d5_budget_policy != "HARD_CAP_WORST_CASE_ATTEMPTS":
+            raise LiveExecutionBlockedError(
+                f"LIVE_EXECUTION_BLOCKED: Budget policy must be HARD_CAP_WORST_CASE_ATTEMPTS, "
+                f"got {protocol.d5_budget_policy}"
+            )
+        if max_attempts is not None and max_attempts < worst_case_attempts:
+            raise LiveBudgetRequiredError(
+                f"LIVE_EXECUTION_BLOCKED: Provided max-attempts ({max_attempts}) is less than "
+                f"worst-case attempts ({worst_case_attempts})"
+            )
+    else:
+        required_calls = len(plan.samples) * len(CONDITIONS)
+        if max_attempts is not None and max_attempts < required_calls:
+            raise LiveBudgetRequiredError(
+                f"LIVE_EXECUTION_BLOCKED: Provided max-attempts ({max_attempts}) is less than "
+                f"required calls ({required_calls})"
+            )
+
+    # Gate 6: Output directory path safety check
+    effective_output = output_dir
+    if effective_output is None:
+        effective_output = root / "artifacts" / "experiments" / plan.manifest["experiment_id"]
+    validated_output = validate_untrusted_output_path(effective_output)
+
+    # Gate 7: Evaluator contract compatibility (MAJOR-6)
+    from src.evaluation.experiment_metrics import validate_evaluator_compatibility
+
+    evaluator_details = validate_evaluator_compatibility(protocol, plan)
+
+    # Gate 8: Clean source tree check
+    is_canonical_test = is_test_split and (is_canonical_scale or plan_in_repo)
+    # Canonical TEST live or canonical scale NEVER permits allow_dirty bypass
+    effective_allow_dirty = (
+        False if (is_live and is_canonical_test) else allow_dirty
+    )
+    if not effective_allow_dirty:
+        try:
+            import subprocess
+
+            res = subprocess.run(
+                ["git", "status", "--porcelain", "src", "config", "prompts", "scripts"],
+                cwd=root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if res.returncode == 0 and res.stdout.strip():
+                raise LiveExecutionBlockedError(
+                    "LIVE_EXECUTION_BLOCKED: Source tree is dirty: git status reports "
+                    f"uncommitted changes in tracked directories:\n{res.stdout.strip()}"
+                )
+        except LiveExecutionBlockedError:
+            raise
+        except Exception as exc:
+            raise LiveExecutionBlockedError(
+                f"LIVE_EXECUTION_BLOCKED: Failed to check git source cleanliness: {exc}"
+            ) from exc
+
+    # Gate 9: Exact 40-character Git commit SHA check
+    git_sha = None
+    try:
+        import subprocess
+
+        git_sha_res = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if git_sha_res.returncode == 0:
+            git_sha = git_sha_res.stdout.strip()
+            import re
+
+            if len(git_sha) != 40 or not re.fullmatch(r"[0-9a-f]{40}", git_sha):
+                raise LiveExecutionBlockedError(
+                    f"LIVE_EXECUTION_BLOCKED: Invalid Git commit SHA: {git_sha}"
+                )
+    except LiveExecutionBlockedError:
+        raise
+    except Exception as exc:
+        if is_test_split or is_canonical_scale:
+            raise LiveExecutionBlockedError(
+                f"LIVE_EXECUTION_BLOCKED: Git commit SHA check failed: {exc}"
+            ) from exc
+
+    return {
+        "status": "EXPERIMENT_PREFLIGHT_READY",
+        "protocol_version": protocol.protocol_version,
+        "protocol_sha256": protocol.protocol_sha256,
+        "git_commit_sha": git_sha,
+        "experiment_id": plan.manifest["experiment_id"],
+        "split": plan.manifest["split"],
+        "sample_count": len(plan.samples),
+        "condition_count": len(CONDITIONS),
+        "expected_requests": len(plan.samples) * len(CONDITIONS),
+        "worst_case_attempts": worst_case_attempts,
+        "concurrency": plan.config.execution.concurrency,
+        "evaluator_contract_valid": True,
+        "evaluator_contract_details": evaluator_details,
+        "output_path_safe": True,
+        "output_directory": str(validated_output),
+        "test_split_protection": (
+            "BLOCKED_WITHOUT_HUMAN_AUTHORIZATION" if is_test_split else "DEV_ONLY"
+        ),
+        "provider_calls_during_preflight": 0,
+        "canonical_test_provider_calls": 0,
+        "provider_calls": 0,
+        "prediction_writes": 0,
+    }
 
 
 def check_live_execution_gates(

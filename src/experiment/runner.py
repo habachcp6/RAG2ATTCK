@@ -19,6 +19,7 @@ from typing import Any, Callable
 
 from src.baseline.pipeline import BaselinePipeline
 from src.experiment.authorization import (
+    REPO_ROOT,
     ExecutionAuthorization,
     LiveExecutionBlockedError,
     ScientificProtocolApproval,
@@ -423,6 +424,8 @@ def _record(
     raw_logged = False
     if raw_response_policy == "RECORD_ONLY":
         raw_resp = getattr(execution, "raw_text", None)
+        if raw_resp is not None:
+            raw_resp = sanitize_secrets(raw_resp, extra_tokens=extra_tokens)
         raw_logged = raw_resp is not None
     elif raw_response_policy == "LOG_SEPARATELY":
         raise ValueError("LOG_SEPARATELY raw-response storage is not implemented")
@@ -686,6 +689,7 @@ def run_live_experiment(
     provider_factory: Callable[[dict[str, Any], LiveBudget], Any] | None = None,
     resume: bool = False,
     stop_after: int | None = None,
+    allow_dirty: bool = False,
 ) -> dict[str, Any]:
     """Execute controlled live experiment with explicit authorization gates.
 
@@ -693,8 +697,39 @@ def run_live_experiment(
     Requires explicit human authorization, hash-bound protocol approval (D1-D7),
     and verified pre-dispatch gates. Provider construction occurs strictly after gates pass.
     """
-    # Gate 1-4: Pre-dispatch authorization & protocol validation
+    # Pre-dispatch authorization & protocol validation (BLOCKER-2)
     validate_live_authorization(authorization, plan, protocol=protocol)
+
+    plan_in_repo = False
+    try:
+        plan_in_repo = hasattr(plan, "root") and plan.root.resolve() == REPO_ROOT.resolve()
+    except Exception:
+        plan_in_repo = False
+    is_test = plan.manifest.get("split") == "test"
+    is_canonical = is_test and (
+        len(getattr(plan, "samples", [])) == 1280
+        or plan_in_repo
+    )
+    effective_allow_dirty = False if is_canonical else allow_dirty
+    should_check_dirty = (
+        not effective_allow_dirty
+        and (plan_in_repo or is_canonical or getattr(plan, "enforce_clean_git", False))
+    )
+    if should_check_dirty:
+        import subprocess
+
+        res = subprocess.run(
+            ["git", "status", "--porcelain", "src", "config", "prompts", "scripts"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if res.returncode == 0 and res.stdout.strip():
+            raise LiveExecutionBlockedError(
+                "LIVE_EXECUTION_BLOCKED: Source tree is dirty: git status reports "
+                f"uncommitted changes in tracked directories:\n{res.stdout.strip()}"
+            )
     assert authorization is not None
 
     if stop_after is not None and (type(stop_after) is not int or stop_after < 1):

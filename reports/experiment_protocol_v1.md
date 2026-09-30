@@ -1,9 +1,9 @@
-# RAG2ATTCK — Canonical Experiment Protocol v1
+# RAG2ATTCK — Canonical Experiment Protocol v1.1
 
 Status: **SCIENTIFIC_PROTOCOL_FROZEN**  
-Protocol Version: `experiment-protocol-v1`  
-Protocol SHA-256: `e7ab9ca3b5a779fc01e4d0b532871377aff041faf9c570c32599fedf26748677`  
-Approval Reference: `RAG2ATTCK-PROTOCOL-V1-FROZEN`  
+Protocol Version: `experiment-protocol-v1.1`  
+Protocol SHA-256: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`  
+Approval Reference: `RAG2ATTCK-PROTOCOL-V1.1-FROZEN`  
 Approval Timestamp: `2026-09-30T00:00:00+00:00`  
 
 ---
@@ -43,7 +43,8 @@ All execution gates and offline evaluators bind to this frozen protocol. Automat
 ### D2d: Macro-F1 Universe (`FROZEN_BENCHMARK_UNIVERSE`)
 * **Decision**: `FROZEN_BENCHMARK_UNIVERSE`
 * **Semantics**: The macro-averaged F1 class universe is strictly bounded by the frozen candidate technique universe defined in the benchmark retrieval corpus (`attack/corpus/enterprise-windows-v19.2.jsonl`, 474 candidate techniques: 176 parent techniques and 298 subtechniques).
-* **Deterministic Invariant**: Model output variations do not alter the denominator or class universe across conditions or runs.
+* **Deterministic Invariant**: Model output variations do not alter the denominator or class universe across conditions or runs. The macro aggregation denominator remains fixed at 474 across all conditions.
+* **Macro Aggregation Contribution**: For unobserved techniques where both ground truth support and predictions are zero ($support = 0$ and $predictions = 0$), the technique contributes $0.0$ to the macro-F1 numerator sum.
 
 ### D2e: Invalid ATT&CK ID Treatment (`INCLUDE_IN_DENOMINATOR`)
 * **Decision**: `INCLUDE_IN_DENOMINATOR`
@@ -82,6 +83,7 @@ All execution gates and offline evaluators bind to this frozen protocol. Automat
 ### D2j: Zero Denominator Convention (`NULL`)
 * **Decision**: `NULL`
 * **Semantics**: Any metric whose denominator evaluates to zero is rendered as `null` (`None` in Python, serialized as `null` in JSON). It must never be silently approximated as `0.0` or `1.0`.
+* **Per-Technique Metrics**: In per-technique evaluations (`per_technique_metrics.json`), all 474 techniques in the frozen universe are explicitly reported. When a technique has zero support and zero predictions, its precision, recall, and F1 are emitted as `null`.
 
 ### D3: Model Version & Provenance (`ALLOW_LATEST_WITH_TIMESTAMP_BINDING`)
 * **Decision**: `ALLOW_LATEST_WITH_TIMESTAMP_BINDING`
@@ -118,6 +120,6 @@ All execution gates and offline evaluators bind to this frozen protocol. Automat
 
 The canonical SHA-256 digest of this protocol contract is:
 ```text
-e7ab9ca3b5a779fc01e4d0b532871377aff041faf9c570c32599fedf26748677
+d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c
 ```
 Computed over the canonical JSON bytes of the decisions mapping. Any mutation of decisions invalidates this signature and immediately halts execution.

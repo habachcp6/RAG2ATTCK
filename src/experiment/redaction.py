@@ -29,18 +29,25 @@ _SECRET_PATTERNS = [
 
 
 def sanitize_secrets(text: str | None, *, extra_tokens: Sequence[str] = ()) -> str | None:
-    """Sanitize secret patterns and explicit tokens from text."""
+    """Sanitize secret patterns and explicit tokens from text.
+
+    FAIL-CLOSED: returns '[REDACTION_FAILED]' if sanitization encounters any unhandled error.
+    """
     if text is None:
         return None
-    result = str(text)
+    try:
+        result = str(text)
 
-    # Redact explicit tokens first
-    for token in extra_tokens:
-        if token and len(token.strip()) >= 4:
-            result = result.replace(token.strip(), "[REDACTED_SECRET]")
+        # Redact explicit tokens first
+        for token in extra_tokens:
+            if token and len(str(token).strip()) >= 4:
+                result = result.replace(str(token).strip(), "[REDACTED_SECRET]")
 
-    # Redact regex patterns
-    for pat, replacement in _SECRET_PATTERNS:
-        result = pat.sub(replacement, result)
+        # Redact regex patterns
+        for pat, replacement in _SECRET_PATTERNS:
+            result = pat.sub(replacement, result)
 
-    return result
+        return result
+    except Exception:
+        return "[REDACTION_FAILED]"
+

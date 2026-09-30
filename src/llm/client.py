@@ -61,15 +61,19 @@ OPERATIONAL_EXCEPTIONS = (
 
 
 def _sanitize(text: str | None, *, extra_tokens: Sequence[str] = ()) -> str | None:
-    """Lazily sanitize secrets from text without triggering circular imports."""
+    """Lazily sanitize secrets from text without triggering circular imports.
+
+    FAIL-CLOSED: Never returns raw unredacted text if redaction fails.
+    """
     if text is None:
         return None
     try:
         from src.experiment.redaction import sanitize_secrets
 
-        return sanitize_secrets(text, extra_tokens=extra_tokens)
+        res = sanitize_secrets(text, extra_tokens=extra_tokens)
+        return "[REDACTION_FAILED]" if res is None and text is not None else res
     except Exception:
-        return text
+        return "[REDACTION_FAILED]"
 
 
 class LiveBudget:
@@ -490,10 +494,11 @@ class LLMClient:
                             self.retry_initial_delay * (self.retry_backoff_factor ** attempt),
                             self.retry_max_delay
                         )
+                        sanitized_exc_str = _sanitize(str(exc), extra_tokens=extra_secrets)
                         logger.info(
                             "Transient error on attempt %d: %s. Retrying in %.2fs (retry %d/%d)...",
                             attempt + 1,
-                            exc,
+                            sanitized_exc_str,
                             delay,
                             attempt + 1,
                             self.max_retries

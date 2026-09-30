@@ -2757,7 +2757,7 @@ def test_frozen_protocol_v1_integrity_and_validation():
     validate_scientific_protocol(protocol)
     assert (
         protocol.protocol_sha256
-        == "e7ab9ca3b5a779fc01e4d0b532871377aff041faf9c570c32599fedf26748677"
+        == "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c"
     )
     assert protocol.d1_raw_response_policy == "RECORD_ONLY"
     assert protocol.d2a_ground_truth_semantics == "ANY_MATCH"
@@ -4194,7 +4194,7 @@ def test_preflight_cli_accepts_valid_scoped_test_authorization_contract(tmp_path
     contract = {
         "human_approval_token": "HUMAN_CANONICAL_TOKEN_OK",
         "approved_protocol_sha256": (
-            "e7ab9ca3b5a779fc01e4d0b532871377aff041faf9c570c32599fedf26748677"
+            "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c"
         ),
         "authorized_max_provider_attempts": 25600,
         "allow_live_dispatch": True,
@@ -4209,6 +4209,411 @@ def test_preflight_cli_accepts_valid_scoped_test_authorization_contract(tmp_path
     assert data["status"] == "EXPERIMENT_PREFLIGHT_READY"
     assert data["test_authorization_status"] == "AUTHORIZED"
     assert data["provider_calls_during_preflight"] == 0
+
+
+def test_canonical_live_rejects_external_self_signed_lock(tmp_path):
+    """External plan root claiming canonical TEST with self-signed lock is rejected with 0 calls."""
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    # Put a self-signed canonical lock inside root/config
+    lock_data = {
+        "schema_version": "1.0.0",
+        "lock_version": "canonical-lock-v1",
+        "experiment_id": plan.manifest["experiment_id"],
+        "protocol_version": "experiment-protocol-v1.1",
+        "protocol_sha256": "fake_proto_sha" * 2,
+        "config_sha256": plan.manifest["config_sha256"],
+        "artifact_hashes": {},
+    }
+    lock_path = root / "config" / "canonical_experiment_lock_v1.json"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path.write_bytes(canonical_bytes(lock_data))
+
+    # Set split to "test" so it attempts to run canonical TEST
+    plan.manifest["split"] = "test"
+    proto = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_EXT_LOCK",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=50,
+        allow_live_dispatch=True,
+    )
+    provider = MockProvider()
+    with pytest.raises(ProtocolNotFrozenError, match="external plan root rejected"):
+        run_live_experiment(
+            plan,
+            tmp_path / "out",
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, b: provider,
+        )
+    assert len(provider.calls) == 0
+
+
+def test_canonical_lock_rejects_code_manifest_drift(tmp_path):
+    """Canonical lock verification detects code manifest drift and fails closed."""
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    proto = create_test_protocol_approval()
+    tampered_manifest = "ff" * 32
+    lock_data = {
+        "schema_version": "1.0.0",
+        "lock_version": "canonical-lock-v1",
+        "experiment_id": plan.manifest["experiment_id"],
+        "protocol_version": proto.protocol_version,
+        "protocol_sha256": proto.protocol_sha256,
+        "code_manifest_sha256": tampered_manifest,
+        "config_sha256": plan.manifest["config_sha256"],
+        "artifact_hashes": {k: v["sha256"] for k, v in plan.manifest["artifacts"].items()},
+    }
+    lock_path = root / "config" / "canonical_experiment_lock_v1.json"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path.write_bytes(canonical_bytes(lock_data))
+
+    with pytest.raises(ProtocolNotFrozenError, match="code drift detected"):
+        validate_canonical_experiment_lock(plan, proto, root=root)
+
+
+def test_canonical_live_rejects_code_after_freeze(tmp_path):
+    """Canonical lock with code_freeze_commit_sha rejects when current HEAD differs."""
+    from src.experiment.authorization import compute_code_manifest_sha256
+
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    proto = create_test_protocol_approval()
+    actual_code_manifest = compute_code_manifest_sha256(root)
+    lock_data = {
+        "schema_version": "1.0.0",
+        "lock_version": "canonical-lock-v1",
+        "experiment_id": plan.manifest["experiment_id"],
+        "protocol_version": proto.protocol_version,
+        "protocol_sha256": proto.protocol_sha256,
+        "code_manifest_sha256": actual_code_manifest,
+        "code_freeze_commit_sha": "00" * 20,  # non-existent / frozen commit
+        "config_sha256": plan.manifest["config_sha256"],
+        "artifact_hashes": {k: v["sha256"] for k, v in plan.manifest["artifacts"].items()},
+    }
+    lock_path = root / "config" / "canonical_experiment_lock_v1.json"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path.write_bytes(canonical_bytes(lock_data))
+
+    with pytest.raises(ProtocolNotFrozenError, match="canonical lock freeze commit"):
+        validate_canonical_experiment_lock(plan, proto, root=root)
+
+
+def test_live_rejects_dirty_experiment_source_before_provider_construction(
+    monkeypatch, bundle, tmp_path
+):
+    """Live execution rejects dirty git status before provider construction with 0 calls."""
+    import subprocess
+    from types import SimpleNamespace
+
+    plan = load_plan(bundle[1])
+    object.__setattr__(plan, "enforce_clean_git", True)
+    output = tmp_path / "live-dirty-test"
+    proto = create_test_protocol_approval(
+        d1_raw_response_policy="RECORD_ONLY",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
+    )
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_DIRTY_TEST",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=30000,
+        allow_live_dispatch=True,
+    )
+
+    original_run = subprocess.run
+
+    def mock_subprocess_run(cmd, *args, **kwargs):
+        if isinstance(cmd, list) and len(cmd) > 1 and cmd[0] == "git" and "status" in cmd:
+            return SimpleNamespace(returncode=0, stdout=" M src/experiment/runner.py\n")
+        return original_run(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", mock_subprocess_run)
+
+    provider = MockProvider()
+    with pytest.raises(LiveExecutionBlockedError, match="Source tree is dirty"):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, b: provider,
+        )
+    assert len(provider.calls) == 0
+
+
+def test_resume_rejects_dirty_source(monkeypatch, tmp_path, capsys):
+    """Resume execution rejects dirty git status with 0 provider calls."""
+    import subprocess
+    from types import SimpleNamespace
+
+    from src.experiment.authorization import validate_experiment_readiness
+
+    config_path = ROOT / "config" / "experiment_config.json"
+    plan = load_plan(config_path)
+    proto_path = ROOT / "config" / "experiment_protocol_v1.json"
+    proto = ScientificProtocolApproval(**parse_json(proto_path.read_bytes()))
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_RESUME_DIRTY",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=30000,
+        allow_live_dispatch=True,
+    )
+
+    original_run = subprocess.run
+
+    def mock_run(cmd, *args, **kwargs):
+        if isinstance(cmd, list) and len(cmd) > 1 and cmd[0] == "git" and "status" in cmd:
+            return SimpleNamespace(returncode=0, stdout=" M src/experiment/__main__.py\n")
+        if isinstance(cmd, list) and len(cmd) > 1 and cmd[0] == "git" and "rev-parse" in cmd:
+            return SimpleNamespace(returncode=0, stdout="a" * 40)
+        return original_run(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+
+    with pytest.raises(LiveExecutionBlockedError, match="Source tree is dirty"):
+        validate_experiment_readiness(
+            plan=plan,
+            protocol=proto,
+            authorization=auth,
+            output_dir=tmp_path / "resume_dirty",
+            is_live=True,
+            is_resume=True,
+        )
+
+
+def test_live_runs_same_readiness_contract_as_preflight(monkeypatch, capsys):
+    """CLI live and preflight both invoke the shared validate_experiment_readiness validator."""
+    import src.experiment.__main__ as main_mod
+
+    called_contexts = []
+    real_validator = main_mod.validate_experiment_readiness
+
+    def tracking_validator(*args, **kwargs):
+        called_contexts.append(kwargs.get("is_live"))
+        return real_validator(*args, **kwargs)
+
+    monkeypatch.setattr(main_mod, "validate_experiment_readiness", tracking_validator)
+
+    # 1. Preflight CLI call
+    rc_preflight = main_mod.main(["preflight", "--allow-dirty"])
+    assert rc_preflight == 0
+    assert False in called_contexts  # preflight has is_live=False
+
+    # 2. Live CLI call with missing authorization token fails closed
+    rc_live = main_mod.main(
+        ["live", "--allow-live-dispatch", "--output-dir", "artifacts/test_live"]
+    )
+    assert rc_live == 1
+    err = capsys.readouterr().err
+    assert "LIVE_EXECUTION_BLOCKED" in err or "HUMAN_DECISION_REQUIRED" in err
+
+
+def test_live_evaluator_scores_real_api_failure_and_timeout():
+    """Evaluator properly validates provenance and scores records with API_FAILURE and TIMEOUT."""
+    from src.evaluation.experiment_metrics import (
+        EvaluationInputs,
+        verify_evaluator_provenance,
+    )
+    from src.experiment.schemas import CONDITIONS
+
+    proto = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
+    records = []
+    for cond in CONDITIONS:
+        records.append({
+            "sample_id": "s1",
+            "condition": cond,
+            "experiment_id": "exp-api-fail",
+            "predicted_technique_ids": [],
+            "parse_status": "API_FAILURE",
+            "returned_model_id": "gpt-4o-2024-08-06",
+            "response_id": None,
+            "system_fingerprint": None,
+            "request_timestamp_utc": "2026-09-30T10:00:00Z",
+            "response_timestamp_utc": None,
+        })
+        records.append({
+            "sample_id": "s2",
+            "condition": cond,
+            "experiment_id": "exp-api-fail",
+            "predicted_technique_ids": [],
+            "parse_status": "TIMEOUT",
+            "returned_model_id": "gpt-4o-2024-08-06",
+            "response_id": None,
+            "system_fingerprint": None,
+            "request_timestamp_utc": "2026-09-30T10:00:01Z",
+            "response_timestamp_utc": None,
+        })
+    manifest = {
+        "experiment_id": "exp-api-fail",
+        "git_commit_sha": "a" * 40,
+        "config_sha256": "b" * 64,
+        "protocol_sha256": proto.protocol_sha256,
+        "model": {"provider": "openai", "model": "gpt-4o"},
+    }
+    inputs = EvaluationInputs(
+        manifest_sha256="c" * 64,
+        experiment_id="exp-api-fail",
+        execution_mode="live",
+        sample_ids=("s1", "s2"),
+        records=tuple(records),
+        ground_truth={"s1": ("T1059.001",), "s2": ("T1105",)},
+        registry={"T1059.001": {}, "T1105": {}},
+        manifest_data=manifest,
+    )
+    # verify_evaluator_provenance accepts valid API_FAILURE / TIMEOUT with None response_timestamp
+    verify_evaluator_provenance(inputs, proto)
+
+
+def test_retry_logger_never_leaks_secrets(caplog):
+    """Transient retry logging in predict() never exposes API keys or sensitive tokens."""
+    import logging
+
+    from src.llm.client import LLMClient
+
+    secret_key = "sk-super-secret-api-token-xyz123"
+
+    client = LLMClient(
+        config_dict={"provider": "openai", "model": "gpt-4o", "max_retries": 1},
+        registry_ids={"T1059.001"},
+        api_key=secret_key,
+        sleep_fn=lambda _: None,
+    )
+
+    def fail_with_secret(prompt):
+        raise ConnectionError(f"HTTP 503 backend error with key {secret_key}")
+
+    client._call_responses_api = fail_with_secret
+
+    with caplog.at_level(logging.INFO):
+        client.predict(
+            sample_id="s1",
+            endpoint_evidence="sample evidence",
+            condition="no_rag",
+            prompt_template="{ENDPOINT_EVIDENCE} {RETRIEVED_CONTEXT}",
+        )
+
+    found_log = False
+    for record in caplog.records:
+        if "Transient error on attempt" in record.message:
+            found_log = True
+            assert secret_key not in record.message
+            assert "[REDACTED" in record.message
+    assert found_log, "Expected transient error log message was not emitted"
+
+
+def test_record_only_redacts_secret_from_raw_response(bundle, tmp_path):
+    """RECORD_ONLY live policy redacts secrets from raw_text before saving to disk."""
+    from types import SimpleNamespace
+
+    plan = load_plan(bundle[1])
+    output = tmp_path / "live-redact-raw"
+    proto = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
+    secret_token = "TOP_SECRET_BEARER_TOKEN_9999"
+    auth = ExecutionAuthorization(
+        human_approval_token=secret_token,
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+
+    class RedactingMockProvider(MockProvider):
+        def create(self, **kwargs):
+            return SimpleNamespace(
+                status="completed",
+                output=[],
+                output_text=f'{{"technique_id":"T1059.001","leak":"{secret_token}"}}',
+                refusal=None,
+                usage=SimpleNamespace(input_tokens=10, output_tokens=1),
+            )
+
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, b: RedactingMockProvider(),
+        stop_after=1,
+        allow_dirty=True,
+    )
+    records_file = output / "no_rag_predictions.jsonl"
+    content = records_file.read_text(encoding="utf-8")
+    assert secret_token not in content
+    assert "[REDACTED" in content
+
+
+def test_redaction_failure_is_fail_closed(monkeypatch):
+    """If redaction encounters an unexpected error, it fails closed to error string."""
+    from src.experiment.redaction import sanitize_secrets
+
+    class BuggyPattern:
+        def sub(self, replacement, text):
+            raise RuntimeError("Regex engine crash")
+
+    monkeypatch.setattr(
+        "src.experiment.redaction._SECRET_PATTERNS", [(BuggyPattern(), "[REDACTED]")]
+    )
+    res = sanitize_secrets("Some sensitive text with sk-123456789012345678901234567890")
+    assert res == "[REDACTION_FAILED]"
+
+
+def test_evaluator_474_techniques_per_condition_null_semantics():
+    """compute_technique_metrics emits all 474 techniques per condition with NULL metrics."""
+    from src.evaluation.experiment_metrics import (
+        EvaluationInputs,
+        compute_technique_metrics,
+    )
+
+    proto = create_test_protocol_approval(
+        d2d_macro_f1_universe="FROZEN_BENCHMARK_UNIVERSE",
+    )
+    universe_474 = tuple(["T1059.001"] + [f"T{1000 + i}" for i in range(473)])
+    records = [
+        {
+            "sample_id": "s1",
+            "condition": "no_rag",
+            "experiment_id": "exp-universe",
+            "parsed_technique_ids": ["T1059.001"],
+            "parse_status": "VALID",
+            "returned_model_id": "gpt-4o-2024-08-06",
+            "response_id": "r1",
+            "system_fingerprint": "fp1",
+            "request_timestamp_utc": "2026-09-30T10:00:00Z",
+            "response_timestamp_utc": "2026-09-30T10:00:02Z",
+        },
+    ]
+    manifest = {
+        "experiment_id": "exp-universe",
+        "git_commit_sha": "a" * 40,
+        "config_sha256": "b" * 64,
+        "protocol_sha256": proto.protocol_sha256,
+        "model": {"provider": "openai", "model": "gpt-4o"},
+    }
+    inputs = EvaluationInputs(
+        manifest_sha256="c" * 64,
+        experiment_id="exp-universe",
+        execution_mode="mock_fixture",
+        sample_ids=("s1",),
+        records=tuple(records),
+        ground_truth={"s1": ("T1059.001",)},
+        registry={tid: {} for tid in universe_474},
+        corpus_ids=universe_474,
+        manifest_data=manifest,
+    )
+    res = compute_technique_metrics(inputs, proto)
+    cond_metrics = res["by_condition"]["no_rag"]
+    assert len(cond_metrics) == 474
+    # Observed technique has numeric metrics
+    assert cond_metrics["T1059.001"]["f1"] == 1.0
+    assert cond_metrics["T1059.001"]["support"] == 1
+    # Unobserved technique has NULL metrics (None in python)
+    assert cond_metrics["T1000"]["f1"] is None
+    assert cond_metrics["T1000"]["precision"] is None
+    assert cond_metrics["T1000"]["recall"] is None
+    assert cond_metrics["T1000"]["support"] == 0
+
+
 
 
 

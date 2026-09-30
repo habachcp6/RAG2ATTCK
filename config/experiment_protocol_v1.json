@@ -1,6 +1,6 @@
 {
-  "protocol_version": "experiment-protocol-v1",
-  "protocol_sha256": "e7ab9ca3b5a779fc01e4d0b532871377aff041faf9c570c32599fedf26748677",
+  "protocol_version": "experiment-protocol-v1.1",
+  "protocol_sha256": "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c",
   "d1_raw_response_policy": "RECORD_ONLY",
   "d2a_ground_truth_semantics": "ANY_MATCH",
   "d2b_empty_ground_truth": "EXCLUDE",
@@ -18,5 +18,5 @@
   "d6_t15_prerequisite_policy": "NOT_REQUIRED_FOR_SYNTHETIC_BENCHMARK",
   "d7_dataset_scope": "PAIRED_TEST",
   "approval_timestamp": "2026-09-30T00:00:00+00:00",
-  "approval_reference": "RAG2ATTCK-PROTOCOL-V1-FROZEN"
+  "approval_reference": "RAG2ATTCK-PROTOCOL-V1.1-FROZEN"
 }

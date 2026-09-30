@@ -165,6 +165,7 @@ class LLMClient:
         live_budget: Optional[LiveBudget] = None,
         is_live: Optional[bool] = None,
         sleep_fn: Optional[Callable[[float], None]] = None,
+        extra_secrets: Sequence[str] = (),
     ) -> None:
         self.ws_root = get_workspace_root()
 
@@ -202,6 +203,7 @@ class LLMClient:
         secret_env_var = self.config.get("secret_policy", {}).get("env_var_name", "OPENAI_API_KEY")
         resolved_key = api_key or os.environ.get(secret_env_var, "").strip() or None
         self.api_key = resolved_key
+        self.extra_secrets = tuple(extra_secrets)
 
         if openai_client is not None:
             # SDK clients may retry internally, bypassing one-budget-unit-per-request
@@ -460,7 +462,13 @@ class LLMClient:
         response_obj: Any = None
         request_ts: Optional[str] = None
         response_ts: Optional[str] = None
-        extra_secrets = [self.api_key] if self.api_key else []
+        extra_secrets = list(self.extra_secrets)
+        if self.api_key and self.api_key not in extra_secrets:
+            extra_secrets.append(self.api_key)
+        for env_name in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "CUSTOM_SECRET_KEY"):
+            val = os.environ.get(env_name)
+            if val and len(val.strip()) >= 4 and val.strip() not in extra_secrets:
+                extra_secrets.append(val.strip())
 
         with WallClockTimer() as timer:
             for attempt in range(self.max_retries + 1):

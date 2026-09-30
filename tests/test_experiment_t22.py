@@ -4239,15 +4239,25 @@ def test_canonical_live_rejects_external_self_signed_lock(tmp_path):
         allow_live_dispatch=True,
     )
     provider = MockProvider()
+    construct_count = 0
+
+    def tracking_factory(cfg, b):
+        nonlocal construct_count
+        construct_count += 1
+        return provider
+
+    out_dir = tmp_path / "out"
     with pytest.raises(ProtocolNotFrozenError, match="external plan root rejected"):
         run_live_experiment(
             plan,
-            tmp_path / "out",
+            out_dir,
             authorization=auth,
             protocol=proto,
-            provider_factory=lambda cfg, b: provider,
+            provider_factory=tracking_factory,
         )
+    assert construct_count == 0
     assert len(provider.calls) == 0
+    assert not out_dir.exists() or not list(out_dir.glob("*.jsonl"))
 
 
 def test_canonical_lock_rejects_code_manifest_drift(tmp_path):
@@ -4406,85 +4416,139 @@ def test_live_runs_same_readiness_contract_as_preflight(monkeypatch, capsys):
         ["live", "--allow-live-dispatch", "--output-dir", "artifacts/test_live"]
     )
     assert rc_live == 1
+    assert True in called_contexts  # live has is_live=True
     err = capsys.readouterr().err
     assert "LIVE_EXECUTION_BLOCKED" in err or "HUMAN_DECISION_REQUIRED" in err
 
 
-def test_live_evaluator_scores_real_api_failure_and_timeout():
-    """Evaluator properly validates provenance and scores records with API_FAILURE and TIMEOUT."""
+def test_live_evaluator_scores_real_api_failure_and_timeout(tmp_path):
+    """run_live_experiment with fake API_FAILURE and TIMEOUT creates disk records;
+    load_evaluation_inputs and evaluate_experiment PASS.
+    """
+    from types import SimpleNamespace
+
+    import httpx
+    import openai
+
     from src.evaluation.experiment_metrics import (
-        EvaluationInputs,
-        verify_evaluator_provenance,
+        evaluate_experiment,
+        load_evaluation_inputs,
     )
     from src.experiment.schemas import CONDITIONS
 
-    proto = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
-    records = []
-    for cond in CONDITIONS:
-        records.append({
-            "sample_id": "s1",
-            "condition": cond,
-            "experiment_id": "exp-api-fail",
-            "predicted_technique_ids": [],
-            "parse_status": "API_FAILURE",
-            "returned_model_id": "gpt-4o-2024-08-06",
-            "response_id": None,
-            "system_fingerprint": None,
-            "request_timestamp_utc": "2026-09-30T10:00:00Z",
-            "response_timestamp_utc": None,
-        })
-        records.append({
-            "sample_id": "s2",
-            "condition": cond,
-            "experiment_id": "exp-api-fail",
-            "predicted_technique_ids": [],
-            "parse_status": "TIMEOUT",
-            "returned_model_id": "gpt-4o-2024-08-06",
-            "response_id": None,
-            "system_fingerprint": None,
-            "request_timestamp_utc": "2026-09-30T10:00:01Z",
-            "response_timestamp_utc": None,
-        })
-    manifest = {
-        "experiment_id": "exp-api-fail",
-        "git_commit_sha": "a" * 40,
-        "config_sha256": "b" * 64,
-        "protocol_sha256": proto.protocol_sha256,
-        "model": {"provider": "openai", "model": "gpt-4o"},
-    }
-    inputs = EvaluationInputs(
-        manifest_sha256="c" * 64,
-        experiment_id="exp-api-fail",
-        execution_mode="live",
-        sample_ids=("s1", "s2"),
-        records=tuple(records),
-        ground_truth={"s1": ("T1059.001",), "s2": ("T1105",)},
-        registry={"T1059.001": {}, "T1105": {}},
-        manifest_data=manifest,
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    output = tmp_path / "live-failure-run"
+    proto = create_test_protocol_approval(
+        d1_raw_response_policy="RECORD_ONLY",
+        d7_dataset_scope="DEV_SMOKE",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
     )
-    # verify_evaluator_provenance accepts valid API_FAILURE / TIMEOUT with None response_timestamp
-    verify_evaluator_provenance(inputs, proto)
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_API_FAIL_TEST",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=200,
+        allow_live_dispatch=True,
+    )
+
+    class FailureMockProvider:
+        def __init__(self):
+            self.responses = self
+            self.active_key = None
+            self.calls = []
+
+        def activate(self, key):
+            self.active_key = tuple(key)
+
+        def create(self, **kwargs):
+            self.calls.append(kwargs)
+            sample_id, condition = self.active_key
+            if sample_id == "s0":
+                # Non-retryable API failure
+                req = httpx.Request("POST", "https://api.openai.com/v1/chat/completions")
+                resp = httpx.Response(400, request=req)
+                raise openai.BadRequestError(
+                    "Non-retryable invalid request", response=resp, body={}
+                )
+            elif sample_id == "s1":
+                # Timeout failure
+                req = httpx.Request("POST", "https://api.openai.com/v1/chat/completions")
+                raise openai.APITimeoutError(request=req)
+            else:
+                # Successful response
+                return SimpleNamespace(
+                    status="completed",
+                    output=[],
+                    output_text='{"technique_id":"T1059.001"}',
+                    refusal=None,
+                    model="gpt-4o-2024-08-06",
+                    id="resp-123",
+                    system_fingerprint="fp-123",
+                    usage=SimpleNamespace(input_tokens=10, output_tokens=2),
+                )
+
+    summary = run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: FailureMockProvider(),
+    )
+    assert summary["complete"] is True
+    assert summary["record_count"] == 50
+
+    manifest_path = output / "manifest.json"
+    pred_paths = {c: output / f"{c}_predictions.jsonl" for c in CONDITIONS}
+    inputs = load_evaluation_inputs(manifest_path, pred_paths, repository_root=root)
+
+    results = evaluate_experiment(inputs, protocol=proto)
+    assert "overall" in results
+
+    # Verify failure decomposition
+    fail_decomp = results["failure_decomposition"]["by_condition"]
+    for c in CONDITIONS:
+        assert fail_decomp[c]["provider_failure_count"] == 2
+        assert fail_decomp[c]["parse_failure_count"] == 0
+
+    # Verify per-condition metrics: failed samples are counted in headline accuracy denominator
+    cond_metrics = results["per_condition"]["conditions"]
+    for c in CONDITIONS:
+        m = cond_metrics[c]
+        assert m["provider_failure_count"] == 2
+        assert m["logical_sample_count"] == 10
+        assert m["accuracy_end_to_end"] is not None
+        assert m["accuracy_end_to_end"] <= 0.8
+        assert m["accuracy_valid_outputs"] == 1.0
 
 
-def test_retry_logger_never_leaks_secrets(caplog):
+def test_retry_logger_never_leaks_secrets(monkeypatch, caplog):
     """Transient retry logging in predict() never exposes API keys or sensitive tokens."""
     import logging
 
     from src.llm.client import LLMClient
 
     secret_key = "sk-super-secret-api-token-xyz123"
+    bearer_token = "sensitive_bearer_token_12345"
+    human_token = "TOKEN_HUMAN_APPROVAL_SECRET_ABC"
+    env_custom_secret = "CUSTOM_SECRET_ENV_VALUE_XYZ99"
+
+    monkeypatch.setenv("CUSTOM_SECRET_KEY", env_custom_secret)
 
     client = LLMClient(
         config_dict={"provider": "openai", "model": "gpt-4o", "max_retries": 1},
         registry_ids={"T1059.001"},
         api_key=secret_key,
         sleep_fn=lambda _: None,
+        extra_secrets=[human_token, bearer_token],
     )
 
-    def fail_with_secret(prompt):
-        raise ConnectionError(f"HTTP 503 backend error with key {secret_key}")
+    def fail_with_all_secrets(prompt):
+        raise ConnectionError(
+            f"HTTP 503 backend error with key={secret_key}, Authorization: Bearer {bearer_token}, "
+            f"human_approval_token={human_token}, env_secret={env_custom_secret}"
+        )
 
-    client._call_responses_api = fail_with_secret
+    client._call_responses_api = fail_with_all_secrets
 
     with caplog.at_level(logging.INFO):
         client.predict(
@@ -4499,6 +4563,9 @@ def test_retry_logger_never_leaks_secrets(caplog):
         if "Transient error on attempt" in record.message:
             found_log = True
             assert secret_key not in record.message
+            assert bearer_token not in record.message
+            assert human_token not in record.message
+            assert env_custom_secret not in record.message
             assert "[REDACTED" in record.message
     assert found_log, "Expected transient error log message was not emitted"
 

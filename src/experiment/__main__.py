@@ -687,6 +687,14 @@ def main(argv=None, *, provider_factory=None) -> int:
     live_parser.add_argument(
         "--stop-after", type=int, help="Optional stop-after limit for staged execution"
     )
+    live_parser.add_argument(
+        "--allow-dirty",
+        action="store_true",
+        help=(
+            "Allow uncommitted git status in tracked directories "
+            "(test-only, rejected for canonical TEST)"
+        ),
+    )
 
     # resume subcommand
     resume_parser = subparsers.add_parser("resume", help="Resume interrupted live experiment")
@@ -715,6 +723,14 @@ def main(argv=None, *, provider_factory=None) -> int:
     )
     resume_parser.add_argument(
         "--stop-after", type=int, help="Optional stop-after limit for staged execution"
+    )
+    resume_parser.add_argument(
+        "--allow-dirty",
+        action="store_true",
+        help=(
+            "Allow uncommitted git status in tracked directories "
+            "(test-only, rejected for canonical TEST)"
+        ),
     )
 
     # preflight subcommand

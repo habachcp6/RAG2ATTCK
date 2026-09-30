@@ -627,10 +627,15 @@ def validate_experiment_readiness(
 
     # Gate 1: Scientific protocol validation (mandatory)
     if protocol is None:
-        raise ProtocolNotFrozenError(
-            "LIVE_EXECUTION_BLOCKED: scientific protocol decisions (D1-D7) remain "
+        msg = (
+            "LIVE_EXECUTION_BLOCKED: full ScientificProtocolApproval contract is mandatory "
+            "for live execution; scientific protocol decisions (D1-D7) remain "
+            "HUMAN_DECISION_REQUIRED and are not frozen"
+            if is_live
+            else "LIVE_EXECUTION_BLOCKED: scientific protocol decisions (D1-D7) remain "
             "HUMAN_DECISION_REQUIRED and are not frozen"
         )
+        raise ProtocolNotFrozenError(msg)
     validate_scientific_protocol(protocol, plan)
 
     # Gate 2: Live authorization validation (mandatory when is_live is True)
@@ -703,7 +708,10 @@ def validate_experiment_readiness(
     effective_allow_dirty = (
         False if (is_live and is_canonical_test) else allow_dirty
     )
-    if not effective_allow_dirty:
+    should_check_dirty = not effective_allow_dirty and (
+        plan_in_repo or is_canonical_test or getattr(plan, "enforce_clean_git", False)
+    )
+    if should_check_dirty:
         try:
             import subprocess
 

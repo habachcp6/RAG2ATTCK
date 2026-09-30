@@ -26,7 +26,6 @@ from src.experiment.authorization import (
     compute_protocol_sha256,
     protocol_decision_dict,
     protocol_to_dict,
-    validate_live_authorization,
 )
 from src.experiment.config import (
     ValidatedPlan,
@@ -697,9 +696,7 @@ def run_live_experiment(
     Requires explicit human authorization, hash-bound protocol approval (D1-D7),
     and verified pre-dispatch gates. Provider construction occurs strictly after gates pass.
     """
-    # Pre-dispatch authorization & protocol validation (BLOCKER-2)
-    validate_live_authorization(authorization, plan, protocol=protocol)
-
+    # Pre-dispatch authorization & readiness validation (BLOCKER-2)
     plan_in_repo = False
     try:
         plan_in_repo = hasattr(plan, "root") and plan.root.resolve() == REPO_ROOT.resolve()
@@ -711,25 +708,18 @@ def run_live_experiment(
         or plan_in_repo
     )
     effective_allow_dirty = False if is_canonical else allow_dirty
-    should_check_dirty = (
-        not effective_allow_dirty
-        and (plan_in_repo or is_canonical or getattr(plan, "enforce_clean_git", False))
-    )
-    if should_check_dirty:
-        import subprocess
 
-        res = subprocess.run(
-            ["git", "status", "--porcelain", "src", "config", "prompts", "scripts"],
-            cwd=REPO_ROOT,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if res.returncode == 0 and res.stdout.strip():
-            raise LiveExecutionBlockedError(
-                "LIVE_EXECUTION_BLOCKED: Source tree is dirty: git status reports "
-                f"uncommitted changes in tracked directories:\n{res.stdout.strip()}"
-            )
+    from src.experiment.authorization import validate_experiment_readiness
+
+    validate_experiment_readiness(
+        plan=plan,
+        protocol=protocol,
+        authorization=authorization,
+        output_dir=directory,
+        allow_dirty=effective_allow_dirty,
+        is_live=True,
+        is_resume=resume,
+    )
     assert authorization is not None
 
     if stop_after is not None and (type(stop_after) is not int or stop_after < 1):
@@ -876,6 +866,16 @@ def run_live_experiment(
             _write_summary(directory, summary)
             return summary
 
+        sensitive_tokens: list[str] = []
+        if api_key:
+            sensitive_tokens.append(api_key)
+        if authorization and authorization.human_approval_token:
+            sensitive_tokens.append(authorization.human_approval_token)
+        for env_name in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "CUSTOM_SECRET_KEY"):
+            val = os.environ.get(env_name)
+            if val and len(val.strip()) >= 4:
+                sensitive_tokens.append(val.strip())
+
         # -------------------------------------------------------------------
         # PROVIDER CONSTRUCTION: Strictly AFTER all pre-dispatch gates pass.
         # -------------------------------------------------------------------
@@ -889,6 +889,7 @@ def run_live_experiment(
                 live_budget=budget,
                 is_live=True,
                 sleep_fn=lambda _: None,
+                extra_secrets=sensitive_tokens,
             )
         else:
             client = LLMClient(
@@ -898,6 +899,7 @@ def run_live_experiment(
                 is_live=True,
                 sleep_fn=lambda _: None,
                 api_key=api_key,
+                extra_secrets=sensitive_tokens,
             )
             provider = client.client
 
@@ -920,15 +922,6 @@ def run_live_experiment(
             else (authorization.d1_raw_response_policy_approved or "DISCARD")
         )
 
-        sensitive_tokens: list[str] = []
-        if api_key:
-            sensitive_tokens.append(api_key)
-        if authorization and authorization.human_approval_token:
-            sensitive_tokens.append(authorization.human_approval_token)
-        for env_name in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "CUSTOM_SECRET_KEY"):
-            val = os.environ.get(env_name)
-            if val and len(val.strip()) >= 4:
-                sensitive_tokens.append(val.strip())
 
         new_records = 0
         for sample in plan.samples:

@@ -388,3 +388,133 @@ class TestFAISSRetrieverIntegration:
         assert [r.technique_id for r in r1] == [r.technique_id for r in r3[:1]]
         assert [r.technique_id for r in r3] == [r.technique_id for r in r5[:3]]
         assert [r.technique_id for r in r5] == [r.technique_id for r in r10[:5]]
+
+    def test_live_rag_candidates_match_independent_real_retriever(self, tmp_path, monkeypatch):
+        """
+        Integration test verifying live experiment RAG candidates, ranks, and similarity scores
+        equal an independently loaded pinned real retriever for identical endpoint_evidence.
+        Verifies query isolation (retriever and embedder spy) and zero real provider calls.
+        Runs against real git status on committed clean HEAD.
+        """
+        from src.experiment.authorization import (
+            ExecutionAuthorization,
+            ScientificProtocolApproval,
+        )
+        from src.experiment.config import load_plan
+        from src.experiment.runner import MockProvider, MockReply, run_live_experiment
+
+        proto_dict = json.loads(
+            Path("config/experiment_protocol_v1.json").read_text(encoding="utf-8")
+        )
+        proto = ScientificProtocolApproval(**proto_dict)
+        plan = load_plan("config/experiment_config.json")
+        auth = ExecutionAuthorization(
+            human_approval_token="TOKEN_REAL_RETRIEVAL_VERIFY",
+            approved_protocol_sha256=proto.protocol_sha256,
+            authorized_max_provider_attempts=25600,
+            allow_live_dispatch=True,
+        )
+
+        sample = plan.samples[0]
+
+        # Spy on retrieval and encoding queries to verify query isolation
+        retrieval_queries: list[tuple[str, int]] = []
+        orig_retrieve = FAISSRetriever.retrieve
+
+        def spy_retrieve(self, query: str, k: int = 5):
+            retrieval_queries.append((query, k))
+            return orig_retrieve(self, query, k=k)
+
+        monkeypatch.setattr(FAISSRetriever, "retrieve", spy_retrieve)
+
+        encoded_texts: list[str] = []
+        orig_encode = SentenceTransformerEmbedder.encode
+
+        def spy_encode(self, texts: list[str]):
+            encoded_texts.extend(texts)
+            return orig_encode(self, texts)
+
+        monkeypatch.setattr(SentenceTransformerEmbedder, "encode", spy_encode)
+
+        # Intercepting MockProvider guarantees strictly ZERO real provider calls
+        captured_calls = []
+
+        class InterceptingMockProvider(MockProvider):
+            def create(self, **kwargs):
+                captured_calls.append((self.key, kwargs))
+                return super().create(**kwargs)
+
+        mock_responses = {
+            (sample.sample_id, cond): [MockReply()]
+            for cond in ("no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10")
+        }
+        mock_provider = InterceptingMockProvider(mock_responses)
+
+        out_dir = tmp_path / "live_real_retrieval_verification"
+
+        # Execute run_live_experiment with embedder=None
+        # (canonical defaults to real SentenceTransformerEmbedder)
+        summary = run_live_experiment(
+            plan,
+            out_dir,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, b: mock_provider,
+            stop_after=5,
+        )
+
+        assert summary["record_count"] == 5
+        assert len(captured_calls) == 5
+
+        # Query Isolation verification:
+        # 1. Exactly 4 retrieval queries executed (for conditions rag_k1, rag_k3, rag_k5, rag_k10)
+        assert len(retrieval_queries) == 4
+        for q, _ in retrieval_queries:
+            assert q == sample.endpoint_evidence, (
+                f"Query '{q}' does not equal endpoint_evidence exactly"
+            )
+
+        # 2. Encoded texts: first is canary probe, operational queries equal endpoint_evidence
+        assert len(encoded_texts) >= 5
+        assert encoded_texts[0] == "attribution canary probe"
+        for operational_query in encoded_texts[1:]:
+            assert operational_query == sample.endpoint_evidence
+
+        # Independently load real retriever using pinned snapshot artifacts
+        independent_retriever = FAISSRetriever.from_saved()
+
+        # Check each RAG depth: rag_k1, rag_k3, rag_k5, rag_k10
+        for k in (1, 3, 5, 10):
+            cond_file = out_dir / f"rag_k{k}_predictions.jsonl"
+            assert cond_file.exists(), f"Missing predictions file: {cond_file}"
+            records = [
+                json.loads(line)
+                for line in cond_file.read_bytes().splitlines()
+                if line
+            ]
+            assert len(records) == 1
+            rec = records[0]
+
+            expected_results = independent_retriever.retrieve(sample.endpoint_evidence, k=k)
+            retrieved_candidates = rec["retrieved_candidates"]
+
+            assert len(retrieved_candidates) == k
+            # Verify candidate technique IDs exactly match
+            assert [c["technique_id"] for c in retrieved_candidates] == [
+                r.technique_id for r in expected_results
+            ]
+            # Verify ranks exactly match
+            assert [c["rank"] for c in retrieved_candidates] == [
+                r.rank for r in expected_results
+            ]
+            # Verify similarity scores match within numerical precision
+            for c, exp in zip(retrieved_candidates, expected_results, strict=True):
+                assert c["score"] == pytest.approx(exp.score, abs=1e-5)
+
+            assert rec["retrieval_k"] == k
+            target_key = (sample.sample_id, f"rag_k{k}")
+            prompt_input = next(
+                call[1]["input"] for call in captured_calls if call[0] == target_key
+            )
+            assert sample.endpoint_evidence.strip() in prompt_input
+

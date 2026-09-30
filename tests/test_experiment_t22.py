@@ -61,11 +61,24 @@ from src.experiment.runner import (
     JournalBudget,
     MockProvider,
     MockReply,
-    run_live_experiment,
     run_mock_experiment,
+)
+from src.experiment.runner import (
+    run_live_experiment as _prod_run_live_experiment,
 )
 from src.experiment.schemas import CONDITIONS, DEPTHS
 from src.llm.client import LLMClient, OpenAISDKClient
+from src.retrieval.retriever import StubEmbedder
+
+
+def run_live_experiment(*args, **kwargs):
+    """Test harness wrapper providing offline StubEmbedder for synthetic fixture bundles."""
+    if "embedder" not in kwargs and kwargs.get("provider_factory") is not None:
+        plan = args[0] if args else kwargs.get("plan")
+        dim = getattr(getattr(plan, "config", None), "retrieval", None)
+        d_val = dim.embedding_dimension if dim else 4
+        kwargs["embedder"] = StubEmbedder(d_val)
+    return _prod_run_live_experiment(*args, **kwargs)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -1561,8 +1574,12 @@ def test_live_execution_requires_full_scientific_protocol_contract(bundle, tmp_p
     assert not output.exists()
 
 
-def test_cli_successful_staged_live_resume(bundle, tmp_path):
+def test_cli_successful_staged_live_resume(bundle, tmp_path, monkeypatch):
     """CLI staged live execution can be resumed with fresh authorization and completes matrix."""
+    monkeypatch.setattr(
+        "src.experiment.runner.SentenceTransformerEmbedder",
+        lambda model_id, revision: StubEmbedder(dimension=4),
+    )
     config_path = bundle[1]
     output_dir = tmp_path / "cli-staged-run"
     proto = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
@@ -1642,8 +1659,12 @@ def test_cli_successful_staged_live_resume(bundle, tmp_path):
     assert len(provider.calls) == calls_before
 
 
-def test_cli_resume_requires_fresh_runtime_authorization(bundle, tmp_path, capsys):
+def test_cli_resume_requires_fresh_runtime_authorization(bundle, tmp_path, capsys, monkeypatch):
     """CLI resume fails closed if runtime auth token or allow_live_dispatch is missing."""
+    monkeypatch.setattr(
+        "src.experiment.runner.SentenceTransformerEmbedder",
+        lambda model_id, revision: StubEmbedder(dimension=4),
+    )
     config_path = bundle[1]
     output_dir = tmp_path / "cli-auth-required"
     proto = create_test_protocol_approval()
@@ -5274,3 +5295,302 @@ def test_live_dev_git_missing_zero_provider_construction(monkeypatch, tmp_path):
         )
     assert len(constructed) == 0
     assert not out_dir.exists() or not list(out_dir.glob("*.jsonl"))
+
+
+def test_live_runner_rejects_arbitrary_embedder_override_in_production(tmp_path, monkeypatch):
+    """Production live runner (provider_factory=None) rejects ANY caller embedder
+    override before key/env/fs writes.
+    """
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    proto = create_test_protocol_approval(
+        d1_raw_response_policy="RECORD_ONLY",
+        d7_dataset_scope="DEV_SMOKE",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
+    )
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_PROD_EMBEDDER_REJECT",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=200,
+        allow_live_dispatch=True,
+    )
+
+    # Set nonsecret dummy key in environment
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-canary-dummy-never-used")
+
+    # Tripwire: OpenAISDKClient constructor must NEVER be called
+    def tripwire(*args, **kwargs):
+        raise AssertionError("OpenAISDKClient constructor tripwire triggered!")
+
+    from openai import OpenAI
+    monkeypatch.setattr(OpenAI, "__init__", tripwire)
+
+    class CustomPseudoEmbedder:
+        def encode(self, texts):
+            return np.zeros((len(texts), 4), dtype=np.float32)
+
+    # 1. StubEmbedder rejected before key/env/filesystem writes
+    out_dir_stub = tmp_path / "prod_stub_rejected"
+    with pytest.raises(
+        ValueError, match="embedder override is forbidden in production live execution"
+    ):
+        _prod_run_live_experiment(
+            plan,
+            out_dir_stub,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=None,
+            embedder=StubEmbedder(4),
+            allow_dirty=True,
+        )
+    assert not out_dir_stub.exists()
+
+    # 2. Arbitrary custom embedder rejected before key/env/filesystem writes
+    out_dir_custom = tmp_path / "prod_custom_rejected"
+    with pytest.raises(
+        ValueError, match="embedder override is forbidden in production live execution"
+    ):
+        _prod_run_live_experiment(
+            plan,
+            out_dir_custom,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=None,
+            embedder=CustomPseudoEmbedder(),
+            allow_dirty=True,
+        )
+    assert not out_dir_custom.exists()
+
+
+def test_live_runner_embedder_probe_encode_failure_zero_provider_construction(tmp_path):
+    """Broken embedder encode() raises during pre-provider probe, yielding zero
+    provider construction/calls.
+    """
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    proto = create_test_protocol_approval(
+        d1_raw_response_policy="RECORD_ONLY",
+        d7_dataset_scope="DEV_SMOKE",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
+    )
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_PROBE_ENCODE_FAIL",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=200,
+        allow_live_dispatch=True,
+    )
+
+    class BrokenEncodingEmbedder:
+        def encode(self, texts):
+            raise RuntimeError("model weights corrupted during forward pass")
+
+    constructed = []
+
+    def mock_provider_factory(cfg, b):
+        constructed.append(1)
+        raise AssertionError("Provider constructed!")
+
+    out_dir = tmp_path / "probe_encode_fail_out"
+    with pytest.raises(
+        ValueError,
+        match="embedder probe failed during encoding: model weights corrupted",
+    ):
+        _prod_run_live_experiment(
+            plan,
+            out_dir,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=mock_provider_factory,
+            embedder=BrokenEncodingEmbedder(),
+            allow_dirty=True,
+        )
+    assert len(constructed) == 0
+
+
+def test_live_runner_embedder_probe_dimension_mismatch_zero_provider_construction(tmp_path):
+    """Embedder probe returning wrong dimension fails closed with zero
+    provider construction/calls.
+    """
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    proto = create_test_protocol_approval(
+        d1_raw_response_policy="RECORD_ONLY",
+        d7_dataset_scope="DEV_SMOKE",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
+    )
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_PROBE_DIM_MISMATCH",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=200,
+        allow_live_dispatch=True,
+    )
+
+    class WrongDimEmbedder:
+        def encode(self, texts):
+            return np.ones((len(texts), 128), dtype=np.float32)
+
+    constructed = []
+
+    def mock_provider_factory(cfg, b):
+        constructed.append(1)
+        raise AssertionError("Provider constructed!")
+
+    out_dir = tmp_path / "probe_dim_mismatch_out"
+    with pytest.raises(ValueError, match="embedder probe produced invalid shape"):
+        _prod_run_live_experiment(
+            plan,
+            out_dir,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=mock_provider_factory,
+            embedder=WrongDimEmbedder(),
+            allow_dirty=True,
+        )
+    assert len(constructed) == 0
+
+
+def test_live_runner_embedder_probe_non_finite_zero_provider_construction(tmp_path):
+    """Embedder probe returning NaN/Inf values fails closed with zero
+    provider construction/calls.
+    """
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    proto = create_test_protocol_approval(
+        d1_raw_response_policy="RECORD_ONLY",
+        d7_dataset_scope="DEV_SMOKE",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
+    )
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_PROBE_NAN_FAIL",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=200,
+        allow_live_dispatch=True,
+    )
+
+    class NanEmbedder:
+        def encode(self, texts):
+            arr = np.ones((len(texts), 4), dtype=np.float32)
+            arr[0, 0] = np.nan
+            return arr
+
+    constructed = []
+
+    def mock_provider_factory(cfg, b):
+        constructed.append(1)
+        raise AssertionError("Provider constructed!")
+
+    out_dir = tmp_path / "probe_nan_fail_out"
+    with pytest.raises(ValueError, match="embedder probe produced non-finite values"):
+        _prod_run_live_experiment(
+            plan,
+            out_dir,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=mock_provider_factory,
+            embedder=NanEmbedder(),
+            allow_dirty=True,
+        )
+    assert len(constructed) == 0
+
+
+def test_live_runner_embedder_probe_blocks_before_no_rag_dispatch(tmp_path):
+    """Pre-provider embedder probe blocks before no_rag condition can dispatch to provider."""
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    proto = create_test_protocol_approval(
+        d1_raw_response_policy="RECORD_ONLY",
+        d7_dataset_scope="DEV_SMOKE",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
+    )
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_BLOCKS_BEFORE_NO_RAG",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=200,
+        allow_live_dispatch=True,
+    )
+
+    class BrokenProbeEmbedder:
+        def encode(self, texts):
+            raise RuntimeError("Embedder cannot encode canary")
+
+    constructed = []
+    attempt_count = [0]
+
+    def mock_provider_factory(cfg, b):
+        constructed.append(1)
+
+        class FakeProvider:
+            def activate(self, key):
+                pass
+
+            def __call__(self, *args, **kwargs):
+                attempt_count[0] += 1
+
+        return FakeProvider()
+
+    out_dir = tmp_path / "blocks_before_norag_out"
+    with pytest.raises(ValueError, match="embedder probe failed during encoding"):
+        _prod_run_live_experiment(
+            plan,
+            out_dir,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=mock_provider_factory,
+            embedder=BrokenProbeEmbedder(),
+            allow_dirty=True,
+        )
+    assert len(constructed) == 0
+    assert attempt_count[0] == 0
+
+
+def test_live_runner_faiss_dimension_mismatch_zero_provider_construction(tmp_path):
+    """FAISS index dimension mismatch fails closed before provider construction with zero calls."""
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    proto = create_test_protocol_approval(
+        d1_raw_response_policy="RECORD_ONLY",
+        d7_dataset_scope="DEV_SMOKE",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
+    )
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_FAISS_DIM_MISMATCH",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=200,
+        allow_live_dispatch=True,
+    )
+
+    # Corrupt index in plan snapshots to have dimension 2 instead of 4
+    import faiss
+    idx = faiss.IndexFlatIP(2)
+    idx.add(np.eye(2, dtype=np.float32))
+    serialized_idx = faiss.serialize_index(idx).tobytes()
+    tampered_snapshots = dict(plan.snapshots)
+    tampered_snapshots["index"] = serialized_idx
+    tampered_manifest = json.loads(canonical_bytes(plan.manifest))
+    tampered_manifest["artifacts"]["index"]["sha256"] = digest(serialized_idx)
+    tampered_plan = dataclasses.replace(
+        plan,
+        snapshots=tampered_snapshots,
+        manifest=tampered_manifest,
+        manifest_sha256=digest(canonical_bytes(tampered_manifest)),
+    )
+
+    constructed = []
+
+    def mock_provider_factory(cfg, b):
+        constructed.append(1)
+        raise AssertionError("Provider constructed!")
+
+    out_dir = tmp_path / "faiss_dim_mismatch_out"
+    with pytest.raises(ValueError, match="FAISS index dimension"):
+        _prod_run_live_experiment(
+            tampered_plan,
+            out_dir,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=mock_provider_factory,
+            embedder=StubEmbedder(4),
+            allow_dirty=True,
+        )
+    assert len(constructed) == 0
+

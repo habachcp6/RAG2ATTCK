@@ -50,7 +50,12 @@ from src.experiment.schemas import CONDITIONS, ExperimentConfig, ExperimentRecor
 from src.llm.client import LiveBudget, LiveBudgetExceededError, LLMClient
 from src.llm.schemas import validate_technique_id
 from src.rag.pipeline import RAGPipeline
-from src.retrieval.retriever import FAISSRetriever, StubEmbedder
+from src.retrieval.retriever import (
+    Embedder,
+    FAISSRetriever,
+    SentenceTransformerEmbedder,
+    StubEmbedder,
+)
 
 
 @dataclass(frozen=True)
@@ -689,6 +694,7 @@ def run_live_experiment(
     resume: bool = False,
     stop_after: int | None = None,
     allow_dirty: bool = False,
+    embedder: Embedder | None = None,
 ) -> dict[str, Any]:
     """Execute controlled live experiment with explicit authorization gates.
 
@@ -696,6 +702,14 @@ def run_live_experiment(
     Requires explicit human authorization, hash-bound protocol approval (D1-D7),
     and verified pre-dispatch gates. Provider construction occurs strictly after gates pass.
     """
+    # Production live execution strictly forbids any caller embedder override.
+    # Rejection occurs immediately before key/env/filesystem operations.
+    if provider_factory is None and embedder is not None:
+        raise ValueError(
+            "embedder override is forbidden in production live execution; "
+            "production must instantiate pinned real SentenceTransformerEmbedder"
+        )
+
     # Pre-dispatch authorization & readiness validation (BLOCKER-2)
     plan_in_repo = False
     try:
@@ -877,6 +891,89 @@ def run_live_experiment(
                 sensitive_tokens.append(val.strip())
 
         # -------------------------------------------------------------------
+        # RETRIEVAL CONSTRUCTION & VALIDATION: Strictly BEFORE provider construction.
+        # Initialization failure must yield zero provider construction/calls.
+        # -------------------------------------------------------------------
+        import faiss
+        import numpy as np
+
+        retrieval_manifest = parse_json(plan.snapshots["retrieval_manifest"])
+        expected_model_id = plan.config.retrieval.embedding_model
+        expected_revision = plan.config.retrieval.embedding_revision
+        expected_dimension = plan.config.retrieval.embedding_dimension
+
+        manifest_model_id = retrieval_manifest.get("embedding_model_id")
+        manifest_revision = retrieval_manifest.get("embedding_model_revision")
+        manifest_dimension = retrieval_manifest.get("embedding_dimension")
+
+        if manifest_model_id != expected_model_id:
+            raise ValueError(
+                f"retrieval manifest model_id mismatch: expected '{expected_model_id}', "
+                f"got '{manifest_model_id}'"
+            )
+        if manifest_revision != expected_revision:
+            raise ValueError(
+                f"retrieval manifest revision mismatch: expected '{expected_revision}', "
+                f"got '{manifest_revision}'"
+            )
+        if manifest_dimension != expected_dimension:
+            raise ValueError(
+                f"retrieval manifest dimension mismatch: expected {expected_dimension}, "
+                f"got {manifest_dimension}"
+            )
+
+        if provider_factory is None and embedder is not None:
+            raise ValueError(
+                "embedder override is forbidden in production live execution; "
+                "production must instantiate pinned real SentenceTransformerEmbedder"
+            )
+
+        if embedder is None:
+            # Canonical live retrieval always instantiates pinned real SentenceTransformerEmbedder
+            embedder = SentenceTransformerEmbedder(
+                model_id=expected_model_id,
+                revision=expected_revision,
+            )
+
+        docmap = parse_json(plan.snapshots["document_mapping"])
+        raw_index = faiss.deserialize_index(np.frombuffer(plan.snapshots["index"], dtype=np.uint8))
+
+        if raw_index.d != expected_dimension:
+            raise ValueError(
+                f"FAISS index dimension ({raw_index.d}) mismatch with "
+                f"expected dimension ({expected_dimension})"
+            )
+        if len(docmap) != raw_index.ntotal:
+            raise ValueError(
+                f"Document mapping count ({len(docmap)}) mismatch with "
+                f"FAISS index total ({raw_index.ntotal})"
+            )
+
+        # Pre-provider probe: validate embedder capability, shape, and numerical validity
+        # strictly BEFORE provider construction/dispatch. Catches broken embedders before
+        # any condition (including condition='no_rag') is executed.
+        try:
+            probe_vec = embedder.encode(["attribution canary probe"])
+        except Exception as exc:
+            raise ValueError(f"embedder probe failed during encoding: {exc}") from exc
+
+        if not hasattr(probe_vec, "shape") or probe_vec.shape != (1, expected_dimension):
+            actual_shape = getattr(probe_vec, "shape", None)
+            raise ValueError(
+                f"embedder probe produced invalid shape {actual_shape}; "
+                f"expected (1, {expected_dimension})"
+            )
+        if not np.isfinite(probe_vec).all():
+            raise ValueError("embedder probe produced non-finite values (NaN/Inf)")
+
+        retriever = FAISSRetriever(
+            index=raw_index,
+            document_mapping=docmap,
+            config=retrieval_manifest,
+            embedder=embedder,
+        )
+
+        # -------------------------------------------------------------------
         # PROVIDER CONSTRUCTION: Strictly AFTER all pre-dispatch gates pass.
         # -------------------------------------------------------------------
         budget = JournalBudget(cap, journal_file, consumed=spent)
@@ -903,16 +1000,6 @@ def run_live_experiment(
             )
             provider = client.client
 
-        import faiss
-        import numpy as np
-
-        retrieval_config = parse_json(plan.snapshots["retrieval_manifest"])
-        retriever = FAISSRetriever(
-            faiss.deserialize_index(np.frombuffer(plan.snapshots["index"], dtype=np.uint8)),
-            parse_json(plan.snapshots["document_mapping"]),
-            retrieval_config,
-            StubEmbedder(plan.config.retrieval.embedding_dimension),
-        )
         baseline = BaselinePipeline(client=client, prompt_template=snapshot_prompt)
         rag = RAGPipeline(client=client, retriever=retriever, prompt_template=snapshot_prompt)
 

@@ -768,10 +768,9 @@ def validate_experiment_readiness(
     except LiveExecutionBlockedError:
         raise
     except Exception as exc:
-        if is_test_split or is_canonical_scale:
-            raise LiveExecutionBlockedError(
-                f"LIVE_EXECUTION_BLOCKED: Git commit SHA check failed: {exc}"
-            ) from exc
+        raise LiveExecutionBlockedError(
+            f"LIVE_EXECUTION_BLOCKED: Git commit SHA check failed: {exc}"
+        ) from exc
 
     return {
         "status": "EXPERIMENT_PREFLIGHT_READY",

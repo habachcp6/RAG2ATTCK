@@ -5110,3 +5110,167 @@ def test_preflight_blocks_wrong_frozen_universe(monkeypatch, capsys):
     err = capsys.readouterr().err
     assert "LIVE_EXECUTION_BLOCKED" in err
     assert "differs from universe of 474" in err
+
+
+def test_evaluator_compatibility_rejects_missing_technique_id_key():
+    """validate_evaluator_compatibility fails closed when corpus line lacks technique_id."""
+    from types import SimpleNamespace
+
+    from src.evaluation.experiment_metrics import validate_evaluator_compatibility
+
+    proto = create_test_protocol_approval(
+        d2d_macro_f1_universe="FROZEN_BENCHMARK_UNIVERSE",
+        d7_dataset_scope="DEV_SMOKE",
+    )
+    bad_corpus = json.dumps({"wrong_key": "T1001"}).encode("utf-8")
+    plan = SimpleNamespace(
+        config=SimpleNamespace(
+            conditions=CONDITIONS,
+            logging=SimpleNamespace(raw_response=True),
+            attack=SimpleNamespace(release="19.2"),
+            execution=SimpleNamespace(concurrency=1, max_requests=100),
+            dataset=SimpleNamespace(split="dev"),
+        ),
+        manifest={
+            "split": "dev",
+            "attack_release": "19.2",
+            "artifacts": {
+                "inference": {"sha256": "a"},
+                "ground_truth": {"sha256": "b"},
+                "prompt": {"sha256": "c"},
+                "model_config": {"sha256": "d"},
+                "retrieval_config": {"sha256": "e"},
+                "corpus": {"sha256": "f"},
+                "index": {"sha256": "g"},
+            },
+        },
+        snapshots={"corpus": bad_corpus},
+    )
+    with pytest.raises(ValueError, match="missing 'technique_id'"):
+        validate_evaluator_compatibility(proto, plan)
+
+
+def test_evaluator_compatibility_rejects_non_bytes_corpus_snapshot():
+    """validate_evaluator_compatibility fails closed when corpus snapshot is not bytes."""
+    from types import SimpleNamespace
+
+    from src.evaluation.experiment_metrics import validate_evaluator_compatibility
+
+    proto = create_test_protocol_approval(
+        d2d_macro_f1_universe="FROZEN_BENCHMARK_UNIVERSE",
+        d7_dataset_scope="DEV_SMOKE",
+    )
+    plan = SimpleNamespace(
+        config=SimpleNamespace(
+            conditions=CONDITIONS,
+            logging=SimpleNamespace(raw_response=True),
+            attack=SimpleNamespace(release="19.2"),
+            execution=SimpleNamespace(concurrency=1, max_requests=100),
+            dataset=SimpleNamespace(split="dev"),
+        ),
+        manifest={
+            "split": "dev",
+            "attack_release": "19.2",
+            "artifacts": {
+                "inference": {"sha256": "a"},
+                "ground_truth": {"sha256": "b"},
+                "prompt": {"sha256": "c"},
+                "model_config": {"sha256": "d"},
+                "retrieval_config": {"sha256": "e"},
+                "corpus": {"sha256": "f"},
+                "index": {"sha256": "g"},
+            },
+        },
+        snapshots={"corpus": "not_bytes_string"},
+    )
+    with pytest.raises(ValueError, match="must be bytes"):
+        validate_evaluator_compatibility(proto, plan)
+
+
+def test_readiness_blocks_when_git_executable_missing(monkeypatch, tmp_path):
+    """validate_experiment_readiness fails closed if git executable raises FileNotFoundError."""
+    import subprocess
+    from types import SimpleNamespace
+
+    from src.experiment.authorization import validate_experiment_readiness
+
+    config_path = ROOT / "config" / "experiment_config.json"
+    plan = load_plan(config_path)
+    proto_path = ROOT / "config" / "experiment_protocol_v1.json"
+    proto = ScientificProtocolApproval(**parse_json(proto_path.read_bytes()))
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_GIT_MISSING",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=30000,
+        allow_live_dispatch=True,
+    )
+
+    monkeypatch.setattr(
+        "src.experiment.authorization.validate_canonical_experiment_lock",
+        lambda *args, **kwargs: None,
+    )
+
+    def mock_run(cmd, *args, **kwargs):
+        if isinstance(cmd, list) and len(cmd) > 1 and cmd[0] == "git":
+            if "status" in cmd:
+                return SimpleNamespace(returncode=0, stdout="", stderr="")
+            if "rev-parse" in cmd:
+                raise FileNotFoundError("No such file or directory: 'git'")
+        return subprocess.run(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+
+    with pytest.raises(LiveExecutionBlockedError, match="Git commit SHA check failed"):
+        validate_experiment_readiness(
+            plan=plan,
+            protocol=proto,
+            authorization=auth,
+            output_dir=tmp_path / "git_missing",
+            is_live=True,
+            allow_dirty=True,
+        )
+
+
+def test_live_dev_git_missing_zero_provider_construction(monkeypatch, tmp_path):
+    """run_live_experiment fails closed on DEV when git is missing, with zero provider calls."""
+    import subprocess
+
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    proto = create_test_protocol_approval(
+        d1_raw_response_policy="RECORD_ONLY",
+        d7_dataset_scope="DEV_SMOKE",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
+    )
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_DEV_GIT_MISSING",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=200,
+        allow_live_dispatch=True,
+    )
+
+    def mock_run(cmd, *args, **kwargs):
+        if isinstance(cmd, list) and len(cmd) > 0 and cmd[0] == "git":
+            raise FileNotFoundError("No such file or directory: 'git'")
+        return subprocess.run(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+
+    constructed = []
+
+    def mock_provider_factory(cfg, b):
+        constructed.append(1)
+        raise AssertionError("Provider constructed!")
+
+    out_dir = tmp_path / "dev_git_missing_run"
+    with pytest.raises(LiveExecutionBlockedError, match="Git commit SHA check failed"):
+        run_live_experiment(
+            plan,
+            out_dir,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=mock_provider_factory,
+            allow_dirty=True,
+        )
+    assert len(constructed) == 0
+    assert not out_dir.exists() or not list(out_dir.glob("*.jsonl"))

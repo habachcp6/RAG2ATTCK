@@ -1692,23 +1692,34 @@ def validate_evaluator_compatibility(
 
     # Validate technique universe if corpus snapshot is available (D2d)
     if hasattr(plan, "snapshots") and "corpus" in plan.snapshots:
-        try:
-            corpus_lines = plan.snapshots["corpus"].decode("utf-8").strip().splitlines()
-            corpus_tids = {
-                json.loads(line)["technique_id"] for line in corpus_lines if line.strip()
-            }
-            if (
-                len(corpus_tids) != 474
-                and protocol.d2d_macro_f1_universe == "FROZEN_BENCHMARK_UNIVERSE"
-            ):
+        if protocol.d2d_macro_f1_universe == "FROZEN_BENCHMARK_UNIVERSE":
+            try:
+                corpus_bytes = plan.snapshots["corpus"]
+                if not isinstance(corpus_bytes, (bytes, bytearray)):
+                    raise ValueError(
+                        f"Corpus snapshot must be bytes, got {type(corpus_bytes).__name__}"
+                    )
+                corpus_lines = corpus_bytes.decode("utf-8").strip().splitlines()
+                corpus_tids: set[str] = set()
+                for line_idx, line in enumerate(corpus_lines):
+                    if not line.strip():
+                        continue
+                    row = json.loads(line)
+                    if not isinstance(row, dict) or "technique_id" not in row:
+                        raise ValueError(
+                            f"Corpus snapshot line {line_idx} missing 'technique_id'"
+                        )
+                    corpus_tids.add(row["technique_id"])
+                if len(corpus_tids) != 474:
+                    raise ValueError(
+                        f"Corpus technique count ({len(corpus_tids)}) differs from universe of 474"
+                    )
+            except Exception as exc:
+                if isinstance(exc, ValueError):
+                    raise
                 raise ValueError(
-                    f"Corpus technique count ({len(corpus_tids)}) differs from universe of 474"
-                )
-        except ValueError:
-            raise
-        except Exception:
-            # Ignore non-decodable corpus snapshots in synthetic unit test mocks
-            pass
+                    f"Corpus snapshot invalid for frozen benchmark universe: {exc}"
+                ) from exc
 
     return {
         "status": "VALID",

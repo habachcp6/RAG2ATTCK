@@ -1,0 +1,48 @@
+{
+  "attempt_events_count": 7,
+  "attempt_ordinals": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "completed_keys": [
+    [
+      "view_00477e30",
+      "no_rag"
+    ],
+    [
+      "view_00477e30",
+      "rag_k1"
+    ],
+    [
+      "view_00477e30",
+      "rag_k3"
+    ],
+    [
+      "view_00477e30",
+      "rag_k5"
+    ],
+    [
+      "view_00477e30",
+      "rag_k10"
+    ],
+    [
+      "view_00540be5",
+      "no_rag"
+    ],
+    [
+      "view_00540be5",
+      "rag_k1"
+    ]
+  ],
+  "completion_events_count": 7,
+  "header_valid": true,
+  "journal_sequence_errors": 0,
+  "manifest_sha256_match": true,
+  "total_journal_entries": 43,
+  "transition_events_count": 28
+}

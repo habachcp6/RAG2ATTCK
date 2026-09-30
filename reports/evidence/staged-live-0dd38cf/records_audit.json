@@ -1,0 +1,121 @@
+[
+  {
+    "condition": "no_rag",
+    "journal_sha256_match": true,
+    "latency_ms": 5460.495999999694,
+    "parse_status": "VALID",
+    "parsed_technique_ids": [
+      "T1053.005"
+    ],
+    "record_sha256": "2f4aba846be1d228cd066cee76411723324b017d27e0c3ecbdf969e846e69203",
+    "request_attempt_count": 1,
+    "request_timestamp_utc": "2026-09-30T16:43:17.636754+00:00",
+    "response_id": "resp_0fe1ea0907c98ee8006abd3c2902dc87d08ee9b785c8d32473",
+    "response_timestamp_utc": "2026-09-30T16:43:23.096192+00:00",
+    "returned_model_id": "gpt-5.6-luna",
+    "run_id": "live-674d2c86c7fa4deb",
+    "sample_id": "view_00477e30"
+  },
+  {
+    "condition": "rag_k1",
+    "journal_sha256_match": true,
+    "latency_ms": 2348.1193000043277,
+    "parse_status": "VALID",
+    "parsed_technique_ids": [
+      "T1053.005"
+    ],
+    "record_sha256": "cd237dd49cb868fd5b103da52fdb0b713af856be072d6ac3396d24a10cea6a6c",
+    "request_attempt_count": 1,
+    "request_timestamp_utc": "2026-09-30T16:43:23.167520+00:00",
+    "response_id": "resp_056d900f4ed953a2006abd3c2c2c4887d0a473885d8efa4e40",
+    "response_timestamp_utc": "2026-09-30T16:43:25.512859+00:00",
+    "returned_model_id": "gpt-5.6-luna",
+    "run_id": "live-674d2c86c7fa4deb",
+    "sample_id": "view_00477e30"
+  },
+  {
+    "condition": "rag_k3",
+    "journal_sha256_match": true,
+    "latency_ms": 2654.265500001202,
+    "parse_status": "VALID",
+    "parsed_technique_ids": [
+      "T1053.005"
+    ],
+    "record_sha256": "e4de90ebfb66e9865d032afec37ee33ec7e034f7dc906529d3a8ac11c3828aaa",
+    "request_attempt_count": 1,
+    "request_timestamp_utc": "2026-09-30T16:43:25.520046+00:00",
+    "response_id": "resp_0a45787ac870232d006abd3c2e827087d0bf60381d91d338d8",
+    "response_timestamp_utc": "2026-09-30T16:43:28.173643+00:00",
+    "returned_model_id": "gpt-5.6-luna",
+    "run_id": "live-674d2c86c7fa4deb",
+    "sample_id": "view_00477e30"
+  },
+  {
+    "condition": "rag_k5",
+    "journal_sha256_match": true,
+    "latency_ms": 2335.160200003884,
+    "parse_status": "VALID",
+    "parsed_technique_ids": [
+      "T1053.005"
+    ],
+    "record_sha256": "e1531ee8793a51571c5bdb90e1577dba42b9df6734983ac704f287dcec32f5d8",
+    "request_attempt_count": 1,
+    "request_timestamp_utc": "2026-09-30T16:43:28.181012+00:00",
+    "response_id": "resp_0d0966e2903e196f006abd3c312d3087d0b12e5205bedd4f98",
+    "response_timestamp_utc": "2026-09-30T16:43:30.515125+00:00",
+    "returned_model_id": "gpt-5.6-luna",
+    "run_id": "live-674d2c86c7fa4deb",
+    "sample_id": "view_00477e30"
+  },
+  {
+    "condition": "rag_k10",
+    "journal_sha256_match": true,
+    "latency_ms": 2955.8976000043913,
+    "parse_status": "VALID",
+    "parsed_technique_ids": [
+      "T1053.005"
+    ],
+    "record_sha256": "8e6129529627875e35c96c9bafbf507cafbf98a273802b5601d628ffb9e1f92f",
+    "request_attempt_count": 1,
+    "request_timestamp_utc": "2026-09-30T16:43:30.522778+00:00",
+    "response_id": "resp_0dd109ab0e0e3640006abd3c33873087d0961d7f5209859661",
+    "response_timestamp_utc": "2026-09-30T16:43:33.477814+00:00",
+    "returned_model_id": "gpt-5.6-luna",
+    "run_id": "live-674d2c86c7fa4deb",
+    "sample_id": "view_00477e30"
+  },
+  {
+    "condition": "no_rag",
+    "journal_sha256_match": true,
+    "latency_ms": 3913.2127999982913,
+    "parse_status": "VALID",
+    "parsed_technique_ids": [
+      "T1059.003"
+    ],
+    "record_sha256": "e908797c4346ce790fb3cd84e04b2bc2864b68cd0cf004df7d27068e555d07f6",
+    "request_attempt_count": 1,
+    "request_timestamp_utc": "2026-09-30T16:48:18.014311+00:00",
+    "response_id": "resp_025e53271467f433006abd3d542a5887d0be26fb240cd7c53c",
+    "response_timestamp_utc": "2026-09-30T16:48:21.926920+00:00",
+    "returned_model_id": "gpt-5.6-luna",
+    "run_id": "live-674d2c86c7fa4deb",
+    "sample_id": "view_00540be5"
+  },
+  {
+    "condition": "rag_k1",
+    "journal_sha256_match": true,
+    "latency_ms": 4241.104400003678,
+    "parse_status": "VALID",
+    "parsed_technique_ids": [
+      "T1059.003"
+    ],
+    "record_sha256": "bcb6382de06b123214fe8e3e82ce441fb548b01d80f6817057e7491c6c56b25e",
+    "request_attempt_count": 1,
+    "request_timestamp_utc": "2026-09-30T16:48:21.944473+00:00",
+    "response_id": "resp_0e7c109e743e7c47006abd3d56f29887d086c8ded24f8f6381",
+    "response_timestamp_utc": "2026-09-30T16:48:26.184877+00:00",
+    "returned_model_id": "gpt-5.6-luna",
+    "run_id": "live-674d2c86c7fa4deb",
+    "sample_id": "view_00540be5"
+  }
+]

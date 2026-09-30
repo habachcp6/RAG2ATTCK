@@ -1,0 +1,119 @@
+{
+  "audit_checks": {
+    "duplicate_requests": 0,
+    "journal_sequence_errors": 0,
+    "manifest_valid": true,
+    "provider_attempts": 7,
+    "record_sha_mismatches": 0,
+    "records": 7,
+    "resume_new_records": 2,
+    "run_id_consistent": true,
+    "secret_leaks": 0
+  },
+  "execution_accounting": {
+    "attempt_count_after": 7,
+    "attempt_count_before": 5,
+    "duplicate_requests": 0,
+    "record_count_after_resume": 7,
+    "record_count_before_resume": 5,
+    "resume_new_records": 2,
+    "run_id_consistent": true
+  },
+  "provenance": {
+    "code_manifest_sha256": "32f8439dcda33de3de1d02cf9eeac956752ed690f0a2482a3284c8424fbaa4aa",
+    "config_sha256": "961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac",
+    "human_authorization_reference": "733a85128d052109",
+    "manifest_sha256": "0b682a389bb5b25abbe3205927b4d1d7b9b54dd3437382ab00cee755c04a7139",
+    "protocol_sha256": "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c",
+    "protocol_version": "experiment-protocol-v1.1",
+    "repository_git_commit_sha": "0dd38cf7c025d73aa2736696e28753a9f480d422",
+    "run_id": "live-674d2c86c7fa4deb"
+  },
+  "records_summary": [
+    {
+      "condition": "no_rag",
+      "ordinal": 1,
+      "parse_status": "VALID",
+      "record_sha256": "2f4aba846be1d228cd066cee76411723324b017d27e0c3ecbdf969e846e69203",
+      "request_timestamp_utc": "2026-09-30T16:43:17.636754+00:00",
+      "response_id": "resp_0fe1ea0907c98ee8006abd3c2902dc87d08ee9b785c8d32473",
+      "response_timestamp_utc": "2026-09-30T16:43:23.096192+00:00",
+      "returned_model_id": "gpt-5.6-luna",
+      "sample_id": "view_00477e30"
+    },
+    {
+      "condition": "rag_k1",
+      "ordinal": 2,
+      "parse_status": "VALID",
+      "record_sha256": "cd237dd49cb868fd5b103da52fdb0b713af856be072d6ac3396d24a10cea6a6c",
+      "request_timestamp_utc": "2026-09-30T16:43:23.167520+00:00",
+      "response_id": "resp_056d900f4ed953a2006abd3c2c2c4887d0a473885d8efa4e40",
+      "response_timestamp_utc": "2026-09-30T16:43:25.512859+00:00",
+      "returned_model_id": "gpt-5.6-luna",
+      "sample_id": "view_00477e30"
+    },
+    {
+      "condition": "rag_k3",
+      "ordinal": 3,
+      "parse_status": "VALID",
+      "record_sha256": "e4de90ebfb66e9865d032afec37ee33ec7e034f7dc906529d3a8ac11c3828aaa",
+      "request_timestamp_utc": "2026-09-30T16:43:25.520046+00:00",
+      "response_id": "resp_0a45787ac870232d006abd3c2e827087d0bf60381d91d338d8",
+      "response_timestamp_utc": "2026-09-30T16:43:28.173643+00:00",
+      "returned_model_id": "gpt-5.6-luna",
+      "sample_id": "view_00477e30"
+    },
+    {
+      "condition": "rag_k5",
+      "ordinal": 4,
+      "parse_status": "VALID",
+      "record_sha256": "e1531ee8793a51571c5bdb90e1577dba42b9df6734983ac704f287dcec32f5d8",
+      "request_timestamp_utc": "2026-09-30T16:43:28.181012+00:00",
+      "response_id": "resp_0d0966e2903e196f006abd3c312d3087d0b12e5205bedd4f98",
+      "response_timestamp_utc": "2026-09-30T16:43:30.515125+00:00",
+      "returned_model_id": "gpt-5.6-luna",
+      "sample_id": "view_00477e30"
+    },
+    {
+      "condition": "rag_k10",
+      "ordinal": 5,
+      "parse_status": "VALID",
+      "record_sha256": "8e6129529627875e35c96c9bafbf507cafbf98a273802b5601d628ffb9e1f92f",
+      "request_timestamp_utc": "2026-09-30T16:43:30.522778+00:00",
+      "response_id": "resp_0dd109ab0e0e3640006abd3c33873087d0961d7f5209859661",
+      "response_timestamp_utc": "2026-09-30T16:43:33.477814+00:00",
+      "returned_model_id": "gpt-5.6-luna",
+      "sample_id": "view_00477e30"
+    },
+    {
+      "condition": "no_rag",
+      "ordinal": 6,
+      "parse_status": "VALID",
+      "record_sha256": "e908797c4346ce790fb3cd84e04b2bc2864b68cd0cf004df7d27068e555d07f6",
+      "request_timestamp_utc": "2026-09-30T16:48:18.014311+00:00",
+      "response_id": "resp_025e53271467f433006abd3d542a5887d0be26fb240cd7c53c",
+      "response_timestamp_utc": "2026-09-30T16:48:21.926920+00:00",
+      "returned_model_id": "gpt-5.6-luna",
+      "sample_id": "view_00540be5"
+    },
+    {
+      "condition": "rag_k1",
+      "ordinal": 7,
+      "parse_status": "VALID",
+      "record_sha256": "bcb6382de06b123214fe8e3e82ce441fb548b01d80f6817057e7491c6c56b25e",
+      "request_timestamp_utc": "2026-09-30T16:48:21.944473+00:00",
+      "response_id": "resp_0e7c109e743e7c47006abd3d56f29887d086c8ded24f8f6381",
+      "response_timestamp_utc": "2026-09-30T16:48:26.184877+00:00",
+      "returned_model_id": "gpt-5.6-luna",
+      "sample_id": "view_00540be5"
+    }
+  ],
+  "schema_version": "1.0.0",
+  "secret_scan_summary": {
+    "Bearer": 0,
+    "OPENAI_API_KEY": 0,
+    "human_auth_token": 0,
+    "sk-": 0
+  },
+  "verification_status": "STAGED_EVIDENCE_VERIFICATION: PASS"
+}

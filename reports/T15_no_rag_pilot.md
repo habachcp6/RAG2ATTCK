@@ -19,6 +19,60 @@ No live API requests were made.
 - `tests/test_no_rag_pilot.py` covers provenance gating, duplicate/empty input
   rejection, no-context isolation, per-sample failure normalization and
   metadata preservation.
+- `tests/test_pilot_hardening.py` exercises the actual client, budget, baseline
+  pipeline and runner with injected providers, including internal-error
+  propagation, direct-call limits, budget identity and immutable input snapshots.
+
+## Pilot execution gates
+
+The public runner validates the complete selected batch before dispatch. It
+requires a `PilotInputs` source snapshot and an explicit approved-source ID
+allowlist on every call. It revalidates the captured manifest's real-data and
+sanitization declarations, source approval, input SHA-256 and record count, then
+re-parses the same immutable bytes and checks that both the snapshot samples and
+requested samples match the validated selection. Calling the runner directly
+cannot bypass provenance preparation. Test providers follow the identical gate
+using explicitly labelled test-only provenance fixtures.
+
+The selected batch must contain 1–20 unique samples with visible evidence and
+non-empty source IDs, plus
+an explicit positive finite `LiveBudget` shared by identity with the client.
+The process-global smoke budget is rejected. Request accounting must be enabled
+even when a test injects a fake provider. The configured budget must not exceed
+`selected_samples * (max_retries + 1)`; a smaller authorized budget may stop the
+run early and is reported as incomplete. Each outbound attempt, including a
+retry, consumes one unit in `LLMClient`; the runner never consumes another unit.
+
+Only typed provider, connection, timeout and budget errors are normalized.
+Programming errors (including `TypeError`), unsupported client interfaces and
+filesystem errors propagate and stop the run. Provider errors retain the client's
+identity and measured latency. If an operational error escapes the pipeline
+without an execution record, its retry count is unknown (`null`), not fabricated
+as zero. The summary reports the number of records with unknown retry counts
+separately; `total_retries` sums known counts. A retry denied before dispatch is
+not counted as an actual retry and leaves the pilot incomplete even when it is
+the last selected sample. JSON decoding and schema validation catch only their expected exception
+types; they do not mask defects in those implementations. Zero token usage is
+preserved as zero.
+
+## Snapshot provenance
+
+`prepare_pilot_inputs` returns immutable `PilotInputs`: source JSONL bytes,
+manifest bytes and selected samples. The input hash, record count and parsed
+samples all refer to the same read. Source IDs and duplicate IDs are checked
+across the input, including rows beyond the selected limit.
+
+`capture_execution_snapshot` captures the model configuration and prompt bytes
+before client construction. The CLI passes the captured configuration to
+`LLMClient` and the captured prompt to `BaselinePipeline`; reporting never
+reopens these files. The sidecar hashes these exact input, manifest, prompt and
+configuration bytes, and records selected sample IDs, source/version, ATT&CK
+version, captured repository SHA and budget/completion state. Files replaced
+after capture cannot silently change the evidence or reported provenance.
+
+The inference response remains the existing single `technique_id` schema and
+uses the existing frozen prompt/model settings. These infrastructure changes do
+not authorize provider dispatch, introduce real-data results or complete T15.
 
 ## Required source metadata
 

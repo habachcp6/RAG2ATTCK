@@ -79,7 +79,7 @@ def test_model_config_structured_output_and_logging():
     assert logging_policy.get("log_latency") is True
     assert logging_policy.get("log_prompt_version") is True
     assert logging_policy.get("log_condition") is True
-    assert logging_policy.get("log_raw_response") is False
+    assert logging_policy.get("log_raw_response") is True
 
 
 def test_model_config_zero_secrets():

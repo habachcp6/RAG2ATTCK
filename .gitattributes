@@ -5,3 +5,10 @@
 *.py text eol=lf
 *.txt text eol=lf
 *.md text eol=lf
+
+# Pinned and legacy artifacts preserved as exact bytes without newline conversion
+config/benchmark_scope.json -text -eol
+config/retrieval.json -text -eol
+src/baseline/smoke.py -text -eol
+src/rag/__init__.py -text -eol
+scripts/dev.ps1 -text -eol

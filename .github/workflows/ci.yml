@@ -28,7 +28,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+
+      - name: Verify exact commit HEAD
+        run: git rev-parse HEAD
 
       - name: Set up Python
         uses: actions/setup-python@v7.0.0
@@ -65,7 +69,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+
+      - name: Verify exact commit HEAD
+        run: git rev-parse HEAD
 
       - name: Set up Python
         uses: actions/setup-python@v7.0.0
@@ -92,7 +100,7 @@ jobs:
         run: uv pip check
 
       - name: Run Synthetic Tests
-        run: uv run pytest tests/test_synthetic.py -q
+        run: uv run python scripts/run_offline_tests.py -m pytest tests/test_synthetic.py -q
 
   full-test-suite:
     name: Full Test Suite (${{ matrix.os }})
@@ -106,8 +114,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
           fetch-depth: 0
+
+      - name: Verify exact commit HEAD
+        run: git rev-parse HEAD
 
       - name: Set up Python
         uses: actions/setup-python@v7.0.0
@@ -136,8 +148,33 @@ jobs:
       - name: Acquire ATT&CK v19.2 reference
         run: uv run python -c "from pathlib import Path; from src.attack_loader import download_attack_reference; download_attack_reference(Path('.'))"
 
+      - name: Lint T20 critical code paths
+        run: >-
+          uv run ruff check
+          scripts/analyze_retrieval_failures.py
+          scripts/verify_t20_canonical_artifacts.py
+          tests/test_retrieval_failure_analysis.py
+          tests/test_t20_canonical_artifacts.py
+
+      - name: Lint pre-experiment infrastructure
+        run: >-
+          uv run ruff check
+          src/experiment
+          src/evaluation/experiment_metrics.py
+          src/evaluation/fixture_metrics.py
+          src/pilot/no_rag_pilot.py
+          tests/test_experiment.py
+          tests/test_experiment_evaluation.py
+          tests/test_experiment_t22.py
+          tests/test_pilot_hardening.py
+          tests/test_pre_experiment_integration.py
+          tests/test_ci_contract.py
+
+      - name: Run experiment preflight gate
+        run: uv run python -m src.experiment preflight
+
       - name: Run Full Test Suite
-        run: uv run pytest -m "not integration" -q
+        run: uv run python scripts/run_offline_tests.py -m pytest -m "not integration" -q
 
       - name: Verify frozen synthetic benchmark and same-seed reproduction
-        run: uv run python -m src.data_ground_truth verify-synthetic
+        run: uv run python scripts/run_offline_tests.py -m src.data_ground_truth verify-synthetic

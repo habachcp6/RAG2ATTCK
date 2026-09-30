@@ -51,10 +51,15 @@ class BaselinePipeline:
         client: Optional[LLMClient] = None,
         prompt_path: Optional[Path | str] = None,
         prompt_version: str = "baseline_v1",
+        prompt_template: str | None = None,
     ) -> None:
         self.ws_root = get_workspace_root()
         self.client = client or LLMClient()
         self.prompt_version = prompt_version
+
+        if prompt_template is not None:
+            self.prompt_template = prompt_template
+            return
 
         p_path = Path(prompt_path) if prompt_path else (self.ws_root / "prompts" / f"{prompt_version}.txt")
         if not p_path.exists():

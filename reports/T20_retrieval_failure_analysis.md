@@ -4,10 +4,10 @@
 
 This report documents an empirical investigation into the retrieval failure modes observed during Task T20 of the RAG2ATTCK benchmark evaluation. In T20, the frozen FAISS dense retriever (`sentence-transformers/all-MiniLM-L6-v2`, `IndexFlatIP`, $k \in \{1, 3, 5, 10\}$) was evaluated against the 756 positive views of the Stage B synthetic benchmark using raw `endpoint_evidence` queries without target labels.
 
-The investigation reveals that the observed retrieval performance ($Hit@1 = 4.23\%$, $Hit@10 = 45.11\%$, $54.89\%$ ground truth absent from Top-10) is driven by three primary structural mechanisms rather than random error:
-1. **Severe Lexical and Representation Gap:** Raw Windows telemetry (JSON structures, Event IDs, CLI flags, process paths) does not align well with the descriptive, natural language prose of MITRE ATT&CK STIX documents when projected through a general-domain embedding model (`all-MiniLM-L6-v2`).
+The investigation reveals that the observed retrieval performance ($Hit@1 = 4.23\%$, $Hit@10 = 45.11\%$, $54.89\%$ ground truth absent from Top-10) is consistent with three plausible structural mechanisms rather than random error. These mechanisms are descriptive hypotheses based on observed correlations; the current experiment does not include ablations that would isolate each mechanism causally:
+1. **Severe Lexical and Representation Gap (Hypothesis):** Raw Windows telemetry (JSON structures, Event IDs, CLI flags, process paths) may not align well with the descriptive, natural language prose of MITRE ATT&CK STIX documents when projected through a general-domain embedding model (`all-MiniLM-L6-v2`). This is plausible given the model's training distribution but has not been isolated experimentally.
 2. **Taxonomic Overlap & Competing Hard Negatives:** Multi-stage attack procedures (e.g., LOLBin-assisted tool downloads or command shell execution) trigger strong semantic matches to adjacent ATT&CK techniques (e.g., `T1218.012` Certutil or `T1574.009` Hijack Execution Flow), crowding out the designated ground truth (e.g., `T1105` or `T1059.003`).
-3. **Contextual Event Dilution:** Contrary to the intuition that additional surrounding context improves retrieval, multi-event contextual views actually degraded retrieval ranking compared to single-event views in 20.6% of evaluated pairs (61/296) (versus improving it in 17.6%, 52/296), as background process logs (`services.exe`, `explorer.exe`, `svchost.exe`) acted as semantic noise.
+3. **Contextual Event Dilution:** Contrary to the intuition that additional surrounding context improves retrieval, multi-event contextual views degraded retrieval ranking compared to single-event views in 22.0% of eligible pairs (65/296), while improving it in only 7.8% (23/296). This comparison uses the same-technique anchor method: for each pair, the single-event view's target technique rank is compared to that same technique's rank in the contextual view, ensuring apples-to-apples evaluation.
 
 Crucially, **no methodology or retrieval algorithm changes are applied in this branch**. All analysis is based strictly on frozen artifacts and empirical query diagnostics.
 
@@ -65,7 +65,7 @@ Retrieval effectiveness varies dramatically across the 8 evaluated technique cla
     - Rank 3: `T1547.004` (Winlogon Helper DLL) — score: 0.3695
     - Rank 4: `T1003.002` (Security Account Manager) — score: 0.3541
     - Rank 5: `T1546.009` (AppCert DLLs) — score: 0.3488
-  - **Root Cause:** The telemetry contains system paths (`C:\Windows\System32\net.exe`), user fields, and CLI syntax. The embedding model matches generic Windows persistence techniques that heavily mention `System32` and administrative configurations. The ATT&CK document for `T1136.001` lacks the specific CLI commands (`net user /add`) or Event IDs, resulting in an embedding distant from raw command lines.
+  - **Plausible Mechanism:** The telemetry contains system paths (`C:\Windows\System32\net.exe`), user fields, and CLI syntax. The embedding model may match generic Windows persistence techniques that heavily mention `System32` and administrative configurations. The ATT&CK document for `T1136.001` lacks the specific CLI commands (`net user /add`) or Event IDs, which may result in an embedding distant from raw command lines.
 
 #### B. T1105 — Ingress Tool Transfer (15.79% Hit@10, 84.21% Absent)
 - **Problem Formulation:** Adversary downloads tools into the environment using utilities like `certutil.exe -urlcache -split -f http://...` or `curl`/`bitsadmin`.
@@ -79,7 +79,7 @@ Retrieval effectiveness varies dramatically across the 8 evaluated technique cla
     - Rank 3: `T1197` (BITS Jobs) — score: 0.4103
     - Rank 4: `T1546.012` (Image File Execution Options) — score: 0.3984
     - Rank 12: `T1105` (Ingress Tool Transfer) — score: 0.3341
-  - **Root Cause (Competing Hard Negative):** The telemetry specifies `certutil.exe`. In the ATT&CK corpus, `T1218.012` specifically focuses on `certutil` proxy execution and includes exact subword tokens for `certutil`. The retriever accurately identifies `certutil`, ranking `T1218.012` at #1 with a very high similarity score ($0.5892$), completely overshadowing `T1105` ($0.3341$). This is a semantic conflict inherent in ATT&CK's dual classification of tool transfer via living-off-the-land binaries.
+  - **Plausible Mechanism (Competing Hard Negative):** The telemetry specifies `certutil.exe`. In the ATT&CK corpus, `T1218.012` specifically focuses on `certutil` proxy execution and includes exact subword tokens for `certutil`. The retriever identifies `certutil`, ranking `T1218.012` at #1 with a very high similarity score ($0.5892$), correlating with a lower rank for `T1105` ($0.3341$). This pattern is consistent with a semantic conflict inherent in ATT&CK's dual classification of tool transfer via living-off-the-land binaries, though the causal mechanism has not been isolated by ablation.
 
 #### C. T1059.003 — Command and Scripting Interpreter: Windows Command Shell (17.12% Hit@10)
 - **Problem Formulation:** Log records `cmd.exe /c whoami /all` or `cmd.exe /c tasklist`.
@@ -92,7 +92,7 @@ Retrieval effectiveness varies dramatically across the 8 evaluated technique cla
     - Rank 2: `T1547.001` (Registry Run Keys) — score: 0.3802
     - Rank 3: `T1546.009` (AppCert DLLs) — score: 0.3694
     - Rank 14: `T1059.003` (Windows Command Shell) — score: 0.3012
-  - **Root Cause:** `cmd.exe` is a carrier process. The command passed to `cmd.exe` contains operational targets (`tasklist`, file redirection, paths). `T1059.003` in ATT&CK has an extremely brief, generic description ("The Windows command shell is the primary command prompt..."). The specific tokens in the command line pull the embedding towards system discovery or persistence instead of the shell interpreter itself.
+  - **Plausible Mechanism:** `cmd.exe` is a carrier process. The command passed to `cmd.exe` contains operational targets (`tasklist`, file redirection, paths). `T1059.003` in ATT&CK has an extremely brief, generic description ("The Windows command shell is the primary command prompt..."). The specific tokens in the command line may pull the embedding towards system discovery or persistence instead of the shell interpreter itself.
 
 #### D. T1543.003 — Create or Modify System Process: Windows Service (30.70% Hit@10)
 - **Problem Formulation:** EventID 4697 (*A service was installed in the system*) or `sc.exe create`.
@@ -105,7 +105,7 @@ Retrieval effectiveness varies dramatically across the 8 evaluated technique cla
     - Rank 2: `T1505.005` (Terminal Services DLL) — score: 0.4182
     - Rank 3: `T1546.009` (AppCert DLLs) — score: 0.3812
     - Rank 7: `T1543.003` (Windows Service) — score: 0.3450
-  - **Root Cause:** Both `T1543.003` and `T1574.011` share terms like `Service`, `ServiceFileName`, and `binary path`. However, the corpus chunk for `T1574.011` has higher density of path and permission keywords, which causes it to rank above `T1543.003`.
+  - **Plausible Mechanism:** Both `T1543.003` and `T1574.011` share terms like `Service`, `ServiceFileName`, and `binary path`. However, the corpus chunk for `T1574.011` has a higher density of path and permission keywords, which may cause it to rank above `T1543.003`.
 
 ---
 
@@ -135,18 +135,30 @@ One of the key empirical findings from T20 is the divergence between `single` an
 | **Contextual-Event** | 460 | **0.0348** | 0.1804 | 0.2565 | **0.4435** | **256 (55.7%)** |
 
 ### 5.2. Scenario-Pair Ranking Analysis
-Evaluating identical scenario pairs ($N = 296$ comparable positive pairs where the single view category is in `mapped_single` or `mapped_multi`) using the formal absent-rank rule (`comparison_rank = rank if rank is not None else 11`) reveals:
-- **Single-Event Produced Better GT Rank (single_rank < contextual_rank):** **61 pairs (20.61%)**
-- **Contextual-Event Produced Better GT Rank (contextual_rank < single_rank):** **52 pairs (17.57%)**
-- **Both Produced Identical Rank (single_rank == contextual_rank):** **183 pairs (61.82%)**
-  - *Equal breakdown:* **130 pairs (43.92%)** had ground truth absent from Top-10 in **both** representations (both ranks `None`, yielding comparison rank 11), while **53 pairs (17.91%)** tied at identical retrieved ranks within Top-10.
-  - *Explicit subset relationship:* The 130 pairs where ground truth was absent from Top-10 in both views form an explicit subset of the 183 equal pairs ($130 + 53 = 183$). Across all 296 pairs, the breakdown partitions completely and deterministically: $61 + 52 + 183 = 296$ pairs ($100.0\%$).
+
+**Pairwise comparison methodology:** For each comparable scenario pair, the single-event view's ground-truth technique ID is selected as the **anchor technique**. Only pairs where the single-event view has exactly one ground-truth technique (`mapped_single`) are eligible for comparison. The anchor technique's retrieval rank is then compared in both the single and contextual views:
+
+```
+single_rank   = single_view.ground_truth_technique_ranks[anchor]
+contextual_rank = contextual_view.ground_truth_technique_ranks[anchor]
+comparison_rank = rank if rank is not None else 11
+```
+
+This ensures apples-to-apples comparison: we measure whether adding contextual events improves or degrades retrieval of the **same ATT&CK technique**. If the contextual view contains extra GT labels (mapped_multi), only the anchor technique's rank is used. Pairs where the anchor technique is absent from the contextual view's rank mapping are excluded with an explicit reason.
+
+Out of 670 candidate pairs with both single and contextual views, **296 are eligible** (374 excluded: non-positive unmapped/ambiguous rows with empty GT sets). For the 296 eligible pairs:
+
+- **Single-Event Produced Better GT Rank (single_rank < contextual_rank):** **65 pairs (22.0%)**
+- **Contextual-Event Produced Better GT Rank (contextual_rank < single_rank):** **23 pairs (7.8%)**
+- **Both Produced Identical Rank (single_rank == contextual_rank):** **208 pairs (70.3%)**
+  - *Equal breakdown:* **147 pairs (49.7%)** had the anchor technique absent from Top-10 in **both** representations (both ranks `None`, yielding comparison rank 11), while **61 pairs (20.6%)** tied at identical retrieved ranks within Top-10.
+  - *Explicit subset relationship:* The 147 pairs where the anchor technique was absent from Top-10 in both views form an explicit subset of the 208 equal pairs ($147 + 61 = 208$). Across all 296 eligible pairs, the breakdown partitions completely: $65 + 23 + 208 = 296$ pairs ($100.0\%$).
 
 ### 5.3. Qualitative Dilution Mechanism
 In contextual views, the critical suspicious event is accompanied by 1–2 background events (e.g., normal parent process spawning `explorer.exe`, subsequent benign network traffic, or `svchost.exe` RPC calls). 
-- In dense representation space, the embedding is computed by mean-pooling token representations across the entire JSON array.
-- The presence of repetitive structural tokens (`"ProcessId"`, `"ThreadId"`, `"svchost.exe"`, `"192.168.1.1"`) shifts the centroid away from the targeted malicious signature toward generic operational noise.
-- As a result, candidate techniques associated with defense evasion or generic execution receive inflated scores, pushing the true technique down or out of the Top-10.
+- The contextual JSON is encoded into a single dense vector representation, so additional background event tokens can alter the resulting embedding relative to the focused single-event encoding.
+- We hypothesize that the presence of repetitive structural tokens (`"ProcessId"`, `"ThreadId"`, `"svchost.exe"`, `"192.168.1.1"`) may shift the combined representation away from the targeted malicious signature toward generic operational noise.
+- This may result in candidate techniques associated with defense evasion or generic execution receiving inflated scores, pushing the true technique down or out of the Top-10. This hypothesis has not been tested by ablation in the current experiment.
 
 ---
 
@@ -160,24 +172,26 @@ A rigorous inspection of `attack/corpus/enterprise-windows-v19.2.jsonl` demonstr
 2. **Missing Operational Verbs in Technique Descriptions:**
    - Techniques like `T1136.001` (Local Account) focus on the conceptual rationale (*"maintain access"*, *"configure accounts"*), but omit specific executable names (`net.exe`, `net1.exe`, `powershell New-LocalUser`) or Windows Event IDs (`4720`, `4722`).
 3. **Boilerplate Noise in Document Head:**
-   - Every corpus document begins with uniform headers: `Technique ID: ...`, `Name: ...`, `Tactics: ...`, `Platforms: Containers, Linux, Windows, macOS...`. These identical header tokens dilute the discriminative power of the 384-dimensional embedding space.
+   - Every corpus document begins with uniform headers: `Technique ID: ...`, `Name: ...`, `Tactics: ...`, `Platforms: Containers, Linux, Windows, macOS...`. These identical header tokens may dilute the discriminative power of the 384-dimensional embedding space (this hypothesis requires a header-ablation experiment to test).
 
 ---
 
-## 7. Root-Cause Hypotheses Ranked by Evidence
+## 7. Failure-Mode Hypotheses Ranked by Empirical Evidence
 
-| Rank | Hypothesis | Description | Evidence Strength |
-|---|---|---|---|
-| **1** | **H1: Lexical Mismatch** | Raw telemetry tokens (CLI syntax, Event IDs) do not match ATT&CK narrative prose. | **Extremely Strong:** High-performing classes (`T1547.001`, `T1685.005`) have exact token overlaps; low-performing classes (`T1136.001`) have zero token overlap. |
-| **2** | **H10: Hard Negatives & Semantic Overlap** | Living-off-the-land actions trigger dual-attribution techniques (e.g. `T1218.012` vs `T1105`), crowding out single-label ground truth. | **Extremely Strong:** In `T1105` ($N=114$), `T1218.012` (Certutil) ranked #1 in 48/114 cases (42.11%) due to receiving similarity scores $>0.55$, with `T1003.002` taking #1 in 26 cases (22.81%). |
-| **3** | **H4: General-Domain Embedding Model** | `all-MiniLM-L6-v2` lacks cyber domain pretraining for raw logs. | **Strong:** Pretrained on general sentence pairs, weighting natural syntax over technical command arguments. |
-| **4** | **H6: Contextual Dilution** | Multi-event logs introduce semantic noise that worsens dense retrieval ranks. | **Strong:** 20.6% of pairs (61/296) degraded when context was added vs 17.6% (52/296) improved. |
-| **5** | **H8: Missing Procedure Tokens in Corpus** | Corpus chunks for specific techniques lack command-line invocations. | **Strong:** `T1136.001` text has no mention of `net user`, resulting in near-total retrieval failure. |
-| **6** | **H3: Corpus Header & Boilerplate Noise** | Platform and tactic boilerplate consumes vector representation capacity. | **Moderate:** Common across all 474 corpus chunks. |
-| **7** | **H5: Multi-Label Metric Asymmetry** | Mapped-multi scenarios increase hit probability but penalize macro recall. | **Moderate:** Multi-label views achieve 72.7% Hit@10 vs 43.4% for single-label, but macro recall is capped. |
-| **8** | **H2: Synthetic Log Compactness** | Synthetic logs are more structured and terse than verbose real-world SIEM dumps. | **Moderate:** Minimal payload text limits the surface area for dense matching. |
-| **9** | **H9: Telemetry Whitelist Stripping** | Whitelist correctly strips target labels, preventing leakage but removing hints. | **Low / Expected:** Whitelist strictly preserves legitimate fields (`CommandLine`, `Image`). Integrity requirement, not defect. |
-| **10**| **H7: Class Imbalance in Benchmark** | Positive views are evenly distributed (~90–115 per class), ruling out class frequency bias. | **Rejected:** Benchmark class balance is well-controlled. |
+> **Evidence rubric.** Evidence strength reflects the *consistency* of observed correlations, not causal proof. No ablation experiment has been conducted to isolate any individual mechanism. "Causal Established" is "No" for all hypotheses below.
+
+| Rank | Hypothesis | Description | Evidence Type | Observed Evidence | Limitation | Causal Established |
+|---|---|---|---|---|---|---|
+| **1** | **H1: Lexical Mismatch** | Raw telemetry tokens (CLI syntax, Event IDs) do not match ATT&CK narrative prose. | Correlation | High-performing classes (`T1547.001`, `T1685.005`) have substantial token overlaps with corpus text; low-performing classes (`T1136.001`) have limited direct lexical overlap. | Correlation between token overlap and retrieval does not prove the embedding model fails *because* of lexical mismatch. Confounders (corpus length, ambiguity) not controlled. | No |
+| **2** | **H10: Hard Negatives & Semantic Overlap** | Living-off-the-land actions trigger dual-attribution techniques (e.g. `T1218.012` vs `T1105`), crowding out single-label ground truth. | Descriptive statistic | In `T1105` ($N=114$), `T1218.012` (Certutil) ranked #1 in 48/114 cases (42.11%), with `T1003.002` taking #1 in 26 cases (22.81%). | Correlation between hard-negative presence and low GT rank does not prove the retriever fails *because* of semantic overlap. Would require removing the competing technique from the corpus to confirm. | No |
+| **3** | **H4: General-Domain Embedding Model** | `all-MiniLM-L6-v2` lacks cyber domain pretraining for raw logs. | Hypothesis | The model was pretrained on general sentence pairs and may weight natural syntax over technical command arguments. | No comparison with a domain-adapted embedding model was conducted. The claim about weighting is inferred from model lineage, not measured. | No |
+| **4** | **H6: Contextual Dilution** | Multi-event logs introduce semantic noise that worsens dense retrieval ranks. | Descriptive statistic (anchor-based) | 22.0% of eligible pairs (65/296) showed degraded anchor-technique rank when context was added; only 7.8% (23/296) improved. | Correlation between added context and rank degradation does not isolate the mechanism (noise vs. topic shift vs. length effect). | No |
+| **5** | **H8: Missing Procedure Tokens in Corpus** | Corpus chunks for specific techniques lack command-line invocations. | Observation | `T1136.001` text has no mention of `net user`, consistent with near-total retrieval failure. | Absence of a token from the corpus does not prove retrieval failure is caused by that absence alone. | No |
+| **6** | **H3: Corpus Header & Boilerplate Noise** | Platform and tactic boilerplate may consume vector representation capacity. | Hypothesis | Common across all 474 corpus chunks. | No header-ablation experiment conducted. | No |
+| **7** | **H5: Multi-Label Metric Asymmetry** | Mapped-multi scenarios increase hit probability but penalize macro recall. | Descriptive statistic | Multi-label views achieve 72.7% Hit@10 vs 43.4% for single-label, but macro recall is capped. | This is a measurement property, not a failure mechanism. | No |
+| **8** | **H2: Synthetic Log Compactness** | Synthetic logs are more structured and terse than verbose real-world SIEM dumps. | Hypothesis | Minimal payload text limits the surface area for dense matching. | No comparison with real-world logs was conducted. | No |
+| **9** | **H9: Telemetry Whitelist Stripping** | Whitelist correctly strips target labels, preventing leakage but removing hints. | Expected behavior | Whitelist strictly preserves legitimate fields (`CommandLine`, `Image`). Integrity requirement, not defect. | Not a failure mechanism. | N/A |
+| **10**| **H7: Class Imbalance in Benchmark** | Positive views are evenly distributed (~90–115 per class), ruling out class frequency bias. | Counter-evidence | Benchmark class balance is well-controlled. | N/A | Rejected |
 
 ---
 

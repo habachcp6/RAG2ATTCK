@@ -18,13 +18,17 @@ from __future__ import annotations
 import json
 import logging
 import os
-from pathlib import Path
 import threading
 import time
-from typing import Any, Callable, Dict, Optional, Set, Tuple
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any, Callable, Dict, Optional, Sequence, Set, Tuple
 
 import openai
+from openai import OpenAI as OpenAISDKClient
+from pydantic import ValidationError
 
+from src.llm.logging import WallClockTimer
 from src.llm.schemas import (
     ExecutionRecord,
     ParseStatus,
@@ -33,7 +37,6 @@ from src.llm.schemas import (
     validate_condition,
     validate_technique_id,
 )
-from src.llm.logging import WallClockTimer
 
 logger = logging.getLogger("rag2attck.llm.client")
 
@@ -45,6 +48,32 @@ logger = logging.getLogger("rag2attck.llm.client")
 class LiveBudgetExceededError(RuntimeError):
     """Raised when the selected live API request budget is exhausted."""
     pass
+
+
+# Only errors from the provider/transport boundary may become execution failures.
+# Programming and filesystem errors must propagate instead of looking like results.
+OPERATIONAL_EXCEPTIONS = (
+    LiveBudgetExceededError,
+    openai.APIError,
+    TimeoutError,
+    ConnectionError,
+)
+
+
+def _sanitize(text: str | None, *, extra_tokens: Sequence[str] = ()) -> str | None:
+    """Lazily sanitize secrets from text without triggering circular imports.
+
+    FAIL-CLOSED: Never returns raw unredacted text if redaction fails.
+    """
+    if text is None:
+        return None
+    try:
+        from src.experiment.redaction import sanitize_secrets
+
+        res = sanitize_secrets(text, extra_tokens=extra_tokens)
+        return "[REDACTION_FAILED]" if res is None and text is not None else res
+    except Exception:
+        return "[REDACTION_FAILED]"
 
 
 class LiveBudget:
@@ -136,6 +165,7 @@ class LLMClient:
         live_budget: Optional[LiveBudget] = None,
         is_live: Optional[bool] = None,
         sleep_fn: Optional[Callable[[float], None]] = None,
+        extra_secrets: Sequence[str] = (),
     ) -> None:
         self.ws_root = get_workspace_root()
 
@@ -172,8 +202,17 @@ class LLMClient:
         # Client setup — fail fast on missing credentials
         secret_env_var = self.config.get("secret_policy", {}).get("env_var_name", "OPENAI_API_KEY")
         resolved_key = api_key or os.environ.get(secret_env_var, "").strip() or None
+        self.api_key = resolved_key
+        self.extra_secrets = tuple(extra_secrets)
 
         if openai_client is not None:
+            # SDK clients may retry internally, bypassing one-budget-unit-per-request
+            # accounting. Construct real clients here with SDK retries disabled.
+            if isinstance(openai_client, OpenAISDKClient):
+                raise ValueError(
+                    "A real OpenAI SDK client cannot be injected; omit openai_client "
+                    "so each outbound attempt uses the guarded constructor."
+                )
             # Injected mock/test client — no API key required
             self.client = openai_client
             self.is_live = False if is_live is None else is_live
@@ -202,14 +241,10 @@ class LLMClient:
         if isinstance(exc, (openai.APITimeoutError, TimeoutError)):
             return True
 
-        if isinstance(exc, (openai.RateLimitError, openai.InternalServerError, openai.APIConnectionError)):
-            return True
-
-        err_str = str(exc).lower()
-        if any(term in err_str for term in ["timeout", "timed out", "rate limit", "connection reset", "503", "502", "500"]):
-            return True
-
-        return False
+        return isinstance(exc, (
+            openai.RateLimitError, openai.InternalServerError,
+            openai.APIConnectionError, ConnectionError,
+        ))
 
     def _call_responses_api(self, prompt: str) -> Any:
         """Execute request using the frozen Responses API interface."""
@@ -247,8 +282,12 @@ class LLMClient:
         # Extract token usage if available
         usage = getattr(response, "usage", None)
         if usage is not None:
-            input_tokens = getattr(usage, "input_tokens", None) or getattr(usage, "prompt_tokens", None)
-            output_tokens = getattr(usage, "output_tokens", None) or getattr(usage, "completion_tokens", None)
+            input_tokens = getattr(usage, "input_tokens", None)
+            output_tokens = getattr(usage, "output_tokens", None)
+            if input_tokens is None:
+                input_tokens = getattr(usage, "prompt_tokens", None)
+            if output_tokens is None:
+                output_tokens = getattr(usage, "completion_tokens", None)
 
         resp_status = getattr(response, "status", None)
 
@@ -338,7 +377,7 @@ class LLMClient:
         # Step 1: Parse JSON
         try:
             payload = json.loads(raw_text)
-        except Exception as e:
+        except json.JSONDecodeError as e:
             return ParseStatus.MALFORMED_RESPONSE, None, f"Response is not valid JSON: {str(e)}"
 
         if not isinstance(payload, dict):
@@ -350,7 +389,7 @@ class LLMClient:
         # Step 2: Validate Pydantic Schema
         try:
             pred = TechniquePrediction.model_validate(payload)
-        except Exception as e:
+        except ValidationError as e:
             return ParseStatus.MALFORMED_RESPONSE, None, f"Schema validation failed: {str(e)}"
 
         extracted_id = pred.technique_id
@@ -419,7 +458,17 @@ class LLMClient:
         retry_count = 0
         error_type: Optional[str] = None
         last_error_msg: Optional[str] = None
+        last_error: Exception | None = None
         response_obj: Any = None
+        request_ts: Optional[str] = None
+        response_ts: Optional[str] = None
+        extra_secrets = list(self.extra_secrets)
+        if self.api_key and self.api_key not in extra_secrets:
+            extra_secrets.append(self.api_key)
+        for env_name in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "CUSTOM_SECRET_KEY"):
+            val = os.environ.get(env_name)
+            if val and len(val.strip()) >= 4 and val.strip() not in extra_secrets:
+                extra_secrets.append(val.strip())
 
         with WallClockTimer() as timer:
             for attempt in range(self.max_retries + 1):
@@ -429,32 +478,37 @@ class LLMClient:
                     if self.is_live:
                         self.live_budget.consume()
 
+                    retry_count = attempt
+                    request_ts = datetime.now(UTC).isoformat()
+
                     # Execute via the frozen Responses API interface — no fallback.
                     response_obj = self._call_responses_api(formatted_prompt)
+                    response_ts = datetime.now(UTC).isoformat()
 
                     # Successfully received response
                     break
 
-                except Exception as exc:
+                except OPERATIONAL_EXCEPTIONS as exc:
+                    last_error = exc
                     error_type = type(exc).__name__
-                    last_error_msg = str(exc)
+                    last_error_msg = _sanitize(str(exc), extra_tokens=extra_secrets)
 
                     if isinstance(exc, LiveBudgetExceededError):
                         # Immediately fail on budget exhaustion without retry
                         break
 
                     if self._is_retryable_error(exc) and attempt < self.max_retries:
-                        retry_count += 1
                         delay = min(
                             self.retry_initial_delay * (self.retry_backoff_factor ** attempt),
                             self.retry_max_delay
                         )
+                        sanitized_exc_str = _sanitize(str(exc), extra_tokens=extra_secrets)
                         logger.info(
                             "Transient error on attempt %d: %s. Retrying in %.2fs (retry %d/%d)...",
                             attempt + 1,
-                            exc,
+                            sanitized_exc_str,
                             delay,
-                            retry_count,
+                            attempt + 1,
                             self.max_retries
                         )
                         self.sleep_fn(delay)
@@ -469,10 +523,7 @@ class LLMClient:
         # Determine terminal status
         if response_obj is None:
             # Check if failure was caused by timeout
-            is_timeout = (
-                error_type in ("APITimeoutError", "TimeoutError")
-                or (last_error_msg and "timeout" in last_error_msg.lower())
-            )
+            is_timeout = isinstance(last_error, (openai.APITimeoutError, TimeoutError))
             final_status = ParseStatus.TIMEOUT if is_timeout else ParseStatus.API_FAILURE
             return ExecutionRecord(
                 sample_id=sample_id,
@@ -483,13 +534,20 @@ class LLMClient:
                 prompt_version=prompt_version,
                 predicted_technique_id=None,
                 parse_status=final_status,
-                invalid_reason=last_error_msg,
+                invalid_reason=_sanitize(last_error_msg, extra_tokens=extra_secrets),
                 input_tokens=None,
                 output_tokens=None,
                 latency_ms=latency_ms,
                 retry_count=retry_count,
                 error_type=error_type,
+                request_timestamp_utc=request_ts,
+                response_timestamp_utc=response_ts,
             )
+
+        # Extract provider metadata from response
+        ret_model = getattr(response_obj, "model", None)
+        resp_id = getattr(response_obj, "id", None)
+        sys_fp = getattr(response_obj, "system_fingerprint", None)
 
         # Inspect response (Responses API only)
         raw_text, upfront_status, upfront_reason, in_tok, out_tok = self._extract_response_content_and_status(
@@ -506,12 +564,18 @@ class LLMClient:
                 prompt_version=prompt_version,
                 predicted_technique_id=None,
                 parse_status=upfront_status,
-                invalid_reason=upfront_reason,
+                invalid_reason=_sanitize(upfront_reason, extra_tokens=extra_secrets),
                 input_tokens=in_tok,
                 output_tokens=out_tok,
                 latency_ms=latency_ms,
                 retry_count=retry_count,
                 error_type=None,
+                raw_text=raw_text,
+                returned_model_id=ret_model,
+                response_id=resp_id,
+                system_fingerprint=sys_fp,
+                request_timestamp_utc=request_ts,
+                response_timestamp_utc=response_ts,
             )
 
         # Post-hoc parsing and validation
@@ -526,10 +590,16 @@ class LLMClient:
             prompt_version=prompt_version,
             predicted_technique_id=pred_id,
             parse_status=post_hoc_status,
-            invalid_reason=inv_reason,
+            invalid_reason=_sanitize(inv_reason, extra_tokens=extra_secrets),
             input_tokens=in_tok,
             output_tokens=out_tok,
             latency_ms=latency_ms,
             retry_count=retry_count,
             error_type=None,
+            raw_text=raw_text,
+            returned_model_id=ret_model,
+            response_id=resp_id,
+            system_fingerprint=sys_fp,
+            request_timestamp_utc=request_ts,
+            response_timestamp_utc=response_ts,
         )

@@ -104,10 +104,10 @@ MITRE ATT&CK Technique
 
 To preserve experimental validity, all parameters outside the retrieval mechanism remain strictly identical:
 * **Dataset & Samples:** Same test split and telemetry instances across both arms.
-* **Language Model & Provider:** Same frozen LLM checkpoint and provider (`openai`, `gpt-5.6-luna`, `reasoning_effort=xhigh`, `api_interface=responses`).
+* **Language Model & Provider:** Same configured model name, provider and interface (`openai`, `gpt-5.6-luna`, `reasoning_effort=xhigh`, `api_interface=responses`) across arms. The exact provider backend-version policy remains unresolved before protocol freeze.
 * **Inference Parameters:** Fixed interface, reasoning effort, and output constraints. Note that parameters such as temperature, top_p, and seed are not exposed or configurable for this model/interface in the current implementation, and thus are not treatment variables.
 * **Prompt Schema:** Standardized prompt template (`prompts/baseline_v1.txt`), differing only by the conditional injection of the retrieved context block.
-* **Output Constraint:** Identical JSON output schema enforcing strict exact-match technique ID syntax.
+* **Output Constraint:** Identical JSON output schema requiring a `technique_id` string, followed by the same post-hoc ATT&CK syntax and registry validation.
 * **Experimental Input:** Exact same telemetry input (`endpoint_evidence`) across both arms.
 
 The sole experimental variable is:
@@ -141,29 +141,15 @@ The primary output for evaluation is the canonical MITRE ATT&CK Technique or Sub
 
 To guarantee methodological integrity and prevent target leakage from detection rules or benchmark artifacts:
 
-> **Ground-truth labels and rule-derived ATT&CK metadata are removed before inference to prevent label leakage.**
+> **Ground-truth labels and rule-derived ATT&CK metadata must be excluded from inference inputs to prevent label leakage.**
 
-Inference queries apply a **strict field whitelist**:
-```text
-Permitted Telemetry Whitelist:
-├── EventID
-├── Image
-├── CommandLine
-├── ParentImage
-├── ParentCommandLine
-├── TargetFilename
-├── RegistryPath
-├── SourceIp
-├── DestinationIp
-├── DestinationPort
-├── User
-├── Computer
-├── ProcessGuid
-├── ParentProcessGuid
-└── UtcTime
-```
-
-**Explicitly Stripped Fields:** Any fields containing `mitre`, `tactic`, `technique`, `rule_name`, `detection`, `sigma`, `compliance`, or pre-annotated ground-truth labels are scrubbed during data loading.
+The frozen synthetic generator builds evidence from the event-specific
+`INFERENCE_ALLOWLIST` in `src/synthetic.py`; its permitted fields vary by
+event type. T21 preflight accepts only `sample_id` and `endpoint_evidence`
+at the top level of each inference row and rejects added answer-bearing fields,
+including when their artifact hashes have been recomputed. This is not a
+generic scrubber for arbitrary real telemetry; real-data sanitization remains
+a separate T15 prerequisite.
 
 ---
 
@@ -231,12 +217,12 @@ Top-k ATT&CK Candidates
 
 ## Language Model & Inference Protocol
 
-* **Model Usage:** A single, frozen LLM provider API endpoint is utilized across both baseline and experimental arms:
+* **Model Usage:** The same configured LLM provider API interface is planned across baseline and experimental arms:
   * Provider: `openai`
   * Model: `gpt-5.6-luna`
   * Reasoning Effort: `xhigh`
   * API Interface: `responses`
-  * Structured Output: Strict JSON schema enforcing exact `technique_id` syntax.
+  * Structured Output: JSON schema requiring a `technique_id` string; post-hoc validation checks ATT&CK ID syntax and registry membership.
 * **No Fine-Tuning:** The research focuses purely on in-context retrieval augmentation without modifying model weights.
 
 ---
@@ -248,8 +234,8 @@ Top-k ATT&CK Candidates
 | **Exact-Match Accuracy** | End-to-End | Primary metric: Fraction of predictions matching ground-truth ATT&CK ID |
 | **Macro-F1 Score** | End-to-End | Primary metric: Unweighted mean of F1 scores across technique classes |
 | **Precision & Recall** | End-to-End | Per-class false positive and false negative attribution analysis |
-| **Invalid ATT&CK ID Rate** | Robustness | Frequency of malformed, deprecated, or hallucinated technique strings |
-| **Recall@k** | Retriever | Fraction of samples where ground truth is present in retrieved top-k candidates |
+| **Invalid ATT&CK ID Rate** | Robustness | Final treatment of malformed, retired, or unknown IDs and its denominator require protocol freeze |
+| **Hit@k / Macro Recall@k (T20 diagnostics)** | Retriever | Hit@k counts positive views with any ground-truth ID in Top-k; Macro Recall@k averages the per-view fraction of ground-truth IDs retrieved. Canonical study scoring remains pending |
 | **Token Usage** | Efficiency (RQ3) | Prompt and completion token consumption per sample |
 | **Inference Latency** | Efficiency (RQ3) | Wall-clock inference time (seconds per sample) |
 

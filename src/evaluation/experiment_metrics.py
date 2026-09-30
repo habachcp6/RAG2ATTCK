@@ -983,6 +983,28 @@ def compute_condition_metrics(
         len(invalid_id_records) / len(completed_records) if completed_records else None
     )
 
+    syntax_error_records = []
+    unknown_id_records = []
+    for r in invalid_id_records:
+        tids = r.get("parsed_technique_ids", [])
+        if not tids:
+            syntax_error_records.append(r)
+        else:
+            tid = tids[0]
+            if not validate_attack_id_syntax(tid):
+                syntax_error_records.append(r)
+            else:
+                unknown_id_records.append(r)
+
+    invalid_syntax_count = len(syntax_error_records)
+    invalid_syntax_rate = (
+        invalid_syntax_count / len(completed_records) if completed_records else None
+    )
+    unknown_id_count = len(unknown_id_records)
+    unknown_id_rate = (
+        unknown_id_count / len(completed_records) if completed_records else None
+    )
+
     provider_failure_records = [
         r
         for r in cond_records
@@ -1062,6 +1084,8 @@ def compute_condition_metrics(
         "condition": condition,
         "logical_sample_count": logical_sample_count,
         "scorable_sample_count": scorable_sample_count,
+        "valid_scorable_sample_count": len(valid_scorable_records),
+        "completed_record_count": len(completed_records),
         "coverage": coverage,
         "accuracy_end_to_end": accuracy_end_to_end,
         "accuracy_valid_outputs": accuracy_valid_outputs,
@@ -1069,6 +1093,10 @@ def compute_condition_metrics(
         "correct_count": correct_count,
         "invalid_id_count": len(invalid_id_records),
         "invalid_id_rate": invalid_id_rate,
+        "invalid_syntax_count": invalid_syntax_count,
+        "invalid_syntax_rate": invalid_syntax_rate,
+        "unknown_id_count": unknown_id_count,
+        "unknown_id_rate": unknown_id_rate,
         "provider_failure_count": len(provider_failure_records),
         "provider_failure_rate": provider_failure_rate,
         "parse_failure_count": len(parse_failure_records),
@@ -1375,6 +1403,46 @@ def evaluate_experiment(
     overall_logical = sum(m["logical_sample_count"] for m in per_condition.values())
     overall_accuracy_e2e = (overall_correct / overall_scorable) if overall_scorable > 0 else None
 
+    overall_valid_scorable = sum(m["valid_scorable_sample_count"] for m in per_condition.values())
+    overall_accuracy_valid = (
+        (overall_correct / overall_valid_scorable) if overall_valid_scorable > 0 else None
+    )
+
+    overall_completed = sum(m["completed_record_count"] for m in per_condition.values())
+    overall_invalid_id_count = sum(m["invalid_id_count"] for m in per_condition.values())
+    overall_invalid_id_rate = (
+        (overall_invalid_id_count / overall_completed) if overall_completed > 0 else None
+    )
+
+    overall_invalid_syntax_count = sum(m["invalid_syntax_count"] for m in per_condition.values())
+    overall_invalid_syntax_rate = (
+        (overall_invalid_syntax_count / overall_completed) if overall_completed > 0 else None
+    )
+
+    overall_unknown_id_count = sum(m["unknown_id_count"] for m in per_condition.values())
+    overall_unknown_id_rate = (
+        (overall_unknown_id_count / overall_completed) if overall_completed > 0 else None
+    )
+
+    overall_retired_id_count = sum(
+        m["retired_id_observation_count"] for m in per_condition.values()
+    )
+    overall_retired_id_rate = (
+        (overall_retired_id_count / overall_completed) if overall_completed > 0 else None
+    )
+
+    overall_provider_failure_count = sum(
+        m["provider_failure_count"] for m in per_condition.values()
+    )
+    overall_provider_failure_rate = (
+        (overall_provider_failure_count / overall_logical) if overall_logical > 0 else None
+    )
+
+    overall_parse_failure_count = sum(m["parse_failure_count"] for m in per_condition.values())
+    overall_parse_failure_rate = (
+        (overall_parse_failure_count / overall_logical) if overall_logical > 0 else None
+    )
+
     valid_f1s = [m["macro_f1"] for m in per_condition.values() if m["macro_f1"] is not None]
     overall_macro_f1 = (sum(valid_f1s) / len(valid_f1s)) if valid_f1s else None
 
@@ -1386,9 +1454,25 @@ def evaluate_experiment(
         "protocol_sha256": protocol.protocol_sha256,
         "logical_sample_count": overall_logical,
         "scorable_sample_count": overall_scorable,
+        "valid_scorable_sample_count": overall_valid_scorable,
+        "completed_record_count": overall_completed,
         "coverage": (overall_scorable / overall_logical) if overall_logical > 0 else None,
+        "correct_count": overall_correct,
         "accuracy_end_to_end": overall_accuracy_e2e,
+        "accuracy_valid_outputs": overall_accuracy_valid,
         "macro_f1": overall_macro_f1,
+        "invalid_id_count": overall_invalid_id_count,
+        "invalid_id_rate": overall_invalid_id_rate,
+        "invalid_syntax_count": overall_invalid_syntax_count,
+        "invalid_syntax_rate": overall_invalid_syntax_rate,
+        "unknown_id_count": overall_unknown_id_count,
+        "unknown_id_rate": overall_unknown_id_rate,
+        "retired_id_observation_count": overall_retired_id_count,
+        "retired_id_rate": overall_retired_id_rate,
+        "provider_failure_count": overall_provider_failure_count,
+        "provider_failure_rate": overall_provider_failure_rate,
+        "parse_failure_count": overall_parse_failure_count,
+        "parse_failure_rate": overall_parse_failure_rate,
         "total_conditions": len(CONDITIONS),
         "by_condition_summary": {
             c: {

@@ -270,7 +270,48 @@ def _handle_preflight(args: argparse.Namespace) -> int:
         )
         return 1
 
-    # 7. Credentials check (informational; fail-closed if require_credentials is set)
+    # 7. Output directory safety check
+    output_dir = getattr(args, "output_dir", None)
+    if output_dir is None:
+        output_dir = repo_root / "artifacts" / "experiments" / plan.manifest["experiment_id"]
+    try:
+        validated_output = validate_untrusted_output_path(output_dir)
+    except Exception as exc:
+        print(
+            json.dumps(
+                {
+                    "status": "LIVE_EXECUTION_BLOCKED",
+                    "reason": f"Output path safety validation failed for {output_dir}: {exc}",
+                    "provider_calls": 0,
+                    "prediction_writes": 0,
+                },
+                sort_keys=True,
+                indent=2,
+            ),
+            file=sys.stderr,
+        )
+        return 1
+
+    # 8. Evaluator contract validation
+    try:
+        validate_scientific_protocol(protocol, plan)
+    except Exception as exc:
+        print(
+            json.dumps(
+                {
+                    "status": "LIVE_EXECUTION_BLOCKED",
+                    "reason": f"Evaluator contract validation failed: {exc}",
+                    "provider_calls": 0,
+                    "prediction_writes": 0,
+                },
+                sort_keys=True,
+                indent=2,
+            ),
+            file=sys.stderr,
+        )
+        return 1
+
+    # 9. Credentials check (informational; fail-closed if require_credentials is set)
     import os
 
     has_key = bool(os.environ.get("OPENAI_API_KEY", "").strip())
@@ -290,7 +331,14 @@ def _handle_preflight(args: argparse.Namespace) -> int:
         )
         return 1
 
-    # 8. Success: All preflight gates satisfied; strictly 0 provider calls, 0 prediction writes
+    # 10. Success: All preflight gates satisfied; strictly 0 provider calls, 0 prediction writes
+    is_test_split = plan.manifest.get("split") == "test"
+    test_auth_status = (
+        "AUTHORIZED"
+        if getattr(args, "test_authorization_token", None)
+        else ("UNAUTHORIZED_PRE_EXPERIMENT" if is_test_split else "NOT_APPLICABLE_DEV")
+    )
+
     report = {
         "status": "EXPERIMENT_PREFLIGHT_READY",
         "protocol_version": protocol.protocol_version,
@@ -304,6 +352,14 @@ def _handle_preflight(args: argparse.Namespace) -> int:
         "worst_case_attempts": worst_case_attempts,
         "concurrency": 1,
         "has_openai_key": has_key,
+        "evaluator_contract_valid": True,
+        "output_path_safe": True,
+        "output_directory": str(validated_output),
+        "test_split_protection": (
+            "BLOCKED_WITHOUT_HUMAN_AUTHORIZATION" if is_test_split else "DEV_ONLY"
+        ),
+        "test_authorization_status": test_auth_status,
+        "canonical_test_provider_calls": 0,
         "provider_calls": 0,
         "prediction_writes": 0,
     }
@@ -754,6 +810,16 @@ def main(argv=None, *, provider_factory=None) -> int:
         "--max-attempts",
         type=int,
         help="Authorized max provider attempts to verify against worst-case policy",
+    )
+    preflight_parser.add_argument(
+        "--output-dir",
+        type=Path,
+        help="Optional candidate output directory to validate path safety",
+    )
+    preflight_parser.add_argument(
+        "--test-authorization-token",
+        type=str,
+        help="Human authorization token for canonical TEST split execution",
     )
 
     # evaluate subcommand

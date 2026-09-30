@@ -3234,3 +3234,236 @@ def test_dev_smoke_resume_and_in_flight_recovery(tmp_path):
     assert len(prov3.calls) == 0
 
 
+def test_dev_smoke_resume_dispatch_started_fails_closed(tmp_path):
+    """Resume fails closed without blind retries when interrupted during DISPATCH_STARTED."""
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    output = tmp_path / "dev-smoke-dispatch-started-fail"
+    proto = create_test_protocol_approval(
+        d1_raw_response_policy="RECORD_ONLY",
+        d7_dataset_scope="DEV_SMOKE",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
+    )
+    auth = ExecutionAuthorization(
+        human_approval_token="DEV_RECOVERY_TOKEN_DISPATCH",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=200,
+        allow_live_dispatch=True,
+    )
+
+    # 1. Run 5 records first
+    prov1 = MockProvider()
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: prov1,
+        stop_after=5,
+    )
+
+    # 2. Inject an in-flight DISPATCH_STARTED transition for the next logical request
+    journal_path = output / "request_journal.jsonl"
+    next_key = [plan.samples[1].sample_id, CONDITIONS[0]]
+    append_journal_event(
+        journal_path,
+        {"event": "transition", "key": next_key, "state": "RESERVED"},
+    )
+    append_journal_event(
+        journal_path,
+        {"event": "transition", "key": next_key, "state": "DISPATCH_STARTED"},
+    )
+
+    # 3. Resume must fail closed; no blind retries or provider dispatch allowed
+    prov2 = MockProvider()
+    with pytest.raises(ValueError, match="in-flight request state is ambiguous"):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, budget: prov2,
+            resume=True,
+        )
+    # Strictly zero provider calls made on ambiguous resume attempt
+    assert len(prov2.calls) == 0
+
+
+def test_canonical_test_split_protection(tmp_path):
+    """Canonical TEST split execution requires all prerequisites; fails closed with 0 calls."""
+    config_path = ROOT / "config" / "experiment_config.json"
+    plan = load_plan(config_path)
+    assert plan.manifest["split"] == "test"
+    output = tmp_path / "canonical-test-protection"
+
+    provider = MockProvider()
+    proto = create_test_protocol_approval(
+        d1_raw_response_policy="RECORD_ONLY",
+        d7_dataset_scope="PAIRED_TEST",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
+    )
+
+    # Case 1: Missing protocol -> blocked, 0 provider calls
+    auth_valid = ExecutionAuthorization(
+        human_approval_token="HUMAN_TOKEN_TEST_SPLIT",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=25600,
+        allow_live_dispatch=True,
+    )
+    with pytest.raises(ProtocolNotFrozenError):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth_valid,
+            protocol=None,
+            provider_factory=lambda cfg, budget: provider,
+        )
+    assert len(provider.calls) == 0
+
+    # Case 2: Missing authorization -> blocked, 0 provider calls
+    with pytest.raises(LiveExecutionBlockedError):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=None,
+            protocol=proto,
+            provider_factory=lambda cfg, budget: provider,
+        )
+    assert len(provider.calls) == 0
+
+    # Case 3: Empty human approval token -> blocked, 0 provider calls
+    auth_empty_token = ExecutionAuthorization(
+        human_approval_token="",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=25600,
+        allow_live_dispatch=True,
+    )
+    with pytest.raises(HumanAuthorizationRequiredError):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth_empty_token,
+            protocol=proto,
+            provider_factory=lambda cfg, budget: provider,
+        )
+    assert len(provider.calls) == 0
+
+    # Case 4: Insufficient budget -> blocked, 0 provider calls
+    auth_insufficient_budget = ExecutionAuthorization(
+        human_approval_token="HUMAN_TOKEN_TEST_SPLIT",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=10,
+        allow_live_dispatch=True,
+    )
+    with pytest.raises(LiveBudgetRequiredError):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth_insufficient_budget,
+            protocol=proto,
+            provider_factory=lambda cfg, budget: provider,
+        )
+    assert len(provider.calls) == 0
+
+    # Case 5: Protocol scope mismatch -> blocked, 0 provider calls
+    dev_proto = create_test_protocol_approval(
+        d1_raw_response_policy="RECORD_ONLY",
+        d7_dataset_scope="DEV_SMOKE",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
+    )
+    auth_dev_scope = ExecutionAuthorization(
+        human_approval_token="HUMAN_TOKEN_TEST_SPLIT",
+        approved_protocol_sha256=dev_proto.protocol_sha256,
+        authorized_max_provider_attempts=25600,
+        allow_live_dispatch=True,
+    )
+    with pytest.raises(ProtocolNotFrozenError):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth_dev_scope,
+            protocol=dev_proto,
+            provider_factory=lambda cfg, budget: provider,
+        )
+    assert len(provider.calls) == 0
+
+
+def test_no_rag_vs_rag_execution_contract(tmp_path):
+    """Verify contract: No-RAG has zero candidate techniques; RAG injects exactly k."""
+    from collections import defaultdict
+
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    output = tmp_path / "dev-smoke-contract"
+    proto = create_test_protocol_approval(
+        d1_raw_response_policy="RECORD_ONLY",
+        d7_dataset_scope="DEV_SMOKE",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
+    )
+    auth = ExecutionAuthorization(
+        human_approval_token="CONTRACT_TEST_TOKEN",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=200,
+        allow_live_dispatch=True,
+    )
+    provider = MockProvider()
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: provider,
+    )
+
+    calls_by_cond = defaultdict(list)
+    for key, kwargs in provider.calls:
+        sample_id, cond = key
+        calls_by_cond[cond].append((sample_id, kwargs))
+
+    assert len(calls_by_cond["no_rag"]) == 10
+    for sid, kwargs in calls_by_cond["no_rag"]:
+        prompt_text = json.dumps(kwargs)
+        assert "Candidate 1:" not in prompt_text
+        assert "Retrieved Candidates" not in prompt_text
+
+    for cond in CONDITIONS[1:]:
+        assert len(calls_by_cond[cond]) == 10
+        for sid, kwargs in calls_by_cond[cond]:
+            prompt_text = json.dumps(kwargs)
+            assert "Candidate 1:" in prompt_text
+
+
+def test_preflight_validates_output_path_and_evaluator_contract(tmp_path):
+    """Preflight CLI checks output path safety, evaluator contract, and test authorization."""
+    from src.experiment.__main__ import main
+
+    fake_target = tmp_path / "fake-target"
+    fake_target.mkdir()
+    symlink_dir = tmp_path / "symlink-out"
+    try:
+        symlink_dir.symlink_to(fake_target)
+        rc = main(["preflight", "--allow-dirty", "--output-dir", str(symlink_dir)])
+        assert rc == 1
+    except OSError:
+        pass
+
+    import io
+    import sys
+
+    captured = io.StringIO()
+    old_stdout = sys.stdout
+    sys.stdout = captured
+    try:
+        rc = main(["preflight", "--allow-dirty"])
+    finally:
+        sys.stdout = old_stdout
+
+    assert rc == 0
+    report = json.loads(captured.getvalue())
+    assert report["status"] == "EXPERIMENT_PREFLIGHT_READY"
+    assert report["evaluator_contract_valid"] is True
+    assert report["output_path_safe"] is True
+    assert "test_authorization_status" in report
+    assert report["canonical_test_provider_calls"] == 0
+
+

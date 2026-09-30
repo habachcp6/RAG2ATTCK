@@ -985,6 +985,13 @@ def test_evaluator_d2f_accuracy_and_failure_rates(tmp_path):
     # Retired ID: s7 predicted T1059 (deprecated) / 7 completed outputs = 1/7
     assert metrics["retired_id_observation_count"] == 1
     assert metrics["retired_id_rate"] == pytest.approx(1 / 7)
+    # Syntax error vs unknown ID breakdown
+    assert metrics["invalid_syntax_count"] == 1
+    assert metrics["invalid_syntax_rate"] == pytest.approx(1 / 7)
+    assert metrics["unknown_id_count"] == 0
+    assert metrics["unknown_id_rate"] == 0.0
+    assert metrics["valid_scorable_sample_count"] == 5
+    assert metrics["completed_record_count"] == 7
 
 
 def test_evaluator_d2h_retrieval_conditional_metrics(tmp_path):
@@ -1077,7 +1084,16 @@ def test_evaluator_end_to_end_contract_delegation(tmp_path):
     # Valid protocol delegates to evaluate_experiment
     results = evaluate_end_to_end(inputs, protocol=proto)
     assert results["overall"]["accuracy_end_to_end"] == 0.5
+    assert results["overall"]["accuracy_valid_outputs"] == 0.6
     assert results["overall"]["logical_sample_count"] == 40
+    assert results["overall"]["scorable_sample_count"] == 30
+    assert results["overall"]["valid_scorable_sample_count"] == 25
+    assert results["overall"]["completed_record_count"] == 35
+    assert results["overall"]["invalid_id_rate"] == pytest.approx(5 / 35)
+    assert results["overall"]["invalid_syntax_count"] == 5
+    assert results["overall"]["unknown_id_count"] == 0
+    assert results["overall"]["provider_failure_rate"] == pytest.approx(5 / 40)
+    assert results["overall"]["parse_failure_rate"] == pytest.approx(5 / 40)
     assert results["overall"]["total_conditions"] == 5
 
     # Missing protocol raises HumanDecisionRequired

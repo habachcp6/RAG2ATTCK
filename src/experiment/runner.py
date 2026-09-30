@@ -416,6 +416,7 @@ def _record(
     execution_mode="mock_fixture",
     run_id=None,
     raw_response_policy="DISCARD",
+    extra_tokens=(),
 ):
     actual_run_id = run_id or manifest.get("run_id") or ("fixture-" + manifest_sha[:16])
     raw_resp = None
@@ -480,7 +481,7 @@ def _record(
         retry_count=execution.retry_count,
         request_attempt_count=attempts,
         error_type=execution.error_type,
-        error_message=sanitize_secrets(execution.invalid_reason),
+        error_message=sanitize_secrets(execution.invalid_reason, extra_tokens=extra_tokens),
         success=execution.is_valid,
         timestamp=datetime.now(UTC).isoformat(),
         terminal=True,
@@ -732,6 +733,7 @@ def run_live_experiment(
 
     directory = validate_untrusted_output_path(directory)
 
+    api_key = None
     if provider_factory is None:
         api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key or not api_key.strip():
@@ -883,6 +885,16 @@ def run_live_experiment(
             else (authorization.d1_raw_response_policy_approved or "DISCARD")
         )
 
+        sensitive_tokens: list[str] = []
+        if api_key:
+            sensitive_tokens.append(api_key)
+        if authorization and authorization.human_approval_token:
+            sensitive_tokens.append(authorization.human_approval_token)
+        for env_name in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "CUSTOM_SECRET_KEY"):
+            val = os.environ.get(env_name)
+            if val and len(val.strip()) >= 4:
+                sensitive_tokens.append(val.strip())
+
         new_records = 0
         for sample in plan.samples:
             for condition in CONDITIONS:
@@ -939,6 +951,7 @@ def run_live_experiment(
                     execution_mode="live",
                     run_id=live_run_id,
                     raw_response_policy=d1_policy,
+                    extra_tokens=sensitive_tokens,
                 )
 
                 # 4. PARSED: parsed representation ready

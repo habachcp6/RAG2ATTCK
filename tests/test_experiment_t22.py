@@ -3939,4 +3939,277 @@ def test_sentinel_leakage_redaction():
     assert "[REDACTED_SECRET]" in sanitized_custom
 
 
+def test_full_artifact_sentinel_leakage_scan(bundle, tmp_path, monkeypatch, capsys):
+    """Zero secret sentinels leak into any generated artifacts, logs, or outputs."""
+    plan = load_plan(bundle[1])
+    output = tmp_path / "full-sentinel-leakage-output"
+    proto = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
+
+    openai_key_sentinel = "sk-proj-SENTINEL_OPENAI_KEY_ABC123456789"
+    bearer_sentinel = "Bearer SENTINEL_BEARER_TOKEN_XYZ987654"
+    env_sentinel = "SENTINEL_ENV_CREDENTIAL_VAL_555"
+    human_auth_sentinel = "HUMAN_AUTH_TOKEN_SENTINEL_777"
+
+    monkeypatch.setenv("OPENAI_API_KEY", openai_key_sentinel)
+    monkeypatch.setenv("CUSTOM_SECRET_KEY", env_sentinel)
+
+    auth = ExecutionAuthorization(
+        human_approval_token=human_auth_sentinel,
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+
+    err_msg = (
+        f"Simulated error with {bearer_sentinel} and key {openai_key_sentinel} "
+        f"and env {env_sentinel} and auth {human_auth_sentinel}"
+    )
+    fake_provider = MockProvider(
+        outcomes={("s1", "no_rag"): [ConnectionError(err_msg)]}
+    )
+
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: fake_provider,
+        stop_after=1,
+    )
+
+    # 1. Scan all generated artifact files
+    sentinels = [
+        "SENTINEL_BEARER_TOKEN_XYZ987654",
+        openai_key_sentinel,
+        env_sentinel,
+        human_auth_sentinel,
+    ]
+    for file_path in output.rglob("*"):
+        if file_path.is_file():
+            content = file_path.read_text(encoding="utf-8", errors="replace")
+            for sentinel in sentinels:
+                assert sentinel not in content, (
+                    f"Secret sentinel {sentinel} leaked into {file_path.name}"
+                )
+
+    # 2. Scan captured stdout and stderr
+    captured = capsys.readouterr()
+    for sentinel in sentinels:
+        assert sentinel not in captured.out, f"Secret sentinel {sentinel} leaked into stdout"
+        assert sentinel not in captured.err, f"Secret sentinel {sentinel} leaked into stderr"
+
+    # 3. Ground truth sentinel must never appear in provider request payloads
+    for key, kwargs in fake_provider.calls:
+        prompt_input = kwargs.get("input", "")
+        assert "SECRET_GT_METADATA" not in prompt_input
+        assert "single_ground_truth" not in prompt_input
+        assert "contextual_ground_truth" not in prompt_input
+
+
+def test_model_provenance_null_metadata():
+    """Evaluator accepts null provider metadata without fabricating snapshot identifiers."""
+    from src.evaluation.experiment_metrics import (
+        EvaluationInputs,
+        compute_run_provenance,
+        verify_evaluator_provenance,
+    )
+
+    proto = create_test_protocol_approval()
+    records = [
+        {
+            "sample_id": f"s{i}",
+            "condition": cond,
+            "experiment_id": "exp-null-prov",
+            "returned_model_id": None,
+            "response_id": None,
+            "system_fingerprint": None,
+            "request_timestamp_utc": None,
+            "response_timestamp_utc": None,
+        }
+        for i in range(2)
+        for cond in ("no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10")
+    ]
+    manifest = {
+        "experiment_id": "exp-null-prov",
+        "git_commit_sha": "a" * 40,
+        "config_sha256": "b" * 64,
+        "protocol_sha256": proto.protocol_sha256,
+        "model": {"provider": "openai", "model": "gpt-5.6-luna"},
+    }
+    inputs = EvaluationInputs(
+        manifest_sha256="c" * 64,
+        experiment_id="exp-null-prov",
+        execution_mode="live",
+        sample_ids=("s0", "s1"),
+        records=tuple(records),
+        ground_truth={"s0": ("T1059.001",), "s1": ("T1105",)},
+        registry={},
+        manifest_data=manifest,
+    )
+    verify_evaluator_provenance(inputs, proto)
+    prov = compute_run_provenance(inputs, proto)
+    assert prov["model_provenance"]["returned_models"] == []
+    assert prov["model_provenance"]["system_fingerprints"] == []
+    assert prov["model_provenance"]["has_response_ids"] is False
+    assert prov["model_provenance"]["has_timestamps"] is False
+
+
+def test_model_provenance_drift_fails_closed():
+    """Evaluator detects model provenance drift across records and fails closed."""
+    from src.evaluation.experiment_metrics import (
+        EvaluationInputs,
+        verify_evaluator_provenance,
+    )
+
+    proto = create_test_protocol_approval()
+    records = [
+        {
+            "sample_id": f"s{i}",
+            "condition": cond,
+            "experiment_id": "exp-drift-prov",
+            "returned_model_id": "gpt-4o-2024-08-06" if i == 0 else "gpt-4o-mini-2024-07-18",
+            "response_id": f"resp_{i}_{cond}",
+            "system_fingerprint": "fp_abc123",
+            "request_timestamp_utc": "2026-09-30T10:00:00Z",
+            "response_timestamp_utc": "2026-09-30T10:00:02Z",
+        }
+        for i in range(2)
+        for cond in ("no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10")
+    ]
+    manifest = {
+        "experiment_id": "exp-drift-prov",
+        "git_commit_sha": "a" * 40,
+        "config_sha256": "b" * 64,
+        "protocol_sha256": proto.protocol_sha256,
+        "model": {"provider": "openai", "model": "gpt-4o"},
+    }
+    inputs = EvaluationInputs(
+        manifest_sha256="c" * 64,
+        experiment_id="exp-drift-prov",
+        execution_mode="live",
+        sample_ids=("s0", "s1"),
+        records=tuple(records),
+        ground_truth={"s0": ("T1059.001",), "s1": ("T1105",)},
+        registry={},
+        manifest_data=manifest,
+    )
+    with pytest.raises(ValueError, match="model provenance drift detected"):
+        verify_evaluator_provenance(inputs, proto)
+
+
+def test_model_provenance_incomplete_timestamp_fails_closed():
+    """Evaluator rejects asymmetric or incomplete timestamps on prediction records."""
+    from src.evaluation.experiment_metrics import (
+        EvaluationInputs,
+        verify_evaluator_provenance,
+    )
+
+    proto = create_test_protocol_approval()
+    records = [
+        {
+            "sample_id": f"s{i}",
+            "condition": cond,
+            "experiment_id": "exp-incompl-ts",
+            "returned_model_id": "gpt-4o-2024-08-06",
+            "response_id": f"resp_{i}_{cond}",
+            "system_fingerprint": "fp_abc123",
+            "request_timestamp_utc": "2026-09-30T10:00:00Z",
+            "response_timestamp_utc": None if i == 0 else "2026-09-30T10:00:02Z",
+        }
+        for i in range(2)
+        for cond in ("no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10")
+    ]
+    manifest = {
+        "experiment_id": "exp-incompl-ts",
+        "git_commit_sha": "a" * 40,
+        "config_sha256": "b" * 64,
+        "protocol_sha256": proto.protocol_sha256,
+        "model": {"provider": "openai", "model": "gpt-4o"},
+    }
+    inputs = EvaluationInputs(
+        manifest_sha256="c" * 64,
+        experiment_id="exp-incompl-ts",
+        execution_mode="live",
+        sample_ids=("s0", "s1"),
+        records=tuple(records),
+        ground_truth={"s0": ("T1059.001",), "s1": ("T1105",)},
+        registry={},
+        manifest_data=manifest,
+    )
+    with pytest.raises(ValueError, match="incomplete timestamps"):
+        verify_evaluator_provenance(inputs, proto)
+
+
+def test_preflight_cli_rejects_alternate_protocol(tmp_path, capsys):
+    """Preflight CLI rejects a valid alternate protocol with recomputed hash."""
+    from src.experiment.authorization import protocol_to_dict
+
+    alt_proto = create_test_protocol_approval(
+        protocol_version="alternate-protocol-v1",
+        d1_raw_response_policy="DISCARD",
+    )
+    proto_path = tmp_path / "alt_protocol.json"
+    proto_path.write_bytes(canonical_bytes(protocol_to_dict(alt_proto)))
+
+    rc = main(["preflight", "--allow-dirty", "--protocol", str(proto_path)])
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "LIVE_EXECUTION_BLOCKED" in err
+    assert "alternate protocol rejected" in err
+
+
+def test_preflight_cli_rejects_alternate_config(capsys):
+    """Preflight CLI rejects an alternate config whose SHA-256 drifts from canonical lock."""
+    canonical_cfg = parse_json((ROOT / "config" / "experiment_config.json").read_bytes())
+    alt_cfg = dict(canonical_cfg)
+    alt_cfg["experiment"] = dict(alt_cfg["experiment"])
+    alt_cfg["experiment"]["version"] = "2"
+
+    cfg_path = ROOT / "config" / "temp_alt_experiment_config.json"
+    cfg_path.write_bytes(canonical_bytes(alt_cfg))
+    try:
+        rc = main(["preflight", "--allow-dirty", "--config", str(cfg_path)])
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "LIVE_EXECUTION_BLOCKED" in err
+        assert "alternate config rejected" in err
+    finally:
+        if cfg_path.exists():
+            cfg_path.unlink()
+
+
+def test_preflight_cli_rejects_invalid_test_authorization_contract(capsys):
+    """Preflight CLI rejects test authorization token that is not a valid scoped contract."""
+    rc = main(
+        ["preflight", "--allow-dirty", "--test-authorization-token", "not_a_valid_json_contract"]
+    )
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "LIVE_EXECUTION_BLOCKED" in err
+    assert "Scoped test authorization token must be a valid JSON contract" in err
+
+
+def test_preflight_cli_accepts_valid_scoped_test_authorization_contract(tmp_path, capsys):
+    """Preflight CLI accepts valid scoped ExecutionAuthorization contract and marks AUTHORIZED."""
+    contract = {
+        "human_approval_token": "HUMAN_CANONICAL_TOKEN_OK",
+        "approved_protocol_sha256": (
+            "e7ab9ca3b5a779fc01e4d0b532871377aff041faf9c570c32599fedf26748677"
+        ),
+        "authorized_max_provider_attempts": 25600,
+        "allow_live_dispatch": True,
+    }
+    contract_file = tmp_path / "valid_auth_contract.json"
+    contract_file.write_bytes(canonical_bytes(contract))
+
+    rc = main(["preflight", "--allow-dirty", "--test-authorization-token", str(contract_file)])
+    assert rc == 0
+    out = capsys.readouterr().out
+    data = json.loads(out)
+    assert data["status"] == "EXPERIMENT_PREFLIGHT_READY"
+    assert data["test_authorization_status"] == "AUTHORIZED"
+    assert data["provider_calls_during_preflight"] == 0
+
+
+
 

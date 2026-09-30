@@ -958,10 +958,27 @@ def verify_evaluator_provenance(
         if missing:
             raise ValueError(f"missing logical sample in condition {cond}: {len(missing)} missing")
 
+    # Model provenance drift check: all records with returned_model_id must match
+    returned_models = {
+        r.get("returned_model_id")
+        for r in inputs.records
+        if r.get("returned_model_id") is not None
+    }
+    if len(returned_models) > 1:
+        models_str = sorted(returned_models)
+        raise ValueError(
+            f"model provenance drift detected: multiple returned_model_ids in run: {models_str}"
+        )
+
     # Timestamp consistency and tamper prevention
     for r in inputs.records:
         req_ts = r.get("request_timestamp_utc")
         resp_ts = r.get("response_timestamp_utc")
+        if (req_ts is None) != (resp_ts is None):
+            raise ValueError(
+                f"incomplete timestamps on record {r.get('sample_id')}: "
+                f"request_timestamp_utc={req_ts}, response_timestamp_utc={resp_ts}"
+            )
         if req_ts is not None and resp_ts is not None:
             t_req = datetime.fromisoformat(req_ts)
             t_resp = datetime.fromisoformat(resp_ts)
@@ -969,6 +986,7 @@ def verify_evaluator_provenance(
                 raise ValueError(
                     f"timestamp tampering detected: response ({resp_ts}) before request ({req_ts})"
                 )
+
 
 
 def compute_condition_metrics(

@@ -357,8 +357,10 @@ def _handle_preflight(args: argparse.Namespace) -> int:
         )
         return 1
 
-    # 10. Scoped test authorization token check (fail closed if provided but empty/whitespace)
+    # 10. Scoped test authorization token check (fail closed if provided but not a valid contract)
     test_token = getattr(args, "test_authorization_token", None)
+    is_test_split = plan.manifest.get("split") == "test"
+    test_auth_status = "UNAUTHORIZED_PRE_EXPERIMENT" if is_test_split else "NOT_APPLICABLE_DEV"
     if test_token is not None:
         if not isinstance(test_token, str) or not test_token.strip():
             print(
@@ -376,14 +378,85 @@ def _handle_preflight(args: argparse.Namespace) -> int:
             )
             return 1
 
-    # 11. Success: All preflight gates satisfied; strictly 0 provider calls, 0 prediction writes
-    is_test_split = plan.manifest.get("split") == "test"
-    test_auth_status = (
-        "AUTHORIZED"
-        if test_token and test_token.strip()
-        else ("UNAUTHORIZED_PRE_EXPERIMENT" if is_test_split else "NOT_APPLICABLE_DEV")
-    )
+        contract_data = None
+        token_path = Path(test_token.strip())
+        if token_path.is_file():
+            try:
+                contract_data = json.loads(token_path.read_bytes())
+            except Exception as exc:
+                print(
+                    json.dumps(
+                        {
+                            "status": "LIVE_EXECUTION_BLOCKED",
+                            "reason": f"Failed to parse test authorization contract file: {exc}",
+                            "provider_calls": 0,
+                            "prediction_writes": 0,
+                        },
+                        sort_keys=True,
+                        indent=2,
+                    ),
+                    file=sys.stderr,
+                )
+                return 1
+        else:
+            try:
+                contract_data = json.loads(test_token)
+            except Exception:
+                contract_data = None
 
+        if not isinstance(contract_data, dict):
+            print(
+                json.dumps(
+                    {
+                        "status": "LIVE_EXECUTION_BLOCKED",
+                        "reason": (
+                            "Scoped test authorization token must be a valid JSON contract "
+                            "or path to an authorization contract file"
+                        ),
+                        "provider_calls": 0,
+                        "prediction_writes": 0,
+                    },
+                    sort_keys=True,
+                    indent=2,
+                ),
+                file=sys.stderr,
+            )
+            return 1
+
+        try:
+            from src.experiment.authorization import (
+                ExecutionAuthorization,
+                validate_live_authorization,
+            )
+
+            auth_contract = ExecutionAuthorization(
+                human_approval_token=contract_data.get("human_approval_token", ""),
+                approved_protocol_sha256=contract_data.get("approved_protocol_sha256"),
+                authorized_max_provider_attempts=contract_data.get(
+                    "authorized_max_provider_attempts",
+                    contract_data.get("authorized_max_requests"),
+                ),
+                allow_live_dispatch=bool(contract_data.get("allow_live_dispatch", False)),
+            )
+            validate_live_authorization(auth_contract, plan, protocol)
+            test_auth_status = "AUTHORIZED"
+        except Exception as exc:
+            print(
+                json.dumps(
+                    {
+                        "status": "LIVE_EXECUTION_BLOCKED",
+                        "reason": f"Scoped test authorization contract validation failed: {exc}",
+                        "provider_calls": 0,
+                        "prediction_writes": 0,
+                    },
+                    sort_keys=True,
+                    indent=2,
+                ),
+                file=sys.stderr,
+            )
+            return 1
+
+    # 11. Success: All preflight gates satisfied; strictly 0 provider calls, 0 prediction writes
     report = {
         "status": "EXPERIMENT_PREFLIGHT_READY",
         "protocol_version": protocol.protocol_version,

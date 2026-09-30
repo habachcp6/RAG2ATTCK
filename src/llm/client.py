@@ -22,7 +22,7 @@ import threading
 import time
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Optional, Sequence, Set, Tuple
 
 import openai
 from openai import OpenAI as OpenAISDKClient
@@ -60,14 +60,14 @@ OPERATIONAL_EXCEPTIONS = (
 )
 
 
-def _sanitize(text: str | None) -> str | None:
+def _sanitize(text: str | None, *, extra_tokens: Sequence[str] = ()) -> str | None:
     """Lazily sanitize secrets from text without triggering circular imports."""
     if text is None:
         return None
     try:
         from src.experiment.redaction import sanitize_secrets
 
-        return sanitize_secrets(text)
+        return sanitize_secrets(text, extra_tokens=extra_tokens)
     except Exception:
         return text
 
@@ -197,6 +197,7 @@ class LLMClient:
         # Client setup — fail fast on missing credentials
         secret_env_var = self.config.get("secret_policy", {}).get("env_var_name", "OPENAI_API_KEY")
         resolved_key = api_key or os.environ.get(secret_env_var, "").strip() or None
+        self.api_key = resolved_key
 
         if openai_client is not None:
             # SDK clients may retry internally, bypassing one-budget-unit-per-request
@@ -455,6 +456,7 @@ class LLMClient:
         response_obj: Any = None
         request_ts: Optional[str] = None
         response_ts: Optional[str] = None
+        extra_secrets = [self.api_key] if self.api_key else []
 
         with WallClockTimer() as timer:
             for attempt in range(self.max_retries + 1):
@@ -477,7 +479,7 @@ class LLMClient:
                 except OPERATIONAL_EXCEPTIONS as exc:
                     last_error = exc
                     error_type = type(exc).__name__
-                    last_error_msg = _sanitize(str(exc))
+                    last_error_msg = _sanitize(str(exc), extra_tokens=extra_secrets)
 
                     if isinstance(exc, LiveBudgetExceededError):
                         # Immediately fail on budget exhaustion without retry
@@ -519,7 +521,7 @@ class LLMClient:
                 prompt_version=prompt_version,
                 predicted_technique_id=None,
                 parse_status=final_status,
-                invalid_reason=_sanitize(last_error_msg),
+                invalid_reason=_sanitize(last_error_msg, extra_tokens=extra_secrets),
                 input_tokens=None,
                 output_tokens=None,
                 latency_ms=latency_ms,
@@ -549,7 +551,7 @@ class LLMClient:
                 prompt_version=prompt_version,
                 predicted_technique_id=None,
                 parse_status=upfront_status,
-                invalid_reason=_sanitize(upfront_reason),
+                invalid_reason=_sanitize(upfront_reason, extra_tokens=extra_secrets),
                 input_tokens=in_tok,
                 output_tokens=out_tok,
                 latency_ms=latency_ms,
@@ -575,7 +577,7 @@ class LLMClient:
             prompt_version=prompt_version,
             predicted_technique_id=pred_id,
             parse_status=post_hoc_status,
-            invalid_reason=_sanitize(inv_reason),
+            invalid_reason=_sanitize(inv_reason, extra_tokens=extra_secrets),
             input_tokens=in_tok,
             output_tokens=out_tok,
             latency_ms=latency_ms,

@@ -5,3 +5,10 @@
 *.py text eol=lf
 *.txt text eol=lf
 *.md text eol=lf
+
+# Pinned and legacy artifacts preserved with CRLF for hash stability across platforms
+config/benchmark_scope.json text eol=crlf
+config/retrieval.json text eol=crlf
+src/baseline/smoke.py text eol=crlf
+src/rag/__init__.py text eol=crlf
+scripts/dev.ps1 text eol=crlf

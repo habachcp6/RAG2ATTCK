@@ -20,14 +20,13 @@ if TYPE_CHECKING:
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 CRITICAL_CODE_PATTERNS: tuple[str, ...] = (
-    "src/experiment",
-    "src/evaluation",
-    "src/llm",
-    "src/rag",
-    "src/baseline",
+    "src",
     "prompts",
     "config/model.json",
     "config/retrieval.json",
+    "pyproject.toml",
+    "uv.lock",
+    ".python-version",
 )
 
 
@@ -507,14 +506,17 @@ def validate_canonical_experiment_lock(
     lock_path = target_repo_root / "config" / "canonical_experiment_lock_v1.json"
 
     plan_in_target = False
+    plan_in_repo = False
     try:
         plan_in_target = hasattr(plan, "root") and plan.root.resolve() == target_repo_root.resolve()
+        plan_in_repo = hasattr(plan, "root") and plan.root.resolve() == REPO_ROOT.resolve()
     except Exception:
         plan_in_target = False
+        plan_in_repo = False
 
     should_enforce = (
         (is_canonical_scale and is_test_split)
-        or (plan_in_target and is_test_split)
+        or (plan_in_repo and is_test_split)
         or (plan_in_target and lock_path.exists())
     )
     if not should_enforce:
@@ -622,6 +624,7 @@ def validate_experiment_readiness(
     from src.experiment.schemas import CONDITIONS
 
     root = Path(repo_root) if repo_root else REPO_ROOT
+    target_code_root = getattr(plan, "root", None) or root
     is_test_split = plan.manifest.get("split") == "test"
     is_canonical_scale = len(getattr(plan, "samples", [])) == 1280
 
@@ -643,7 +646,7 @@ def validate_experiment_readiness(
         validate_live_authorization(authorization, plan, protocol=protocol)
 
     # Gate 3: Canonical experiment lock & code manifest validation
-    validate_canonical_experiment_lock(plan, protocol, repo_root=root)
+    validate_canonical_experiment_lock(plan, protocol, repo_root=target_code_root)
 
     # Gate 4: Sequential concurrency check
     if (
@@ -711,18 +714,23 @@ def validate_experiment_readiness(
     should_check_dirty = not effective_allow_dirty and (
         plan_in_repo or is_canonical_test or getattr(plan, "enforce_clean_git", False)
     )
+    git_cwd = root if (root / ".git").exists() else REPO_ROOT
     if should_check_dirty:
         try:
             import subprocess
 
             res = subprocess.run(
                 ["git", "status", "--porcelain", "src", "config", "prompts", "scripts"],
-                cwd=root,
+                cwd=git_cwd,
                 capture_output=True,
                 text=True,
                 check=False,
             )
-            if res.returncode == 0 and res.stdout.strip():
+            if res.returncode != 0:
+                raise LiveExecutionBlockedError(
+                    f"LIVE_EXECUTION_BLOCKED: git status failed: {res.stderr}"
+                )
+            if res.stdout.strip():
                 raise LiveExecutionBlockedError(
                     "LIVE_EXECUTION_BLOCKED: Source tree is dirty: git status reports "
                     f"uncommitted changes in tracked directories:\n{res.stdout.strip()}"
@@ -741,19 +749,22 @@ def validate_experiment_readiness(
 
         git_sha_res = subprocess.run(
             ["git", "rev-parse", "HEAD"],
-            cwd=root,
+            cwd=git_cwd,
             capture_output=True,
             text=True,
             check=False,
         )
-        if git_sha_res.returncode == 0:
-            git_sha = git_sha_res.stdout.strip()
-            import re
+        if git_sha_res.returncode != 0:
+            raise LiveExecutionBlockedError(
+                f"LIVE_EXECUTION_BLOCKED: git rev-parse HEAD failed: {git_sha_res.stderr}"
+            )
+        git_sha = git_sha_res.stdout.strip()
+        import re
 
-            if len(git_sha) != 40 or not re.fullmatch(r"[0-9a-f]{40}", git_sha):
-                raise LiveExecutionBlockedError(
-                    f"LIVE_EXECUTION_BLOCKED: Invalid Git commit SHA: {git_sha}"
-                )
+        if len(git_sha) != 40 or not re.fullmatch(r"[0-9a-f]{40}", git_sha):
+            raise LiveExecutionBlockedError(
+                f"LIVE_EXECUTION_BLOCKED: Invalid Git commit SHA: {git_sha}"
+            )
     except LiveExecutionBlockedError:
         raise
     except Exception as exc:

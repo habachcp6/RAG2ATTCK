@@ -4681,7 +4681,432 @@ def test_evaluator_474_techniques_per_condition_null_semantics():
     assert cond_metrics["T1000"]["support"] == 0
 
 
+def test_code_manifest_detects_retriever_drift(tmp_path):
+    """Canonical lock verification detects retriever drift and blocks live execution."""
+    from src.experiment.authorization import compute_code_manifest_sha256
+
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    proto = create_test_protocol_approval(
+        d1_raw_response_policy="RECORD_ONLY",
+        d7_dataset_scope="DEV_SMOKE",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
+    )
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_RETRIEVER_DRIFT",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=200,
+        allow_live_dispatch=True,
+    )
+
+    retriever_file = root / "src" / "retrieval" / "retriever.py"
+    retriever_file.parent.mkdir(parents=True, exist_ok=True)
+    retriever_file.write_text("# frozen retriever\n", encoding="utf-8")
+
+    actual_code_manifest = compute_code_manifest_sha256(root)
+    lock_data = {
+        "schema_version": "1.0.0",
+        "lock_version": "canonical-lock-v1",
+        "experiment_id": plan.manifest["experiment_id"],
+        "protocol_version": proto.protocol_version,
+        "protocol_sha256": proto.protocol_sha256,
+        "code_manifest_sha256": actual_code_manifest,
+        "config_sha256": plan.manifest["config_sha256"],
+        "artifact_hashes": {k: v["sha256"] for k, v in plan.manifest["artifacts"].items()},
+    }
+    lock_path = root / "config" / "canonical_experiment_lock_v1.json"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path.write_bytes(canonical_bytes(lock_data))
+
+    # Mutate retriever to simulate drift
+    retriever_file.write_text("# drifted retriever content\n", encoding="utf-8")
+
+    constructed = []
+
+    def mock_provider_factory(cfg, b):
+        constructed.append(1)
+        raise AssertionError("Provider constructed despite code drift!")
+
+    out_dir = tmp_path / "retriever_drift_run"
+    with pytest.raises(ProtocolNotFrozenError, match="code drift detected"):
+        run_live_experiment(
+            plan,
+            out_dir,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=mock_provider_factory,
+            allow_dirty=True,
+        )
+    assert len(constructed) == 0
+    assert not out_dir.exists() or not list(out_dir.glob("*.jsonl"))
 
 
+def test_code_manifest_detects_dependency_lock_drift(tmp_path):
+    """Canonical lock verification detects uv.lock drift and blocks live execution."""
+    from src.experiment.authorization import compute_code_manifest_sha256
+
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    proto = create_test_protocol_approval(
+        d1_raw_response_policy="RECORD_ONLY",
+        d7_dataset_scope="DEV_SMOKE",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
+    )
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_LOCK_DRIFT",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=200,
+        allow_live_dispatch=True,
+    )
+
+    lock_dep_file = root / "uv.lock"
+    lock_dep_file.write_text("# frozen uv.lock\n", encoding="utf-8")
+
+    actual_code_manifest = compute_code_manifest_sha256(root)
+    lock_data = {
+        "schema_version": "1.0.0",
+        "lock_version": "canonical-lock-v1",
+        "experiment_id": plan.manifest["experiment_id"],
+        "protocol_version": proto.protocol_version,
+        "protocol_sha256": proto.protocol_sha256,
+        "code_manifest_sha256": actual_code_manifest,
+        "config_sha256": plan.manifest["config_sha256"],
+        "artifact_hashes": {k: v["sha256"] for k, v in plan.manifest["artifacts"].items()},
+    }
+    lock_path = root / "config" / "canonical_experiment_lock_v1.json"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path.write_bytes(canonical_bytes(lock_data))
+
+    # Mutate uv.lock to simulate dependency lock drift
+    lock_dep_file.write_text("# drifted uv.lock content\n", encoding="utf-8")
+
+    constructed = []
+
+    def mock_provider_factory(cfg, b):
+        constructed.append(1)
+        raise AssertionError("Provider constructed despite lock drift!")
+
+    out_dir = tmp_path / "lock_drift_run"
+    with pytest.raises(ProtocolNotFrozenError, match="code drift detected"):
+        run_live_experiment(
+            plan,
+            out_dir,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=mock_provider_factory,
+            allow_dirty=True,
+        )
+    assert len(constructed) == 0
+    assert not out_dir.exists() or not list(out_dir.glob("*.jsonl"))
 
 
+def test_readiness_blocks_when_git_status_returns_nonzero(monkeypatch, tmp_path):
+    """validate_experiment_readiness fails closed if git status returns nonzero."""
+    import subprocess
+    from types import SimpleNamespace
+
+    from src.experiment.authorization import validate_experiment_readiness
+
+    config_path = ROOT / "config" / "experiment_config.json"
+    plan = load_plan(config_path)
+    proto_path = ROOT / "config" / "experiment_protocol_v1.json"
+    proto = ScientificProtocolApproval(**parse_json(proto_path.read_bytes()))
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_STATUS_NONZERO",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=30000,
+        allow_live_dispatch=True,
+    )
+
+    monkeypatch.setattr(
+        "src.experiment.authorization.validate_canonical_experiment_lock",
+        lambda *args, **kwargs: None,
+    )
+
+    original_run = subprocess.run
+
+    def mock_run(cmd, *args, **kwargs):
+        if isinstance(cmd, list) and len(cmd) > 1 and cmd[0] == "git" and "status" in cmd:
+            return SimpleNamespace(returncode=128, stdout="", stderr="fatal: not a git repo")
+        if isinstance(cmd, list) and len(cmd) > 1 and cmd[0] == "git" and "rev-parse" in cmd:
+            return SimpleNamespace(returncode=0, stdout="a" * 40, stderr="")
+        return original_run(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+
+    with pytest.raises(LiveExecutionBlockedError, match="git status failed"):
+        validate_experiment_readiness(
+            plan=plan,
+            protocol=proto,
+            authorization=auth,
+            output_dir=tmp_path / "status_fail",
+            is_live=True,
+        )
+
+
+def test_readiness_blocks_when_git_rev_parse_returns_nonzero(monkeypatch, tmp_path):
+    """validate_experiment_readiness fails closed if git rev-parse returns nonzero."""
+    import subprocess
+    from types import SimpleNamespace
+
+    from src.experiment.authorization import validate_experiment_readiness
+
+    config_path = ROOT / "config" / "experiment_config.json"
+    plan = load_plan(config_path)
+    proto_path = ROOT / "config" / "experiment_protocol_v1.json"
+    proto = ScientificProtocolApproval(**parse_json(proto_path.read_bytes()))
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_REV_PARSE_NONZERO",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=30000,
+        allow_live_dispatch=True,
+    )
+
+    monkeypatch.setattr(
+        "src.experiment.authorization.validate_canonical_experiment_lock",
+        lambda *args, **kwargs: None,
+    )
+
+    original_run = subprocess.run
+
+    def mock_run(cmd, *args, **kwargs):
+        if isinstance(cmd, list) and len(cmd) > 1 and cmd[0] == "git" and "status" in cmd:
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+        if isinstance(cmd, list) and len(cmd) > 1 and cmd[0] == "git" and "rev-parse" in cmd:
+            return SimpleNamespace(
+                returncode=128, stdout="", stderr="fatal: ambiguous argument 'HEAD'"
+            )
+        return original_run(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+
+    with pytest.raises(LiveExecutionBlockedError, match="git rev-parse HEAD failed"):
+        validate_experiment_readiness(
+            plan=plan,
+            protocol=proto,
+            authorization=auth,
+            output_dir=tmp_path / "rev_parse_fail",
+            is_live=True,
+        )
+
+
+def test_live_git_status_failure_zero_provider_construction(monkeypatch, tmp_path):
+    """run_live_experiment fails closed on git status nonzero before provider construction."""
+    import subprocess
+    from types import SimpleNamespace
+
+    config_path = ROOT / "config" / "experiment_config.json"
+    plan = load_plan(config_path)
+    proto_path = ROOT / "config" / "experiment_protocol_v1.json"
+    proto = ScientificProtocolApproval(**parse_json(proto_path.read_bytes()))
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_LIVE_STATUS_FAIL",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=30000,
+        allow_live_dispatch=True,
+    )
+
+    monkeypatch.setattr(
+        "src.experiment.authorization.validate_canonical_experiment_lock",
+        lambda *args, **kwargs: None,
+    )
+
+    original_run = subprocess.run
+
+    def mock_run(cmd, *args, **kwargs):
+        if isinstance(cmd, list) and len(cmd) > 1 and cmd[0] == "git" and "status" in cmd:
+            return SimpleNamespace(returncode=128, stdout="", stderr="fatal: git status crashed")
+        if isinstance(cmd, list) and len(cmd) > 1 and cmd[0] == "git" and "rev-parse" in cmd:
+            return SimpleNamespace(returncode=0, stdout="a" * 40, stderr="")
+        return original_run(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+
+    constructed = []
+
+    def mock_provider_factory(cfg, b):
+        constructed.append(1)
+        raise AssertionError("Provider constructed!")
+
+    out_dir = tmp_path / "live_git_fail"
+    with pytest.raises(LiveExecutionBlockedError, match="git status failed"):
+        run_live_experiment(
+            plan,
+            out_dir,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=mock_provider_factory,
+        )
+    assert len(constructed) == 0
+    assert not out_dir.exists() or not list(out_dir.glob("*.jsonl"))
+
+
+def test_resume_git_rev_parse_failure_zero_provider_construction(monkeypatch, tmp_path):
+    """run_live_experiment resume fails closed on git rev-parse nonzero before provider."""
+    import subprocess
+    from types import SimpleNamespace
+
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    proto = create_test_protocol_approval(
+        d1_raw_response_policy="RECORD_ONLY",
+        d7_dataset_scope="DEV_SMOKE",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
+    )
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_RESUME_GIT_FAIL",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=200,
+        allow_live_dispatch=True,
+    )
+
+    provider = MockProvider()
+    out_dir = tmp_path / "resume_git_fail"
+    run_live_experiment(
+        plan,
+        out_dir,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, b: provider,
+        stop_after=1,
+        allow_dirty=True,
+    )
+    provider_calls_before = len(provider.calls)
+
+    original_run = subprocess.run
+
+    def mock_run(cmd, *args, **kwargs):
+        if isinstance(cmd, list) and len(cmd) > 1 and cmd[0] == "git" and "status" in cmd:
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+        if isinstance(cmd, list) and len(cmd) > 1 and cmd[0] == "git" and "rev-parse" in cmd:
+            return SimpleNamespace(returncode=128, stdout="", stderr="fatal: rev-parse error")
+        return original_run(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+
+    constructed = []
+
+    def mock_provider_factory(cfg, b):
+        constructed.append(1)
+        raise AssertionError("Provider constructed on resume!")
+
+    with pytest.raises(LiveExecutionBlockedError, match="git rev-parse HEAD failed"):
+        run_live_experiment(
+            plan,
+            out_dir,
+            authorization=auth,
+            protocol=proto,
+            resume=True,
+            provider_factory=mock_provider_factory,
+            allow_dirty=True,
+        )
+    assert len(constructed) == 0
+    assert len(provider.calls) == provider_calls_before
+
+
+def test_evaluator_compatibility_rejects_473_technique_universe():
+    """validate_evaluator_compatibility rejects corpus snapshot with 473 techniques."""
+    from types import SimpleNamespace
+
+    from src.evaluation.experiment_metrics import validate_evaluator_compatibility
+
+    proto = create_test_protocol_approval(
+        d2d_macro_f1_universe="FROZEN_BENCHMARK_UNIVERSE",
+        d7_dataset_scope="DEV_SMOKE",
+    )
+    lines_473 = [json.dumps({"technique_id": f"T{1000 + i}"}) for i in range(473)]
+    corpus_bytes = "\n".join(lines_473).encode("utf-8")
+    plan = SimpleNamespace(
+        config=SimpleNamespace(
+            conditions=CONDITIONS,
+            logging=SimpleNamespace(raw_response=True),
+            attack=SimpleNamespace(release="19.2"),
+            execution=SimpleNamespace(concurrency=1, max_requests=100),
+            dataset=SimpleNamespace(split="dev"),
+        ),
+        manifest={
+            "split": "dev",
+            "attack_release": "19.2",
+            "artifacts": {
+                "inference": {"sha256": "a"},
+                "ground_truth": {"sha256": "b"},
+                "prompt": {"sha256": "c"},
+                "model_config": {"sha256": "d"},
+                "retrieval_config": {"sha256": "e"},
+                "corpus": {"sha256": "f"},
+                "index": {"sha256": "g"},
+            },
+        },
+        snapshots={"corpus": corpus_bytes},
+    )
+    with pytest.raises(
+        ValueError, match=r"Corpus technique count \(473\) differs from universe of 474"
+    ):
+        validate_evaluator_compatibility(proto, plan)
+
+
+def test_evaluator_compatibility_rejects_475_technique_universe():
+    """validate_evaluator_compatibility rejects corpus snapshot with 475 techniques."""
+    from types import SimpleNamespace
+
+    from src.evaluation.experiment_metrics import validate_evaluator_compatibility
+
+    proto = create_test_protocol_approval(
+        d2d_macro_f1_universe="FROZEN_BENCHMARK_UNIVERSE",
+        d7_dataset_scope="DEV_SMOKE",
+    )
+    lines_475 = [json.dumps({"technique_id": f"T{1000 + i}"}) for i in range(475)]
+    corpus_bytes = "\n".join(lines_475).encode("utf-8")
+    plan = SimpleNamespace(
+        config=SimpleNamespace(
+            conditions=CONDITIONS,
+            logging=SimpleNamespace(raw_response=True),
+            attack=SimpleNamespace(release="19.2"),
+            execution=SimpleNamespace(concurrency=1, max_requests=100),
+            dataset=SimpleNamespace(split="dev"),
+        ),
+        manifest={
+            "split": "dev",
+            "attack_release": "19.2",
+            "artifacts": {
+                "inference": {"sha256": "a"},
+                "ground_truth": {"sha256": "b"},
+                "prompt": {"sha256": "c"},
+                "model_config": {"sha256": "d"},
+                "retrieval_config": {"sha256": "e"},
+                "corpus": {"sha256": "f"},
+                "index": {"sha256": "g"},
+            },
+        },
+        snapshots={"corpus": corpus_bytes},
+    )
+    with pytest.raises(
+        ValueError, match=r"Corpus technique count \(475\) differs from universe of 474"
+    ):
+        validate_evaluator_compatibility(proto, plan)
+
+
+def test_preflight_blocks_wrong_frozen_universe(monkeypatch, capsys):
+    """Preflight CLI exits 1 and emits LIVE_EXECUTION_BLOCKED when universe count is wrong."""
+    import src.experiment.__main__ as main_mod
+
+    monkeypatch.setattr(
+        "src.experiment.authorization.validate_canonical_experiment_lock",
+        lambda *args, **kwargs: None,
+    )
+
+    real_load_plan = main_mod.load_plan
+
+    def mock_load_plan(config_path, *args, **kwargs):
+        plan = real_load_plan(config_path, *args, **kwargs)
+        lines_473 = [json.dumps({"technique_id": f"T{1000 + i}"}) for i in range(473)]
+        plan.snapshots["corpus"] = "\n".join(lines_473).encode("utf-8")
+        return plan
+
+    monkeypatch.setattr(main_mod, "load_plan", mock_load_plan)
+
+    rc = main_mod.main(["preflight", "--allow-dirty"])
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "LIVE_EXECUTION_BLOCKED" in err
+    assert "differs from universe of 474" in err

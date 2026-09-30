@@ -1704,10 +1704,11 @@ def validate_evaluator_compatibility(
                 raise ValueError(
                     f"Corpus technique count ({len(corpus_tids)}) differs from universe of 474"
                 )
-        except Exception as exc:
-            if "differs from frozen universe" in str(exc):
-                raise
+        except ValueError:
+            raise
+        except Exception:
             # Ignore non-decodable corpus snapshots in synthetic unit test mocks
+            pass
 
     return {
         "status": "VALID",

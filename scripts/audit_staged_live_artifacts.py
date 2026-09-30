@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -13,6 +14,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from src.evaluation.experiment_metrics import canonical_json_bytes
+from src.experiment.authorization import compute_code_manifest_sha256
 
 
 def sha256_file(path: Path) -> str:
@@ -31,11 +33,19 @@ def audit_staged_live(
     manifest_file = artifact_dir / "manifest.json"
     journal_file = artifact_dir / "request_journal.jsonl"
     summary_file = artifact_dir / "run_summary.json"
+    lock_file = repo_root / "config" / "canonical_experiment_lock_v1.json"
 
     if not manifest_file.exists():
         raise FileNotFoundError(f"Missing {manifest_file}")
     if not journal_file.exists():
         raise FileNotFoundError(f"Missing {journal_file}")
+    if not summary_file.exists():
+        raise FileNotFoundError(f"Missing {summary_file}")
+    if not lock_file.exists():
+        raise FileNotFoundError(f"Missing {lock_file}")
+
+    # Copy actual run_summary.json into evidence package
+    (output_dir / "run_summary.json").write_bytes(summary_file.read_bytes())
 
     # 1. File Hashes
     file_hashes: dict[str, dict[str, Any]] = {}
@@ -46,7 +56,11 @@ def audit_staged_live(
                 "sha256": sha256_file(p),
             }
 
-    # 2. Manifest Verification
+    # 2. Canonical Lock & Repository Provenance Audit
+    lock_data = json.loads(lock_file.read_bytes())
+    actual_code_manifest_sha = compute_code_manifest_sha256(repo_root)
+    code_manifest_valid = actual_code_manifest_sha == lock_data.get("code_manifest_sha256")
+
     manifest_bytes = manifest_file.read_bytes()
     manifest_data = json.loads(manifest_bytes)
     manifest_sha = hashlib.sha256(canonical_json_bytes(manifest_data)).hexdigest()
@@ -55,7 +69,34 @@ def audit_staged_live(
     protocol_sha256 = manifest_data.get("protocol_sha256")
     config_sha256 = manifest_data.get("config_sha256")
 
-    # 3. Journal Audit
+    protocol_lock_valid = protocol_sha256 == lock_data.get("protocol_sha256")
+    config_lock_valid = config_sha256 == lock_data.get("config_sha256")
+
+    # Verify git target commit
+    try:
+        git_head_sha = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=repo_root, text=True
+        ).strip()
+    except Exception:
+        git_head_sha = "unknown"
+
+    # Verify manifest artifact hashes match canonical lock
+    manifest_artifacts = manifest_data.get("artifacts", {})
+    lock_artifacts = lock_data.get("artifact_hashes", {})
+    artifact_hash_mismatches = 0
+    for name, exp_hash in lock_artifacts.items():
+        if manifest_artifacts.get(name, {}).get("sha256") != exp_hash:
+            artifact_hash_mismatches += 1
+
+    # 3. Dynamic Execution & Resume Accounting from run_summary.json
+    run_summary_data = json.loads(summary_file.read_bytes())
+    record_count_after_resume = run_summary_data.get("record_count", 0)
+    resume_new_records = run_summary_data.get("new_records", 0)
+    record_count_before_resume = record_count_after_resume - resume_new_records
+    attempt_count_after = run_summary_data.get("consumed_provider_attempts", 0)
+    attempt_count_before = attempt_count_after - resume_new_records
+
+    # 4. Strict Journal State-Machine & Sequence Verification
     journal_lines = [
         json.loads(line)
         for line in journal_file.read_text(encoding="utf-8").splitlines()
@@ -69,46 +110,65 @@ def audit_staged_live(
         and header.get("max_requests") == 25600
     )
 
+    manifest_valid = (
+        header_valid
+        and protocol_lock_valid
+        and config_lock_valid
+        and artifact_hash_mismatches == 0
+    )
+
     transitions: list[dict[str, Any]] = []
     attempts: list[dict[str, Any]] = []
     completions: list[dict[str, Any]] = []
     journal_sequence_errors = 0
 
-    expected_ordinals = list(range(1, 8))
-    actual_ordinals: list[int] = []
-
-    # Map of (sample_id, condition) -> completed sha
+    active_key = None
+    expected_state = None
+    ordinal = 0
     completed_records_in_journal: dict[tuple[str, str], str] = {}
-    records_per_key_events: dict[tuple[str, str], list[str]] = {}
 
-    for entry in journal_lines[1:]:
+    for idx, entry in enumerate(journal_lines[1:], 1):
         evt = entry.get("event")
+        key = tuple(entry.get("key", []))
+
         if evt == "transition":
             transitions.append(entry)
-            key = tuple(entry.get("key", []))
-            records_per_key_events.setdefault(key, []).append(entry.get("state"))
+            st = entry.get("state")
+            if st == "RESERVED":
+                if active_key is not None:
+                    journal_sequence_errors += 1
+                active_key = key
+                expected_state = "DISPATCH_STARTED"
+            elif st == "DISPATCH_STARTED":
+                if key != active_key or expected_state != "DISPATCH_STARTED":
+                    journal_sequence_errors += 1
+                expected_state = "attempt"
+            elif st == "RESPONSE_RECEIVED":
+                if key != active_key or expected_state != "RESPONSE_RECEIVED":
+                    journal_sequence_errors += 1
+                expected_state = "PARSED"
+            elif st == "PARSED":
+                if key != active_key or expected_state != "PARSED":
+                    journal_sequence_errors += 1
+                expected_state = "complete"
+            else:
+                journal_sequence_errors += 1
         elif evt == "attempt":
             attempts.append(entry)
-            actual_ordinals.append(entry.get("ordinal"))
+            if key != active_key or expected_state != "attempt":
+                journal_sequence_errors += 1
+            ordinal += 1
+            if entry.get("ordinal") != ordinal:
+                journal_sequence_errors += 1
+            expected_state = "RESPONSE_RECEIVED"
         elif evt == "complete":
             completions.append(entry)
-            key = tuple(entry.get("key", []))
+            if key != active_key or expected_state != "complete":
+                journal_sequence_errors += 1
             completed_records_in_journal[key] = entry.get("record_sha256")
+            active_key = None
+            expected_state = None
         else:
-            journal_sequence_errors += 1
-
-    if actual_ordinals != expected_ordinals:
-        journal_sequence_errors += 1
-
-    # Check state transitions for each key: RESERVED -> DISPATCH_STARTED -> RESPONSE_RECEIVED -> PARSED
-    expected_state_seq = [
-        "RESERVED",
-        "DISPATCH_STARTED",
-        "RESPONSE_RECEIVED",
-        "PARSED",
-    ]
-    for key, states in records_per_key_events.items():
-        if states != expected_state_seq:
             journal_sequence_errors += 1
 
     journal_audit = {
@@ -118,12 +178,12 @@ def audit_staged_live(
         "transition_events_count": len(transitions),
         "attempt_events_count": len(attempts),
         "completion_events_count": len(completions),
-        "attempt_ordinals": actual_ordinals,
+        "attempt_ordinals": [a.get("ordinal") for a in attempts],
         "journal_sequence_errors": journal_sequence_errors,
         "completed_keys": [list(k) for k in completed_records_in_journal.keys()],
     }
 
-    # 4. Records Audit
+    # 5. Records Audit
     conditions = ["no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10"]
     records_audit: list[dict[str, Any]] = []
     seen_keys: set[tuple[str, str]] = set()
@@ -168,17 +228,23 @@ def audit_staged_live(
 
     # Sort records audit by request timestamp
     records_audit.sort(key=lambda x: x.get("request_timestamp_utc", ""))
+    for i, rec in enumerate(records_audit, 1):
+        rec["ordinal"] = i
 
-    # 5. Secret Redaction Scan
-    sentinel_token = "RAG2ATTCK-LIVE-2026-09-30"
-    env_api_key = os.environ.get("OPENAI_API_KEY", "")
+    run_id_consistent = (
+        all(r["run_id"] == run_id for r in records_audit)
+        and run_summary_data.get("run_id") == run_id
+    )
 
+    # 6. Secret Redaction Scan (Safe: uses patterns and optional env, zero hardcoded tokens)
     secret_findings: dict[str, int] = {
         "OPENAI_API_KEY": 0,
         "sk-": 0,
         "Bearer": 0,
-        "human_auth_token": 0,
+        "auth_token_pattern": 0,
     }
+
+    env_api_key = os.environ.get("OPENAI_API_KEY", "")
 
     for p in artifact_dir.iterdir():
         if not p.is_file():
@@ -186,65 +252,76 @@ def audit_staged_live(
         text = p.read_text(encoding="utf-8", errors="ignore")
         if env_api_key and env_api_key in text:
             secret_findings["OPENAI_API_KEY"] += 1
-        if sentinel_token in text:
-            secret_findings["human_auth_token"] += 1
         if "Bearer " in text:
             secret_findings["Bearer"] += 1
         if re.search(r"sk-[A-Za-z0-9_\-]{20,}", text):
             secret_findings["sk-"] += 1
+        if re.search(r"(?i)(api[_-]?key|secret|token|password)\s*[:=]\s*['\"]?[A-Za-z0-9_\-\.]{8,}['\"]?", text):
+            secret_findings["auth_token_pattern"] += 1
 
     total_secret_leaks = sum(secret_findings.values())
 
-    # 6. Overall Staged Live Summary
-    code_manifest_sha256 = "32f8439dcda33de3de1d02cf9eeac956752ed690f0a2482a3284c8424fbaa4aa"
-    run_summary_data = json.loads(summary_file.read_bytes()) if summary_file.exists() else {}
+    # 7. Verification Predicate
+    is_verified = (
+        manifest_valid
+        and code_manifest_valid
+        and protocol_lock_valid
+        and config_lock_valid
+        and run_id_consistent
+        and journal_sequence_errors == 0
+        and duplicate_requests == 0
+        and record_sha_mismatches == 0
+        and total_secret_leaks == 0
+        and len(records_audit) == record_count_after_resume
+        and len(attempts) == attempt_count_after
+        and resume_new_records == (record_count_after_resume - record_count_before_resume)
+    )
 
     staged_live_audit = {
         "schema_version": "1.0.0",
-        "verification_status": "STAGED_EVIDENCE_VERIFICATION: PASS"
-        if (
-            header_valid
-            and journal_sequence_errors == 0
-            and duplicate_requests == 0
-            and record_sha_mismatches == 0
-            and total_secret_leaks == 0
-            and len(records_audit) == 7
-        )
-        else "STAGED_EVIDENCE_VERIFICATION: FAIL",
+        "verification_status": (
+            "STAGED_EVIDENCE_VERIFICATION: PASS"
+            if is_verified
+            else "STAGED_EVIDENCE_VERIFICATION: FAIL"
+        ),
         "provenance": {
             "repository_git_commit_sha": git_commit_sha,
+            "git_head_sha": git_head_sha,
             "protocol_version": manifest_data.get("protocol", {}).get("protocol_version")
             or manifest_data.get("protocol_version"),
             "protocol_sha256": protocol_sha256,
             "config_sha256": config_sha256,
-            "code_manifest_sha256": code_manifest_sha256,
+            "code_manifest_sha256": actual_code_manifest_sha,
             "run_id": run_id,
             "manifest_sha256": manifest_sha,
             "human_authorization_reference": manifest_data.get("human_authorization_reference"),
         },
         "execution_accounting": {
-            "record_count_before_resume": 5,
-            "record_count_after_resume": 7,
-            "attempt_count_before": 5,
-            "attempt_count_after": 7,
-            "resume_new_records": 2,
+            "record_count_before_resume": record_count_before_resume,
+            "record_count_after_resume": record_count_after_resume,
+            "attempt_count_before": attempt_count_before,
+            "attempt_count_after": attempt_count_after,
+            "resume_new_records": resume_new_records,
             "duplicate_requests": duplicate_requests,
-            "run_id_consistent": all(r["run_id"] == run_id for r in records_audit),
+            "run_id_consistent": run_id_consistent,
         },
         "audit_checks": {
-            "manifest_valid": header_valid,
-            "run_id_consistent": True,
+            "manifest_valid": manifest_valid,
+            "code_manifest_valid": code_manifest_valid,
+            "protocol_lock_valid": protocol_lock_valid,
+            "config_lock_valid": config_lock_valid,
+            "run_id_consistent": run_id_consistent,
             "records": len(records_audit),
             "provider_attempts": len(attempts),
             "duplicate_requests": duplicate_requests,
-            "resume_new_records": 2,
+            "resume_new_records": resume_new_records,
             "record_sha_mismatches": record_sha_mismatches,
             "journal_sequence_errors": journal_sequence_errors,
             "secret_leaks": total_secret_leaks,
         },
         "records_summary": [
             {
-                "ordinal": i + 1,
+                "ordinal": r["ordinal"],
                 "sample_id": r["sample_id"],
                 "condition": r["condition"],
                 "parse_status": r["parse_status"],
@@ -254,12 +331,12 @@ def audit_staged_live(
                 "response_timestamp_utc": r["response_timestamp_utc"],
                 "record_sha256": r["record_sha256"],
             }
-            for i, r in enumerate(records_audit)
+            for r in records_audit
         ],
         "secret_scan_summary": secret_findings,
     }
 
-    # 7. Write All Files
+    # 8. Write Machine-Readable JSON Artifacts
     (output_dir / "staged_live_audit.json").write_text(
         json.dumps(staged_live_audit, indent=2, sort_keys=True), encoding="utf-8"
     )
@@ -276,6 +353,19 @@ def audit_staged_live(
         json.dumps(secret_findings, indent=2, sort_keys=True), encoding="utf-8"
     )
 
+    # 9. Dynamically Render README.md (No hardcoded values/response IDs!)
+    table_rows = []
+    for r in records_audit:
+        table_rows.append(
+            f"| {r['ordinal']} | `{r['sample_id']}` | `{r['condition']}` | `{r['parse_status']}` | `{r['response_id']}` | `{r['returned_model_id']}` | `{r.get('latency_ms', 0):.1f}ms` | `{r['record_sha256'][:16]}...` |"
+        )
+    records_table = "\n".join(table_rows)
+
+    checks_rows = []
+    for k, v in staged_live_audit["audit_checks"].items():
+        checks_rows.append(f"{k}: {v}")
+    checks_str = "\n".join(checks_rows)
+
     readme_content = f"""# RAG2ATTCK Staged Live Test Evidence Package
 
 This directory contains the machine-generated, cryptographically verified audit evidence for the staged live execution and resume test on merged `main` commit `{git_commit_sha}`.
@@ -283,44 +373,37 @@ This directory contains the machine-generated, cryptographically verified audit 
 ## Execution Provenance
 - **Repository Commit**: `{git_commit_sha}`
 - **Run ID**: `{run_id}`
-- **Protocol Version**: `{manifest_data.get('protocol', {}).get('protocol_version') or manifest_data.get('protocol_version')}`
+- **Protocol Version**: `{staged_live_audit['provenance']['protocol_version']}`
 - **Protocol SHA-256**: `{protocol_sha256}`
 - **Config SHA-256**: `{config_sha256}`
-- **Code Manifest SHA-256**: `{code_manifest_sha256}`
+- **Code Manifest SHA-256**: `{actual_code_manifest_sha}`
 - **Manifest SHA-256**: `{manifest_sha}`
-- **Human Authorization Reference**: `{manifest_data.get('human_authorization_reference')}` (SHA-256 prefix)
+- **Human Authorization Reference**: `{manifest_data.get('human_authorization_reference')}` (SHA-256 digest prefix)
 
 ## Verification Verdict
 ```text
-STAGED_EVIDENCE_VERIFICATION: PASS
-manifest_valid: true
-run_id_consistent: true
-records: 7
-provider_attempts: 7
-duplicate_requests: 0
-resume_new_records: 2
-record_sha_mismatches: 0
-journal_sequence_errors: 0
-secret_leaks: 0
+{staged_live_audit['verification_status']}
+{checks_str}
 ```
 
-## Summary of Staged Requests
-1. **Initial Staged Run (`--stop-after 5`)**:
-   - `view_00477e30` / `no_rag` (ordinal 1, response: `resp_0fe1ea0907c98ee8006abd3c2902dc87d08ee9b785c8d32473`)
-   - `view_00477e30` / `rag_k1` (ordinal 2, response: `resp_056d900f4ed953a2006abd3c2c2c4887d0a473885d8efa4e40`)
-   - `view_00477e30` / `rag_k3` (ordinal 3, response: `resp_07d4b46c6bf977e2006abd3c2ea85487d00fca6834d858349d`)
-   - `view_00477e30` / `rag_k5` (ordinal 4, response: `resp_021e1a49fbf7a94a006abd3c30ea9c87d000c01a2f64f33668`)
-   - `view_00477e30` / `rag_k10` (ordinal 5, response: `resp_07bfa77b0d2da285006abd3c332fc087d0a89781cf4da3a970`)
-2. **Resume Test (`--stop-after 2`)**:
-   - Prior 5 records preserved without re-execution (`duplicate_requests: 0`).
-   - `view_00540be5` / `no_rag` (ordinal 6, response: `resp_0835f8f533a39e80006abd3d68407487d03f024765d1430489`)
-   - `view_00540be5` / `rag_k1` (ordinal 7, response: `resp_0cb81255e2e83120006abd3d6a6d6887d00df7fe05ec865620`)
+## Record-Level Execution Audit (Derived from Live Artifacts)
+| Ordinal | Sample ID | Condition | Status | Response ID | Model ID | Latency | Record SHA-256 |
+|---|---|---|---|---|---|---|---|
+{records_table}
+
+## Verification Accounting
+- **Initial Run (`--stop-after 5`)**: completed {record_count_before_resume} records, {attempt_count_before} provider attempts.
+- **Resume Test (`--stop-after 2`)**: appended {resume_new_records} new records, {attempt_count_after - attempt_count_before} provider attempts.
+- **Total Consumed**: {record_count_after_resume} records / {attempt_count_after} attempts.
+- **Duplicate Requests**: {duplicate_requests} (0 re-executions).
+- **Run ID Continuity**: `{run_id}` maintained across initial run and resume.
 
 ## Files in Package
 - `staged_live_audit.json`: High-level summary and verification metrics.
 - `staged_live_file_hashes.json`: SHA-256 hashes and sizes of all runtime experiment artifacts.
 - `journal_audit.json`: Detailed validation of request journal sequence, transitions, ordinals, and completions.
 - `records_audit.json`: Detailed record-level metadata, latency, timestamps, and hash bindings.
+- `run_summary.json`: Original runner summary output for independent verification.
 - `secret_scan.json`: Zero secret leakage verification.
 """
     (output_dir / "README.md").write_text(readme_content, encoding="utf-8")
@@ -331,9 +414,9 @@ secret_leaks: 0
 if __name__ == "__main__":
     art_dir = Path("artifacts/experiments/live-test-01")
     out_dir = Path("reports/evidence/staged-live-0dd38cf")
-    repo = Path(".").resolve()
+    repo = REPO_ROOT
 
     res = audit_staged_live(art_dir, out_dir, repo)
-    print("STAGED_EVIDENCE_VERIFICATION: PASS")
+    print(res["verification_status"])
     for k, v in res["audit_checks"].items():
         print(f"{k}: {v}")

@@ -3,6 +3,7 @@
     "condition": "no_rag",
     "journal_sha256_match": true,
     "latency_ms": 5460.495999999694,
+    "ordinal": 1,
     "parse_status": "VALID",
     "parsed_technique_ids": [
       "T1053.005"
@@ -20,6 +21,7 @@
     "condition": "rag_k1",
     "journal_sha256_match": true,
     "latency_ms": 2348.1193000043277,
+    "ordinal": 2,
     "parse_status": "VALID",
     "parsed_technique_ids": [
       "T1053.005"
@@ -37,6 +39,7 @@
     "condition": "rag_k3",
     "journal_sha256_match": true,
     "latency_ms": 2654.265500001202,
+    "ordinal": 3,
     "parse_status": "VALID",
     "parsed_technique_ids": [
       "T1053.005"
@@ -54,6 +57,7 @@
     "condition": "rag_k5",
     "journal_sha256_match": true,
     "latency_ms": 2335.160200003884,
+    "ordinal": 4,
     "parse_status": "VALID",
     "parsed_technique_ids": [
       "T1053.005"
@@ -71,6 +75,7 @@
     "condition": "rag_k10",
     "journal_sha256_match": true,
     "latency_ms": 2955.8976000043913,
+    "ordinal": 5,
     "parse_status": "VALID",
     "parsed_technique_ids": [
       "T1053.005"
@@ -88,6 +93,7 @@
     "condition": "no_rag",
     "journal_sha256_match": true,
     "latency_ms": 3913.2127999982913,
+    "ordinal": 6,
     "parse_status": "VALID",
     "parsed_technique_ids": [
       "T1059.003"
@@ -105,6 +111,7 @@
     "condition": "rag_k1",
     "journal_sha256_match": true,
     "latency_ms": 4241.104400003678,
+    "ordinal": 7,
     "parse_status": "VALID",
     "parsed_technique_ids": [
       "T1059.003"

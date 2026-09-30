@@ -20,6 +20,7 @@ import logging
 import os
 import threading
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Set, Tuple
 
@@ -57,6 +58,18 @@ OPERATIONAL_EXCEPTIONS = (
     TimeoutError,
     ConnectionError,
 )
+
+
+def _sanitize(text: str | None) -> str | None:
+    """Lazily sanitize secrets from text without triggering circular imports."""
+    if text is None:
+        return None
+    try:
+        from src.experiment.redaction import sanitize_secrets
+
+        return sanitize_secrets(text)
+    except Exception:
+        return text
 
 
 class LiveBudget:
@@ -440,6 +453,8 @@ class LLMClient:
         last_error_msg: Optional[str] = None
         last_error: Exception | None = None
         response_obj: Any = None
+        request_ts: Optional[str] = None
+        response_ts: Optional[str] = None
 
         with WallClockTimer() as timer:
             for attempt in range(self.max_retries + 1):
@@ -450,9 +465,11 @@ class LLMClient:
                         self.live_budget.consume()
 
                     retry_count = attempt
+                    request_ts = datetime.now(UTC).isoformat()
 
                     # Execute via the frozen Responses API interface — no fallback.
                     response_obj = self._call_responses_api(formatted_prompt)
+                    response_ts = datetime.now(UTC).isoformat()
 
                     # Successfully received response
                     break
@@ -460,7 +477,7 @@ class LLMClient:
                 except OPERATIONAL_EXCEPTIONS as exc:
                     last_error = exc
                     error_type = type(exc).__name__
-                    last_error_msg = str(exc)
+                    last_error_msg = _sanitize(str(exc))
 
                     if isinstance(exc, LiveBudgetExceededError):
                         # Immediately fail on budget exhaustion without retry
@@ -502,13 +519,20 @@ class LLMClient:
                 prompt_version=prompt_version,
                 predicted_technique_id=None,
                 parse_status=final_status,
-                invalid_reason=last_error_msg,
+                invalid_reason=_sanitize(last_error_msg),
                 input_tokens=None,
                 output_tokens=None,
                 latency_ms=latency_ms,
                 retry_count=retry_count,
                 error_type=error_type,
+                request_timestamp_utc=request_ts,
+                response_timestamp_utc=response_ts,
             )
+
+        # Extract provider metadata from response
+        ret_model = getattr(response_obj, "model", None)
+        resp_id = getattr(response_obj, "id", None)
+        sys_fp = getattr(response_obj, "system_fingerprint", None)
 
         # Inspect response (Responses API only)
         raw_text, upfront_status, upfront_reason, in_tok, out_tok = self._extract_response_content_and_status(
@@ -525,13 +549,18 @@ class LLMClient:
                 prompt_version=prompt_version,
                 predicted_technique_id=None,
                 parse_status=upfront_status,
-                invalid_reason=upfront_reason,
+                invalid_reason=_sanitize(upfront_reason),
                 input_tokens=in_tok,
                 output_tokens=out_tok,
                 latency_ms=latency_ms,
                 retry_count=retry_count,
                 error_type=None,
                 raw_text=raw_text,
+                returned_model_id=ret_model,
+                response_id=resp_id,
+                system_fingerprint=sys_fp,
+                request_timestamp_utc=request_ts,
+                response_timestamp_utc=response_ts,
             )
 
         # Post-hoc parsing and validation
@@ -546,11 +575,16 @@ class LLMClient:
             prompt_version=prompt_version,
             predicted_technique_id=pred_id,
             parse_status=post_hoc_status,
-            invalid_reason=inv_reason,
+            invalid_reason=_sanitize(inv_reason),
             input_tokens=in_tok,
             output_tokens=out_tok,
             latency_ms=latency_ms,
             retry_count=retry_count,
             error_type=None,
             raw_text=raw_text,
+            returned_model_id=ret_model,
+            response_id=resp_id,
+            system_fingerprint=sys_fp,
+            request_timestamp_utc=request_ts,
+            response_timestamp_utc=response_ts,
         )

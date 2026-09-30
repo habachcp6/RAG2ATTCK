@@ -3,7 +3,7 @@
   "experiment": {
     "name": "synthetic-paired-test",
     "version": "1",
-    "status": "pre_freeze"
+    "status": "frozen"
   },
   "dataset": {
     "benchmark": "synthetic-paired-v1",
@@ -86,7 +86,7 @@
   "generation": {
     "config": {
       "path": "config/model.json",
-      "sha256": "846866b57a917cd5bd5df6db1f12e85a74957b785554b3c5c13df08e0ea65cdb"
+      "sha256": "312c34cedd84106f2004c6070b72aeac1dd84209a464e2993fee3ec87822697f"
     },
     "provider": "openai",
     "model": "gpt-5.6-luna",
@@ -107,13 +107,13 @@
   "execution": {
     "retries": 3,
     "timeout_seconds": 120,
-    "concurrency": null,
-    "max_requests": null,
+    "concurrency": 1,
+    "max_requests": 6400,
     "resume": true,
     "fail_closed": true
   },
   "logging": {
-    "raw_response": false,
+    "raw_response": true,
     "parsed_prediction": true,
     "tokens": true,
     "latency": true,

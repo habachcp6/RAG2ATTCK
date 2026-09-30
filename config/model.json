@@ -24,7 +24,7 @@
     "log_latency": true,
     "log_prompt_version": true,
     "log_condition": true,
-    "log_raw_response": false
+    "log_raw_response": true
   },
   "secret_policy": {
     "api_key_source": "environment_variable",

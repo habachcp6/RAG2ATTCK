@@ -206,10 +206,10 @@ def test_canonical_dry_run_counts_and_no_writes(monkeypatch):
     assert len({s.pair_id for s in plan.samples}) == 640
     assert plan.manifest["expected_request_count"] == 6400
     assert plan.manifest["maximum_attempts"] == 25600
-    assert plan.config.execution.max_requests is None
-    assert plan.report()["scientific_status"] == "NOT_FROZEN"
+    assert plan.config.execution.max_requests == 6400
+    assert plan.report()["scientific_status"] == "FROZEN"
     assert plan.report()["status"] == "HUMAN_DECISION_REQUIRED"
-    assert plan.manifest["status"] == "pre_freeze"
+    assert plan.manifest["status"] == "frozen"
     assert len(plan.snapshots) == 15
     assert (
         plan.manifest["artifacts"]["experiment_config"]["sha256"] == plan.manifest["config_sha256"]
@@ -236,7 +236,7 @@ def test_cli_only_dry_run_and_human_gate(bundle, capsys):
         lambda c: c["conditions"].append("no_rag"),
         lambda c: c["retrieval"].update(depths=[1, 3, 5]),
         lambda c: c["generation"].update(temperature=0),
-        lambda c: c["logging"].update(raw_response=True),
+        lambda c: c["logging"].update(raw_response=False),
         lambda c: c["execution"].update(max_requests=True),
         lambda c: c.update(condition_overrides={"rag_k1": {"model": "different"}}),
     ],

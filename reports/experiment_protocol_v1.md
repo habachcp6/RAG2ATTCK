@@ -42,7 +42,7 @@ All execution gates and offline evaluators bind to this frozen protocol. Automat
 
 ### D2d: Macro-F1 Universe (`FROZEN_BENCHMARK_UNIVERSE`)
 * **Decision**: `FROZEN_BENCHMARK_UNIVERSE`
-* **Semantics**: The macro-averaged F1 class universe is strictly bounded by the frozen candidate technique universe defined in the benchmark retrieval corpus (`attack/corpus/enterprise-windows-v19.2.jsonl`, 196 candidate techniques).
+* **Semantics**: The macro-averaged F1 class universe is strictly bounded by the frozen candidate technique universe defined in the benchmark retrieval corpus (`attack/corpus/enterprise-windows-v19.2.jsonl`, 474 candidate techniques: 176 parent techniques and 298 subtechniques).
 * **Deterministic Invariant**: Model output variations do not alter the denominator or class universe across conditions or runs.
 
 ### D2e: Invalid ATT&CK ID Treatment (`INCLUDE_IN_DENOMINATOR`)

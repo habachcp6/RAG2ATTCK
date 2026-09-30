@@ -69,6 +69,11 @@ _RECORD_FIELDS = frozenset(
         "provider",
         "model",
         "model_version",
+        "returned_model_id",
+        "response_id",
+        "system_fingerprint",
+        "request_timestamp_utc",
+        "response_timestamp_utc",
         "prompt_sha256",
         "model_config_sha256",
         "output_schema_sha256",
@@ -203,6 +208,7 @@ class EvaluationInputs:
     registry: Mapping[str, Mapping[str, bool]]
     ground_truth_status: Mapping[str, str] = dc_field(default_factory=dict)
     manifest_data: Mapping[str, Any] = dc_field(default_factory=dict)
+    corpus_ids: tuple[str, ...] = dc_field(default_factory=tuple)
 
 
 def load_evaluation_inputs(
@@ -548,6 +554,7 @@ def _load_evaluation_inputs(
         registry,
         ground_truth_status=ground_truth_status,
         manifest_data=dict(manifest),
+        corpus_ids=tuple(sorted(corpus_ids)),
     )
 
 
@@ -672,6 +679,16 @@ def _validate_record(row, condition, sample, manifest, digest, artifacts, regist
     )
     for field in ("error_type", "error_message"):
         _require(row[field] is None or isinstance(row[field], str), f"invalid {field}")
+    for field in ("returned_model_id", "response_id", "system_fingerprint"):
+        _require(row[field] is None or isinstance(row[field], str), f"invalid {field}")
+    for ts_field in ("request_timestamp_utc", "response_timestamp_utc"):
+        _require(row[ts_field] is None or isinstance(row[ts_field], str), f"invalid {ts_field}")
+        if row[ts_field] is not None:
+            ts = datetime.fromisoformat(row[ts_field])
+            _require(
+                ts.utcoffset() is not None and ts.utcoffset().total_seconds() == 0,
+                f"{ts_field} must be UTC",
+            )
     _require(isinstance(row["timestamp"], str), "timestamp must be ISO UTC")
     stamp = datetime.fromisoformat(row["timestamp"])
     _require(
@@ -941,6 +958,18 @@ def verify_evaluator_provenance(
         if missing:
             raise ValueError(f"missing logical sample in condition {cond}: {len(missing)} missing")
 
+    # Timestamp consistency and tamper prevention
+    for r in inputs.records:
+        req_ts = r.get("request_timestamp_utc")
+        resp_ts = r.get("response_timestamp_utc")
+        if req_ts is not None and resp_ts is not None:
+            t_req = datetime.fromisoformat(req_ts)
+            t_resp = datetime.fromisoformat(resp_ts)
+            if t_resp < t_req:
+                raise ValueError(
+                    f"timestamp tampering detected: response ({resp_ts}) before request ({req_ts})"
+                )
+
 
 def compute_condition_metrics(
     records: Sequence[Mapping[str, Any]],
@@ -1047,9 +1076,12 @@ def compute_condition_metrics(
         correct_count / len(valid_scorable_records) if valid_scorable_records else None
     )
 
-    # D2d Macro-F1 across techniques with ground truth support in candidate universe
-    technique_universe = sorted(inputs.registry.keys())
-    f1_list = []
+    # D2d Macro-F1 across frozen retrieval corpus universe (invariant size)
+    technique_universe = (
+        sorted(inputs.corpus_ids) if inputs.corpus_ids else sorted(inputs.registry.keys())
+    )
+    universe_size = len(technique_universe)
+    f1_sum = 0.0
     for tid in technique_universe:
         tp = sum(
             1
@@ -1072,13 +1104,19 @@ def compute_condition_metrics(
         support = sum(
             1 for r in scorable_records if tid in inputs.ground_truth.get(r["sample_id"], ())
         )
-        if support > 0:
+        predictions = sum(
+            1 for r in scorable_records if r.get("parsed_technique_ids") == [tid]
+        )
+        if support == 0 and predictions == 0:
+            # Zero denominator per D2d/D2j: unobserved class contributes 0.0 to numerator sum
+            f1 = 0.0
+        else:
             prec = tp / (tp + fp) if (tp + fp) > 0 else 0.0
             rec = tp / (tp + fn) if (tp + fn) > 0 else 0.0
             f1 = (2 * prec * rec / (prec + rec)) if (prec + rec) > 0 else 0.0
-            f1_list.append(f1)
+        f1_sum += f1
 
-    macro_f1 = (sum(f1_list) / len(f1_list)) if f1_list else None
+    macro_f1 = (f1_sum / universe_size) if universe_size > 0 else None
 
     return {
         "condition": condition,
@@ -1264,7 +1302,9 @@ def compute_technique_metrics(
     protocol: ScientificProtocolApproval,
 ) -> dict[str, Any]:
     """Compute per-technique TP, FP, FN, precision, recall, and F1 per condition."""
-    technique_universe = sorted(inputs.registry.keys())
+    technique_universe = (
+        sorted(inputs.corpus_ids) if inputs.corpus_ids else sorted(inputs.registry.keys())
+    )
     by_condition = {}
     for condition in CONDITIONS:
         cond_records = [r for r in inputs.records if r["condition"] == condition]
@@ -1347,6 +1387,32 @@ def compute_run_provenance(
     run_id = manifest.get("run_id") if manifest else None
     if not run_id and inputs.records:
         run_id = inputs.records[0].get("run_id")
+    returned_models = sorted(
+        list(
+            {
+                r.get("returned_model_id")
+                for r in inputs.records
+                if r.get("returned_model_id") is not None
+            }
+        )
+    )
+    system_fingerprints = sorted(
+        list(
+            {
+                r.get("system_fingerprint")
+                for r in inputs.records
+                if r.get("system_fingerprint") is not None
+            }
+        )
+    )
+    model_provenance = {
+        "configured_provider": manifest.get("model", {}).get("provider") if manifest else None,
+        "configured_model": manifest.get("model", {}).get("model") if manifest else None,
+        "returned_models": returned_models,
+        "system_fingerprints": system_fingerprints,
+        "has_response_ids": any(r.get("response_id") is not None for r in inputs.records),
+        "has_timestamps": any(r.get("request_timestamp_utc") is not None for r in inputs.records),
+    }
     return {
         "schema_version": "1.0.0",
         "experiment_id": inputs.experiment_id,
@@ -1358,6 +1424,7 @@ def compute_run_provenance(
         "protocol_version": protocol.protocol_version,
         "protocol_sha256": protocol.protocol_sha256,
         "protocol_decisions": protocol_decision_dict(protocol),
+        "model_provenance": model_provenance,
         "dataset_sha256": manifest.get("artifacts", {}).get("inference", {}).get("sha256")
         if manifest
         else None,
@@ -1521,3 +1588,52 @@ def evaluate_experiment(
         _atomic_write_json(out_path / "run_provenance.json", run_provenance)
 
     return result
+
+
+def validate_evaluator_compatibility(
+    protocol: ScientificProtocolApproval,
+    plan: Any,
+) -> None:
+    """Validate that plan configuration and artifacts strictly meet evaluator requirements.
+
+    Fails closed on protocol mismatch, missing artifacts, or schema incompatibility.
+    """
+    if not isinstance(protocol, ScientificProtocolApproval):
+        raise TypeError(f"Expected ScientificProtocolApproval, got {type(protocol).__name__}")
+    validate_scientific_protocol(protocol)
+
+    if plan is None:
+        raise ValueError("Plan is required for evaluator compatibility validation")
+
+    # Validate condition matrix
+    if tuple(plan.config.conditions) != CONDITIONS:
+        raise ValueError(
+            f"Plan conditions {plan.config.conditions} do not match evaluator matrix {CONDITIONS}"
+        )
+
+    # Validate raw response policy compatibility (D1)
+    if protocol.d1_raw_response_policy == "RECORD_ONLY":
+        if not getattr(plan.config.logging, "raw_response", False):
+            raise ValueError(
+                "Evaluator protocol specifies RECORD_ONLY but plan logging.raw_response is False"
+            )
+
+    # Validate required artifacts are present in plan
+    plan_artifacts = getattr(plan, "artifacts", None)
+    if plan_artifacts is None and hasattr(plan, "manifest"):
+        plan_artifacts = plan.manifest.get("artifacts", {})
+    if not plan_artifacts:
+        plan_artifacts = {}
+    required_evaluator_artifacts = {
+        "inference",
+        "ground_truth",
+        "prompt",
+        "model_config",
+        "retrieval_config",
+        "corpus",
+        "index",
+    }
+    missing = required_evaluator_artifacts - set(plan_artifacts.keys())
+    if missing:
+        raise ValueError(f"Plan missing artifacts required by evaluator: {sorted(missing)}")
+

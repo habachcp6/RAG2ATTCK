@@ -413,6 +413,75 @@ def validate_live_authorization(
                 f"cannot cover the required matrix calls ({required_calls})"
             )
 
+    # Gate 5: Canonical experiment lock enforcement for canonical TEST execution
+    validate_canonical_experiment_lock(plan, protocol, root=plan.root)
+
+
+def validate_canonical_experiment_lock(
+    plan: ValidatedPlan,
+    protocol: ScientificProtocolApproval,
+    *,
+    root: Any = None,
+) -> None:
+    """Enforce that test split or canonical experiment binds strictly to the frozen lock artifact.
+
+    Reject any alternate protocol or config even if internally self-consistent.
+    """
+    from pathlib import Path
+
+    from src.experiment.config import parse_json
+
+    is_test_split = plan.manifest.get("split") == "test"
+    is_canonical_scale = len(getattr(plan, "samples", [])) == 1280
+    default_repo_root = Path(__file__).resolve().parents[2]
+
+    # Determine repo root containing config/
+    repo_root = Path(root) if root else plan.root
+    lock_path = repo_root / "config" / "canonical_experiment_lock_v1.json"
+
+    # If repo_root is the project repository root:
+    # only enforce canonical lock on TEST split or canonical scale cohort
+    try:
+        is_default_root = repo_root.resolve() == default_repo_root.resolve()
+    except Exception:
+        is_default_root = False
+
+    if is_default_root:
+        should_enforce = is_test_split or is_canonical_scale
+    else:
+        should_enforce = lock_path.exists() or (is_test_split and is_canonical_scale)
+
+    if not should_enforce:
+        return
+
+    if not lock_path.exists():
+        raise ProtocolNotFrozenError(
+            "LIVE_EXECUTION_BLOCKED: canonical experiment lock file missing "
+            "at config/canonical_experiment_lock_v1.json"
+        )
+    lock_data = parse_json(lock_path.read_bytes())
+    if protocol.protocol_sha256 != lock_data.get("protocol_sha256"):
+        raise ProtocolNotFrozenError(
+            f"LIVE_EXECUTION_BLOCKED: protocol SHA-256 ({protocol.protocol_sha256}) "
+            f"does not match canonical lock ({lock_data.get('protocol_sha256')}); "
+            "alternate protocol rejected for canonical TEST execution"
+        )
+    if plan.manifest.get("config_sha256") != lock_data.get("config_sha256"):
+        raise ProtocolNotFrozenError(
+            f"LIVE_EXECUTION_BLOCKED: config SHA-256 ({plan.manifest.get('config_sha256')}) "
+            f"does not match canonical lock ({lock_data.get('config_sha256')}); "
+            "alternate config rejected for canonical TEST execution"
+        )
+    expected_artifacts = lock_data.get("artifact_hashes", {})
+    plan_artifacts = plan.manifest.get("artifacts", {})
+    for name, expected_hash in expected_artifacts.items():
+        actual_hash = plan_artifacts.get(name, {}).get("sha256")
+        if actual_hash != expected_hash:
+            raise ProtocolNotFrozenError(
+                f"LIVE_EXECUTION_BLOCKED: artifact '{name}' SHA-256 mismatch with canonical lock "
+                f"(expected {expected_hash}, got {actual_hash})"
+            )
+
 
 def check_live_execution_gates(
     plan: ValidatedPlan,

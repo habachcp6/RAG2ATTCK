@@ -41,6 +41,7 @@ from src.experiment.authorization import (
     ScientificProtocolApproval,
     check_live_execution_gates,
     create_test_protocol_approval,
+    validate_canonical_experiment_lock,
     validate_live_authorization,
     validate_scientific_protocol,
 )
@@ -3465,5 +3466,477 @@ def test_preflight_validates_output_path_and_evaluator_contract(tmp_path):
     assert report["output_path_safe"] is True
     assert "test_authorization_status" in report
     assert report["canonical_test_provider_calls"] == 0
+
+
+# ===========================================================================
+# 14. Canonical Lock, Preflight Hardening, Resume Drift, Macro-F1 & Provenance
+# ===========================================================================
+
+
+def test_canonical_lock_rejects_alternate_protocol(tmp_path):
+    """Canonical lock rejects any protocol whose SHA-256 does not match lock."""
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    lock_data = {
+        "schema_version": "1.0.0",
+        "lock_version": "v1",
+        "protocol_sha256": "11" * 32,
+        "config_sha256": plan.manifest["config_sha256"],
+        "artifact_hashes": {k: v["sha256"] for k, v in plan.manifest["artifacts"].items()},
+    }
+    lock_path = root / "config" / "canonical_experiment_lock_v1.json"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path.write_bytes(canonical_bytes(lock_data))
+
+    proto = create_test_protocol_approval()
+    with pytest.raises(ProtocolNotFrozenError, match="alternate protocol rejected"):
+        validate_canonical_experiment_lock(plan, proto, root=root)
+
+
+def test_canonical_lock_rejects_alternate_config(tmp_path):
+    """Canonical lock rejects any plan config whose SHA-256 does not match lock."""
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    proto = create_test_protocol_approval()
+    lock_data = {
+        "schema_version": "1.0.0",
+        "lock_version": "v1",
+        "protocol_sha256": proto.protocol_sha256,
+        "config_sha256": "22" * 32,
+        "artifact_hashes": {k: v["sha256"] for k, v in plan.manifest["artifacts"].items()},
+    }
+    lock_path = root / "config" / "canonical_experiment_lock_v1.json"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path.write_bytes(canonical_bytes(lock_data))
+
+    with pytest.raises(ProtocolNotFrozenError, match="alternate config rejected"):
+        validate_canonical_experiment_lock(plan, proto, root=root)
+
+
+def test_canonical_lock_rejects_tampered_artifact_hash(tmp_path):
+    """Canonical lock rejects tampered artifact hashes."""
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    proto = create_test_protocol_approval()
+    hashes = {k: v["sha256"] for k, v in plan.manifest["artifacts"].items()}
+    hashes["prompt"] = "33" * 32
+    lock_data = {
+        "schema_version": "1.0.0",
+        "lock_version": "v1",
+        "protocol_sha256": proto.protocol_sha256,
+        "config_sha256": plan.manifest["config_sha256"],
+        "artifact_hashes": hashes,
+    }
+    lock_path = root / "config" / "canonical_experiment_lock_v1.json"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path.write_bytes(canonical_bytes(lock_data))
+
+    with pytest.raises(ProtocolNotFrozenError, match="mismatch with canonical lock"):
+        validate_canonical_experiment_lock(plan, proto, root=root)
+
+
+def test_preflight_rejects_concurrency_not_one(tmp_path, capsys):
+    """Preflight rejects execution concurrency other than 1."""
+    from src.experiment.authorization import protocol_to_dict
+
+    root, config_path, config = _make_dev_bundle(tmp_path)
+    config["execution"]["concurrency"] = 4
+    config_path.write_bytes(canonical_bytes(config))
+    proto = create_test_protocol_approval(
+        d7_dataset_scope="DEV_SMOKE",
+        d1_raw_response_policy="RECORD_ONLY",
+    )
+    proto_path = tmp_path / "protocol.json"
+    proto_path.write_bytes(canonical_bytes(protocol_to_dict(proto)))
+    rc = main([
+        "preflight",
+        "--allow-dirty",
+        "--config",
+        str(config_path),
+        "--protocol",
+        str(proto_path),
+    ])
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "LIVE_EXECUTION_BLOCKED" in err
+    assert "concurrency" in err
+
+
+def test_preflight_rejects_missing_or_zero_budget(tmp_path, capsys):
+    """Preflight rejects plan execution configuration with missing or zero max_requests."""
+    from src.experiment.authorization import protocol_to_dict
+
+    root, config_path, config = _make_dev_bundle(tmp_path)
+    config["execution"]["max_requests"] = None
+    config_path.write_bytes(canonical_bytes(config))
+    proto = create_test_protocol_approval(
+        d7_dataset_scope="DEV_SMOKE",
+        d1_raw_response_policy="RECORD_ONLY",
+    )
+    proto_path = tmp_path / "protocol.json"
+    proto_path.write_bytes(canonical_bytes(protocol_to_dict(proto)))
+    rc = main([
+        "preflight",
+        "--allow-dirty",
+        "--config",
+        str(config_path),
+        "--protocol",
+        str(proto_path),
+    ])
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "LIVE_EXECUTION_BLOCKED" in err
+    assert "positive max_requests budget" in err
+
+
+def test_preflight_rejects_empty_test_authorization_token(capsys):
+    """Preflight rejects empty or whitespace-only test authorization token."""
+    rc = main(["preflight", "--allow-dirty", "--test-authorization-token", "   "])
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "LIVE_EXECUTION_BLOCKED" in err
+    assert "empty or whitespace" in err
+
+
+def test_preflight_reports_concurrency_and_provider_calls_zero(capsys):
+    """Preflight outputs concurrency from plan and provider_calls_during_preflight: 0."""
+    rc = main(["preflight", "--allow-dirty"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    data = json.loads(out)
+    assert data["concurrency"] == 1
+    assert data["provider_calls_during_preflight"] == 0
+
+
+def test_resume_rejects_config_drift(bundle, tmp_path):
+    """Resume rejects manifest config SHA-256 drift and guarantees 0 provider calls."""
+    root, config_path, _ = bundle
+    plan = load_plan(config_path)
+    output = tmp_path / "resume-config-drift"
+    proto = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_DRIFT",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=50,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: MockProvider(),
+        stop_after=1,
+    )
+    manifest_path = output / "manifest.json"
+    manifest_data = parse_json(manifest_path.read_bytes())
+    manifest_data["config_sha256"] = "99" * 32
+    manifest_path.write_bytes(canonical_bytes(manifest_data))
+
+    provider_calls = 0
+
+    def counting_factory(cfg, budget):
+        nonlocal provider_calls
+        provider_calls += 1
+        return MockProvider()
+
+    with pytest.raises(LiveExecutionBlockedError, match="config SHA-256"):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=counting_factory,
+            resume=True,
+        )
+    assert provider_calls == 0
+
+
+def test_resume_rejects_prompt_drift(bundle, tmp_path):
+    """Resume rejects manifest prompt template drift and guarantees 0 provider calls."""
+    root, config_path, _ = bundle
+    plan = load_plan(config_path)
+    output = tmp_path / "resume-prompt-drift"
+    proto = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_PROMPT_DRIFT",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=50,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: MockProvider(),
+        stop_after=1,
+    )
+    manifest_path = output / "manifest.json"
+    manifest_data = parse_json(manifest_path.read_bytes())
+    manifest_data["artifacts"]["prompt"]["sha256"] = "88" * 32
+    manifest_path.write_bytes(canonical_bytes(manifest_data))
+
+    provider_calls = 0
+
+    def counting_factory(cfg, budget):
+        nonlocal provider_calls
+        provider_calls += 1
+        return MockProvider()
+
+    with pytest.raises(LiveExecutionBlockedError, match="artifact 'prompt' SHA-256 drift"):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=counting_factory,
+            resume=True,
+        )
+    assert provider_calls == 0
+
+
+def test_resume_rejects_model_config_drift(bundle, tmp_path):
+    """Resume rejects model configuration drift and guarantees 0 provider calls."""
+    root, config_path, _ = bundle
+    plan = load_plan(config_path)
+    output = tmp_path / "resume-model-drift"
+    proto = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_MODEL_DRIFT",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=50,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: MockProvider(),
+        stop_after=1,
+    )
+    manifest_path = output / "manifest.json"
+    manifest_data = parse_json(manifest_path.read_bytes())
+    manifest_data["artifacts"]["model_config"]["sha256"] = "77" * 32
+    manifest_path.write_bytes(canonical_bytes(manifest_data))
+
+    provider_calls = 0
+
+    def counting_factory(cfg, budget):
+        nonlocal provider_calls
+        provider_calls += 1
+        return MockProvider()
+
+    with pytest.raises(LiveExecutionBlockedError, match="artifact 'model_config' SHA-256 drift"):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=counting_factory,
+            resume=True,
+        )
+    assert provider_calls == 0
+
+
+def test_resume_rejects_code_identity_drift(bundle, tmp_path):
+    """Resume rejects code commit identity drift and guarantees 0 provider calls."""
+    root, config_path, _ = bundle
+    plan = load_plan(config_path)
+    output = tmp_path / "resume-code-drift"
+    proto = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_CODE_DRIFT",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=50,
+        allow_live_dispatch=True,
+    )
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: MockProvider(),
+        stop_after=1,
+    )
+    manifest_path = output / "manifest.json"
+    manifest_data = parse_json(manifest_path.read_bytes())
+    manifest_data["git_commit_sha"] = "66" * 20
+    manifest_path.write_bytes(canonical_bytes(manifest_data))
+
+    provider_calls = 0
+
+    def counting_factory(cfg, budget):
+        nonlocal provider_calls
+        provider_calls += 1
+        return MockProvider()
+
+    with pytest.raises(LiveExecutionBlockedError, match="code identity drift"):
+        run_live_experiment(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=counting_factory,
+            resume=True,
+        )
+    assert provider_calls == 0
+
+
+def test_macro_f1_universe_and_denominator_invariance():
+    """Macro-F1 denominator remains invariant to predictions and unobserved classes."""
+    from src.evaluation.experiment_metrics import (
+        EvaluationInputs,
+        compute_condition_metrics,
+    )
+
+    proto = create_test_protocol_approval()
+    corpus = ("T1001", "T1002", "T1003", "T1004", "T1005")
+    gt = {
+        "s1": ("T1001",),
+        "s2": ("T1002",),
+    }
+    records = [
+        {
+            "sample_id": "s1",
+            "condition": "no_rag",
+            "parsed_technique_ids": ["T1001"],
+            "parse_status": "VALID",
+        },
+        {
+            "sample_id": "s2",
+            "condition": "no_rag",
+            "parsed_technique_ids": ["T1002"],
+            "parse_status": "VALID",
+        },
+    ]
+    inputs = EvaluationInputs(
+        manifest_sha256="00" * 32,
+        experiment_id="exp-macro-f1",
+        execution_mode="mock_fixture",
+        sample_ids=("s1", "s2"),
+        records=tuple(records),
+        ground_truth=gt,
+        registry={tid: {} for tid in corpus},
+        corpus_ids=corpus,
+    )
+    metrics = compute_condition_metrics(records, inputs, proto, "no_rag")
+    # T1001: F1=1.0, T1002: F1=1.0, T1003-T1005: 0.0 -> sum=2.0 / 5 = 0.40
+    assert metrics["macro_f1"] == pytest.approx(2.0 / 5.0)
+
+    # Hallucinated ID outside universe must not expand denominator
+    records_hallucinated = [
+        {
+            "sample_id": "s1",
+            "condition": "no_rag",
+            "parsed_technique_ids": ["T1001"],
+            "parse_status": "VALID",
+        },
+        {
+            "sample_id": "s2",
+            "condition": "no_rag",
+            "parsed_technique_ids": ["T9999"],
+            "parse_status": "INVALID_ID",
+        },
+    ]
+    inputs_hal = EvaluationInputs(
+        manifest_sha256="00" * 32,
+        experiment_id="exp-macro-f1",
+        execution_mode="mock_fixture",
+        sample_ids=("s1", "s2"),
+        records=tuple(records_hallucinated),
+        ground_truth=gt,
+        registry={tid: {} for tid in corpus},
+        corpus_ids=corpus,
+    )
+    metrics_hal = compute_condition_metrics(records_hallucinated, inputs_hal, proto, "no_rag")
+    # T1001: F1=1.0, T1002: F1=0.0 -> sum=1.0 / 5 = 0.20
+    assert metrics_hal["macro_f1"] == pytest.approx(1.0 / 5.0)
+
+
+def test_model_provenance_and_tamper_detection():
+    """Model provenance metadata is captured and inverted timestamps trigger tamper detection."""
+    from src.evaluation.experiment_metrics import (
+        EvaluationInputs,
+        compute_run_provenance,
+        verify_evaluator_provenance,
+    )
+
+    proto = create_test_protocol_approval()
+    records = [
+        {
+            "sample_id": f"s{i}",
+            "condition": cond,
+            "experiment_id": "exp-prov",
+            "returned_model_id": "gpt-4o-2024-08-06",
+            "response_id": f"resp_{i}_{cond}",
+            "system_fingerprint": "fp_abc123",
+            "request_timestamp_utc": "2026-09-30T10:00:00Z",
+            "response_timestamp_utc": "2026-09-30T10:00:02Z",
+        }
+        for i in range(2)
+        for cond in ("no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10")
+    ]
+    manifest = {
+        "experiment_id": "exp-prov",
+        "git_commit_sha": "a" * 40,
+        "config_sha256": "b" * 64,
+        "protocol_sha256": proto.protocol_sha256,
+        "model": {"provider": "openai", "model": "gpt-4o"},
+    }
+    inputs = EvaluationInputs(
+        manifest_sha256="c" * 64,
+        experiment_id="exp-prov",
+        execution_mode="live",
+        sample_ids=("s0", "s1"),
+        records=tuple(records),
+        ground_truth={"s0": ("T1059.001",), "s1": ("T1105",)},
+        registry={},
+        manifest_data=manifest,
+    )
+    verify_evaluator_provenance(inputs, proto)
+    prov = compute_run_provenance(inputs, proto)
+    assert "model_provenance" in prov
+    assert prov["model_provenance"]["returned_models"] == ["gpt-4o-2024-08-06"]
+    assert prov["model_provenance"]["system_fingerprints"] == ["fp_abc123"]
+    assert prov["model_provenance"]["has_response_ids"] is True
+    assert prov["model_provenance"]["has_timestamps"] is True
+
+    # Tampered timestamp: response before request
+    tampered_records = list(records)
+    tampered_records[0] = dict(records[0])
+    tampered_records[0]["request_timestamp_utc"] = "2026-09-30T10:00:05Z"
+    tampered_records[0]["response_timestamp_utc"] = "2026-09-30T10:00:01Z"
+    tampered_inputs = EvaluationInputs(
+        manifest_sha256="c" * 64,
+        experiment_id="exp-prov",
+        execution_mode="live",
+        sample_ids=("s0", "s1"),
+        records=tuple(tampered_records),
+        ground_truth={"s0": ("T1059.001",), "s1": ("T1105",)},
+        registry={},
+        manifest_data=manifest,
+    )
+    with pytest.raises(ValueError, match="timestamp tampering detected"):
+        verify_evaluator_provenance(tampered_inputs, proto)
+
+
+def test_sentinel_leakage_redaction():
+    """Secrets, Bearer tokens, OpenAI keys, and sentinels are scrubbed from outputs."""
+    from src.experiment.redaction import sanitize_secrets
+
+    raw = "Failed with Bearer my-secret-token-123 and key sk-proj-abcdef1234567890abcdef1234567890"
+    sanitized = sanitize_secrets(raw)
+    assert "my-secret-token-123" not in sanitized
+    assert "sk-proj-abcdef1234567890abcdef1234567890" not in sanitized
+    assert "[REDACTED_BEARER_TOKEN]" in sanitized
+    assert "[REDACTED_OPENAI_KEY]" in sanitized
+
+    sentinel = "HUMAN_SUPER_SECRET_TOKEN_999"
+    sanitized_custom = sanitize_secrets(f"Error for token {sentinel}", extra_tokens=[sentinel])
+    assert sentinel not in sanitized_custom
+    assert "[REDACTED_SECRET]" in sanitized_custom
+
 
 

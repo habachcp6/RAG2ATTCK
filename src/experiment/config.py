@@ -88,7 +88,9 @@ class ValidatedPlan:
             "schema_version": "1.0.0",
             "status": "HUMAN_DECISION_REQUIRED",
             "infrastructure_validation": "PASS",
-            "scientific_status": "NOT_FROZEN",
+            "scientific_status": (
+                "FROZEN" if self.config.experiment.status == "frozen" else "NOT_FROZEN"
+            ),
             "live_execution_implemented": False,
             "experiment_id": self.manifest["experiment_id"],
             "sample_count": len(self.samples),
@@ -303,8 +305,8 @@ def _validate_model(config, snapshot):
         raise ValueError("generation settings do not inherit the bound canonical model config")
     if "temperature" in model or "seed" in model:
         raise ValueError("provider-default temperature/seed must remain omitted")
-    if model.get("logging_policy", {}).get("log_raw_response") is not False:
-        raise ValueError("raw response logging policy changed")
+    if model.get("logging_policy", {}).get("log_raw_response") is not config.logging.raw_response:
+        raise ValueError("raw response logging policy changed between model and experiment config")
     expected_schema = {
         "format": "json_schema",
         "schema_name": "attack_technique_prediction",
@@ -381,13 +383,14 @@ def load_plan(config_path: Path | str, *, root: Path | str | None = None) -> Val
         "T20 human merge and exact-main CI closure required",
         "T21 scientific freeze and provider/API authorization required",
         "Canonical evaluator definitions require human decision",
-        (
+    ]
+    if not config.logging.raw_response:
+        human.append(
             "raw_response_logging_policy: HUMAN_DECISION_REQUIRED. "
             "Roadmap T22 requires raw-response caching, while the inherited "
             "model/experiment policy disables persistence. Human reconciliation "
             "is required before T21 scientific freeze."
-        ),
-    ]
+        )
     if config.generation.model_version is None:
         human.append("Exact provider model version requires human freeze")
     if config.execution.concurrency is None:
@@ -398,7 +401,7 @@ def load_plan(config_path: Path | str, *, root: Path | str | None = None) -> Val
         "schema_version": "1.0.0",
         "execution_mode": "pre_freeze",
         "experiment_id": experiment_id,
-        "status": "pre_freeze",
+        "status": config.experiment.status,
         "git_commit_sha": git_sha,
         "config_sha256": digest(config_bytes),
         "artifacts": {name: ref.model_dump() for name, ref in references.items()},

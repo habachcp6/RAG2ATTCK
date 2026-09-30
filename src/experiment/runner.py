@@ -45,6 +45,7 @@ from src.experiment.journal import (
     validate_reservation_abandonment,
 )
 from src.experiment.path_safety import validate_untrusted_output_path
+from src.experiment.redaction import sanitize_secrets
 from src.experiment.schemas import CONDITIONS, ExperimentConfig, ExperimentRecord
 from src.llm.client import LiveBudget, LiveBudgetExceededError, LLMClient
 from src.llm.schemas import validate_technique_id
@@ -211,6 +212,66 @@ def _validate_record_binding(record, manifest, manifest_sha, registry_ids, corpu
         raise ValueError("record candidate is absent from captured corpus/registry")
     if record.request_attempt_count > manifest["execution"]["retries"] + 1:
         raise ValueError("record exceeds bound retry policy")
+
+
+def _verify_resume_manifest_consistency(manifest: dict[str, Any], plan: ValidatedPlan) -> None:
+    """Fail closed if stored run manifest has drifted from current validated plan."""
+    # 1. Code identity
+    if manifest.get("git_commit_sha") != plan.manifest.get("git_commit_sha"):
+        raise LiveExecutionBlockedError(
+            f"cannot resume run: code identity drift (manifest {manifest.get('git_commit_sha')} "
+            f"!= current {plan.manifest.get('git_commit_sha')})"
+        )
+
+    # 2. Config SHA
+    if manifest.get("config_sha256") != plan.manifest.get("config_sha256"):
+        raise LiveExecutionBlockedError(
+            f"cannot resume run: config SHA-256 drift (manifest {manifest.get('config_sha256')} "
+            f"!= current {plan.manifest.get('config_sha256')})"
+        )
+
+    # 3. Complete artifact hash map
+    manifest_artifacts = manifest.get("artifacts", {})
+    plan_artifacts = plan.manifest.get("artifacts", {})
+    if set(manifest_artifacts) != set(plan_artifacts):
+        raise LiveExecutionBlockedError("cannot resume run: artifact set drift")
+    for name, plan_art in plan_artifacts.items():
+        if manifest_artifacts.get(name, {}).get("sha256") != plan_art.get("sha256"):
+            raise LiveExecutionBlockedError(f"cannot resume run: artifact '{name}' SHA-256 drift")
+
+    # 4. Prompt, model, retrieval config
+    if manifest.get("model") != plan.manifest.get("model"):
+        raise LiveExecutionBlockedError("cannot resume run: model configuration drift")
+    if manifest.get("retrieval") != plan.manifest.get("retrieval"):
+        raise LiveExecutionBlockedError("cannot resume run: retrieval configuration drift")
+    if manifest.get("model_version") != plan.manifest.get("model_version"):
+        raise LiveExecutionBlockedError("cannot resume run: model version drift")
+
+    # 5. Dataset, split, sample matrix
+    if manifest.get("split") != plan.manifest.get("split"):
+        raise LiveExecutionBlockedError("cannot resume run: dataset split drift")
+    if manifest.get("benchmark_version") != plan.manifest.get("benchmark_version"):
+        raise LiveExecutionBlockedError("cannot resume run: benchmark version drift")
+    if manifest.get("attack_release") != plan.manifest.get("attack_release"):
+        raise LiveExecutionBlockedError("cannot resume run: ATT&CK release drift")
+    if manifest.get("sample_ids") != plan.manifest.get("sample_ids"):
+        raise LiveExecutionBlockedError("cannot resume run: sample ID ordering or membership drift")
+    if manifest.get("samples") != plan.manifest.get("samples"):
+        raise LiveExecutionBlockedError("cannot resume run: sample metadata drift")
+    if manifest.get("expected_request_count") != plan.manifest.get("expected_request_count"):
+        raise LiveExecutionBlockedError("cannot resume run: expected request count drift")
+
+    # 6. Retry, concurrency, budget semantics
+    if manifest.get("execution") != plan.manifest.get("execution"):
+        raise LiveExecutionBlockedError("cannot resume run: execution semantics drift")
+
+    # 7. Conditions
+    if manifest.get("conditions") != plan.manifest.get("conditions"):
+        raise LiveExecutionBlockedError("cannot resume run: experiment conditions drift")
+
+    # 8. Output schema
+    if manifest.get("output_schema_sha256") != plan.manifest.get("output_schema_sha256"):
+        raise LiveExecutionBlockedError("cannot resume run: output schema SHA-256 drift")
 
 
 def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_ids):
@@ -382,6 +443,11 @@ def _record(
         provider=execution.provider,
         model=execution.model,
         model_version=manifest["model_version"],
+        returned_model_id=getattr(execution, "returned_model_id", None),
+        response_id=getattr(execution, "response_id", None),
+        system_fingerprint=getattr(execution, "system_fingerprint", None),
+        request_timestamp_utc=getattr(execution, "request_timestamp_utc", None),
+        response_timestamp_utc=getattr(execution, "response_timestamp_utc", None),
         prompt_sha256=manifest["artifacts"]["prompt"]["sha256"],
         model_config_sha256=manifest["artifacts"]["model_config"]["sha256"],
         output_schema_sha256=manifest["output_schema_sha256"],
@@ -414,7 +480,7 @@ def _record(
         retry_count=execution.retry_count,
         request_attempt_count=attempts,
         error_type=execution.error_type,
-        error_message=execution.invalid_reason,
+        error_message=sanitize_secrets(execution.invalid_reason),
         success=execution.is_valid,
         timestamp=datetime.now(UTC).isoformat(),
         terminal=True,
@@ -717,6 +783,9 @@ def run_live_experiment(
                     "cannot resume run under a different scientific protocol; "
                     "decision drift rejected"
                 )
+
+            # Check complete run manifest consistency against current validated plan
+            _verify_resume_manifest_consistency(manifest, plan)
 
             manifest_sha = digest(canonical_bytes(manifest))
             records, spent, recoverable_reservation = _resume_state(

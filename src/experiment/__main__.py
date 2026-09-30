@@ -18,6 +18,7 @@ from src.experiment.authorization import (
     ProtocolNotFrozenError,
     ScientificProtocolApproval,
     check_live_execution_gates,
+    validate_canonical_experiment_lock,
     validate_scientific_protocol,
 )
 from src.experiment.config import load_plan, parse_json
@@ -187,12 +188,16 @@ def _handle_preflight(args: argparse.Namespace) -> int:
     try:
         plan = load_plan(config_path)
         validate_scientific_protocol(protocol, plan)
+        validate_canonical_experiment_lock(plan, protocol, root=repo_root)
     except Exception as exc:
         print(
             json.dumps(
                 {
                     "status": "LIVE_EXECUTION_BLOCKED",
-                    "reason": f"Plan loading or protocol compatibility check failed: {exc}",
+                    "reason": (
+                        "Plan loading, protocol compatibility, or canonical lock check "
+                        f"failed: {exc}"
+                    ),
                     "provider_calls": 0,
                     "prediction_writes": 0,
                 },
@@ -206,7 +211,7 @@ def _handle_preflight(args: argparse.Namespace) -> int:
     # 5. Sequential concurrency check
     if (
         protocol.d4_concurrency_policy != "SEQUENTIAL_ONLY"
-        or plan.config.execution.concurrency not in (None, 1)
+        or plan.config.execution.concurrency != 1
     ):
         print(
             json.dumps(
@@ -214,7 +219,7 @@ def _handle_preflight(args: argparse.Namespace) -> int:
                     "status": "LIVE_EXECUTION_BLOCKED",
                     "reason": (
                         "Concurrency policy must be SEQUENTIAL_ONLY and "
-                        "concurrency must be 1 or None"
+                        "execution concurrency in config must be explicitly 1"
                     ),
                     "provider_calls": 0,
                     "prediction_writes": 0,
@@ -227,6 +232,25 @@ def _handle_preflight(args: argparse.Namespace) -> int:
         return 1
 
     # 6. Budget check
+    if not plan.config.execution.max_requests or plan.config.execution.max_requests <= 0:
+        print(
+            json.dumps(
+                {
+                    "status": "LIVE_EXECUTION_BLOCKED",
+                    "reason": (
+                        "Execution configuration must define an explicit "
+                        "positive max_requests budget"
+                    ),
+                    "provider_calls": 0,
+                    "prediction_writes": 0,
+                },
+                sort_keys=True,
+                indent=2,
+            ),
+            file=sys.stderr,
+        )
+        return 1
+
     from src.experiment.schemas import CONDITIONS
 
     worst_case_attempts = (
@@ -294,13 +318,15 @@ def _handle_preflight(args: argparse.Namespace) -> int:
 
     # 8. Evaluator contract validation
     try:
-        validate_scientific_protocol(protocol, plan)
+        from src.evaluation.experiment_metrics import validate_evaluator_compatibility
+
+        validate_evaluator_compatibility(protocol, plan)
     except Exception as exc:
         print(
             json.dumps(
                 {
                     "status": "LIVE_EXECUTION_BLOCKED",
-                    "reason": f"Evaluator contract validation failed: {exc}",
+                    "reason": f"Evaluator contract compatibility validation failed: {exc}",
                     "provider_calls": 0,
                     "prediction_writes": 0,
                 },
@@ -331,11 +357,30 @@ def _handle_preflight(args: argparse.Namespace) -> int:
         )
         return 1
 
-    # 10. Success: All preflight gates satisfied; strictly 0 provider calls, 0 prediction writes
+    # 10. Scoped test authorization token check (fail closed if provided but empty/whitespace)
+    test_token = getattr(args, "test_authorization_token", None)
+    if test_token is not None:
+        if not isinstance(test_token, str) or not test_token.strip():
+            print(
+                json.dumps(
+                    {
+                        "status": "LIVE_EXECUTION_BLOCKED",
+                        "reason": "Test authorization token cannot be empty or whitespace",
+                        "provider_calls": 0,
+                        "prediction_writes": 0,
+                    },
+                    sort_keys=True,
+                    indent=2,
+                ),
+                file=sys.stderr,
+            )
+            return 1
+
+    # 11. Success: All preflight gates satisfied; strictly 0 provider calls, 0 prediction writes
     is_test_split = plan.manifest.get("split") == "test"
     test_auth_status = (
         "AUTHORIZED"
-        if getattr(args, "test_authorization_token", None)
+        if test_token and test_token.strip()
         else ("UNAUTHORIZED_PRE_EXPERIMENT" if is_test_split else "NOT_APPLICABLE_DEV")
     )
 
@@ -350,7 +395,8 @@ def _handle_preflight(args: argparse.Namespace) -> int:
         "condition_count": len(CONDITIONS),
         "expected_requests": len(plan.samples) * len(CONDITIONS),
         "worst_case_attempts": worst_case_attempts,
-        "concurrency": 1,
+        "concurrency": plan.config.execution.concurrency,
+        "provider_calls_during_preflight": 0,
         "has_openai_key": has_key,
         "evaluator_contract_valid": True,
         "output_path_safe": True,

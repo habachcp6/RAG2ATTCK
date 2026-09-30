@@ -88,8 +88,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
           fetch-depth: 0
+
+      - name: Verify exact commit HEAD
+        run: git rev-parse HEAD
 
       - name: Set up Python
         uses: actions/setup-python@v7.0.0
@@ -123,6 +127,9 @@ jobs:
           uv run python -c "import json; from sentence_transformers import SentenceTransformer;
           c=json.load(open('config/retrieval.json', encoding='utf-8'));
           SentenceTransformer(c['embedding_model_id'], revision=c['embedding_model_revision'])"
+
+      - name: Run experiment preflight gate
+        run: uv run python -m src.experiment preflight
 
       - name: Run real retrieval integration tests without provider access
         run: uv run python scripts/run_offline_tests.py -m pytest -m integration -q

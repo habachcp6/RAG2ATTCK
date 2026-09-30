@@ -84,6 +84,11 @@ class ExecutionRecord(BaseModel):
     retry_count: int = 0
     error_type: Optional[str] = None
     raw_text: Optional[str] = None
+    returned_model_id: Optional[str] = None
+    response_id: Optional[str] = None
+    system_fingerprint: Optional[str] = None
+    request_timestamp_utc: Optional[str] = None
+    response_timestamp_utc: Optional[str] = None
 
     model_config = ConfigDict(
         extra="forbid",

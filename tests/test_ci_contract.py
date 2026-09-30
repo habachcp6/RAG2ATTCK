@@ -119,8 +119,10 @@ def _assert_common_setup(steps, *, full_history=False):
     checkout = _step(steps, "Checkout repository")
     assert checkout["uses"] == "actions/checkout@v7.0.1"
     assert checkout["with"]["persist-credentials"] is False
+    assert checkout["with"]["ref"] == "${{ github.event.pull_request.head.sha || github.sha }}"
     if full_history:
         assert checkout["with"]["fetch-depth"] == 0
+    assert _step(steps, "Verify exact commit HEAD")["run"] == "git rev-parse HEAD"
     python = _step(steps, "Set up Python")
     assert python["uses"] == "actions/setup-python@v7.0.0"
     assert python["with"]["python-version-file"] == ".python-version"
@@ -136,6 +138,7 @@ def _assert_common_setup(steps, *, full_history=False):
     names = [step.get("name") for step in steps]
     ordered = (
         "Checkout repository",
+        "Verify exact commit HEAD",
         "Set up Python",
         "Set up uv",
         "Validate lockfile",
@@ -182,12 +185,16 @@ def _assert_ci(workflow):
     assert shlex.split(_step(steps, "Run Full Test Suite")["run"]) == (
         GUARDED_PYTHON + ["pytest", "-m", "not integration", "-q"]
     )
+    assert _step(steps, "Run experiment preflight gate")["run"] == (
+        "uv run python -m src.experiment preflight"
+    )
     assert shlex.split(
         _step(steps, "Verify frozen synthetic benchmark and same-seed reproduction")["run"]
     ) == GUARDED_PYTHON + ["src.data_ground_truth", "verify-synthetic"]
     assert shlex.split(_step(steps, "Acquire ATT&CK v19.2 reference")["run"]) == ACQUIRE_ATTACK
     names = [step.get("name") for step in steps]
     assert names.index("Acquire ATT&CK v19.2 reference") < names.index("Run Full Test Suite")
+    assert names.index("Run experiment preflight gate") < names.index("Run Full Test Suite")
 
 
 def _assert_integration(workflow):
@@ -201,6 +208,9 @@ def _assert_integration(workflow):
     assert shlex.split(_step(steps, test_name)["run"]) == (
         GUARDED_PYTHON + ["pytest", "-m", "integration", "-q"]
     )
+    assert _step(steps, "Run experiment preflight gate")["run"] == (
+        "uv run python -m src.experiment preflight"
+    )
     names = [step.get("name") for step in steps]
     for acquisition in (
         "Install dependencies",
@@ -209,6 +219,7 @@ def _assert_integration(workflow):
     ):
         _step(steps, acquisition)
         assert names.index(acquisition) < names.index(test_name)
+    assert names.index("Run experiment preflight gate") < names.index(test_name)
     assert shlex.split(_step(steps, "Acquire ATT&CK v19.2 reference")["run"]) == ACQUIRE_ATTACK
     assert shlex.split(
         _step(steps, "Acquire pinned embedding model before offline checks")["run"]
@@ -229,6 +240,7 @@ def test_combined_ci_keeps_lint_guard_and_acquisition_contracts():
     [
         "Lint T20 critical code paths",
         "Lint pre-experiment infrastructure",
+        "Run experiment preflight gate",
         "Run Full Test Suite",
         "Verify frozen synthetic benchmark and same-seed reproduction",
     ],
@@ -380,7 +392,14 @@ def test_shallow_checkout_for_provenance_tests_is_detected(workflow_name, job_na
     [
         ("ci.yml", "full-test-suite", "Lint T20 critical code paths", _assert_ci),
         ("ci.yml", "full-test-suite", "Lint pre-experiment infrastructure", _assert_ci),
+        ("ci.yml", "full-test-suite", "Run experiment preflight gate", _assert_ci),
         ("ci.yml", "full-test-suite", "Run Full Test Suite", _assert_ci),
+        (
+            "integration.yml",
+            "real-retrieval",
+            "Run experiment preflight gate",
+            _assert_integration,
+        ),
         (
             "integration.yml",
             "real-retrieval",

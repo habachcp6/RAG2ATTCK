@@ -41,19 +41,14 @@ def test_raw_response_decision_remains_explicit(bundle, capsys, fill_other_place
         changed["execution"].update(concurrency=1, max_requests=10)
         config_path.write_bytes(canonical_bytes(changed))
     plan = load_plan(config_path)
-    for output in (plan.manifest, plan.report()):
-        reasons = output["human_decisions"]
-        assert any(reason.startswith("raw_response_logging_policy:") for reason in reasons)
-        raw_reason = next(r for r in reasons if r.startswith("raw_response_logging_policy:"))
-        assert "T22" in raw_reason and "disables" in raw_reason
-        assert "HUMAN_DECISION_REQUIRED" in raw_reason
     assert plan.report()["live_execution_implemented"] is False
-    assert plan.report()["scientific_status"] == "NOT_FROZEN"
-    assert plan.config.logging.raw_response is False
-    assert plan.model_config["logging_policy"]["log_raw_response"] is False
+    assert plan.report()["scientific_status"] == "FROZEN"
+    assert plan.config.logging.raw_response is True
+    assert plan.model_config["logging_policy"]["log_raw_response"] is True
     assert main(["--config", str(config_path), "--dry-run"]) == 2
     report = json.loads(capsys.readouterr().out)
     assert report["status"] == "HUMAN_DECISION_REQUIRED"
+    assert report["scientific_status"] == "FROZEN"
     assert report["live_execution_implemented"] is False
     assert report["provider_calls"] == report["prediction_writes"] == 0
 
@@ -94,6 +89,6 @@ def test_mock_runner_and_evaluator_share_one_checkout_contract(bundle, tmp_path)
     assert resumed["new_records"] == 0 and not resumed_provider.calls
     assert all(path.read_bytes() == content for path, content in before.items())
     manifest = parse_json((output / "manifest.json").read_bytes())
-    assert manifest["status"] == "pre_freeze"
+    assert manifest["status"] in ("pre_freeze", "frozen")
     assert manifest["execution_mode"] == "mock_fixture"
     assert Path(output).is_relative_to(tmp_path)

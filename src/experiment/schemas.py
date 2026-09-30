@@ -27,7 +27,7 @@ class Artifact(StrictModel):
 class ExperimentIdentity(StrictModel):
     name: Annotated[str, Field(pattern=r"^[a-z0-9][a-z0-9_-]*$")]
     version: Nonempty
-    status: Literal["pre_freeze"]
+    status: Literal["pre_freeze", "frozen"]
 
 
 class Dataset(StrictModel):
@@ -96,7 +96,7 @@ class Execution(StrictModel):
 
 
 class Logging(StrictModel):
-    raw_response: Literal[False]
+    raw_response: bool
     parsed_prediction: Literal[True]
     tokens: Literal[True]
     latency: Literal[True]
@@ -144,6 +144,11 @@ class ExperimentRecord(StrictModel):
     provider: Nonempty
     model: Nonempty
     model_version: Nonempty | None
+    returned_model_id: str | None = None
+    response_id: str | None = None
+    system_fingerprint: str | None = None
+    request_timestamp_utc: str | None = None
+    response_timestamp_utc: str | None = None
     prompt_sha256: SHA256
     model_config_sha256: SHA256
     output_schema_sha256: SHA256

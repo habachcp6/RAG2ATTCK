@@ -32,7 +32,7 @@ class ExperimentIdentity(StrictModel):
 
 class Dataset(StrictModel):
     benchmark: Literal["synthetic-paired-v1"]
-    split: Literal["test"]
+    split: Literal["test", "dev"]
     expected_sample_count: Annotated[int, Field(gt=0)]
     expected_pair_count: Annotated[int, Field(gt=0)]
     inference: Artifact

@@ -28,6 +28,8 @@ from src.evaluation.experiment_metrics import (
     _load_evaluation_inputs,
     evaluate_conditional_accuracy,
     evaluate_end_to_end,
+    evaluate_experiment,
+    load_evaluation_inputs,
 )
 from src.experiment.__main__ import main
 from src.experiment.authorization import (
@@ -36,6 +38,7 @@ from src.experiment.authorization import (
     LiveBudgetRequiredError,
     LiveExecutionBlockedError,
     ProtocolNotFrozenError,
+    ScientificProtocolApproval,
     check_live_execution_gates,
     create_test_protocol_approval,
     validate_live_authorization,
@@ -2737,4 +2740,497 @@ def test_path_safety_detects_arbitrary_reparse_tags_and_attributes(tmp_path, mon
     assert is_symlink_or_junction(test_dir) is True
     with pytest.raises(ValueError, match="symlink output directory rejected"):
         validate_untrusted_output_path(test_dir)
+
+
+# ===========================================================================
+# 12. Section 24: Scientific Protocol Integrity & Plan Validation Tests
+# ===========================================================================
+
+
+def test_frozen_protocol_v1_integrity_and_validation():
+    """Verify config/experiment_protocol_v1.json matches exact frozen SHA-256 and rules."""
+    proto_path = ROOT / "config" / "experiment_protocol_v1.json"
+    assert proto_path.exists()
+    proto_dict = parse_json(proto_path.read_bytes())
+    protocol = ScientificProtocolApproval(**proto_dict)
+    validate_scientific_protocol(protocol)
+    assert (
+        protocol.protocol_sha256
+        == "e7ab9ca3b5a779fc01e4d0b532871377aff041faf9c570c32599fedf26748677"
+    )
+    assert protocol.d1_raw_response_policy == "RECORD_ONLY"
+    assert protocol.d2a_ground_truth_semantics == "ANY_MATCH"
+    assert protocol.d2b_empty_ground_truth == "EXCLUDE"
+    assert protocol.d2c_ambiguous_ground_truth == "EXCLUDE"
+    assert protocol.d2d_macro_f1_universe == "FROZEN_BENCHMARK_UNIVERSE"
+    assert protocol.d2e_invalid_id_denominator == "INCLUDE_IN_DENOMINATOR"
+    assert protocol.d2f_api_error_denominator == "INCLUDE_IN_DENOMINATOR"
+    assert protocol.d2g_retired_attack_id == "ALLOW_HISTORICAL"
+    assert protocol.d2h_conditional_retrieval == "ANY_GT_RETRIEVED"
+    assert protocol.d2i_failure_precedence == "INDEPENDENT_AXES"
+    assert protocol.d2j_zero_denominator == "NULL"
+    assert protocol.d3_model_version_policy == "ALLOW_LATEST_WITH_TIMESTAMP_BINDING"
+    assert protocol.d4_concurrency_policy == "SEQUENTIAL_ONLY"
+    assert protocol.d5_budget_policy == "HARD_CAP_WORST_CASE_ATTEMPTS"
+    assert protocol.d6_t15_prerequisite_policy == "NOT_REQUIRED_FOR_SYNTHETIC_BENCHMARK"
+    assert protocol.d7_dataset_scope == "PAIRED_TEST"
+
+
+# ===========================================================================
+# 13. Section 34 & 35: CLI Preflight & TEST Split Protection Tests
+# ===========================================================================
+
+
+def test_cli_preflight_ready(capsys):
+    """CLI preflight succeeds when run with --allow-dirty and outputs EXPERIMENT_PREFLIGHT_READY."""
+    ret = main(["preflight", "--allow-dirty"])
+    assert ret == 0
+    out = capsys.readouterr().out
+    assert "EXPERIMENT_PREFLIGHT_READY" in out
+    data = json.loads(out)
+    assert data["provider_calls"] == 0
+    assert data["prediction_writes"] == 0
+    assert data["split"] == "test"
+    assert data["sample_count"] == 1280
+    assert data["condition_count"] == 5
+    assert data["expected_requests"] == 6400
+    assert data["worst_case_attempts"] == 25600
+
+
+def test_cli_preflight_dirty_source_blocks(capsys, monkeypatch):
+    """CLI preflight detects uncommitted/dirty changes and fails closed."""
+    import subprocess
+
+    orig_run = subprocess.run
+
+    def fake_git_status(*args, **kwargs):
+        cmd = args[0] if args else kwargs.get("args")
+        if isinstance(cmd, list) and "status" in cmd:
+            return subprocess.CompletedProcess(cmd, 0, stdout="M src/dirty_file.py\n", stderr="")
+        return orig_run(*args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", fake_git_status)
+    ret = main(["preflight"])
+    assert ret == 1
+    err = capsys.readouterr().err
+    assert "LIVE_EXECUTION_BLOCKED" in err
+    assert "dirty" in err
+
+
+def test_cli_preflight_missing_protocol_file_blocks(capsys, tmp_path):
+    """CLI preflight fails closed when protocol file is missing."""
+    missing = tmp_path / "nonexistent_protocol.json"
+    ret = main(["preflight", "--allow-dirty", "--protocol-file", str(missing)])
+    assert ret == 1
+    err = capsys.readouterr().err
+    assert "LIVE_EXECUTION_BLOCKED" in err
+
+
+def test_cli_preflight_tampered_protocol_hash_blocks(capsys, tmp_path):
+    """CLI preflight fails closed when protocol hash is tampered."""
+    proto_file = tmp_path / "tampered_protocol.json"
+    proto_data = parse_json((ROOT / "config" / "experiment_protocol_v1.json").read_bytes())
+    proto_data["protocol_sha256"] = "00" * 32
+    proto_file.write_bytes(canonical_bytes(proto_data))
+    ret = main(["preflight", "--allow-dirty", "--protocol-file", str(proto_file)])
+    assert ret == 1
+    err = capsys.readouterr().err
+    assert "LIVE_EXECUTION_BLOCKED" in err
+    assert "protocol SHA-256 hash mismatch" in err
+
+
+def test_cli_preflight_insufficient_max_attempts_blocks(capsys):
+    """CLI preflight rejects max-attempts smaller than worst-case requirement."""
+    ret = main(["preflight", "--allow-dirty", "--max-attempts", "100"])
+    assert ret == 1
+    err = capsys.readouterr().err
+    assert "LIVE_EXECUTION_BLOCKED" in err
+    assert "less than worst-case attempts" in err
+
+
+def test_preflight_guarantees_zero_provider_calls_and_zero_writes(bundle, tmp_path):
+    """Preflight execution must never invoke providers or write prediction files."""
+    plan = load_plan(bundle[1])
+    proto = create_test_protocol_approval()
+    gate = check_live_execution_gates(plan, None, protocol=proto)
+    assert gate["provider_calls"] == 0
+    assert gate["prediction_writes"] == 0
+    assert gate["live_execution_permitted"] is False
+
+
+# ===========================================================================
+# 14. Section 37-43: DEV Smoke Harness (10 DEV samples x 5 conditions = 50 calls)
+# ===========================================================================
+
+
+def _make_dev_bundle(tmp_path):
+    root = tmp_path / "inputs_dev"
+    root.mkdir()
+    config = json.loads((ROOT / "config" / "experiment_config.json").read_bytes())
+    snapshots = {}
+
+    def store(name, value, *, jsonl=False, raw=False):
+        data = (
+            value
+            if raw
+            else (
+                b"".join(canonical_bytes(row) + b"\n" for row in value)
+                if jsonl
+                else canonical_bytes(value) + b"\n"
+            )
+        )
+        (root / name).write_bytes(data)
+        snapshots[name] = data
+        return {"path": name, "sha256": digest(data)}
+
+    pair_ids = [f"p{i}" for i in range(5)]
+    views = []
+    truth = []
+    inference = []
+    pairs = []
+    for i in range(5):
+        s_single = f"s{2 * i}"
+        s_contextual = f"s{2 * i + 1}"
+        v_single = {
+            "view_id": s_single,
+            "pair_id": f"p{i}",
+            "view_type": "single",
+            "event_ids": [f"e{i}"],
+        }
+        v_contextual = {
+            "view_id": s_contextual,
+            "pair_id": f"p{i}",
+            "view_type": "contextual",
+            "event_ids": [f"e{i}", f"c{i}"],
+        }
+        views.extend([v_single, v_contextual])
+
+        t_single = {
+            "view_id": s_single,
+            "label_status": "mapped",
+            "technique_ids": ["T1059.001"],
+            "rationale": "SECRET_GT_METADATA",
+        }
+        t_contextual = {
+            "view_id": s_contextual,
+            "label_status": "ambiguous" if i == 4 else "mapped",
+            "technique_ids": [] if i == 4 else ["T1059.001", "T1000"],
+            "rationale": "SECRET_GT_METADATA",
+        }
+        truth.extend([t_single, t_contextual])
+
+        inference.append(
+            {"sample_id": s_single, "endpoint_evidence": f"evidence for {s_single}"}
+        )
+        inference.append(
+            {"sample_id": s_contextual, "endpoint_evidence": f"evidence for {s_contextual}"}
+        )
+
+        pairs.append(
+            {
+                "pair_id": f"p{i}",
+                "split": "dev",
+                "single_view": v_single,
+                "contextual_view": v_contextual,
+                "single_ground_truth": t_single,
+                "contextual_ground_truth": t_contextual,
+            }
+        )
+
+    registry = {
+        "objects": [
+            {
+                "type": "attack-pattern",
+                "external_references": [{"source_name": "mitre-attack", "external_id": tid}],
+            }
+            for tid in ["T1059.001", "T1000"] + [f"T10{i:02d}" for i in range(1, 11)]
+        ]
+    }
+    config["attack"]["registry"] = store("registry.json", registry)
+    config["dataset"]["inference"] = store("inference.jsonl", inference, jsonl=True)
+    config["dataset"]["ground_truth"] = store("ground_truth.jsonl", truth, jsonl=True)
+    config["dataset"]["views"] = store("views.jsonl", views, jsonl=True)
+    config["dataset"]["pairs"] = store("pairs.jsonl", pairs, jsonl=True)
+    config["dataset"]["split_manifest"] = store(
+        "split_manifest.json", {"dev": pair_ids, "test": []}
+    )
+    dataset_manifest = {
+        "state": "frozen",
+        "benchmark_version": "synthetic-paired-v1",
+        "attack_version": "19.2",
+        "view_count": 10,
+        "pair_count": 5,
+        "split_counts": {"dev": 5, "test": 0},
+        "attack_source_sha256": config["attack"]["registry"]["sha256"],
+        "files": {
+            name: digest(data) for name, data in snapshots.items() if name != "registry.json"
+        },
+    }
+    config["dataset"]["manifest"] = store("dataset_manifest.json", dataset_manifest)
+    config["dataset"]["split"] = "dev"
+    config["dataset"]["expected_sample_count"] = 10
+    config["dataset"]["expected_pair_count"] = 5
+    corpus = [
+        {
+            "technique_id": tid,
+            "name": tid,
+            "retrieval_text": "reference " + tid,
+            "source_version": "19.2",
+        }
+        for tid in ["T1059.001", "T1000"] + [f"T10{i:02d}" for i in range(1, 11)]
+    ]
+    config["attack"]["corpus"] = store("corpus.jsonl", corpus, jsonl=True)
+    config["attack"]["document_mapping"] = store("docmap.json", corpus)
+    index = faiss.IndexFlatIP(4)
+    vectors = np.eye(4, dtype=np.float32)[np.arange(12) % 4]
+    index.add(vectors)
+    config["attack"]["index"] = store(
+        "index.bin", faiss.serialize_index(index).tobytes(), raw=True
+    )
+    retrieval = json.loads((ROOT / "config" / "retrieval.json").read_bytes())
+    retrieval.update(
+        corpus_path="corpus.jsonl",
+        corpus_sha256=config["attack"]["corpus"]["sha256"],
+        faiss_index_path="index.bin",
+        document_mapping_path="docmap.json",
+        manifest_path="retrieval_manifest.json",
+        embedding_dimension=4,
+    )
+    config["retrieval"]["embedding_dimension"] = 4
+    config["retrieval"]["config"] = store("retrieval.json", retrieval)
+    retrieval_manifest = {
+        key: retrieval[key]
+        for key in (
+            "corpus_sha256",
+            "embedding_model_id",
+            "embedding_model_revision",
+            "embedding_dimension",
+            "faiss_index_type",
+            "normalization",
+            "similarity_metric",
+            "faiss_version",
+        )
+    }
+    retrieval_manifest.update(
+        index_sha256=config["attack"]["index"]["sha256"],
+        document_mapping_sha256=config["attack"]["document_mapping"]["sha256"],
+        document_count=12,
+    )
+    config["attack"]["retrieval_manifest"] = store(
+        "retrieval_manifest.json", retrieval_manifest
+    )
+    config["generation"]["config"] = store(
+        "model.json", (ROOT / "config" / "model.json").read_bytes(), raw=True
+    )
+    config["prompt"]["template"] = store(
+        "baseline.txt", (ROOT / "prompts" / "baseline_v1.txt").read_bytes(), raw=True
+    )
+    config_path = root / "experiment.json"
+    config_path.write_bytes(canonical_bytes(config))
+    return root, config_path, config
+
+
+def test_dev_smoke_matrix_execution_and_accounting(tmp_path):
+    """DEV smoke runs 10 DEV samples x 5 conditions = 50 provider calls with exact accounting."""
+    _, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    output = tmp_path / "dev-smoke-run"
+    proto = create_test_protocol_approval(
+        d1_raw_response_policy="RECORD_ONLY",
+        d7_dataset_scope="DEV_SMOKE",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
+    )
+    # Worst case attempts = 10 samples * 5 conditions * (3 retries + 1) = 200
+    auth = ExecutionAuthorization(
+        human_approval_token="DEV_SMOKE_AUTH_TOKEN_SECRET_987",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=200,
+        allow_live_dispatch=True,
+    )
+    provider = MockProvider()
+    summary = run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: provider,
+    )
+    assert summary["complete"] is True
+    assert summary["record_count"] == 50
+    assert summary["requests_consumed"] == 50
+    assert summary["consumed_provider_attempts"] == 50
+    assert len(provider.calls) == 50
+
+    # Verify predictions files
+    for cond in CONDITIONS:
+        pred_file = output / f"{cond}_predictions.jsonl"
+        assert pred_file.exists()
+        rows = [parse_json(line) for line in pred_file.read_bytes().splitlines() if line]
+        assert len(rows) == 10
+        expected_k = 0 if cond == "no_rag" else int(cond[5:])
+        for r in rows:
+            assert r["retrieval_k"] == expected_k
+            assert len(r["retrieved_candidates"]) == expected_k
+
+
+def test_dev_smoke_gt_and_secret_leakage_sentinels(tmp_path):
+    """DEV smoke strictly prevents ground-truth and credentials leakage."""
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    output = tmp_path / "dev-smoke-leakage"
+    proto = create_test_protocol_approval(
+        d1_raw_response_policy="RECORD_ONLY",
+        d7_dataset_scope="DEV_SMOKE",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
+    )
+    secret_token = "SUPER_SECRET_TOKEN_DO_NOT_LEAK_ABC_123"
+    auth = ExecutionAuthorization(
+        human_approval_token=secret_token,
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=200,
+        allow_live_dispatch=True,
+    )
+    provider = MockProvider()
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: provider,
+    )
+
+    # 1. Zero GT leakage into provider calls
+    assert len(provider.calls) == 50
+    for key, kwargs in provider.calls:
+        call_str = json.dumps(kwargs)
+        assert "SECRET_GT_METADATA" not in call_str
+        assert "single_ground_truth" not in call_str
+        assert "contextual_ground_truth" not in call_str
+        assert "label_status" not in call_str
+
+    # 2. Zero secret token leakage in disk outputs
+    for f in output.glob("*"):
+        if f.is_file():
+            content = f.read_bytes()
+            assert secret_token.encode("utf-8") not in content
+
+
+def test_dev_smoke_evaluator_produces_all_six_artifacts(tmp_path):
+    """Canonical evaluator consumes DEV smoke output and generates all six JSON artifacts."""
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    output = tmp_path / "dev-smoke-eval-in"
+    proto = create_test_protocol_approval(
+        d1_raw_response_policy="RECORD_ONLY",
+        d7_dataset_scope="DEV_SMOKE",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
+    )
+    auth = ExecutionAuthorization(
+        human_approval_token="DEV_EVAL_AUTH_TOKEN",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=200,
+        allow_live_dispatch=True,
+    )
+    provider = MockProvider()
+    run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: provider,
+    )
+
+    paths = {c: output / f"{c}_predictions.jsonl" for c in CONDITIONS}
+    eval_inputs = load_evaluation_inputs(
+        output / "manifest.json", paths, repository_root=root
+    )
+    assert len(eval_inputs.records) == 50
+    assert len(eval_inputs.sample_ids) == 10
+
+    eval_out = tmp_path / "dev-smoke-eval-out"
+    eval_results = evaluate_experiment(eval_inputs, proto, output_dir=eval_out)
+    assert eval_results["overall"]["logical_sample_count"] == 50
+    assert eval_results["overall"]["total_conditions"] == 5
+
+    expected_artifacts = (
+        "overall_metrics.json",
+        "per_condition_metrics.json",
+        "per_technique_metrics.json",
+        "retrieval_conditional_metrics.json",
+        "failure_decomposition.json",
+        "run_provenance.json",
+    )
+    for fname in expected_artifacts:
+        fpath = eval_out / fname
+        assert fpath.exists()
+        loaded = parse_json(fpath.read_bytes())
+        assert loaded["schema_version"] == "1.0.0"
+
+
+def test_dev_smoke_resume_and_in_flight_recovery(tmp_path):
+    """DEV smoke staged execution, RESERVED crash recovery, and DISPATCH_STARTED failure."""
+    root, config_path, _ = _make_dev_bundle(tmp_path)
+    plan = load_plan(config_path)
+    output = tmp_path / "dev-smoke-recovery"
+    proto = create_test_protocol_approval(
+        d1_raw_response_policy="RECORD_ONLY",
+        d7_dataset_scope="DEV_SMOKE",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
+    )
+    auth = ExecutionAuthorization(
+        human_approval_token="DEV_RECOVERY_TOKEN",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=200,
+        allow_live_dispatch=True,
+    )
+
+    # 1. Run 10 records first (stops after 10)
+    prov1 = MockProvider()
+    summary1 = run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: prov1,
+        stop_after=10,
+    )
+    assert summary1["complete"] is False
+    assert summary1["record_count"] == 10
+
+    # 2. Inject RESERVED transition for record 11
+    journal_path = output / "request_journal.jsonl"
+    next_key = [plan.samples[2].sample_id, CONDITIONS[0]]
+    append_journal_event(
+        journal_path,
+        {"event": "transition", "key": next_key, "state": "RESERVED"},
+    )
+
+    # 3. Resume successfully completes
+    prov2 = MockProvider()
+    summary2 = run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: prov2,
+        resume=True,
+    )
+    assert summary2["complete"] is True
+    assert summary2["record_count"] == 50
+    assert summary2["new_records"] == 40
+
+    # 4. Rerunning completed run makes 0 new calls
+    prov3 = MockProvider()
+    summary3 = run_live_experiment(
+        plan,
+        output,
+        authorization=auth,
+        protocol=proto,
+        provider_factory=lambda cfg, budget: prov3,
+        resume=True,
+    )
+    assert summary3["complete"] is True
+    assert summary3["new_records"] == 0
+    assert len(prov3.calls) == 0
+
 

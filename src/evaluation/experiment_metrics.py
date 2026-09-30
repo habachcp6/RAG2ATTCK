@@ -15,10 +15,16 @@ import tempfile
 from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from dataclasses import field as dc_field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from src.experiment.authorization import (
+    ScientificProtocolApproval,
+    protocol_decision_dict,
+    validate_scientific_protocol,
+)
 from src.llm.schemas import ParseStatus, TechniquePrediction, validate_attack_id_syntax
 
 CONDITIONS = ("no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10")
@@ -96,14 +102,33 @@ class HumanDecisionRequired(RuntimeError):
     """A scientific policy must be approved before canonical scoring exists."""
 
 
-def evaluate_end_to_end(*args: Any, **kwargs: Any) -> None:
-    """Hard gate: even a caller-supplied 'approved' policy cannot enable scoring."""
-    raise HumanDecisionRequired("HUMAN_DECISION_REQUIRED: " + "; ".join(UNRESOLVED_POLICIES))
+def evaluate_end_to_end(*args: Any, **kwargs: Any) -> Any:
+    """Canonical evaluator entrypoint.
+
+    Requires an explicit, verified ScientificProtocolApproval contract.
+    Caller-supplied flags (e.g. approved=True, force=True, arbitrary policy dicts)
+    cannot enable scoring and fail closed with HumanDecisionRequired.
+    """
+    protocol = kwargs.get("protocol")
+    if protocol is None or not isinstance(protocol, ScientificProtocolApproval):
+        raise HumanDecisionRequired("HUMAN_DECISION_REQUIRED: " + "; ".join(UNRESOLVED_POLICIES))
+    if not args:
+        raise ValueError("inputs argument is required")
+    output_dir = kwargs.get("output_dir")
+    expected_id = kwargs.get("expected_experiment_id")
+    return evaluate_experiment(
+        args[0], protocol, output_dir=output_dir, expected_experiment_id=expected_id
+    )
 
 
-def evaluate_conditional_accuracy(*args: Any, **kwargs: Any) -> None:
-    """No canonical conditional accuracy or precedence is silently inferred."""
-    raise HumanDecisionRequired("HUMAN_DECISION_REQUIRED: " + "; ".join(UNRESOLVED_POLICIES))
+def evaluate_conditional_accuracy(*args: Any, **kwargs: Any) -> Any:
+    """No canonical conditional accuracy is inferred without frozen protocol."""
+    protocol = kwargs.get("protocol")
+    if protocol is None or not isinstance(protocol, ScientificProtocolApproval):
+        raise HumanDecisionRequired("HUMAN_DECISION_REQUIRED: " + "; ".join(UNRESOLVED_POLICIES))
+    if not args:
+        raise ValueError("inputs argument is required")
+    return compute_retrieval_conditional_metrics(args[0], protocol)
 
 
 def canonical_json_bytes(value: Any) -> bytes:
@@ -176,6 +201,8 @@ class EvaluationInputs:
     records: tuple[dict[str, Any], ...]
     ground_truth: Mapping[str, tuple[str, ...]]
     registry: Mapping[str, Mapping[str, bool]]
+    ground_truth_status: Mapping[str, str] = dc_field(default_factory=dict)
+    manifest_data: Mapping[str, Any] = dc_field(default_factory=dict)
 
 
 def load_evaluation_inputs(
@@ -184,12 +211,15 @@ def load_evaluation_inputs(
     *,
     repository_root: Path | str,
 ) -> EvaluationInputs:
-    """Validate the complete TEST1280 x five-condition matrix, without scoring."""
+    """Validate the complete TEST1280 or DEV x five-condition matrix, without scoring."""
+    manifest = _json(Path(manifest_path).read_bytes())
+    target_split = manifest.get("split", "test")
+    expected_count = 1280 if target_split == "test" else len(manifest.get("sample_ids", []))
     return _load_evaluation_inputs(
         manifest_path,
         prediction_paths,
         repository_root=repository_root,
-        expected_sample_count=1280,
+        expected_sample_count=expected_count,
         verify_journal=True,
     )
 
@@ -207,12 +237,13 @@ def _load_evaluation_inputs(
     manifest = _json(Path(manifest_path).read_bytes())
     _require(isinstance(manifest, dict), "manifest must be an object")
     _require(manifest.get("schema_version") == "1.0.0", "unsupported manifest version")
-    _require(manifest.get("status") == "pre_freeze", "unsupported freeze status")
+    _require(manifest.get("status") in {"pre_freeze", "frozen"}, "unsupported freeze status")
     _require(
         manifest.get("execution_mode") in {"mock_fixture", "live"},
         "only mock_fixture or live records are supported before freeze",
     )
-    _require(manifest.get("split") == "test", "only complete TEST cohort is supported")
+    target_split = manifest.get("split")
+    _require(target_split in {"test", "dev"}, "only complete TEST or DEV cohort is supported")
     _require(
         manifest.get("conditions") == list(CONDITIONS),
         "condition matrix must be the exact five conditions",
@@ -406,6 +437,7 @@ def _load_evaluation_inputs(
     expected_samples: dict[str, dict[str, str]] = {}
     pair_views: dict[str, list[str]] = defaultdict(list)
     ground_truth = {}
+    ground_truth_status = {}
     for sample_id, view in views.items():
         pair_id, view_type = view.get("pair_id"), view.get("view_type")
         _require(
@@ -433,23 +465,27 @@ def _load_evaluation_inputs(
             and bool(ids) == (label_status == "mapped"),
             "GT label status mismatch",
         )
-        if split_pairs[pair_id] == "test":
+        if split_pairs[pair_id] == target_split:
             expected_samples[sample_id] = {
                 "sample_id": sample_id,
                 "pair_id": pair_id,
                 "view_type": view_type,
             }
             ground_truth[sample_id] = tuple(sorted(ids))
+            ground_truth_status[sample_id] = label_status
     _require(
         set(pair_views) == set(pairs)
         and all(sorted(v) == ["contextual", "single"] for v in pair_views.values()),
         "every pair must have exactly single/contextual views",
     )
     sample_ids = sorted(expected_samples)
-    _require(len(sample_ids) == expected_sample_count, "TEST cohort cardinality mismatch")
+    _require(
+        len(sample_ids) == expected_sample_count,
+        f"{target_split.upper()} cohort cardinality mismatch",
+    )
     _require(
         manifest.get("sample_ids") == sample_ids,
-        "manifest must contain ALL TEST views without GT filtering",
+        f"manifest must contain ALL {target_split.upper()} views without GT filtering",
     )
     _require(
         manifest.get("samples") == [expected_samples[sid] for sid in sample_ids],
@@ -510,6 +546,8 @@ def _load_evaluation_inputs(
         tuple(rows),
         ground_truth,
         registry,
+        ground_truth_status=ground_truth_status,
+        manifest_data=dict(manifest),
     )
 
 
@@ -813,3 +851,589 @@ def export_fixture_diagnostics(report: Mapping[str, Any], output_path: Path | st
     data = canonical_json_bytes(dict(report)) + b"\n"
     with output.open("xb") as handle:
         handle.write(data)
+
+
+def _atomic_write_json(path: Path, data: Mapping[str, Any]) -> None:
+    """Write machine-readable JSON artifact atomically using temp replace."""
+    path = path.resolve()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_suffix(".json.tmp")
+    temp.unlink(missing_ok=True)
+    with temp.open("xb") as handle:
+        handle.write(canonical_json_bytes(data) + b"\n")
+        handle.flush()
+        import os
+
+        os.fsync(handle.fileno())
+    temp.replace(path)
+
+
+def verify_evaluator_provenance(
+    inputs: EvaluationInputs,
+    protocol: ScientificProtocolApproval,
+    expected_experiment_id: str | None = None,
+) -> None:
+    """Validate that run provenance strictly matches protocol, manifest, and inputs.
+
+    Fails closed on foreign experiment ID, corrupted hashes, or protocol drift.
+    """
+    if not isinstance(protocol, ScientificProtocolApproval):
+        raise TypeError(f"Expected ScientificProtocolApproval, got {type(protocol).__name__}")
+    validate_scientific_protocol(protocol)
+
+    manifest = inputs.manifest_data
+    if expected_experiment_id and inputs.experiment_id != expected_experiment_id:
+        raise ValueError(
+            f"foreign experiment ID: expected {expected_experiment_id}, got {inputs.experiment_id}"
+        )
+
+    if manifest:
+        if manifest.get("experiment_id") != inputs.experiment_id:
+            raise ValueError(
+                f"foreign experiment ID: inputs has {inputs.experiment_id}, "
+                f"manifest has {manifest.get('experiment_id')}"
+            )
+        manifest_proto_sha = manifest.get("protocol_sha256")
+        if manifest_proto_sha and manifest_proto_sha != protocol.protocol_sha256:
+            raise ValueError(
+                f"wrong protocol hash: manifest has {manifest_proto_sha}, "
+                f"evaluator given {protocol.protocol_sha256}"
+            )
+        artifacts = manifest.get("artifacts", {})
+        if "experiment_config" in artifacts and manifest.get("config_sha256"):
+            if manifest["config_sha256"] != artifacts["experiment_config"]["sha256"]:
+                raise ValueError(
+                    "wrong config hash: manifest config_sha256 does not match artifact"
+                )
+        if "ground_truth" in artifacts:
+            gt_sha = artifacts["ground_truth"]["sha256"]
+            for r in inputs.records:
+                if r.get("ground_truth_sha256") != gt_sha:
+                    raise ValueError("wrong GT hash: record ground_truth_sha256 mismatch")
+        if "inference" in artifacts:
+            inf_sha = artifacts["inference"]["sha256"]
+            for r in inputs.records:
+                if r.get("dataset_sha256") != inf_sha:
+                    raise ValueError("wrong dataset hash: record dataset_sha256 mismatch")
+        if "prompt" in artifacts:
+            prompt_sha = artifacts["prompt"]["sha256"]
+            for r in inputs.records:
+                if r.get("prompt_sha256") != prompt_sha:
+                    raise ValueError("wrong prompt hash: record prompt_sha256 mismatch")
+
+    # Record identity and completeness checks
+    by_condition: dict[str, set[str]] = defaultdict(set)
+    for r in inputs.records:
+        cond = r["condition"]
+        sid = r["sample_id"]
+        if sid in by_condition[cond]:
+            raise ValueError(f"unexpected duplicate record: sample {sid} in condition {cond}")
+        by_condition[cond].add(sid)
+        if r.get("experiment_id") != inputs.experiment_id:
+            raise ValueError(
+                f"foreign experiment ID: record has {r.get('experiment_id')}, "
+                f"inputs has {inputs.experiment_id}"
+            )
+
+    expected_samples = set(inputs.sample_ids)
+    for cond in CONDITIONS:
+        missing = expected_samples - by_condition[cond]
+        if missing:
+            raise ValueError(f"missing logical sample in condition {cond}: {len(missing)} missing")
+
+
+def compute_condition_metrics(
+    records: Sequence[Mapping[str, Any]],
+    inputs: EvaluationInputs,
+    protocol: ScientificProtocolApproval,
+    condition: str,
+) -> dict[str, Any]:
+    """Compute primary scientific metrics for one experimental condition under protocol."""
+    cond_records = [r for r in records if r["condition"] == condition]
+    logical_sample_count = len(cond_records)
+
+    scorable_records = []
+    unmapped_count = 0
+    ambiguous_count = 0
+    for r in cond_records:
+        sid = r["sample_id"]
+        gt = inputs.ground_truth.get(sid, ())
+        status = inputs.ground_truth_status.get(sid, "mapped" if gt else "unmapped")
+        if status == "ambiguous":
+            ambiguous_count += 1
+            if protocol.d2c_ambiguous_ground_truth != "EXCLUDE":
+                scorable_records.append(r)
+        elif status == "unmapped" or not gt:
+            unmapped_count += 1
+            if protocol.d2b_empty_ground_truth == "TREAT_AS_NEGATIVE":
+                scorable_records.append(r)
+        else:
+            scorable_records.append(r)
+
+    scorable_sample_count = len(scorable_records)
+    coverage = scorable_sample_count / logical_sample_count if logical_sample_count > 0 else None
+
+    completed_records = [
+        r
+        for r in cond_records
+        if r["parse_status"] in {"VALID", "INVALID_ID", "MALFORMED_RESPONSE"}
+    ]
+    invalid_id_records = [r for r in cond_records if r["parse_status"] == "INVALID_ID"]
+    invalid_id_rate = (
+        len(invalid_id_records) / len(completed_records) if completed_records else None
+    )
+
+    provider_failure_records = [
+        r
+        for r in cond_records
+        if r["parse_status"] in {"TIMEOUT", "REFUSAL", "INCOMPLETE", "API_FAILURE"}
+    ]
+    provider_failure_rate = (
+        len(provider_failure_records) / logical_sample_count if logical_sample_count > 0 else None
+    )
+
+    parse_failure_records = [r for r in cond_records if r["parse_status"] == "MALFORMED_RESPONSE"]
+    parse_failure_rate = (
+        len(parse_failure_records) / logical_sample_count if logical_sample_count > 0 else None
+    )
+
+    retired_count = 0
+    for r in cond_records:
+        for tid in r.get("parsed_technique_ids", []):
+            flags = inputs.registry.get(tid, {})
+            if flags.get("deprecated") or flags.get("revoked"):
+                retired_count += 1
+    retired_id_rate = retired_count / len(completed_records) if completed_records else None
+
+    # D2a ANY_MATCH: predicted ID must belong to GT set
+    correct_records = []
+    for r in scorable_records:
+        sid = r["sample_id"]
+        gt = set(inputs.ground_truth.get(sid, ()))
+        if r["parse_status"] == "VALID" and r.get("parsed_technique_ids"):
+            pred = r["parsed_technique_ids"][0]
+            if pred in gt:
+                correct_records.append(r)
+
+    correct_count = len(correct_records)
+    accuracy_end_to_end = (
+        correct_count / scorable_sample_count if scorable_sample_count > 0 else None
+    )
+
+    valid_scorable_records = [r for r in scorable_records if r["parse_status"] == "VALID"]
+    accuracy_valid_outputs = (
+        correct_count / len(valid_scorable_records) if valid_scorable_records else None
+    )
+
+    # D2d Macro-F1 across techniques with ground truth support in candidate universe
+    technique_universe = sorted(inputs.registry.keys())
+    f1_list = []
+    for tid in technique_universe:
+        tp = sum(
+            1
+            for r in scorable_records
+            if r.get("parsed_technique_ids") == [tid]
+            and tid in inputs.ground_truth.get(r["sample_id"], ())
+        )
+        fp = sum(
+            1
+            for r in scorable_records
+            if r.get("parsed_technique_ids") == [tid]
+            and tid not in inputs.ground_truth.get(r["sample_id"], ())
+        )
+        fn = sum(
+            1
+            for r in scorable_records
+            if tid in inputs.ground_truth.get(r["sample_id"], ())
+            and r.get("parsed_technique_ids") != [tid]
+        )
+        support = sum(
+            1 for r in scorable_records if tid in inputs.ground_truth.get(r["sample_id"], ())
+        )
+        if support > 0:
+            prec = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+            rec = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+            f1 = (2 * prec * rec / (prec + rec)) if (prec + rec) > 0 else 0.0
+            f1_list.append(f1)
+
+    macro_f1 = (sum(f1_list) / len(f1_list)) if f1_list else None
+
+    return {
+        "condition": condition,
+        "logical_sample_count": logical_sample_count,
+        "scorable_sample_count": scorable_sample_count,
+        "coverage": coverage,
+        "accuracy_end_to_end": accuracy_end_to_end,
+        "accuracy_valid_outputs": accuracy_valid_outputs,
+        "macro_f1": macro_f1,
+        "correct_count": correct_count,
+        "invalid_id_count": len(invalid_id_records),
+        "invalid_id_rate": invalid_id_rate,
+        "provider_failure_count": len(provider_failure_records),
+        "provider_failure_rate": provider_failure_rate,
+        "parse_failure_count": len(parse_failure_records),
+        "parse_failure_rate": parse_failure_rate,
+        "retired_id_observation_count": retired_count,
+        "retired_id_rate": retired_id_rate,
+        "unmapped_ground_truth_count": unmapped_count,
+        "ambiguous_ground_truth_count": ambiguous_count,
+        "unmapped_exclusion_reason": "UNMAPPED_GROUND_TRUTH" if unmapped_count else None,
+        "ambiguous_exclusion_reason": "AMBIGUOUS_GROUND_TRUTH" if ambiguous_count else None,
+    }
+
+
+def compute_retrieval_conditional_metrics(
+    inputs: EvaluationInputs,
+    protocol: ScientificProtocolApproval,
+) -> dict[str, Any]:
+    """Compute retrieval-conditional metrics at actual retrieved k under D2h ANY_GT_RETRIEVED."""
+    by_condition = {}
+    for condition in CONDITIONS[1:]:  # rag_k1, rag_k3, rag_k5, rag_k10
+        k = int(condition[5:])
+        cond_records = [r for r in inputs.records if r["condition"] == condition]
+        scorable_records = []
+        for r in cond_records:
+            sid = r["sample_id"]
+            gt = inputs.ground_truth.get(sid, ())
+            status = inputs.ground_truth_status.get(sid, "mapped" if gt else "unmapped")
+            if status == "mapped" and gt:
+                scorable_records.append(r)
+
+        retrieval_success_records = []
+        retrieval_failure_records = []
+        for r in scorable_records:
+            gt = set(inputs.ground_truth.get(r["sample_id"], ()))
+            retrieved_ids = {c["technique_id"] for c in r.get("retrieved_candidates", [])}
+            if bool(retrieved_ids & gt):
+                retrieval_success_records.append(r)
+            else:
+                retrieval_failure_records.append(r)
+
+        def is_correct(r):
+            if r["parse_status"] == "VALID" and r.get("parsed_technique_ids"):
+                return r["parsed_technique_ids"][0] in set(
+                    inputs.ground_truth.get(r["sample_id"], ())
+                )
+            return False
+
+        succ_count = len(retrieval_success_records)
+        fail_count = len(retrieval_failure_records)
+
+        succ_correct = sum(1 for r in retrieval_success_records if is_correct(r))
+        fail_correct = sum(1 for r in retrieval_failure_records if is_correct(r))
+
+        p_correct_given_success = (succ_correct / succ_count) if succ_count > 0 else None
+        p_correct_given_failure = (fail_correct / fail_count) if fail_count > 0 else None
+
+        by_condition[condition] = {
+            "retrieval_k": k,
+            "scorable_sample_count": len(scorable_records),
+            "retrieval_success_count": succ_count,
+            "retrieval_failure_count": fail_count,
+            "P_correct_given_retrieval_success": p_correct_given_success,
+            "P_correct_given_retrieval_failure": p_correct_given_failure,
+            "retrieval_success_correct_count": succ_correct,
+            "retrieval_failure_correct_count": fail_correct,
+        }
+
+    return {
+        "schema_version": "1.0.0",
+        "experiment_id": inputs.experiment_id,
+        "manifest_sha256": inputs.manifest_sha256,
+        "protocol_version": protocol.protocol_version,
+        "protocol_sha256": protocol.protocol_sha256,
+        "retrieval_success_definition": protocol.d2h_conditional_retrieval,
+        "by_condition": by_condition,
+    }
+
+
+def compute_failure_decomposition(
+    inputs: EvaluationInputs,
+    protocol: ScientificProtocolApproval,
+) -> dict[str, Any]:
+    """Analyze failures along independent diagnostic axes without forced mutual exclusion."""
+    by_condition = {}
+    for condition in CONDITIONS:
+        cond_records = [r for r in inputs.records if r["condition"] == condition]
+        scorable_records = []
+        for r in cond_records:
+            sid = r["sample_id"]
+            gt = inputs.ground_truth.get(sid, ())
+            status = inputs.ground_truth_status.get(sid, "mapped" if gt else "unmapped")
+            if status == "mapped" and gt:
+                scorable_records.append(r)
+
+        total_scorable = len(scorable_records)
+        retrieval_misses = 0
+        provider_failures = 0
+        parse_failures = 0
+        invalid_attack_ids = 0
+        valid_but_wrong = 0
+        overlap_retrieval_miss_and_wrong = 0
+
+        for r in scorable_records:
+            gt = set(inputs.ground_truth.get(r["sample_id"], ()))
+            status = r["parse_status"]
+            retrieved = {c["technique_id"] for c in r.get("retrieved_candidates", [])}
+            is_rag = condition != "no_rag"
+            retrieval_miss = is_rag and not bool(retrieved & gt)
+            if retrieval_miss:
+                retrieval_misses += 1
+
+            if status in {"TIMEOUT", "REFUSAL", "INCOMPLETE", "API_FAILURE"}:
+                provider_failures += 1
+            elif status == "MALFORMED_RESPONSE":
+                parse_failures += 1
+            elif status == "INVALID_ID":
+                invalid_attack_ids += 1
+            elif status == "VALID":
+                pred = r.get("parsed_technique_ids", [None])[0]
+                if pred not in gt:
+                    valid_but_wrong += 1
+                    if retrieval_miss:
+                        overlap_retrieval_miss_and_wrong += 1
+
+        by_condition[condition] = {
+            "total_scorable_samples": total_scorable,
+            "retrieval_miss_count": retrieval_misses,
+            "retrieval_miss_rate": (retrieval_misses / total_scorable) if total_scorable else None,
+            "provider_failure_count": provider_failures,
+            "provider_failure_rate": (provider_failures / total_scorable)
+            if total_scorable
+            else None,
+            "parse_failure_count": parse_failures,
+            "parse_failure_rate": (parse_failures / total_scorable) if total_scorable else None,
+            "invalid_attack_id_count": invalid_attack_ids,
+            "invalid_attack_id_rate": (invalid_attack_ids / total_scorable)
+            if total_scorable
+            else None,
+            "valid_but_wrong_classification_count": valid_but_wrong,
+            "valid_but_wrong_classification_rate": (valid_but_wrong / total_scorable)
+            if total_scorable
+            else None,
+            "overlap_retrieval_miss_and_wrong_classification": overlap_retrieval_miss_and_wrong,
+        }
+
+    return {
+        "schema_version": "1.0.0",
+        "experiment_id": inputs.experiment_id,
+        "manifest_sha256": inputs.manifest_sha256,
+        "protocol_version": protocol.protocol_version,
+        "protocol_sha256": protocol.protocol_sha256,
+        "failure_axes": [
+            "retrieval_miss",
+            "provider_failure",
+            "parse_failure",
+            "invalid_attack_id",
+            "valid_but_wrong_classification",
+        ],
+        "by_condition": by_condition,
+    }
+
+
+def compute_technique_metrics(
+    inputs: EvaluationInputs,
+    protocol: ScientificProtocolApproval,
+) -> dict[str, Any]:
+    """Compute per-technique TP, FP, FN, precision, recall, and F1 per condition."""
+    technique_universe = sorted(inputs.registry.keys())
+    by_condition = {}
+    for condition in CONDITIONS:
+        cond_records = [r for r in inputs.records if r["condition"] == condition]
+        scorable_records = [
+            r
+            for r in cond_records
+            if inputs.ground_truth_status.get(
+                r["sample_id"],
+                "mapped" if inputs.ground_truth.get(r["sample_id"]) else "unmapped",
+            )
+            == "mapped"
+            and inputs.ground_truth.get(r["sample_id"])
+        ]
+        per_class = {}
+        for tid in technique_universe:
+            tp = sum(
+                1
+                for r in scorable_records
+                if r.get("parsed_technique_ids") == [tid]
+                and tid in inputs.ground_truth.get(r["sample_id"], ())
+            )
+            fp = sum(
+                1
+                for r in scorable_records
+                if r.get("parsed_technique_ids") == [tid]
+                and tid not in inputs.ground_truth.get(r["sample_id"], ())
+            )
+            fn = sum(
+                1
+                for r in scorable_records
+                if tid in inputs.ground_truth.get(r["sample_id"], ())
+                and r.get("parsed_technique_ids") != [tid]
+            )
+            support = sum(
+                1 for r in scorable_records if tid in inputs.ground_truth.get(r["sample_id"], ())
+            )
+            if tp + fp > 0 or support > 0:
+                prec = (
+                    tp / (tp + fp)
+                    if (tp + fp) > 0
+                    else (None if protocol.d2j_zero_denominator == "NULL" else 0.0)
+                )
+                rec = (
+                    tp / (tp + fn)
+                    if (tp + fn) > 0
+                    else (None if protocol.d2j_zero_denominator == "NULL" else 0.0)
+                )
+                f1 = (
+                    (2 * tp / (2 * tp + fp + fn))
+                    if (2 * tp + fp + fn) > 0
+                    else (None if protocol.d2j_zero_denominator == "NULL" else 0.0)
+                )
+                per_class[tid] = {
+                    "tp": tp,
+                    "fp": fp,
+                    "fn": fn,
+                    "support": support,
+                    "precision": prec,
+                    "recall": rec,
+                    "f1": f1,
+                }
+        by_condition[condition] = per_class
+
+    return {
+        "schema_version": "1.0.0",
+        "experiment_id": inputs.experiment_id,
+        "manifest_sha256": inputs.manifest_sha256,
+        "protocol_version": protocol.protocol_version,
+        "protocol_sha256": protocol.protocol_sha256,
+        "by_condition": by_condition,
+    }
+
+
+def compute_run_provenance(
+    inputs: EvaluationInputs,
+    protocol: ScientificProtocolApproval,
+) -> dict[str, Any]:
+    """Capture execution provenance for evaluation artifacts."""
+    manifest = inputs.manifest_data
+    run_id = manifest.get("run_id") if manifest else None
+    if not run_id and inputs.records:
+        run_id = inputs.records[0].get("run_id")
+    return {
+        "schema_version": "1.0.0",
+        "experiment_id": inputs.experiment_id,
+        "execution_mode": inputs.execution_mode,
+        "run_id": run_id,
+        "git_commit_sha": manifest.get("git_commit_sha") if manifest else None,
+        "config_sha256": manifest.get("config_sha256") if manifest else None,
+        "manifest_sha256": inputs.manifest_sha256,
+        "protocol_version": protocol.protocol_version,
+        "protocol_sha256": protocol.protocol_sha256,
+        "protocol_decisions": protocol_decision_dict(protocol),
+        "dataset_sha256": manifest.get("artifacts", {}).get("inference", {}).get("sha256")
+        if manifest
+        else None,
+        "ground_truth_sha256": manifest.get("artifacts", {}).get("ground_truth", {}).get("sha256")
+        if manifest
+        else None,
+        "corpus_sha256": manifest.get("artifacts", {}).get("corpus", {}).get("sha256")
+        if manifest
+        else None,
+        "index_sha256": manifest.get("artifacts", {}).get("index", {}).get("sha256")
+        if manifest
+        else None,
+        "prompt_sha256": manifest.get("artifacts", {}).get("prompt", {}).get("sha256")
+        if manifest
+        else None,
+        "attack_release": manifest.get("attack_release", "19.2") if manifest else "19.2",
+        "model": manifest.get("model", {}) if manifest else {},
+        "model_version": manifest.get("model_version") if manifest else None,
+        "evaluation_timestamp": datetime.now(UTC).isoformat(),
+    }
+
+
+def evaluate_experiment(
+    inputs: EvaluationInputs,
+    protocol: ScientificProtocolApproval,
+    output_dir: Path | str | None = None,
+    expected_experiment_id: str | None = None,
+) -> dict[str, Any]:
+    """Execute complete canonical evaluation across all conditions and write artifacts.
+
+    Fails closed if provenance or protocol contract is invalid.
+    """
+    verify_evaluator_provenance(inputs, protocol, expected_experiment_id=expected_experiment_id)
+
+    per_condition = {}
+    for condition in CONDITIONS:
+        per_condition[condition] = compute_condition_metrics(
+            inputs.records, inputs, protocol, condition
+        )
+
+    overall_scorable = sum(m["scorable_sample_count"] for m in per_condition.values())
+    overall_correct = sum(m["correct_count"] for m in per_condition.values())
+    overall_logical = sum(m["logical_sample_count"] for m in per_condition.values())
+    overall_accuracy_e2e = (overall_correct / overall_scorable) if overall_scorable > 0 else None
+
+    valid_f1s = [m["macro_f1"] for m in per_condition.values() if m["macro_f1"] is not None]
+    overall_macro_f1 = (sum(valid_f1s) / len(valid_f1s)) if valid_f1s else None
+
+    overall_metrics = {
+        "schema_version": "1.0.0",
+        "experiment_id": inputs.experiment_id,
+        "manifest_sha256": inputs.manifest_sha256,
+        "protocol_version": protocol.protocol_version,
+        "protocol_sha256": protocol.protocol_sha256,
+        "logical_sample_count": overall_logical,
+        "scorable_sample_count": overall_scorable,
+        "coverage": (overall_scorable / overall_logical) if overall_logical > 0 else None,
+        "accuracy_end_to_end": overall_accuracy_e2e,
+        "macro_f1": overall_macro_f1,
+        "total_conditions": len(CONDITIONS),
+        "by_condition_summary": {
+            c: {
+                "accuracy_end_to_end": per_condition[c]["accuracy_end_to_end"],
+                "accuracy_valid_outputs": per_condition[c]["accuracy_valid_outputs"],
+                "macro_f1": per_condition[c]["macro_f1"],
+                "invalid_id_rate": per_condition[c]["invalid_id_rate"],
+                "provider_failure_rate": per_condition[c]["provider_failure_rate"],
+                "parse_failure_rate": per_condition[c]["parse_failure_rate"],
+            }
+            for c in CONDITIONS
+        },
+    }
+
+    per_condition_metrics = {
+        "schema_version": "1.0.0",
+        "experiment_id": inputs.experiment_id,
+        "manifest_sha256": inputs.manifest_sha256,
+        "protocol_version": protocol.protocol_version,
+        "protocol_sha256": protocol.protocol_sha256,
+        "conditions": per_condition,
+    }
+
+    retrieval_cond = compute_retrieval_conditional_metrics(inputs, protocol)
+    failure_decomp = compute_failure_decomposition(inputs, protocol)
+    technique_metrics = compute_technique_metrics(inputs, protocol)
+    run_provenance = compute_run_provenance(inputs, protocol)
+
+    result = {
+        "overall": overall_metrics,
+        "per_condition": per_condition_metrics,
+        "per_technique": technique_metrics,
+        "retrieval_conditional": retrieval_cond,
+        "failure_decomposition": failure_decomp,
+        "run_provenance": run_provenance,
+    }
+
+    if output_dir is not None:
+        out_path = Path(output_dir).resolve()
+        out_path.mkdir(parents=True, exist_ok=True)
+        _atomic_write_json(out_path / "overall_metrics.json", overall_metrics)
+        _atomic_write_json(out_path / "per_condition_metrics.json", per_condition_metrics)
+        _atomic_write_json(out_path / "per_technique_metrics.json", technique_metrics)
+        _atomic_write_json(out_path / "retrieval_conditional_metrics.json", retrieval_cond)
+        _atomic_write_json(out_path / "failure_decomposition.json", failure_decomp)
+        _atomic_write_json(out_path / "run_provenance.json", run_provenance)
+
+    return result

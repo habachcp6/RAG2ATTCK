@@ -838,3 +838,253 @@ def test_fixture_policy_is_explicit_and_cannot_score_multilabel_or_empty_gt():
             single_label_fixture_metrics(truth, [A], policy=_policy())
     with pytest.raises(TypeError, match="explicit FixtureOnlyPolicy"):
         single_label_fixture_metrics([A], [A], policy=None)
+
+
+# ===========================================================================
+# Section 31: Canonical Evaluator Infrastructure & Adversarial Tests
+# ===========================================================================
+
+
+def _test_protocol():
+    from src.experiment.authorization import create_test_protocol_approval
+
+    return create_test_protocol_approval(
+        protocol_version="experiment-protocol-v1",
+        d1_raw_response_policy="RECORD_ONLY",
+        d2a_ground_truth_semantics="ANY_MATCH",
+        d2b_empty_ground_truth="EXCLUDE",
+        d2c_ambiguous_ground_truth="EXCLUDE",
+        d2d_macro_f1_universe="FROZEN_BENCHMARK_UNIVERSE",
+        d2e_invalid_id_denominator="INCLUDE_IN_DENOMINATOR",
+        d2f_api_error_denominator="INCLUDE_IN_DENOMINATOR",
+        d2g_retired_attack_id="ALLOW_HISTORICAL",
+        d2h_conditional_retrieval="ANY_GT_RETRIEVED",
+        d2i_failure_precedence="INDEPENDENT_AXES",
+        d2j_zero_denominator="NULL",
+        d3_model_version_policy="ALLOW_LATEST_WITH_TIMESTAMP_BINDING",
+        d4_concurrency_policy="SEQUENTIAL_ONLY",
+        d5_budget_policy="HARD_CAP_WORST_CASE_ATTEMPTS",
+        d6_t15_prerequisite_policy="NOT_REQUIRED_FOR_SYNTHETIC_BENCHMARK",
+        d7_dataset_scope="PAIRED_TEST",
+    )
+
+
+def test_evaluator_provenance_rejects_foreign_experiment_id(tmp_path):
+    inputs = _load(tmp_path, _fixture(tmp_path))
+    proto = _test_protocol()
+    with pytest.raises(ValueError, match="foreign experiment ID"):
+        evaluator_metrics.verify_evaluator_provenance(
+            inputs, proto, expected_experiment_id="unexpected-exp-id"
+        )
+
+
+def test_evaluator_provenance_rejects_protocol_hash_mismatch(tmp_path):
+    inputs = _load(tmp_path, _fixture(tmp_path))
+    proto = _test_protocol()
+    tampered_manifest = dict(inputs.manifest_data)
+    tampered_manifest["protocol_sha256"] = "11" * 32
+    tampered_inputs = replace(inputs, manifest_data=tampered_manifest)
+    with pytest.raises(ValueError, match="wrong protocol hash"):
+        evaluator_metrics.verify_evaluator_provenance(tampered_inputs, proto)
+
+
+def test_evaluator_provenance_rejects_corrupted_gt_hash(tmp_path):
+    inputs = _load(tmp_path, _fixture(tmp_path))
+    proto = _test_protocol()
+    records = list(inputs.records)
+    records[0] = {**records[0], "ground_truth_sha256": "00" * 32}
+    corrupted_inputs = replace(inputs, records=tuple(records))
+    with pytest.raises(ValueError, match="wrong GT hash"):
+        evaluator_metrics.verify_evaluator_provenance(corrupted_inputs, proto)
+
+
+def test_evaluator_provenance_rejects_corrupted_dataset_hash(tmp_path):
+    inputs = _load(tmp_path, _fixture(tmp_path))
+    proto = _test_protocol()
+    records = list(inputs.records)
+    records[0] = {**records[0], "dataset_sha256": "00" * 32}
+    corrupted_inputs = replace(inputs, records=tuple(records))
+    with pytest.raises(ValueError, match="wrong dataset hash"):
+        evaluator_metrics.verify_evaluator_provenance(corrupted_inputs, proto)
+
+
+def test_evaluator_provenance_rejects_corrupted_prompt_hash(tmp_path):
+    inputs = _load(tmp_path, _fixture(tmp_path))
+    proto = _test_protocol()
+    records = list(inputs.records)
+    records[0] = {**records[0], "prompt_sha256": "00" * 32}
+    corrupted_inputs = replace(inputs, records=tuple(records))
+    with pytest.raises(ValueError, match="wrong prompt hash"):
+        evaluator_metrics.verify_evaluator_provenance(corrupted_inputs, proto)
+
+
+def test_evaluator_provenance_rejects_duplicate_records(tmp_path):
+    inputs = _load(tmp_path, _fixture(tmp_path))
+    proto = _test_protocol()
+    records = list(inputs.records)
+    records.append(records[0])  # duplicate record
+    corrupted_inputs = replace(inputs, records=tuple(records))
+    with pytest.raises(ValueError, match="unexpected duplicate record"):
+        evaluator_metrics.verify_evaluator_provenance(corrupted_inputs, proto)
+
+
+def test_evaluator_provenance_rejects_missing_logical_sample(tmp_path):
+    inputs = _load(tmp_path, _fixture(tmp_path))
+    proto = _test_protocol()
+    records = list(inputs.records)
+    records.pop(0)  # drop one sample in no_rag
+    corrupted_inputs = replace(inputs, records=tuple(records))
+    with pytest.raises(ValueError, match="missing logical sample"):
+        evaluator_metrics.verify_evaluator_provenance(corrupted_inputs, proto)
+
+
+def test_evaluator_d2a_multi_label_any_match(tmp_path):
+    inputs = _load(tmp_path, _fixture(tmp_path))
+    proto = _test_protocol()
+    metrics = evaluator_metrics.compute_condition_metrics(
+        inputs.records, inputs, proto, "no_rag"
+    )
+    # s2 ground truth is [A, B] and prediction is [B]. Under ANY_MATCH, it is correct.
+    assert metrics["correct_count"] == 3  # s0 (A==A), s2 (B in [A,B]), s6 (A==A)
+    assert metrics["scorable_sample_count"] == 6
+    assert metrics["accuracy_end_to_end"] == 0.5
+
+
+def test_evaluator_d2b_d2c_empty_and_ambiguous_gt_exclusion(tmp_path):
+    inputs = _load(tmp_path, _fixture(tmp_path))
+    proto = _test_protocol()
+    metrics = evaluator_metrics.compute_condition_metrics(
+        inputs.records, inputs, proto, "no_rag"
+    )
+    assert metrics["logical_sample_count"] == 8
+    assert metrics["scorable_sample_count"] == 6
+    assert metrics["coverage"] == 0.75
+    assert metrics["unmapped_ground_truth_count"] == 1
+    assert metrics["ambiguous_ground_truth_count"] == 1
+    assert metrics["unmapped_exclusion_reason"] == "UNMAPPED_GROUND_TRUTH"
+    assert metrics["ambiguous_exclusion_reason"] == "AMBIGUOUS_GROUND_TRUTH"
+
+
+def test_evaluator_d2f_accuracy_and_failure_rates(tmp_path):
+    inputs = _load(tmp_path, _fixture(tmp_path))
+    proto = _test_protocol()
+    metrics = evaluator_metrics.compute_condition_metrics(
+        inputs.records, inputs, proto, "no_rag"
+    )
+    # Total scorable: 6 (s0, s1, s2, s3, s6, s7)
+    # Correct: 3 (s0, s2, s6) -> accuracy_end_to_end = 3/6 = 0.5
+    assert metrics["accuracy_end_to_end"] == 0.5
+    # Valid scorable outputs: 5 (s0, s1, s2, s6, s7) -> accuracy_valid_outputs = 3/5 = 0.6
+    assert metrics["accuracy_valid_outputs"] == 0.6
+    # Invalid ID: 1 (s3) / 7 completed outputs (VALID + INVALID_ID + MALFORMED_RESPONSE) = 1/7
+    assert metrics["invalid_id_count"] == 1
+    assert metrics["invalid_id_rate"] == pytest.approx(1 / 7)
+    # Provider failures: s4 (API_FAILURE), parse failures: s5 (MALFORMED_RESPONSE)
+    assert metrics["provider_failure_count"] == 1
+    assert metrics["parse_failure_count"] == 1
+    # Retired ID: s7 predicted T1059 (deprecated) / 7 completed outputs = 1/7
+    assert metrics["retired_id_observation_count"] == 1
+    assert metrics["retired_id_rate"] == pytest.approx(1 / 7)
+
+
+def test_evaluator_d2h_retrieval_conditional_metrics(tmp_path):
+    inputs = _load(tmp_path, _fixture(tmp_path))
+    proto = _test_protocol()
+    report = evaluator_metrics.compute_retrieval_conditional_metrics(inputs, proto)
+    assert report["protocol_version"] == "experiment-protocol-v1"
+    assert report["retrieval_success_definition"] == "ANY_GT_RETRIEVED"
+    assert set(report["by_condition"].keys()) == {"rag_k1", "rag_k3", "rag_k5", "rag_k10"}
+
+    k1 = report["by_condition"]["rag_k1"]
+    assert k1["retrieval_k"] == 1
+    assert k1["scorable_sample_count"] == 6
+    assert k1["retrieval_success_count"] + k1["retrieval_failure_count"] == 6
+    assert k1["P_correct_given_retrieval_success"] is not None
+    assert k1["P_correct_given_retrieval_failure"] is not None
+
+
+def test_evaluator_d2i_failure_decomposition_independent_axes(tmp_path):
+    inputs = _load(tmp_path, _fixture(tmp_path))
+    proto = _test_protocol()
+    report = evaluator_metrics.compute_failure_decomposition(inputs, proto)
+    assert report["protocol_version"] == "experiment-protocol-v1"
+    assert set(report["failure_axes"]) == {
+        "retrieval_miss",
+        "provider_failure",
+        "parse_failure",
+        "invalid_attack_id",
+        "valid_but_wrong_classification",
+    }
+    no_rag = report["by_condition"]["no_rag"]
+    assert no_rag["total_scorable_samples"] == 6
+    assert no_rag["retrieval_miss_count"] == 0  # no_rag is not RAG
+    assert no_rag["invalid_attack_id_count"] == 1
+    assert no_rag["valid_but_wrong_classification_count"] == 2  # s1, s7
+
+    k1 = report["by_condition"]["rag_k1"]
+    assert k1["total_scorable_samples"] == 6
+    assert k1["retrieval_miss_count"] >= 1
+    assert "overlap_retrieval_miss_and_wrong_classification" in k1
+
+
+def test_evaluator_d2j_zero_denominator_renders_null(tmp_path):
+    inputs = _load(tmp_path, _fixture(tmp_path))
+    proto = _test_protocol()
+    # Negative-only cohort has 0 positives -> retrieval conditional metrics has nulls
+    empty_records = [r for r in inputs.records if inputs.ground_truth.get(r["sample_id"]) == ()]
+    empty_inputs = replace(inputs, records=tuple(empty_records))
+    report = evaluator_metrics.compute_retrieval_conditional_metrics(empty_inputs, proto)
+    for row in report["by_condition"].values():
+        assert row["retrieval_success_count"] == 0
+        assert row["retrieval_failure_count"] == 0
+        assert row["P_correct_given_retrieval_success"] is None
+        assert row["P_correct_given_retrieval_failure"] is None
+
+
+def test_evaluator_exports_all_six_artifacts_atomically(tmp_path):
+    inputs = _load(tmp_path, _fixture(tmp_path))
+    proto = _test_protocol()
+    out_dir = tmp_path / "canonical_artifacts"
+
+    results = evaluator_metrics.evaluate_experiment(inputs, proto, output_dir=out_dir)
+    assert "overall" in results
+    assert "per_condition" in results
+    assert "per_technique" in results
+    assert "retrieval_conditional" in results
+    assert "failure_decomposition" in results
+    assert "run_provenance" in results
+
+    expected_files = (
+        "overall_metrics.json",
+        "per_condition_metrics.json",
+        "per_technique_metrics.json",
+        "retrieval_conditional_metrics.json",
+        "failure_decomposition.json",
+        "run_provenance.json",
+    )
+    for fname in expected_files:
+        fpath = out_dir / fname
+        assert fpath.exists()
+        assert not fpath.with_suffix(".json.tmp").exists()
+        content = json.loads(fpath.read_bytes())
+        assert content["schema_version"] == "1.0.0"
+
+
+def test_evaluator_end_to_end_contract_delegation(tmp_path):
+    inputs = _load(tmp_path, _fixture(tmp_path))
+    proto = _test_protocol()
+
+    # Valid protocol delegates to evaluate_experiment
+    results = evaluate_end_to_end(inputs, protocol=proto)
+    assert results["overall"]["accuracy_end_to_end"] == 0.5
+    assert results["overall"]["logical_sample_count"] == 40
+    assert results["overall"]["total_conditions"] == 5
+
+    # Missing protocol raises HumanDecisionRequired
+    with pytest.raises(HumanDecisionRequired):
+        evaluate_end_to_end(inputs)
+    with pytest.raises(HumanDecisionRequired):
+        evaluate_end_to_end(inputs, protocol=None)
+    with pytest.raises(HumanDecisionRequired):
+        evaluate_conditional_accuracy(inputs)
+

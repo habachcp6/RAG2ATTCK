@@ -312,6 +312,7 @@ class ResumeState:
     receipts_by_key: dict[tuple[str, str], list[dict[str, Any]]] | None = None
     settled_keys: set[tuple[str, str]] | None = None
     settled_events: dict[tuple[str, str], dict[str, Any]] | None = None
+    completed_last_ordinal_by_key: dict[tuple[str, str], int] | None = None
 
     def __post_init__(self) -> None:
         if self.receipts_by_key is None:
@@ -320,6 +321,8 @@ class ResumeState:
             self.settled_keys = set()
         if self.settled_events is None:
             self.settled_events = {}
+        if self.completed_last_ordinal_by_key is None:
+            self.completed_last_ordinal_by_key = {}
 
     def __iter__(self):
         yield self.records
@@ -370,6 +373,7 @@ def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_i
     receipts_by_key: dict[tuple[str, str], list[dict[str, Any]]] = {}
     settled_keys: set[tuple[str, str]] = set()
     settled_events: dict[tuple[str, str], dict[str, Any]] = {}
+    completed_last_ordinal_by_key: dict[tuple[str, str], int] = {}
 
     for event in journal[1:]:
         key = tuple(event.get("key", []))
@@ -441,7 +445,25 @@ def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_i
                 raise ValueError(
                     "attempt_receipt event only permitted during active DISPATCH_STARTED"
                 )
-            receipts_by_key.setdefault(key, []).append(event)
+            rec_ord = event.get("ordinal")
+            rec_idx = event.get("attempt_index")
+            if type(rec_ord) is not int or rec_ord != consumed:
+                raise ValueError(
+                    f"attempt_receipt ordinal {rec_ord} does not match journal consumed {consumed}"
+                )
+            expected_idx = consumed - start - 1
+            if type(rec_idx) is not int or rec_idx != expected_idx:
+                raise ValueError(
+                    f"attempt_receipt attempt_index {rec_idx} does not match "
+                    f"expected {expected_idx}"
+                )
+            key_receipts = receipts_by_key.setdefault(key, [])
+            if any(
+                r.get("ordinal") == rec_ord or r.get("attempt_index") == rec_idx
+                for r in key_receipts
+            ):
+                raise ValueError(f"duplicate attempt_receipt for key {key} in journal")
+            key_receipts.append(event)
         elif kind == EVENT_RESERVATION_ABANDONED and set(event) == {"event", "key"}:
             if not is_live:
                 raise ValueError("reservation_abandoned event only permitted in live execution")
@@ -480,6 +502,7 @@ def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_i
             ):
                 raise ValueError("record/journal hash or request accounting mismatch")
             completed.add(key)
+            completed_last_ordinal_by_key[key] = consumed
             active = None
             active_state = None
             monetary_reserved_key = None
@@ -520,6 +543,7 @@ def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_i
         receipts_by_key=receipts_by_key,
         settled_keys=settled_keys,
         settled_events=settled_events,
+        completed_last_ordinal_by_key=completed_last_ordinal_by_key,
     )
 
 
@@ -1024,7 +1048,7 @@ def run_live_experiment(
                         tier="default",
                         expected_model=manifest["model"]["model"],
                         most_recent_attempt_ordinal=(
-                            comp_receipts[-1].get("ordinal") if comp_receipts else None
+                            resume_state.completed_last_ordinal_by_key.get(comp_key)
                         ),
                     )
                     if breach:

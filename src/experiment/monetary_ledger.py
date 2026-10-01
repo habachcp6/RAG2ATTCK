@@ -1123,15 +1123,15 @@ def calculate_request_cost_from_receipts(
                         f"expected journal attempt {most_recent_attempt_ordinal}"
                     )
 
-    # 1c. Validate attempt status sequence: only final receipt may be successful
+    # 1c. Validate attempt status sequence: only final receipt may be a returned response
     for i in range(attempts_consumed - 1):
         r = receipt_by_attempt.get(i)
         if r is not None:
             status_i = r.get("status")
-            if status_i == "SUCCESS":
+            if status_i in ("SUCCESS", "INCOMPLETE"):
                 breach = True
                 breach_reasons.append(
-                    f"Attempt {i} has status 'SUCCESS' before final attempt "
+                    f"Attempt {i} has status '{status_i}' before final attempt "
                     f"{attempts_consumed - 1}; earlier attempts must be retryable failures"
                 )
             elif status_i not in ("TIMEOUT", "API_FAILURE"):
@@ -1156,22 +1156,31 @@ def calculate_request_cost_from_receipts(
         rec_status = getattr(record, "parse_status", None)
 
         if final_receipt is not None:
+            final_status = final_receipt.get("status")
             if rec_status in ("TIMEOUT", "API_FAILURE"):
-                if final_receipt.get("status") not in ("TIMEOUT", "API_FAILURE"):
+                if final_status not in ("TIMEOUT", "API_FAILURE"):
                     breach = True
                     breach_reasons.append(
-                        f"Final receipt status '{final_receipt.get('status')}' "
+                        f"Final receipt status '{final_status}' "
                         f"does not match record failure '{rec_status}'"
                     )
-            else:
-                if rec_status is not None and final_receipt.get("status") != "SUCCESS":
+            elif rec_status == "INCOMPLETE":
+                if final_status not in ("SUCCESS", "INCOMPLETE"):
                     breach = True
                     breach_reasons.append(
-                        f"Final receipt status '{final_receipt.get('status')}' "
+                        f"Final receipt status '{final_status}' "
+                        f"does not match record outcome '{rec_status}'"
+                    )
+            else:
+                if rec_status is not None and final_status != "SUCCESS":
+                    breach = True
+                    breach_reasons.append(
+                        f"Final receipt status '{final_status}' "
                         f"does not match record outcome '{rec_status}'"
                     )
 
-                # Terminal success or post-hoc validation outcome
+            if rec_status not in ("TIMEOUT", "API_FAILURE"):
+                # Terminal success, incomplete, or post-hoc validation outcome
                 # Verify Response ID binding
                 rec_resp_id = getattr(record, "response_id", None)
                 recpt_resp_id = final_receipt.get("response_id")
@@ -1225,7 +1234,12 @@ def calculate_request_cost_from_receipts(
             continue
 
         status = r.get("status")
-        if status != "SUCCESS":
+        in_tok = r.get("input_tokens")
+        out_tok = r.get("output_tokens")
+        ca_tok = r.get("cached_tokens")
+
+        # Transport failures or unknown token usage retain worst-case reservation
+        if status not in ("SUCCESS", "INCOMPLETE") or in_tok is None or out_tok is None:
             total_cost += attempt_worst
             continue
 
@@ -1255,11 +1269,6 @@ def calculate_request_cost_from_receipts(
                 )
                 total_cost += attempt_worst
                 continue
-
-        in_tok = r.get("input_tokens")
-        out_tok = r.get("output_tokens")
-        ca_tok = r.get("cached_tokens")
-
         if in_tok is not None and (in_tok > max_in or in_tok < 0):
             breach = True
             breach_reasons.append(f"Attempt {i} input tokens {in_tok} exceeded ceiling {max_in}")

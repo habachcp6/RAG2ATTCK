@@ -19,7 +19,7 @@ from src.experiment.authorization import (
     create_test_protocol_approval,
     protocol_to_dict,
 )
-from src.experiment.config import canonical_bytes
+from src.experiment.config import canonical_bytes, parse_jsonl
 from src.experiment.journal import (
     EVENT_ATTEMPT_RECEIPT,
     EVENT_MONETARY_CANCEL_HOLD,
@@ -1113,6 +1113,136 @@ class TestRecordBindingIntegrity:
         assert cost == Decimal("1.62008680")
         assert reason is None
 
+    def test_root_offline_record_incomplete_status_settles_without_breach(
+        self, sample_pricing
+    ):
+        """Offline record with parse_status=INCOMPLETE settles metered tokens without breach.
+
+        Record: model=gpt-5.6-luna, id=resp-incomplete, prompt=1000, completion=8192,
+        parse_status=INCOMPLETE, attempts=1.
+        Receipt: idx0, ordinal=1, status=INCOMPLETE, tokens=1000/8192, default tier, Luna.
+        Must not breach, and settles exact token cost Decimal('0.01008040').
+        """
+        receipts = [
+            {
+                "attempt_index": 0,
+                "ordinal": 1,
+                "status": "INCOMPLETE",
+                "input_tokens": 1000,
+                "output_tokens": 8192,
+                "service_tier": "default",
+                "model": "gpt-5.6-luna",
+                "response_id": "resp-incomplete",
+            }
+        ]
+        record = SimpleNamespace(
+            request_attempt_count=1,
+            prompt_tokens=1000,
+            completion_tokens=8192,
+            response_id="resp-incomplete",
+            model="gpt-5.6-luna",
+            parse_status="INCOMPLETE",
+        )
+        cost, breach, reason = calculate_request_cost_from_receipts(
+            attempts_consumed=1,
+            receipts=receipts,
+            record=record,
+            pricing_config=sample_pricing,
+            tier="default",
+            expected_model="gpt-5.6-luna",
+            most_recent_attempt_ordinal=1,
+        )
+        assert breach is False
+        assert cost == Decimal("0.01008040")
+        assert reason is None
+
+    def test_incomplete_status_before_final_retry_flags_breach_and_retains_worst(
+        self, sample_pricing
+    ):
+        """Returned INCOMPLETE response before final attempt flags breach and retains worst.
+
+        Attempt 0: status=INCOMPLETE (returned response), ordinal=1.
+        Attempt 1: status=SUCCESS, ordinal=2.
+        Since non-final returned responses cannot be genuine before retry, must breach.
+        """
+        receipts = [
+            {
+                "attempt_index": 0,
+                "ordinal": 1,
+                "status": "INCOMPLETE",
+                "input_tokens": 1000,
+                "output_tokens": 8192,
+                "service_tier": "default",
+                "model": "gpt-5.6-luna",
+                "response_id": "resp-inc-earlier",
+            },
+            {
+                "attempt_index": 1,
+                "ordinal": 2,
+                "status": "SUCCESS",
+                "input_tokens": 1000,
+                "output_tokens": 500,
+                "service_tier": "default",
+                "model": "gpt-5.6-luna",
+                "response_id": "resp-final",
+            },
+        ]
+        record = SimpleNamespace(
+            request_attempt_count=2,
+            prompt_tokens=1000,
+            completion_tokens=500,
+            response_id="resp-final",
+            model="gpt-5.6-luna",
+            parse_status="VALID",
+        )
+        cost, breach, reason = calculate_request_cost_from_receipts(
+            attempts_consumed=2,
+            receipts=receipts,
+            record=record,
+            pricing_config=sample_pricing,
+            tier="default",
+            expected_model="gpt-5.6-luna",
+            most_recent_attempt_ordinal=2,
+        )
+        assert breach is True
+        assert cost == Decimal("1.07949120")
+        assert "Attempt 0 has status 'INCOMPLETE' before final attempt" in reason
+
+    def test_incomplete_with_unknown_tokens_retains_worst(self, sample_pricing):
+        """Unknown token usage on INCOMPLETE receipt retains worst-case reservation."""
+        receipts = [
+            {
+                "attempt_index": 0,
+                "ordinal": 1,
+                "status": "INCOMPLETE",
+                "input_tokens": None,
+                "output_tokens": None,
+                "service_tier": "default",
+                "model": "gpt-5.6-luna",
+                "response_id": "resp-incomplete",
+            }
+        ]
+        record = SimpleNamespace(
+            request_attempt_count=1,
+            prompt_tokens=1000,
+            completion_tokens=8192,
+            response_id="resp-incomplete",
+            model="gpt-5.6-luna",
+            parse_status="INCOMPLETE",
+        )
+        cost, breach, reason = calculate_request_cost_from_receipts(
+            attempts_consumed=1,
+            receipts=receipts,
+            record=record,
+            pricing_config=sample_pricing,
+            tier="default",
+            expected_model="gpt-5.6-luna",
+            most_recent_attempt_ordinal=1,
+        )
+        assert breach is True
+        assert cost == Decimal("0.53974560")
+        assert "Token count mismatch" in reason
+
 
 class TestCanonicalProductionStudyLedgerOverrideRejection:
     """Production live execution rejects custom study_ledger_path overrides."""
@@ -1720,3 +1850,162 @@ class TestAnchorAndLedgerIntegrityRegressions:
             LiveExecutionBlockedError, match="study initialization anchor.*is missing"
         ):
             StudyBudgetLedger(ledger_path, pricing_config=sample_pricing)
+
+    def test_runner_case_incomplete_followed_by_another_request_and_resume(
+        self, bundle, tmp_path
+    ):
+        """Runner handles INCOMPLETE outcome followed by another request and clean resume."""
+        from src.experiment.config import load_plan
+        from tests.test_experiment_t22 import run_live_experiment as run_live_exp
+
+        plan = load_plan(bundle[1])
+        output = tmp_path / "run_incomplete_resume"
+        ledger_path = tmp_path / "study_ledger.json"
+
+        proto = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
+        auth = ExecutionAuthorization(
+            human_approval_token="HUMAN_AUTH_TOKEN_XYZ",
+            scientific_protocol_approved=True,
+            authorized_max_requests=100,
+            allow_live_dispatch=True,
+            approved_protocol_sha256=proto.protocol_sha256,
+            use_money_guard=True,
+            study_ledger_path=str(ledger_path),
+        )
+
+        # Request 1 returns INCOMPLETE with metered tokens
+        reply_inc = MockReply(
+            status="incomplete",
+            input_tokens=1000,
+            output_tokens=8192,
+            response_id="resp-inc-1",
+        )
+        provider1 = MockProvider(
+            outcomes={("s1", "no_rag"): [reply_inc]}
+        )
+        summary1 = run_live_exp(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, bud: provider1,
+            stop_after=1,
+        )
+        assert summary1["new_records"] == 1
+        assert summary1["complete"] is False
+
+        # Verify record is INCOMPLETE and ledger settled exact tokens without breach
+        pred_file = output / "no_rag_predictions.jsonl"
+        preds = parse_jsonl(pred_file.read_bytes())
+        assert len(preds) == 1
+        assert preds[0]["parse_status"] == "INCOMPLETE"
+        assert preds[0]["prompt_tokens"] == 1000
+        assert preds[0]["completion_tokens"] == 8192
+
+        ledger1 = StudyBudgetLedger(ledger_path)
+        assert ledger1.has_breach is False
+        assert ledger1.cumulative_settled_cost_usd == Decimal("0.01008040")
+
+        # Request 2 follows up with completed/VALID reply
+        reply_val = MockReply(
+            status="completed",
+            input_tokens=1000,
+            output_tokens=500,
+            response_id="resp-val-2",
+        )
+        provider2 = MockProvider(
+            outcomes={("s1", "rag_k1"): [reply_val]}
+        )
+        summary2 = run_live_exp(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, bud: provider2,
+            resume=True,
+            stop_after=1,
+        )
+        assert summary2["new_records"] == 1
+        assert summary2["complete"] is False
+
+        # Control resume: verifies both completed records without breach
+        provider3 = MockProvider()
+        ledger2 = StudyBudgetLedger(ledger_path)
+        assert ledger2.has_breach is False
+        # Cost is 0.01008040 (inc) + 0.00085000 (val) = 0.01093040
+        assert ledger2.cumulative_settled_cost_usd == Decimal("0.01093040")
+
+        summary3 = run_live_exp(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, bud: provider3,
+            resume=True,
+            stop_after=1,
+        )
+        assert summary3["new_records"] == 1
+        assert summary3["study_budget"]["has_breach"] is False
+
+    def test_tampered_ordinal_resume_zero_call_regression(self, bundle, tmp_path):
+        """Tampered receipt ordinal in journal causes resume to fail closed with 0 calls."""
+        from src.experiment.config import load_plan
+        from tests.test_experiment_t22 import run_live_experiment as run_live_exp
+
+        plan = load_plan(bundle[1])
+        output = tmp_path / "run_tampered_ordinal"
+        ledger_path = tmp_path / "study_ledger.json"
+
+        proto = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
+        auth = ExecutionAuthorization(
+            human_approval_token="HUMAN_AUTH_TOKEN_XYZ",
+            scientific_protocol_approved=True,
+            authorized_max_requests=100,
+            allow_live_dispatch=True,
+            approved_protocol_sha256=proto.protocol_sha256,
+            use_money_guard=True,
+            study_ledger_path=str(ledger_path),
+        )
+
+        provider1 = MockProvider()
+        summary1 = run_live_exp(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, bud: provider1,
+            stop_after=1,
+        )
+        assert summary1["new_records"] == 1
+
+        # Tamper with attempt_receipt event in journal
+        journal_path = output / "request_journal.jsonl"
+        events = parse_jsonl(journal_path.read_bytes())
+        tampered = False
+        for ev in events:
+            if ev.get("event") == "attempt_receipt":
+                ev["ordinal"] = 99
+                tampered = True
+                break
+        assert tampered is True
+        journal_path.write_bytes(
+            b"".join(canonical_bytes(e) + b"\n" for e in events)
+        )
+
+        # Attempt to resume with fresh provider
+        provider2 = MockProvider()
+        with pytest.raises(
+            ValueError, match="attempt_receipt ordinal 99 does not match journal consumed 1"
+        ):
+            run_live_exp(
+                plan,
+                output,
+                authorization=auth,
+                protocol=proto,
+                provider_factory=lambda cfg, bud: provider2,
+                resume=True,
+                stop_after=1,
+            )
+
+        # Must fail closed before ANY provider call is dispatched
+        assert provider2.call_count == 0

@@ -20,10 +20,10 @@ Subagent D has completed the inventory, D_REPAIR remediation, CD_RENDER_REPAIR e
 | **Offline Reproducibility Guide** | `docs/reproducibility.md` | 17,033 | `be21fd04ce2879ce3d752981b71b38a7aa843753c788217c05d1b0b8bb70f13b` | VERIFIED |
 | **Offline Reproduction Pipeline** | `scripts/reproduce_study.py` | 51,485 | `b2e04e3b926c03300050a34695ca9b24daeaeb5dfdce701f2465617b17e4b36f` | VERIFIED |
 | **Proposed Reconciled README** | `docs/README_PROPOSED.md` | 19,460 | `48209e0e39ac4e2c2be1e0fa10721ff73c8a404f4cd6276537d02198d586936b` | VERIFIED |
-| **Presentation Deck Outline (MD)** | `docs/presentation/slides.md` | 32,912 | `82881eec5ed0f421cbba20b871a499fa91bf051071f9c24c3eb4bb0a4445029f` | VERIFIED |
-| **PowerPoint Deck Builder Script** | `scripts/generate_slides.py` | 52,395 | `d4431d317efbf98e25c1424a813eb0b1178c0e4932fe04759125eb80e7d17d9b` | VERIFIED |
-| **Compiled PowerPoint Deck (PPTX)**| `docs/presentation/slides.pptx` | 375,682 | `e37a74f2db91e96714e346d6d4bcbb867954e13fedd9f7b1d33ce41067243046` | VERIFIED |
-| **Sanitized Evidence Manifest** | `docs/sanitized_evidence_manifest.json` | 12,769 | `986571a4041f3a97739fba54a5b38f32390e1cf0d710e3f976d81e7958666922` | VERIFIED |
+| **Presentation Deck Outline (MD)** | `docs/presentation/slides.md` | 33,550 | `8125abeff9e7cb4e373b101ff02a7f4a72ceb548cf2145a5306d9060faff76ee` | VERIFIED |
+| **PowerPoint Deck Builder Script** | `scripts/generate_slides.py` | 53,050 | `b4894f35226154965b382d2a65cd71aea73fa89ba080692ddadee648e15f2e8e` | VERIFIED |
+| **Compiled PowerPoint Deck (PPTX)**| `docs/presentation/slides.pptx` | 376,014 | `9e330fe96c506284b6b219c0b4feef458a4cfde9897d4b60c6c73bd4e918152a` | VERIFIED |
+| **Sanitized Evidence Manifest** | `docs/sanitized_evidence_manifest.json` | 12,769 | `67b4f9741ff9db1d46a3f3e01452925131d180023c5ac789085b457a4b46ad6c` | VERIFIED |
 
 ---
 

@@ -15,7 +15,6 @@
 - **Tiêu đề tiếng Anh:** Evaluating MITRE ATT&CK-Grounded Retrieval-Augmented Generation for Technique Attribution from Windows Endpoint Logs (RAG2ATT&CK)
 - **Tác giả:** Nhóm Nghiên Cứu RAG2ATT&CK
 - **Phân loại nghiên cứu:** Thực nghiệm đối chứng có kiểm soát (Controlled Empirical Study)
-- **Công cụ tạo bản trình chiếu:** Deck 16:9 widescreen được tạo tự động bởi python-pptx (`scripts/generate_slides.py`)
 - **Trạng thái kỹ thuật & pháp lý:**
   - Giao thức khoa học: `experiment-protocol-v1.1` (Frozen Protocol)
   - Khóa mật mã thực nghiệm: `canonical-lock-v1` (15 Canonical Artifacts Verified)
@@ -42,16 +41,17 @@
   - *Hiện tượng ảo giác (Hallucination):* LLM thuần túy dễ gán nhầm sang các kỹ thuật phổ biến hoặc phát sinh mã ATT&CK không có trong danh mục.
   - *Nhầm lẫn Sub-techniques:* Khó phân biệt giữa các kỹ thuật lân cận (ví dụ: `T1059.001` PowerShell vs `T1059.003` Command Shell; hoặc `T1059.009` Cloud API vs `T1218.012` Verclsid).
 - **Động lực của RAG2ATT&CK:**
-  - Thiết kế nghiên cứu thực nghiệm có kiểm soát (Controlled Empirical Study).
+  - Thiết kế nghiên cứu thực nghiệm đối chứng có kiểm soát (Controlled Empirical Study).
   - Đo lường khách quan delta hiệu năng do RAG mang lại trên cùng mô hình LLM.
   - Bóc tách độc lập lỗi tìm kiếm (Retrieval Failure) và lỗi phân loại (Classification Failure).
-  - Đóng băng giao thức v1.1: Thực thi xác định (Deterministic Execution under Frozen Environment & Seeds).
-  - Tái lập ngoại tuyến chi phí 0 đồng với bộ `offline_guard` chặn kết nối mạng ngoài ý muốn ở tầng socket.
+  - **Phạm vi tính xác định (Determinism Scope):** Áp dụng cho khâu tái tạo bộ dữ liệu, quy trình đánh giá ngoại tuyến và thứ tự tie-breaking.
+  - **Biến thiên backend LLM & Chính sách D3:** Phản hồi và backend LLM có thể biến thiên (tham số `seed` không gửi qua giao thức mạng), được quản lý bởi chính sách siêu dữ liệu ràng buộc tem thời gian D3 (`timestamp-bound metadata policy`).
+  - Tái lập ngoại tuyến chi phí 0 đồng với bộ `offline_guard` can thiệp tầng socket.
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Trong thực tế giám sát SOC, các kỹ sư thường kỳ vọng LLM có thể đọc log và gán ngay mã ATT&CK. Tuy nhiên, nếu không có cơ chế neo tri thức, LLM thường gặp ảo giác hoặc nhầm lẫn giữa các kỹ thuật lân cận. Nghiên cứu này định lượng khách quan mức độ hỗ trợ của RAG dưới các điều kiện đối chứng chặt chẽ, không phóng đại hiệu năng. Toàn bộ thực thi đạt tính xác định (Deterministic Execution under Frozen Environment & Seeds), loại trừ hoàn toàn tính tùy tiện trong diễn giải số liệu.
+> "Trong thực tế giám sát SOC, các kỹ sư thường kỳ vọng LLM có thể đọc log và gán ngay mã ATT&CK. Tuy nhiên, nếu không có cơ chế neo tri thức, LLM thường gặp ảo giác hoặc nhầm lẫn giữa các kỹ thuật lân cận. Nghiên cứu này định lượng khách quan mức độ hỗ trợ của RAG dưới các điều kiện đối chứng chặt chẽ, không phóng đại hiệu năng. Chúng tôi làm rõ phạm vi tính xác định (determinism): tính xác định áp dụng tuyệt đối cho khâu tái tạo bộ dữ liệu, quy trình thẩm định đánh giá ngoại tuyến và quy tắc xử lý thứ tự tie-breaking. Đối với mô hình LLM, phản hồi và backend mô hình thực tế có thể biến thiên do tham số seed không được truyền qua giao thức mạng; sự biến thiên này được theo dõi và ghi nhận chặt chẽ theo chính sách siêu dữ liệu ràng buộc tem thời gian D3 (timestamp-bound metadata policy).
 > 
-> *Bằng chứng dự án:* `docs/README_PROPOSED.md`; `config/canonical_experiment_lock_v1.json` (SHA-256: `961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac`); `tests/test_attack_id_validation.py`."
+> *Bằng chứng dự án:* `docs/README_PROPOSED.md`; `config/canonical_experiment_lock_v1.json` (SHA-256: `961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac`); `reports/experiment_protocol_v1.md` (D3 policy); `tests/test_attack_id_validation.py`."
 
 ---
 

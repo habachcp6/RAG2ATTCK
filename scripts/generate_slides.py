@@ -190,7 +190,7 @@ def build_slide_1_title(prs: Presentation) -> None:
     p2.space_before = Pt(8)
 
     p3 = tf.add_paragraph()
-    p3.text = "Giao thức khoa học: experiment-protocol-v1.1  |  Khóa chuẩn: canonical-lock-v1  |  Tác tạo: Python-pptx automated pipeline"
+    p3.text = "Giao thức khoa học: experiment-protocol-v1.1  |  Khóa chuẩn: canonical-lock-v1"
     p3.font.name = "Calibri"
     p3.font.size = Pt(13)
     p3.font.color.rgb = RGBColor(226, 232, 240)
@@ -238,22 +238,23 @@ def build_slide_2_problem(prs: Presentation) -> None:
     add_card(
         slide, 8.8, 1.35, 3.733, 5.55, "Động Lực Của RAG2ATT&CK",
         [
-            "Thiết kế nghiên cứu thực nghiệm có kiểm soát (Controlled Empirical Study).",
-            "Đo lường chính xác delta hiệu năng do RAG mang lại trên cùng mô hình LLM.",
+            "Thiết kế nghiên cứu thực nghiệm đối chứng có kiểm soát (Controlled Empirical Study).",
+            "Đo lường khách quan delta hiệu năng do RAG mang lại trên cùng mô hình LLM.",
             "Bóc tách độc lập lỗi tìm kiếm (Retrieval Failure) và lỗi phân loại (Classification Failure).",
-            "Đóng băng giao thức v1.1: Thực thi xác định (Deterministic Execution under Frozen Environment & Seeds).",
-            "Tái lập ngoại tuyến chi phí 0 đồng với bộ offline_guard chặn các kết nối mạng ngoài ý muốn.",
+            "Phạm vi tính xác định (Determinism): Áp dụng cho tái tạo dataset, đánh giá ngoại tuyến và thứ tự tie-breaking.",
+            "Biến thiên backend LLM: Phản hồi LLM có thể biến thiên (không gửi seed qua mạng), được quản lý bởi chính sách siêu dữ liệu D3 (timestamp-bound).",
+            "Tái lập ngoại tuyến chi phí 0 đồng với bộ offline_guard can thiệp tầng socket.",
         ],
         header_color=SUCCESS_GREEN,
-        body_size=11.5,
-        item_spacing=3.5,
+        body_size=10.0,
+        item_spacing=2.5,
     )
 
     set_speaker_notes(
         slide,
         "GHI CHÚ DIỄN GIẢ (Slide 2):\n"
-        "Trong thực tế giám sát SOC, các kỹ sư thường kỳ vọng LLM có thể đọc log và gán ngay mã ATT&CK. Tuy nhiên, nếu không có cơ chế neo tri thức, LLM thường gặp ảo giác hoặc nhầm lẫn giữa các kỹ thuật lân cận. Nghiên cứu này đo lường khoa học mức độ hỗ trợ của RAG dưới các điều kiện đối chứng chặt chẽ. Toàn bộ thực thi đạt tính xác định (Deterministic Execution under Frozen Environment & Seeds), loại trừ hoàn toàn tính tùy tiện trong diễn giải số liệu.\n"
-        "Bằng chứng dự án: docs/README_PROPOSED.md; config/canonical_experiment_lock_v1.json (SHA-256: 961ba9b3...); tests/test_attack_id_validation.py."
+        "Trong thực tế giám sát SOC, các kỹ sư thường kỳ vọng LLM có thể đọc log và gán ngay mã ATT&CK. Tuy nhiên, nếu không có cơ chế neo tri thức, LLM thường gặp ảo giác hoặc nhầm lẫn giữa các kỹ thuật lân cận. Nghiên cứu này định lượng khách quan mức độ hỗ trợ của RAG dưới các điều kiện đối chứng chặt chẽ, không phóng đại hiệu năng. Chúng tôi làm rõ phạm vi tính xác định (determinism): tính xác định áp dụng tuyệt đối cho khâu tái tạo bộ dữ liệu, quy trình thẩm định đánh giá ngoại tuyến và quy tắc xử lý thứ tự tie-breaking. Đối với mô hình LLM, phản hồi và backend mô hình thực tế có thể biến thiên do tham số seed không được truyền qua giao thức mạng; sự biến thiên này được theo dõi và ghi nhận chặt chẽ theo chính sách siêu dữ liệu ràng buộc tem thời gian D3 (timestamp-bound metadata policy).\n"
+        "Bằng chứng dự án: docs/README_PROPOSED.md; config/canonical_experiment_lock_v1.json (SHA-256: 961ba9b3...); reports/experiment_protocol_v1.md (D3 policy); tests/test_attack_id_validation.py."
     )
 
 

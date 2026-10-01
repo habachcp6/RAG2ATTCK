@@ -1,0 +1,159 @@
+{
+  "schema_version": "1.0.0",
+  "audit_type": "S1_INTEGRATION_EXECUTION_AUDIT",
+  "audit_timestamp_utc": "2026-10-01T23:22:29Z",
+  "auditor": "Subagent A (Audit Recovery & Integration Verification)",
+  "verdict": "PASS_INTEGRATION_VERIFIED",
+  "target_worktree_state": {
+    "worktree_path": "D:/RAG2ATTCK-worktrees/integrated-audit-s1",
+    "branch": "codex/s1-integrated-audit",
+    "head_sha": "95b924638c03e7ddeb9f65a1d500fb212b256fd2",
+    "base_sha": "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315",
+    "cleanliness": "CLEAN",
+    "source_code_diff_empty": true,
+    "source_code_diff_command": "git diff 80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315 -- src/",
+    "source_code_protection_verdict": "ZERO_MODIFICATIONS_TO_SRC"
+  },
+  "merge_lineage_and_disjoint_file_sets": {
+    "tracks": {
+      "track_a": {
+        "name": "Audit Recovery",
+        "commit": "1477a9fde092939e771883a588386326c2ba5519",
+        "files_count": 5,
+        "files": [
+          "reports/evidence/runtime_recovery_audit.md",
+          "reports/evidence/sanitized_historical_logs.json",
+          "tests/fixtures/__init__.py",
+          "tests/fixtures/runtime_recovery_wrapper_fixture.py",
+          "tests/test_runtime_recovery_wrapper.py"
+        ]
+      },
+      "track_b": {
+        "name": "Evaluator Prep",
+        "commit": "7cc7a784e06505317626b97bad575fec1f8670d6",
+        "files_count": 4,
+        "files": [
+          "reports/evidence/evaluator_contract_and_analysis_plan.md",
+          "scripts/analysis/__init__.py",
+          "scripts/analysis/evaluate_rqs.py",
+          "tests/test_evaluator_offline_contract.py"
+        ]
+      },
+      "track_c": {
+        "name": "Report & Related Work",
+        "commit": "3d7a06cb0eaf6a45a876e3d8c450b689831dfee4",
+        "files_count": 5,
+        "files": [
+          "docs/report/scientific_report.docx",
+          "docs/report/scientific_report.md",
+          "reports/evidence/research_report_scaffold.md",
+          "scripts/export_report_docx.py",
+          "scripts/verify_report_metadata.py"
+        ]
+      },
+      "track_d": {
+        "name": "Reproducibility & Presentation",
+        "commit": "0c244e5bdf0f586416650d69530301e5ceb4fac3",
+        "files_count": 24,
+        "files": [
+          "docs/README_PROPOSED.md",
+          "docs/presentation/slides.md",
+          "docs/presentation/slides.pptx",
+          "docs/reproducibility.md",
+          "docs/sanitized_evidence_manifest.json",
+          "outputs/reproduction/figures/fig_rq2_per_technique_breakdown.png",
+          "outputs/reproduction/figures/fig_rq2_retrieval_hit_rates.png",
+          "outputs/reproduction/figures/fig_rq3_pilot_token_scaling.png",
+          "outputs/reproduction/fixture_diagnostics/_fixture_metadata.json",
+          "outputs/reproduction/fixture_diagnostics/failure_decomposition.json",
+          "outputs/reproduction/fixture_diagnostics/overall_metrics.json",
+          "outputs/reproduction/fixture_diagnostics/per_condition_metrics.json",
+          "outputs/reproduction/fixture_diagnostics/per_technique_metrics.json",
+          "outputs/reproduction/fixture_diagnostics/retrieval_conditional_metrics.json",
+          "outputs/reproduction/fixture_diagnostics/run_provenance.json",
+          "outputs/reproduction/reproduction_report.md",
+          "outputs/reproduction/tables/table_1_retrieval_diagnostics.md",
+          "outputs/reproduction/tables/table_2_per_technique_retrieval.md",
+          "outputs/reproduction/tables/table_3_dev_pilot_resource_usage.md",
+          "outputs/reproduction/tables/table_4_pairwise_representation_comparison.md",
+          "reports/evidence/reproducibility_package_manifest.md",
+          "scripts/generate_slides.py",
+          "scripts/reproduce_study.py",
+          "tests/test_canonical_reproduction_boundary.py"
+        ]
+      }
+    },
+    "total_files_added": 38,
+    "total_baseline_files_modified": 0,
+    "total_baseline_files_deleted": 0,
+    "pairwise_disjoint_verified": true,
+    "overlapping_files_count": 0
+  },
+  "execution_hashes_and_invariants": {
+    "core_manifest_sha256": "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4",
+    "core_manifest_verified": true,
+    "protocol_sha256": "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c",
+    "protocol_sha256_verified": true,
+    "all_15_canonical_artifacts_verified": true,
+    "stix_v19_2_census": {
+      "total_attack_patterns": 858,
+      "revoked": 149,
+      "deprecated": 12,
+      "unique_inactive": 161,
+      "active": 697,
+      "active_windows_corpus": 474,
+      "census_verified": true
+    }
+  },
+  "offline_test_evidence": {
+    "targeted_tests": {
+      "count": 69,
+      "passed": 69,
+      "failed": 0,
+      "status": "PASSED",
+      "suites": [
+        "tests/test_runtime_recovery_wrapper.py (16 passed)",
+        "tests/test_evaluator_offline_contract.py (44 passed)",
+        "tests/test_canonical_reproduction_boundary.py (9 passed)"
+      ]
+    },
+    "unit_tests": {
+      "total_collected": 1335,
+      "passed": 1329,
+      "skipped": 1,
+      "failed": 0,
+      "status": "PASSED"
+    },
+    "faiss_integration_tests": {
+      "count": 5,
+      "passed": 5,
+      "status": "PASSED",
+      "suite": "tests/test_retriever.py::TestFAISSRetrieverIntegration"
+    },
+    "verify_synthetic": {
+      "script": "scripts/validate_synthetic_registry.py",
+      "passed": true,
+      "status": "PASSED"
+    },
+    "verify_report_metadata": {
+      "script": "scripts/verify_report_metadata.py",
+      "passed": true,
+      "status": "PASSED"
+    },
+    "reproduce_study": {
+      "script": "scripts/reproduce_study.py --verify-hashes",
+      "passed": true,
+      "status": "PASSED"
+    },
+    "network_egress": {
+      "live_calls_made": 0,
+      "policy": "FAIL_CLOSED_ZERO_EGRESS"
+    }
+  },
+  "auditor_worktree_provenance": {
+    "worktree": "D:/RAG2ATTCK-worktrees/audit-recovery-s1",
+    "branch": "codex/s1-audit-recovery",
+    "pre_sha": "1477a9fde092939e771883a588386326c2ba5519",
+    "post_sha": "aeb53f963fe3e98a31704b2142f9bc941b12b911"
+  }
+}

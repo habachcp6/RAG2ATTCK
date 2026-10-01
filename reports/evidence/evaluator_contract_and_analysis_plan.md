@@ -6,7 +6,7 @@
 - **Branch**: `codex/s1-evaluator-prep` (PR #27)
 - **PRE_SHA**: `80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315`
 - **Execution Mode**: Strictly OFFLINE (ZERO live provider/API calls; in-flight live matrix untouched)
-- **Timestamp**: `2026-10-02T03:45:00Z`
+- **Timestamp**: `2026-10-01T21:05:00Z`
 
 ---
 
@@ -192,11 +192,24 @@ We implemented a publication-grade analysis engine in `scripts/analysis/evaluate
 - `rq_analysis.json`: Machine-readable structured JSON with all numerical metrics, pair-cluster CIs, p-values, failure axes, reconciled financial accounting, and metadata.
 - `rq_analysis_summary.md`: Publication-ready GitHub-Flavored Markdown report containing structured summary tables for RQ1, RQ2, and RQ3.
 
+### 4.6 Codex Probe Investigation & Repair Resolution (B_RECONCILE_REPAIR2)
+Following initial implementation, an independent probe (`artifacts/orchestration/probe_b_receipt_reconciliation.py`) was executed to stress-test journal and ledger reconciliation under adversarial drift mutations. The probe surfaced three critical fail-open vulnerabilities:
+1. **Manifest binding gap**: Injected mismatched header manifest SHA (`b`*64 vs records `a`*64) was accepted instead of fail-closed.
+2. **Cost recomputation bypass**: Settlement claiming $1.23 for a receipt calculating to $0.0000490 was accepted without reconciliation against attempt receipts.
+3. **Ledger ignored**: Supplied `study_ledger_data` claiming $9.99 was ignored without one-to-one ledger verification.
+
+**Architectural Hardening Implemented**:
+- **Header & Matrix Enforcement**: Exact header event requirement, matching record manifest SHA-256. Integer ordinals must be strictly contiguous positive sequences (1..N). Complete matrix coverage requires all records to be completed and settled; foreign settlement/receipt keys are rejected immediately.
+- **Per-Request Cost Recalculation**: Recomputes per-attempt and per-request costs using native tariff models (including retries, worst-case missing usage charges of $0.53974560, and prompt cache read/write rates). Settlement costs must match computed receipt sums exactly; discrepancies fail closed.
+- **Reservation Hold Lifecycle**: `complete` verifies record SHA-256 but does NOT release reservation holds; only `monetary_settle`, `monetary_cancel_orphan`, or `cancel_hold` releases holds. Native `amount_usd` is read from `monetary_cancel_orphan`. Conservation invariant `held == cost + refund` is strictly enforced.
+- **Read-Only Ledger Validation**: Compares supplied ledger data one-to-one against journal complete/settle events, pricing contract SHA, record SHAs, costs, refunds, and balance conservation equation (`total - pilot - settled - active == available`).
+- **Probe Fail-Closed**: Running `probe_b_receipt_reconciliation.py` now fails closed immediately with `ValueError: Journal header manifest_sha256 mismatch with records` (exit code 1).
+
 ---
 
 ## 5. Verification Test Suite (`tests/test_evaluator_offline_contract.py`)
 
-A comprehensive test suite of 24 rigorous tests verifies every aspect of the evaluation contract, financial accounting, and analysis tooling.
+A comprehensive test suite of 34 rigorous tests verifies every aspect of the evaluation contract, financial accounting, failure semantics, mutation edge cases, and analysis tooling.
 
 ### 5.1 Test Inventory
 
@@ -217,25 +230,35 @@ A comprehensive test suite of 24 rigorous tests verifies every aspect of the eva
 | 13 | `test_missing_usage_worst_case_attempt_charge` | Native worst-case attempt fee ($0.53974560) on missing usage | **PASSED** |
 | 14 | `test_reconciled_financial_accounting_with_retries` | Financial reconciliation accounting for retried attempts | **PASSED** |
 | 15 | `test_reconciliation_duplicate_and_mismatched_keys_fail` | Rejects duplicate ordinals, duplicate settles, hash mismatches | **PASSED** |
-| 16 | `test_explicit_cost_denominators_and_excluded_views` | 3 explicit cost denominators & excluded views spend | **PASSED** |
-| 17 | `test_study_wide_financial_accounting_and_pilot_hold` | Preserves prior pilot hold ($0.05264010) study-wide | **PASSED** |
-| 18 | `test_cli_repository_root_resolution_from_external_cwd` | CLI defaults resolved against repo root from external CWD | **PASSED** |
-| 19 | `test_pair_cluster_bootstrap_resampling` | Pair-cluster bootstrap resampling by `pair_id` | **PASSED** |
-| 20 | `test_rq2_independent_failure_axes_and_no_rag_na` | RQ2 D2i independent axes, overlaps, and No-RAG N/A semantics | **PASSED** |
-| 21 | `test_rq3_view_diagnostics_scorable_counts` | TEST split scorable view counts (278 single, 440 contextual) | **PASSED** |
-| 22 | `test_mcnemar_test_statistical_properties` | McNemar chi2, exact binomial, odds ratio | **PASSED** |
-| 23 | `test_rq1_controlled_comparison_computation` | RQ1 metrics, deltas, relative gains, pair-cluster CIs | **PASSED** |
-| 24 | `test_run_rq_analysis_generates_all_artifacts` | Full analysis pipeline generating JSON & MD | **PASSED** |
+| 16 | `test_reconciliation_mutation_foreign_and_missing_header` | B_RECONCILE: foreign/missing/duplicate header validation | **PASSED** |
+| 17 | `test_reconciliation_mutation_settlement_vs_receipt_cost_and_refund_mismatch` | B_RECONCILE: settlement drift & conservation failure | **PASSED** |
+| 18 | `test_reconciliation_mutation_ledger_vs_journal_drift` | B_RECONCILE: ledger cost/hash drift & missing/extra keys | **PASSED** |
+| 19 | `test_reconciliation_mutation_missing_and_extra_keys` | B_RECONCILE: matrix coverage & non-contiguous ordinals | **PASSED** |
+| 20 | `test_reconciliation_mutation_two_retries_with_cached_usage` | B_RECONCILE: 2 retries (3 attempts) with cached tariffs | **PASSED** |
+| 21 | `test_reconciliation_mutation_missing_usage` | B_RECONCILE: missing token usage worst-case attempt charge | **PASSED** |
+| 22 | `test_reconciliation_mutation_orphan_cancellation` | B_RECONCILE: orphan hold release with native amount_usd | **PASSED** |
+| 23 | `test_reconciliation_mutation_complete_without_settle` | B_RECONCILE: complete without settle fail-closed | **PASSED** |
+| 24 | `test_reconciliation_mutation_nonfinite_and_malformed_amounts` | B_RECONCILE: NaN/Inf/negative amounts & float token counts | **PASSED** |
+| 25 | `test_cli_subprocess_mismatched_journal_or_ledger_fails` | B_RECONCILE: public CLI failure on mutated journal/ledger | **PASSED** |
+| 26 | `test_explicit_cost_denominators_and_excluded_views` | 3 explicit cost denominators & excluded views spend | **PASSED** |
+| 27 | `test_study_wide_financial_accounting_and_pilot_hold` | Preserves prior pilot hold ($0.05264010) study-wide | **PASSED** |
+| 28 | `test_cli_repository_root_resolution_from_external_cwd` | CLI defaults resolved against repo root from external CWD | **PASSED** |
+| 29 | `test_pair_cluster_bootstrap_resampling` | Pair-cluster bootstrap resampling by `pair_id` | **PASSED** |
+| 30 | `test_rq2_independent_failure_axes_and_no_rag_na` | RQ2 D2i independent axes, overlaps, and No-RAG N/A semantics | **PASSED** |
+| 31 | `test_rq3_view_diagnostics_scorable_counts` | TEST split scorable view counts (278 single, 440 contextual) | **PASSED** |
+| 32 | `test_mcnemar_test_statistical_properties` | McNemar chi2, exact binomial, odds ratio | **PASSED** |
+| 33 | `test_rq1_controlled_comparison_computation` | RQ1 metrics, deltas, relative gains, pair-cluster CIs | **PASSED** |
+| 34 | `test_run_rq_analysis_generates_all_artifacts` | Full analysis pipeline generating JSON & MD | **PASSED** |
 
 ### 5.2 Test Execution Results
 ```bash
 uv run pytest tests/test_evaluator_offline_contract.py -v
-============================= 24 passed in 8.09s ==============================
+============================= 34 passed in 14.09s =============================
 
 uv run pytest tests/test_experiment_evaluation.py -q
-============================= 94 passed in 12.96s =============================
+============================= 94 passed in 14.07s =============================
 
-Combined Total: 118 passed in 21.05s
+Combined Total: 128 passed in 23.36s (OFFLINE_GUARD: installed=True attempted_egress=0)
 ```
 
 ### 5.3 Code Quality & Linter Compliance
@@ -253,9 +276,9 @@ uv run ruff format --check scripts/analysis/evaluate_rqs.py tests/test_evaluator
 
 | File Path | SHA-256 Digest | Purpose |
 | :--- | :--- | :--- |
-| `scripts/analysis/evaluate_rqs.py` | `0e0b8ef21747ff533a5a5bda36e22842279f5f6c189b7325799d3b8b16920298` | Offline RQ1/RQ2/RQ3 analysis script with repairs 1–8 |
+| `scripts/analysis/evaluate_rqs.py` | `9890331266ff029e22208fc1f7b772afc65c0a11c65a8d579e0da644c6ee42fb` | Offline RQ1/RQ2/RQ3 analysis script with B_RECONCILE_REPAIR2 |
 | `scripts/analysis/__init__.py` | `28b40746d09b574e95393ac9e2a95879116cd9d4c7a86afb1be7be573f9ad54a` | Analysis package initializer |
-| `tests/test_evaluator_offline_contract.py` | `d49c246b1a6eaf26f672a755c450fb0d4443b9e1671df67cbaf3cccbd440c6e2` | Evaluator offline contract test suite (24 tests) |
+| `tests/test_evaluator_offline_contract.py` | `3a47b6893ba5d314070e76d81f4586a56f84dbf8e3a6d6cd3cd3300bce239e0d` | Evaluator offline contract test suite (34 tests) |
 | `reports/evidence/evaluator_contract_and_analysis_plan.md` | *This document* | Comprehensive Phase S1 evidence document |
 
 ---
@@ -275,12 +298,12 @@ uv run ruff format --check scripts/analysis/evaluate_rqs.py tests/test_evaluator
 - [x] Verified D2i independent failure axes without forced mutual exclusion or causal partitioning claims.
 - [x] Verified D2j NULL zero denominators.
 - [x] Completed Codex Review Repair 1: Strict pricing configuration validation (fail-closed, no zero fallback).
-- [x] Completed Codex Review Repair 2: Full ledger and journal reconciliation with hash binding and study-wide accounting.
+- [x] Completed Codex Review Repair 2 (B_RECONCILE_REPAIR2): Full ledger and journal reconciliation with hash binding, read-only ledger validation, probe fail-closed, and 10 distinguishing mutation regressions.
 - [x] Completed Codex Review Repair 3: Three explicit cost denominators and excluded views spend disclosure.
 - [x] Completed Codex Review Repair 4: Robust CLI root resolution (`--repository-root`).
 - [x] Completed Codex Review Repair 5: Distinguishing known-answer 474-class Macro-F1 test.
 - [x] Completed Codex Review Repair 6: Comprehensive regression suite for tariffs, retries, and malformed inputs.
 - [x] Completed Codex Review Repair 7: Pair-cluster bootstrap resampling by `pair_id` and exact view counts (278 single, 440 contextual).
 - [x] Completed Codex Review Repair 8: RQ2 D2i independent failure axes, overlap accounting, and No-RAG N/A semantics.
-- [x] Full test suite passed (24/24 offline contract tests, 94/94 evaluation suite tests; 118 total).
+- [x] Full test suite passed (34/34 offline contract tests, 94/94 evaluation suite tests; 128 total).
 - [x] Ruff lint and format checks passed with zero errors (`line-length = 100`).

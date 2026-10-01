@@ -43,12 +43,17 @@ from src.evaluation.experiment_metrics import (
 )
 from src.experiment.authorization import ScientificProtocolApproval
 from src.experiment.monetary_ledger import (
+    _strict_json_loads,
     calculate_attempt_token_cost,
+    compute_pricing_contract_sha256,
     load_pricing_config,
     round_cost_up,
+    round_credit_down,
+    validate_finite_nonnegative_money,
+    validate_token_count,
 )
 
-ANALYSIS_TOOL_VERSION = "1.1.0"
+ANALYSIS_TOOL_VERSION = "1.2.0"
 
 
 # ---------------------------------------------------------------------------
@@ -136,130 +141,479 @@ def reconcile_journal_and_ledger(
 ) -> dict[str, Any]:
     """Reconcile request journal attempt receipts and monetary settlements by sample/condition.
 
-    Invariants:
-    - Verifies journal header against manifest when present.
-    - Strictly checks attempt receipt ordinal uniqueness and attempt_index uniqueness per request.
-    - Computes attempt receipt costs using actual returned service tier and cached token rates.
-    - Validates monetary settlement hash binding against prediction record SHA-256.
-    - Flags monetary breaches and duplicate settlements.
-    - Distinguishes canonical condition expenditures from whole-study holds and orphan reservations.
+    Invariants (B_RECONCILE_REPAIR2):
+    1. Read-only validation of supplied study ledger data/bytes against prediction records
+       and journal.
+    2. Enforce exact journal header/manifest binding, valid keys, complete matrix coverage,
+       and reject missing/foreign/extra/duplicate settlements and receipts.
+    3. Recompute per-request costs from attempt receipts using native tariff model, retries,
+       worst-case missing usage charges, cached usage, and returned tier. Disagreements fail closed.
+    4. Interpret reservation lifecycle: complete does NOT release hold; monetary_settle /
+       cancel_orphan / cancel_hold does. Read native amount_usd on monetary_cancel_orphan.
+    5. Whole-study accounting retains pilot hold, cumulative settled cost, active/orphan holds
+       and balance conservation; canonical per-condition costs exclude pilot hold.
     """
     validate_pricing_config(pricing_config)
 
     records_by_key = {(r["sample_id"], r["condition"]): r for r in records}
+    expected_keys = set(records_by_key.keys())
 
-    events: list[dict[str, Any]] = []
+    record_manifest_shas = {
+        r.get("manifest_sha256") for r in records if r.get("manifest_sha256") is not None
+    }
+
+    # Load journal events
+    events: Optional[list[dict[str, Any]]] = None
     if journal_events is not None:
         events = list(journal_events)
-    elif journal_path is not None and Path(journal_path).is_file():
-        raw_lines = Path(journal_path).read_text(encoding="utf-8").splitlines()
-        events = [json.loads(line) for line in raw_lines if line.strip()]
+    elif journal_path is not None:
+        jp = Path(journal_path)
+        if jp.is_file():
+            raw_lines = jp.read_text(encoding="utf-8").splitlines()
+            events = [_strict_json_loads(line) for line in raw_lines if line.strip()]
+        else:
+            raise FileNotFoundError(f"Journal file not found: {jp}")
 
-    if not events:
+    # Load study ledger data (read-only)
+    ledger: Optional[dict[str, Any]] = None
+    if study_ledger_data is not None:
+        ledger = study_ledger_data
+    elif study_ledger_path is not None:
+        lp = Path(study_ledger_path)
+        if lp.is_file():
+            ledger = _strict_json_loads(lp.read_bytes())
+        else:
+            raise FileNotFoundError(f"Study ledger file not found: {lp}")
+
+    if events is None and ledger is None:
         return {
             "journal_present": False,
+            "ledger_present": False,
             "receipts_by_condition": {c: [] for c in CONDITIONS},
             "settlements_by_condition": {c: {} for c in CONDITIONS},
             "receipts_cost_by_condition": {c: None for c in CONDITIONS},
             "settled_cost_by_condition": {c: None for c in CONDITIONS},
+            "token_estimated_cost_by_condition": {c: None for c in CONDITIONS},
             "retried_attempts_by_condition": {c: 0 for c in CONDITIONS},
             "active_reservations_usd": Decimal("0.0"),
             "orphan_reservations_usd": Decimal("0.0"),
             "has_breach": False,
             "breach_reasons": [],
+            "ledger_verified": False,
         }
 
+    if events is None:
+        events = []
+
+    header_found = False
+    header_manifest_sha = None
+    active_reservations: dict[tuple[str, str], Decimal] = {}
     receipts_by_key: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     settlements_by_key: dict[tuple[str, str], dict[str, Any]] = {}
-    seen_receipt_ordinals: set[int] = set()
-    active_reservations: dict[tuple[str, str], Decimal] = {}
+    completed_keys: set[tuple[str, str]] = set()
+    all_receipt_ordinals: list[int] = []
     orphan_reservations_usd = Decimal("0.0")
+    cancelled_holds_usd = Decimal("0.0")
     has_breach = False
     breach_reasons: list[str] = []
 
     for event in events:
         kind = event.get("event")
-        key_raw = event.get("key")
-        key = (key_raw[0], key_raw[1]) if isinstance(key_raw, list) and len(key_raw) == 2 else None
+        if not isinstance(kind, str):
+            raise ValueError(f"Event missing or invalid 'event' type: {event}")
 
-        if kind == "attempt_receipt" and key is not None:
-            rec_ord = event.get("ordinal")
-            rec_idx = event.get("attempt_index")
-            if rec_ord in seen_receipt_ordinals:
+        if kind == "header":
+            if header_found:
+                raise ValueError("Duplicate header event in journal")
+            header_found = True
+            header_manifest_sha = event.get("manifest_sha256")
+            if not isinstance(header_manifest_sha, str) or len(header_manifest_sha) != 64:
+                raise ValueError(f"Invalid journal header manifest_sha256: {header_manifest_sha}")
+            if record_manifest_shas and any(m != header_manifest_sha for m in record_manifest_shas):
                 raise ValueError(
-                    f"Duplicate attempt_receipt ordinal {rec_ord} for key {key} in journal"
+                    f"Journal header manifest_sha256 mismatch with records: "
+                    f"header={header_manifest_sha} != records={record_manifest_shas}"
                 )
-            seen_receipt_ordinals.add(rec_ord)
+            continue
+
+        key_raw = event.get("key")
+        if key_raw is None:
+            continue
+
+        if not (
+            isinstance(key_raw, (list, tuple))
+            and len(key_raw) == 2
+            and isinstance(key_raw[0], str)
+            and isinstance(key_raw[1], str)
+        ):
+            raise ValueError(f"Invalid event key structure: {key_raw}")
+        key = (key_raw[0], key_raw[1])
+
+        # Reject foreign conditions or foreign keys for completion/settlement/receipts
+        if key[1] not in CONDITIONS:
+            raise ValueError(f"Invalid condition in journal event key: {key}")
+        if (
+            kind in ("attempt_receipt", "complete", "monetary_settle")
+            and records
+            and key not in expected_keys
+        ):
+            raise ValueError(f"Foreign/extra key in journal event: {key}")
+
+        if kind == "monetary_reserve":
+            amt_val = validate_finite_nonnegative_money(
+                event.get("amount_usd"), f"reserve amount for {key}"
+            )
+            amt_round = round_cost_up(amt_val)
+            if amt_round <= Decimal("0.0"):
+                raise ValueError(f"monetary_reserve amount must be strictly positive: {amt_round}")
+            if key in active_reservations:
+                raise ValueError(f"Duplicate active monetary_reserve for key: {key}")
+            active_reservations[key] = amt_round
+
+        elif kind == "attempt_receipt":
+            ord_val = event.get("ordinal")
+            if not isinstance(ord_val, int) or isinstance(ord_val, bool) or ord_val <= 0:
+                raise ValueError(
+                    f"attempt_receipt ordinal must be positive integer, got: {ord_val}"
+                )
+            all_receipt_ordinals.append(ord_val)
+
+            idx_val = event.get("attempt_index")
+            if not isinstance(idx_val, int) or isinstance(idx_val, bool) or idx_val < 0:
+                raise ValueError(
+                    f"attempt_receipt attempt_index must be non-negative integer, got: {idx_val}"
+                )
 
             existing_receipts = receipts_by_key[key]
-            if any(r.get("attempt_index") == rec_idx for r in existing_receipts):
-                raise ValueError(f"Duplicate attempt_receipt attempt_index {rec_idx} for key {key}")
+            if any(r.get("attempt_index") == idx_val for r in existing_receipts):
+                raise ValueError(f"Duplicate attempt_index {idx_val} for key: {key}")
 
-            tier = event.get("service_tier") or event.get("requested_service_tier") or "default"
-            rec_cost = calculate_attempt_token_cost(
-                event.get("input_tokens"),
-                event.get("output_tokens"),
-                pricing_config,
-                cached_tokens=event.get("cached_tokens"),
-                tier=tier,
-            )
-            event_copy = dict(event)
-            event_copy["calculated_cost_usd"] = rec_cost
-            receipts_by_key[key].append(event_copy)
+            p_tok = validate_token_count(event.get("input_tokens"), "input_tokens")
+            c_tok = validate_token_count(event.get("output_tokens"), "output_tokens")
+            ca_tok = validate_token_count(event.get("cached_tokens"), "cached_tokens")
+            if ca_tok is not None and p_tok is not None and ca_tok > p_tok:
+                raise ValueError(f"cached_tokens ({ca_tok}) cannot exceed input_tokens ({p_tok})")
 
-        elif kind == "monetary_settle" and key is not None:
-            if key in settlements_by_key:
-                raise ValueError(f"Duplicate monetary_settle event for key {key} in journal")
-            settlements_by_key[key] = event
-            if event.get("breach", False):
-                has_breach = True
-                breach_reasons.append(str(event.get("breach_reason", "Unknown monetary breach")))
+            receipts_by_key[key].append(dict(event))
 
-            # Verify hash binding against record
+        elif kind == "complete":
+            completed_keys.add(key)
+            rec_sha = event.get("record_sha256")
+            if not isinstance(rec_sha, str) or len(rec_sha) != 64:
+                raise ValueError(
+                    f"complete event missing valid record_sha256 for key {key}: {rec_sha}"
+                )
             if key in records_by_key:
-                rec_sha = hashlib.sha256(canonical_json_bytes(records_by_key[key])).hexdigest()
-                settle_sha = event.get("record_sha256")
-                if settle_sha != rec_sha:
+                exp_sha = hashlib.sha256(canonical_json_bytes(records_by_key[key])).hexdigest()
+                if rec_sha != exp_sha:
+                    raise ValueError(
+                        f"complete record_sha256 mismatch for key {key}: {rec_sha} != {exp_sha}"
+                    )
+            # NOTE: complete does NOT release hold!
+
+        elif kind == "monetary_settle":
+            if key in settlements_by_key:
+                raise ValueError(f"Duplicate monetary_settle event for key: {key}")
+
+            cost_val = validate_finite_nonnegative_money(
+                event.get("cost_usd"), f"settle cost for {key}"
+            )
+            refund_val = validate_finite_nonnegative_money(
+                event.get("refund_usd"), f"settle refund for {key}"
+            )
+            cost_round = round_cost_up(cost_val)
+            refund_round = round_credit_down(refund_val)
+
+            if key not in active_reservations:
+                raise ValueError(f"monetary_settle for unreserved key {key}")
+            held = active_reservations.pop(key)
+            if round_cost_up(cost_round + refund_round) != held:
+                raise ValueError(
+                    f"Settlement conservation mismatch for key {key}: "
+                    f"cost {cost_round} + refund {refund_round} != held {held}"
+                )
+
+            settle_sha = event.get("record_sha256")
+            if not isinstance(settle_sha, str) or len(settle_sha) != 64:
+                raise ValueError(
+                    f"Invalid record_sha256 in monetary_settle for key {key}: {settle_sha}"
+                )
+
+            if key in records_by_key:
+                exp_sha = hashlib.sha256(canonical_json_bytes(records_by_key[key])).hexdigest()
+                if settle_sha != exp_sha:
                     raise ValueError(
                         f"Monetary settle record_sha256 mismatch for key {key}: "
-                        f"{settle_sha} != {rec_sha}"
+                        f"{settle_sha} != {exp_sha}"
                     )
 
-        elif kind == "monetary_reserve" and key is not None:
-            active_reservations[key] = Decimal(str(event.get("amount_usd", "0.0")))
+            if event.get("breach", False):
+                has_breach = True
+                breach_reasons.append(str(event.get("breach_reason", f"Monetary breach on {key}")))
 
-        elif kind == "complete" and key is not None:
+            settlements_by_key[key] = {
+                "cost_usd": str(cost_round),
+                "refund_usd": str(refund_round),
+                "record_sha256": settle_sha,
+                "breach": bool(event.get("breach", False)),
+                "breach_reason": event.get("breach_reason"),
+            }
+
+        elif kind == "monetary_cancel_orphan":
+            amt_val = validate_finite_nonnegative_money(
+                event.get("amount_usd"), f"cancel orphan amount for {key}"
+            )
+            amt_round = round_cost_up(amt_val)
             if key in active_reservations:
-                del active_reservations[key]
+                held = active_reservations.pop(key)
+                if held != amt_round:
+                    raise ValueError(
+                        f"Cancel orphan amount mismatch for {key}: hold {held} != {amt_round}"
+                    )
+            orphan_reservations_usd += amt_round
 
-        elif kind == "monetary_cancel_orphan" and key is not None:
-            orphan_reservations_usd += Decimal(str(event.get("refund_usd", "0.0")))
+        elif kind in ("monetary_cancel_hold", "cancel_hold"):
+            amt_val = validate_finite_nonnegative_money(
+                event.get("amount_usd", "0.0"), f"cancel hold for {key}"
+            )
+            amt_round = round_cost_up(amt_val)
+            if key in active_reservations:
+                held = active_reservations.pop(key)
+                if held != amt_round and amt_val > Decimal("0.0"):
+                    raise ValueError(
+                        f"Cancel hold amount mismatch for {key}: hold {held} != {amt_round}"
+                    )
+            cancelled_holds_usd += amt_round
 
-    # Aggregate by condition
+    # Enforce header on completed run with records
+    if events and not header_found and any(r.get("manifest_sha256") for r in records):
+        raise ValueError("Journal missing header event with manifest_sha256")
+
+    # Ordinal sequence verification
+    if all_receipt_ordinals:
+        if len(set(all_receipt_ordinals)) != len(all_receipt_ordinals):
+            raise ValueError("Duplicate attempt_receipt ordinal detected")
+        sorted_ords = sorted(all_receipt_ordinals)
+        if sorted_ords and sorted_ords[0] != 1:
+            raise ValueError(f"Attempt receipt ordinals must start at 1, got: {sorted_ords[0]}")
+        for i in range(len(sorted_ords) - 1):
+            if sorted_ords[i + 1] != sorted_ords[i] + 1:
+                raise ValueError(
+                    f"Non-contiguous attempt_receipt ordinals: "
+                    f"{sorted_ords[i]} -> {sorted_ords[i + 1]}"
+                )
+
+    # Complete-without-settle check
+    complete_unsettled = completed_keys - set(settlements_by_key.keys())
+    if complete_unsettled:
+        raise ValueError(f"Complete-without-settle detected for keys: {complete_unsettled}")
+
+    # Complete coverage of records on completed run
+    if records and (settlements_by_key or receipts_by_key):
+        for key in expected_keys:
+            if key not in completed_keys:
+                raise ValueError(f"Missing complete event for record key: {key}")
+            if key not in settlements_by_key:
+                raise ValueError(f"Missing monetary_settle for record key: {key}")
+            if key not in receipts_by_key:
+                raise ValueError(f"Missing attempt_receipt for record key: {key}")
+
+    if active_reservations:
+        completed_still_reserved = completed_keys & set(active_reservations.keys())
+        if completed_still_reserved:
+            raise ValueError(
+                f"Completed requests with unsettled active reservations: {completed_still_reserved}"
+            )
+
+    # Per-request cost recalculation and settlement binding
+    bounds = pricing_config.get("reservation_bounds", {})
+    attempt_worst = Decimal(str(bounds.get("default_attempt_worst_usd", "0.53974560")))
+    logical_worst = Decimal(str(bounds.get("default_logical_worst_usd", "2.15898240")))
+
+    recomputed_costs_by_key: dict[tuple[str, str], Decimal] = {}
+    for key, r_list in receipts_by_key.items():
+        indices = [r["attempt_index"] for r in r_list]
+        if sorted(indices) != list(range(len(r_list))):
+            raise ValueError(
+                f"Receipt attempt_indices for {key} do not cover 0..{len(r_list) - 1}: {indices}"
+            )
+
+        rec = records_by_key.get(key)
+        if rec is not None:
+            rec_attempts = rec.get("request_attempt_count")
+            if rec_attempts is not None and rec_attempts != len(r_list):
+                raise ValueError(
+                    f"Record attempt count {rec_attempts} != receipt count {len(r_list)} for {key}"
+                )
+
+        req_cost = Decimal("0.0")
+        for attempt_r in r_list:
+            st = attempt_r.get("status")
+            in_tok = attempt_r.get("input_tokens")
+            out_tok = attempt_r.get("output_tokens")
+            ca_tok = attempt_r.get("cached_tokens")
+            tier = attempt_r.get("service_tier") or "default"
+
+            if st in ("TIMEOUT", "API_FAILURE") or in_tok is None or out_tok is None:
+                req_cost += attempt_worst
+            else:
+                att_cost = calculate_attempt_token_cost(
+                    in_tok,
+                    out_tok,
+                    pricing_config,
+                    cached_tokens=ca_tok,
+                    tier=tier,
+                )
+                req_cost += att_cost
+
+        req_cost_rounded = round_cost_up(req_cost)
+        if req_cost_rounded > logical_worst:
+            req_cost_rounded = logical_worst
+
+        recomputed_costs_by_key[key] = req_cost_rounded
+
+        if key in settlements_by_key:
+            j_cost = Decimal(str(settlements_by_key[key]["cost_usd"]))
+            if j_cost != req_cost_rounded:
+                raise ValueError(
+                    f"Journal settlement cost mismatch for key {key}: "
+                    f"journal_settlement={j_cost} != computed_from_receipts={req_cost_rounded}"
+                )
+
+    # Study Ledger verification
+    ledger_verified = False
+    if ledger is not None:
+        ledger_verified = True
+        pricing_sha = compute_pricing_contract_sha256(pricing_config)
+        if "pricing_contract_sha256" in ledger and ledger["pricing_contract_sha256"] != pricing_sha:
+            raise ValueError(
+                f"Pricing contract mismatch in study ledger: "
+                f"{ledger['pricing_contract_sha256']} != {pricing_sha}"
+            )
+
+        settled_records = ledger.get("settled_records", {})
+        if not isinstance(settled_records, dict):
+            raise ValueError("Study ledger missing or invalid 'settled_records' dictionary")
+
+        for l_key_raw in settled_records.keys():
+            if ":" in l_key_raw:
+                parts = l_key_raw.split(":", 1)
+            elif "_" in l_key_raw:
+                parts = l_key_raw.rsplit("_", 1)
+            else:
+                parts = [l_key_raw, ""]
+            l_tuple_key = (parts[0], parts[1])
+            if records and l_tuple_key not in expected_keys:
+                raise ValueError(f"Foreign ledger settlement key: {l_key_raw}")
+
+        for key, rec in records_by_key.items():
+            sid, cond = key
+            key_str = f"{sid}:{cond}"
+            if key_str not in settled_records:
+                alt_key = str(list(key))
+                if alt_key in settled_records:
+                    l_entry = settled_records[alt_key]
+                else:
+                    raise ValueError(f"Study ledger missing settled record for key {key_str}")
+            else:
+                l_entry = settled_records[key_str]
+
+            if not isinstance(l_entry, dict):
+                raise ValueError(f"Study ledger settled_records[{key_str}] must be dict")
+
+            exp_sha = hashlib.sha256(canonical_json_bytes(rec)).hexdigest()
+            l_sha = l_entry.get("record_sha256")
+            if l_sha != exp_sha:
+                raise ValueError(
+                    f"Study ledger record_sha256 mismatch for {key_str}: {l_sha} != {exp_sha}"
+                )
+
+            l_cost = round_cost_up(
+                validate_finite_nonnegative_money(
+                    l_entry.get("cost_usd"), f"ledger cost for {key_str}"
+                )
+            )
+            if key in settlements_by_key:
+                j_cost = Decimal(str(settlements_by_key[key]["cost_usd"]))
+                if l_cost != j_cost:
+                    raise ValueError(
+                        f"Study ledger cost mismatch for {key_str}: "
+                        f"ledger={l_cost} != journal={j_cost}"
+                    )
+
+            if "refund_usd" in l_entry and key in settlements_by_key:
+                l_ref = round_credit_down(
+                    validate_finite_nonnegative_money(
+                        l_entry.get("refund_usd"), f"ledger refund for {key_str}"
+                    )
+                )
+                j_ref = Decimal(str(settlements_by_key[key]["refund_usd"]))
+                if l_ref != j_ref:
+                    raise ValueError(
+                        f"Study ledger refund mismatch for {key_str}: "
+                        f"ledger={l_ref} != journal={j_ref}"
+                    )
+
+        # Balance conservation
+        if "total_budget_usd" in ledger:
+            tot_b = validate_finite_nonnegative_money(
+                ledger["total_budget_usd"], "total_budget_usd"
+            )
+            pilot_h = validate_finite_nonnegative_money(
+                ledger.get("prior_pilot_provisional_hold_usd", "0.0"), "pilot_hold"
+            )
+            cum_settled = validate_finite_nonnegative_money(
+                ledger.get("cumulative_settled_cost_usd", "0.0"), "cumulative_settled"
+            )
+            act_res = validate_finite_nonnegative_money(
+                ledger.get("active_reservations_usd", "0.0"), "active_reservations"
+            )
+            avail_b = validate_finite_nonnegative_money(
+                ledger.get("uncommitted_available_balance_usd", "0.0"), "available_balance"
+            )
+            expected_avail = round_credit_down(tot_b - pilot_h - cum_settled - act_res)
+            if avail_b != expected_avail:
+                raise ValueError(
+                    f"Study ledger balance conservation drift: available={avail_b} != "
+                    f"expected={expected_avail} (total={tot_b} - pilot={pilot_h} - "
+                    f"settled={cum_settled} - active={act_res})"
+                )
+
+    # Condition aggregation
     receipts_cost_by_cond: dict[str, Optional[Decimal]] = {}
     settled_cost_by_cond: dict[str, Optional[Decimal]] = {}
+    token_est_cost_by_cond: dict[str, Optional[Decimal]] = {}
     retried_attempts_by_cond: dict[str, int] = {}
 
     for cond in CONDITIONS:
-        cond_receipts = [
-            r for (sid, c), r_list in receipts_by_key.items() if c == cond for r in r_list
-        ]
-        cond_settles = [s for (sid, c), s in settlements_by_key.items() if c == cond]
+        cond_records = [r for r in records if r["condition"] == cond]
+        t_est = Decimal("0.0")
+        for r in cond_records:
+            p_tok = r.get("prompt_tokens")
+            c_tok = r.get("completion_tokens")
+            t_est += calculate_attempt_token_cost(p_tok, c_tok, pricing_config)
+        token_est_cost_by_cond[cond] = round_cost_up(t_est)
 
-        if cond_receipts:
+        cond_receipt_keys = [k for k in recomputed_costs_by_key if k[1] == cond]
+        if cond_receipt_keys:
             receipts_cost_by_cond[cond] = round_cost_up(
-                sum(r["calculated_cost_usd"] for r in cond_receipts)
+                sum(recomputed_costs_by_key[k] for k in cond_receipt_keys)
             )
-            retried_attempts_by_cond[cond] = sum(
-                1 for r in cond_receipts if r.get("attempt_index", 0) > 0
+            retried_count = sum(
+                1
+                for k in cond_receipt_keys
+                for r in receipts_by_key[k]
+                if r.get("attempt_index", 0) > 0
             )
+            retried_attempts_by_cond[cond] = retried_count
         else:
             receipts_cost_by_cond[cond] = None
             retried_attempts_by_cond[cond] = 0
 
-        if cond_settles:
+        cond_settle_keys = [k for k in settlements_by_key if k[1] == cond]
+        if cond_settle_keys:
             settled_cost_by_cond[cond] = round_cost_up(
-                sum(Decimal(str(s["cost_usd"])) for s in cond_settles)
+                sum(Decimal(str(settlements_by_key[k]["cost_usd"])) for k in cond_settle_keys)
             )
         else:
             settled_cost_by_cond[cond] = None
@@ -269,16 +623,21 @@ def reconcile_journal_and_ledger(
     )
 
     return {
-        "journal_present": True,
+        "journal_present": bool(events),
+        "ledger_present": ledger is not None,
         "receipts_by_condition": receipts_by_key,
         "settlements_by_condition": settlements_by_key,
         "receipts_cost_by_condition": receipts_cost_by_cond,
         "settled_cost_by_condition": settled_cost_by_cond,
+        "token_estimated_cost_by_condition": token_est_cost_by_cond,
         "retried_attempts_by_condition": retried_attempts_by_cond,
+        "active_reservation_count": len(active_reservations),
         "active_reservations_usd": active_res_sum,
         "orphan_reservations_usd": orphan_reservations_usd,
+        "orphan_cancellations_usd": orphan_reservations_usd,
         "has_breach": has_breach,
         "breach_reasons": breach_reasons,
+        "ledger_verified": ledger_verified,
     }
 
 

@@ -489,6 +489,13 @@ def _create_dev_run_with_journal(tmp_path):
             all_records.append(row)
         _dump_rows(dev_dir / f"{cond}_predictions.jsonl", dev_rows)
 
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+    hold_amt = Decimal("2.15898240")
+    cost_amt = calculate_attempt_token_cost(100, 20, pricing_cfg, cached_tokens=0)
+    refund_amt = hold_amt - cost_amt
+
     journal_rows = [
         {
             "event": "header",
@@ -506,15 +513,40 @@ def _create_dev_run_with_journal(tmp_path):
             )
             rec_sha = hashlib.sha256(canonical_json_bytes(rec)).hexdigest()
             ordinal += 1
-            journal_rows.append({"event": "begin", "key": [s["sample_id"], cond]})
+            key = [s["sample_id"], cond]
             journal_rows.append(
-                {"event": "attempt", "key": [s["sample_id"], cond], "ordinal": ordinal}
+                {"event": "monetary_reserve", "key": key, "amount_usd": str(hold_amt)}
+            )
+            journal_rows.append({"event": "begin", "key": key})
+            journal_rows.append({"event": "attempt", "key": key, "ordinal": ordinal})
+            journal_rows.append(
+                {
+                    "event": "attempt_receipt",
+                    "key": key,
+                    "ordinal": ordinal,
+                    "attempt_index": 0,
+                    "status": "SUCCESS",
+                    "input_tokens": 100,
+                    "output_tokens": 20,
+                    "cached_tokens": 0,
+                    "service_tier": "default",
+                }
             )
             journal_rows.append(
                 {
                     "event": "complete",
-                    "key": [s["sample_id"], cond],
+                    "key": key,
                     "record_sha256": rec_sha,
+                }
+            )
+            journal_rows.append(
+                {
+                    "event": "monetary_settle",
+                    "key": key,
+                    "record_sha256": rec_sha,
+                    "cost_usd": str(cost_amt),
+                    "refund_usd": str(refund_amt),
+                    "breach": False,
                 }
             )
 
@@ -710,14 +742,17 @@ def test_reconciled_financial_accounting_with_retries(tmp_path):
 
     # Construct journal with a retried request for (s0, no_rag):
     # Attempt 0: failed (API_FAILURE, usage=None -> charged worst-case $0.53974560)
-    # Attempt 1: succeeded (prompt=1000, completion=100)
+    # Attempt 1: succeeded (prompt=1000, completion=100 -> $0.00037000)
     rec_s0 = next(
         r for r in inputs.records if r["sample_id"] == "s0" and r["condition"] == "no_rag"
     )
+    rec_s0 = dict(rec_s0)
+    rec_s0["request_attempt_count"] = 2
     rec_sha = hashlib.sha256(canonical_json_bytes(rec_s0)).hexdigest()
 
     events = [
         {"event": "header", "manifest_sha256": inputs.manifest_sha256, "max_requests": 100},
+        {"event": "monetary_reserve", "key": ["s0", "no_rag"], "amount_usd": "2.15898240"},
         {"event": "transition", "key": ["s0", "no_rag"], "state": "RESERVED"},
         {"event": "transition", "key": ["s0", "no_rag"], "state": "DISPATCH_STARTED"},
         {
@@ -729,6 +764,7 @@ def test_reconciled_financial_accounting_with_retries(tmp_path):
             "input_tokens": None,
             "output_tokens": None,
             "cached_tokens": None,
+            "service_tier": "default",
         },
         {"event": "transition", "key": ["s0", "no_rag"], "state": "DISPATCH_STARTED"},
         {
@@ -740,6 +776,7 @@ def test_reconciled_financial_accounting_with_retries(tmp_path):
             "input_tokens": 1000,
             "output_tokens": 100,
             "cached_tokens": None,
+            "service_tier": "default",
         },
         {"event": "complete", "key": ["s0", "no_rag"], "record_sha256": rec_sha},
         {
@@ -753,7 +790,7 @@ def test_reconciled_financial_accounting_with_retries(tmp_path):
     ]
 
     reconciled = reconcile_journal_and_ledger(
-        inputs.records,
+        [rec_s0],
         pricing_cfg,
         journal_events=events,
     )
@@ -762,7 +799,7 @@ def test_reconciled_financial_accounting_with_retries(tmp_path):
     assert reconciled["retried_attempts_by_condition"]["no_rag"] == 1
     settled_cost = reconciled["settled_cost_by_condition"]["no_rag"]
     assert settled_cost is not None
-    assert settled_cost > Decimal("0.53974560")
+    assert settled_cost == Decimal("0.54011560")
 
 
 def test_reconciliation_duplicate_and_mismatched_keys_fail(tmp_path):
@@ -772,9 +809,17 @@ def test_reconciliation_duplicate_and_mismatched_keys_fail(tmp_path):
     from scripts.analysis.evaluate_rqs import load_pricing_config
 
     pricing_cfg, _ = load_pricing_config()
+    manifest_sha = inputs.manifest_sha256
+
+    rec_s0 = next(
+        r for r in inputs.records if r["sample_id"] == "s0" and r["condition"] == "no_rag"
+    )
+    rec_s0_hash = hashlib.sha256(canonical_json_bytes(rec_s0)).hexdigest()
 
     # 1. Duplicate receipt ordinal
     dup_ord_events = [
+        {"event": "header", "manifest_sha256": manifest_sha, "max_requests": 1},
+        {"event": "monetary_reserve", "key": ["s0", "no_rag"], "amount_usd": "2.15898240"},
         {
             "event": "attempt_receipt",
             "key": ["s0", "no_rag"],
@@ -782,6 +827,7 @@ def test_reconciliation_duplicate_and_mismatched_keys_fail(tmp_path):
             "attempt_index": 0,
             "input_tokens": 100,
             "output_tokens": 10,
+            "service_tier": "default",
         },
         {
             "event": "attempt_receipt",
@@ -790,51 +836,713 @@ def test_reconciliation_duplicate_and_mismatched_keys_fail(tmp_path):
             "attempt_index": 1,
             "input_tokens": 100,
             "output_tokens": 10,
+            "service_tier": "default",
         },
     ]
     with pytest.raises(ValueError, match="Duplicate attempt_receipt ordinal"):
-        reconcile_journal_and_ledger(inputs.records, pricing_cfg, journal_events=dup_ord_events)
+        reconcile_journal_and_ledger([rec_s0], pricing_cfg, journal_events=dup_ord_events)
 
     # 2. Duplicate monetary_settle
-    rec_s0 = next(
-        r for r in inputs.records if r["sample_id"] == "s0" and r["condition"] == "no_rag"
-    )
-    rec_s0_hash = hashlib.sha256(canonical_json_bytes(rec_s0)).hexdigest()
-
     dup_settle_events = [
+        {"event": "header", "manifest_sha256": manifest_sha, "max_requests": 1},
+        {"event": "monetary_reserve", "key": ["s0", "no_rag"], "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": ["s0", "no_rag"],
+            "ordinal": 1,
+            "attempt_index": 0,
+            "input_tokens": 100,
+            "output_tokens": 20,
+            "service_tier": "default",
+        },
+        {"event": "complete", "key": ["s0", "no_rag"], "record_sha256": rec_s0_hash},
         {
             "event": "monetary_settle",
             "key": ["s0", "no_rag"],
-            "cost_usd": "0.01",
-            "refund_usd": "2.00",
+            "cost_usd": "0.00004900",
+            "refund_usd": "2.15893340",
             "record_sha256": rec_s0_hash,
             "breach": False,
         },
         {
             "event": "monetary_settle",
             "key": ["s0", "no_rag"],
-            "cost_usd": "0.01",
-            "refund_usd": "2.00",
+            "cost_usd": "0.00004900",
+            "refund_usd": "2.15893340",
             "record_sha256": rec_s0_hash,
             "breach": False,
         },
     ]
     with pytest.raises(ValueError, match="Duplicate monetary_settle event"):
-        reconcile_journal_and_ledger(inputs.records, pricing_cfg, journal_events=dup_settle_events)
+        reconcile_journal_and_ledger([rec_s0], pricing_cfg, journal_events=dup_settle_events)
 
     # 3. Hash mismatch between monetary_settle and record
     mismatch_events = [
+        {"event": "header", "manifest_sha256": manifest_sha, "max_requests": 1},
+        {"event": "monetary_reserve", "key": ["s0", "no_rag"], "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": ["s0", "no_rag"],
+            "ordinal": 1,
+            "attempt_index": 0,
+            "input_tokens": 100,
+            "output_tokens": 20,
+            "service_tier": "default",
+        },
+        {"event": "complete", "key": ["s0", "no_rag"], "record_sha256": rec_s0_hash},
         {
             "event": "monetary_settle",
             "key": ["s0", "no_rag"],
-            "cost_usd": "0.01",
-            "refund_usd": "2.00",
+            "cost_usd": "0.00004900",
+            "refund_usd": "2.15893340",
             "record_sha256": "f" * 64,  # Incorrect hash!
             "breach": False,
-        }
+        },
     ]
     with pytest.raises(ValueError, match="Monetary settle record_sha256 mismatch"):
-        reconcile_journal_and_ledger(inputs.records, pricing_cfg, journal_events=mismatch_events)
+        reconcile_journal_and_ledger([rec_s0], pricing_cfg, journal_events=mismatch_events)
+
+
+def test_reconciliation_mutation_foreign_and_missing_header(tmp_path):
+    """Header mutations: foreign manifest SHA, missing header, and duplicate headers fail."""
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+    record = {"sample_id": "s0", "condition": "no_rag", "manifest_sha256": "a" * 64}
+
+    # Foreign header
+    events_foreign = [
+        {"event": "header", "manifest_sha256": "b" * 64, "max_requests": 1},
+    ]
+    with pytest.raises(ValueError, match="Journal header manifest_sha256 mismatch"):
+        reconcile_journal_and_ledger([record], pricing_cfg, journal_events=events_foreign)
+
+    # Missing header
+    events_missing = [
+        {"event": "monetary_reserve", "key": ["s0", "no_rag"], "amount_usd": "1.00"},
+    ]
+    with pytest.raises(ValueError, match="Journal missing header event"):
+        reconcile_journal_and_ledger([record], pricing_cfg, journal_events=events_missing)
+
+    # Duplicate header
+    events_dup = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+    ]
+    with pytest.raises(ValueError, match="Duplicate header event"):
+        reconcile_journal_and_ledger([record], pricing_cfg, journal_events=events_dup)
+
+
+def test_reconciliation_mutation_settlement_vs_receipt_cost_and_refund_mismatch():
+    """Settlement cost drifting from receipts or violating balance conservation fails closed."""
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+    record = {
+        "sample_id": "s0",
+        "condition": "no_rag",
+        "manifest_sha256": "a" * 64,
+        "request_attempt_count": 1,
+    }
+    rec_sha = hashlib.sha256(canonical_json_bytes(record)).hexdigest()
+    key = ["s0", "no_rag"]
+
+    # 1. Cost mismatch (receipt cost is 0.00004900, settlement claims 1.23000000)
+    events_cost_mismatch = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+        {"event": "monetary_reserve", "key": key, "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": key,
+            "ordinal": 1,
+            "attempt_index": 0,
+            "input_tokens": 100,
+            "output_tokens": 20,
+            "cached_tokens": 0,
+            "service_tier": "default",
+        },
+        {"event": "complete", "key": key, "record_sha256": rec_sha},
+        {
+            "event": "monetary_settle",
+            "key": key,
+            "record_sha256": rec_sha,
+            "cost_usd": "1.23000000",
+            "refund_usd": "0.92898240",
+            "breach": False,
+        },
+    ]
+    with pytest.raises(ValueError, match="Journal settlement cost mismatch"):
+        reconcile_journal_and_ledger([record], pricing_cfg, journal_events=events_cost_mismatch)
+
+    # 2. Refund conservation mismatch (held is 2.15898240, cost + refund = 1.04900000 != held)
+    events_conservation_mismatch = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+        {"event": "monetary_reserve", "key": key, "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": key,
+            "ordinal": 1,
+            "attempt_index": 0,
+            "input_tokens": 100,
+            "output_tokens": 20,
+            "cached_tokens": 0,
+            "service_tier": "default",
+        },
+        {"event": "complete", "key": key, "record_sha256": rec_sha},
+        {
+            "event": "monetary_settle",
+            "key": key,
+            "record_sha256": rec_sha,
+            "cost_usd": "0.00004900",
+            "refund_usd": "1.00000000",
+            "breach": False,
+        },
+    ]
+    with pytest.raises(ValueError, match="Settlement conservation mismatch"):
+        reconcile_journal_and_ledger(
+            [record], pricing_cfg, journal_events=events_conservation_mismatch
+        )
+
+
+def test_reconciliation_mutation_ledger_vs_journal_drift():
+    """Ledger disagreements with predictions fail closed (cost/hash drift, missing/extra)."""
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+    record = {
+        "sample_id": "s0",
+        "condition": "no_rag",
+        "manifest_sha256": "a" * 64,
+        "request_attempt_count": 1,
+    }
+    rec_sha = hashlib.sha256(canonical_json_bytes(record)).hexdigest()
+    key = ["s0", "no_rag"]
+
+    valid_events = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+        {"event": "monetary_reserve", "key": key, "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": key,
+            "ordinal": 1,
+            "attempt_index": 0,
+            "input_tokens": 100,
+            "output_tokens": 20,
+            "cached_tokens": 0,
+            "service_tier": "default",
+        },
+        {"event": "complete", "key": key, "record_sha256": rec_sha},
+        {
+            "event": "monetary_settle",
+            "key": key,
+            "record_sha256": rec_sha,
+            "cost_usd": "0.00004900",
+            "refund_usd": "2.15893340",
+            "breach": False,
+        },
+    ]
+
+    # 1. Cost drift in ledger
+    ledger_cost_drift = {
+        "settled_records": {
+            "s0:no_rag": {
+                "record_sha256": rec_sha,
+                "cost_usd": "0.00005000",
+                "refund_usd": "2.15893240",
+            }
+        }
+    }
+    with pytest.raises(ValueError, match="Study ledger cost mismatch"):
+        reconcile_journal_and_ledger(
+            [record], pricing_cfg, journal_events=valid_events, study_ledger_data=ledger_cost_drift
+        )
+
+    # 2. Record SHA drift in ledger
+    ledger_sha_drift = {
+        "settled_records": {
+            "s0:no_rag": {
+                "record_sha256": "e" * 64,
+                "cost_usd": "0.00004900",
+                "refund_usd": "2.15893340",
+            }
+        }
+    }
+    with pytest.raises(ValueError, match="Study ledger record_sha256 mismatch"):
+        reconcile_journal_and_ledger(
+            [record], pricing_cfg, journal_events=valid_events, study_ledger_data=ledger_sha_drift
+        )
+
+    # 3. Ledger missing settlement
+    ledger_missing = {"settled_records": {}}
+    with pytest.raises(ValueError, match="Study ledger missing settled record"):
+        reconcile_journal_and_ledger(
+            [record], pricing_cfg, journal_events=valid_events, study_ledger_data=ledger_missing
+        )
+
+    # 4. Ledger extra settlement key
+    ledger_extra = {
+        "settled_records": {
+            "s0:no_rag": {
+                "record_sha256": rec_sha,
+                "cost_usd": "0.00004900",
+                "refund_usd": "2.15893340",
+            },
+            "s1:no_rag": {
+                "record_sha256": "1" * 64,
+                "cost_usd": "0.00004900",
+                "refund_usd": "2.15893340",
+            },
+        }
+    }
+    with pytest.raises(ValueError, match="Foreign ledger settlement key"):
+        reconcile_journal_and_ledger(
+            [record], pricing_cfg, journal_events=valid_events, study_ledger_data=ledger_extra
+        )
+
+
+def test_reconciliation_mutation_missing_and_extra_keys():
+    """Matrix coverage: missing settlements, foreign keys, or non-contiguous ordinals fail."""
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+    r1 = {
+        "sample_id": "s0",
+        "condition": "no_rag",
+        "manifest_sha256": "a" * 64,
+        "request_attempt_count": 1,
+    }
+    r2 = {
+        "sample_id": "s1",
+        "condition": "no_rag",
+        "manifest_sha256": "a" * 64,
+        "request_attempt_count": 1,
+    }
+    r1_sha = hashlib.sha256(canonical_json_bytes(r1)).hexdigest()
+
+    # 1. Missing settlement for r2
+    partial_events = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 2},
+        {"event": "monetary_reserve", "key": ["s0", "no_rag"], "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": ["s0", "no_rag"],
+            "ordinal": 1,
+            "attempt_index": 0,
+            "input_tokens": 100,
+            "output_tokens": 20,
+            "cached_tokens": 0,
+            "service_tier": "default",
+        },
+        {"event": "complete", "key": ["s0", "no_rag"], "record_sha256": r1_sha},
+        {
+            "event": "monetary_settle",
+            "key": ["s0", "no_rag"],
+            "record_sha256": r1_sha,
+            "cost_usd": "0.00004900",
+            "refund_usd": "2.15893340",
+            "breach": False,
+        },
+    ]
+    with pytest.raises(ValueError, match="Missing complete event for record key"):
+        reconcile_journal_and_ledger([r1, r2], pricing_cfg, journal_events=partial_events)
+
+    # 2. Foreign settlement key (s99 not in records)
+    foreign_events = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 2},
+        {"event": "monetary_reserve", "key": ["s0", "no_rag"], "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": ["s0", "no_rag"],
+            "ordinal": 1,
+            "attempt_index": 0,
+            "input_tokens": 100,
+            "output_tokens": 20,
+            "cached_tokens": 0,
+            "service_tier": "default",
+        },
+        {"event": "complete", "key": ["s0", "no_rag"], "record_sha256": r1_sha},
+        {
+            "event": "monetary_settle",
+            "key": ["s0", "no_rag"],
+            "record_sha256": r1_sha,
+            "cost_usd": "0.00004900",
+            "refund_usd": "2.15893340",
+            "breach": False,
+        },
+        {"event": "monetary_reserve", "key": ["s99", "no_rag"], "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": ["s99", "no_rag"],
+            "ordinal": 2,
+            "attempt_index": 0,
+            "input_tokens": 100,
+            "output_tokens": 20,
+            "cached_tokens": 0,
+            "service_tier": "default",
+        },
+        {"event": "complete", "key": ["s99", "no_rag"], "record_sha256": "c" * 64},
+        {
+            "event": "monetary_settle",
+            "key": ["s99", "no_rag"],
+            "record_sha256": "c" * 64,
+            "cost_usd": "0.00004900",
+            "refund_usd": "2.15893340",
+            "breach": False,
+        },
+    ]
+    with pytest.raises(ValueError, match="Foreign/extra key in journal event"):
+        reconcile_journal_and_ledger([r1], pricing_cfg, journal_events=foreign_events)
+
+    # 3. Non-contiguous attempt ordinals (ordinal 2 instead of 1)
+    non_contig_events = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+        {"event": "monetary_reserve", "key": ["s0", "no_rag"], "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": ["s0", "no_rag"],
+            "ordinal": 2,
+            "attempt_index": 0,
+            "input_tokens": 100,
+            "output_tokens": 20,
+            "cached_tokens": 0,
+            "service_tier": "default",
+        },
+        {"event": "complete", "key": ["s0", "no_rag"], "record_sha256": r1_sha},
+        {
+            "event": "monetary_settle",
+            "key": ["s0", "no_rag"],
+            "record_sha256": r1_sha,
+            "cost_usd": "0.00004900",
+            "refund_usd": "2.15893340",
+            "breach": False,
+        },
+    ]
+    with pytest.raises(ValueError, match="Attempt receipt ordinals must start at 1"):
+        reconcile_journal_and_ledger([r1], pricing_cfg, journal_events=non_contig_events)
+
+    # 4. Non-contiguous attempt ordinals with gap (1, 3)
+    gap_events = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+        {"event": "monetary_reserve", "key": ["s0", "no_rag"], "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": ["s0", "no_rag"],
+            "ordinal": 1,
+            "attempt_index": 0,
+            "status": "RETRYABLE",
+            "input_tokens": 100,
+            "output_tokens": 20,
+            "cached_tokens": 0,
+            "service_tier": "default",
+        },
+        {
+            "event": "attempt_receipt",
+            "key": ["s0", "no_rag"],
+            "ordinal": 3,
+            "attempt_index": 1,
+            "status": "SUCCESS",
+            "input_tokens": 100,
+            "output_tokens": 20,
+            "cached_tokens": 0,
+            "service_tier": "default",
+        },
+    ]
+    with pytest.raises(ValueError, match="Non-contiguous attempt_receipt ordinals"):
+        reconcile_journal_and_ledger([r1], pricing_cfg, journal_events=gap_events)
+
+
+def test_reconciliation_mutation_two_retries_with_cached_usage():
+    """Verify request with 2 retries (3 attempts total) correctly applies cached token tariffs."""
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+    record = {
+        "sample_id": "s0",
+        "condition": "no_rag",
+        "manifest_sha256": "a" * 64,
+        "request_attempt_count": 3,
+    }
+    rec_sha = hashlib.sha256(canonical_json_bytes(record)).hexdigest()
+    key = ["s0", "no_rag"]
+
+    events = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+        {"event": "monetary_reserve", "key": key, "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": key,
+            "ordinal": 1,
+            "attempt_index": 0,
+            "status": "RATE_LIMIT",
+            "input_tokens": None,
+            "output_tokens": None,
+            "cached_tokens": None,
+            "service_tier": "default",
+        },
+        {
+            "event": "attempt_receipt",
+            "key": key,
+            "ordinal": 2,
+            "attempt_index": 1,
+            "status": "RETRYABLE",
+            "input_tokens": 5000,
+            "output_tokens": 50,
+            "cached_tokens": 3000,
+            "service_tier": "default",
+        },
+        {
+            "event": "attempt_receipt",
+            "key": key,
+            "ordinal": 3,
+            "attempt_index": 2,
+            "status": "SUCCESS",
+            "input_tokens": 5000,
+            "output_tokens": 100,
+            "cached_tokens": 4500,
+            "service_tier": "default",
+        },
+        {"event": "complete", "key": key, "record_sha256": rec_sha},
+        {
+            "event": "monetary_settle",
+            "key": key,
+            "record_sha256": rec_sha,
+            "cost_usd": "0.54070060",
+            "refund_usd": "1.61828180",
+            "breach": False,
+        },
+    ]
+
+    reconciled = reconcile_journal_and_ledger([record], pricing_cfg, journal_events=events)
+    assert reconciled["journal_present"] is True
+    assert reconciled["settled_cost_by_condition"]["no_rag"] == Decimal("0.54070060")
+    assert reconciled["retried_attempts_by_condition"]["no_rag"] == 2
+
+
+def test_reconciliation_mutation_missing_usage():
+    """Missing token usage on attempt receipt must be charged full worst-case attempt fee."""
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+    record = {
+        "sample_id": "s0",
+        "condition": "no_rag",
+        "manifest_sha256": "a" * 64,
+        "request_attempt_count": 1,
+    }
+    rec_sha = hashlib.sha256(canonical_json_bytes(record)).hexdigest()
+    key = ["s0", "no_rag"]
+
+    # Settle claiming $0.00 for missing usage fails
+    events_undercharged = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+        {"event": "monetary_reserve", "key": key, "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": key,
+            "ordinal": 1,
+            "attempt_index": 0,
+            "status": "API_FAILURE",
+            "input_tokens": None,
+            "output_tokens": None,
+            "cached_tokens": None,
+            "service_tier": "default",
+        },
+        {"event": "complete", "key": key, "record_sha256": rec_sha},
+        {
+            "event": "monetary_settle",
+            "key": key,
+            "record_sha256": rec_sha,
+            "cost_usd": "0.00000000",
+            "refund_usd": "2.15898240",
+            "breach": False,
+        },
+    ]
+    with pytest.raises(ValueError, match="Journal settlement cost mismatch"):
+        reconcile_journal_and_ledger([record], pricing_cfg, journal_events=events_undercharged)
+
+
+def test_reconciliation_mutation_orphan_cancellation():
+    """Orphan hold cancellation releases reservation hold with native amount_usd."""
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+    key_settled = ["s0", "no_rag"]
+    key_orphan = ["s1", "no_rag"]
+    record = {
+        "sample_id": "s0",
+        "condition": "no_rag",
+        "manifest_sha256": "a" * 64,
+        "request_attempt_count": 1,
+    }
+    rec_sha = hashlib.sha256(canonical_json_bytes(record)).hexdigest()
+
+    events = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 2},
+        {"event": "monetary_reserve", "key": key_settled, "amount_usd": "2.15898240"},
+        {"event": "monetary_reserve", "key": key_orphan, "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": key_settled,
+            "ordinal": 1,
+            "attempt_index": 0,
+            "status": "SUCCESS",
+            "input_tokens": 100,
+            "output_tokens": 20,
+            "cached_tokens": 0,
+            "service_tier": "default",
+        },
+        {"event": "complete", "key": key_settled, "record_sha256": rec_sha},
+        {
+            "event": "monetary_settle",
+            "key": key_settled,
+            "record_sha256": rec_sha,
+            "cost_usd": "0.00004900",
+            "refund_usd": "2.15893340",
+            "breach": False,
+        },
+        {"event": "monetary_cancel_orphan", "key": key_orphan, "amount_usd": "2.15898240"},
+    ]
+
+    reconciled = reconcile_journal_and_ledger([record], pricing_cfg, journal_events=events)
+    assert reconciled["active_reservation_count"] == 0
+    assert reconciled["active_reservations_usd"] == Decimal("0.00000000")
+    assert reconciled["orphan_cancellations_usd"] == Decimal("2.15898240")
+
+
+def test_reconciliation_mutation_complete_without_settle():
+    """Complete events without subsequent settlement must fail closed."""
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+    record = {
+        "sample_id": "s0",
+        "condition": "no_rag",
+        "manifest_sha256": "a" * 64,
+        "request_attempt_count": 1,
+    }
+    rec_sha = hashlib.sha256(canonical_json_bytes(record)).hexdigest()
+    key = ["s0", "no_rag"]
+
+    events = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+        {"event": "monetary_reserve", "key": key, "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": key,
+            "ordinal": 1,
+            "attempt_index": 0,
+            "status": "SUCCESS",
+            "input_tokens": 100,
+            "output_tokens": 20,
+            "cached_tokens": 0,
+            "service_tier": "default",
+        },
+        {"event": "complete", "key": key, "record_sha256": rec_sha},
+    ]
+
+    with pytest.raises(ValueError, match="Complete-without-settle detected"):
+        reconcile_journal_and_ledger([record], pricing_cfg, journal_events=events)
+
+
+def test_reconciliation_mutation_nonfinite_and_malformed_amounts():
+    """Non-finite money amounts (NaN, Inf, negative) and malformed token counts fail closed."""
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+    key = ["s0", "no_rag"]
+    record = {
+        "sample_id": "s0",
+        "condition": "no_rag",
+        "manifest_sha256": "a" * 64,
+        "request_attempt_count": 1,
+    }
+
+    # 1. NaN in monetary_reserve amount_usd
+    events_nan_res = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+        {"event": "monetary_reserve", "key": key, "amount_usd": "NaN"},
+    ]
+    with pytest.raises(ValueError, match="must be finite"):
+        reconcile_journal_and_ledger([record], pricing_cfg, journal_events=events_nan_res)
+
+    # 2. Negative amount_usd in monetary_reserve
+    events_neg_res = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+        {"event": "monetary_reserve", "key": key, "amount_usd": "-1.00"},
+    ]
+    with pytest.raises(ValueError, match="non-negative"):
+        reconcile_journal_and_ledger([record], pricing_cfg, journal_events=events_neg_res)
+
+    # 3. Non-integer token count in attempt_receipt
+    events_float_tok = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+        {"event": "monetary_reserve", "key": key, "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": key,
+            "ordinal": 1,
+            "attempt_index": 0,
+            "status": "SUCCESS",
+            "input_tokens": 100.5,
+            "output_tokens": 20,
+            "cached_tokens": 0,
+            "service_tier": "default",
+        },
+    ]
+    with pytest.raises(ValueError, match="must be exact int"):
+        reconcile_journal_and_ledger([record], pricing_cfg, journal_events=events_float_tok)
+
+
+def test_cli_subprocess_mismatched_journal_or_ledger_fails(tmp_path):
+    """CLI analysis invocation with mismatched journal or ledger must fail closed (exit != 0)."""
+    manifest_path = _create_dev_run_with_journal(tmp_path)
+    real_repo_root = Path(__file__).resolve().parents[1]
+
+    # Populate default config directory in tmp_path so CLI default paths resolve against mock root
+    config_dir = tmp_path / "config"
+    config_dir.mkdir(exist_ok=True)
+    import shutil
+
+    shutil.copy(
+        real_repo_root / "config" / "experiment_protocol_v1.json",
+        config_dir / "experiment_protocol_v1.json",
+    )
+    shutil.copy(
+        real_repo_root / "config" / "pricing_v1.json",
+        config_dir / "pricing_v1.json",
+    )
+
+    # Mutate the generated request_journal.jsonl to introduce a cost mismatch
+    journal_file = manifest_path.parent / "request_journal.jsonl"
+    lines = journal_file.read_text(encoding="utf-8").splitlines()
+    mutated_lines = []
+    for line in lines:
+        data = json.loads(line)
+        if data.get("event") == "monetary_settle":
+            # Conserve hold (cost + refund = hold) but drift from receipt calculation
+            data["cost_usd"] = "1.00000000"
+            data["refund_usd"] = str(Decimal("2.15898240") - Decimal("1.00000000"))
+        mutated_lines.append(json.dumps(data))
+    journal_file.write_text("\n".join(mutated_lines) + "\n", encoding="utf-8")
+
+    out_dir = tmp_path / "failing_cli_reports"
+
+    cmd = [
+        sys.executable,
+        str(real_repo_root / "scripts" / "analysis" / "evaluate_rqs.py"),
+        "--manifest",
+        str(manifest_path),
+        "--output-dir",
+        str(out_dir),
+        "--repository-root",
+        str(tmp_path),
+        "--bootstrap-samples",
+        "20",
+    ]
+
+    proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    assert proc.returncode != 0
+    assert "Journal settlement cost mismatch" in proc.stderr
 
 
 def test_explicit_cost_denominators_and_excluded_views(tmp_path):

@@ -5597,8 +5597,8 @@ def test_live_runner_faiss_dimension_mismatch_zero_provider_construction(tmp_pat
 
 def test_production_runner_enforces_retry_exponential_backoff(bundle, tmp_path, monkeypatch):
     """Production provider_factory=None path enforces configured exponential backoff."""
-    from unittest import mock
     from types import SimpleNamespace
+    from unittest import mock
 
     monkeypatch.setenv("OPENAI_API_KEY", "sk-mock-production-key-for-backoff-test")
 
@@ -5645,7 +5645,7 @@ def test_production_runner_enforces_retry_exponential_backoff(bundle, tmp_path, 
     with (
         mock.patch("openai.OpenAI", return_value=mock_client) as mock_openai_cls,
         mock.patch("src.experiment.runner.SentenceTransformerEmbedder", return_value=stub_embedder),
-        mock.patch("time.sleep", side_effect=sleep_delays.append) as spy_sleep,
+        mock.patch("time.sleep", side_effect=sleep_delays.append),
     ):
         summary = _prod_run_live_experiment(
             plan,
@@ -5673,7 +5673,8 @@ def test_production_runner_enforces_retry_exponential_backoff(bundle, tmp_path, 
 
     pred_path = output_dir / "no_rag_predictions.jsonl"
     assert pred_path.exists()
-    lines = [json.loads(line) for line in pred_path.read_text(encoding="utf-8").strip().splitlines() if line.strip()]
+    raw_lines = pred_path.read_text(encoding="utf-8").strip().splitlines()
+    lines = [json.loads(line) for line in raw_lines if line.strip()]
     assert len(lines) == 1
     assert lines[0]["retry_count"] == 3
     assert lines[0]["parse_status"] == "VALID"

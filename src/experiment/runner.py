@@ -994,7 +994,6 @@ def run_live_experiment(
                 registry_ids=set(snapshot_registry),
                 live_budget=budget,
                 is_live=True,
-                sleep_fn=lambda _: None,
                 api_key=api_key,
                 extra_secrets=sensitive_tokens,
             )

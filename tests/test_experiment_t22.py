@@ -5594,3 +5594,111 @@ def test_live_runner_faiss_dimension_mismatch_zero_provider_construction(tmp_pat
         )
     assert len(constructed) == 0
 
+
+def test_production_runner_enforces_retry_exponential_backoff(bundle, tmp_path, monkeypatch):
+    """Production provider_factory=None path enforces configured exponential backoff."""
+    from types import SimpleNamespace
+    from unittest import mock
+
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-mock-production-key-for-backoff-test")
+
+    root, config_path, _ = bundle
+    plan = load_plan(config_path)
+    output_dir = tmp_path / "prod-backoff-test"
+    proto = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
+    auth = ExecutionAuthorization(
+        human_approval_token="TOKEN_PRODUCTION_BACKOFF",
+        approved_protocol_sha256=proto.protocol_sha256,
+        authorized_max_provider_attempts=20,
+        allow_live_dispatch=True,
+    )
+
+    # 1. Exercise production constructor path (provider_factory=None)
+    sleep_delays = []
+    call_count = [0]
+
+    def fake_create(**kwargs):
+        call_count[0] += 1
+        if call_count[0] == 1:
+            raise ConnectionError("transient connection reset")
+        elif call_count[0] == 2:
+            raise TimeoutError("transient timeout")
+        elif call_count[0] == 3:
+            raise ConnectionError("transient network drop")
+        return SimpleNamespace(
+            status="completed",
+            output=[],
+            output_text='{"technique_id":"T1059.001"}',
+            refusal=None,
+            usage=SimpleNamespace(input_tokens=100, output_tokens=50),
+            id="resp_backoff_test",
+            model="gpt-5.6-luna",
+            system_fingerprint="fp_backoff",
+        )
+
+    mock_client = mock.MagicMock()
+    mock_client.responses.create.side_effect = fake_create
+
+    dim = plan.config.retrieval.embedding_dimension
+    stub_embedder = StubEmbedder(dim)
+
+    with (
+        mock.patch("openai.OpenAI", return_value=mock_client) as mock_openai_cls,
+        mock.patch("src.experiment.runner.SentenceTransformerEmbedder", return_value=stub_embedder),
+        mock.patch("time.sleep", side_effect=sleep_delays.append),
+    ):
+        summary = _prod_run_live_experiment(
+            plan,
+            output_dir,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=None,
+            stop_after=1,
+            allow_dirty=True,
+        )
+
+    assert mock_openai_cls.called, "OpenAI SDK constructor must be called in production path"
+    assert call_count[0] == 4, f"Expected 4 attempts, got {call_count[0]}"
+    assert sleep_delays == [1.0, 2.0, 4.0], f"Expected delays [1.0, 2.0, 4.0], got {sleep_delays}"
+    assert summary["consumed_provider_attempts"] == 4
+    assert summary["new_records"] == 1
+    assert summary["record_count"] == 1
+
+    journal_events = read_journal_events(output_dir / "request_journal.jsonl")
+    attempt_events = [e for e in journal_events if e.get("event") == "attempt"]
+    assert len(attempt_events) == 4
+    assert [e["ordinal"] for e in attempt_events] == [1, 2, 3, 4]
+    complete_events = [e for e in journal_events if e.get("event") == "complete"]
+    assert len(complete_events) == 1
+
+    pred_path = output_dir / "no_rag_predictions.jsonl"
+    assert pred_path.exists()
+    raw_lines = pred_path.read_text(encoding="utf-8").strip().splitlines()
+    lines = [json.loads(line) for line in raw_lines if line.strip()]
+    assert len(lines) == 1
+    assert lines[0]["retry_count"] == 3
+    assert lines[0]["parse_status"] == "VALID"
+    assert lines[0]["parsed_technique_ids"] == ["T1059.001"]
+
+    # 2. Verify that mock seam (provider_factory is not None) remains fast (no-wait)
+    mock_delays = []
+    fast_provider = MockProvider(
+        outcomes={("s1", "no_rag"): [TimeoutError("transient timeout"), MockReply()]}
+    )
+
+    fast_dir = tmp_path / "mock-seam-fast-test"
+    with mock.patch("time.sleep", side_effect=mock_delays.append):
+        fast_summary = run_live_experiment(
+            plan,
+            fast_dir,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, b: fast_provider,
+            stop_after=1,
+            allow_dirty=True,
+        )
+
+    assert fast_provider.attempt == 2
+    assert mock_delays == [], "Mock seam must not call time.sleep (remains fast)"
+    assert fast_summary["consumed_provider_attempts"] == 2
+

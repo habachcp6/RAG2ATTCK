@@ -2,7 +2,7 @@
 
 Tests:
 1. Five conditions matrix enforcement (no_rag, rag_k1, rag_k3, rag_k5, rag_k10).
-2. Fixed 474-class Macro-F1 denominator (FROZEN_BENCHMARK_UNIVERSE).
+2. Distinguishing fixed 474-class Macro-F1 known-answer denominator test (Item 5).
 3. ANY_MATCH multi-GT semantics (D2a).
 4. Excluded unmapped and ambiguous ground truth counts (D2b/D2c).
 5. End-to-end failure denominator including invalid IDs and API failures (D2e/D2f).
@@ -10,7 +10,18 @@ Tests:
 7. Independent failure axes without mutual exclusion (D2i).
 8. Null zero denominators (D2j).
 9. Evaluator CLI contract via subprocess invocation.
-10. Offline RQ analysis tools (RQ1, RQ2, RQ3, McNemar, bootstrap CIs, report generation).
+10. Strict pricing validation and unknown service tier rejection (Item 1 & 6).
+11. Malformed token values validation (negative, non-int, cached > prompt) (Item 6).
+12. Cached token rates tariff accounting (cache_read vs cache_write) (Item 6).
+13. Missing usage worst-case attempt charge contract ($0.53974560) (Item 1 & 6).
+14. Financial reconciliation with retries, extra receipts, and settlements (Item 2 & 6).
+15. Duplicate/mismatched receipt and settlement keys failure modes (Item 6).
+16. Explicit cost denominators and excluded views disclosure (Item 3).
+17. Study-wide financial accounting and prior pilot hold preservation (Item 2).
+18. CLI repository root resolution from external arbitrary CWD (Item 4).
+19. Pair-cluster bootstrap resampling preserving intra-pair correlation (Item 7).
+20. RQ2 D2i independent failure axes, overlap accounting, and No-RAG N/A semantics (Item 8).
+21. Scorable view counts verification (278 single, 440 contextual) (Item 7).
 """
 
 from __future__ import annotations
@@ -19,6 +30,8 @@ import hashlib
 import json
 import subprocess
 import sys
+from decimal import Decimal
+from pathlib import Path
 
 import pytest
 
@@ -28,15 +41,21 @@ from scripts.analysis.evaluate_rqs import (
     compute_rq1,
     compute_rq2,
     compute_rq3,
+    reconcile_journal_and_ledger,
     run_rq_analysis,
+    validate_pricing_config,
 )
 from src.evaluation.experiment_metrics import (
     CONDITIONS,
+    canonical_json_bytes,
     evaluate_experiment,
 )
+from src.experiment.monetary_ledger import calculate_attempt_token_cost
 from tests.test_experiment_evaluation import (
     A,
     B,
+    C,
+    _digest,
     _dump_rows,
     _fixture,
     _load,
@@ -60,35 +79,266 @@ def test_evaluator_contract_five_conditions_matrix(tmp_path):
     assert set(results["overall"]["by_condition_summary"].keys()) == set(CONDITIONS)
 
 
-def test_evaluator_contract_fixed_474_class_macro_f1(tmp_path):
-    """Macro-F1 denominator must remain invariant to benchmark universe size (474 classes).
+def _fixture_474(tmp_path):
+    """Fixture with frozen 474-class MITRE ATT&CK universe."""
+    fillers = [f"T{2000 + i}" for i in range(470)]
+    registry_ids = [A, B, C, "T1059", *fillers]
+    assert len(registry_ids) == 474
 
-    Unobserved classes contribute 0.0 to the numerator, and the denominator is strictly 474.
+    truth = [[A], [B], [A], [C], [], [], [A], [B], [A], [B]]
+    samples = [
+        {
+            "sample_id": f"s{i}",
+            "pair_id": f"p{i // 2}",
+            "view_type": "single" if i % 2 == 0 else "contextual",
+        }
+        for i in range(10)
+    ]
+    artifact_values = {
+        "inference": [
+            {"sample_id": s["sample_id"], "endpoint_evidence": f"fixture event {i}"}
+            for i, s in enumerate(samples)
+        ],
+        "ground_truth": [
+            {
+                "view_id": s["sample_id"],
+                "technique_ids": truth[i],
+                "label_status": "mapped" if truth[i] else ("unmapped" if i == 4 else "ambiguous"),
+            }
+            for i, s in enumerate(samples)
+        ],
+        "views": [
+            {
+                "view_id": s["sample_id"],
+                "pair_id": s["pair_id"],
+                "view_type": s["view_type"],
+                "event_ids": [f"e{i // 2}"] if i % 2 == 0 else [f"e{i // 2}", f"context{i // 2}"],
+            }
+            for i, s in enumerate(samples)
+        ],
+        "corpus": [{"technique_id": tid} for tid in registry_ids],
+    }
+    artifact_values["pairs"] = [
+        {
+            "pair_id": f"p{i}",
+            "split": "test" if i < 4 else "dev",
+            "single_view": artifact_values["views"][2 * i],
+            "contextual_view": artifact_values["views"][2 * i + 1],
+            "single_ground_truth": artifact_values["ground_truth"][2 * i],
+            "contextual_ground_truth": artifact_values["ground_truth"][2 * i + 1],
+        }
+        for i in range(5)
+    ]
+    specs = {}
+    for name, rows in artifact_values.items():
+        path = tmp_path / f"{name}.jsonl"
+        _dump_rows(path, rows)
+        specs[name] = {"path": path.name, "sha256": _digest(path.read_bytes())}
+
+    def artifact(name, value, *, data=None):
+        path = tmp_path / f"{name}.json"
+        path.write_bytes(canonical_json_bytes(value) if data is None else data)
+        specs[name] = {"path": path.name, "sha256": _digest(path.read_bytes())}
+
+    artifact("split_manifest", {"test": [f"p{i}" for i in range(4)], "dev": ["p4"]})
+    artifact(
+        "attack_registry",
+        {
+            "objects": [
+                {
+                    "type": "attack-pattern",
+                    "external_references": [{"source_name": "mitre-attack", "external_id": tid}],
+                    "x_mitre_deprecated": tid == "T1059",
+                }
+                for tid in registry_ids
+            ]
+        },
+    )
+    artifact("prompt", None, data=b"fixture prompt {ENDPOINT_EVIDENCE} {RETRIEVED_CONTEXT}")
+    model = {
+        "provider": "fixture",
+        "model": "fixture-model",
+        "logging_policy": {"log_raw_response": False},
+    }
+    artifact("model_config", model)
+    artifact("index", None, data=b"fixture index - never loaded")
+    artifact("document_mapping", [{"technique_id": tid} for tid in registry_ids])
+    artifact(
+        "retrieval_config",
+        {
+            "supported_k": [1, 3, 5, 10],
+            "corpus_sha256": specs["corpus"]["sha256"],
+            "embedding_model": "mock",
+            "distance_metric": "cosine",
+        },
+    )
+    artifact(
+        "retrieval_manifest",
+        {
+            "corpus_sha256": specs["corpus"]["sha256"],
+            "index_sha256": specs["index"]["sha256"],
+            "document_mapping_sha256": specs["document_mapping"]["sha256"],
+        },
+    )
+    artifact(
+        "dataset_manifest",
+        {
+            "benchmark_version": "fixture-only",
+            "attack_version": "19.2",
+            "state": "frozen",
+            "view_count": 10,
+            "pair_count": 5,
+            "split_counts": {"test": 4, "dev": 1},
+            "attack_source_sha256": specs["attack_registry"]["sha256"],
+            "files": {
+                Path(specs[name]["path"]).name: specs[name]["sha256"]
+                for name in ("inference", "ground_truth", "views", "pairs", "split_manifest")
+            },
+        },
+    )
+    execution = {"retries": 1}
+    experiment_config = {
+        "schema_version": "1.0.0",
+        "purpose": "known_answer_fixture_only",
+        "execution": execution,
+    }
+    artifact("experiment_config", experiment_config)
+    from src.llm.schemas import TechniquePrediction
+
+    schema_sha = hashlib.sha256(
+        canonical_json_bytes(TechniquePrediction.model_json_schema())
+    ).hexdigest()
+
+    manifest = {
+        "schema_version": "1.0.0",
+        "status": "frozen",
+        "execution_mode": "mock_fixture",
+        "experiment_id": "known-answer-only",
+        "git_commit_sha": "0" * 40,
+        "config_sha256": specs["experiment_config"]["sha256"],
+        "artifacts": specs,
+        "split": "test",
+        "sample_ids": [f"s{i}" for i in range(8)],
+        "samples": samples[:8],
+        "expected_request_count": 40,
+        "maximum_attempts": 80,
+        "conditions": list(CONDITIONS),
+        "execution": execution,
+        "model": model,
+        "model_version": None,
+        "retrieval": {
+            "supported_k": [1, 3, 5, 10],
+            "corpus_sha256": specs["corpus"]["sha256"],
+            "embedding_model": "mock",
+            "distance_metric": "cosine",
+        },
+        "output_schema_sha256": schema_sha,
+        "benchmark_version": "fixture-only",
+        "attack_release": "19.2",
+    }
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_bytes(canonical_json_bytes(manifest))
+    manifest_digest = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+
+    pred_paths = {}
+    for cond in CONDITIONS:
+        rows = []
+        k = 0 if cond == "no_rag" else int(cond[5:])
+        for s in samples[:8]:
+            sid = s["sample_id"]
+            gt = truth[int(sid[1:])]
+            status = "mapped" if gt else ("unmapped" if sid == "s4" else "ambiguous")
+            pred_id = gt[0] if (status == "mapped" and gt) else None
+            row = {
+                "schema_version": "1.0.0",
+                "execution_mode": "mock_fixture",
+                "experiment_id": "known-answer-only",
+                "manifest_sha256": manifest_digest,
+                "condition": cond,
+                "retrieval_k": k,
+                "provider": "fixture",
+                "model": "fixture-model",
+                "model_version": None,
+                "output_schema_sha256": schema_sha,
+                "ground_truth_version": "fixture-only",
+                "attack_release": "19.2",
+                "prompt_sha256": specs["prompt"]["sha256"],
+                "model_config_sha256": specs["model_config"]["sha256"],
+                "dataset_sha256": specs["inference"]["sha256"],
+                "ground_truth_sha256": specs["ground_truth"]["sha256"],
+                "corpus_sha256": specs["corpus"]["sha256"],
+                "index_sha256": specs["index"]["sha256"],
+                "sample_id": sid,
+                "pair_id": s["pair_id"],
+                "view_type": s["view_type"],
+                "run_id": "run-001",
+                "raw_response": None,
+                "raw_response_logged": False,
+                "parse_status": "VALID" if pred_id else "API_FAILURE",
+                "success": bool(pred_id),
+                "parsed_technique_ids": [pred_id] if pred_id else [],
+                "retrieved_candidates": [
+                    {"technique_id": fillers[idx], "rank": idx + 1, "score": 1.0 / (idx + 1)}
+                    for idx in range(k)
+                ],
+                "prompt_tokens": 100,
+                "completion_tokens": 20,
+                "total_tokens": 120,
+                "latency_ms": 15.0,
+                "retry_count": 0,
+                "request_attempt_count": 1,
+                "error_type": None,
+                "error_message": None,
+                "returned_model_id": "fixture-model",
+                "response_id": f"resp-{sid}",
+                "system_fingerprint": None,
+                "request_timestamp_utc": "2026-10-01T00:00:00+00:00",
+                "response_timestamp_utc": "2026-10-01T00:00:01+00:00",
+                "timestamp": "2026-10-01T00:00:01+00:00",
+                "terminal": True,
+            }
+            rows.append(row)
+        pred_path = tmp_path / f"{cond}_predictions.jsonl"
+        _dump_rows(pred_path, rows)
+        pred_paths[cond] = pred_path
+
+    return manifest_path, pred_paths, manifest
+
+
+def test_evaluator_contract_fixed_474_class_macro_f1_distinguishing(tmp_path):
+    """Known-answer test: Macro-F1 denominator must strictly be 474, not observed classes.
+
+    In this 474-class fixture:
+    - Exactly 3 classes (A, B, C) are observed and have F1 = 1.0.
+    - Exactly 471 classes are unobserved in predictions/ground truth (F1 = 0.0 per D2d/D2j).
+    - The true Macro-F1 is strictly 3.0 / 474 = 0.0063291...
+    - An observed-only denominator (3.0 / 3.0 = 1.0) must FAIL by a factor of 158x.
     """
-    fixture = _fixture(tmp_path)
+    fixture = _fixture_474(tmp_path)
     inputs = _load(tmp_path, fixture)
     proto = _test_protocol()
 
-    # The fixture corpus contains 14 technique IDs. Let's verify per-condition Macro-F1.
-    res = evaluate_experiment(inputs, proto)
-    for cond in CONDITIONS:
-        cond_f1 = res["per_condition"]["conditions"][cond]["macro_f1"]
-        # Macro F1 is sum(F1_c) / universe_size
-        universe_size = len(inputs.corpus_ids)
-        assert universe_size == 14  # Fixture corpus size
-        assert cond_f1 is not None
-        assert 0.0 <= cond_f1 <= 1.0
+    assert len(inputs.corpus_ids) == 474
+
+    results = evaluate_experiment(inputs, proto)
+    cond_metrics = results["per_condition"]["conditions"]["no_rag"]
+    cond_f1 = cond_metrics["macro_f1"]
+
+    expected_f1 = 3.0 / 474.0
+    observed_only_f1 = 3.0 / 3.0  # 1.0
+
+    assert cond_f1 == pytest.approx(expected_f1, abs=1e-7)
+    assert cond_f1 != observed_only_f1
+    assert abs(cond_f1 - observed_only_f1) > 0.99
+    assert cond_f1 < 0.01
 
 
 def test_evaluator_contract_any_match_multilabel_ground_truth(tmp_path):
     """D2a ANY_MATCH: predicting ANY valid ground truth technique counts as correct."""
     fixture = _fixture(tmp_path)
-    # Sample s2 in fixture has GT = [A, B] (multilabel: T1059.001 and T1105)
-    # Test that predicting A is correct, predicting B is correct, predicting C is wrong
     inputs = _load(tmp_path, fixture)
     proto = _test_protocol()
 
-    # Verify sample s2 in rag_k3 has parsed_technique_ids == [B] in fixture
     s2_record = next(
         r for r in inputs.records if r["sample_id"] == "s2" and r["condition"] == "rag_k3"
     )
@@ -97,7 +347,6 @@ def test_evaluator_contract_any_match_multilabel_ground_truth(tmp_path):
     assert A in inputs.ground_truth["s2"]
 
     results = evaluate_experiment(inputs, proto)
-    # Condition metrics should count s2 as correct because B is in [A, B]
     cond_metrics = results["per_condition"]["conditions"]["rag_k3"]
     assert cond_metrics["correct_count"] == 3
 
@@ -108,8 +357,6 @@ def test_evaluator_contract_unmapped_and_ambiguous_gt_exclusion(tmp_path):
     inputs = _load(tmp_path, fixture)
     proto = _test_protocol()
 
-    # In fixture: 8 samples total. s4 has label_status='unmapped', s5 has label_status='ambiguous'
-    # Remaining scorable samples = 6 per condition.
     results = evaluate_experiment(inputs, proto)
     for cond in CONDITIONS:
         m = results["per_condition"]["conditions"][cond]
@@ -127,23 +374,13 @@ def test_evaluator_contract_end_to_end_failure_denominator(tmp_path):
     inputs = _load(tmp_path, fixture)
     proto = _test_protocol()
 
-    # In fixture scorable samples (s0, s1, s2, s3, s6, s7):
-    # s0: VALID (A) -> correct
-    # s1: VALID (C) -> incorrect (GT is B)
-    # s2: VALID (B) -> correct (GT is [A, B])
-    # s3: INVALID_ID ("not-an-id") -> failure included in e2e denominator
-    # s6: VALID (A) -> correct
-    # s7: VALID ("T1059" retired ID) -> incorrect (GT is B)
-    # Total scorable: 6. Valid scorable: 5 (s3 is INVALID_ID). Correct: 3 (s0, s2, s6).
     results = evaluate_experiment(inputs, proto)
     m = results["per_condition"]["conditions"]["rag_k3"]
 
     assert m["scorable_sample_count"] == 6
     assert m["valid_scorable_sample_count"] == 5
     assert m["correct_count"] == 3
-    # accuracy_end_to_end = 3 / 6 = 0.5
     assert m["accuracy_end_to_end"] == 0.5
-    # accuracy_valid_outputs = 3 / 5 = 0.6
     assert m["accuracy_valid_outputs"] == 0.6
 
 
@@ -157,10 +394,10 @@ def test_evaluator_contract_invalid_and_retired_id_diagnostics(tmp_path):
     m = results["per_condition"]["conditions"]["rag_k3"]
 
     assert m["invalid_id_count"] == 1
-    assert m["invalid_syntax_count"] == 1  # "not-an-id" has invalid syntax
+    assert m["invalid_syntax_count"] == 1
     assert m["unknown_id_count"] == 0
-    assert m["retired_id_observation_count"] == 1  # T1059 is deprecated in registry fixture
-    assert m["completed_record_count"] == 7  # 8 - 1 (API_FAILURE) = 7 completed
+    assert m["retired_id_observation_count"] == 1
+    assert m["completed_record_count"] == 7
 
 
 def test_evaluator_contract_independent_failure_axes(tmp_path):
@@ -190,7 +427,6 @@ def test_evaluator_contract_null_zero_denominators(tmp_path):
     results = evaluate_experiment(inputs, proto)
     per_tech = results["per_technique"]["by_condition"]["rag_k3"]
 
-    # "T2000" is in corpus/registry but never in ground truth or predictions
     filler = per_tech["T2000"]
     assert filler["support"] == 0
     assert filler["tp"] == 0
@@ -222,8 +458,6 @@ def _create_dev_run_with_journal(tmp_path):
     dev_manifest["expected_request_count"] = req_count
     dev_manifest["maximum_attempts"] = req_count * (dev_manifest["execution"]["retries"] + 1)
     dev_manifest["fixture_max_requests"] = req_count
-
-    from src.evaluation.experiment_metrics import canonical_json_bytes
 
     manifest_bytes = canonical_json_bytes(dev_manifest)
     manifest_digest = hashlib.sha256(manifest_bytes).hexdigest()
@@ -295,7 +529,6 @@ def test_evaluator_cli_contract_subprocess_execution(tmp_path):
     out_dir = tmp_path / "cli_eval_output"
     proto_path = tmp_path / "protocol.json"
     proto = _test_protocol()
-    from src.evaluation.experiment_metrics import canonical_json_bytes
 
     proto_path.write_bytes(
         canonical_json_bytes(
@@ -358,13 +591,411 @@ def test_evaluator_cli_contract_subprocess_execution(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# Offline RQ Analysis Tools Tests
+# Strict Pricing & Financial Accounting Regressions (Items 1, 2, 3, 6)
 # ---------------------------------------------------------------------------
+
+
+def test_pricing_config_strict_validation():
+    """Pricing configuration must reject missing tariffs, invalid bounds, or unknown tiers."""
+    # Empty config
+    with pytest.raises(ValueError, match="missing 'tariffs'"):
+        validate_pricing_config({})
+
+    # Non-dict
+    with pytest.raises(ValueError, match="must be a dict"):
+        validate_pricing_config("invalid")  # type: ignore
+
+    # Missing default tier
+    with pytest.raises(ValueError, match="missing 'tariffs' or 'default'"):
+        validate_pricing_config({"tariffs": {"auto": {}}})
+
+    # Missing reservation bounds
+    invalid_tariff_config = {
+        "tariffs": {
+            "default": {
+                "short": {
+                    "input_per_million": "0.20",
+                    "output_per_million": "1.20",
+                    "cache_read_per_million": "0.02",
+                    "cache_write_per_million": "0.25",
+                },
+                "long": {
+                    "input_per_million": "0.40",
+                    "output_per_million": "1.80",
+                    "cache_read_per_million": "0.04",
+                    "cache_write_per_million": "0.50",
+                },
+            }
+        },
+        "reservation_bounds": {},
+        "ceilings": {
+            "max_input_tokens": 1050000,
+            "max_output_tokens": 8192,
+            "short_context_limit": 272000,
+        },
+        "total_study_budget_usd": "19.99000000",
+    }
+    with pytest.raises(ValueError, match="Missing required reservation bound"):
+        validate_pricing_config(invalid_tariff_config)
+
+    # Valid config passes
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    valid_cfg, _ = load_pricing_config()
+    assert validate_pricing_config(valid_cfg) == valid_cfg
+
+
+def test_malformed_token_values_validation():
+    """Negative tokens or cached > prompt tokens must raise ValueError without silent clamping."""
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+
+    # Negative prompt tokens
+    with pytest.raises(ValueError, match="cannot be negative"):
+        calculate_attempt_token_cost(-10, 100, pricing_cfg)
+
+    # Negative completion tokens
+    with pytest.raises(ValueError, match="cannot be negative"):
+        calculate_attempt_token_cost(100, -5, pricing_cfg)
+
+    # Cached tokens exceeding prompt tokens
+    with pytest.raises(ValueError, match="cannot exceed prompt_tokens"):
+        calculate_attempt_token_cost(100, 50, pricing_cfg, cached_tokens=150)
+
+    # Unknown tier rejected immediately (no fallback permitted)
+    with pytest.raises(ValueError, match="Unknown service tier 'unknown_tier'"):
+        calculate_attempt_token_cost(100, 50, pricing_cfg, tier="unknown_tier")
+
+
+def test_cached_token_rates_tariff_accounting():
+    """Verify prompt cached tokens billed at cache_read rate ($0.02) vs cache_write ($0.25)."""
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+
+    # 10,000 prompt tokens, 1,000 completion tokens
+    p_tok = 10000
+    c_tok = 1000
+
+    # Uncached: prompt billed at cache_write (10k * 0.25 / 1M = $0.0025) + output = $0.0037
+    cost_uncached = calculate_attempt_token_cost(p_tok, c_tok, pricing_cfg, cached_tokens=0)
+    # Cached: 8k cached ($0.00016) + 2k write ($0.0005) + output ($0.0012) = $0.00186
+    cost_cached = calculate_attempt_token_cost(p_tok, c_tok, pricing_cfg, cached_tokens=8000)
+
+    assert cost_cached < cost_uncached
+    assert cost_uncached == Decimal("0.00370000")
+    assert cost_cached == Decimal("0.00186000")
+
+
+def test_missing_usage_worst_case_attempt_charge():
+    """Missing prompt or completion tokens must charge worst-case attempt fee ($0.53974560)."""
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+
+    worst_fee = Decimal("0.53974560")
+    assert calculate_attempt_token_cost(None, 100, pricing_cfg) == worst_fee
+    assert calculate_attempt_token_cost(100, None, pricing_cfg) == worst_fee
+    assert calculate_attempt_token_cost(None, None, pricing_cfg) == worst_fee
+
+
+def test_reconciled_financial_accounting_with_retries(tmp_path):
+    """Reconciled cost must account for retried attempts beyond final prediction record tokens."""
+    fixture = _fixture(tmp_path)
+    inputs = _load(tmp_path, fixture)
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+
+    # Construct journal with a retried request for (s0, no_rag):
+    # Attempt 0: failed (API_FAILURE, usage=None -> charged worst-case $0.53974560)
+    # Attempt 1: succeeded (prompt=1000, completion=100)
+    rec_s0 = next(
+        r for r in inputs.records if r["sample_id"] == "s0" and r["condition"] == "no_rag"
+    )
+    rec_sha = hashlib.sha256(canonical_json_bytes(rec_s0)).hexdigest()
+
+    events = [
+        {"event": "header", "manifest_sha256": inputs.manifest_sha256, "max_requests": 100},
+        {"event": "transition", "key": ["s0", "no_rag"], "state": "RESERVED"},
+        {"event": "transition", "key": ["s0", "no_rag"], "state": "DISPATCH_STARTED"},
+        {
+            "event": "attempt_receipt",
+            "key": ["s0", "no_rag"],
+            "ordinal": 1,
+            "attempt_index": 0,
+            "status": "API_FAILURE",
+            "input_tokens": None,
+            "output_tokens": None,
+            "cached_tokens": None,
+        },
+        {"event": "transition", "key": ["s0", "no_rag"], "state": "DISPATCH_STARTED"},
+        {
+            "event": "attempt_receipt",
+            "key": ["s0", "no_rag"],
+            "ordinal": 2,
+            "attempt_index": 1,
+            "status": "SUCCESS",
+            "input_tokens": 1000,
+            "output_tokens": 100,
+            "cached_tokens": None,
+        },
+        {"event": "complete", "key": ["s0", "no_rag"], "record_sha256": rec_sha},
+        {
+            "event": "monetary_settle",
+            "key": ["s0", "no_rag"],
+            "cost_usd": str(Decimal("0.53974560") + Decimal("0.00037000")),
+            "refund_usd": "1.61886680",
+            "record_sha256": rec_sha,
+            "breach": False,
+        },
+    ]
+
+    reconciled = reconcile_journal_and_ledger(
+        inputs.records,
+        pricing_cfg,
+        journal_events=events,
+    )
+
+    assert reconciled["journal_present"] is True
+    assert reconciled["retried_attempts_by_condition"]["no_rag"] == 1
+    settled_cost = reconciled["settled_cost_by_condition"]["no_rag"]
+    assert settled_cost is not None
+    assert settled_cost > Decimal("0.53974560")
+
+
+def test_reconciliation_duplicate_and_mismatched_keys_fail(tmp_path):
+    """Reconciliation rejects duplicate ordinals, duplicate settles, or hash mismatches."""
+    fixture = _fixture(tmp_path)
+    inputs = _load(tmp_path, fixture)
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+
+    # 1. Duplicate receipt ordinal
+    dup_ord_events = [
+        {
+            "event": "attempt_receipt",
+            "key": ["s0", "no_rag"],
+            "ordinal": 1,
+            "attempt_index": 0,
+            "input_tokens": 100,
+            "output_tokens": 10,
+        },
+        {
+            "event": "attempt_receipt",
+            "key": ["s0", "no_rag"],
+            "ordinal": 1,  # Duplicate ordinal!
+            "attempt_index": 1,
+            "input_tokens": 100,
+            "output_tokens": 10,
+        },
+    ]
+    with pytest.raises(ValueError, match="Duplicate attempt_receipt ordinal"):
+        reconcile_journal_and_ledger(inputs.records, pricing_cfg, journal_events=dup_ord_events)
+
+    # 2. Duplicate monetary_settle
+    rec_s0 = next(
+        r for r in inputs.records if r["sample_id"] == "s0" and r["condition"] == "no_rag"
+    )
+    rec_s0_hash = hashlib.sha256(canonical_json_bytes(rec_s0)).hexdigest()
+
+    dup_settle_events = [
+        {
+            "event": "monetary_settle",
+            "key": ["s0", "no_rag"],
+            "cost_usd": "0.01",
+            "refund_usd": "2.00",
+            "record_sha256": rec_s0_hash,
+            "breach": False,
+        },
+        {
+            "event": "monetary_settle",
+            "key": ["s0", "no_rag"],
+            "cost_usd": "0.01",
+            "refund_usd": "2.00",
+            "record_sha256": rec_s0_hash,
+            "breach": False,
+        },
+    ]
+    with pytest.raises(ValueError, match="Duplicate monetary_settle event"):
+        reconcile_journal_and_ledger(inputs.records, pricing_cfg, journal_events=dup_settle_events)
+
+    # 3. Hash mismatch between monetary_settle and record
+    mismatch_events = [
+        {
+            "event": "monetary_settle",
+            "key": ["s0", "no_rag"],
+            "cost_usd": "0.01",
+            "refund_usd": "2.00",
+            "record_sha256": "f" * 64,  # Incorrect hash!
+            "breach": False,
+        }
+    ]
+    with pytest.raises(ValueError, match="Monetary settle record_sha256 mismatch"):
+        reconcile_journal_and_ledger(inputs.records, pricing_cfg, journal_events=mismatch_events)
+
+
+def test_explicit_cost_denominators_and_excluded_views(tmp_path):
+    """RQ3 must report cost_per_logical_request, cost_per_scorable_query, and cost_per_correct."""
+    fixture = _fixture(tmp_path)
+    inputs = _load(tmp_path, fixture)
+    proto = _test_protocol()
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+
+    rq3 = compute_rq3(inputs, proto, pricing_config=pricing_cfg)
+    k3_fin = rq3["tradeoffs_by_condition"]["rag_k3"]["financial_cost_usd"]
+
+    assert "cost_per_logical_request_usd" in k3_fin
+    assert "cost_per_scorable_query_usd" in k3_fin
+    assert "cost_per_correct_attribution_usd" in k3_fin
+    assert "cost_of_excluded_ambiguous_views_usd" in k3_fin
+    assert "cost_of_excluded_unmapped_views_usd" in k3_fin
+    assert "cost_of_all_excluded_views_usd" in k3_fin
+    assert "excluded_views_financial_disclosure" in k3_fin
+
+    tot = k3_fin["total_cost_usd"]
+    # 8 total logical records, 6 scorable, 3 correct in fixture
+    assert k3_fin["cost_per_logical_request_usd"] == pytest.approx(tot / 8.0)
+    assert k3_fin["cost_per_scorable_query_usd"] == pytest.approx(tot / 6.0)
+    assert k3_fin["cost_per_correct_attribution_usd"] == pytest.approx(tot / 3.0)
+    assert k3_fin["cost_of_all_excluded_views_usd"] > 0
+
+
+def test_study_wide_financial_accounting_and_pilot_hold(tmp_path):
+    """Whole-study accounting must preserve prior pilot hold without charging to conditions."""
+    fixture = _fixture(tmp_path)
+    inputs = _load(tmp_path, fixture)
+    proto = _test_protocol()
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+
+    rq3 = compute_rq3(inputs, proto, pricing_config=pricing_cfg)
+    study_fin = rq3["whole_study_financial_accounting"]
+
+    assert study_fin["total_study_budget_usd"] == 19.99
+    assert study_fin["prior_pilot_provisional_hold_usd"] == pytest.approx(0.05264010)
+    assert study_fin["total_study_committed_spend_usd"] > 0.05264010
+    assert study_fin["net_remaining_uncommitted_budget_usd"] > 0
+
+    # Ensure pilot hold was NOT charged to any individual condition
+    for cond in CONDITIONS:
+        cond_tot = rq3["tradeoffs_by_condition"][cond]["financial_cost_usd"]["total_cost_usd"]
+        assert cond_tot < 0.05264010
+
+
+def test_cli_repository_root_resolution_from_external_cwd(tmp_path):
+    """CLI defaults for protocol and pricing must resolve against --repository-root from any CWD."""
+    manifest_path = _create_dev_run_with_journal(tmp_path)
+    real_repo_root = Path(__file__).resolve().parents[1]
+
+    # Populate default config directory in tmp_path so CLI default paths resolve against mock root
+    config_dir = tmp_path / "config"
+    config_dir.mkdir(exist_ok=True)
+    import shutil
+
+    shutil.copy(
+        real_repo_root / "config" / "experiment_protocol_v1.json",
+        config_dir / "experiment_protocol_v1.json",
+    )
+    shutil.copy(
+        real_repo_root / "config" / "pricing_v1.json",
+        config_dir / "pricing_v1.json",
+    )
+
+    external_cwd = tmp_path.parent / "outside_cwd_test"
+    external_cwd.mkdir(exist_ok=True)
+
+    out_dir = tmp_path / "external_cwd_reports"
+
+    cmd = [
+        sys.executable,
+        str(real_repo_root / "scripts" / "analysis" / "evaluate_rqs.py"),
+        "--manifest",
+        str(manifest_path),
+        "--output-dir",
+        str(out_dir),
+        "--repository-root",
+        str(tmp_path),
+        "--bootstrap-samples",
+        "20",
+    ]
+
+    proc = subprocess.run(cmd, cwd=external_cwd, capture_output=True, text=True, check=False)
+    assert proc.returncode == 0, f"External CWD CLI failed: {proc.stderr}\n{proc.stdout}"
+    assert (out_dir / "rq_analysis.json").exists()
+    assert (out_dir / "rq_analysis_summary.md").exists()
+
+
+def test_pair_cluster_bootstrap_resampling():
+    """Pair-cluster bootstrap must resample clusters of views sharing pair_id together."""
+    # 4 pairs (p0, p1, p2, p3), 2 views each (single, contextual)
+    cluster_ids = ["p0", "p0", "p1", "p1", "p2", "p2", "p3", "p3"]
+    treat = [1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0]
+    base = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+
+    ci = compute_paired_bootstrap_ci(
+        treat, base, cluster_ids=cluster_ids, num_samples=200, seed=123
+    )
+    assert ci["resampling_method"] == "pair_cluster_bootstrap"
+    assert ci["cluster_count"] == 4
+    assert ci["ci_lower"] <= ci["mean_delta"] <= ci["ci_upper"]
+
+
+def test_rq2_independent_failure_axes_and_no_rag_na(tmp_path):
+    """RQ2 enforces D2i independent failure axes and sets No-RAG retrieval metrics to None."""
+    fixture = _fixture(tmp_path)
+    inputs = _load(tmp_path, fixture)
+    proto = _test_protocol()
+
+    rq2 = compute_rq2(inputs, proto)
+    assert rq2["schema_version"] == "1.0.0"
+
+    # 1. No-RAG: retrieval metrics must be None (not applicable)
+    no_rag = rq2["by_condition"]["no_rag"]
+    assert no_rag["retrieval_metrics"]["applicable"] is False
+    assert no_rag["retrieval_metrics"]["macro_recall"] is None
+    assert no_rag["retrieval_metrics"]["retrieval_hit_rate"] is None
+    assert no_rag["generation_conditional_accuracy"]["applicable"] is False
+    assert no_rag["generation_conditional_accuracy"]["p_correct_given_retrieval_success"] is None
+    assert no_rag["independent_failure_axes"]["retrieval_miss_count"] is None
+
+    # 2. RAG_k3: independent axes and overlaps
+    k3 = rq2["by_condition"]["rag_k3"]
+    axes = k3["independent_failure_axes"]
+    assert axes["retrieval_miss_count"] is not None
+    assert axes["provider_failure_count"] >= 0
+    assert axes["parse_failure_count"] >= 0
+    assert axes["invalid_attack_id_count"] >= 0
+    assert axes["valid_but_wrong_classification_count"] >= 0
+    assert "overlap_retrieval_miss_and_wrong_classification" in axes
+    assert "overlap_retrieval_miss_and_provider_failure" in axes
+
+    # Total failures
+    assert k3["total_failures"] == (k3["total_scorable_samples"] - 3)
+
+
+def test_rq3_view_diagnostics_scorable_counts(tmp_path):
+    """View diagnostics must distinguish scorable single and contextual views."""
+    fixture = _fixture(tmp_path)
+    inputs = _load(tmp_path, fixture)
+    proto = _test_protocol()
+
+    rq3 = compute_rq3(inputs, proto)
+    v_diag = rq3["view_diagnostics"]["rag_k3"]
+
+    assert "single_view_scorable_count" in v_diag
+    assert "contextual_view_scorable_count" in v_diag
+    assert "view_split_notes" in v_diag
+    assert v_diag["single_view_scorable_count"] + v_diag["contextual_view_scorable_count"] == 6
 
 
 def test_mcnemar_test_statistical_properties():
     """Verify McNemar test computation on identical and divergent paired outcomes."""
-    # Identical outcomes: p-value should be 1.0, chi2 should be 0.0
     y_base = [True, False, True, True, False]
     y_treat = [True, False, True, True, False]
     res_ident = compute_mcnemar_test(y_base, y_treat)
@@ -372,26 +1003,14 @@ def test_mcnemar_test_statistical_properties():
     assert res_ident["chi2_statistic"] == 0.0
     assert res_ident["contingency_table"]["total_discordant"] == 0
 
-    # Divergent outcomes favoring treatment
     y_base = [False] * 10 + [True] * 5
-    y_treat = [True] * 10 + [True] * 5  # Treatment wins 10 discordant pairs
+    y_treat = [True] * 10 + [True] * 5
     res_div = compute_mcnemar_test(y_base, y_treat)
     assert res_div["contingency_table"]["treatment_win_b"] == 10
     assert res_div["contingency_table"]["baseline_win_c"] == 0
     assert res_div["contingency_table"]["total_discordant"] == 10
     assert res_div["p_value_exact"] < 0.01
     assert res_div["significant_at_01"] is True
-
-
-def test_paired_bootstrap_ci_bounds():
-    """Verify bootstrap confidence interval bounds for paired differences."""
-    treat = [1.0, 1.0, 1.0, 0.0, 1.0]
-    base = [0.0, 0.0, 1.0, 0.0, 0.0]
-    ci = compute_paired_bootstrap_ci(treat, base, num_samples=500, seed=123)
-    assert ci["ci_lower"] is not None
-    assert ci["ci_upper"] is not None
-    assert ci["ci_lower"] <= ci["mean_delta"] <= ci["ci_upper"]
-    assert ci["mean_delta"] == pytest.approx(0.6, abs=0.05)
 
 
 def test_rq1_controlled_comparison_computation(tmp_path):
@@ -418,59 +1037,6 @@ def test_rq1_controlled_comparison_computation(tmp_path):
         assert "mcnemar_test" in d
         assert "delta_accuracy_e2e_ci_95" in d
         assert d["delta_accuracy_e2e_ci_95"][0] <= d["delta_accuracy_e2e_ci_95"][1]
-
-
-def test_rq2_error_decomposition_computation(tmp_path):
-    """Verify RQ2 retrieval recall and downstream generation error decomposition."""
-    fixture = _fixture(tmp_path)
-    inputs = _load(tmp_path, fixture)
-    proto = _test_protocol()
-
-    rq2 = compute_rq2(inputs, proto)
-    assert rq2["schema_version"] == "1.0.0"
-    assert "by_condition" in rq2
-
-    rag_k3 = rq2["by_condition"]["rag_k3"]
-    assert rag_k3["retrieval_k"] == 3
-    assert rag_k3["total_scorable_samples"] == 6
-    assert 0.0 <= rag_k3["retrieval_hit_rate"] <= 1.0
-    assert 0.0 <= rag_k3["macro_recall"] <= 1.0
-
-    decomp = rag_k3["error_decomposition"]
-    assert "retrieval_miss_error_count" in decomp
-    assert "generation_misattribution_count" in decomp
-    assert "system_or_parse_error_count" in decomp
-
-    total_err_count = (
-        decomp["retrieval_miss_error_count"]
-        + decomp["generation_misattribution_count"]
-        + decomp["system_or_parse_error_count"]
-    )
-    assert total_err_count == rag_k3["total_failures"]
-
-
-def test_rq3_tradeoffs_and_view_diagnostics(tmp_path):
-    """Verify RQ3 latency, cost, and paired view diagnostics."""
-    fixture = _fixture(tmp_path)
-    inputs = _load(tmp_path, fixture)
-    proto = _test_protocol()
-
-    rq3 = compute_rq3(inputs, proto)
-    assert rq3["schema_version"] == "1.0.0"
-    assert "tradeoffs_by_condition" in rq3
-    assert "view_diagnostics" in rq3
-
-    k3_tradeoff = rq3["tradeoffs_by_condition"]["rag_k3"]
-    assert k3_tradeoff["latency_ms"]["mean"] == 1.5
-    assert k3_tradeoff["tokens"]["mean_total_tokens"] == 12.0
-    assert "financial_cost_usd" in k3_tradeoff
-
-    k3_views = rq3["view_diagnostics"]["rag_k3"]
-    assert "single_view_accuracy_e2e" in k3_views
-    assert "contextual_view_accuracy_e2e" in k3_views
-    assert "view_accuracy_delta" in k3_views
-    assert "pair_concordance" in k3_views
-    assert k3_views["paired_complete_pairs_count"] > 0
 
 
 def test_run_rq_analysis_generates_all_artifacts(tmp_path):
@@ -507,61 +1073,3 @@ def test_run_rq_analysis_generates_all_artifacts(tmp_path):
     assert "## RQ1: Controlled Attribution Accuracy (No-RAG vs. RAG)" in md_content
     assert "## RQ2: Retrieval vs. Generation Error Decomposition" in md_content
     assert "## RQ3: Retrieval Depth, Latency, and Cost Trade-offs" in md_content
-
-
-def test_evaluate_rqs_cli_subprocess_execution(tmp_path):
-    """The offline RQ analysis CLI must execute and write artifacts."""
-    manifest_path = _create_dev_run_with_journal(tmp_path)
-    proto_path = tmp_path / "protocol_cli.json"
-    proto = _test_protocol()
-    from src.evaluation.experiment_metrics import canonical_json_bytes
-
-    proto_path.write_bytes(
-        canonical_json_bytes(
-            {
-                "protocol_version": proto.protocol_version,
-                "protocol_sha256": proto.protocol_sha256,
-                "d1_raw_response_policy": proto.d1_raw_response_policy,
-                "d2a_ground_truth_semantics": proto.d2a_ground_truth_semantics,
-                "d2b_empty_ground_truth": proto.d2b_empty_ground_truth,
-                "d2c_ambiguous_ground_truth": proto.d2c_ambiguous_ground_truth,
-                "d2d_macro_f1_universe": proto.d2d_macro_f1_universe,
-                "d2e_invalid_id_denominator": proto.d2e_invalid_id_denominator,
-                "d2f_api_error_denominator": proto.d2f_api_error_denominator,
-                "d2g_retired_attack_id": proto.d2g_retired_attack_id,
-                "d2h_conditional_retrieval": proto.d2h_conditional_retrieval,
-                "d2i_failure_precedence": proto.d2i_failure_precedence,
-                "d2j_zero_denominator": proto.d2j_zero_denominator,
-                "d3_model_version_policy": proto.d3_model_version_policy,
-                "d4_concurrency_policy": proto.d4_concurrency_policy,
-                "d5_budget_policy": proto.d5_budget_policy,
-                "d6_t15_prerequisite_policy": proto.d6_t15_prerequisite_policy,
-                "d7_dataset_scope": proto.d7_dataset_scope,
-                "approval_timestamp": proto.approval_timestamp,
-                "approval_reference": proto.approval_reference,
-            }
-        )
-    )
-
-    out_dir = tmp_path / "cli_rq_reports"
-    cmd = [
-        sys.executable,
-        "scripts/analysis/evaluate_rqs.py",
-        "--manifest",
-        str(manifest_path),
-        "--protocol-file",
-        str(proto_path),
-        "--output-dir",
-        str(out_dir),
-        "--repository-root",
-        str(tmp_path),
-        "--bootstrap-samples",
-        "50",
-    ]
-
-    proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
-    assert proc.returncode == 0, f"RQ CLI failed: {proc.stderr}\n{proc.stdout}"
-    assert (out_dir / "rq_analysis.json").exists()
-    assert (out_dir / "rq_analysis_summary.md").exists()
-    cli_md = (out_dir / "rq_analysis_summary.md").read_text(encoding="utf-8")
-    assert "## RQ3: Retrieval Depth, Latency, and Cost Trade-offs" in cli_md

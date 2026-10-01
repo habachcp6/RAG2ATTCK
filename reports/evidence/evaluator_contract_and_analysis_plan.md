@@ -3,22 +3,31 @@
 - **Author**: Subagent B (Evaluator & Analysis Preparation Specialist)
 - **Phase**: S1 (Evaluator & Analysis Preparation)
 - **Dedicated Worktree**: `D:/RAG2ATTCK-worktrees/prep-evaluator-s1`
-- **Branch**: `codex/s1-evaluator-prep`
+- **Branch**: `codex/s1-evaluator-prep` (PR #27)
 - **PRE_SHA**: `80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315`
 - **Execution Mode**: Strictly OFFLINE (ZERO live provider/API calls; in-flight live matrix untouched)
-- **Timestamp**: `2026-10-02T03:25:00Z`
+- **Timestamp**: `2026-10-02T03:45:00Z`
 
 ---
 
 ## 1. Executive Summary & Purpose
 
-The purpose of this subagent assignment is to independently verify and harden the scientific evaluation infrastructure and create automated, offline statistical analysis tooling for the RAG2ATTCK study.
+The purpose of this subagent assignment is to independently verify and harden the scientific evaluation infrastructure, implement publication-grade offline statistical analysis tooling, and execute comprehensive contract repairs addressing all items from the Codex Orchestration Review (`artifacts/orchestration/analysis_reproduction_review_20261002.md`).
 
 In strict adherence to the project's frozen protocol principles:
-1. **Zero live provider calls**: All testing, evaluation, and diagnostic verification was executed offline against synthetic and fixture datasets. No in-flight live matrix predictions were scored or altered.
+1. **Zero live provider calls**: All testing, evaluation, and diagnostic verification was executed offline against synthetic and fixture datasets. No in-flight live matrix predictions were scored or altered (strictly 0 egress).
 2. **Canonical protocol preservation**: The canonical evaluator entrypoint in `src/evaluation/experiment_metrics.py` remains fail-closed behind the `ScientificProtocolApproval` contract (D1–D7). No flags, bypasses, or ad-hoc defaults can unblock scoring without explicit verified approval.
 3. **Dedicated offline analysis pipeline**: Created `scripts/analysis/evaluate_rqs.py` to compute publication-grade metrics and statistical tests for Research Questions **RQ1**, **RQ2**, and **RQ3**.
-4. **Comprehensive offline test suite**: Created `tests/test_evaluator_offline_contract.py` containing 16 rigorous tests validating every edge case of the evaluation contract and analysis tools.
+4. **Comprehensive offline test suite**: Created `tests/test_evaluator_offline_contract.py` containing 24 rigorous tests validating every edge case of the evaluation contract, financial accounting, failure semantics, and analysis tools.
+5. **Codex Review Repairs Completed (Items 1–8)**:
+   - **Item 1 (Strict Pricing Validation)**: Tariffs, bounds, and ceilings validated against `config/pricing_v1.json`. Fail-closed on missing keys or unknown tiers; zero-cost fallbacks are strictly prohibited.
+   - **Item 2 (Ledger/Journal Reconciliation)**: Parses `attempt_receipt` and `monetary_settle` events, verifies ordinal and attempt uniqueness, binds record SHA-256 against prediction records, accounts for retries, and preserves study-wide financial accounting with prior-pilot hold ($0.05264010) preserved without adding to individual condition costs.
+   - **Item 3 (Three Cost Denominators)**: Discloses `cost_per_logical_request_usd` (N=1,280), `cost_per_scorable_query_usd` (N=718), and `cost_per_correct_attribution_usd`, alongside explicit real expenditure disclosures on excluded views (311 ambiguous + 251 unmapped).
+   - **Item 4 (Robust CLI Root Resolution)**: Resolves default protocol, pricing, output, and ledger paths against `--repository-root` or `repo_root` (`Path(__file__).resolve().parents[2]`), ensuring deterministic execution regardless of caller CWD.
+   - **Item 5 (Distinguishing 474-Class Macro-F1 Test)**: Mathematically demonstrates that 471 unobserved classes contribute 0.0 and denominator is strictly 474, proving that an observed-only denominator (dividing by 3) fails by a factor of 158x.
+   - **Item 6 (Comprehensive Regressions)**: Test coverage for unknown pricing tiers, negative tokens, cached > prompt tokens, cached token tariffs, missing usage worst-case attempt charge ($0.53974560), duplicate receipt ordinals, duplicate monetary settles, and hash mismatches.
+   - **Item 7 (Pair-Cluster Bootstrap & View Cohort Counts)**: Implements pair-cluster bootstrap resampling by `pair_id` (clustering single and contextual views together to preserve intra-pair correlation; designated as an exploratory diagnostic) and explicitly discloses exact TEST scorable view counts (278 single views, 440 contextual views; 718 total).
+   - **Item 8 (RQ2 D2i Semantics & No-RAG N/A Handling)**: Evaluates independent failure axes without forced mutual exclusion or causal partitioning claims; tracks overlaps (`overlap_retrieval_miss_and_wrong_classification`, `overlap_retrieval_miss_and_provider_failure`); sets No-RAG retrieval and conditional metrics strictly to `None`/`null` (not 0.0); sets zero-denominator percentages to `None`/`null` per D2j.
 
 ---
 
@@ -38,6 +47,7 @@ Per the frozen dataset manifest (`data/ground_truth/synthetic/dataset_manifest.j
 This guarantees that:
 - The denominator for end-to-end accuracy ($N_{\text{scorable}}$) is strictly **718** on the TEST split.
 - Ambiguous (311) and unmapped (251) views are tracked and reported with explicit audit reasons (`AMBIGUOUS_GROUND_TRUTH`, `UNMAPPED_GROUND_TRUTH`) without corrupting attribution accuracy.
+- Within the 718 scorable views, the view distribution is explicitly documented as **278 single views** and **440 contextual views**.
 
 ---
 
@@ -83,10 +93,10 @@ We conducted an independent code audit and test suite verification of `src/evalu
   3. `parse_failure_rate`
   4. `invalid_attack_id_rate`
   5. `valid_but_wrong_classification_rate`
-  Plus `overlap_retrieval_miss_and_wrong_classification` to quantify correlated errors.
+  Plus overlap metrics (`overlap_retrieval_miss_and_wrong_classification`, `overlap_retrieval_miss_and_provider_failure`) to quantify correlated multi-fault events.
 
 ### 3.8 Null Zero Denominators (D2j)
-- In `per_technique_metrics.json`: when `d2j_zero_denominator = "NULL"`, classes with 0 support and 0 predictions report `precision = None`, `recall = None`, and `f1 = None` rather than an artificial 0.0 or 1.0.
+- In `per_technique_metrics.json` and `rq_analysis.json`: when denominators are zero, precision, recall, conditional metrics, and percentages evaluate strictly to `None` / `null` rather than artificial 0.0 or 1.0.
 
 ### 3.9 Six Canonical Output Artifacts
 The evaluator writes six JSON files atomically using temporary replacement (`.json.tmp` -> `.json` with `fsync`):
@@ -101,7 +111,7 @@ The evaluator writes six JSON files atomically using temporary replacement (`.js
 
 ## 4. Offline Research Question Analysis Tools (`scripts/analysis/evaluate_rqs.py`)
 
-We implemented a dedicated analysis engine in `scripts/analysis/evaluate_rqs.py` designed to consume completed run directories or canonical evaluation artifacts.
+We implemented a publication-grade analysis engine in `scripts/analysis/evaluate_rqs.py` designed to consume completed run directories or canonical evaluation artifacts.
 
 ### 4.1 Research Question 1 (RQ1): Controlled Attribution Accuracy
 - **Core Question**: *To what extent does MITRE ATT&CK-grounded RAG improve exact technique attribution accuracy compared to No-RAG?*
@@ -111,64 +121,89 @@ We implemented a dedicated analysis engine in `scripts/analysis/evaluate_rqs.py`
   - `macro_f1` (over invariant 474 universe).
   - Absolute delta: $\Delta \text{Acc} = \text{Acc}_{\text{rag\_k}} - \text{Acc}_{\text{no\_rag}}$.
   - Relative gain percentage: $\frac{\text{Acc}_{\text{rag\_k}} - \text{Acc}_{\text{no\_rag}}}{\text{Acc}_{\text{no\_rag}}} \times 100\%$.
-- **Secondary Statistical Tests**:
+- **Statistical Significance & Resampling**:
   - **Paired McNemar Test**:
     Evaluates discordant pairs ($b$: No-RAG wrong & RAG right; $c$: No-RAG right & RAG wrong). Computes Edwards continuity-corrected $\chi^2 = \frac{(|b - c| - 1)^2}{b + c}$ and exact two-sided binomial $p$-value from $B(b + c, 0.5)$.
-  - **Paired Bootstrap Confidence Intervals (95% CI)**:
-    $B = 1000$ paired resamples with replacement using a deterministic seed (`numpy.random.default_rng(seed)`), computing empirical percentile bounds $[q_{0.025}, q_{0.975}]$ for $\Delta \text{Accuracy}$ and $\Delta \text{Macro-F1}$.
+  - **Pair-Cluster Bootstrap Confidence Intervals (95% CI)**:
+    Resampling is grouped by `pair_id` so that both single and contextual views from the same pair are sampled together, preserving intra-pair correlation structure. Labeled explicitly as an exploratory diagnostic (`resampling_method = "pair_cluster_bootstrap"`). Computes empirical percentile bounds $[q_{0.025}, q_{0.975}]$ for $\Delta \text{Accuracy}$ and $\Delta \text{Macro-F1}$ over $B = 1000$ cluster resamples.
 
-### 4.2 Research Question 2 (RQ2): Retrieval vs. Generation Error Decomposition
+### 4.2 Research Question 2 (RQ2): Independent Failure Axes & Retrieval Quality
 - **Core Question**: *How does retrieval quality affect final attribution, and where do failures originate?*
-- **Computed Metrics**:
-  - **Upstream Retrieval Quality**:
-    - Hit@k / Binary Recall@k: fraction of scorable samples where $\text{GT} \cap \text{Candidates} \neq \emptyset$.
-    - Macro Recall@k: average fraction of ground-truth techniques retrieved in top-$k$.
-    - Retrieval Miss count and rate.
-  - **Downstream Generation Conditioning (D2h)**:
-    - $P(\text{Correct} \mid \text{Retrieval Success})$: Accuracy of LLM when ground truth was provided in context.
-    - $P(\text{Correct} \mid \text{Retrieval Failure})$: Accuracy of LLM when ground truth was absent from context.
-  - **Pipeline Error Decomposition (Disjoint Partition of All Failures)**:
-    Every failed sample is partitioned into exactly one root cause:
-    1. **Retrieval Miss Error**: Retriever failed to retrieve ground truth ($GT \cap C = \emptyset$). Upstream retrieval bottleneck.
-    2. **Generation Misattribution Error**: Retriever succeeded ($GT \cap C \neq \emptyset$), but LLM chose a distractor candidate. Downstream reasoning bottleneck.
-    3. **Generation System/Parse Error**: Retriever succeeded, but LLM output was unparseable or API failed.
-    Sum of errors: $\text{Retrieval Miss} + \text{Gen Misattribution} + \text{System/Parse} = \text{Total Failures}$ ($100\%$).
+- **Upstream Retrieval Quality**:
+  - Hit@k / Binary Recall@k: fraction of scorable samples where $\text{GT} \cap \text{Candidates} \neq \emptyset$.
+  - Macro Recall@k: average fraction of ground-truth techniques retrieved in top-$k$.
+  - Retrieval Miss count and rate.
+- **Downstream Generation Conditioning (D2h)**:
+  - $P(\text{Correct} \mid \text{Retrieval Success})$: Accuracy of LLM when ground truth was provided in context.
+  - $P(\text{Correct} \mid \text{Retrieval Failure})$: Accuracy of LLM when ground truth was absent from context.
+- **Canonical Independent Failure Axes (D2i)**:
+  Failures are reported across 5 non-mutually-exclusive diagnostic axes:
+  1. `retrieval_miss`: Retriever failed to include any ground-truth technique ($GT \cap C = \emptyset$).
+  2. `provider_failure`: Network timeouts, rate limits, or API dropouts.
+  3. `parse_failure`: Malformed JSON or unparseable technique structure.
+  4. `invalid_attack_id`: Hallucinated or non-existent ATT&CK IDs.
+  5. `valid_but_wrong_classification`: Syntactically valid registry IDs that do not match ground truth.
+  - **Overlap Tracking**: Multi-fault events are explicitly counted and reported:
+    - `overlap_retrieval_miss_and_wrong_classification`
+    - `overlap_retrieval_miss_and_provider_failure`
+    - `overlap_retrieval_miss_and_parse_failure`
+    - `overlap_retrieval_miss_and_invalid_id`
+  - **No-RAG Semantics**: For $k=0$ (`no_rag`), retrieval metrics (Hit@k, Recall@k, retrieval miss) and retrieval-conditional accuracies are strictly set to `None`/`null` (`retrieval_metrics.applicable = false`), avoiding misleading 0.0 values.
+  - **Zero Denominators (D2j)**: Rates and percentages with zero denominators evaluate strictly to `None`/`null`.
 
 ### 4.3 Research Question 3 (RQ3): Retrieval Depth, Latency, Cost Trade-offs & View Diagnostics
 - **Core Question**: *What is the resource trade-off across candidate depths $k \in \{1, 3, 5, 10\}$ vs Baseline ($k=0$)?*
 - **Resource & Efficiency Trade-offs**:
   - **Latency Distribution**: Mean, median, p95, and total latency (ms) per condition.
-  - **Token Accounting**: Mean prompt, completion, and total tokens per query.
-  - **Monetary Cost**: Computed directly from `config/pricing_v1.json` via `calculate_attempt_token_cost`:
-    - Total cost ($USD) per condition.
-    - Cost per scorable query ($USD/sample).
-    - Cost per correct attribution: $\frac{\text{Total Cost}}{N_{\text{correct}}}$.
-    - Marginal cost per accuracy point gained.
+  - **Token Accounting**: Mean prompt, completion, total, and prompt cached tokens per query.
+- **Rigorous Financial Accounting & Reconciliation**:
+  - **Strict Pricing Config Validation**: Validates `config/pricing_v1.json` for model rate parity, service tiers, currency ($USD), cache tariffs (write: $0.25/1M, read: $0.02/1M), and maximum spend ceilings ($19.99). Fails closed immediately on missing rates; no zero fallbacks.
+  - **Journal & Ledger Reconciliation**:
+    - Reconciles `attempt_receipt` and `monetary_settle` events against final predictions.
+    - Enforces uniqueness of receipt ordinals and attempt indices.
+    - Validates record hash binding (`record_sha256`) against prediction bytes.
+    - Identifies retried attempts and computes reconciled costs including failed/retry expenditure.
+    - Missing token usage records are billed at the native worst-case attempt fee ($0.53974560), tracking `missing_usage_records_count` and `missing_usage_charged_usd`.
+  - **Whole-Study Financial Accounting**:
+    - Discloses `total_study_budget_usd` ($19.99).
+    - Preserves prior pilot provisional hold ($0.05264010) study-wide without adding it to individual condition costs.
+    - Computes `net_remaining_uncommitted_budget_usd`.
+  - **Three Explicit Cost Denominators**:
+    1. `cost_per_logical_request_usd`: Total expenditure divided by all 1,280 benchmark views.
+    2. `cost_per_scorable_query_usd`: Total expenditure divided by 718 scorable queries.
+    3. `cost_per_correct_attribution_usd`: Total expenditure divided by $N_{\text{correct}}$.
+  - **Excluded Views Real Expenditure**:
+    - Discloses real expenditure committed to the 311 ambiguous views and 251 unmapped views (`cost_of_all_excluded_views_usd`, `ambiguous_views_spend_usd`, `unmapped_views_spend_usd`).
 - **Paired View Diagnostics (Single-View vs Contextual-View)**:
-  - Each pair in the benchmark contains 1 single-event view (isolated evidence) and 1 contextual-event view (with background events).
+  - Discloses exact TEST scorable view counts: **278 single views** and **440 contextual views** (718 total).
   - Evaluates:
     - $\text{Accuracy}_{\text{single}}$ vs $\text{Accuracy}_{\text{contextual}}$.
     - View delta: $\Delta_{\text{view}} = \text{Acc}_{\text{contextual}} - \text{Acc}_{\text{single}}$.
-    - Pair concordance breakdown: Both correct, single-only correct, contextual-only correct, both incorrect.
+    - Pair concordance breakdown on complete scorable pairs: both correct, single-only correct, contextual-only correct, both incorrect.
     - McNemar paired test on Single vs Contextual accuracy.
 
-### 4.4 Automated Output Artifacts
+### 4.4 Robust CLI Root Resolution
+- CLI argument `--repository-root` defaults to `Path(__file__).resolve().parents[2]`.
+- `--protocol-file`, `--pricing-file`, `--journal-file`, `--study-ledger-file`, and `--output-dir` resolve deterministically against `repo_root` when provided as relative paths.
+- Execution from external working directories behaves identically to root-level invocation.
+
+### 4.5 Automated Output Artifacts
 `evaluate_rqs.py` generates two self-contained artifacts:
-- `rq_analysis.json`: Machine-readable structured JSON with all numerical metrics, CIs, p-values, and metadata.
+- `rq_analysis.json`: Machine-readable structured JSON with all numerical metrics, pair-cluster CIs, p-values, failure axes, reconciled financial accounting, and metadata.
 - `rq_analysis_summary.md`: Publication-ready GitHub-Flavored Markdown report containing structured summary tables for RQ1, RQ2, and RQ3.
 
 ---
 
 ## 5. Verification Test Suite (`tests/test_evaluator_offline_contract.py`)
 
-A comprehensive test suite was written to verify every aspect of the evaluation contract and analysis tooling.
+A comprehensive test suite of 24 rigorous tests verifies every aspect of the evaluation contract, financial accounting, and analysis tooling.
 
 ### 5.1 Test Inventory
 
 | # | Test Function Name | Tested Component | Status |
 | :-: | :--- | :--- | :-: |
 | 1 | `test_evaluator_contract_five_conditions_matrix` | 5 conditions enforcement | **PASSED** |
-| 2 | `test_evaluator_contract_fixed_474_class_macro_f1` | Invariant Macro-F1 denominator | **PASSED** |
+| 2 | `test_evaluator_contract_fixed_474_class_macro_f1_distinguishing` | Distinguishing 474 Macro-F1 test (158x penalty on observed-only) | **PASSED** |
 | 3 | `test_evaluator_contract_any_match_multilabel_ground_truth` | D2a ANY_MATCH multi-label GT | **PASSED** |
 | 4 | `test_evaluator_contract_unmapped_and_ambiguous_gt_exclusion` | D2b/D2c exclusion & counts | **PASSED** |
 | 5 | `test_evaluator_contract_end_to_end_failure_denominator` | D2e/D2f invalid ID & API errors in e2e acc | **PASSED** |
@@ -176,27 +211,40 @@ A comprehensive test suite was written to verify every aspect of the evaluation 
 | 7 | `test_evaluator_contract_independent_failure_axes` | D2i independent diagnostic axes | **PASSED** |
 | 8 | `test_evaluator_contract_null_zero_denominators` | D2j NULL zero denominators | **PASSED** |
 | 9 | `test_evaluator_cli_contract_subprocess_execution` | CLI subprocess execution with dev journal | **PASSED** |
-| 10 | `test_mcnemar_test_statistical_properties` | McNemar chi2, exact binomial, odds ratio | **PASSED** |
-| 11 | `test_paired_bootstrap_ci_bounds` | Paired bootstrap percentile CI bounds | **PASSED** |
-| 12 | `test_rq1_controlled_comparison_computation` | RQ1 metrics, deltas, relative gains, CIs | **PASSED** |
-| 13 | `test_rq2_error_decomposition_computation` | RQ2 recall, conditional acc, disjoint error partition | **PASSED** |
-| 14 | `test_rq3_tradeoffs_and_view_diagnostics` | RQ3 latency, token, cost, paired views | **PASSED** |
-| 15 | `test_run_rq_analysis_generates_all_artifacts` | Full analysis pipeline generating JSON & MD | **PASSED** |
-| 16 | `test_evaluate_rqs_cli_subprocess_execution` | `evaluate_rqs.py` CLI subprocess execution | **PASSED** |
+| 10 | `test_pricing_config_strict_validation` | Strict pricing tariff, ceiling, and key validation | **PASSED** |
+| 11 | `test_malformed_token_values_validation` | Negative token rejection and cached > prompt tokens | **PASSED** |
+| 12 | `test_cached_token_rates_tariff_accounting` | Cache read ($0.02) vs cache write ($0.25) pricing | **PASSED** |
+| 13 | `test_missing_usage_worst_case_attempt_charge` | Native worst-case attempt fee ($0.53974560) on missing usage | **PASSED** |
+| 14 | `test_reconciled_financial_accounting_with_retries` | Financial reconciliation accounting for retried attempts | **PASSED** |
+| 15 | `test_reconciliation_duplicate_and_mismatched_keys_fail` | Rejects duplicate ordinals, duplicate settles, hash mismatches | **PASSED** |
+| 16 | `test_explicit_cost_denominators_and_excluded_views` | 3 explicit cost denominators & excluded views spend | **PASSED** |
+| 17 | `test_study_wide_financial_accounting_and_pilot_hold` | Preserves prior pilot hold ($0.05264010) study-wide | **PASSED** |
+| 18 | `test_cli_repository_root_resolution_from_external_cwd` | CLI defaults resolved against repo root from external CWD | **PASSED** |
+| 19 | `test_pair_cluster_bootstrap_resampling` | Pair-cluster bootstrap resampling by `pair_id` | **PASSED** |
+| 20 | `test_rq2_independent_failure_axes_and_no_rag_na` | RQ2 D2i independent axes, overlaps, and No-RAG N/A semantics | **PASSED** |
+| 21 | `test_rq3_view_diagnostics_scorable_counts` | TEST split scorable view counts (278 single, 440 contextual) | **PASSED** |
+| 22 | `test_mcnemar_test_statistical_properties` | McNemar chi2, exact binomial, odds ratio | **PASSED** |
+| 23 | `test_rq1_controlled_comparison_computation` | RQ1 metrics, deltas, relative gains, pair-cluster CIs | **PASSED** |
+| 24 | `test_run_rq_analysis_generates_all_artifacts` | Full analysis pipeline generating JSON & MD | **PASSED** |
 
 ### 5.2 Test Execution Results
 ```bash
 uv run pytest tests/test_evaluator_offline_contract.py -v
-============================= 16 passed in 9.27s ==============================
+============================= 24 passed in 8.09s ==============================
 
-uv run pytest tests/test_evaluator_offline_contract.py tests/test_experiment_evaluation.py -q
-============================ 110 passed in 19.63s =============================
+uv run pytest tests/test_experiment_evaluation.py -q
+============================= 94 passed in 12.96s =============================
+
+Combined Total: 118 passed in 21.05s
 ```
 
 ### 5.3 Code Quality & Linter Compliance
 ```bash
 uv run ruff check scripts/analysis/evaluate_rqs.py tests/test_evaluator_offline_contract.py
 All checks passed!
+
+uv run ruff format --check scripts/analysis/evaluate_rqs.py tests/test_evaluator_offline_contract.py
+2 files already formatted
 ```
 
 ---
@@ -205,27 +253,34 @@ All checks passed!
 
 | File Path | SHA-256 Digest | Purpose |
 | :--- | :--- | :--- |
-| `scripts/analysis/evaluate_rqs.py` | `2a6ee0385da2424deb667dc26e5e76dc591d95b91147f1a569fdd515accc4dd8` | Offline RQ1/RQ2/RQ3 analysis script |
+| `scripts/analysis/evaluate_rqs.py` | `0e0b8ef21747ff533a5a5bda36e22842279f5f6c189b7325799d3b8b16920298` | Offline RQ1/RQ2/RQ3 analysis script with repairs 1–8 |
 | `scripts/analysis/__init__.py` | `28b40746d09b574e95393ac9e2a95879116cd9d4c7a86afb1be7be573f9ad54a` | Analysis package initializer |
-| `tests/test_evaluator_offline_contract.py` | `748a15cf4f3fbd4cb70fc5d879de385d398dbed6da6ef8085f440f0409a4753b` | Evaluator offline contract test suite |
-| `reports/evidence/evaluator_contract_and_analysis_plan.md` | `b6af0316b508b9b3810faf99794bcd060fe71ee0e1fa451f32617be67a7ce66c` (prior to this cell update) | Comprehensive Phase S1 evidence document |
+| `tests/test_evaluator_offline_contract.py` | `d49c246b1a6eaf26f672a755c450fb0d4443b9e1671df67cbaf3cccbd440c6e2` | Evaluator offline contract test suite (24 tests) |
+| `reports/evidence/evaluator_contract_and_analysis_plan.md` | *This document* | Comprehensive Phase S1 evidence document |
 
 ---
 
 ## 7. Protocol Compliance Checklist
 
 - [x] PRE_SHA verified: `80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315`
-- [x] Strictly ZERO live provider/API calls executed.
+- [x] Strictly ZERO live provider/API calls executed (0 egress).
 - [x] In-flight live matrix untouched; zero scores generated for live runs.
+- [x] Core evaluator frozen in `src/evaluation/experiment_metrics.py` untouched.
 - [x] Verified 5 conditions matrix (`no_rag`, `rag_k1`, `rag_k3`, `rag_k5`, `rag_k10`).
-- [x] Verified fixed 474-class Macro-F1 denominator (`FROZEN_BENCHMARK_UNIVERSE`).
+- [x] Verified fixed 474-class Macro-F1 denominator (`FROZEN_BENCHMARK_UNIVERSE`) with distinguishing test.
 - [x] Verified D2a ANY_MATCH multi-GT semantics.
 - [x] Verified D2b/D2c unmapped (251) and ambiguous (311) ground truth exclusions.
 - [x] Verified D2e/D2f end-to-end failure denominators (invalid IDs and API failures penalized).
 - [x] Verified D2g invalid syntax vs unknown vs retired ID diagnostics.
-- [x] Verified D2i independent failure axes.
+- [x] Verified D2i independent failure axes without forced mutual exclusion or causal partitioning claims.
 - [x] Verified D2j NULL zero denominators.
-- [x] Implemented `scripts/analysis/evaluate_rqs.py` (RQ1, RQ2, RQ3, McNemar, Bootstrap CIs, Pricing).
-- [x] Implemented `tests/test_evaluator_offline_contract.py` (16 test cases).
-- [x] Full test suite passed (16/16 offline contract tests, 110/110 evaluation suite tests).
-- [x] Ruff lint checks passed with zero errors (`line-length = 100`).
+- [x] Completed Codex Review Repair 1: Strict pricing configuration validation (fail-closed, no zero fallback).
+- [x] Completed Codex Review Repair 2: Full ledger and journal reconciliation with hash binding and study-wide accounting.
+- [x] Completed Codex Review Repair 3: Three explicit cost denominators and excluded views spend disclosure.
+- [x] Completed Codex Review Repair 4: Robust CLI root resolution (`--repository-root`).
+- [x] Completed Codex Review Repair 5: Distinguishing known-answer 474-class Macro-F1 test.
+- [x] Completed Codex Review Repair 6: Comprehensive regression suite for tariffs, retries, and malformed inputs.
+- [x] Completed Codex Review Repair 7: Pair-cluster bootstrap resampling by `pair_id` and exact view counts (278 single, 440 contextual).
+- [x] Completed Codex Review Repair 8: RQ2 D2i independent failure axes, overlap accounting, and No-RAG N/A semantics.
+- [x] Full test suite passed (24/24 offline contract tests, 94/94 evaluation suite tests; 118 total).
+- [x] Ruff lint and format checks passed with zero errors (`line-length = 100`).

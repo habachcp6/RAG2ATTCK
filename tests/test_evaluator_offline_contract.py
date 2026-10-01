@@ -26,6 +26,7 @@ Tests:
 
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 import json
 import subprocess
@@ -1822,6 +1823,10 @@ def test_run_rq_analysis_generates_all_artifacts(tmp_path):
     assert "rq1" in analysis
     assert "rq2" in analysis
     assert "rq3" in analysis
+    assert analysis["execution_mode"] == "mock_fixture"
+    assert analysis["fixture_only"] is True
+    assert analysis["provenance_status"] == "diagnostic_fixture"
+    assert analysis["dataset_split"] == "test"
 
     json_path = out_dir / "rq_analysis.json"
     md_path = out_dir / "rq_analysis_summary.md"
@@ -1831,9 +1836,18 @@ def test_run_rq_analysis_generates_all_artifacts(tmp_path):
 
     json_data = json.loads(json_path.read_bytes())
     assert json_data["experiment_id"] == inputs.experiment_id
+    assert json_data["execution_mode"] == "mock_fixture"
+    assert json_data["fixture_only"] is True
+    assert json_data["provenance_status"] == "diagnostic_fixture"
+    assert json_data["dataset_split"] == "test"
 
     md_content = md_path.read_text(encoding="utf-8")
     assert "# RAG2ATTCK Empirical Analysis Report (RQ1, RQ2, RQ3)" in md_content
+    assert "- **Execution Mode**: `mock_fixture`" in md_content
+    assert "- **Dataset Split / Scope**: `test`" in md_content
+    assert "- **Provenance Status**: `diagnostic_fixture`" in md_content
+    assert "> [!NOTE] Diagnostic Fixture Provenance" in md_content
+    assert "It does not constitute canonical empirical research results." in md_content
     assert "## RQ1: Controlled Attribution Accuracy (No-RAG vs. RAG)" in md_content
     assert "## RQ2: Retrieval vs. Generation Error Decomposition" in md_content
     assert "## RQ3: Retrieval Depth, Latency, and Cost Trade-offs" in md_content
@@ -2303,3 +2317,75 @@ def test_native_tariff_logical_worst_ceiling_breach_fails_closed():
         ValueError, match="native contract breach.*exceeds logical worst-case reservation"
     ):
         reconcile_journal_and_ledger([record], pricing_cfg, journal_events=events)
+
+
+# ---------------------------------------------------------------------------
+# Execution Mode & Provenance Boundary Verification (BD_MODE_BOUNDARY)
+# ---------------------------------------------------------------------------
+
+
+def test_provenance_mode_boundary_diagnostic_fixture(tmp_path):
+    """BD_MODE_BOUNDARY: Diagnostic fixture data retains explicit non-canonical provenance."""
+    fixture = _fixture(tmp_path)
+    inputs = _load(tmp_path, fixture)
+    proto = _test_protocol()
+
+    out_dir = tmp_path / "fixture_reports"
+    analysis = run_rq_analysis(
+        inputs,
+        proto,
+        bootstrap_samples=50,
+        seed=42,
+        output_dir=out_dir,
+    )
+
+    assert analysis["execution_mode"] == "mock_fixture"
+    assert analysis["fixture_only"] is True
+    assert analysis["provenance_status"] == "diagnostic_fixture"
+    assert analysis["dataset_split"] == "test"
+
+    md_path = out_dir / "rq_analysis_summary.md"
+    assert md_path.exists()
+    md_content = md_path.read_text(encoding="utf-8")
+
+    assert "- **Execution Mode**: `mock_fixture`" in md_content
+    assert "- **Dataset Split / Scope**: `test`" in md_content
+    assert "- **Provenance Status**: `diagnostic_fixture`" in md_content
+    assert (
+        "> [!NOTE] Diagnostic Fixture Provenance: This analysis was executed on "
+        "diagnostic/mock fixture data"
+    ) in md_content
+    assert "It does not constitute canonical empirical research results." in md_content
+
+
+def test_provenance_mode_boundary_canonical_study_positive_control(tmp_path):
+    """BD_MODE_BOUNDARY: Canonical live test data earns canonical_study status without warning."""
+    fixture = _fixture(tmp_path)
+    inputs = _load(tmp_path, fixture)
+    proto = _test_protocol()
+
+    live_inputs = dataclasses.replace(inputs, execution_mode="live")
+
+    out_dir = tmp_path / "canonical_reports"
+    analysis = run_rq_analysis(
+        live_inputs,
+        proto,
+        bootstrap_samples=50,
+        seed=42,
+        output_dir=out_dir,
+    )
+
+    assert analysis["execution_mode"] == "live"
+    assert analysis["fixture_only"] is False
+    assert analysis["provenance_status"] == "canonical_study"
+    assert analysis["dataset_split"] == "test"
+
+    md_path = out_dir / "rq_analysis_summary.md"
+    assert md_path.exists()
+    md_content = md_path.read_text(encoding="utf-8")
+
+    assert "- **Execution Mode**: `live`" in md_content
+    assert "- **Dataset Split / Scope**: `test`" in md_content
+    assert "- **Provenance Status**: `canonical_study`" in md_content
+    assert "Diagnostic Fixture Provenance" not in md_content
+    assert "It does not constitute canonical empirical research results." not in md_content

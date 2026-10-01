@@ -1728,6 +1728,19 @@ def run_rq_analysis(
         repo_root=repo_root,
     )
 
+    execution_mode = getattr(inputs, "execution_mode", "unknown")
+    dataset_split = (
+        inputs.manifest_data.get("split", "unknown")
+        if hasattr(inputs, "manifest_data") and inputs.manifest_data
+        else "unknown"
+    )
+    is_fixture = execution_mode != "live"
+    provenance_status = (
+        "canonical_study"
+        if execution_mode == "live" and dataset_split == "test"
+        else "diagnostic_fixture"
+    )
+
     overall_summary = {
         "schema_version": "1.0.0",
         "analysis_tool_version": ANALYSIS_TOOL_VERSION,
@@ -1736,6 +1749,10 @@ def run_rq_analysis(
         "manifest_sha256": inputs.manifest_sha256,
         "protocol_version": protocol.protocol_version,
         "protocol_sha256": protocol.protocol_sha256,
+        "execution_mode": execution_mode,
+        "dataset_split": dataset_split,
+        "fixture_only": is_fixture,
+        "provenance_status": provenance_status,
         "rq1": rq1,
         "rq2": rq2,
         "rq3": rq3,
@@ -1767,6 +1784,11 @@ def generate_rq_markdown_report(analysis_dict: dict[str, Any]) -> str:
     rq3 = analysis_dict.get("rq3", {})
     whole_fin = rq3.get("whole_study_financial_accounting", {})
 
+    exec_mode = analysis_dict.get("execution_mode", "unknown")
+    dataset_split = analysis_dict.get("dataset_split", "unknown")
+    provenance_status = analysis_dict.get("provenance_status", "unknown")
+    is_fixture = analysis_dict.get("fixture_only", exec_mode != "live")
+
     lines = [
         "# RAG2ATTCK Empirical Analysis Report (RQ1, RQ2, RQ3)",
         "",
@@ -1775,18 +1797,41 @@ def generate_rq_markdown_report(analysis_dict: dict[str, Any]) -> str:
         f"- **Protocol Version**: `{analysis_dict.get('protocol_version')}` "
         f"(`{analysis_dict.get('protocol_sha256', '')[:12]}...`)",
         f"- **Analysis Tool Version**: `{analysis_dict.get('analysis_tool_version')}`",
+        f"- **Execution Mode**: `{exec_mode}`",
+        f"- **Dataset Split / Scope**: `{dataset_split}`",
+        f"- **Provenance Status**: `{provenance_status}`",
         f"- **Report Generated**: `{analysis_dict.get('analysis_timestamp')}`",
         "",
-        "---",
-        "",
-        "## RQ1: Controlled Attribution Accuracy (No-RAG vs. RAG)",
-        "",
-        "> *Does retrieval augmentation improve exact technique attribution over unaugmented LLM?*",
-        "",
-        "| Condition | End-to-End Acc | 95% CI (Cluster) | Macro-F1 (474) | "
-        "Delta Acc vs No-RAG | 95% CI Delta | McNemar p (exact) |",
-        "| :--- | :---: | :---: | :---: | :---: | :---: | :---: |",
     ]
+
+    if is_fixture:
+        lines.extend(
+            [
+                (
+                    f"> [!NOTE] Diagnostic Fixture Provenance: This analysis was executed on "
+                    f"diagnostic/mock fixture data (execution_mode='{exec_mode}'). It does not "
+                    "constitute canonical empirical research results."
+                ),
+                "",
+            ]
+        )
+
+    lines.extend(
+        [
+            "---",
+            "",
+            "## RQ1: Controlled Attribution Accuracy (No-RAG vs. RAG)",
+            "",
+            (
+                "> *Does retrieval augmentation improve exact technique attribution over "
+                "unaugmented LLM?*"
+            ),
+            "",
+            "| Condition | End-to-End Acc | 95% CI (Cluster) | Macro-F1 (474) | "
+            "Delta Acc vs No-RAG | 95% CI Delta | McNemar p (exact) |",
+            "| :--- | :---: | :---: | :---: | :---: | :---: | :---: |",
+        ]
+    )
 
     by_cond_rq1 = rq1.get("by_condition", {})
     for cond in CONDITIONS:

@@ -6,23 +6,24 @@
 - **Branch**: `codex/s1-evaluator-prep` (PR #27)
 - **PRE_SHA**: `80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315`
 - **Execution Mode**: Strictly OFFLINE (ZERO live provider/API calls; in-flight live matrix untouched)
-- **Timestamp**: `2026-10-01T21:26:00Z`
+- **Timestamp**: `2026-10-01T22:05:00Z`
 
 ---
 
 ## 1. Executive Summary & Purpose
 
-The purpose of this subagent assignment is to independently verify and harden the scientific evaluation infrastructure, implement publication-grade offline statistical analysis tooling, and execute comprehensive contract repairs addressing all items from the Codex Orchestration Review (`artifacts/orchestration/analysis_reproduction_review_20261002.md`) and the subsequent Codex differential probe (`FAIL | B_NATIVE_TARIFF_CONFORMANCE`).
+The purpose of this subagent assignment is to independently verify and harden the scientific evaluation infrastructure, implement publication-grade offline statistical analysis tooling, and execute comprehensive contract repairs addressing all items from the Codex Orchestration Review (`artifacts/orchestration/analysis_reproduction_review_20261002.md`), the subsequent Codex differential probe (`FAIL | B_NATIVE_TARIFF_CONFORMANCE`), and the execution-mode provenance boundary directive (`FAIL/INSUFFICIENT_EVIDENCE | BD_MODE_BOUNDARY`).
 
 In strict adherence to the project's frozen protocol principles:
 1. **Zero live provider calls**: All testing, evaluation, and diagnostic verification was executed offline against synthetic and fixture datasets. No in-flight live matrix predictions were scored or altered (strictly 0 egress).
 2. **Canonical protocol preservation**: The canonical evaluator entrypoint in `src/evaluation/experiment_metrics.py` remains fail-closed behind the `ScientificProtocolApproval` contract (D1–D7). No flags, bypasses, or ad-hoc defaults can unblock scoring without explicit verified approval.
 3. **Dedicated offline analysis pipeline**: Created `scripts/analysis/evaluate_rqs.py` to compute publication-grade metrics and statistical tests for Research Questions **RQ1**, **RQ2**, and **RQ3**.
-4. **Comprehensive offline test suite**: Created `tests/test_evaluator_offline_contract.py` containing 42 rigorous tests validating every edge case of the evaluation contract, financial accounting, failure semantics, native tariff conformance, and analysis tools.
-5. **Codex Review Repairs Completed (Items 1–8 + B_NATIVE_TARIFF_REPAIR)**:
+4. **Comprehensive offline test suite**: Created `tests/test_evaluator_offline_contract.py` containing 44 rigorous tests validating every edge case of the evaluation contract, financial accounting, failure semantics, native tariff conformance, execution-mode boundaries, and analysis tools.
+5. **Codex Review Repairs Completed (Items 1–8, B_NATIVE_TARIFF_REPAIR, & BD_MODE_BOUNDARY)**:
    - **Item 1 (Strict Pricing Validation)**: Tariffs, bounds, and ceilings validated against `config/pricing_v1.json`. Fail-closed on missing keys or unknown tiers; zero-cost fallbacks are strictly prohibited.
    - **Item 2 (Ledger/Journal Reconciliation - B_RECONCILE_REPAIR2 & B_NATIVE_TARIFF_REPAIR)**: Parses `attempt_receipt` and `monetary_settle` events, verifies ordinal and attempt uniqueness, binds record SHA-256 against prediction records, accounts for retries, and preserves study-wide financial accounting with prior-pilot hold ($0.05264010) preserved without adding to individual condition costs.
    - **B_NATIVE_TARIFF_REPAIR (Native Tariff Delegation)**: Eliminated custom calculation loops in `reconcile_journal_and_ledger` and delegated directly to native frozen `calculate_request_cost_from_receipts` in `src.experiment.monetary_ledger`. Added `RecordObjectAdapter` for getattr binding, fail-closed enforcement on `req_breach`, and distinguishing tests covering positive control ($0.00000370), worst-case fee on `RATE_LIMIT` / `TIMEOUT` / `API_FAILURE` ($0.53974560), missing `service_tier`, foreign model receipts, `INCOMPLETE` status with tokens, final-receipt drift, and logical worst ceiling breaches ($2.15898240).
+   - **BD_MODE_BOUNDARY (Execution-Mode Boundary & Honest Provenance)**: Added execution-mode metadata tracking to `run_rq_analysis` (`execution_mode`, `dataset_split`, `fixture_only`, `provenance_status`). Enforces honest provenance separation between diagnostic mock fixtures (`provenance_status='diagnostic_fixture'`, triggering an explicit Markdown alert banner) and canonical empirical study data (`provenance_status='canonical_study'`). Added distinguishing positive and diagnostic control tests.
    - **Item 3 (Three Cost Denominators)**: Discloses `cost_per_logical_request_usd` (N=1,280), `cost_per_scorable_query_usd` (N=718), and `cost_per_correct_attribution_usd`, alongside explicit real expenditure disclosures on excluded views (311 ambiguous + 251 unmapped).
    - **Item 4 (Robust CLI Root Resolution)**: Resolves default protocol, pricing, output, and ledger paths against `--repository-root` or `repo_root` (`Path(__file__).resolve().parents[2]`), ensuring deterministic execution regardless of caller CWD.
    - **Item 5 (Distinguishing 474-Class Macro-F1 Test)**: Mathematically demonstrates that 471 unobserved classes contribute 0.0 and denominator is strictly 474, proving that an observed-only denominator (dividing by 3) fails by a factor of 158x.
@@ -258,16 +259,18 @@ A comprehensive test suite of 34 rigorous tests verifies every aspect of the eva
 | 40 | `test_native_tariff_transport_failures_charged_worst_case` | B_NATIVE_TARIFF: TIMEOUT and API_FAILURE receipts charged worst attempt fee | **PASSED** |
 | 41 | `test_native_tariff_final_receipt_drift_vs_record_breaches` | B_NATIVE_TARIFF: Final receipt drift vs record (tokens, response ID, model) breaches fail-closed | **PASSED** |
 | 42 | `test_native_tariff_logical_worst_ceiling_breach_fails_closed` | B_NATIVE_TARIFF: Total cost exceeding logical worst ceiling ($2.15898240) breaches fail-closed | **PASSED** |
+| 43 | `test_provenance_mode_boundary_diagnostic_fixture` | BD_MODE_BOUNDARY: Diagnostic fixture data retains explicit non-canonical provenance | **PASSED** |
+| 44 | `test_provenance_mode_boundary_canonical_study_positive_control` | BD_MODE_BOUNDARY: Canonical live test data earns canonical_study status without warning | **PASSED** |
 
 ### 5.2 Test Execution Results
 ```bash
 uv run pytest tests/test_evaluator_offline_contract.py -v
-============================= 42 passed in 14.65s =============================
+============================= 44 passed in 14.80s =============================
 
 uv run pytest tests/test_experiment_evaluation.py -q
 ============================= 94 passed in 14.07s =============================
 
-Combined Total: 136 passed in 24.12s (OFFLINE_GUARD: installed=True attempted_egress=0)
+Combined Total: 138 passed in 25.12s (OFFLINE_GUARD: installed=True attempted_egress=0)
 ```
 
 ### 5.3 Code Quality & Linter Compliance
@@ -285,9 +288,9 @@ uv run ruff format --check scripts/analysis/evaluate_rqs.py tests/test_evaluator
 
 | File Path | SHA-256 Digest | Purpose |
 | :--- | :--- | :--- |
-| `scripts/analysis/evaluate_rqs.py` | `003f4f51d82f81d5c3845cb59b9b404e42837964ba0836e5ea630bdc952b0a1c` | Offline RQ1/RQ2/RQ3 analysis script with B_NATIVE_TARIFF_REPAIR |
+| `scripts/analysis/evaluate_rqs.py` | `357c7ca9a535ec31a19f25ae98d4387b3debf9ed0a9215878dd0479570a35fa0` | Offline RQ1/RQ2/RQ3 analysis script with B_NATIVE_TARIFF_REPAIR & BD_MODE_BOUNDARY |
 | `scripts/analysis/__init__.py` | `28b40746d09b574e95393ac9e2a95879116cd9d4c7a86afb1be7be573f9ad54a` | Analysis package initializer |
-| `tests/test_evaluator_offline_contract.py` | `5cce3fefb8d0bb01bdd79c220c9b2ac37b0a2a1be6c294862e2004617d8d6c7c` | Evaluator offline contract test suite (42 tests) |
+| `tests/test_evaluator_offline_contract.py` | `e2df522654d3a239d0c2cc4700ff20e011ad8223bc8a0bdfb7d016890946ab0a` | Evaluator offline contract test suite (44 tests) |
 | `reports/evidence/evaluator_contract_and_analysis_plan.md` | *This document* | Comprehensive Phase S1 evidence document |
 
 ---
@@ -309,11 +312,12 @@ uv run ruff format --check scripts/analysis/evaluate_rqs.py tests/test_evaluator
 - [x] Completed Codex Review Repair 1: Strict pricing configuration validation (fail-closed, no zero fallback).
 - [x] Completed Codex Review Repair 2 (B_RECONCILE_REPAIR2): Full ledger and journal reconciliation with hash binding, read-only ledger validation, probe fail-closed, and 10 distinguishing mutation regressions.
 - [x] Completed Codex Review Repair (B_NATIVE_TARIFF_REPAIR): Direct delegation to native frozen `calculate_request_cost_from_receipts`, `RecordObjectAdapter`, fail-closed breach propagation, and 8 dedicated tests (positive control, worst-case fee on transport/rate-limit, missing service tier, foreign model, `INCOMPLETE` with tokens, final receipt drift, ceiling breach).
+- [x] Completed Codex Review Repair (BD_MODE_BOUNDARY): Execution-mode boundary and honest provenance tracking implemented in `run_rq_analysis` and `generate_rq_markdown_report`, backed by diagnostic fixture and canonical positive control tests.
 - [x] Completed Codex Review Repair 3: Three explicit cost denominators and excluded views spend disclosure.
 - [x] Completed Codex Review Repair 4: Robust CLI root resolution (`--repository-root`).
 - [x] Completed Codex Review Repair 5: Distinguishing known-answer 474-class Macro-F1 test.
 - [x] Completed Codex Review Repair 6: Comprehensive regression suite for tariffs, retries, and malformed inputs.
 - [x] Completed Codex Review Repair 7: Pair-cluster bootstrap resampling by `pair_id` and exact view counts (278 single, 440 contextual).
 - [x] Completed Codex Review Repair 8: RQ2 D2i independent failure axes, overlap accounting, and No-RAG N/A semantics.
-- [x] Full test suite passed (42/42 offline contract tests, 94/94 evaluation suite tests; 136 total).
+- [x] Full test suite passed (44/44 offline contract tests, 94/94 evaluation suite tests; 138 total).
 - [x] Ruff lint and format checks passed with zero errors (`line-length = 100`).

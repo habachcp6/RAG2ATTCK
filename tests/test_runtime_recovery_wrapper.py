@@ -1,9 +1,14 @@
 """Unit tests for Windows atomic file replacement retry wrapper and runtime recovery integrity.
 
-Directly binds to the wrapper in launch_canonical_resume.py
-(SHA256: 05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa)
-and exercises real StudyBudgetLedger file operations, os.replace failure injection,
-and monetary balance invariants.
+Uses portable fixture module tests.fixtures.runtime_recovery_wrapper_fixture to verify
+the exact non-sensitive retry wrapper from launch_canonical_resume.py without depending
+on machine-specific absolute paths.
+
+Provenance:
+- Canonical Launcher SHA-256:
+  05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa
+- Extracted Wrapper Block SHA-256:
+  e4a0115ff2d712bf6a0b896b50d9f4d412b786707d9721f47c74a4ac174e5f68
 
 Test coverage:
 1. Finite retry bound (raises after max 12 retries, exponential backoff, non-retriable fail fast).
@@ -16,20 +21,18 @@ Test coverage:
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import shutil
 import tempfile
-import time
 from decimal import Decimal
 from pathlib import Path
-from typing import Any
 
 import pytest
 
 from src.experiment.authorization import (
     ExecutionAuthorization,
+    LiveExecutionBlockedError,
     create_test_protocol_approval,
 )
 from src.experiment.config import canonical_bytes, digest, load_plan
@@ -47,15 +50,15 @@ from src.experiment.runner import (
     JournalBudget,
     MockProvider,
 )
+from tests.fixtures.runtime_recovery_wrapper_fixture import (
+    CANONICAL_LAUNCHER_SHA256,
+    CANONICAL_WRAPPER_BLOCK_SHA256,
+    build_robust_methods,
+    verify_local_launcher_if_present,
+    verify_wrapper_block_digest,
+)
 
 pytest_plugins = ["tests.test_experiment_t22"]
-
-LAUNCHER_PATH = Path(
-    r"C:\Users\hahoa\.gemini\antigravity\brain\cd393b52-6d99-4f23-878e-7afbb7e0ecf9\scratch\launch_canonical_resume.py"
-)
-EXPECTED_LAUNCHER_SHA256 = (
-    "05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa"
-)
 
 _TRUE_ORIG_WRITE_ATOMICALLY = StudyBudgetLedger._write_atomically_unlocked
 _TRUE_ORIG_ANCHOR_ATOMICALLY = StudyBudgetLedger._write_anchor_atomically_unlocked
@@ -75,46 +78,35 @@ def sample_pricing():
 
 
 @pytest.fixture
-def bound_canonical_wrapper():
-    """Installs the exact wrapper from launch_canonical_resume.py with intercepted fast sleep."""
-    assert LAUNCHER_PATH.is_file(), f"Launcher script missing at {LAUNCHER_PATH}"
-    content = LAUNCHER_PATH.read_bytes()
-    actual_sha = hashlib.sha256(content).hexdigest()
-    assert (
-        actual_sha == EXPECTED_LAUNCHER_SHA256
-    ), f"Launcher SHA mismatch: {actual_sha} != {EXPECTED_LAUNCHER_SHA256}"
+def bound_canonical_wrapper(monkeypatch):
+    """Installs the exact wrapper from the portable fixture with intercepted fast sleep."""
+    assert verify_wrapper_block_digest(), "Embedded wrapper block digest mismatch"
 
     sleep_calls: list[float] = []
 
-    class MockTime:
-        def sleep(self, s: float) -> None:
-            sleep_calls.append(s)
+    def mock_sleep(s: float) -> None:
+        sleep_calls.append(s)
 
-    # Ensure pristine class methods before extracting
-    StudyBudgetLedger._write_atomically_unlocked = _TRUE_ORIG_WRITE_ATOMICALLY
-    StudyBudgetLedger._write_anchor_atomically_unlocked = _TRUE_ORIG_ANCHOR_ATOMICALLY
+    robust_write, robust_anchor = build_robust_methods(
+        _TRUE_ORIG_WRITE_ATOMICALLY,
+        _TRUE_ORIG_ANCHOR_ATOMICALLY,
+        sleep_fn=mock_sleep,
+    )
 
-    lines = content.decode("utf-8").splitlines()
-    wrapper_text = "\n".join(lines[46:76])
-    namespace: dict[str, Any] = {
-        "StudyBudgetLedger": StudyBudgetLedger,
-        "time": MockTime(),
-    }
-    exec(wrapper_text, namespace)
-
-    robust_write = StudyBudgetLedger._write_atomically_unlocked
-    robust_anchor = StudyBudgetLedger._write_anchor_atomically_unlocked
+    monkeypatch.setattr(StudyBudgetLedger, "_write_atomically_unlocked", robust_write)
+    monkeypatch.setattr(StudyBudgetLedger, "_write_anchor_atomically_unlocked", robust_anchor)
 
     yield {
         "robust_write": robust_write,
         "robust_anchor": robust_anchor,
         "orig_write": _TRUE_ORIG_WRITE_ATOMICALLY,
         "orig_anchor": _TRUE_ORIG_ANCHOR_ATOMICALLY,
-        "launcher_sha256": actual_sha,
+        "launcher_sha256": CANONICAL_LAUNCHER_SHA256,
+        "wrapper_block_sha256": CANONICAL_WRAPPER_BLOCK_SHA256,
         "sleep_calls": sleep_calls,
     }
 
-    # Teardown: always restore pristine original methods
+    # Teardown: restore pristine original methods
     StudyBudgetLedger._write_atomically_unlocked = _TRUE_ORIG_WRITE_ATOMICALLY
     StudyBudgetLedger._write_anchor_atomically_unlocked = _TRUE_ORIG_ANCHOR_ATOMICALLY
 
@@ -123,9 +115,13 @@ class TestFiniteRetryBound:
     """Test 1: Finite retry bound (raises after max 12 retries, exponential backoff, non-retriable fail fast)."""
 
     def test_launcher_hash_and_wrapper_binding(self, bound_canonical_wrapper):
-        assert bound_canonical_wrapper["launcher_sha256"] == EXPECTED_LAUNCHER_SHA256
-        assert callable(bound_canonical_wrapper["robust_write"])
-        assert callable(bound_canonical_wrapper["robust_anchor"])
+        assert bound_canonical_wrapper["launcher_sha256"] == CANONICAL_LAUNCHER_SHA256
+        assert bound_canonical_wrapper["wrapper_block_sha256"] == CANONICAL_WRAPPER_BLOCK_SHA256
+        assert verify_wrapper_block_digest() is True
+
+        # Optional check: verify equivalence with local live launcher if present
+        is_ok, msg = verify_local_launcher_if_present()
+        assert is_ok, f"Local launcher verification failed: {msg}"
 
     def test_finite_retry_bound_raises_after_12_attempts_winerror_5(
         self, tmp_dir, sample_pricing, bound_canonical_wrapper, monkeypatch
@@ -150,7 +146,7 @@ class TestFiniteRetryBound:
         assert replace_calls == 12, f"Expected exactly 12 attempts, got {replace_calls}"
         assert getattr(exc_info.value, "winerror", None) == 5
         assert len(bound_canonical_wrapper["sleep_calls"]) == 11
-        expected_sleeps = [0.05 * (1.5 ** i) for i in range(11)]
+        expected_sleeps = [0.05 * (1.5**i) for i in range(11)]
         assert bound_canonical_wrapper["sleep_calls"] == pytest.approx(expected_sleeps)
 
     def test_finite_retry_bound_winerror_32_sharing_violation(
@@ -164,7 +160,10 @@ class TestFiniteRetryBound:
         def failing_replace(src, dst):
             nonlocal replace_calls
             replace_calls += 1
-            exc = OSError(32, "The process cannot access the file because it is being used by another process")
+            exc = OSError(
+                32,
+                "The process cannot access the file because it is being used by another process",
+            )
             exc.winerror = 32
             raise exc
 
@@ -372,11 +371,17 @@ class TestNoBudgetOrStateReset:
 
     def test_journal_budget_cannot_be_reset(self, tmp_dir):
         journal_file = tmp_dir / "request_journal.jsonl"
-        journal_file.write_text('{"event":"header","manifest_sha256":"abc","max_requests":10}\n', encoding="utf-8")
+        journal_file.write_text(
+            '{"event":"header","manifest_sha256":"abc","max_requests":10}\n',
+            encoding="utf-8",
+        )
         budget = JournalBudget(10, journal_file, consumed=3)
         assert budget.consumed_provider_attempts == 3
 
-        with pytest.raises(ValueError, match="persisted experiment request spending cannot be reset"):
+        with pytest.raises(
+            ValueError,
+            match="persisted experiment request spending cannot be reset",
+        ):
             budget.reset()
 
 
@@ -407,8 +412,6 @@ class TestCrashConsistencyLedgerAndAnchor:
         assert anchor_path.exists()
 
         # Instantiating StudyBudgetLedger must fail closed with LiveExecutionBlockedError
-        from src.experiment.authorization import LiveExecutionBlockedError
-
         with pytest.raises(
             LiveExecutionBlockedError,
             match="Refusing silent re-initialization of fresh budget",
@@ -480,7 +483,9 @@ class TestExceptionPropagationAndDualLockSafety:
     ):
         ledger_path = tmp_dir / "study_ledger.json"
         anchor_path = tmp_dir / ".study_anchor.json"
-        ledger = StudyBudgetLedger(ledger_path, anchor_path=anchor_path, pricing_config=sample_pricing)
+        ledger = StudyBudgetLedger(
+            ledger_path, anchor_path=anchor_path, pricing_config=sample_pricing
+        )
 
         def failing_replace(src, dst):
             exc = PermissionError(13, "Simulated WinError 5")
@@ -513,6 +518,7 @@ class TestCompareWrappedVsUnwrappedBehavior:
         ledger = StudyBudgetLedger(ledger_path, pricing_config=sample_pricing)
 
         replace_calls = 0
+
         def fail_once(src, dst):
             nonlocal replace_calls
             replace_calls += 1

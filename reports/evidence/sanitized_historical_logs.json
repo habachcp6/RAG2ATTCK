@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0.0",
+  "audit_phase": "S1",
+  "provenance": {
+    "generated_by": "Subagent A (Runtime Recovery & Integrity Auditor)",
+    "audit_timestamp_utc": "2026-10-01T20:28:00Z",
+    "git_commit_sha": "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315",
+    "sanitization_verified": true,
+    "contains_secrets": false
+  },
+  "tasks": [
+    {
+      "task_handle": "cd393b52-6d99-4f23-878e-7afbb7e0ecf9/task-1215",
+      "os_pid": 14356,
+      "event_type": "TERMINAL_FAILURE_HISTORICAL",
+      "host_path": "C:\\Users\\hahoa\\.gemini\\antigravity\\brain\\cd393b52-6d99-4f23-878e-7afbb7e0ecf9\\.system_generated\\tasks\\task-1215.log",
+      "file_size_bytes": 1829,
+      "created_time_utc": "2026-10-01T19:28:35Z",
+      "last_write_time_utc": "2026-10-01T19:46:17Z",
+      "sha256": "e7fcdfc8e44c1ce63b7e8b566866669500530f95bd3011a7d49f719beea87d58",
+      "exit_code": 1,
+      "sanitized_content": "=== LAUNCHING CANONICAL RESUME (PID: 14356, stop_after=6399) ===\nWarning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.\nLoading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|##########| 103/103 [00:00<00:00, 1842.67it/s]\nTraceback (most recent call last):\n  File \"C:\\Users\\hahoa\\.gemini\\antigravity\\brain\\cd393b52-6d99-4f23-878e-7afbb7e0ecf9\\scratch\\launch_canonical_resume.py\", line 159, in <module>\n    launch_resume(stop_after=st_after, dry_run=is_dry)\n    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\hahoa\\.gemini\\antigravity\\brain\\cd393b52-6d99-4f23-878e-7afbb7e0ecf9\\scratch\\launch_canonical_resume.py\", line 124, in launch_resume\n    summary = run_live_experiment(\n        plan=plan,\n    ...<5 lines>...\n        stop_after=stop_after,\n    )\n  File \"D:\\RAG2ATTCK-worktrees\\canonical-live-usd1999\\src\\experiment\\runner.py\", line 1372, in run_live_experiment\n    study_ledger.reserve(key_str, R_logical_worst)\n    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\RAG2ATTCK-worktrees\\canonical-live-usd1999\\src\\experiment\\monetary_ledger.py\", line 808, in reserve\n    self._write_atomically_unlocked()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"D:\\RAG2ATTCK-worktrees\\canonical-live-usd1999\\src\\experiment\\monetary_ledger.py\", line 741, in _write_atomically_unlocked\n    tmp_file.replace(self.ledger_path)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\n  File \"C:\\Program Files\\Python313\\Lib\\pathlib\\_local.py\", line 780, in replace\n    os.replace(self, target)\n    ~~~~~~~~~~^^^^^^^^^^^^^^\nPermissionError: [WinError 5] Access is denied: 'D:\\\\RAG2ATT&CK\\\\artifacts\\\\study_budget\\\\study_ledger.tmp' -> 'D:\\\\RAG2ATT&CK\\\\artifacts\\\\study_budget\\\\study_ledger.json'\n"
+    },
+    {
+      "task_handle": "cd393b52-6d99-4f23-878e-7afbb7e0ecf9/task-1264",
+      "os_pid": 50192,
+      "event_type": "RESUME_LAUNCH_STARTUP",
+      "host_path": "C:\\Users\\hahoa\\.gemini\\antigravity\\brain\\cd393b52-6d99-4f23-878e-7afbb7e0ecf9\\.system_generated\\tasks\\task-1264.log",
+      "file_size_bytes": 333,
+      "created_time_utc": "2026-10-01T19:48:36Z",
+      "last_write_time_utc": "2026-10-01T19:48:46Z",
+      "sha256": "47835a53b5dccd7efb360931885613471df8137232cdd576cbf65ec5e8788c07",
+      "exit_code": null,
+      "sanitized_content": "=== LAUNCHING CANONICAL RESUME (PID: 50192, stop_after=6399) ===\nLoading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|##########| 103/103 [00:00<00:00, 1903.06it/s]\nWarning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.\n"
+    }
+  ]
+}

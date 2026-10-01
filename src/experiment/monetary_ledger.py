@@ -1032,12 +1032,15 @@ def calculate_request_cost_from_receipts(
     *,
     tier: str = "default",
     expected_model: Optional[str] = None,
+    most_recent_attempt_ordinal: Optional[int] = None,
 ) -> tuple[Decimal, bool, Optional[str]]:
     """Compute exact request settlement cost from durable per-attempt receipts and committed record.
 
     Invariants:
     - Strict ordinal and attempt_index uniqueness covering [0..attempts_consumed-1].
     - Zero duplicate receipts; duplicate receipts immediately flag breach.
+    - Ordinals must be unique and strictly sequential with step 1.
+    - Only final attempt may be successful; earlier attempts must be retryable failures.
     - Final attempt receipt binds strictly to committed record (ID, model, tokens, status).
     - Returned service tier must match required tier (missing remains unknown and breaches).
     - No silent min clipping: exceeding logical worst flags breach.
@@ -1083,6 +1086,61 @@ def calculate_request_cost_from_receipts(
             f"do not cover expected {expected_indices}"
         )
 
+    # 1b. Validate receipt ordinals (uniqueness, sequence, and most recent match)
+    receipts_with_ord = [r for r in receipts if "ordinal" in r and r.get("ordinal") is not None]
+    if receipts_with_ord or most_recent_attempt_ordinal is not None:
+        if len(receipts_with_ord) != len(receipts):
+            breach = True
+            breach_reasons.append("Incomplete ordinal tracking across receipts")
+        else:
+            ordinals: list[int] = []
+            for i in range(attempts_consumed):
+                r = receipt_by_attempt.get(i)
+                ord_val = r.get("ordinal") if r else None
+                if not isinstance(ord_val, int) or isinstance(ord_val, bool):
+                    breach = True
+                    breach_reasons.append(f"Attempt {i} has invalid non-integer ordinal {ord_val}")
+                else:
+                    ordinals.append(ord_val)
+
+            if len(set(ordinals)) != len(ordinals):
+                breach = True
+                breach_reasons.append(f"Duplicate receipt ordinal detected in {ordinals}")
+
+            for i in range(len(ordinals) - 1):
+                if ordinals[i + 1] != ordinals[i] + 1:
+                    breach = True
+                    breach_reasons.append(
+                        f"Non-sequential receipt ordinals: attempt {i} has {ordinals[i]}, "
+                        f"attempt {i + 1} has {ordinals[i + 1]}"
+                    )
+
+            if most_recent_attempt_ordinal is not None and ordinals:
+                if ordinals[-1] != most_recent_attempt_ordinal:
+                    breach = True
+                    breach_reasons.append(
+                        f"Most recent receipt ordinal {ordinals[-1]} does not match "
+                        f"expected journal attempt {most_recent_attempt_ordinal}"
+                    )
+
+    # 1c. Validate attempt status sequence: only final receipt may be successful
+    for i in range(attempts_consumed - 1):
+        r = receipt_by_attempt.get(i)
+        if r is not None:
+            status_i = r.get("status")
+            if status_i == "SUCCESS":
+                breach = True
+                breach_reasons.append(
+                    f"Attempt {i} has status 'SUCCESS' before final attempt "
+                    f"{attempts_consumed - 1}; earlier attempts must be retryable failures"
+                )
+            elif status_i not in ("TIMEOUT", "API_FAILURE"):
+                breach = True
+                breach_reasons.append(
+                    f"Attempt {i} has non-retryable status '{status_i}' before final attempt "
+                    f"{attempts_consumed - 1}"
+                )
+
     # 2. Binding to committed record
     if record is not None:
         rec_attempts = getattr(record, "request_attempt_count", None)
@@ -1106,6 +1164,13 @@ def calculate_request_cost_from_receipts(
                         f"does not match record failure '{rec_status}'"
                     )
             else:
+                if rec_status is not None and final_receipt.get("status") != "SUCCESS":
+                    breach = True
+                    breach_reasons.append(
+                        f"Final receipt status '{final_receipt.get('status')}' "
+                        f"does not match record outcome '{rec_status}'"
+                    )
+
                 # Terminal success or post-hoc validation outcome
                 # Verify Response ID binding
                 rec_resp_id = getattr(record, "response_id", None)

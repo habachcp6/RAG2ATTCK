@@ -975,6 +975,144 @@ class TestRecordBindingIntegrity:
         assert breach is False
         assert cost == Decimal("0.00085000")
 
+    def test_case_a_duplicate_ordinal_receipts_flags_breach_and_retains_worst(
+        self, sample_pricing
+    ):
+        """Case A: Duplicate ordinals across attempts flag breach and retain full reservation.
+
+        attempts=2, record prompt1000/completion500/modelLuna/id resp-final,
+        receipts TIMEOUT idx0 ordinal1 + SUCCESS idx1 ordinal1 => must breach, cost 1.07949120.
+        """
+        receipts = [
+            {
+                "attempt_index": 0,
+                "status": "TIMEOUT",
+                "ordinal": 1,
+            },
+            {
+                "attempt_index": 1,
+                "status": "SUCCESS",
+                "ordinal": 1,
+                "input_tokens": 1000,
+                "output_tokens": 500,
+                "service_tier": "default",
+                "model": "gpt-5.6-luna",
+                "response_id": "resp-final",
+            },
+        ]
+        record = SimpleNamespace(
+            request_attempt_count=2,
+            prompt_tokens=1000,
+            completion_tokens=500,
+            response_id="resp-final",
+            model="gpt-5.6-luna",
+            parse_status="VALID",
+        )
+        cost, breach, reason = calculate_request_cost_from_receipts(
+            attempts_consumed=2,
+            receipts=receipts,
+            record=record,
+            pricing_config=sample_pricing,
+            tier="default",
+            expected_model="gpt-5.6-luna",
+        )
+        assert breach is True
+        assert cost == Decimal("1.07949120")
+        assert "Duplicate receipt ordinal" in reason or "Non-sequential" in reason
+
+    def test_case_b_success_before_final_retry_flags_breach_and_retains_worst(
+        self, sample_pricing
+    ):
+        """Case B: SUCCESS before final attempt flags breach and retains full reservation.
+
+        attempts=2, record prompt1000/completion500/modelLuna/id resp-final,
+        receipts SUCCESS idx0 ordinal1 + SUCCESS idx1 ordinal2 => must breach, cost 1.07949120.
+        """
+        receipts = [
+            {
+                "attempt_index": 0,
+                "status": "SUCCESS",
+                "ordinal": 1,
+                "response_id": "resp-earlier",
+                "model": "gpt-5.6-luna",
+                "input_tokens": 1000,
+                "output_tokens": 500,
+                "service_tier": "default",
+            },
+            {
+                "attempt_index": 1,
+                "status": "SUCCESS",
+                "ordinal": 2,
+                "response_id": "resp-final",
+                "model": "gpt-5.6-luna",
+                "input_tokens": 1000,
+                "output_tokens": 500,
+                "service_tier": "default",
+            },
+        ]
+        record = SimpleNamespace(
+            request_attempt_count=2,
+            prompt_tokens=1000,
+            completion_tokens=500,
+            response_id="resp-final",
+            model="gpt-5.6-luna",
+            parse_status="VALID",
+        )
+        cost, breach, reason = calculate_request_cost_from_receipts(
+            attempts_consumed=2,
+            receipts=receipts,
+            record=record,
+            pricing_config=sample_pricing,
+            tier="default",
+            expected_model="gpt-5.6-luna",
+        )
+        assert breach is True
+        assert cost == Decimal("1.07949120")
+        assert "Attempt 0 has status 'SUCCESS' before final attempt" in reason
+
+    def test_genuine_3_timeouts_1_success_nonzero_globalstart_control(
+        self, sample_pricing
+    ):
+        """Control: Genuine 3 timeouts + 1 success with nonzero globalstart must not breach.
+
+        globalstart=10, ordinals=[11, 12, 13, 14], cost=3*worst + token_cost = 1.62008680.
+        """
+        receipts = [
+            {"attempt_index": 0, "status": "TIMEOUT", "ordinal": 11},
+            {"attempt_index": 1, "status": "TIMEOUT", "ordinal": 12},
+            {"attempt_index": 2, "status": "TIMEOUT", "ordinal": 13},
+            {
+                "attempt_index": 3,
+                "status": "SUCCESS",
+                "ordinal": 14,
+                "input_tokens": 1000,
+                "output_tokens": 500,
+                "model": "gpt-5.6-luna",
+                "response_id": "resp-final",
+                "service_tier": "default",
+            },
+        ]
+        record = SimpleNamespace(
+            request_attempt_count=4,
+            prompt_tokens=1000,
+            completion_tokens=500,
+            model="gpt-5.6-luna",
+            response_id="resp-final",
+            parse_status="VALID",
+        )
+        cost, breach, reason = calculate_request_cost_from_receipts(
+            attempts_consumed=4,
+            receipts=receipts,
+            record=record,
+            pricing_config=sample_pricing,
+            tier="default",
+            expected_model="gpt-5.6-luna",
+            most_recent_attempt_ordinal=14,
+        )
+        assert breach is False
+        assert cost == Decimal("1.62008680")
+        assert reason is None
+
 
 class TestCanonicalProductionStudyLedgerOverrideRejection:
     """Production live execution rejects custom study_ledger_path overrides."""

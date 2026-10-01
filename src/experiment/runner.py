@@ -1023,6 +1023,9 @@ def run_live_experiment(
                         pricing_config=pricing_config,
                         tier="default",
                         expected_model=manifest["model"]["model"],
+                        most_recent_attempt_ordinal=(
+                            comp_receipts[-1].get("ordinal") if comp_receipts else None
+                        ),
                     )
                     if breach:
                         raise LiveExecutionBlockedError(
@@ -1442,6 +1445,7 @@ def run_live_experiment(
                         pricing_config=pricing_config,
                         tier="default",
                         expected_model=manifest["model"]["model"],
+                        most_recent_attempt_ordinal=budget.count,
                     )
                     refund = study_ledger.settle(
                         key_str=key_str,

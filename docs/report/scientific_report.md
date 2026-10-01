@@ -1,7 +1,7 @@
 # Evaluating MITRE ATT&CK-Grounded RAG for Technique Attribution from Windows Endpoint Logs: A Replication-and-Extension Study
 
 **Author:** Hà Hoàng Bách  
-**Affiliation:** RAG2ATT&CK Project  
+**Project:** RAG2ATT&CK  
 **Date:** October 2026  
 **Status:** DRAFT — IN PROGRESS / PENDING EXPERIMENTAL EXECUTION  
 **Protocol Version:** `experiment-protocol-v1.1` (Canonical Decisions Digest: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`)  
@@ -18,7 +18,7 @@ In this work, we present a controlled replication-and-extension study evaluating
 
 We evaluate this system across **1,280 synthetic paired test views** (derived from 640 scenario pairs across 64 template families, featuring matched single-event and contextual-event representations). An authoritative join of test view identifiers against ground-truth records yields **718 mapped positive scorable views** (678 single-GT, 40 multi-GT), with 311 ambiguous views and 251 unmapped views excluded from headline accuracy per protocol policies D2c and D2b. Crucially, we formally bound our claims: the evaluated dataset is strictly synthetic (`synthetic-paired-v1`), as forensic analysis of historical public Windows-APT telemetry revealed unresolved cell discrepancies and precision inconsistencies during reconciliation, preventing independent verification of authoritative ground truth. Consequently, our findings are bounded to the synthetic benchmark, and generalization to production enterprise telemetry remains unsupported.
 
-Our evaluation framework employs a fixed 474-class macro-averaged F1 universe, multi-label `ANY_MATCH` correctness semantics, headline end-to-end accuracy incorporating provider and parse failures, and an independent-axes failure decomposition. In compliance with strict empirical integrity guidelines, this report establishes the formal research report scaffold, mathematical formulations, literature review, and experimental table schemas without inventing unexecuted numerical results. Preliminary offline retrieval diagnostics across positive views demonstrate that dense retrieval achieves $Hit@1 = 4.23%$ and $Hit@10 = 45.11%$, with no ground-truth technique retrieved within Top-10 in $54.89%$ of positive views (the complement of view-level Any-GT Hit@10), influenced by lexical mismatch in command-line arguments and contextual event dilution. The canonical live execution matrix (6,400 requests) is strictly budgeted under a $19.99 financial guard, establishing a reproducible foundation for evaluating knowledge grounding in security reasoning.
+Our evaluation framework employs a fixed 474-class macro-averaged F1 universe, multi-label `ANY_MATCH` correctness semantics, headline end-to-end accuracy incorporating provider and parse failures, and an independent-axes failure decomposition. In compliance with strict empirical integrity guidelines, this report establishes the formal research report scaffold, mathematical formulations, literature review, and experimental table schemas without inventing unexecuted numerical results. Preliminary offline retrieval diagnostics across positive views demonstrate that dense retrieval achieves $Hit@1 = 4.23%$ and $Hit@10 = 45.11%$, with no ground-truth technique retrieved within Top-10 in $54.89%$ of positive views (the complement of view-level Any-GT Hit@10), influenced by lexical mismatch in command-line arguments and contextual event dilution. The canonical live execution matrix (6,400 requests) is strictly budgeted under a USD 19.99 financial guard, establishing a reproducible foundation for evaluating knowledge grounding in security reasoning.
 
 ---
 
@@ -30,7 +30,7 @@ Enterprise defense relies heavily on the ingestion, processing, and interpretati
 Accurate ATT&CK mapping enables automated playbooks, contextualized threat hunting, kill-chain reconstruction, and cross-organization threat intelligence sharing. However, manual attribution at the sub-technique level is labor-intensive and cognitively demanding. An adversary executing a living-off-the-land binary (LOLBin) like `certutil.exe` might be staging tools from an external server (Ingress Tool Transfer: `T1105`) or decoding payloads (Deobfuscate/Decode Files or Information: `T1140`). Disambiguating these nuanced attacker goals requires domain knowledge, familiarity with command-line syntax, and comprehensive understanding of the ATT&CK taxonomy.
 
 ### 1.2 LLMs and the RAG Paradigm in Threat Attribution
-Recent advancements in commercial language models with extended internal reasoning capabilities (such as OpenAI's `gpt-5.6-luna`) have demonstrated notable analytical performance in log triage and security analysis [2, 3]. However, relying solely on an LLM's internal parametric memory poses operational risks in security-critical environments:
+Commercial foundation models with extended internal reasoning capabilities (such as OpenAI's `gpt-5.6-luna`) provide architectural support for structured output schemas and multi-step reasoning over dense technical context, serving as motivation for automated threat attribution workflows [2, 3]. However, relying solely on an LLM's internal parametric memory poses operational risks in security-critical environments:
 1. **Parametric Hallucination & Invalid Identifiers:** Models may synthesize non-existent technique identifiers (such as `T1543.006`, which is absent from the Enterprise ATT&CK taxonomy) or confuse platform scopes by assigning non-Windows techniques (such as Cloud API: `T1059.009`, an active cloud technique in ATT&CK v19.2 that is not applicable to Windows host execution).
 2. **Knowledge Obsolescence:** Static model weights cannot reflect updates, deprecations, or newly introduced techniques in quarterly ATT&CK releases.
 3. **Lack of Verifiable Grounding:** Parametric predictions lack auditable citations back to official adversary procedure descriptions, making verification difficult for human analysts.
@@ -131,7 +131,7 @@ Table 1a and Table 1b present a comprehensive 16-dimension comparison across the
 ### 3.1 MITRE ATT&CK Enterprise Matrix v19.2
 All retrieval, ground truth, and evaluation components in RAG2ATTCK are cryptographically bound to the official MITRE ATT&CK Enterprise Matrix release v19.2:
 - **Raw STIX Source:** `enterprise-attack-19.2.json` (File SHA-256: `dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4`).
-- **Corpus Census and Filtering:** From the 858 raw `attack-pattern` objects in STIX v19.2, we filter out 161 inactive techniques (33 revoked, 128 deprecated). From the remaining 697 active techniques, we extract all techniques supporting the Windows platform (`"Windows" in platforms`), resulting in an active Windows corpus of exactly **474 techniques**:
+- **Corpus Census and Filtering:** The raw STIX v19.2 catalog contains exactly **858** `attack-pattern` objects. We identify **161 unique inactive** technique objects, comprising **149 revoked** (`revoked: true`) and **12 deprecated** (`x_mitre_deprecated: true`) objects with zero overlap between sets ($149 + 12 = 161$). Filtering inactive objects yields **697 active enterprise techniques**. Filtering for host Windows execution (`"Windows" in x_mitre_platforms`) yields an active Windows corpus of exactly **474 techniques and sub-techniques**:
   - **176 Root Techniques** (37.1%)
   - **298 Sub-techniques** (62.9%)
 - **Taxonomic Integrity Invariants:** All 298 sub-techniques possess a valid parent technique inside the 474-technique corpus (0 orphan sub-techniques; 0 cross-platform dangling references). Every technique ID maps bijectively to a single STIX UUID.
@@ -212,22 +212,34 @@ The language model configuration is frozen in `config/model.json` (File SHA-256:
 - **API Interface:** OpenAI Responses API (`client.responses.create`), providing native schema constraints and unified reasoning token budgeting.
 - **Reasoning Effort:** Configured `reasoning_effort="xhigh"`.
 - **Output Token Budget (`max_output_tokens`):** `8192` tokens. Under OpenAI reasoning models, `max_output_tokens` represents an upper budget bound governing a unified allocation pool covering both internal reasoning tokens and visible completion tokens. While empirical DEV pilot runs observed mean output consumption of ~657 tokens, this parameter acts as a finite budget ceiling rather than an absolute guarantee against truncation: if the model's internal chain-of-thought and completion combined exhaust the 8,192 token allocation, the API emits an incomplete response (`status="incomplete"` with `incomplete_details.reason="max_output_tokens"`), which the evaluation harness flags as an incomplete provider failure.
-- **Structured Schema Enforcement:** Native JSON Schema enforcement (`strict: true`) targeting the Pydantic contract:
+- **Structured Schema Enforcement:** Native JSON Schema enforcement (`strict: true`) targeting the Pydantic contract derived from `TechniquePrediction.model_json_schema()`:
   ```json
   {
+    "title": "TechniquePrediction",
+    "description": "Minimal structured prediction payload returned by LLM:\n{\"technique_id\": \"T1059.001\"}\n\nNote: Strict format validation is deliberately omitted from the Pydantic schema\nso that syntactically invalid or non-registry IDs successfully pass JSON/schema parsing\nand are subsequently categorized as INVALID_ID by post-hoc validation (rather than MALFORMED_RESPONSE).",
     "type": "object",
     "properties": {
       "technique_id": {
-        "type": "string",
-        "pattern": "^T[0-9]{4}(\\.[0-9]{3})?$"
+        "title": "Technique Id",
+        "description": "The predicted MITRE ATT&CK Technique or Sub-technique ID.",
+        "type": "string"
       }
     },
-    "required": ["technique_id"],
+    "required": [
+      "technique_id"
+    ],
     "additionalProperties": false
   }
   ```
-- **Sampling Parameters:** Left at provider defaults (`temperature = 1.0`, `top_p = 1.0`, `presence_penalty = 0.0`, `frequency_penalty = 0.0`).
-- **Resilience Policy:** Exponential backoff with jitter (`max_retries = 3`, initial delay 1.0s, factor 2.0, max delay 30.0s, socket timeout 120s).
+  Crucially, format-level regex validation (such as `^T[0-9]{4}(\.[0-9]{3})?$`) is deliberately omitted from the Pydantic schema and provider API contract. This architectural decision strictly decouples provider-level JSON structural validity from downstream domain-specific taxonomic validation:
+  1. *Provider Schema Validation:* Enforces that the model emits a syntactically valid JSON object possessing a string-typed `technique_id` field with no additional properties.
+  2. *Post-Hoc Taxonomic Validation:* Decouples structural parse failures from attribution domain errors via a two-layer validation pipeline:
+     - **Layer 1 (Canonical Syntax Check):** Validates the string against the canonical MITRE ATT&CK regex pattern (`^T\d{4}(?:\.\d{3})?$`). Syntactic violations (e.g., malformed patterns such as `"T1059.1"` or `"T99999_bad"`) parse valid JSON and are classified as `INVALID_ID` rather than `MALFORMED_RESPONSE`.
+     - **Layer 2 (Registry Membership Check):** Validates syntax-compliant identifiers against the pinned ATT&CK v19.2 enterprise registry. Syntactically valid but uncataloged identifiers (e.g., non-existent techniques such as `"T9999"`) are classified as `INVALID_ID`.
+  
+  If regex enforcement were embedded directly within the provider JSON schema, any syntactically invalid output would be rejected at the API provider layer and misclassified as `MALFORMED_RESPONSE` (a structural parse failure), obscuring whether the model attempted a malformed technique prediction versus failing JSON generation.
+- **Sampling Parameters:** Under the OpenAI Responses API implementation contract (`src/llm/client.py`), sampling parameters (`temperature`, `top_p`, `presence_penalty`, `frequency_penalty`, and `seed`) are not sent / not configured in the request payload. By maintaining unconfigured provider defaults uniformly across all dispatches, the experimental runner guarantees identical configured controls across all experimental conditions.
+- **Resilience Policy:** Deterministic exponential backoff without jitter (`max_retries = 3`, initial delay 1.0s, factor 2.0, max delay 30.0s, socket timeout 120s; delay computed deterministically as $\min(\text{initial} \times \text{factor}^{\text{attempt}}, \text{max\_delay})$).
 
 ### 4.3 Symmetric Prompt Architecture
 To eliminate prompt design as a confounding variable, the No-RAG baseline and all RAG conditions share the identical base prompt template (`prompts/baseline_v1.txt`, File SHA-256: `b751fde1ee33b03ec0bdc07cbba10267002d2086cf22b91a74bdfd123856f206`):
@@ -271,17 +283,17 @@ The benchmark executes five distinct conditions across all 1,280 TEST views (6,4
 4. `rag_k5`: Injects Top-5 retrieved ATT&CK technique descriptions (default operational depth).
 5. `rag_k10`: Injects Top-10 retrieved ATT&CK technique descriptions (dense candidate pool).
 
-### 4.6 Tariff, Monetary Accounting, and Financial Guard ($19.99 Budget)
+### 4.6 Tariff, Monetary Accounting, and Financial Guard (USD 19.99 Budget)
 Live provider execution involves non-trivial API costs. In accordance with Protocol Decision D5, execution is governed by a financial and request-budget safeguard:
 - **Tariff Structure:** Standard commercial pricing for `gpt-5.6-luna`:
-  - Input Tokens: $\$0.20$ per $10^6$ tokens (conservative modeling rate: $\$0.25 / 10^6$).
-  - Output Tokens: $\$1.20$ per $10^6$ tokens (inclusive of hidden reasoning tokens).
+  - Input Tokens: USD 0.20 per 1,000,000 input tokens (conservative modeling rate: USD 0.25 per 1,000,000 input tokens).
+  - Output Tokens: USD 1.20 per 1,000,000 output tokens (inclusive of hidden reasoning tokens).
 - **Worst-Case Attempt Cap:**
   $$\text{Cap} = N_{\text{views}} \times N_{\text{conditions}} \times (\text{max\_retries} + 1) = 1,280 \times 5 \times 4 = 25,600 \text{ attempts}$$
-- **DEV Pilot Empirical Calibration (2026-10-01):** A real-provider pilot on 20 DEV views (`reports/dev_cost_pilot_20261001.md`) observed:
+- **DEV Pilot Empirical Calibration (2026-10-01):** A real-provider calibration pilot across 20 requests (evaluating 4 synthetic DEV views across 5 experimental conditions, documented in `reports/dev_cost_pilot_20261001.md`) observed:
   - Input Tokens: 42,213; Output Tokens: 13,139 (mean output: 656.95 tokens/request; peak: 2,421 tokens).
-  - Total Empirical Spend: $\$0.0242$ across 20 successful requests (mean latency: 8.13s).
-- **Canonical Projection and the $19.99 Hard Ceiling:** Offline tokenization of all 6,400 planned TEST prompts via `o200k_base` projected 15,766,654 input tokens. At the observed pilot output mean, the projected cost is approximately **$\$8.20$** (or **$\$8.99$** under conservative input rates). A hard budget ceiling of **$\$19.99$** is enforced by the execution runner, providing a $2.2\times$ safety margin before halting execution.
+  - Tariff Accounting Estimate: An estimated usage cost of USD 0.0242 across 20 successful requests (mean latency: 8.13s). Note: this figure represents an internal usage/tariff accounting estimate derived from token meters and public tariff rates, not a commercial invoice.
+- **Canonical Projection and the USD 19.99 Hard Ceiling:** Offline tokenization of all 6,400 planned TEST prompts via `o200k_base` projected 15,766,654 input tokens. At the observed pilot output mean, the projected cost is approximately **USD 8.20** (or **USD 8.99** under conservative input modeling rates). Crucially, these financial forecasts represent modeled projections rather than absolute commercial guarantees. A hard budget ceiling of **USD 19.99** is strictly enforced by the execution runner, providing a $2.2\times$ safety margin before halting execution.
 
 ---
 
@@ -428,15 +440,15 @@ While end-to-end LLM inference awaits canonical execution, the standalone dense 
    - *High-Performing Classes (Lexical Alignment):* Techniques with exact vocabulary overlap between logs and ATT&CK prose achieved strong recall: `T1685.005` (Clear Windows Event Logs) achieved **$98.39%$ Hit@10** (due to unique tokens like `wevtutil`, `EventID 1102`); `T1547.001` (Registry Run Keys / Startup Folder) achieved **$92.45%$ Hit@10** (due to exact registry paths `CurrentVersion/Run`).
    - *Severe Failure Classes (Representation Gap):* `T1136.001` (Local Account) achieved **$0.0%$ Hit@10 across all 99 views**. Telemetry containing `net user /add` and Event ID 4720 completely failed to retrieve the technique, matching instead generic persistence and DLL techniques.
    - *Hard Negative Crowding:* In `T1105` (Ingress Tool Transfer, $15.79%$ Hit@10), LOLBin telemetry invoking `certutil.exe -urlcache` resulted in `T1218.012` (Verclsid) ranking #1 in $42.1%$ of cases, crowding out `T1105`.
-3. **Contextual Event Dilution:**
-   In an anchor-technique pairwise analysis across 296 eligible scenario pairs, adding multi-event context degraded the ground-truth retrieval rank in **$22.0%$ of pairs (65/296)**, while improving it in only **$7.8%$ (23/296)**. Multi-event sequences introduce background operational tokens (`svchost.exe`, RPC calls, thread IDs) that dilute the dense vector representation away from the primary malicious signature.
+3. **Contextual Event Dilution Hypothesis and Rank Observations:**
+   In an anchor-technique pairwise comparison across 296 eligible scenario pairs, adding multi-event context was observed to degrade the ground-truth retrieval rank in **$22.0\%$ of pairs (65/296)**, while improving it in only **$7.8\%$ (23/296)**, with the remaining pairs exhibiting neutral rank changes. While we hypothesize that multi-event sequences introduce background operational tokens (`svchost.exe`, RPC calls, thread IDs) that dilute the dense vector embedding away from the primary malicious signature, this contextual dilution effect and any prospective event-filtering requirements remain hypotheses to be formally evaluated during end-to-end LLM reasoning.
 
 ### 6.3 RQ3: Retrieval Depth, API Cost, and Latency Trade-Offs
 Table 5 defines the schema for evaluating the operational costs, latencies, and token consumption scaling as retrieval depth increases from $k=1$ to $k=10$.
 
 *Table 5: Resource Consumption and Latency Scaling Across Retrieval Depths (Schema).*
 
-| Condition | Total Input Tokens | Total Output Tokens | Mean Output Tokens / Req | Mean Latency (s) | Median Latency (s) | P95 Latency (s) | Total Cost ($) | Mean Cost / Query ($) |
+| Condition | Total Input Tokens | Total Output Tokens | Mean Output Tokens / Req | Mean Latency (s) | Median Latency (s) | P95 Latency (s) | Total Cost (USD) | Mean Cost / Query (USD) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | `no_rag` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
 | `rag_k1` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
@@ -470,12 +482,12 @@ To guarantee full transparency, we disclose all execution harnesses and wrapper 
   ```text
   05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa
   ```
-- **Windows File-Locking Resilience Wrapper:** On Windows platforms, concurrent atomic file writes to JSON journals can trigger transient OS-level file-locking exceptions (`WindowsError 5: Access is denied` or `WindowsError 32: The process cannot access the file because it is being used by another process`). To prevent premature aborts, `StudyBudgetLedger._write_atomically_unlocked` incorporates a 12-retry wrapper with exponential backoff and jitter, ensuring reliable atomic state persistence across long-running sequential dispatches.
+- **Windows File-Locking Resilience Wrapper:** On Windows platforms, concurrent atomic file writes to JSON journals can trigger transient OS-level file-locking exceptions (`WindowsError 5: Access is denied` or `WindowsError 32: The process cannot access the file because it is being used by another process`). To prevent premature aborts, the launcher wrapper incorporates a 12-retry policy around atomic ledger writes using deterministic exponential backoff without jitter (`delay = 0.05 * (1.5 ** attempt)`), ensuring reliable state persistence across long-running sequential dispatches.
 - **Offline Guard Harness (`scripts/run_offline_tests.py`):** An in-process socket monkeypatch that intercepts network calls during testing, verifying zero external egress during offline validation.
 - **Sequential Live Runner (`src/experiment/runner.py`):** An automated execution engine enforcing `concurrency = 1`, local journal logging, SHA-256 state tracking, and fail-closed budget checks.
 
 ### 7.5 Threats to Validity
-- **Internal Validity:** Potential threats include data leakage, prompt asymmetry, and non-deterministic tie-breaking. These were mitigated via field whitelisting (purging all rule titles and ATT&CK markers), byte-identical prompt templates across No-RAG and RAG, and FAISS global tie-breaking.
+- **Internal Validity:** Potential threats include data leakage, prompt asymmetry, and non-deterministic tie-breaking. These were mitigated via field whitelisting (purging all rule titles and ATT&CK markers), byte-identical prompt templates across No-RAG and RAG, and FAISS global tie-breaking. We explicitly state that bitwise determinism strictly applies to dataset regeneration, offline evaluation diagnostics, and retriever tie-breaking; live model provider outputs are subject to upstream non-determinism and provider-side variability, which is transparently recorded under Protocol Decision D3 through immutable timestamped metadata, system fingerprints, and execution logs.
 - **External Validity:** The primary threat is the synthetic nature of `synthetic-paired-v1` and the specific choice of `gpt-5.6-luna`. Results may not generalize directly to other model families or complex enterprise networks.
 - **Construct Validity:** Scoring technique attribution via `ANY_MATCH` multi-label semantics could award credit if a model predicts an auxiliary technique rather than the primary malicious action. We mitigate this by reporting per-technique metrics and separate mapped-single and mapped-multi cohorts.
 

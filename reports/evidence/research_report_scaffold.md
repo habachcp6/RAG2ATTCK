@@ -89,11 +89,11 @@ Per Codex clarification, the markdown scaffold serves as preparation, and a comp
 ### 5.1 Created Artifact Checksums
 | File Path | File Size | SHA-256 Checksum | Purpose |
 | :--- | :---: | :--- | :--- |
-| `docs/report/scientific_report.md` | 69,549 bytes | `014259cd27828bb2b1ba285c0c68ecd4c29397b6d7a2f118611163ebce33b1f9` | Repaired research report markdown scaffold |
-| `docs/report/scientific_report.docx` | 75,802 bytes | `4e74a4e680fe65e1d822f49312fc936d3b08cb8f473b6cee62dc53499b046659` | Compiled editable Microsoft Word publication report |
+| `docs/report/scientific_report.md` | 73,519 bytes | `7a8102b6e865a00c1cf6e5c9c598c36681185a17364e712930293b07c254cedf` | Repaired research report markdown scaffold |
+| `docs/report/scientific_report.docx` | 77,319 bytes | `932bf6ad2977cdddd53ea15aa1e80c3b9aabff23599a1d35d228592a9dbc4cb3` | Compiled editable Microsoft Word publication report |
 | `scripts/export_report_docx.py` | 32,532 bytes | `6c94a9a499ba22639c322419089dc6349fdfcc2ce46cd4da4b7346427cad373f` | DOCX export tool with LaTeX-to-Unicode converter and layout controls |
-| `scripts/verify_report_metadata.py` | 11,144 bytes | `df62d937a775425cf1b1504ba0a5db70c31ab3ded00688f0c3600619154313ce` | Automated verifier for report hashes, evaluator invariants, and DOCX QA |
-| `reports/evidence/research_report_scaffold.md` | ~20 KB | Tracked in Git (CD_FACTUAL_R2) | Phase S1 evidence document |
+| `scripts/verify_report_metadata.py` | 14,755 bytes | `eb842755420b420a07f99a2f2f489e5bd91c199fb26df51112f835ac35f074e8` | Automated verifier for report hashes, evaluator invariants, and DOCX QA |
+| `reports/evidence/research_report_scaffold.md` | ~23 KB | Tracked in Git (C_METHODS_FINAL_ALIGNMENT) | Phase S1 evidence document |
 
 ### 5.2 Minor Metadata Refinements (PR #25 Follow-Up)
 1. **Reference 7 (Yang & Hsu):** Springer primary page explicitly confirms online publication date is **2 July 2026** (pp. 235–251, SIST vol. 8767, SITAIBA 2025). `[PARTIAL / METADATA ONLY]` status retained as full chapter is subscription paywalled.
@@ -131,14 +131,29 @@ Following the second Codex Reviewer audit (`FAIL | CD_FACTUAL_R2`), eight factua
 7. **Table 1 Split (Table 1a & Table 1b):** Split the 10-column Table 1 into Table 1a (Comparators 1–4, 5 columns, total width 6.50 in) and Table 1b (Comparators 5–8 + RAG2ATTCK, 6 columns, total width 6.50 in), completely eliminating column header squeezing in portrait mode.
 8. **Word Title & Text Formatting:** Purged Word's default blue border `<w:pBdr>` from Title style and set title text color to pure black `RGBColor(0, 0, 0)`. Updated Affiliation to `RAG2ATT&CK Project`. Unescaped all 24 raw `\%` occurrences in markdown and exporter to standard `%`.
 
+### 5.6 Reviewer Directive: C_METHODS_FINAL_ALIGNMENT Execution & Validation
+Following the third comprehensive methodology and taxonomy audit (`C_METHODS_FINAL_ALIGNMENT`), seven critical methodological, taxonomic, and formatting alignments were executed:
+1. **Raw STIX v19.2 Census Breakdown (Section 3.1):** Corrected STIX census numbers directly from `attack/raw/enterprise-v19.2/enterprise-attack-19.2.json`: exactly 858 `attack-pattern` objects, 149 revoked (`revoked: true`), 12 deprecated (`x_mitre_deprecated: true`), 0 overlap between sets, 161 unique inactive objects, 697 active enterprise techniques, and exactly 474 active Windows techniques and sub-techniques (176 root techniques, 298 sub-techniques). Added automated verification function `verify_stix_v19_2_census()` to `scripts/verify_report_metadata.py` asserting these counts against raw JSON and report markdown.
+2. **Exact Pydantic JSON Schema & Decoupled Validation (Section 4.2):** Replaced fabricated regex schema with exact `TechniquePrediction.model_json_schema()`. Documented why format regex is deliberately omitted from Pydantic schema: allows syntactically invalid or non-registry IDs to pass JSON parsing and be categorized as `INVALID_ID` under post-hoc validation (rather than failing provider schema and being misclassified as `MALFORMED_RESPONSE`). Strictly distinguished provider schema validation from post-hoc two-layer taxonomic checks (Layer 1: regex syntax, Layer 2: v19.2 registry membership).
+3. **Sampling Settings & Absence from Payload (Section 4.2):** Explicitly stated that under the OpenAI Responses API implementation contract (`LLMClient`), sampling parameters (`temperature`, `top_p`, `presence_penalty`, `frequency_penalty`, `seed`) are not sent / not configured in the request payload dictionary, ensuring identical configured controls across all experimental conditions.
+4. **Retry Backoff & Elimination of Jitter Claims (Section 4.2 & Section 7.4):** Removed erroneous jitter claims. Documented deterministic exponential backoff in `LLMClient` (`min(initial * factor ** attempt, max_delay)`) and in the launcher wrapper around Windows atomic ledger writes (`delay = 0.05 * (1.5 ** attempt)`).
+5. **Currency Notation & Math Delimiter Protection (Section 4.6 & Abstract):** Replaced all currency `$` references with plain text (`USD 0.20 per 1,000,000 input tokens`, `USD 1.20 per 1,000,000 output tokens`, `USD 0.0242`, `USD 8.20`, `USD 8.99`, `USD 19.99`), completely eliminating LaTeX math delimiter confusion in markdown and DOCX compilation.
+6. **DEV Pilot Scope & Accounting Framing (Section 4.6):** Corrected DEV pilot description to 20 requests evaluating 4 synthetic DEV views across 5 experimental conditions. Explicitly clarified that pilot costs represent usage/tariff accounting estimates (not commercial invoices) and forecasts represent modeled projections (not absolute guarantees).
+7. **Bounded Claims & Determinism Scope (Section 1.2, 6.2, 7.5 & Header):**
+   - Header updated to `**Project:** RAG2ATT&CK`.
+   - References [2, 3] framed as architectural motivation and capability documentation rather than empirical proof.
+   - Contextual event dilution and event filter requirements framed as hypotheses; rank shifts framed as observations.
+   - Determinism scope clarified: bitwise determinism strictly applies to dataset regeneration, offline evaluation, and tie-breaking; live model provider outputs are subject to upstream non-determinism, bound under Protocol Decision D3 metadata policies.
+
 ---
 
 ## 6. Compliance Statement
 Subagent C certifies that:
 1. The research report is authored in English with a rigorous, clear synthetic scope: the benchmark is `synthetic-paired-v1` (1,280 views $\times$ 5 conditions), NOT real-world telemetry. Generalization to enterprise telemetry remains unsupported.
-2. All 10 mandatory reviewer directives, CD_RENDER_REPAIR, and all 8 CD_FACTUAL_R2 requirements are fully resolved and audited.
+2. All 10 mandatory reviewer directives, CD_RENDER_REPAIR, all 8 CD_FACTUAL_R2 requirements, and all C_METHODS_FINAL_ALIGNMENT items are fully resolved and audited.
 3. PR #8 and T33 primary evidence was integrated without exaggeration, and source-access blockers were faithfully disclosed.
 4. Strictly zero invented numerical results were produced; all experimental outcome tables are formatted as formal schemas with explicit placeholders (`[TBD_AT_EXECUTION]`).
 5. The Markdown scaffold is verified and immediately convertible to a usable, editable DOCX report via `scripts/export_report_docx.py`.
-6. Automated verifier `scripts/verify_report_metadata.py` passes 100% of cryptographic, mathematical, and formatting checks.
+6. Automated verifier `scripts/verify_report_metadata.py` passes 100% of cryptographic, mathematical, taxonomic, and formatting checks.
 7. Strictly zero live provider or API calls were initiated (`OFFLINE_GUARD: attempted_egress=0`).
+

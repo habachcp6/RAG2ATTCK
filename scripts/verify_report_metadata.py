@@ -235,6 +235,66 @@ def verify_docx_formatting_invariants(docx_path: Path):
     print(f"  [OK] All {len(doc.tables)} tables have width <= 6.50in in portrait mode")
 
 
+def verify_stix_v19_2_census(md_path: Path):
+    """Verify STIX v19.2 raw census counts directly from raw STIX JSON and report markdown."""
+    print("--- 5. Verifying STIX v19.2 Raw Census Invariants ---")
+    stix_path = Path("attack/raw/enterprise-v19.2/enterprise-attack-19.2.json")
+    assert stix_path.exists(), f"Raw STIX file missing: {stix_path}"
+
+    stix_data = json.loads(stix_path.read_bytes())
+    objects = stix_data.get("objects", [])
+    attack_patterns = [o for o in objects if o.get("type") == "attack-pattern"]
+
+    total_ap = len(attack_patterns)
+    revoked = [o for o in attack_patterns if o.get("revoked", False)]
+    deprecated = [o for o in attack_patterns if o.get("x_mitre_deprecated", False)]
+    overlap = [
+        o for o in attack_patterns if o.get("revoked", False) and o.get("x_mitre_deprecated", False)
+    ]
+    unique_inactive = {o["id"] for o in revoked} | {o["id"] for o in deprecated}
+    active = [
+        o
+        for o in attack_patterns
+        if not o.get("revoked", False) and not o.get("x_mitre_deprecated", False)
+    ]
+    active_windows = [o for o in active if "Windows" in o.get("x_mitre_platforms", [])]
+    sub_techniques = [o for o in active_windows if o.get("x_mitre_is_subtechnique", False)]
+    root_techniques = [o for o in active_windows if not o.get("x_mitre_is_subtechnique", False)]
+
+    # Assert exact counts against raw STIX
+    assert total_ap == 858, f"Expected 858 attack-patterns, got {total_ap}"
+    assert len(revoked) == 149, f"Expected 149 revoked, got {len(revoked)}"
+    assert len(deprecated) == 12, f"Expected 12 deprecated, got {len(deprecated)}"
+    assert len(overlap) == 0, f"Expected 0 overlap, got {len(overlap)}"
+    assert len(unique_inactive) == 161, f"Expected 161 unique inactive, got {len(unique_inactive)}"
+    assert len(active) == 697, f"Expected 697 active, got {len(active)}"
+    assert len(active_windows) == 474, f"Expected 474 active Windows, got {len(active_windows)}"
+    assert len(sub_techniques) == 298, f"Expected 298 sub-techniques, got {len(sub_techniques)}"
+    assert len(root_techniques) == 176, f"Expected 176 root techniques, got {len(root_techniques)}"
+
+    print(
+        f"  [OK] Raw STIX v19.2 Census: {total_ap} attack-patterns, {len(revoked)} revoked, "
+        f"{len(deprecated)} deprecated, {len(unique_inactive)} unique inactive (0 overlap), {len(active)} active"
+    )
+    print(
+        f"  [OK] Active Windows Corpus: {len(active_windows)} techniques "
+        f"({len(root_techniques)} root, {len(sub_techniques)} sub-techniques)"
+    )
+
+    # Verify report markdown text consistency
+    md_text = md_path.read_text(encoding="utf-8")
+    assert "**Project:** RAG2ATT&CK" in md_text, "Report header must declare **Project:** RAG2ATT&CK"
+    assert "858" in md_text, "STIX total count 858 missing from report"
+    assert "149 revoked" in md_text, "149 revoked count missing from report"
+    assert "12 deprecated" in md_text, "12 deprecated count missing from report"
+    assert "161 unique inactive" in md_text, "161 unique inactive count missing from report"
+    assert "697 active enterprise techniques" in md_text, "697 active count missing from report"
+    assert "474 techniques and sub-techniques" in md_text, "474 active Windows count missing from report"
+    assert "176 Root Techniques" in md_text, "176 root techniques count missing from report"
+    assert "298 Sub-techniques" in md_text, "298 sub-techniques count missing from report"
+    print("  [OK] Report markdown text exact match with STIX v19.2 census breakdown and header")
+
+
 def main():
     md_path = Path("docs/report/scientific_report.md")
     docx_path = Path("docs/report/scientific_report.docx")
@@ -243,6 +303,7 @@ def main():
     verify_docx_table6(docx_path, verified_hashes)
     verify_evaluator_zero_denominator_cases()
     verify_docx_formatting_invariants(docx_path)
+    verify_stix_v19_2_census(md_path)
 
     print("\n========================================================")
     print("ALL REPORT METADATA & INVARIANT VERIFICATIONS PASSED!")
@@ -251,3 +312,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

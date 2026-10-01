@@ -6,7 +6,6 @@ import contextlib
 import hashlib
 import json
 import os
-import subprocess
 from decimal import ROUND_CEILING, ROUND_FLOOR, Decimal
 from pathlib import Path
 from typing import Any, Iterator, Optional
@@ -118,37 +117,11 @@ def get_canonical_study_ledger_path(study_root: Optional[Path] = None) -> Path:
     return root / "artifacts" / "study_budget" / "study_ledger.json"
 
 
-def _is_cloud_sync_hardlink(p: Path) -> bool:
-    """Check if hardlink is solely an artifact of OS/cloud-sync staging."""
-    if os.name != "nt":
-        return False
-    try:
-        res = subprocess.run(
-            ["fsutil", "hardlink", "list", str(p)],
-            capture_output=True,
-            text=True,
-            timeout=2,
-        )
-        if res.returncode == 0:
-            links = [line.strip() for line in res.stdout.splitlines() if line.strip()]
-            non_cloud = [
-                link
-                for link in links
-                if not link.startswith(r"\.tmp.driveupload")
-                and not link.startswith(r"\.tmp.drivedownload")
-            ]
-            if len(non_cloud) <= 1:
-                return True
-    except Exception:
-        pass
-    return False
-
-
 def validate_safe_ledger_path(ledger_path: Path | str) -> Path:
     """Validate ledger path safety against symlinks, directory junctions, and hardlinks.
 
     Reuses validate_untrusted_output_path for raw and resolved ancestor checks,
-    and additionally rejects hardlinked files (st_nlink > 1) on both the target path
+    and unconditionally rejects hardlinked files (st_nlink > 1) on both the target path
     and any associated .tmp file.
     """
     if isinstance(ledger_path, str) and not ledger_path.strip():
@@ -167,7 +140,7 @@ def validate_safe_ledger_path(ledger_path: Path | str) -> Path:
         if raw_p.is_dir():
             raise ValueError(f"ledger path must be a file, not a directory: {raw_p}")
         st = raw_p.stat()
-        if st.st_nlink > 1 and not _is_cloud_sync_hardlink(raw_p):
+        if st.st_nlink > 1:
             raise ValueError(f"hardlinked ledger file rejected: {raw_p} (st_nlink={st.st_nlink})")
 
     # 3. Check associated .tmp file if present
@@ -178,7 +151,7 @@ def validate_safe_ledger_path(ledger_path: Path | str) -> Path:
         if tmp_p.is_dir():
             raise ValueError(f"temporary file must be a file, not a directory: {tmp_p}")
         st_tmp = tmp_p.stat()
-        if st_tmp.st_nlink > 1 and not _is_cloud_sync_hardlink(tmp_p):
+        if st_tmp.st_nlink > 1:
             raise ValueError(
                 f"hardlinked temporary file rejected: {tmp_p} (st_nlink={st_tmp.st_nlink})"
             )
@@ -191,7 +164,7 @@ def validate_safe_ledger_path(ledger_path: Path | str) -> Path:
         if resolved_p.is_dir():
             raise ValueError(f"ledger path must be a file, not a directory: {resolved_p}")
         st_res = resolved_p.stat()
-        if st_res.st_nlink > 1 and not _is_cloud_sync_hardlink(resolved_p):
+        if st_res.st_nlink > 1:
             raise ValueError(
                 f"hardlinked ledger file rejected: {resolved_p} (st_nlink={st_res.st_nlink})"
             )
@@ -203,7 +176,99 @@ def validate_safe_ledger_path(ledger_path: Path | str) -> Path:
         if resolved_tmp.is_dir():
             raise ValueError(f"temporary file must be a file, not a directory: {resolved_tmp}")
         st_res_tmp = resolved_tmp.stat()
-        if st_res_tmp.st_nlink > 1 and not _is_cloud_sync_hardlink(resolved_tmp):
+        if st_res_tmp.st_nlink > 1:
+            raise ValueError(
+                f"hardlinked temporary file rejected: {resolved_tmp} "
+                f"(st_nlink={st_res_tmp.st_nlink})"
+            )
+
+    return resolved_p
+
+
+def get_canonical_study_anchor_path(study_root: Optional[Path] = None) -> Path:
+    """Get the stable study-wide anchor path outside deletable artifact/output tree."""
+    root = study_root or resolve_study_root()
+    return root / ".study_anchor.json"
+
+
+def resolve_study_anchor_path(
+    ledger_path: Path,
+    study_root: Path,
+    explicit_anchor_path: Optional[Path | str] = None,
+) -> Path:
+    """Resolve study anchor path ensuring it resides outside deletable per-run/output paths."""
+    if explicit_anchor_path is not None:
+        return Path(explicit_anchor_path)
+    try:
+        ledger_path.resolve().relative_to(study_root.resolve())
+        return get_canonical_study_anchor_path(study_root)
+    except ValueError:
+        p = ledger_path.resolve().parent
+        if p.name in ("study_budget", "artifacts", "experiments", "output", "live-output"):
+            return p.parent / ".study_anchor.json"
+        return p / ".study_anchor.json"
+
+
+def validate_safe_anchor_path(anchor_path: Path | str) -> Path:
+    """Validate anchor path safety against symlinks, directory junctions, and hardlinks.
+
+    Reuses validate_untrusted_output_path for raw and resolved ancestor checks,
+    and unconditionally rejects hardlinked files (st_nlink > 1) on both the target path
+    and any associated .tmp file.
+    """
+    if isinstance(anchor_path, str) and not anchor_path.strip():
+        raise ValueError("anchor path must not be empty")
+
+    raw_p = Path(anchor_path)
+
+    # 1. Reuse existing validate_untrusted_output_path on parent directory
+    safe_parent = validate_untrusted_output_path(raw_p.parent)
+
+    # 2. Raw path checks before resolution
+    if is_symlink_or_junction(raw_p):
+        raise ValueError(f"symlink anchor path rejected: {raw_p}")
+
+    if raw_p.exists():
+        if raw_p.is_dir():
+            raise ValueError(f"anchor path must be a file, not a directory: {raw_p}")
+        st = raw_p.stat()
+        if st.st_nlink > 1:
+            raise ValueError(f"hardlinked anchor file rejected: {raw_p} (st_nlink={st.st_nlink})")
+
+    # 3. Check associated .tmp file if present
+    tmp_p = raw_p.with_suffix(".tmp")
+    if is_symlink_or_junction(tmp_p):
+        raise ValueError(f"symlink temporary file rejected: {tmp_p}")
+    if tmp_p.exists():
+        if tmp_p.is_dir():
+            raise ValueError(f"temporary file must be a file, not a directory: {tmp_p}")
+        st_tmp = tmp_p.stat()
+        if st_tmp.st_nlink > 1:
+            raise ValueError(
+                f"hardlinked temporary file rejected: {tmp_p} (st_nlink={st_tmp.st_nlink})"
+            )
+
+    # 4. Resolved path checks
+    resolved_p = (safe_parent / raw_p.name).resolve()
+    if is_symlink_or_junction(resolved_p):
+        raise ValueError(f"symlink anchor path rejected: {resolved_p}")
+    if resolved_p.exists():
+        if resolved_p.is_dir():
+            raise ValueError(f"anchor path must be a file, not a directory: {resolved_p}")
+        st_res = resolved_p.stat()
+        if st_res.st_nlink > 1:
+            raise ValueError(
+                f"hardlinked anchor file rejected: {resolved_p} (st_nlink={st_res.st_nlink})"
+            )
+
+    resolved_tmp = resolved_p.with_suffix(".tmp")
+    if is_symlink_or_junction(resolved_tmp):
+        raise ValueError(f"symlink temporary file rejected: {resolved_tmp}")
+    if resolved_tmp.exists():
+        if resolved_tmp.is_dir():
+            raise ValueError(f"temporary file must be a file, not a directory: {resolved_tmp}")
+        st_res_tmp = resolved_tmp.stat()
+        if st_res_tmp.st_nlink > 1:
             raise ValueError(
                 f"hardlinked temporary file rejected: {resolved_tmp} "
                 f"(st_nlink={st_res_tmp.st_nlink})"
@@ -225,11 +290,19 @@ def load_pricing_config(
         else:
             pricing_file = candidate
 
-    pricing_path = validate_safe_ledger_path(pricing_file)
-    if not pricing_path.exists():
-        raise FileNotFoundError(f"Pricing configuration file not found at {pricing_path}")
+    raw_p = Path(pricing_file)
+    safe_parent = validate_untrusted_output_path(raw_p.parent)
+    if is_symlink_or_junction(raw_p):
+        raise ValueError(f"symlink pricing path rejected: {raw_p}")
+    resolved_p = (safe_parent / raw_p.name).resolve()
+    if is_symlink_or_junction(resolved_p):
+        raise ValueError(f"symlink pricing path rejected: {resolved_p}")
+    if not resolved_p.exists():
+        raise FileNotFoundError(f"Pricing configuration file not found at {resolved_p}")
+    if resolved_p.is_dir():
+        raise ValueError(f"pricing path must be a file, not a directory: {resolved_p}")
 
-    data = _strict_json_loads(pricing_path.read_bytes())
+    data = _strict_json_loads(resolved_p.read_bytes())
     digest = compute_pricing_contract_sha256(data)
     return data, digest
 
@@ -251,7 +324,7 @@ def study_ledger_lock(lock_path: Path) -> Iterator[None]:
         if lock_path.is_dir():
             raise ValueError(f"lock path must be a file, not a directory: {lock_path}")
         st = lock_path.stat()
-        if st.st_nlink > 1 and not _is_cloud_sync_hardlink(lock_path):
+        if st.st_nlink > 1:
             raise ValueError(f"hardlinked lock file rejected: {lock_path} (st_nlink={st.st_nlink})")
 
     try:
@@ -278,6 +351,19 @@ def study_ledger_lock(lock_path: Path) -> Iterator[None]:
             pass
 
 
+@contextlib.contextmanager
+def study_ledger_and_anchor_lock(ledger_lock: Path, anchor_lock: Path) -> Iterator[None]:
+    """Acquire single-writer locks for ledger and anchor in deterministic sorted order."""
+    if ledger_lock.resolve() == anchor_lock.resolve():
+        with study_ledger_lock(ledger_lock):
+            yield
+    else:
+        locks = sorted([ledger_lock, anchor_lock], key=lambda p: str(p.resolve()))
+        with study_ledger_lock(locks[0]):
+            with study_ledger_lock(locks[1]):
+                yield
+
+
 class StudyBudgetLedger:
     """Persistent shared study-wide budget ledger with single-writer lock.
 
@@ -292,6 +378,9 @@ class StudyBudgetLedger:
         pricing_config: Optional[dict[str, Any]] = None,
         study_root: Optional[Path] = None,
         code_root: Optional[Path] = None,
+        anchor_path: Optional[Path | str] = None,
+        output_directory: Optional[Path | str] = None,
+        experiment_id: Optional[str] = None,
     ) -> None:
         self.study_root = study_root or resolve_study_root()
         ledger_file = (
@@ -299,6 +388,15 @@ class StudyBudgetLedger:
         )
         self.ledger_path = validate_safe_ledger_path(ledger_file)
         self.lock_path = self.ledger_path.with_suffix(".lock")
+
+        resolved_anchor_file = resolve_study_anchor_path(
+            self.ledger_path, self.study_root, explicit_anchor_path=anchor_path
+        )
+        self.anchor_path = validate_safe_anchor_path(resolved_anchor_file)
+        self.anchor_lock_path = self.anchor_path.with_suffix(".lock")
+
+        self.output_directory = Path(output_directory).resolve() if output_directory else None
+        self.experiment_id = experiment_id
 
         if pricing_config is not None:
             self.pricing_config = pricing_config
@@ -309,7 +407,7 @@ class StudyBudgetLedger:
         study_budget = self.pricing_config.get("study_budget", {})
         self.total_budget = validate_finite_nonnegative_money(
             self.pricing_config.get("total_study_budget_usd")
-            or study_budget.get("total_budget_usd", "20.00000000"),
+            or study_budget.get("total_budget_usd", "19.99000000"),
             "total_budget_usd",
         )
         self.prior_pilot_hold = validate_finite_nonnegative_money(
@@ -327,41 +425,51 @@ class StudyBudgetLedger:
         )
 
         self._data: dict[str, Any] = {}
-        with study_ledger_lock(self.lock_path):
+        self.is_already_initialized = False
+        with study_ledger_and_anchor_lock(self.lock_path, self.anchor_lock_path):
             self._load_or_initialize_unlocked()
 
     def _load_or_initialize_unlocked(self) -> None:
-        """Load existing ledger or initialize fresh study-wide ledger without nested locking."""
+        """Load existing ledger or initialize fresh study-wide ledger with anchor protection."""
         self.ledger_path.parent.mkdir(parents=True, exist_ok=True)
-        if self.ledger_path.exists():
-            raw = _strict_json_loads(self.ledger_path.read_bytes())
-            # Verify consistency with frozen configuration
-            if raw.get("pricing_contract_sha256") != self.pricing_sha256:
-                raise ValueError(
-                    f"Pricing contract mismatch in study ledger: "
-                    f"{raw.get('pricing_contract_sha256')} != {self.pricing_sha256}"
-                )
-            existing_total = validate_finite_nonnegative_money(
-                raw.get("total_budget_usd"), "total_budget_usd"
-            )
-            if existing_total != self.total_budget:
-                raise ValueError(
-                    f"Total study budget mismatch: existing ledger has {existing_total}, "
-                    f"expected {self.total_budget}"
-                )
-            existing_pilot = validate_finite_nonnegative_money(
-                raw.get("prior_pilot_provisional_hold_usd"), "prior_pilot_provisional_hold_usd"
-            )
-            if existing_pilot != self.prior_pilot_hold:
-                raise ValueError(
-                    f"Prior pilot hold mismatch: existing ledger has {existing_pilot}, "
-                    f"expected {self.prior_pilot_hold}"
-                )
+        self.anchor_path.parent.mkdir(parents=True, exist_ok=True)
 
-            self._data = raw
-            self._verify_balance_invariant_unlocked()
-        else:
+        anchor_exists = self.anchor_path.exists()
+        ledger_exists = self.ledger_path.exists()
+
+        if anchor_exists and not ledger_exists:
+            raise LiveExecutionBlockedError(
+                f"LIVE_EXECUTION_BLOCKED: Study initialization anchor exists at "
+                f"{self.anchor_path}, but study ledger at {self.ledger_path} is missing. "
+                f"Refusing silent re-initialization of fresh budget."
+            )
+
+        if not anchor_exists and ledger_exists:
+            raise LiveExecutionBlockedError(
+                f"LIVE_EXECUTION_BLOCKED: Study ledger exists at {self.ledger_path}, "
+                f"but study initialization anchor at {self.anchor_path} is missing. "
+                f"Refusing unanchored ledger."
+            )
+
+        if not anchor_exists and not ledger_exists:
+            self.is_already_initialized = False
             initial_available = round_credit_down(self.total_budget - self.prior_pilot_hold)
+            anchor_payload: dict[str, Any] = {
+                "schema_version": "1.0.0",
+                "study_id": "rag2attack-study-wide",
+                "pricing_contract_sha256": self.pricing_sha256,
+                "total_budget_usd": str(self.total_budget),
+                "prior_pilot_provisional_hold_usd": str(self.prior_pilot_hold),
+                "initial_available_usd": str(initial_available),
+                "ledger_path": str(self.ledger_path.resolve()),
+            }
+            if self.output_directory is not None:
+                anchor_payload["output_directory"] = str(self.output_directory)
+            if self.experiment_id is not None:
+                anchor_payload["experiment_id"] = str(self.experiment_id)
+
+            self._write_anchor_atomically_unlocked(anchor_payload)
+
             self._data = {
                 "schema_version": "1.0.0",
                 "study_id": "rag2attack-study-wide",
@@ -377,6 +485,78 @@ class StudyBudgetLedger:
                 "settled_records": {},
             }
             self._write_atomically_unlocked()
+        else:
+            anchor_raw = _strict_json_loads(self.anchor_path.read_bytes())
+            if anchor_raw.get("pricing_contract_sha256") != self.pricing_sha256:
+                raise ValueError(
+                    f"Pricing contract mismatch in study anchor: "
+                    f"{anchor_raw.get('pricing_contract_sha256')} != {self.pricing_sha256}"
+                )
+            anchor_total = validate_finite_nonnegative_money(
+                anchor_raw.get("total_budget_usd"), "total_budget_usd"
+            )
+            if anchor_total != self.total_budget:
+                raise ValueError(
+                    f"Total study budget mismatch in anchor: "
+                    f"existing anchor has {anchor_total}, expected {self.total_budget}"
+                )
+            anchor_pilot = validate_finite_nonnegative_money(
+                anchor_raw.get("prior_pilot_provisional_hold_usd"),
+                "prior_pilot_provisional_hold_usd",
+            )
+            if anchor_pilot != self.prior_pilot_hold:
+                raise ValueError(
+                    f"Prior pilot hold mismatch in anchor: "
+                    f"existing anchor has {anchor_pilot}, expected {self.prior_pilot_hold}"
+                )
+
+            rec_out = anchor_raw.get("output_directory")
+            if rec_out is None and self.output_directory is not None:
+                # First time an output directory is bound to this study
+                anchor_raw["output_directory"] = str(self.output_directory)
+                if self.experiment_id is not None:
+                    anchor_raw["experiment_id"] = str(self.experiment_id)
+                self._write_anchor_atomically_unlocked(anchor_raw)
+                self.is_already_initialized = False
+            elif rec_out is not None:
+                self.is_already_initialized = True
+                if (
+                    self.output_directory is not None
+                    and Path(rec_out).resolve() != self.output_directory
+                ):
+                    self.output_dir_mismatch = True
+                else:
+                    self.output_dir_mismatch = False
+            else:
+                self.is_already_initialized = False
+                self.output_dir_mismatch = False
+
+            ledger_raw = _strict_json_loads(self.ledger_path.read_bytes())
+            if ledger_raw.get("pricing_contract_sha256") != self.pricing_sha256:
+                raise ValueError(
+                    f"Pricing contract mismatch in study ledger: "
+                    f"{ledger_raw.get('pricing_contract_sha256')} != {self.pricing_sha256}"
+                )
+            existing_total = validate_finite_nonnegative_money(
+                ledger_raw.get("total_budget_usd"), "total_budget_usd"
+            )
+            if existing_total != self.total_budget:
+                raise ValueError(
+                    f"Total study budget mismatch: existing ledger has {existing_total}, "
+                    f"expected {self.total_budget}"
+                )
+            existing_pilot = validate_finite_nonnegative_money(
+                ledger_raw.get("prior_pilot_provisional_hold_usd"),
+                "prior_pilot_provisional_hold_usd",
+            )
+            if existing_pilot != self.prior_pilot_hold:
+                raise ValueError(
+                    f"Prior pilot hold mismatch: existing ledger has {existing_pilot}, "
+                    f"expected {self.prior_pilot_hold}"
+                )
+
+            self._data = ledger_raw
+            self._verify_balance_invariant_unlocked()
 
     def _verify_balance_invariant_unlocked(self) -> None:
         """Deeply validate that ledger aggregates match all hold and settled records exactly."""
@@ -509,6 +689,31 @@ class StudyBudgetLedger:
                 f"got {type(self._data['breached_records']).__name__}"
             )
 
+    def _write_anchor_atomically_unlocked(self, data: dict[str, Any]) -> None:
+        """Write study anchor to disk with fsync under atomic rename pattern.
+
+        Safely creates known tmp file with exclusive open ('xb') to fail closed
+        against hijacking or pre-existing hardlinks.
+        """
+        payload = canonical_json_bytes(data)
+        tmp_file = self.anchor_path.with_suffix(".tmp")
+        validate_safe_anchor_path(tmp_file)
+
+        if tmp_file.exists():
+            st = tmp_file.stat()
+            if st.st_nlink > 1:
+                raise ValueError(
+                    f"hardlinked temporary file rejected: {tmp_file} (st_nlink={st.st_nlink})"
+                )
+            tmp_file.unlink()
+
+        with tmp_file.open("xb") as stream:
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+
+        tmp_file.replace(self.anchor_path)
+
     def _write_atomically_unlocked(self) -> None:
         """Write ledger to disk with fsync under atomic rename pattern.
 
@@ -522,7 +727,7 @@ class StudyBudgetLedger:
 
         if tmp_file.exists():
             st = tmp_file.stat()
-            if st.st_nlink > 1 and not _is_cloud_sync_hardlink(tmp_file):
+            if st.st_nlink > 1:
                 raise ValueError(
                     f"hardlinked temporary file rejected: {tmp_file} (st_nlink={st.st_nlink})"
                 )
@@ -565,7 +770,7 @@ class StudyBudgetLedger:
         amount_valid = validate_finite_nonnegative_money(amount_usd, "amount_usd")
         amount_round = round_cost_up(amount_valid)
 
-        with study_ledger_lock(self.lock_path):
+        with study_ledger_and_anchor_lock(self.lock_path, self.anchor_lock_path):
             self._load_or_initialize_unlocked()
             if self.has_breach:
                 raise LiveExecutionBlockedError(
@@ -631,7 +836,7 @@ class StudyBudgetLedger:
                 f"Settled cost ${cost_round} cannot exceed reserved amount ${reserved_round}"
             )
 
-        with study_ledger_lock(self.lock_path):
+        with study_ledger_and_anchor_lock(self.lock_path, self.anchor_lock_path):
             self._load_or_initialize_unlocked()
             settled_history = self._data.setdefault("settled_records", {})
 
@@ -706,7 +911,7 @@ class StudyBudgetLedger:
         amount_valid = validate_finite_nonnegative_money(amount_usd, "amount_usd")
         amount_round = round_cost_up(amount_valid)
 
-        with study_ledger_lock(self.lock_path):
+        with study_ledger_and_anchor_lock(self.lock_path, self.anchor_lock_path):
             self._load_or_initialize_unlocked()
             active_reservations = self._data.setdefault("active_reservations", {})
             if key_str not in active_reservations:

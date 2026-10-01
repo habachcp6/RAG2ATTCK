@@ -357,6 +357,7 @@ class ExecutionAuthorization:
     d1_raw_response_policy_approved: str | None = None
     d7_dataset_scope_approved: str | None = None
     study_ledger_path: str | None = None
+    study_anchor_path: str | None = None
     use_money_guard: bool = False
 
 

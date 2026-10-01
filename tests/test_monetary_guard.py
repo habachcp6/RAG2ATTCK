@@ -215,7 +215,7 @@ class TestStudyWideBudgetPersistence:
         ledger1 = StudyBudgetLedger(ledger_path, pricing_config=sample_pricing)
 
         initial_available = ledger1.uncommitted_available_balance_usd
-        assert initial_available == Decimal("19.94735990")
+        assert initial_available == Decimal("19.93735990")
 
         # Reserve and settle in run 1
         ledger1.reserve("s1:no_rag", Decimal("2.15898240"))
@@ -433,7 +433,7 @@ class TestCrashRecoveryEdgeCases:
         # Recovery cancels orphan hold
         ledger.cancel_orphan_hold(key_str, r_worst)
         assert ledger.active_reservations_usd == Decimal("0.00000000")
-        assert ledger.uncommitted_available_balance_usd == Decimal("19.94735990")
+        assert ledger.uncommitted_available_balance_usd == Decimal("19.93735990")
 
     def test_offline_zero_egress(self):
         """Verify global live budget is untouched."""
@@ -1231,3 +1231,221 @@ class TestBreachPersistentlyPreventsResume:
                 provider_factory=lambda cfg, bud: MockProvider(),
                 resume=True,
             )
+
+
+class TestAnchorAndLedgerIntegrityRegressions:
+    """Regressions for anchor enforcement, missing ledger fail-closed, and history joins."""
+
+    def test_partial_run_missing_ledger_resume_fails_closed(self, bundle, tmp_path):
+        """Regression for FAIL at 77026:
+
+        In commit 77026c9, two-view fixture run with stop_after=1 produced cost 0.00000370.
+        Deleting ONLY the temp study ledger then resuming stop_after=1 produced 2 records
+        but cumulative cost remained 0.00000370 instead of 0.00000740 because _load_or_initialize
+        auto reset missing ledger and resume skipped missing settled entries.
+
+        In REPAIR_USD_FINAL, anchor outside deletable output/ledger path detects missing
+        ledger after initialization and fails closed before any provider calls (0 egress).
+        """
+        from src.experiment.config import load_plan
+        from tests.test_experiment_t22 import run_live_experiment as run_live_exp
+
+        plan = load_plan(bundle[1])
+        output = tmp_path / "run_output"
+        ledger_path = tmp_path / "study_ledger.json"
+
+        proto = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
+        auth = ExecutionAuthorization(
+            human_approval_token="HUMAN_AUTH_TOKEN_XYZ",
+            scientific_protocol_approved=True,
+            authorized_max_requests=100,
+            allow_live_dispatch=True,
+            approved_protocol_sha256=proto.protocol_sha256,
+            use_money_guard=True,
+            study_ledger_path=str(ledger_path),
+        )
+
+        provider = MockProvider()
+        summary1 = run_live_exp(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, bud: provider,
+            stop_after=1,
+        )
+        assert summary1["new_records"] == 1
+        assert summary1["complete"] is False
+        first_cost = Decimal(summary1["study_budget"]["cumulative_settled_cost_usd"])
+        assert first_cost > Decimal("0.0")
+
+        # Confirm anchor and ledger both exist
+        assert ledger_path.exists()
+        anchor_path = tmp_path / ".study_anchor.json"
+        assert anchor_path.exists()
+
+        # Delete ONLY temp study ledger (anchor remains intact)
+        ledger_path.unlink()
+        assert not ledger_path.exists()
+        assert anchor_path.exists()
+
+        # Track provider calls before resume
+        calls_before = provider.call_count
+
+        # Resume must FAIL CLOSED with zero calls
+        with pytest.raises(
+            LiveExecutionBlockedError,
+            match="Study initialization anchor exists.*study ledger.*is missing",
+        ):
+            run_live_exp(
+                plan,
+                output,
+                authorization=auth,
+                protocol=proto,
+                provider_factory=lambda cfg, bud: provider,
+                resume=True,
+                stop_after=1,
+            )
+
+        # Zero provider calls were dispatched during failed resume
+        assert provider.call_count == calls_before
+
+    def test_new_output_dir_refused_against_initialized_study(self, bundle, tmp_path):
+        """New output directory with resume=False refused against already initialized study."""
+        from src.experiment.config import load_plan
+        from tests.test_experiment_t22 import run_live_experiment as run_live_exp
+
+        plan = load_plan(bundle[1])
+        output1 = tmp_path / "run_output_1"
+        output2 = tmp_path / "run_output_2"
+        ledger_path = tmp_path / "study_ledger.json"
+
+        proto = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
+        auth = ExecutionAuthorization(
+            human_approval_token="HUMAN_AUTH_TOKEN_XYZ",
+            scientific_protocol_approved=True,
+            authorized_max_requests=100,
+            allow_live_dispatch=True,
+            approved_protocol_sha256=proto.protocol_sha256,
+            use_money_guard=True,
+            study_ledger_path=str(ledger_path),
+        )
+
+        provider = MockProvider()
+        run_live_exp(
+            plan,
+            output1,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, bud: provider,
+            stop_after=1,
+        )
+
+        calls_before = provider.call_count
+
+        # Attempt to run against a new output directory without resume
+        with pytest.raises(
+            LiveExecutionBlockedError,
+            match="Study has already been initialized.*new output directory.*cannot start fresh",
+        ):
+            run_live_exp(
+                plan,
+                output2,
+                authorization=auth,
+                protocol=proto,
+                provider_factory=lambda cfg, bud: provider,
+                resume=False,
+            )
+
+        assert provider.call_count == calls_before
+        assert not output2.exists()
+
+    def test_rolled_back_archived_ledger_refused_on_resume(self, bundle, tmp_path):
+        """Archived or rolled-back ledger missing settled journal history fails closed on resume."""
+        from src.experiment.config import load_plan
+        from tests.test_experiment_t22 import run_live_experiment as run_live_exp
+
+        plan = load_plan(bundle[1])
+        output = tmp_path / "run_output_rollback"
+        ledger_path = tmp_path / "study_ledger.json"
+
+        proto = create_test_protocol_approval(d1_raw_response_policy="RECORD_ONLY")
+        auth = ExecutionAuthorization(
+            human_approval_token="HUMAN_AUTH_TOKEN_XYZ",
+            scientific_protocol_approved=True,
+            authorized_max_requests=100,
+            allow_live_dispatch=True,
+            approved_protocol_sha256=proto.protocol_sha256,
+            use_money_guard=True,
+            study_ledger_path=str(ledger_path),
+        )
+
+        provider = MockProvider()
+        # Step 1: Run 1 sample
+        run_live_exp(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, bud: provider,
+            stop_after=1,
+        )
+
+        # Archive copy of ledger containing only 1 record
+        archived_ledger_bytes = ledger_path.read_bytes()
+
+        # Step 2: Resume to produce second sample
+        run_live_exp(
+            plan,
+            output,
+            authorization=auth,
+            protocol=proto,
+            provider_factory=lambda cfg, bud: provider,
+            resume=True,
+            stop_after=1,
+        )
+
+        # Overwrite ledger with older archived copy (missing sample 2)
+        ledger_path.write_bytes(archived_ledger_bytes)
+
+        calls_before = provider.call_count
+
+        # Resume attempt with rolled-back ledger must fail closed
+        with pytest.raises(
+            LiveExecutionBlockedError,
+            match="missing from study ledger; rolled-back, missing, or archived",
+        ):
+            run_live_exp(
+                plan,
+                output,
+                authorization=auth,
+                protocol=proto,
+                provider_factory=lambda cfg, bud: provider,
+                resume=True,
+            )
+
+        assert provider.call_count == calls_before
+
+    def test_budget_19_99_and_net_available(self, tmp_dir, sample_pricing):
+        """Total study ceiling is strictly 19.99 USD, net starting available 19.93735990 USD."""
+        ledger_path = tmp_dir / "study_ledger.json"
+        ledger = StudyBudgetLedger(ledger_path, pricing_config=sample_pricing)
+
+        assert ledger.total_budget == Decimal("19.99000000")
+        assert ledger.total_budget < Decimal("20.00000000")
+        assert ledger.prior_pilot_hold == Decimal("0.05264010")
+        assert ledger.uncommitted_available_balance_usd == Decimal("19.93735990")
+
+    def test_unanchored_ledger_refused(self, tmp_dir, sample_pricing):
+        """Ledger file existing without initialization anchor fails closed."""
+        ledger_path = tmp_dir / "study_ledger.json"
+        ledger = StudyBudgetLedger(ledger_path, pricing_config=sample_pricing)
+        assert ledger.anchor_path.exists()
+
+        # Delete anchor file only
+        ledger.anchor_path.unlink()
+
+        with pytest.raises(
+            LiveExecutionBlockedError, match="study initialization anchor.*is missing"
+        ):
+            StudyBudgetLedger(ledger_path, pricing_config=sample_pricing)

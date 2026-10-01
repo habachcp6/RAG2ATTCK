@@ -4,7 +4,7 @@
   "model": "gpt-5.6-luna",
   "service_tier": "default",
   "currency": "USD",
-  "total_study_budget_usd": "20.00000000",
+  "total_study_budget_usd": "19.99000000",
   "prior_pilot_provisional_hold_usd": "0.05264010",
   "ceilings": {
     "max_input_tokens": 1050000,
@@ -47,6 +47,6 @@
     "auto_attempt_worst_usd": "1.07949120",
     "auto_logical_worst_usd": "4.31796480",
     "prior_pilot_hold_usd": "0.05264010",
-    "net_available_starting_budget_usd": "19.94735990"
+    "net_available_starting_budget_usd": "19.93735990"
   }
 }

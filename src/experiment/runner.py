@@ -90,6 +90,10 @@ class MockProvider:
         self.key = None
         self.attempt = 0
 
+    @property
+    def call_count(self) -> int:
+        return len(self.calls)
+
     def activate(self, key):
         self.key = key
         self.attempt = 0
@@ -900,6 +904,14 @@ def run_live_experiment(
                 "LIVE_EXECUTION_BLOCKED: Custom study_ledger_path is not permitted "
                 "in canonical production execution"
             )
+        if (
+            provider_factory is None
+            and getattr(authorization, "study_anchor_path", None) is not None
+        ):
+            raise LiveExecutionBlockedError(
+                "LIVE_EXECUTION_BLOCKED: Custom study_anchor_path is not permitted "
+                "in canonical production execution"
+            )
         target_code_root = getattr(plan, "root", None) or REPO_ROOT
         pricing_config, _ = load_pricing_config(repo_root=target_code_root)
         R_logical_worst = Decimal(
@@ -910,11 +922,28 @@ def run_live_experiment(
             )
         )
         ledger_path = getattr(authorization, "study_ledger_path", None)
+        anchor_path = getattr(authorization, "study_anchor_path", None)
         study_ledger = StudyBudgetLedger(
             ledger_path=ledger_path,
+            anchor_path=anchor_path,
             pricing_config=pricing_config,
             code_root=target_code_root,
+            output_directory=directory,
+            experiment_id=plan.manifest["experiment_id"],
         )
+
+    if use_guard and study_ledger is not None:
+        if not resume and study_ledger.is_already_initialized:
+            raise LiveExecutionBlockedError(
+                f"LIVE_EXECUTION_BLOCKED: Study has already been initialized (anchor at "
+                f"{study_ledger.anchor_path}); new output directory '{directory}' "
+                f"cannot start fresh un-resumed execution without explicit authorized reset."
+            )
+        if resume and getattr(study_ledger, "output_dir_mismatch", False):
+            raise LiveExecutionBlockedError(
+                f"LIVE_EXECUTION_BLOCKED: Output directory '{directory}' does not match "
+                f"study anchor recorded directory."
+            )
 
     existed = directory.exists()
     if existed and not resume:
@@ -1013,7 +1042,26 @@ def run_live_experiment(
                                     f"LIVE_EXECUTION_BLOCKED: settled journal record drift "
                                     f"or breach for {comp_key_str}"
                                 )
-                        # Verify consistency with ledger entry if present
+                        # Enforce complete settled join with study ledger
+                        led_entry = study_ledger.settled_records.get(comp_key_str)
+                        if led_entry is None:
+                            raise LiveExecutionBlockedError(
+                                f"LIVE_EXECUTION_BLOCKED: settled record {comp_key_str} in journal "
+                                f"is missing from study ledger; rolled-back, missing, or archived "
+                                f"ledger history rejected"
+                            )
+                        if (
+                            Decimal(str(led_entry.get("cost_usd"))) != cost
+                            or Decimal(str(led_entry.get("refund_usd"))) != expected_refund
+                            or led_entry.get("record_sha256") != rec_sha
+                            or led_entry.get("breach", False)
+                        ):
+                            raise LiveExecutionBlockedError(
+                                f"LIVE_EXECUTION_BLOCKED: settled ledger record drift "
+                                f"or breach for {comp_key_str}"
+                            )
+                    else:
+                        # Complete-without-settle recovery
                         led_entry = study_ledger.settled_records.get(comp_key_str)
                         if led_entry is not None:
                             if (
@@ -1023,17 +1071,17 @@ def run_live_experiment(
                                 or led_entry.get("breach", False)
                             ):
                                 raise LiveExecutionBlockedError(
-                                    f"LIVE_EXECUTION_BLOCKED: settled ledger record drift "
-                                    f"or breach for {comp_key_str}"
+                                    f"LIVE_EXECUTION_BLOCKED: complete-without-settle record "
+                                    f"{comp_key_str} conflicts with existing ledger settlement"
                                 )
-                    else:
-                        # Complete-without-settle recovery
-                        refund = study_ledger.settle(
-                            key_str=comp_key_str,
-                            cost_usd=cost,
-                            reserved_amount_usd=R_logical_worst,
-                            record_sha256=rec_sha,
-                        )
+                            refund = Decimal(str(led_entry.get("refund_usd")))
+                        else:
+                            refund = study_ledger.settle(
+                                key_str=comp_key_str,
+                                cost_usd=cost,
+                                reserved_amount_usd=R_logical_worst,
+                                record_sha256=rec_sha,
+                            )
                         _append(
                             journal_file,
                             {

@@ -3,7 +3,7 @@
 **Subagent Handle:** Subagent D (Reproducibility & Presentation Owner for Phase S1)  
 **Dedicated Worktree:** `D:/RAG2ATTCK-worktrees/repro-presentation-s1`  
 **Branch:** `codex/s1-reproducibility-presentation`  
-**Execution Timestamp (UTC):** 2026-10-01T21:07:00Z (Local: 2026-10-02T04:07:00+07:00)  
+**Execution Timestamp (UTC):** 2026-10-01T22:06:00Z (Local: 2026-10-02T05:06:00+07:00)  
 **Baseline PRE_SHA:** `80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315`  
 **Execution Policy:** STRICTLY ZERO live provider/API calls. Zero secret leakage. 100% offline verifiable.
 
@@ -11,19 +11,19 @@
 
 ## 1. Executive Summary & Inventory of Deliverables
 
-Subagent D has completed the inventory, D_REPAIR remediation, and CD_RENDER_REPAIR enhancements across all Phase S1 deliverables. The presentation deck (`docs/presentation/slides.pptx` and `docs/presentation/slides.md`) and offline reproducibility pipeline have been audited and upgraded to enforce mathematical rigor (D2i independent failure axes), zero bounding-box text overflow, consistent widescreen typography, strict academic claim hygiene, and artifact-cited speaker notes on every single slide. An external researcher or reviewer can independently verify every cryptographic artifact hash, recompute the T20 retrieval diagnostics from raw records, execute the canonical evaluation pipeline under Frozen Protocol v1.1, and recompile publication-quality figures, markdown tables, and a 16:9 PowerPoint presentation deck without spending money, querying live LLM APIs, or installing external database infrastructure.
+Subagent D has completed the inventory, D_REPAIR remediation, CD_RENDER_REPAIR enhancements, and BD_MODE_BOUNDARY execution boundaries across all Phase S1 deliverables. The presentation deck (`docs/presentation/slides.pptx` and `docs/presentation/slides.md`) and offline reproducibility pipeline have been audited and upgraded to enforce mathematical rigor (D2i independent failure axes), zero bounding-box text overflow, consistent widescreen typography, strict academic claim hygiene, artifact-cited speaker notes on every single slide, and fail-closed canonical execution mode enforcement (`execution_mode == 'live'`). A complete mock matrix (even with `split='test'`) is strictly barred from being published as canonical research results. An external researcher or reviewer can independently verify every cryptographic artifact hash, recompute the T20 retrieval diagnostics from raw records, execute the canonical evaluation pipeline under Frozen Protocol v1.1, and recompile publication-quality figures, markdown tables, and a 16:9 PowerPoint presentation deck without spending money, querying live LLM APIs, or installing external database infrastructure.
 
 ### Complete Table of Authored Deliverables
 
 | Deliverable | File Path | File Size (Bytes) | SHA-256 Digest | Status |
 | :--- | :--- | :---: | :--- | :---: |
 | **Offline Reproducibility Guide** | `docs/reproducibility.md` | 16,761 | `e0d89163c14b0ff3e22f1a1bfe7339adbaac89b7cd08ef68bc08438097ebb358` | VERIFIED |
-| **Offline Reproduction Pipeline** | `scripts/reproduce_study.py` | 50,585 | `118676a617f46b40fad0d87c532b606a8f19d43a9a21a7471ac24a46ae0bb0c7` | VERIFIED |
+| **Offline Reproduction Pipeline** | `scripts/reproduce_study.py` | 51,485 | `b2e04e3b926c03300050a34695ca9b24daeaeb5dfdce701f2465617b17e4b36f` | VERIFIED |
 | **Proposed Reconciled README** | `docs/README_PROPOSED.md` | 19,460 | `48209e0e39ac4e2c2be1e0fa10721ff73c8a404f4cd6276537d02198d586936b` | VERIFIED |
 | **Presentation Deck Outline (MD)** | `docs/presentation/slides.md` | 30,547 | `50f573c356dd9fde4ef0f5e399de251659297b0e5ec72beb67e814d6ab084298` | VERIFIED |
 | **PowerPoint Deck Builder Script** | `scripts/generate_slides.py` | 50,280 | `471a44a214785bc1fc5af623b7b5f13890809f5f0969661747fd76f3f393ba6e` | VERIFIED |
 | **Compiled PowerPoint Deck (PPTX)**| `docs/presentation/slides.pptx` | 374,804 | `b82b25ba494dca81270ca54ee8b0163556e7eef98c1d1a8882313005aa66bc2d` | VERIFIED |
-| **Sanitized Evidence Manifest** | `docs/sanitized_evidence_manifest.json` | 12,769 | `05f32a70d26f2531e8d5946fd71114bd0f264a0c871b51eedc06c24ec299e43f` | VERIFIED |
+| **Sanitized Evidence Manifest** | `docs/sanitized_evidence_manifest.json` | 12,769 | `a76be1292413f11ff31c013194f8019ac41d75397e5063f54ff7a37f49e19557` | VERIFIED |
 
 ---
 
@@ -120,8 +120,12 @@ The canonical evaluator (`src/evaluation/experiment_metrics.py`) was executed on
 6. `failure_decomposition.json`
 7. `run_provenance.json`
 
-### 5.2 Authoritative Completed-Run Reproduction Path
-The reproduction pipeline includes `--manifest` and `--run-dir` CLI options enabling verification of completed 1,280-sample test runs. It enforces fail-closed validation of the full 1,280 x 5 matrix (6,400 records) under Frozen Protocol v1.1. Incomplete runs (e.g. DEV pilot or in-flight live execution) fail closed with clear diagnostic notices.
+### 5.2 Authoritative Completed-Run Reproduction Path & Execution-Mode Boundary
+The reproduction pipeline includes `--manifest` and `--run-dir` CLI options enabling verification of completed 1,280-sample test runs. Under the `BD_MODE_BOUNDARY` mandate, it enforces fail-closed validation of:
+1. `split == "test"` (all 1,280 samples across 5 conditions = 6,400 records).
+2. `execution_mode == "live"` (manifest check and post-load `inputs.execution_mode` check). A complete 1,280x5 mock matrix (`execution_mode="mock_fixture"`) is strictly barred from publishing canonical study results.
+3. Full fail-closed test coverage established in `tests/test_canonical_reproduction_boundary.py` (9/9 passed under `OFFLINE_GUARD`).
+Incomplete runs, pilot cohorts, or mock fixtures fail closed with clear diagnostic notices.
 
 ---
 

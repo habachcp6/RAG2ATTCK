@@ -273,8 +273,8 @@
     },
     "reproduction_script": {
       "path": "scripts/reproduce_study.py",
-      "sha256": "118676a617f46b40fad0d87c532b606a8f19d43a9a21a7471ac24a46ae0bb0c7",
-      "size_bytes": 50585
+      "sha256": "b2e04e3b926c03300050a34695ca9b24daeaeb5dfdce701f2465617b17e4b36f",
+      "size_bytes": 51485
     },
     "proposed_readme": {
       "path": "docs/README_PROPOSED.md",

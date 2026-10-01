@@ -538,6 +538,16 @@ def run_authoritative_completed_evaluator(
         )
         return False
 
+    execution_mode = manifest_data.get("execution_mode")
+    if execution_mode != "live":
+        output_lines.append(
+            f"  [FAIL_CLOSED] Execution mode boundary check failed: Authoritative canonical evaluation\n"
+            f"  requires execution_mode='live'. Found execution_mode='{execution_mode}'.\n"
+            f"  Mock fixtures, test matrices, or uncertified records cannot be published as canonical study results.\n"
+            f"  For offline mathematical verification of test fixtures, use --run-fixture-diagnostics."
+        )
+        return False
+
     prediction_paths: dict[str, Path] = {}
     for cond in CORE_CONDITIONS:
         pred_path = resolved_run_dir / f"{cond}_predictions.jsonl"
@@ -576,6 +586,13 @@ def run_authoritative_completed_evaluator(
         )
     except Exception as exc:
         output_lines.append(f"  [FAIL_CLOSED] Failed to validate evaluation inputs: {exc}")
+        return False
+
+    if inputs.execution_mode != "live":
+        output_lines.append(
+            f"  [FAIL_CLOSED] EvaluationInputs post-load validation failed: execution_mode must be 'live'.\n"
+            f"  Found inputs.execution_mode='{inputs.execution_mode}'. Refusing to create canonical study results."
+        )
         return False
 
     eval_canonical_dir = output_dir / "canonical_study_results"

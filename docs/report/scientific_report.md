@@ -1,7 +1,7 @@
 # Evaluating MITRE ATT&CK-Grounded RAG for Technique Attribution from Windows Endpoint Logs: A Replication-and-Extension Study
 
 **Author:** Hà Hoàng Bách  
-**Affiliation:** RAG2ATT&CK Research Project  
+**Affiliation:** RAG2ATT&CK Project  
 **Date:** October 2026  
 **Status:** DRAFT — IN PROGRESS / PENDING EXPERIMENTAL EXECUTION  
 **Protocol Version:** `experiment-protocol-v1.1` (Canonical Decisions Digest: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`)  
@@ -18,7 +18,7 @@ In this work, we present a controlled replication-and-extension study evaluating
 
 We evaluate this system across **1,280 synthetic paired test views** (derived from 640 scenario pairs across 64 template families, featuring matched single-event and contextual-event representations). An authoritative join of test view identifiers against ground-truth records yields **718 mapped positive scorable views** (678 single-GT, 40 multi-GT), with 311 ambiguous views and 251 unmapped views excluded from headline accuracy per protocol policies D2c and D2b. Crucially, we formally bound our claims: the evaluated dataset is strictly synthetic (`synthetic-paired-v1`), as forensic analysis of historical public Windows-APT telemetry revealed unresolved cell discrepancies and precision inconsistencies during reconciliation, preventing independent verification of authoritative ground truth. Consequently, our findings are bounded to the synthetic benchmark, and generalization to production enterprise telemetry remains unsupported.
 
-Our evaluation framework employs a fixed 474-class macro-averaged F1 universe, multi-label `ANY_MATCH` correctness semantics, headline end-to-end accuracy incorporating provider and parse failures, and an independent-axes failure decomposition. In compliance with strict empirical integrity guidelines, this report establishes the formal research report scaffold, mathematical formulations, literature review, and experimental table schemas without inventing unexecuted numerical results. Preliminary offline retrieval diagnostics across positive views demonstrate that dense retrieval achieves $Hit@1 = 4.23\%$ and $Hit@10 = 45.11\%$, with no ground-truth technique retrieved within Top-10 in $54.89\%$ of positive views (the complement of view-level Any-GT Hit@10), influenced by lexical mismatch in command-line arguments and contextual event dilution. The canonical live execution matrix (6,400 requests) is strictly budgeted under a $19.99 financial guard, establishing a reproducible foundation for evaluating knowledge grounding in security reasoning.
+Our evaluation framework employs a fixed 474-class macro-averaged F1 universe, multi-label `ANY_MATCH` correctness semantics, headline end-to-end accuracy incorporating provider and parse failures, and an independent-axes failure decomposition. In compliance with strict empirical integrity guidelines, this report establishes the formal research report scaffold, mathematical formulations, literature review, and experimental table schemas without inventing unexecuted numerical results. Preliminary offline retrieval diagnostics across positive views demonstrate that dense retrieval achieves $Hit@1 = 4.23%$ and $Hit@10 = 45.11%$, with no ground-truth technique retrieved within Top-10 in $54.89%$ of positive views (the complement of view-level Any-GT Hit@10), influenced by lexical mismatch in command-line arguments and contextual event dilution. The canonical live execution matrix (6,400 requests) is strictly budgeted under a $19.99 financial guard, establishing a reproducible foundation for evaluating knowledge grounding in security reasoning.
 
 ---
 
@@ -72,28 +72,49 @@ In strict adherence to scholarly truthfulness, we report the exact verification 
 - **Partial / Access-Blocked (2/8):** Yang & Hsu [7] is verified solely from the publisher abstract and bibliographic metadata (Springer SIST vol. 8767, pp. 235–251, published online 2 July 2026; full chapter is subscription-restricted). Okuma et al. [9] is verified solely from the IEEE conference bibliographic record (ICSPIS 2023, pp. 104–109; primary full text was inaccessible during the audit). Claims regarding these two works are strictly bounded to verified metadata.
 
 ### 2.2 Comparator Matrix
-Table 1 presents an 18-dimension comparison across the eight comparator works and RAG2ATTCK, highlighting target inputs, ATT&CK granularity, retrieval parameters, baseline controls, and evaluation methodologies.
+Table 1a and Table 1b present a comprehensive 16-dimension comparison across the eight comparator works and RAG2ATTCK, partitioned into two complementary views to preserve granular legibility: Table 1a details Comparators 1–4, and Table 1b details Comparators 5–8 alongside RAG2ATTCK.
 
-*Table 1: Multi-Dimensional Comparator Matrix Grounded in Primary Evidence.*
+*Table 1a: Multi-Dimensional Comparator Matrix Grounded in Primary Evidence (Part 1: Comparators 1–4).*
 
-| Dimension | Yang & Hsu (2026) [7] | Adediran et al. (2026) [10] | CAM-LDS (Landauer et al., 2026) [8] | TechniqueRAG (Lekssays et al., 2025) [5] | H-TechniqueRAG (Morbiato et al., 2026) [6] | Trace2ATT&CK (Lupinacci et al., 2026) [11] | Okuma et al. (2023) [9] | LADE (Gwak et al., 2026/2027) [12] | **RAG2ATTCK (This Work)** |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1. Primary Input** | Windows Sysmon process trees | AWS CloudTrail JSON events | Linux system logs (auditd, syslog) + IDS alerts | Unstructured CTI text reports | Unstructured CTI text reports | Linux eBPF provenance graphs | Windows Sysmon event logs | Chronological command/script traces | **Windows endpoint telemetry (Sysmon / Security logs)** |
-| **2. Target Platform** | Windows | AWS Cloud | Linux / Multi-source | Cross-platform (CTI text) | Cross-platform (CTI text) | Linux | Windows | Cross-platform host OS | **Windows Enterprise** |
-| **3. Core Task** | Malicious behavior detection & explanation | Cloud threat detection & ATT&CK mapping | Benchmark log interpretation | CTI technique & sub-technique annotation | CTI technique annotation & context routing | Kernel telemetry to ATT&CK mapping | Heuristic log-to-technique correlation | APT detection & TTP mapping | **Exact ATT&CK Technique / Sub-technique attribution** |
-| **4. ATT&CK Target Granularity** | Behavior explanation (Exact ID UNVERIFIED) | Technique & Sub-technique (`Txxxx.yyy`) | Collapses sub-techniques to parent (`Txxxx`) | Technique & Sub-technique (`Txxxx.yyy`) | Tactic $\to$ Technique hierarchy | Ranked Technique & Sub-technique candidates | Technique level (`Txxxx`) | Ranked Technique candidates (Top-1/3/10) | **Exact Technique & Sub-technique (`Txxxx.yyy`)** |
-| **5. RAG Architecture** | Semantic matching RAG | Two-step query expansion RAG (Vertex AI) | **None** (Zero-shot prompting) | Exemplar retrieval (BM25 + DeepSeek v3 rerank) | Hierarchical dense RAG (FAISS IVF) | Dense chunk retrieval (Chroma + MMR) | **None** (Rule-based correlation) | **None** (Rubric prompting with static ATT&CK text) | **Dense semantic RAG (FAISS IndexFlatIP cosine)** |
-| **6. Retrieval Corpus** | Security templates & attack patterns | ATT&CK Cloud, AWS catalogue, threat blogs | N/A | Annotated text-label pairs (TRAM, Procedures) | ATT&CK Enterprise (CTI-RCM, TRAM, MITRE) | ATT&CK Enterprise KB (800-word chunks) | N/A | N/A | **Official ATT&CK Enterprise v19.2 (474 active Windows docs)** |
-| **7. Matched No-RAG Baseline?** | **Yes** (Mistral, phi-2, TinyLlama w/o RAG) | **Yes** (Gemini 2.5 Pro baseline w/o RAG) | Evaluates *only* zero-shot (no RAG) | **Yes** (Zero-shot and fine-tuned w/o RAG) | Flat RAG vs. Hierarchical RAG (no raw baseline) | **Yes** (Prompting baseline w/o RAG) | No (Heuristic only) | Prompting only (no RAG ablation) | **Yes (Strictly matched gpt-5.6-luna w/o RAG)** |
-| **8. Top-k Retrieval Ablation?** | UNVERIFIED (full text unavailable) | **No** (Numeric k NOT REPORTED; ablation deferred) | Evaluates output cutoff $k$, not retriever depth | Evaluates pool size $K=40$, fixed $k=3$ exemplars | **Yes** (Tactic depth $M=3$, max 15 tech/tactic) | Fixed retriever depth (5 chunks), output cutoff 5 | No | Output cutoff $k \in \{1, 3, 10\}$, not retriever depth | **Yes ($k \in \{1, 3, 5, 10\}$ systematically ablated)** |
-| **9. Standalone Retriever Metrics?** | UNVERIFIED | **NOT REPORTED** (Generation gap only) | N/A | P/R/F1 on ranking; standalone Hit@k NOT REPORTED | Micro P/R/F1, MAP@10; standalone Recall@k NOT REPORTED | **NOT REPORTED** (End-to-end HR@5 reported) | N/A | N/A | **Yes (Hit@k, Recall@k, Median Rank explicitly reported)** |
-| **10. Failure Decomposition?** | UNVERIFIED | Qualitative error categorization (26.3% vs 60% gap)* | No | Analyzes generator vs retriever errors | Analyzes distractor impact in flat vs hierarchical | No (End-to-end system evaluation) | No | No | **Yes (Formal decoupled split: Retrieval vs Generation error)** |
-| **11. Telemetry Leakage Controls** | UNVERIFIED | Notes `stratus-red-team` agent in raw logs | Strips explicit ATT&CK labels/tactics | CTI text; no detector rule metadata | CTI text; curated benchmarks | Kernel syscalls; no detector rule metadata | Simulation metadata used | Script command lines analyzed | **Strict field whitelist; detector rules/labels purged** |
-| **12. Primary Models** | Mistral-7B, phi-2, TinyLlama-1.1B | Gemini 2.5 Pro | GPT-5.5, Llama-3-70B, Mixtral, Command R+ | Ministral-8B (fine-tuned) | Llama-3-8B-Instruct | Mistral-7B, Llama-3-8B, CodeLlama, etc. | Heuristic algorithm | GPT-4, Claude-3-Opus, Llama-3-70B | **OpenAI gpt-5.6-luna (xhigh reasoning effort)** |
-| **13. Headline Metrics** | Precision, F1, False Positive Rate | Accuracy, Precision, Recall, F1, Latency, Cost | Technique Rank, P@k, Recall@k, MRR | Precision, Recall, Macro-F1, Micro-F1 | Micro P/R/F1, MAP@10, Latency, API calls | HR@5, MRR@5, NDCG@5 | Mapping accuracy | Precision, Recall, F1, HR/MRR/NDCG @ 3, 10 | **End-to-End Accuracy, 474-class Macro-F1, Recall@k** |
-| **14. Primary Dataset** | Attack samples + benign process trees | 200 AWS CloudTrail events (122 mal / 78 ben) | 7 scenarios, 198 log steps, 18 sources | TRAM, Procedures, Expert CTI datasets | 1,200 CTI-RCM + 2,800 MITRE + 450 TRAM | 347 Linux Atomic Red Team executions | Atomic Red Team Sysmon logs | AVIATOR (35 attack / 32 benign sequences) | **1,280 paired synthetic views (640 scenario pairs)** |
-| **15. Closest Similarity** | Sysmon logs + matched No-RAG/RAG | Controlled No-RAG vs RAG on telemetry | Exact technique prediction from command logs | ATT&CK RAG with retrieval quality analysis | Investigating retrieval depth & distractor noise | Telemetry-to-ATT&CK mapping comparing RAG/prompt | Windows Sysmon mapped to ATT&CK | Host command execution traces mapped to ATT&CK | **Integrates telemetry, exact attribution, depth ablation** |
-| **16. Key Difference** | Binary detection; process tree heuristics | AWS CloudTrail API; two-step Vertex RAG | Zero-shot only (no RAG); Linux focus | Unstructured CTI text; fine-tunes generator | Unstructured CTI text; hierarchical routing | Linux eBPF provenance graphs; no depth ablation | Non-LLM rule heuristic from 2023 | Prompting only (no RAG); small sample (35 seqs) | **Windows endpoint logs + exact ID + depth ablation + error split** |
+| Dimension | Yang & Hsu (2026) [7] | Adediran et al. (2026) [10] | CAM-LDS (Landauer et al., 2026) [8] | TechniqueRAG (Lekssays et al., 2025) [5] |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Primary Input** | Windows Sysmon process trees | AWS CloudTrail JSON events | Linux system logs (auditd, syslog) + IDS alerts | Unstructured CTI text reports |
+| **2. Target Platform** | Windows | AWS Cloud | Linux / Multi-source | Cross-platform (CTI text) |
+| **3. Core Task** | Malicious behavior detection & explanation | Cloud threat detection & ATT&CK mapping | Benchmark log interpretation | CTI technique & sub-technique annotation |
+| **4. ATT&CK Target Granularity** | Behavior explanation (Exact ID UNVERIFIED) | Technique & Sub-technique (`Txxxx.yyy`) | Collapses sub-techniques to parent (`Txxxx`) | Technique & Sub-technique (`Txxxx.yyy`) |
+| **5. RAG Architecture** | Semantic matching RAG | Two-step query expansion RAG (Vertex AI) | **None** (Zero-shot prompting) | Exemplar retrieval (BM25 + DeepSeek v3 rerank) |
+| **6. Retrieval Corpus** | Security templates & attack patterns | ATT&CK Cloud, AWS catalogue, threat blogs | N/A | Annotated text-label pairs (TRAM, Procedures) |
+| **7. Matched No-RAG Baseline?** | **Yes** (Mistral, phi-2, TinyLlama w/o RAG) | **Yes** (Gemini 2.5 Pro baseline w/o RAG) | Evaluates *only* zero-shot (no RAG) | **Yes** (Zero-shot and fine-tuned w/o RAG) |
+| **8. Top-k Retrieval Ablation?** | UNVERIFIED (full text unavailable) | **No** (Numeric k NOT REPORTED; ablation deferred) | Evaluates output cutoff $k$, not retriever depth | Evaluates pool size $K=40$, fixed $k=3$ exemplars |
+| **9. Standalone Retriever Metrics?** | UNVERIFIED | **NOT REPORTED** (Generation gap only) | N/A | P/R/F1 on ranking; standalone Hit@k NOT REPORTED |
+| **10. Failure Decomposition?** | UNVERIFIED | Qualitative error categorization (26.3% vs 60% gap)* | No | Analyzes generator vs retriever errors |
+| **11. Telemetry Leakage Controls** | UNVERIFIED | Notes `stratus-red-team` agent in raw logs | Strips explicit ATT&CK labels/tactics | CTI text; no detector rule metadata |
+| **12. Primary Models** | Mistral-7B, phi-2, TinyLlama-1.1B | Gemini 2.5 Pro | GPT-5.5, Llama-3-70B, Mixtral, Command R+ | Ministral-8B (fine-tuned) |
+| **13. Headline Metrics** | Precision, F1, False Positive Rate | Accuracy, Precision, Recall, F1, Latency, Cost | Technique Rank, P@k, Recall@k, MRR | Precision, Recall, Macro-F1, Micro-F1 |
+| **14. Primary Dataset** | Attack samples + benign process trees | 200 AWS CloudTrail events (122 mal / 78 ben) | 7 scenarios, 198 log steps, 18 sources | TRAM, Procedures, Expert CTI datasets |
+| **15. Closest Similarity** | Sysmon logs + matched No-RAG/RAG | Controlled No-RAG vs RAG on telemetry | Exact technique prediction from command logs | ATT&CK RAG with retrieval quality analysis |
+| **16. Key Difference** | Binary detection; process tree heuristics | AWS CloudTrail API; two-step Vertex RAG | Zero-shot only (no RAG); Linux focus | Unstructured CTI text; fine-tunes generator |
+
+*Table 1b: Multi-Dimensional Comparator Matrix Grounded in Primary Evidence (Part 2: Comparators 5–8 and RAG2ATTCK).*
+
+| Dimension | H-TechniqueRAG (Morbiato et al., 2026) [6] | Trace2ATT&CK (Lupinacci et al., 2026) [11] | Okuma et al. (2023) [9] | LADE (Gwak et al., 2026/2027) [12] | **RAG2ATTCK (This Work)** |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **1. Primary Input** | Unstructured CTI text reports | Linux eBPF provenance graphs | Windows Sysmon event logs | Chronological command/script traces | **Windows endpoint telemetry (Sysmon / Security logs)** |
+| **2. Target Platform** | Cross-platform (CTI text) | Linux | Windows | Cross-platform host OS | **Windows Enterprise** |
+| **3. Core Task** | CTI technique annotation & context routing | Kernel telemetry to ATT&CK mapping | Heuristic log-to-technique correlation | APT detection & TTP mapping | **Exact ATT&CK Technique / Sub-technique attribution** |
+| **4. ATT&CK Target Granularity** | Tactic $\to$ Technique hierarchy | Ranked Technique & Sub-technique candidates | Technique level (`Txxxx`) | Ranked Technique candidates (Top-1/3/10) | **Exact Technique & Sub-technique (`Txxxx.yyy`)** |
+| **5. RAG Architecture** | Hierarchical dense RAG (FAISS IVF) | Dense chunk retrieval (Chroma + MMR) | **None** (Rule-based correlation) | **None** (Rubric prompting with static ATT&CK text) | **Dense semantic RAG (FAISS IndexFlatIP cosine)** |
+| **6. Retrieval Corpus** | ATT&CK Enterprise (CTI-RCM, TRAM, MITRE) | ATT&CK Enterprise KB (800-word chunks) | N/A | N/A | **Official ATT&CK Enterprise v19.2 (474 active Windows docs)** |
+| **7. Matched No-RAG Baseline?** | Flat RAG vs. Hierarchical RAG (no raw baseline) | **Yes** (Prompting baseline w/o RAG) | No (Heuristic only) | Prompting only (no RAG ablation) | **Yes (Strictly matched gpt-5.6-luna w/o RAG)** |
+| **8. Top-k Retrieval Ablation?** | **Yes** (Tactic depth $M=3$, max 15 tech/tactic) | Fixed retriever depth (5 chunks), output cutoff 5 | No | Output cutoff $k \in \{1, 3, 10\}$, not retriever depth | **Yes ($k \in \{1, 3, 5, 10\}$ systematically ablated)** |
+| **9. Standalone Retriever Metrics?** | Micro P/R/F1, MAP@10; standalone Recall@k NOT REPORTED | **NOT REPORTED** (End-to-end HR@5 reported) | N/A | N/A | **Yes (Hit@k, Recall@k, Median Rank explicitly reported)** |
+| **10. Failure Decomposition?** | Analyzes distractor impact in flat vs hierarchical | No (End-to-end system evaluation) | No | No | **Yes (Formal decoupled split: Retrieval vs Generation error)** |
+| **11. Telemetry Leakage Controls** | CTI text; curated benchmarks | Kernel syscalls; no detector rule metadata | Simulation metadata used | Script command lines analyzed | **Strict field whitelist; detector rules/labels purged** |
+| **12. Primary Models** | Llama-3-8B-Instruct | Mistral-7B, Llama-3-8B, CodeLlama, etc. | Heuristic algorithm | GPT-4, Claude-3-Opus, Llama-3-70B | **OpenAI gpt-5.6-luna (xhigh reasoning effort)** |
+| **13. Headline Metrics** | Micro P/R/F1, MAP@10, Latency, API calls | HR@5, MRR@5, NDCG@5 | Mapping accuracy | Precision, Recall, F1, HR/MRR/NDCG @ 3, 10 | **End-to-End Accuracy, 474-class Macro-F1, Recall@k** |
+| **14. Primary Dataset** | 1,200 CTI-RCM + 2,800 MITRE + 450 TRAM | 347 Linux Atomic Red Team executions | Atomic Red Team Sysmon logs | AVIATOR (35 attack / 32 benign sequences) | **1,280 paired synthetic views (640 scenario pairs)** |
+| **15. Closest Similarity** | Investigating retrieval depth & distractor noise | Telemetry-to-ATT&CK mapping comparing RAG/prompt | Windows Sysmon mapped to ATT&CK | Host command execution traces mapped to ATT&CK | **Integrates telemetry, exact attribution, depth ablation** |
+| **16. Key Difference** | Unstructured CTI text; hierarchical routing | Linux eBPF provenance graphs; no depth ablation | Non-LLM rule heuristic from 2023 | Prompting only (no RAG); small sample (35 seqs) | **Windows endpoint logs + exact ID + depth ablation + error split** |
 
 *Note on Adediran et al. [10]: The published text contains an unresolved reporting discrepancy, stating in Section 2 that retrieval-generation gaps account for 60% of errors, while Section 6.4.1 reports 26.3% (5/19).*
 
@@ -117,7 +138,7 @@ All retrieval, ground truth, and evaluation components in RAG2ATTCK are cryptogr
 - **Corpus Serialization:** Preserved in `attack/corpus/enterprise-windows-v19.2.jsonl` (File SHA-256: `b219341154ddf2f12e97d622158a04ab7d57641df6a865559258d365852c3c75`).
 
 ### 3.2 Benchmark Scope
-The evaluation focuses on eight high-frequency Windows attack techniques representing core tactics across the cyber kill chain (Execution, Persistence, Privilege Escalation, Defense Evasion, and Command and Control), formally defined in `config/benchmark_scope.json` (File SHA-256: `6bd769324f6ac9193d7df82e7f54f5a1397a41b9bc72be767da5a72b54b3a47c`):
+The evaluation focuses on eight high-frequency Windows attack techniques representing core tactics across the cyber kill chain (Execution, Persistence, Privilege Escalation, Defense Evasion, and Command and Control), formally defined in `config/benchmark_scope.json` (File SHA-256: `d6aa89831dec75362b4fd48de0fd6e7082290f2be0cb7bd0afc6bc518148db8b`):
 1. `T1059.001`: Command and Scripting Interpreter: PowerShell
 2. `T1059.003`: Command and Scripting Interpreter: Windows Command Shell
 3. `T1053.005`: Scheduled Task/Job: Scheduled Task
@@ -187,10 +208,10 @@ All experimental executions, runner dispatches, and offline scoring routines are
 ### 4.2 Language Model and Inference Configuration
 The language model configuration is frozen in `config/model.json` (File SHA-256: `312c34cedd84106f2004c6070b72aeac1dd84209a464e2993fee3ec87822697f`) and documented in `reports/T11_model_freeze.md`:
 - **Provider:** `openai`
-- **Canonical Model Identifier:** `gpt-5.6-luna` (July 2026 commercial release; 1.05M context window, 128k native completion limit).
+- **Canonical Model Identifier:** `gpt-5.6-luna` (1,050,000 context window, 128,000 max output tokens capacity).
 - **API Interface:** OpenAI Responses API (`client.responses.create`), providing native schema constraints and unified reasoning token budgeting.
 - **Reasoning Effort:** Configured `reasoning_effort="xhigh"`.
-- **Output Token Budget (`max_output_tokens`):** `8192` tokens. Under reasoning models, this parameter governs a unified allocation pool covering both internal reasoning tokens and visible completion tokens. A ceiling of 8,192 tokens ensures the model does not encounter mid-thought truncation (`finish_reason="length"`).
+- **Output Token Budget (`max_output_tokens`):** `8192` tokens. Under OpenAI reasoning models, `max_output_tokens` represents an upper budget bound governing a unified allocation pool covering both internal reasoning tokens and visible completion tokens. While empirical DEV pilot runs observed mean output consumption of ~657 tokens, this parameter acts as a finite budget ceiling rather than an absolute guarantee against truncation: if the model's internal chain-of-thought and completion combined exhaust the 8,192 token allocation, the API emits an incomplete response (`status="incomplete"` with `incomplete_details.reason="max_output_tokens"`), which the evaluation harness flags as an incomplete provider failure.
 - **Structured Schema Enforcement:** Native JSON Schema enforcement (`strict: true`) targeting the Pydantic contract:
   ```json
   {
@@ -284,29 +305,47 @@ To prevent masking system fragility or parse errors, Protocol Decision D2f enfor
 ### 5.3 Macro-Averaged F1 Across the 474-Class Universe
 Per Protocol Decisions D2d and D2j, the macro-averaged F1 metric is evaluated over the fixed 474-technique benchmark universe $\mathcal{C}$ ($|\mathcal{C}| = 474$). Crucially, the denominator of the macro average remains strictly frozen at 474 across all conditions, regardless of the number of techniques observed in any individual test partition.
 
-1. **Per-Class Confusion Components:** For each class $c \in \mathcal{C}$, compute true positives ($TP_c$), false positives ($FP_c$), and false negatives ($FN_c$) across scorable samples:
-   - $TP_c$: Model predicted class $c$ and $c \in Y_i$.
-   - $FP_c$: Model predicted class $c$ but $c \notin Y_i$.
-   - $FN_c$: Model predicted a class other than $c$, but $c \in Y_i$.
-   - Ground-truth support: $\text{support}_c = TP_c + FN_c$.
-   - Emitted predictions: $\text{pred}_c = TP_c + FP_c$.
+The evaluation architecture distinguishes between **per-technique diagnostic exports** (`compute_technique_metrics`) and **condition-level scalar aggregation** (`compute_condition_metrics`):
 
-2. **Per-Class Precision ($P_c$) and Recall ($R_c$):**
-   $$P_c = \frac{TP_c}{TP_c + FP_c}, \quad R_c = \frac{TP_c}{TP_c + FN_c}$$
-   Per Protocol Decision D2j, if a denominator is zero, the per-class precision or recall evaluates to `null` (or 0.0 in metric computations where denominator is 0).
+#### 1. Per-Class Confusion Components and Evaluator Accounting
+For each technique $c \in \mathcal{C}$, the evaluator tracks:
+- True Positives ($TP_c$): Model predicted class $c$ and $c \in Y_i$.
+- False Positives ($FP_c$): Model predicted class $c$ but $c \notin Y_i$.
+- False Negatives ($FN_c$): Model predicted a class other than $c$, but $c \in Y_i$.
+- Ground-truth support: $\text{support}_c = TP_c + FN_c$.
+- Emitted predictions: $\text{pred}_c = TP_c + FP_c$.
 
-3. **Per-Class $F1_c$ and Zero-Denominator Policy:**
-   In exact alignment with the canonical evaluation implementation (`src/evaluation/experiment_metrics.py`, lines 1170–1177):
-   - **Unobserved Classes ($\text{support}_c = 0 \land \text{pred}_c = 0$):** Per D2d/D2j, techniques neither present in ground truth nor emitted by the model have zero denominators and contribute exactly $0.0$ to the macro-sum numerator ($F1_c = 0.0$).
-   - **Unpredicted Classes ($\text{support}_c > 0 \land \text{pred}_c = 0$):** Techniques present in ground truth but never emitted receive $P_c = 0.0, R_c = 0.0 \implies F1_c = 0.0$.
-   - **Unobserved False Positives ($\text{support}_c = 0 \land \text{pred}_c > 0$):** Techniques absent from ground truth but hallucinated by the model receive $R_c = 0.0 \implies F1_c = 0.0$.
-   - **Observed Classes with True Positives ($TP_c > 0$):**
-     $$F1_c = \frac{2 \cdot P_c \cdot R_c}{P_c + R_c}$$
+#### 2. Per-Technique Metric Export and D2j `NULL` Convention (`compute_technique_metrics`)
+In the exported per-technique diagnostic artifact (`by_condition[condition][tid]`), every technique in the universe reports `tp`, `fp`, `fn`, `support`, `precision`, `recall`, and `f1`. In strict compliance with Protocol Decision D2j (`d2j_zero_denominator == "NULL"`), zero-denominator fractions evaluate strictly to `None` (serialized as JSON `null`), preserving topological distinction across three critical boundary cases:
 
-4. **Macro-Averaged Metric Aggregation:**
-   The macro F1 score sums per-class $F1_c$ across all 474 techniques and divides by the frozen universe size 474:
-   $$\text{Macro-F1} = \frac{1}{474} \sum_{c \in \mathcal{C}} F1_c$$
-   This formulation guarantees that macro-F1 penalizes both false attributions and omissions against the full MITRE ATT&CK Windows taxonomy, preventing artificial inflation from omitting unobserved classes from the denominator.
+- **Case A (Unobserved Class: $\text{support}_c = 0 \land \text{pred}_c = 0$):**
+  $TP_c = 0, FP_c = 0, FN_c = 0$. Both precision denominator ($TP+FP=0$) and recall denominator ($TP+FN=0$) are zero; F1 denominator ($2TP+FP+FN=0$) is zero.
+  - Exported fields: `precision = None`, `recall = None`, `f1 = None` (serialized as `null`).
+  - *Known-Answer Verification Example:* A technique in the 474 universe (e.g., `T1000`) never appearing in ground truth and never emitted by the model produces:
+    `{"tp": 0, "fp": 0, "fn": 0, "support": 0, "precision": null, "recall": null, "f1": null}`.
+
+- **Case B (Unpredicted Class: $\text{support}_c > 0 \land \text{pred}_c = 0$):**
+  $TP_c = 0, FP_c = 0, FN_c = \text{support}_c > 0$. Precision denominator ($TP+FP=0$) is zero; recall denominator is $\text{support}_c > 0$; F1 denominator is $FN_c > 0$.
+  - Exported fields: `precision = None` (`null`), `recall = 0.0`, `f1 = 0.0`.
+  - *Known-Answer Verification Example:* A technique present in ground truth (e.g., `T1001`, support = 1) that the model completely fails to predict produces:
+    `{"tp": 0, "fp": 0, "fn": 1, "support": 1, "precision": null, "recall": 0.0, "f1": 0.0}`.
+
+- **Case C (Unobserved False Positive / Hallucinated Class: $\text{support}_c = 0 \land \text{pred}_c > 0$):**
+  $TP_c = 0, FP_c = \text{pred}_c > 0, FN_c = 0$. Precision denominator is $FP_c > 0$; recall denominator ($TP+FN=0$) is zero; F1 denominator is $FP_c > 0$.
+  - Exported fields: `precision = 0.0`, `recall = None` (`null`), `f1 = 0.0`.
+  - *Known-Answer Verification Example:* A technique absent from ground truth (e.g., `T1002`, support = 0) hallucinated by the model 1 time produces:
+    `{"tp": 0, "fp": 1, "fn": 0, "support": 0, "precision": 0.0, "recall": null, "f1": 0.0}`.
+
+#### 3. Condition-Level Macro-F1 Aggregation (`compute_condition_metrics`)
+To produce the headline $\text{Macro-F1}$ scalar across the entire fixed 474-technique universe without undefined arithmetic, condition-level aggregation enforces the following summation rules:
+- Unobserved classes ($\text{support}_c = 0 \land \text{pred}_c = 0$, Case A) contribute exactly $0.0$ to the numerator sum (`f1_sum += 0.0`).
+- Unpredicted classes (Case B) and unobserved false positives (Case C) contribute their computed harmonic mean of $0.0$ (`f1_sum += 0.0`).
+- Observed classes with true positives ($TP_c > 0$) compute:
+  $$P_c = \frac{TP_c}{TP_c + FP_c}, \quad R_c = \frac{TP_c}{TP_c + FN_c}, \quad F1_c = \frac{2 \cdot P_c \cdot R_c}{P_c + R_c}$$
+- The total sum is divided by the frozen universe size 474:
+  $$\text{Macro-F1} = \frac{1}{474} \sum_{c \in \mathcal{C}} F1_c$$
+
+*Evaluator Property:* The condition evaluator (`compute_condition_metrics`) exports `macro_f1`. It intentionally omits aggregate macro precision and macro recall scalars, preventing mathematical ambiguity over unobserved class denominators and ensuring metric stability.
 
 ### 5.4 Decoupled Independent-Axes Failure Decomposition
 Protocol Decision D2i defines five independent, non-mutually-exclusive diagnostic failure axes:
@@ -341,7 +380,7 @@ Table 2a and Table 2b outline the comparative attribution performance and diagno
 
 *Table 2b: Attribution Diagnostic Metrics Across Experimental Conditions (Schema).*
 
-| Condition | Scorable Views ($N$) | 474-Class Macro Precision | 474-Class Macro Recall | Invalid ID Rate (%) | Completed Output Count |
+| Condition | Scorable Views ($N$) | Completed Outputs | Parse Failures | Invalid ATT&CK IDs | Invalid ID Rate (%) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | `no_rag` | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
 | `rag_k1` | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
@@ -379,18 +418,18 @@ Table 4 defines the formal error decomposition schema across the independent dia
 While end-to-end LLM inference awaits canonical execution, the standalone dense retriever (`all-MiniLM-L6-v2` + FAISS `IndexFlatIP`) was evaluated offline across all 756 positive benchmark views (full benchmark: 718 TEST + 38 DEV) in Task T20 (`reports/T20_retrieval_failure_analysis.md`). These empirical findings establish critical baseline context for interpreting future RAG performance:
 
 1. **Aggregate Retrieval Performance Across Full Benchmark (756 Positive Views):**
-   - **$Hit@1$:** $4.23\%$ (TEST: $3.76\%$, DEV: $13.16\%$)
-   - **$Hit@3$:** $16.80\%$ (TEST: $16.43\%$, DEV: $23.68\%$)
-   - **$Hit@5$:** $24.21\%$ (TEST: $24.09\%$, DEV: $26.32\%$)
-   - **$Hit@10$:** $45.11\%$ (TEST: $44.71\%$, DEV: $52.63\%$)
-   - **Macro Recall@10:** $43.14\%$
-   - **Complement of View-Level Any-GT Hit@10:** **$54.89\%$** (in 415 of 756 positive views, no ground-truth technique was retrieved within the Top-10 candidates).
+   - **$Hit@1$:** $4.23%$ (TEST: $3.76%$, DEV: $13.16%$)
+   - **$Hit@3$:** $16.80%$ (TEST: $16.43%$, DEV: $23.68%$)
+   - **$Hit@5$:** $24.21%$ (TEST: $24.09%$, DEV: $26.32%$)
+   - **$Hit@10$:** $45.11%$ (TEST: $44.71%$, DEV: $52.63%$)
+   - **Macro Recall@10:** $43.14%$
+   - **Complement of View-Level Any-GT Hit@10:** **$54.89%$** (in 415 of 756 positive views, no ground-truth technique was retrieved within the Top-10 candidates).
 2. **Technique-Specific Divergence:**
-   - *High-Performing Classes (Lexical Alignment):* Techniques with exact vocabulary overlap between logs and ATT&CK prose achieved strong recall: `T1685.005` (Clear Windows Event Logs) achieved **$98.39\%$ Hit@10** (due to unique tokens like `wevtutil`, `EventID 1102`); `T1547.001` (Registry Run Keys / Startup Folder) achieved **$92.45\%$ Hit@10** (due to exact registry paths `CurrentVersion/Run`).
-   - *Severe Failure Classes (Representation Gap):* `T1136.001` (Local Account) achieved **$0.0\%$ Hit@10 across all 99 views**. Telemetry containing `net user /add` and Event ID 4720 completely failed to retrieve the technique, matching instead generic persistence and DLL techniques.
-   - *Hard Negative Crowding:* In `T1105` (Ingress Tool Transfer, $15.79\%$ Hit@10), LOLBin telemetry invoking `certutil.exe -urlcache` resulted in `T1218.012` (Verclsid) ranking #1 in $42.1\%$ of cases, crowding out `T1105`.
+   - *High-Performing Classes (Lexical Alignment):* Techniques with exact vocabulary overlap between logs and ATT&CK prose achieved strong recall: `T1685.005` (Clear Windows Event Logs) achieved **$98.39%$ Hit@10** (due to unique tokens like `wevtutil`, `EventID 1102`); `T1547.001` (Registry Run Keys / Startup Folder) achieved **$92.45%$ Hit@10** (due to exact registry paths `CurrentVersion/Run`).
+   - *Severe Failure Classes (Representation Gap):* `T1136.001` (Local Account) achieved **$0.0%$ Hit@10 across all 99 views**. Telemetry containing `net user /add` and Event ID 4720 completely failed to retrieve the technique, matching instead generic persistence and DLL techniques.
+   - *Hard Negative Crowding:* In `T1105` (Ingress Tool Transfer, $15.79%$ Hit@10), LOLBin telemetry invoking `certutil.exe -urlcache` resulted in `T1218.012` (Verclsid) ranking #1 in $42.1%$ of cases, crowding out `T1105`.
 3. **Contextual Event Dilution:**
-   In an anchor-technique pairwise analysis across 296 eligible scenario pairs, adding multi-event context degraded the ground-truth retrieval rank in **$22.0\%$ of pairs (65/296)**, while improving it in only **$7.8\%$ (23/296)**. Multi-event sequences introduce background operational tokens (`svchost.exe`, RPC calls, thread IDs) that dilute the dense vector representation away from the primary malicious signature.
+   In an anchor-technique pairwise analysis across 296 eligible scenario pairs, adding multi-event context degraded the ground-truth retrieval rank in **$22.0%$ of pairs (65/296)**, while improving it in only **$7.8%$ (23/296)**. Multi-event sequences introduce background operational tokens (`svchost.exe`, RPC calls, thread IDs) that dilute the dense vector representation away from the primary malicious signature.
 
 ### 6.3 RQ3: Retrieval Depth, API Cost, and Latency Trade-Offs
 Table 5 defines the schema for evaluating the operational costs, latencies, and token consumption scaling as retrieval depth increases from $k=1$ to $k=10$.
@@ -458,7 +497,7 @@ In adherence to open science principles, all artifacts, code, configurations, an
 | **Protocol Configuration File** | `config/experiment_protocol_v1.json` | File SHA-256 | `a402b04ab463172f9d4079bff27b089ca8a21ffd0805d097af6cb1f3c7b5a8fb` |
 | **Model Configuration File** | `config/model.json` | File SHA-256 | `312c34cedd84106f2004c6070b72aeac1dd84209a464e2993fee3ec87822697f` |
 | **Retrieval Configuration File** | `config/retrieval.json` | File SHA-256 | `b33a93913e7f6de36f6f9021f77b2c9dcb1d426929162acb250a3c73ac8e6e25` |
-| **Benchmark Scope File** | `config/benchmark_scope.json` | File SHA-256 | `6bd769324f6ac9193d7df82e7f54f5a1397a41b9bc72be767da5a72b54b3a47c` |
+| **Benchmark Scope File** | `config/benchmark_scope.json` | File SHA-256 | `d6aa89831dec75362b4fd48de0fd6e7082290f2be0cb7bd0afc6bc518148db8b` |
 | **Base Prompt Template File** | `prompts/baseline_v1.txt` | File SHA-256 | `b751fde1ee33b03ec0bdc07cbba10267002d2086cf22b91a74bdfd123856f206` |
 | **ATT&CK Enterprise v19.2 Raw STIX** | `attack/raw/enterprise-v19.2/enterprise-attack-19.2.json` | File SHA-256 | `dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4` |
 | **Active Windows Retrieval Corpus** | `attack/corpus/enterprise-windows-v19.2.jsonl` | File SHA-256 | `b219341154ddf2f12e97d622158a04ab7d57641df6a865559258d365852c3c75` |
@@ -476,8 +515,8 @@ The repository is maintained at: `https://github.com/habachcp6/RAG2ATTCK`. Root 
 ## References
 
 1. The MITRE Corporation. "MITRE ATT&CK® Enterprise Matrix, Version 19.2." Published March 2026. Available: <https://attack.mitre.org/>. `[PRIMARY SOURCE VERIFIED]`
-2. OpenAI. "Reasoning Models and Frontiers in Automated Analysis: GPT-5.6 Series." Technical Overview, July 2026. Available: <https://developers.openai.com/api/docs/models/gpt-5.6-luna>. `[PRIMARY SOURCE VERIFIED]`
-3. OpenAI. "OpenAI Reasoning Best Practices and Output Budgeting." Technical Guide, 2026. Available: <https://developers.openai.com/api/docs/guides/reasoning>. `[PRIMARY SOURCE VERIFIED]`
+2. OpenAI. "GPT-5.6 Luna Model." OpenAI Documentation, accessed 2 October 2026. Available: <https://developers.openai.com/api/docs/models/gpt-5.6-luna>. Specifications: 1,050,000 context window, 128,000 max output capacity. `[PRIMARY SOURCE VERIFIED]`
+3. OpenAI. "Reasoning models." OpenAI Documentation Guides, accessed 2 October 2026. Available: <https://developers.openai.com/api/docs/guides/reasoning>. Note: Details upper budget bounds and incomplete responses (status="incomplete", incomplete_details.reason="max_output_tokens") when max_output_tokens is exhausted. `[PRIMARY SOURCE VERIFIED]`
 4. Lewis, P.; Perez, E.; Piktus, A.; Petroni, F.; Karpukhin, V.; Goyal, N.; Küttler, H.; Lewis, M.; Yih, W.-t.; Rocktäschel, T.; Riedel, S.; Kiela, D. "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks." In: *Advances in Neural Information Processing Systems (NeurIPS 2020)*, vol. 33, pp. 9459–9474, 2020. `[PRIMARY SOURCE VERIFIED]`
 5. Lekssays, A.; Shukla, U.; Sencar, H. T.; Parvez, M. R. "TechniqueRAG: Retrieval Augmented Generation for Adversarial Technique Annotation in Cyber Threat Intelligence Text." In: *Findings of the Association for Computational Linguistics: ACL 2025*, pp. 20913–20926, 2025. DOI: <https://doi.org/10.18653/v1/2025.findings-acl.1076>; arXiv: <https://arxiv.org/abs/2505.11988>. Note: Operates on paired CTI text-label exemplars; standalone Hit@k is NOT REPORTED. `[FULL TEXT VERIFIED]`
 6. Morbiato, F.; Keller, M.; Nair, P.; Romano, L. "Hierarchical Retrieval Augmented Generation for Adversarial Technique Annotation in Cyber Threat Intelligence Text." arXiv:2604.14166, submitted 24 March 2026. Available: <https://arxiv.org/abs/2604.14166>. Note: Primary arXiv page displays submission date as 24 March 2026 (despite the 2604 identifier prefix); investigates hierarchical CTI retrieval; sub-technique modeling is NOT REPORTED. `[FULL TEXT VERIFIED]`

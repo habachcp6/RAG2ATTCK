@@ -1,52 +1,55 @@
-"""Export Markdown scientific report to formatted DOCX."""
+"""Export scientific_report.md to a beautifully formatted Word (.docx) document.
+
+Incorporates publication-quality typography, professional table formatting with
+OpenXML pagination rules (<w:tblHeader/>, <w:cantSplit/>), column width optimization,
+Unicode mathematical typesetting, callout styling, and rigorous QA verification.
+"""
 
 from __future__ import annotations
 
 import re
-import sys
 from pathlib import Path
 
 import docx
 from docx.enum.table import WD_TABLE_ALIGNMENT
-from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import nsdecls, qn
 from docx.shared import Inches, Pt, RGBColor
 
 
-def extract_braced(text: str, start_idx: int) -> tuple[str, int]:
-    """Extract content inside balanced { ... } starting at text[start_idx] == '{'."""
-    if start_idx >= len(text) or text[start_idx] != "{":
-        return "", start_idx
+def extract_braced(s: str, start_brace_idx: int) -> tuple[str, int]:
+    """Extract content inside matching braces {...} starting at start_brace_idx."""
     depth = 0
     content = []
-    i = start_idx
-    while i < len(text):
-        c = text[i]
-        if c == "{":
+    i = start_brace_idx
+    while i < len(s):
+        ch = s[i]
+        if ch == "{":
             depth += 1
             if depth > 1:
-                content.append(c)
-        elif c == "}":
+                content.append(ch)
+        elif ch == "}":
             depth -= 1
             if depth == 0:
                 return "".join(content), i + 1
             else:
-                content.append(c)
+                content.append(ch)
         else:
-            content.append(c)
+            if depth >= 1:
+                content.append(ch)
         i += 1
-    return "".join(content), len(text)
+    return "".join(content), len(s)
 
 
 def replace_fractions(text: str) -> str:
-    """Replace \\frac{num}{den} with (num) / (den) handling nested braces safely."""
-    while "\\frac{" in text:
-        idx = text.find("\\frac{")
-        num_start = idx + len("\\frac")
-        num, num_end = extract_braced(text, num_start)
-        while num_end < len(text) and text[num_end].isspace():
-            num_end += 1
+    """Recursively convert LaTeX fractions \\frac{num}{den} to (num) / (den) handling nested braces."""
+    pattern = r"\\frac\{"
+    while True:
+        m = re.search(pattern, text)
+        if not m:
+            break
+        idx = m.start()
+        num, num_end = extract_braced(text, m.end() - 1)
         if num_end < len(text) and text[num_end] == "{":
             den, den_end = extract_braced(text, num_end)
             text = text[:idx] + f"({num}) / ({den})" + text[den_end:]
@@ -59,7 +62,8 @@ def latex_to_unicode(text: str) -> str:
     """Convert LaTeX mathematical notation to clean, structured Unicode math text."""
     s = text.strip()
 
-    # Replace escaped currency amounts like \$19.99
+    # Replace escaped percent and currency amounts
+    s = s.replace(r"\%", "%")
     s = re.sub(r"\\\$([0-9.]+)", r"$\1", s)
 
     # Strip $$ delimiters if present
@@ -122,6 +126,7 @@ def latex_to_unicode(text: str) -> str:
         (r"\\left\[", "["),
         (r"\\right\]", "]"),
         (r"\\_", "_"),
+        (r"\\%", "%"),
     ]
     for pattern, rep in replacements:
         s = re.sub(pattern, rep, s)
@@ -201,13 +206,12 @@ def assign_table_column_widths(table, num_cols: int, header_texts: list[str]) ->
     hdr_joined = " ".join(header_texts).lower()
 
     if num_cols == 10:
-        # Table 1: Multi-dimensional comparator matrix
         widths = [1.10] + [0.60] * 9
     elif num_cols == 9:
-        # Table 5: Resource Consumption
+        # Table 5: Resource Consumption (9 cols)
         widths = [0.90] + [0.70] * 8
     elif num_cols == 8:
-        # Table 4: Failure Decomposition
+        # Table 4: Failure Decomposition (8 cols)
         widths = [0.90, 0.80, 0.90, 0.95, 0.95, 0.70, 0.65, 0.65]
     elif num_cols == 6:
         if "retrieval depth" in hdr_joined:
@@ -216,9 +220,19 @@ def assign_table_column_widths(table, num_cols: int, header_texts: list[str]) ->
         elif "single-event" in hdr_joined:
             # Table 3: Representation Stratification
             widths = [1.00, 1.15, 1.25, 1.05, 1.05, 1.00]
+        elif "h-techniquerag" in hdr_joined:
+            # Table 1b: Comparators 5-8 + RAG2ATTCK (6 cols)
+            widths = [1.25, 1.05, 1.05, 1.05, 1.05, 1.05]
         else:
-            # Table 2b: Attribution Diagnostics
-            widths = [1.10, 0.90, 1.15, 1.15, 1.10, 1.10]
+            # Table 2b: Attribution Diagnostics (6 cols)
+            # Condition, Scorable Views, Completed Outputs, Parse Failures, Invalid ATT&CK IDs, Invalid ID Rate (%)
+            widths = [1.10, 1.00, 1.15, 1.10, 1.10, 1.05]
+    elif num_cols == 5:
+        if "yang & hsu" in hdr_joined:
+            # Table 1a: Comparators 1-4 (5 cols)
+            widths = [1.30, 1.30, 1.30, 1.30, 1.30]
+        else:
+            widths = [1.30, 1.30, 1.30, 1.30, 1.30]
     elif num_cols == 4:
         # Table 6: Cryptographic Reproducibility Manifest
         widths = [1.60, 1.80, 0.90, 2.20]
@@ -249,6 +263,7 @@ def format_inline_runs(
     default_color: RGBColor | None = None,
 ):
     """Parse inline markdown (bold, italic, code, math, links, currency) and append runs to paragraph."""
+    text = text.replace(r"\%", "%")
     token_pattern = re.compile(
         r"(\\\*|\\\$[0-9.]+|\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)]+\)|\$[^$]+\$)"
     )
@@ -399,11 +414,22 @@ def build_docx_from_markdown(md_path: Path, output_docx_path: Path):
     style_normal.paragraph_format.line_spacing = 1.15
     style_normal.paragraph_format.space_after = Pt(4)
 
+    # Clean Title style in Word template to eliminate default blue border/rule and ensure black text
+    if "Title" in doc.styles:
+        title_style = doc.styles["Title"]
+        title_style.font.name = "Georgia"
+        title_style.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
+        title_pPr = title_style._element.get_or_add_pPr()
+        bdr = title_pPr.find(qn("w:pBdr"))
+        if bdr is not None:
+            title_pPr.remove(bdr)
+
     lines = md_path.read_text(encoding="utf-8").splitlines()
     in_code_block = False
     code_lines = []
     in_table = False
     table_lines = []
+    in_references = False
 
     def flush_table():
         nonlocal in_table, table_lines
@@ -433,6 +459,7 @@ def build_docx_from_markdown(md_path: Path, output_docx_path: Path):
         table.autofit = False
 
         # Select font size and margins based on column count
+        hdr_str = " ".join(raw_rows[0]).lower() if raw_rows else ""
         if num_cols >= 9:
             cell_font_size = Pt(7.5)
             pad_top, pad_bot, pad_left, pad_right = 60, 60, 60, 60
@@ -440,8 +467,11 @@ def build_docx_from_markdown(md_path: Path, output_docx_path: Path):
             cell_font_size = Pt(8.0)
             pad_top, pad_bot, pad_left, pad_right = 70, 70, 70, 70
         elif num_cols == 6:
-            cell_font_size = Pt(8.5)
-            pad_top, pad_bot, pad_left, pad_right = 80, 80, 80, 80
+            cell_font_size = Pt(8.0) if "h-techniquerag" in hdr_str else Pt(8.5)
+            pad_top, pad_bot, pad_left, pad_right = 70, 70, 70, 70
+        elif num_cols == 5:
+            cell_font_size = Pt(8.0) if "yang & hsu" in hdr_str else Pt(8.5)
+            pad_top, pad_bot, pad_left, pad_right = 70, 70, 70, 70
         else:
             cell_font_size = Pt(9.0)
             pad_top, pad_bot, pad_left, pad_right = 100, 100, 100, 100
@@ -584,19 +614,25 @@ def build_docx_from_markdown(md_path: Path, output_docx_path: Path):
 
         # Handle Headings
         if line.startswith("# "):
-            h = doc.add_heading(level=0)
-            h.paragraph_format.space_before = Pt(12)
-            h.paragraph_format.space_after = Pt(8)
-            run = h.add_run(line[2:].strip())
+            # Standard academic title formatting: pure black text, NO blue borders or rules
+            p = doc.add_paragraph()
+            p.paragraph_format.space_before = Pt(12)
+            p.paragraph_format.space_after = Pt(8)
+            run = p.add_run(line[2:].strip())
             run.font.name = "Georgia"
             run.font.size = Pt(20)
             run.font.bold = True
-            run.font.color.rgb = RGBColor(0x0A, 0x25, 0x40)
+            run.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
         elif line.startswith("## "):
+            sec_title = line[3:].strip()
+            if sec_title.lower().startswith("references"):
+                in_references = True
+            else:
+                in_references = False
             h = doc.add_heading(level=1)
             h.paragraph_format.space_before = Pt(14)
             h.paragraph_format.space_after = Pt(6)
-            run = h.add_run(line[3:].strip())
+            run = h.add_run(sec_title)
             run.font.name = "Georgia"
             run.font.size = Pt(14)
             run.font.bold = True
@@ -651,11 +687,32 @@ def build_docx_from_markdown(md_path: Path, output_docx_path: Path):
             content = line.strip()[2:]
             format_inline_runs(p, content)
         elif re.match(r"^\d+\.\s+", line.strip()):
-            p = doc.add_paragraph(style="List Number")
-            p.paragraph_format.space_after = Pt(2)
-            p.paragraph_format.line_spacing = 1.15
-            content = re.sub(r"^\d+\.\s+", "", line.strip())
-            format_inline_runs(p, content)
+            m = re.match(r"^(\d+)\.\s+(.*)", line.strip())
+            num_str, content = m.groups()
+            p = doc.add_paragraph()
+            if in_references:
+                # Academic bibliography formatting with static numbering and hanging indent
+                p.paragraph_format.left_indent = Inches(0.35)
+                p.paragraph_format.first_line_indent = Inches(-0.35)
+                p.paragraph_format.space_after = Pt(4)
+                p.paragraph_format.line_spacing = 1.15
+                num_run = p.add_run(f"[{num_str}] ")
+                num_run.bold = True
+                num_run.font.name = "Calibri"
+                num_run.font.size = Pt(10)
+                num_run.font.color.rgb = RGBColor(0x24, 0x29, 0x2F)
+                format_inline_runs(p, content, font_size=Pt(10))
+            else:
+                # Static numbered items to prevent Word global list counter bleeding
+                p.paragraph_format.left_indent = Inches(0.30)
+                p.paragraph_format.first_line_indent = Inches(-0.20)
+                p.paragraph_format.space_after = Pt(2)
+                p.paragraph_format.line_spacing = 1.15
+                num_run = p.add_run(f"{num_str}. ")
+                num_run.bold = True
+                num_run.font.name = "Calibri"
+                num_run.font.color.rgb = RGBColor(0x24, 0x29, 0x2F)
+                format_inline_runs(p, content)
         elif line.strip():
             p = doc.add_paragraph()
             format_inline_runs(p, line.strip())
@@ -680,18 +737,71 @@ def audit_docx_quality(doc_path: Path):
     tex_pattern = re.compile(r"\\[a-zA-Z]+|\$\$")
     errors = []
 
-    # 1. Audit all paragraphs for raw TeX leakage
+    # 1. Audit Title paragraph (P0): pure black text, NO w:pBdr
+    p0 = doc.paragraphs[0]
+    if not p0.text.startswith("Evaluating MITRE ATT&CK-Grounded RAG"):
+        errors.append(f"P0 text does not start with Title: '{p0.text[:60]}'")
+    p0_xml = p0._element.xml
+    if "w:pBdr" in p0_xml:
+        errors.append(f"Title paragraph has w:pBdr element: {p0_xml[:200]}")
+    for r in p0.runs:
+        if r.font.color and r.font.color.rgb:
+            if r.font.color.rgb != RGBColor(0, 0, 0):
+                errors.append(f"Title run has non-black color: {r.font.color.rgb}")
+
+    # 2. Audit all paragraphs for raw TeX leakage and capture References
+    in_ref_sec = False
+    ref_paragraphs = []
     for p_idx, p in enumerate(doc.paragraphs):
         text = p.text
-        # Skip paragraphs inside code blocks (identified by Consolas font)
+        if text.strip() == "References" and p.style.name.startswith("Heading"):
+            in_ref_sec = True
+            continue
+        if in_ref_sec:
+            if p.style.name.startswith("Heading"):
+                in_ref_sec = False
+            elif text.strip().startswith("[") and "]" in text:
+                ref_paragraphs.append((p_idx, p))
+
         is_code = any(r.font.name == "Consolas" for r in p.runs)
         if not is_code:
             matches = tex_pattern.findall(text)
             if matches:
                 errors.append(f"Paragraph {p_idx} has raw TeX tokens {matches}: '{text[:120]}...'")
 
-    # 2. Audit all table cells for raw TeX leakage, pagination rules, and width constraints
+    # 3. Audit References numbering: exactly 13 references, numbered [1] to [13], no List Number style
+    if len(ref_paragraphs) != 13:
+        errors.append(f"Expected 13 references in References section, found {len(ref_paragraphs)}")
+    else:
+        for expected_num, (p_idx, p) in enumerate(ref_paragraphs, 1):
+            expected_prefix = f"[{expected_num}]"
+            if not p.text.strip().startswith(expected_prefix):
+                errors.append(
+                    f"Ref paragraph {p_idx} expected prefix '{expected_prefix}', got '{p.text[:20]}'"
+                )
+            if p.style.name == "List Number":
+                errors.append(f"Ref paragraph {p_idx} uses List Number style instead of static numbering")
+
+    # 4. Audit all table cells for raw TeX leakage, pagination rules, and width constraints
+    t1a_found = False
+    t1b_found = False
+    t2b_found = False
+
     for t_idx, table in enumerate(doc.tables):
+        row0_text = " ".join(c.text.strip() for c in table.rows[0].cells).lower()
+        if "yang & hsu" in row0_text:
+            t1a_found = True
+            if len(table.columns) != 5:
+                errors.append(f"Table 1a expected 5 cols, got {len(table.columns)}")
+        elif "h-techniquerag" in row0_text:
+            t1b_found = True
+            if len(table.columns) != 6:
+                errors.append(f"Table 1b expected 6 cols, got {len(table.columns)}")
+        elif "completed outputs" in row0_text:
+            t2b_found = True
+            if "macro precision" in row0_text or "macro recall" in row0_text:
+                errors.append("Table 2b still contains unexported macro precision/recall!")
+
         # Header check
         row0_xml = table.rows[0]._tr.xml
         if "<w:tblHeader" not in row0_xml:
@@ -718,6 +828,13 @@ def audit_docx_quality(doc_path: Path):
         if col_widths_sum > 6.55:
             errors.append(f"Table {t_idx} width {col_widths_sum:.2f}in exceeds printable limit of 6.50in")
 
+    if not t1a_found:
+        errors.append("Table 1a (Comparators 1-4) not found in DOCX tables")
+    if not t1b_found:
+        errors.append("Table 1b (Comparators 5-8 + RAG2ATTCK) not found in DOCX tables")
+    if not t2b_found:
+        errors.append("Table 2b (Attribution Diagnostics) not found in DOCX tables")
+
     if errors:
         error_msg = f"DOCX QA Audit FAILED with {len(errors)} error(s):\n" + "\n".join(errors)
         raise AssertionError(error_msg)
@@ -725,7 +842,8 @@ def audit_docx_quality(doc_path: Path):
     print(
         f"DOCX QA Audit PASSED: 0 raw TeX tokens across {len(doc.paragraphs)} paragraphs and "
         f"{len(doc.tables)} tables ({sum(len(t.rows) for t in doc.tables)} rows). "
-        f"All tables have cantSplit on all rows, tblHeader on row 0, and width <= 6.50 inches."
+        f"Title is pure black with no borders. References [1]..[13] statically numbered. "
+        f"Table 1a and Table 1b verified. All tables have cantSplit on all rows, tblHeader on row 0, and width <= 6.50 inches."
     )
 
 

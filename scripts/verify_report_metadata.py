@@ -9,7 +9,8 @@ Verifies:
    - Case B: Unpredicted class (support>0, pred=0) -> precision=None, recall=0.0, f1=0.0
    - Case C: Unobserved false positive (support=0, pred>0) -> precision=0.0, recall=None, f1=0.0
    - All three cases contribute 0.0 to the condition Macro-F1 numerator sum divided by 474.
-5. Word document formatting invariants (Title color/borders, References [1]..[13], Table widths <= 6.50in).
+5. Word document formatting invariants (Title color/borders, References [1]..[13],
+   Table widths <= 6.50in).
 """
 
 from __future__ import annotations
@@ -56,7 +57,11 @@ def verify_markdown_table6(md_path: Path) -> dict[str, str]:
         raise AssertionError("Table 6 marker not found in scientific_report.md")
 
     t6_section = text.split(t6_marker)[1].split("### 8.3")[0]
-    rows = [line.strip() for line in t6_section.strip().splitlines() if line.strip().startswith("|")]
+    rows = [
+        line.strip()
+        for line in t6_section.strip().splitlines()
+        if line.strip().startswith("|")
+    ]
 
     # Skip header and separator
     data_rows = [r for r in rows if not re.match(r"^\|\s*:?---+", r)][1:]
@@ -128,7 +133,9 @@ def verify_docx_table6(docx_path: Path, verified_hashes: dict[tuple[str, str], s
 
 
 def verify_evaluator_zero_denominator_cases():
-    """Perform read-only known-answer verification for all 3 zero-denominator cases under D2j NULL."""
+    """Perform read-only known-answer verification for all 3 zero-denominator cases
+    under D2j NULL.
+    """
     print("--- 3. Verifying Evaluator Zero-Denominator Invariants ---")
     proto_data = json.loads(Path("config/experiment_protocol_v1.json").read_text(encoding="utf-8"))
     protocol = ScientificProtocolApproval(**proto_data)
@@ -197,9 +204,14 @@ def verify_evaluator_zero_denominator_cases():
     cond_metrics = compute_condition_metrics(records, inputs, protocol, "no_rag")
     # All 3 techniques contribute 0.0 to f1_sum, so macro_f1 = 0.0 / 3 = 0.0
     assert cond_metrics["macro_f1"] == 0.0, f"Expected macro_f1=0.0, got {cond_metrics['macro_f1']}"
-    assert "macro_precision" not in cond_metrics, "Macro precision should not be in condition metrics"
+    assert (
+        "macro_precision" not in cond_metrics
+    ), "Macro precision should not be in condition metrics"
     assert "macro_recall" not in cond_metrics, "Macro recall should not be in condition metrics"
-    print("  [OK] Condition Macro-F1 correctly sums unobserved classes as 0.0 without precision/recall bleed")
+    print(
+        "  [OK] Condition Macro-F1 correctly sums unobserved classes as 0.0 "
+        "without precision/recall bleed"
+    )
 
 
 def verify_docx_formatting_invariants(docx_path: Path):
@@ -274,7 +286,8 @@ def verify_stix_v19_2_census(md_path: Path):
 
     print(
         f"  [OK] Raw STIX v19.2 Census: {total_ap} attack-patterns, {len(revoked)} revoked, "
-        f"{len(deprecated)} deprecated, {len(unique_inactive)} unique inactive (0 overlap), {len(active)} active"
+        f"{len(deprecated)} deprecated, {len(unique_inactive)} unique inactive (0 overlap), "
+        f"{len(active)} active"
     )
     print(
         f"  [OK] Active Windows Corpus: {len(active_windows)} techniques "
@@ -283,13 +296,17 @@ def verify_stix_v19_2_census(md_path: Path):
 
     # Verify report markdown text consistency
     md_text = md_path.read_text(encoding="utf-8")
-    assert "**Project:** RAG2ATT&CK" in md_text, "Report header must declare **Project:** RAG2ATT&CK"
+    assert (
+        "**Project:** RAG2ATT&CK" in md_text
+    ), "Report header must declare **Project:** RAG2ATT&CK"
     assert "858" in md_text, "STIX total count 858 missing from report"
     assert "149 revoked" in md_text, "149 revoked count missing from report"
     assert "12 deprecated" in md_text, "12 deprecated count missing from report"
     assert "161 unique inactive" in md_text, "161 unique inactive count missing from report"
     assert "697 active enterprise techniques" in md_text, "697 active count missing from report"
-    assert "474 techniques and sub-techniques" in md_text, "474 active Windows count missing from report"
+    assert (
+        "474 techniques and sub-techniques" in md_text
+    ), "474 active Windows count missing from report"
     assert "176 Root Techniques" in md_text, "176 root techniques count missing from report"
     assert "298 Sub-techniques" in md_text, "298 sub-techniques count missing from report"
     print("  [OK] Report markdown text exact match with STIX v19.2 census breakdown and header")

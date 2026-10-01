@@ -42,7 +42,9 @@ def extract_braced(s: str, start_brace_idx: int) -> tuple[str, int]:
 
 
 def replace_fractions(text: str) -> str:
-    """Recursively convert LaTeX fractions \\frac{num}{den} to (num) / (den) handling nested braces."""
+    """Recursively convert LaTeX fractions \\frac{num}{den} to (num) / (den)
+    handling nested braces.
+    """
     pattern = r"\\frac\{"
     while True:
         m = re.search(pattern, text)
@@ -189,7 +191,9 @@ def set_cell_border(cell, **kwargs):
 
 
 def apply_table_pagination_rules(table):
-    """Ensure repeat header on page break (<w:tblHeader/>) and prevent row splitting (<w:cantSplit/>)."""
+    """Ensure repeat header on page break (<w:tblHeader/>) and
+    prevent row splitting (<w:cantSplit/>).
+    """
     for r_idx, row in enumerate(table.rows):
         trPr = row._tr.get_or_add_trPr()
         cantSplit = parse_xml(f'<w:cantSplit {nsdecls("w")}/>')
@@ -225,7 +229,8 @@ def assign_table_column_widths(table, num_cols: int, header_texts: list[str]) ->
             widths = [1.25, 1.05, 1.05, 1.05, 1.05, 1.05]
         else:
             # Table 2b: Attribution Diagnostics (6 cols)
-            # Condition, Scorable Views, Completed Outputs, Parse Failures, Invalid ATT&CK IDs, Invalid ID Rate (%)
+            # Condition, Scorable Views, Completed Outputs, Parse Failures,
+            # Invalid ATT&CK IDs, Invalid ID Rate (%)
             widths = [1.10, 1.00, 1.15, 1.10, 1.10, 1.05]
     elif num_cols == 5:
         if "yang & hsu" in hdr_joined:
@@ -262,7 +267,9 @@ def format_inline_runs(
     default_italic: bool = False,
     default_color: RGBColor | None = None,
 ):
-    """Parse inline markdown (bold, italic, code, math, links, currency) and append runs to paragraph."""
+    """Parse inline markdown (bold, italic, code, math, links, currency)
+    and append runs to paragraph.
+    """
     text = text.replace(r"\%", "%")
     token_pattern = re.compile(
         r"(\\\*|\\\$[0-9.]+|\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)]+\)|\$[^$]+\$)"
@@ -390,7 +397,9 @@ def add_display_math(doc, math_text: str):
     shd = parse_xml(f'<w:shd {nsdecls("w")} w:fill="F8FAFC"/>')
     pPr.append(shd)
     pBdr = parse_xml(
-        f'<w:pBdr {nsdecls("w")}><w:left w:val="single" w:sz="18" w:space="8" w:color="0969DA"/></w:pBdr>'
+        f'<w:pBdr {nsdecls("w")}>'
+        '<w:left w:val="single" w:sz="18" w:space="8" w:color="0969DA"/>'
+        "</w:pBdr>"
     )
     pPr.append(pBdr)
 
@@ -662,7 +671,9 @@ def build_docx_from_markdown(md_path: Path, output_docx_path: Path):
             p.paragraph_format.space_after = Pt(6)
             pPr = p._element.get_or_add_pPr()
             pBdr = parse_xml(
-                f'<w:pBdr {nsdecls("w")}><w:bottom w:val="single" w:sz="6" w:space="1" w:color="D0D7DE"/></w:pBdr>'
+                f'<w:pBdr {nsdecls("w")}>'
+                '<w:bottom w:val="single" w:sz="6" w:space="1" w:color="D0D7DE"/>'
+                "</w:pBdr>"
             )
             pPr.append(pBdr)
         elif line.startswith("> "):
@@ -675,7 +686,9 @@ def build_docx_from_markdown(md_path: Path, output_docx_path: Path):
             format_inline_runs(p, quote_text)
             pPr = p._element.get_or_add_pPr()
             pBdr = parse_xml(
-                f'<w:pBdr {nsdecls("w")}><w:left w:val="single" w:sz="24" w:space="8" w:color="0969DA"/></w:pBdr>'
+                f'<w:pBdr {nsdecls("w")}>'
+                '<w:left w:val="single" w:sz="24" w:space="8" w:color="0969DA"/>'
+                "</w:pBdr>"
             )
             pPr.append(pBdr)
             shd = parse_xml(f'<w:shd {nsdecls("w")} w:fill="F6F8FA"/>')
@@ -769,7 +782,8 @@ def audit_docx_quality(doc_path: Path):
             if matches:
                 errors.append(f"Paragraph {p_idx} has raw TeX tokens {matches}: '{text[:120]}...'")
 
-    # 3. Audit References numbering: exactly 13 references, numbered [1] to [13], no List Number style
+    # 3. Audit References numbering: exactly 13 references, numbered [1] to [13],
+    # no List Number style
     if len(ref_paragraphs) != 13:
         errors.append(f"Expected 13 references in References section, found {len(ref_paragraphs)}")
     else:
@@ -777,10 +791,13 @@ def audit_docx_quality(doc_path: Path):
             expected_prefix = f"[{expected_num}]"
             if not p.text.strip().startswith(expected_prefix):
                 errors.append(
-                    f"Ref paragraph {p_idx} expected prefix '{expected_prefix}', got '{p.text[:20]}'"
+                    f"Ref paragraph {p_idx} expected prefix '{expected_prefix}', "
+                    f"got '{p.text[:20]}'"
                 )
             if p.style.name == "List Number":
-                errors.append(f"Ref paragraph {p_idx} uses List Number style instead of static numbering")
+                errors.append(
+                    f"Ref paragraph {p_idx} uses List Number style instead of static numbering"
+                )
 
     # 4. Audit all table cells for raw TeX leakage, pagination rules, and width constraints
     t1a_found = False
@@ -820,13 +837,16 @@ def audit_docx_quality(doc_path: Path):
                 matches = tex_pattern.findall(cell_text)
                 if matches:
                     errors.append(
-                        f"Table {t_idx} row {r_idx} col {c_idx} has raw TeX {matches}: '{cell_text[:80]}'"
+                        f"Table {t_idx} row {r_idx} col {c_idx} has raw TeX {matches}: "
+                        f"'{cell_text[:80]}'"
                     )
 
         # Width check (sum of column widths)
         col_widths_sum = sum(col.width.inches for col in table.columns if col.width)
         if col_widths_sum > 6.55:
-            errors.append(f"Table {t_idx} width {col_widths_sum:.2f}in exceeds printable limit of 6.50in")
+            errors.append(
+                f"Table {t_idx} width {col_widths_sum:.2f}in exceeds printable limit of 6.50in"
+            )
 
     if not t1a_found:
         errors.append("Table 1a (Comparators 1-4) not found in DOCX tables")
@@ -842,8 +862,9 @@ def audit_docx_quality(doc_path: Path):
     print(
         f"DOCX QA Audit PASSED: 0 raw TeX tokens across {len(doc.paragraphs)} paragraphs and "
         f"{len(doc.tables)} tables ({sum(len(t.rows) for t in doc.tables)} rows). "
-        f"Title is pure black with no borders. References [1]..[13] statically numbered. "
-        f"Table 1a and Table 1b verified. All tables have cantSplit on all rows, tblHeader on row 0, and width <= 6.50 inches."
+        "Title is pure black with no borders. References [1]..[13] statically numbered. "
+        "Table 1a and Table 1b verified. All tables have cantSplit on all rows, "
+        "tblHeader on row 0, and width <= 6.50 inches."
     )
 
 

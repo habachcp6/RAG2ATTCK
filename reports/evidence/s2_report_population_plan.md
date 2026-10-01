@@ -3,9 +3,9 @@
 **Task Handle:** Subagent C: Research Report & Publication Lead (Phase S2 Planning)  
 **Assigned Worktree:** `D:/RAG2ATTCK-worktrees/report-s1`  
 **Git Branch:** `codex/s1-report-related-work` (PR #25)  
-**PRE_SHA:** `3d7a06cb0eaf6a45a876e3d8c450b689831dfee4`  
+**PRE_SHA:** `b4bd35ffe1b947027c858835c477c0bdef9c8118`  
 **Date:** October 2026  
-**Document Status:** FINAL — APPROVED FOR S2 EXECUTION  
+**Document Status:** DRAFT — PENDING CODEX SUPERVISOR REVIEW  
 **Operational Invariant 1 (Strictly Plan-Only):** Strictly **ZERO** invented numerical results; all pending experimental tables and narrative statistics remain explicit schemas with formal placeholders (`[TBD_AT_EXECUTION]`) until canonical execution outputs are finalized.  
 **Operational Invariant 2 (Empirical Grounding):** Strictly **ZERO** mock, fixture, or synthetic pilot numbers shall be presented as canonical findings. All populated figures and metrics must trace bijectively to authoritative outputs in `outputs/canonical_evaluation/` and `outputs/canonical_analysis/`.  
 **Operational Invariant 3 (Zero Egress Invariant):** All post-execution analysis, report population, figure generation, and compilation scripts execute under the offline socket guard (`OFFLINE_GUARD: installed=True attempted_egress=0`).  
@@ -37,8 +37,9 @@ The purpose of this document is to specify the **complete, deterministic populat
 |      * retrieval_conditional_metrics.json                                                          |
 |      * failure_decomposition.json                                                                  |
 |      * run_provenance.json                                                                         |
-|    - analysis runner -> outputs/canonical_analysis/                                                |
-|      * pairwise_representation_comparison.json, resource_scaling.json                              |
+|    - Specialist B analysis runner -> outputs/canonical_analysis/                                    |
+|      * rq_analysis.json (unified analysis containing: rq1, rq2, rq3,                               |
+|        rq3.tradeoffs_by_condition, and rq3.view_diagnostics)                                       |
 +----------------------------------------------------------------------------------------------------+
                                                   |
                                                   v
@@ -53,8 +54,7 @@ The purpose of this document is to specify the **complete, deterministic populat
 | 4. PUBLICATION COMPILATION & VISUAL QA                                                             |
 |    - scripts/export_report_docx.py -> docs/report/scientific_report.docx                            |
 |    - Native Word COM export -> docs/report/scientific_report.pdf                                   |
-|    - pypdfium2 rasterization & visual QA inspection                                                 |
-|    - scripts/verify_report_metadata.py (re-verified under offline guard)                           |
+|    - Independent offline QA: verify_report_metadata.py & pypdfium2 visual inspection               |
 +----------------------------------------------------------------------------------------------------+
 ```
 
@@ -68,6 +68,8 @@ The purpose of this document is to specify the **complete, deterministic populat
 > 6. `run_provenance.json`
 >
 > Legacy or non-standard file identifiers (such as `evaluation_summary.json` or `condition_metrics.json`) **do NOT exist** in the RAG2ATTCK codebase and must never be referenced by population or analysis scripts. All evaluation metrics are parsed directly and authoritatively from these six native exports.
+>
+> **Specialist B Analysis Contract Alignment:** Specialist B exports **a single unified analysis deliverable**: `outputs/canonical_analysis/rq_analysis.json`. Specialist B does *not* export multi-file splits (such as `pairwise_representation_comparison.json` or `resource_scaling.json`). All research question syntheses, representation comparisons, subset macro calculations, and cost-latency trade-offs are structured under canonical top-level branches: `rq1`, `rq2`, `rq3`, `rq3.tradeoffs_by_condition`, and `rq3.view_diagnostics`.
 
 ---
 
@@ -81,12 +83,12 @@ Every placeholder in `docs/report/scientific_report.md` and `docs/report/scienti
 | :--- | :--- | :--- | :--- |
 | **Table 1a** | Comparator Matrix (Part 1: Comparators 1–4) | *Frozen in Phase S1* | Fully populated; literature review anchor. |
 | **Table 1b** | Comparator Matrix (Part 2: Comparators 5–8 + RAG2ATTCK) | *Frozen in Phase S1* | Fully populated; literature review anchor. |
-| **Table 2a** | Primary Attribution Performance Across Experimental Conditions | `outputs/canonical_evaluation/per_condition_metrics.json` | `.conditions[<condition>]` |
-| **Table 2b** | Attribution Diagnostic Metrics Across Experimental Conditions | `outputs/canonical_evaluation/per_condition_metrics.json`<br>`outputs/canonical_evaluation/failure_decomposition.json` | `.conditions[<condition>]`<br>`.by_condition[<condition>]` |
-| **Table 3** | Representation Stratification: Single vs. Contextual Views | `outputs/canonical_analysis/pairwise_representation_comparison.json` | `.by_condition[<condition>]` |
-| **Table 4** | Decoupled Failure Decomposition Matrix | `outputs/canonical_evaluation/failure_decomposition.json`<br>`outputs/canonical_evaluation/retrieval_conditional_metrics.json` | `.by_condition[<condition>]` |
-| **Table 5** | Resource Consumption and Latency Scaling Across Depths | `outputs/canonical_analysis/resource_scaling.json` | `.by_condition[<condition>]` |
-| **Table 6** | Cryptographic Reproducibility Manifest | File System Checksums (`Get-FileHash`) | Prediction files + `study_ledger.json` SHA-256 |
+| **Table 2a** | Primary Attribution Performance Across Experimental Conditions | `outputs/canonical_evaluation/per_condition_metrics.json`<br>`outputs/canonical_analysis/rq_analysis.json` | `/conditions/{c}/accuracy_end_to_end`<br>`/conditions/{c}/accuracy_valid_outputs`<br>`/conditions/{c}/macro_f1`<br>`.rq1.mapped_single_accuracy`, `.rq1.mapped_multi_accuracy` |
+| **Table 2b** | Attribution Diagnostic Metrics Across Experimental Conditions | `outputs/canonical_evaluation/per_condition_metrics.json`<br>`outputs/canonical_evaluation/failure_decomposition.json` | `/conditions/{c}/completed_record_count`<br>`/conditions/{c}/parse_failure_count`<br>`/conditions/{c}/invalid_id_count`<br>`/conditions/{c}/invalid_id_rate` (native denominator) |
+| **Table 3** | Representation Stratification: Single vs. Contextual Views | `outputs/canonical_analysis/rq_analysis.json` | `.rq1.representation_stratification`<br>`.rq1.pairwise_comparison` |
+| **Table 4** | Decoupled Failure Decomposition Matrix | `outputs/canonical_evaluation/failure_decomposition.json`<br>`outputs/canonical_evaluation/retrieval_conditional_metrics.json` | `/by_condition/{c}`<br>`retrieval_miss_count`, `valid_but_wrong_classification_count`<br>`retrieval_failure_correct_count`, overlap tracking |
+| **Table 5** | Resource Consumption and Latency Scaling Across Depths | `outputs/canonical_analysis/rq_analysis.json` | `.rq3.by_condition[{c}]`<br>`.rq3.tradeoffs_by_condition` |
+| **Table 6** | Cryptographic Reproducibility Manifest | File System Checksums (`hashlib.sha256`) | 12 baseline hashes preserved intact;<br>runtime prediction & ledger hashes in dedicated supplementary section |
 
 ---
 
@@ -95,18 +97,20 @@ Every placeholder in `docs/report/scientific_report.md` and `docs/report/scienti
 #### A. Table 2a: Primary Attribution Performance Across Conditions
 - **Target Section:** Section 6.1 (RQ1: Retrieval-Augmented Attribution Efficacy)
 - **Target Rows:** 5 experimental conditions (`no_rag`, `rag_k1`, `rag_k3`, `rag_k5`, `rag_k10`)
-- **Source Artifact:** `outputs/canonical_evaluation/per_condition_metrics.json`
+- **Source Artifacts:** `outputs/canonical_evaluation/per_condition_metrics.json` (canonical evaluator) and `outputs/canonical_analysis/rq_analysis.json` (Specialist B analysis deliverable)
 - **Field Mappings:**
   1. `Scorable Views ($N$)`: Fixed integer `718` across all rows (Protocol Decisions D2b & D2c: 678 single-GT + 40 multi-GT mapped positive views).
-  2. `Headline Accuracy ($\text{Acc}_{\text{e2e}}$)`: Extracted from `conditions[c].accuracy`. Formatted as `XX.XX%` (e.g., `42.34%`).
-  3. `Valid Output Accuracy ($\text{Acc}_{\text{valid}}$)`: Extracted from `conditions[c].accuracy_valid`. Formatted as `XX.XX%`.
-  4. `474-Class Macro-F1`: Extracted from `conditions[c].macro_f1`. Formatted as `XX.XX%` (or decimal `0.XXXX`).
-  5. `Mapped-Single Acc ($N=678$)`: Extracted from `conditions[c].mapped_single_accuracy`. Formatted as `XX.XX%`.
-  6. `Mapped-Multi Acc ($N=40$)`: Extracted from `conditions[c].mapped_multi_accuracy`. Formatted as `XX.XX%`.
+  2. `Headline Accuracy ($\text{Acc}_{\text{e2e}}$)`: Extracted from canonical pointer `/conditions/{c}/accuracy_end_to_end`. Formatted as `XX.XX%` (e.g., `42.34%`).
+  3. `Valid Output Accuracy ($\text{Acc}_{\text{valid}}$)`: Extracted from canonical pointer `/conditions/{c}/accuracy_valid_outputs`. Formatted as `XX.XX%`.
+  4. `474-Class Macro-F1`: Extracted from canonical pointer `/conditions/{c}/macro_f1`. Formatted as `XX.XX%` (or decimal `0.XXXX`).
+  5. `Mapped-Single Acc ($N=678$)`: Extracted from Specialist B's `outputs/canonical_analysis/rq_analysis.json` under `.rq1.by_condition[c].mapped_single_accuracy`. Formatted as `XX.XX%`.
+  6. `Mapped-Multi Acc ($N=40$)`: Extracted from Specialist B's `outputs/canonical_analysis/rq_analysis.json` under `.rq1.by_condition[c].mapped_multi_accuracy`. Formatted as `XX.XX%`.
 - **Units & Formatting:** Metric percentages `XX.XX%`; sample counts integer $N$.
-- **Methodological Invariants:**
-  - Macro-F1 is evaluated across the entire fixed 474-technique active Windows universe ($N=474$).
-  - Unobserved classes (Case A: support=0, pred=0) contribute exactly 0.0 to the numerator sum (`f1_sum += 0.0`), dividing by 474.
+- **Methodological Invariants & The Three Distinct Denominators:**
+  - **Denominator 1: Fixed Positive Scorable Views ($N=718$):** The authoritative denominator for condition headline accuracy ($\text{Acc}_{\text{e2e}} = \text{correct\_count} / 718$). Comprises 678 single-GT and 40 multi-GT mapped positive views across the 1,280 TEST views.
+  - **Denominator 2: Logical Completed Records ($N=1,280$ per condition):** All 1,280 samples dispatched per condition. Terminal completed attempts (`completed_record_count`) count all records with terminal parse status $\in \{\text{VALID}, \text{INVALID\_ID}, \text{MALFORMED\_RESPONSE}\}$. Provider failures and parse failures natively divide by `logical_sample_count` ($1,280$).
+  - **Denominator 3: Active Windows Taxonomy Universe ($N=474$ classes):** Every technique class in the frozen 474-class universe is evaluated. Unobserved classes (Case A: support=0, pred=0; Case B: support>0, pred=0; Case C: support=0, pred>0) contribute exactly 0.0 to the numerator sum (`f1_sum += 0.0`), dividing by 474.
+  - **Vetted Offline Producer Invariant:** Breakdown accuracies and Macro-F1 metrics for single-GT ($N=678$) and multi-GT ($N=40$) subsets do NOT exist as native fields in frozen `per_condition_metrics.json`. They must be computed and provided by Specialist B's vetted offline analysis deliverable (`outputs/canonical_analysis/rq_analysis.json` branch `rq1`) or a dedicated vetted offline producer script (`scripts/reproduce_study.py`) evaluated over the scorable view subsets.
   - Multi-label correctness is governed by `ANY_MATCH` ($I_{\text{correct}} = 1$ if predicted ID $\in Y_{\text{GT}}$).
   - Headline accuracy incorporates provider and parse failures in the denominator.
 
@@ -115,23 +119,24 @@ Every placeholder in `docs/report/scientific_report.md` and `docs/report/scienti
 - **Target Rows:** 5 experimental conditions
 - **Source Artifacts:** `outputs/canonical_evaluation/per_condition_metrics.json` and `outputs/canonical_evaluation/failure_decomposition.json`
 - **Field Mappings:**
-  1. `Completed Outputs`: Extracted from `conditions[c].completed_outputs` (or computed as `718 - provider_failure_count - parse_failure_count`).
-  2. `Parse Failures`: Extracted from `conditions[c].parse_failure_count` (`parse_failure_rate`).
-  3. `Invalid ATT&CK IDs`: Extracted from `conditions[c].invalid_attack_id_count` (`invalid_attack_id_rate`).
-  4. `Invalid ID Rate (%)`: Computed as `(invalid_attack_id_count / 718) * 100`, formatted as `XX.XX%`.
+  1. `Completed Records`: Extracted from canonical pointer `/conditions/{c}/completed_record_count` (terminal completed requests out of the 1,280 logical samples where parse status $\in \{\text{VALID}, \text{INVALID\_ID}, \text{MALFORMED\_RESPONSE}\}$, including genuine parse failures and invalid IDs). This is NOT `718 minus failures`.
+  2. `Parse Failures`: Extracted from canonical pointer `/conditions/{c}/parse_failure_count` (native rate `parse_failure_rate`, dividing by `logical_sample_count` = 1,280).
+  3. `Invalid ATT&CK IDs`: Extracted from canonical pointer `/conditions/{c}/invalid_id_count`.
+  4. `Invalid ID Rate (%)`: Extracted directly from native canonical pointer `/conditions/{c}/invalid_id_rate` (which natively divides `invalid_id_count` by `completed_record_count`), formatted as `XX.XX%`.
 - **Units & Formatting:** Integer counts and percentage rates `XX.XX%`.
-- **Methodological Invariants:**
+- **Native Denominator Preservation Invariant:**
+  - Invalid-ID rate, provider failure rate, and parse failure rate use their native exported denominators (`completed_record_count` or `logical_sample_count`); population scripts must preserve native exported rates and denominators without recalculating everything over 718.
   - Strictly distinguishes `INVALID_ID` (syntactically valid JSON where predicted ID fails canonical regex or active registry lookup) from `MALFORMED_RESPONSE` (structural JSON decode failure or missing `technique_id` key).
 
 #### C. Table 3: Representation Stratification: Single-Event vs. Contextual-Event Views
 - **Target Section:** Section 6.1 (Telemetry Representation Analysis)
 - **Target Rows:** 5 experimental conditions
-- **Source Artifact:** `outputs/canonical_analysis/pairwise_representation_comparison.json`
+- **Source Artifact:** `outputs/canonical_analysis/rq_analysis.json` (Specialist B analysis deliverable, branch `rq1.representation_stratification` and `rq1.pairwise_comparison`)
 - **Field Mappings:**
-  1. `Single-Event $\text{Acc}_{\text{e2e}}$ ($N=278$)`: Single view subset headline accuracy (`single_event.accuracy`).
-  2. `Contextual-Event $\text{Acc}_{\text{e2e}}$ ($N=440$)`: Contextual view subset headline accuracy (`contextual_event.accuracy`).
-  3. `Single Macro-F1`: Macro-F1 over single views (`single_event.macro_f1`).
-  4. `Contextual Macro-F1`: Macro-F1 over contextual views (`contextual_event.macro_f1`).
+  1. `Single-Event $\text{Acc}_{\text{e2e}}$ ($N=278$)`: Single view subset headline accuracy (`rq1.representation_stratification.by_condition[c].single_event.accuracy`).
+  2. `Contextual-Event $\text{Acc}_{\text{e2e}}$ ($N=440$)`: Contextual view subset headline accuracy (`rq1.representation_stratification.by_condition[c].contextual_event.accuracy`).
+  3. `Single Macro-F1`: Macro-F1 over single views (`rq1.representation_stratification.by_condition[c].single_event.macro_f1`).
+  4. `Contextual Macro-F1`: Macro-F1 over contextual views (`rq1.representation_stratification.by_condition[c].contextual_event.macro_f1`).
   5. `$\Delta \text{Acc}$ (Context - Single)`: Computed difference in percentage points (`contextual_event.accuracy - single_event.accuracy`). Formatted with explicit sign: `+X.XX pp` or `-X.XX pp`.
 - **Units & Formatting:** Percentages `XX.XX%`; difference in percentage points `pp`.
 - **Complete Scorable Pairs Census & Methodological Invariants:**
@@ -140,37 +145,39 @@ Every placeholder in `docs/report/scientific_report.md` and `docs/report/scienti
     * **162 Contextual-Only Mapped Pairs:** Exactly 162 scenario pairs where *only* the contextual-event view is mapped (the single-event view is unmapped or ambiguous, $162 \times 1 = 162$ views).
     * **200 Unmapped Pairs:** Exactly 200 scenario pairs where *neither* view is mapped ($200 \times 2 = 400$ views; excluded per D2b/D2c).
     * **Reconciliation to 718 Mapped Positive Views:** $556 + 162 = 718$ total mapped positive views (278 single views + 440 contextual views; $278 + 162 = 440$).
-  - **Pairwise Comparison Scope:** The pairwise representation comparison in `pairwise_representation_comparison.json` (win/loss/equal rates) evaluates strictly over the **278 complete scorable pairs** where both representations possess verified ground truth, eliminating confounding from asymmetric unmapped views.
+  - **Pairwise Comparison Scope:** The pairwise representation comparison in `rq_analysis.json` (`rq1.pairwise_comparison`: win/loss/equal rates) evaluates strictly over the **278 complete scorable pairs** where both representations possess verified ground truth, eliminating confounding from asymmetric unmapped views.
+  - **Vetted Offline Producer Invariant:** Single vs. contextual subset macro-F1 and accuracy metrics are computed by Specialist B's offline analysis deliverable (`rq_analysis.json`) rather than claimed to be native fields in `per_condition_metrics.json`.
   - Stratification evaluates whether multi-event background context aids or impairs LLM reasoning.
 
 #### D. Table 4: Decoupled Failure Decomposition Matrix
 - **Target Section:** Section 6.2 (RQ2: Retrieval Quality and Failure Decomposition)
 - **Target Rows:** 5 experimental conditions
-- **Source Artifacts:** `outputs/canonical_evaluation/failure_decomposition.json` and `outputs/canonical_evaluation/retrieval_conditional_metrics.json`
+- **Source Artifacts:** `outputs/canonical_evaluation/failure_decomposition.json` and `outputs/canonical_evaluation/retrieval_conditional_metrics.json` (and `outputs/canonical_analysis/rq_analysis.json` branch `rq2`)
 - **Field Mappings:**
-  1. `Total Errors`: Computed as `718 - correct_outputs`.
-  2. `Upstream Retrieval Miss ($GT \notin \text{Top-}k$)`: Extracted from `by_condition[c].retrieval_miss_count`. Value is `N/A` for `no_rag`.
+  1. `Total Errors`: Computed as `718 - correct_count`.
+  2. `Upstream Retrieval Miss ($GT \notin \text{Top-}k$)`: Extracted from `/by_condition/{c}/retrieval_miss_count`. Value is `N/A` for `no_rag`.
   3. `Downstream Selection Failure ($GT \in \text{Top-}k \land \text{Wrong}$)`: Count of scorable views where $\text{Top-}k \cap Y_{\text{GT}} \neq \emptyset$, but the model emitted an incorrect prediction.
-  4. `Parametric Recovery ($GT \notin \text{Top-}k \land \text{Correct}$)`: Count of scorable views where $\text{Top-}k \cap Y_{\text{GT}} = \emptyset$, yet the model predicted the correct ground-truth technique using parametric knowledge alone.
-  5. `Invalid ATT&CK ID`: Extracted from `by_condition[c].invalid_attack_id_count`.
-  6. `Parse Failure`: Extracted from `by_condition[c].parse_failure_count`.
-  7. `Provider / Timeout Failure`: Extracted from `by_condition[c].provider_failure_count`.
+  4. `Correct Attribution Despite GT Absent from Top-k ($GT \notin \text{Top-}k \land \text{Correct}$)`: Extracted from `retrieval_conditional_metrics.json` via `/by_condition/{c}/retrieval_failure_correct_count`.
+     * Description: Count of scorable views where Top-k retrieval misses the ground truth ($GT \notin \text{Top-}k$), yet the LLM still outputs a correct ground-truth technique. This phenomenon is reported neutrally as non-retrieved correct attribution; it acknowledges potential partial contextual clues or telemetry artifacts in the prompt alongside pre-training memory, without asserting internal reasoning mechanisms or claiming exclusive causal attribution to parametric knowledge alone.
+  5. `Invalid ATT&CK ID`: Extracted from `/by_condition/{c}/invalid_attack_id_count`.
+  6. `Parse Failure`: Extracted from `/by_condition/{c}/parse_failure_count`.
+  7. `Provider / Timeout Failure`: Extracted from `/by_condition/{c}/provider_failure_count`.
 - **Units & Formatting:** Integer counts.
-- **Methodological Invariants:**
-  - Evaluated along independent diagnostic axes per Protocol Decision D2i (no artificial forced exclusivity).
-  - Explicitly decouples retriever limitations from LLM reasoning/selection fidelity.
+- **Methodological Invariants & Non-Exclusivity:**
+  - Evaluated along independent diagnostic axes per Protocol Decision D2i without artificial forced mutual exclusivity.
+  - Specifically, in `src/evaluation/experiment_metrics.py:compute_failure_decomposition`, upstream retrieval misses and downstream wrong classifications can overlap and are explicitly tracked via `overlap_retrieval_miss_and_wrong_classification`.
 
 #### E. Table 5: Resource Consumption and Latency Scaling Across Retrieval Depths
 - **Target Section:** Section 6.3 (RQ3: Retrieval Depth, API Cost, and Latency Trade-Offs)
 - **Target Rows:** 5 experimental conditions
-- **Source Artifact:** `outputs/canonical_analysis/resource_scaling.json` (derived from `study_ledger.json` settlements and execution records)
+- **Source Artifact:** `outputs/canonical_analysis/rq_analysis.json` (Specialist B analysis deliverable, branch `rq3` and `rq3.tradeoffs_by_condition`, derived from `study_ledger.json` settlements and execution records)
 - **Field Mappings:**
-  1. `Total Input Tokens`: Sum of prompt input tokens across all 1,280 samples in condition (`total_input_tokens`).
-  2. `Total Output Tokens`: Sum of completion and reasoning tokens (`total_output_tokens`).
-  3. `Mean Output Tokens / Req`: Average output tokens per request (`mean_output_tokens`, formatted as `XXX.X`).
-  4. `Mean Latency (s)`: Mean wall-clock latency (`mean_latency_seconds`, formatted as `X.XXs`).
-  5. `Median Latency (s)`: Median latency (`median_latency_seconds`, formatted as `X.XXs`).
-  6. `P95 Latency (s)`: 95th percentile latency (`p95_latency_seconds`, formatted as `X.XXs`).
+  1. `Total Input Tokens`: Sum of prompt input tokens across all 1,280 samples in condition (`rq3.by_condition[c].total_input_tokens`).
+  2. `Total Output Tokens`: Sum of completion and reasoning tokens (`rq3.by_condition[c].total_output_tokens`).
+  3. `Mean Output Tokens / Req`: Average output tokens per request (`rq3.by_condition[c].mean_output_tokens`, formatted as `XXX.X`).
+  4. `Mean Latency (s)`: Mean wall-clock latency (`rq3.by_condition[c].mean_latency_seconds`, formatted as `X.XXs`).
+  5. `Median Latency (s)`: Median latency (`rq3.by_condition[c].median_latency_seconds`, formatted as `X.XXs`).
+  6. `P95 Latency (s)`: 95th percentile latency (`rq3.by_condition[c].p95_latency_seconds`, formatted as `X.XXs`).
   7. `Total Cost (USD)`: Total settled condition cost formatted as `USD XX.XX` (e.g., `USD 1.84`).
   8. `Mean Cost / Query (USD)`: Average cost per query formatted as `USD X.XXXX` (e.g., `USD 0.0014`).
 - **Units & Formatting:** Token counts integer; latency seconds `X.XXs`; cost formatted as plain text `USD XX.XX` (strictly zero raw `$` to protect LaTeX math parsers).
@@ -184,15 +191,17 @@ Every placeholder in `docs/report/scientific_report.md` and `docs/report/scienti
 #### F. Table 6: Cryptographic Reproducibility Manifest
 - **Target Section:** Section 8.2 (Cryptographic Reproducibility Inventory)
 - **Source:** Direct cryptographic hashing (`hashlib.sha256()`) of disk assets
-- **Entries to Append in Phase S2:**
-  - `outputs/canonical_runs/predictions_no_rag.jsonl`: File SHA-256
-  - `outputs/canonical_runs/predictions_rag_k1.jsonl`: File SHA-256
-  - `outputs/canonical_runs/predictions_rag_k3.jsonl`: File SHA-256
-  - `outputs/canonical_runs/predictions_rag_k5.jsonl`: File SHA-256
-  - `outputs/canonical_runs/predictions_rag_k10.jsonl`: File SHA-256
-  - `outputs/canonical_runs/study_ledger.json`: File SHA-256
-  - `outputs/canonical_evaluation/run_provenance.json`: File SHA-256
-- **Existing Retained Entries:** All 12 baseline asset hashes verified in Phase S1 are retained without alteration.
+- **Baseline Preservation Invariant:** All 12 baseline asset hashes verified and frozen in Phase S1 are retained completely intact in their original table section.
+- **Dedicated Supplementary Provenance Section:**
+  - In Phase S2, canonical runtime execution and evaluation artifacts are appended into a distinct, dedicated supplementary provenance section (or sub-table), NOT modifying or replacing the 12 original baseline hashes:
+    * `outputs/canonical_runs/predictions_no_rag.jsonl`: File SHA-256
+    * `outputs/canonical_runs/predictions_rag_k1.jsonl`: File SHA-256
+    * `outputs/canonical_runs/predictions_rag_k3.jsonl`: File SHA-256
+    * `outputs/canonical_runs/predictions_rag_k5.jsonl`: File SHA-256
+    * `outputs/canonical_runs/predictions_rag_k10.jsonl`: File SHA-256
+    * `outputs/canonical_runs/study_ledger.json`: File SHA-256
+    * `outputs/canonical_evaluation/run_provenance.json`: File SHA-256
+    * `outputs/canonical_analysis/rq_analysis.json`: File SHA-256
 
 ---
 
@@ -211,9 +220,12 @@ To elevate the scientific report to publication standards, four figures will be 
 |   - Caption: Headline Attribution Accuracy and 474-Class Macro-F1 as a function of retriever depth.|
 +----------------------------------------------------------------------------------------------------+
 | Figure 2: fig2_failure_decomposition.png                                                           |
-|   - Type: Stacked 100% horizontal bar chart across 5 conditions                                    |
-|   - Categories: Upstream Miss, Downstream Selection Error, Invalid ATT&CK ID, Provider/Parse Err  |
-|   - Caption: Decoupled Failure Distribution across Experimental Conditions.                        |
+|   - Type: Grouped multi-panel bar chart with explicit empirical overlap view                       |
+|   - Categories: Upstream Miss, Downstream Selection Error, Invalid ATT&CK ID, Provider/Parse Err, |
+|     and Overlap (Upstream Miss & Wrong Classification)                                              |
+|   - Rationale: Protocol Decision D2i specifies non-exclusive failure axes; axes CAN OVERLAP.       |
+|     No artificial 100% partition is imposed; independent failure rates and overlap are plotted.    |
+|   - Caption: Decoupled Non-Exclusive Failure Axes and Empirical Overlap Across Conditions.         |
 +----------------------------------------------------------------------------------------------------+
 | Figure 3: fig3_representation_disparity.png                                                        |
 |   - Type: Paired grouped bar chart with delta indicators                                           |
@@ -239,11 +251,11 @@ To elevate the scientific report to publication standards, four figures will be 
 
 | Document Section | Target Narrative Subsection | Artifact Key / Statistical Analysis Required |
 | :--- | :--- | :--- |
-| **Abstract** | Quantitative Summary (Lines ~21) | Headline $\text{Acc}_{\text{e2e}}$ delta ($\Delta \text{Acc} = \text{Acc}_{\text{RAG\_k10}} - \text{Acc}_{\text{No-RAG}}$), Macro-F1 improvement, ratio of upstream to downstream errors, settled budget spend. |
-| **Section 6.1** | RQ1 Headline Findings Narrative | Statistical significance: McNemar's test $p$-value and paired bootstrap confidence intervals comparing `no_rag` against each RAG depth; per-class Macro-F1 winners and losers; mapped-single vs mapped-multi attribution fidelity. |
-| **Section 6.2** | RQ2 Failure Decomposition Narrative | Quantification of the primary failure bottleneck: does attribution fail because the retriever missed the technique ($GT \notin \text{Top-}k$) or because the LLM failed to select it from context ($GT \in \text{Top-}k \land \text{Wrong}$)? Frequency of parametric recovery. Empirical verdict on the Contextual Dilution Hypothesis. |
-| **Section 6.3** | RQ3 Operational Trade-Offs Narrative | Latency inflation analysis: percentage increase in P95 latency from No-RAG to RAG-k10. Cost efficiency: accuracy gain per 100,000 input tokens. Identification of the optimal operational inflection point (e.g., $k=3$ vs $k=5$). |
-| **Section 7** | Discussion & Practical SOC Deployment | Practical architectural recommendations for SOC log pipelines: triage heuristic filtering, dense pre-filtering, and selective LLM escalation. |
+| **Abstract** | Quantitative Summary (Lines ~21) | Objective quantitative summary across all 5 experimental conditions. Headline $\text{Acc}_{\text{e2e}}$ deltas across conditions (reported with signed percentage points: $+X.XX\text{ pp}$ or $-X.XX\text{ pp}$, avoiding presumption that $k=10$ is optimal or saturating; comparative analyses are exploratory). Macro-F1 deltas, ratio of upstream retrieval misses to downstream selection errors, and settled budget spend under USD 19.99 ceiling. |
+| **Section 6.1** | RQ1 Headline Findings Narrative | Condition-by-condition comparisons: McNemar's test $p$-value and paired bootstrap confidence intervals comparing `no_rag` against each RAG depth; report all conditions neutrally and objectively without assuming monotonic improvement (recognizing flat, positive, or negative regimes); mapped-single vs mapped-multi attribution fidelity from Specialist B's `rq_analysis.json` (`rq1`). |
+| **Section 6.2** | RQ2 Failure Decomposition Narrative | Quantification of failure axes: upstream retrieval misses ($GT \notin \text{Top-}k$) vs downstream selection errors ($GT \in \text{Top-}k \land \text{Wrong}$); empirical overlap (`overlap_retrieval_miss_and_wrong_classification`); frequency of non-retrieved correct attribution (correct despite GT absent from Top-k, acknowledged neutrally as potential partial prompt clues alongside parametric memory, without asserting internal reasoning mechanisms or causal claims); empirical verdict on the Contextual Dilution Hypothesis. |
+| **Section 6.3** | RQ3 Operational Trade-Offs Narrative | Latency inflation analysis: percentage change in mean and P95 latency from No-RAG across RAG depths. Cost scaling under tariff (USD 0.150/1M in, USD 0.600/1M out); cost efficiency (accuracy delta per token/dollar). Identification of operational Pareto trade-offs from Specialist B's `rq_analysis.json` (`rq3` and `rq3.tradeoffs_by_condition`). |
+| **Section 7** | Discussion & Practical SOC Deployment | Practical architectural recommendations for SOC log pipelines: triage heuristic filtering, dense pre-filtering, and selective LLM escalation based on empirical Pareto efficiency. |
 
 ---
 
@@ -278,7 +290,7 @@ Prior to publication sign-off, the automated verification script `scripts/verify
    - Validates Protocol Decision D2j (`NULL` convention) across all three zero-denominator boundary cases:
      * *Case A (Unobserved Class: support=0, pred=0):* `precision=None, recall=None, f1=None`.
      * *Case B (Unpredicted Class: support>0, pred=0):* `precision=None, recall=0.0, f1=0.0`.
-     * *Case C (Unobserved False Positive: support=0, pred=0):* `precision=0.0, recall=None, f1=0.0`.
+     * *Case C (Unobserved False Positive: support=0, pred>0):* `precision=0.0, recall=None, f1=0.0`.
    - Confirms that all three cases contribute exactly 0.0 to condition Macro-F1 numerator sum divided by 474.
 4. **Stage 4 (Word Formatting Invariants):**
    - Title paragraph check: Run font color is pure black `RGBColor(0, 0, 0)`; paragraph XML contains zero `<w:pBdr>` border tags.
@@ -311,7 +323,7 @@ The compiled Microsoft Word document must strictly adhere to the layout specific
 
 ---
 
-### 3.4 Native Word COM Export and Visual Inspection Procedure
+### 3.4 Native Word COM Export, Offline QA Backend, and Visual Inspection Procedure
 
 To ensure 100% fidelity before publication delivery, the following automated procedure will be executed on the Windows workstation:
 
@@ -344,49 +356,58 @@ print(f'Rasterized {len(pdf)} pages to {out_dir}')
 "
 ```
 
+> [!IMPORTANT]
+> **Offline QA Backend & COM Independence:** Windows Microsoft Word COM automation (`New-Object -ComObject Word.Application`) is host-dependent and is NOT guaranteed to be socket-proof under strict offline-guard harnesses. Therefore, an independent, offline QA backend (`scripts/verify_report_metadata.py` using `python-docx`, combined with offline headless PDF rasterization via `pypdfium2` and programmatic metadata assertions) serves as the authoritative, socket-proof verification gate (`OFFLINE_GUARD: attempted_egress=0`). Full visual QA inspection across all pages with zero remaining placeholders (`[TBD_AT_EXECUTION]`) is mandatory prior to final Phase S2 delivery.
+
 **Visual Inspection Checklist:**
 - [ ] Page 1 Header: Title pure black, no border, author name, project name, date, and draft status cleanly aligned.
 - [ ] Literature Review Tables: Table 1a and Table 1b fit within margins without column text squeezing.
 - [ ] Results Tables: Tables 2a, 2b, 3, 4, and 5 display populated figures cleanly; column headers aligned; no overlapping text.
 - [ ] Figures 1–4: Centered, clear 300 DPI resolution, readable axis labels, no clipping of legends.
-- [ ] Table 6 (Manifest): All hashes legible and unclipped.
+- [ ] Table 6 (Manifest): All hashes legible and unclipped; baseline section and supplementary provenance section separated cleanly.
 - [ ] References: Statically numbered [1]..[13], hanging indents aligned, no duplicate counters.
+- [ ] Zero Remaining Placeholders: No `[TBD_AT_EXECUTION]` or unresolved tokens remain anywhere in the document.
 
 ---
 
 ## 4. Phase S2 Population Script Specifications
 
-To ensure fully automated, reproducible population, two helper scripts will be constructed during Phase S2:
+To ensure fully automated, reproducible population, two helper scripts are planned for construction during Phase S2. Both scripts will be developed and tested against fixture schemas under the strict offline socket guard harness (`attempted_egress=0`):
 
 ### 4.1 `scripts/reproduce_study.py` (Figure & Metric Engine)
-- **Inputs:** `outputs/canonical_evaluation/`, `outputs/canonical_analysis/`, and `outputs/canonical_runs/`.
+- **Status:** New planned file to be implemented in Phase S2.
+- **Inputs:** `outputs/canonical_evaluation/` (6 native files), `outputs/canonical_analysis/rq_analysis.json` (Specialist B), and `outputs/canonical_runs/`.
 - **Outputs:**
   - `docs/report/figures/fig1_attribution_scaling.png`
   - `docs/report/figures/fig2_failure_decomposition.png`
   - `docs/report/figures/fig3_representation_disparity.png`
   - `docs/report/figures/fig4_cost_latency_pareto.png`
-- **Responsibilities:**
-  - Loads canonical evaluation outputs.
-  - Computes bootstrap confidence intervals.
-  - Renders 300 DPI publication plots.
-  - Validates that zero mock or synthetic debug figures are utilized.
+- **Responsibilities & Safeguards:**
+  - Loads canonical evaluation outputs and `rq_analysis.json`.
+  - Computes bootstrap confidence intervals without making network calls.
+  - Renders 300 DPI publication plots adhering to colorblind-safe palettes and serif typography.
+  - Generates Figure 2 as independent non-mutually-exclusive failure axes with explicit empirical overlap view (`overlap_retrieval_miss_and_wrong_classification`).
+  - Accompanied by unit tests validating behavior on null, missing, negative differences, and overlapping failure data.
 
 ### 4.2 `scripts/populate_report.py` (Scaffold Populator)
-- **Inputs:** `docs/report/scientific_report.md` (template scaffold) and canonical JSON evaluation files.
+- **Status:** New planned file to be implemented in Phase S2.
+- **Inputs:** `docs/report/scientific_report.md` (template scaffold), `outputs/canonical_evaluation/` (6 native files), and `outputs/canonical_analysis/rq_analysis.json`.
 - **Outputs:** Updated `docs/report/scientific_report.md` with populated tables and narratives.
-- **Responsibilities:**
-  - Replaces all `[TBD_AT_EXECUTION]` table cell placeholders with exact formatted values.
-  - Injects statistical test results (McNemar's test, bootstrap intervals) into narrative paragraphs.
-  - Appends canonical prediction file and ledger hashes to Table 6.
-  - Automatically triggers `scripts/export_report_docx.py` to regenerate the publication Word document.
+- **Responsibilities & Safeguards:**
+  - Replaces all `[TBD_AT_EXECUTION]` table cell placeholders with exact formatted values matching the canonical pointers and format rules in Section 2.
+  - Uses native denominators for all diagnostic rates (does not force rates over 718).
+  - Injects statistical test results (McNemar's test, bootstrap intervals) into narrative paragraphs neutrally and objectively without assuming monotonic improvement or inferring internal reasoning mechanisms.
+  - Appends canonical prediction file and ledger hashes to the dedicated supplementary section of Table 6, preserving the 12 original baseline hashes intact.
+  - Automatically triggers `scripts/export_report_docx.py` and runs `scripts/verify_report_metadata.py` under the offline guard.
+  - Tested with schema fixture unit tests covering empty, malformed, negative delta, and zero-denominator cases under D2j NULL.
 
 ---
 
 ## 5. Commit & Worktree State
 
 - **Worktree:** `D:/RAG2ATTCK-worktrees/report-s1`
-- **Branch:** `codex/s1-report-related-work`
-- **PRE_SHA:** `3d7a06cb0eaf6a45a876e3d8c450b689831dfee4`
-- **POST_SHA:** `91cf8b62781ea373cf18ac31445e451c2eb697b7`
+- **Branch:** `codex/s1-report-related-work` (PR #25)
+- **PRE_SHA:** `b4bd35ffe1b947027c858835c477c0bdef9c8118`
+- **Document Status:** `DRAFT — PENDING CODEX SUPERVISOR REVIEW`
 - **Offline Guard Status:** Verified active (`attempted_egress=0`).
 - **Plan File:** `reports/evidence/s2_report_population_plan.md`

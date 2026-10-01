@@ -79,7 +79,7 @@ Per Codex clarification, the markdown scaffold serves as preparation, and a comp
   - Native Word tables with dark navy header rows (`#092C4C`), alternating row shading (`#F8FAFC`), custom twip cell padding, and light gray interior borders (`#D0D7DE`).
   - Styled callout blockquotes with thick primary accent left border (`#0969DA`) and background shading (`#F6F8FA`).
   - Formatted inline markdown runs (bold, italic, inline code spans, hyperlinks).
-- **Materialized Artifact:** `docs/report/scientific_report.docx` (69,214 bytes, SHA-256: `48b93765b0bd12bb12e0106e7d5c376fef624534573c31d87b14a0fc3781821c`).
+- **Materialized Artifact:** `docs/report/scientific_report.docx` (69,271 bytes, SHA-256: `f33463a362e90a7b2e13bba8437ea4d3a276d1931eb4407ef8105946172fe924`).
 - **Turnkey Post-Run Compilation:** Once full matrix execution completes and table placeholders are replaced with verified numbers, running `uv run python scripts/export_report_docx.py` immediately compiles the finalized editable Word deliverable.
 
 ---
@@ -89,12 +89,16 @@ Per Codex clarification, the markdown scaffold serves as preparation, and a comp
 ### 5.1 Created Artifact Checksums
 | File Path | File Size | SHA-256 Checksum | Purpose |
 | :--- | :---: | :--- | :--- |
-| `docs/report/scientific_report.md` | 31,529 bytes | `4050d93ca099e40bc1ffa345f02bb1d5e2bd6a6dab90b92801a23ee4687e5ea2` | Repaired publication report markdown scaffold |
-| `docs/report/scientific_report.docx` | 69,214 bytes | `48b93765b0bd12bb12e0106e7d5c376fef624534573c31d87b14a0fc3781821c` | Compiled editable Microsoft Word publication report |
+| `docs/report/scientific_report.md` | 31,859 bytes | `c400cd8afe2752305992ca89d7dbe1e71a73fe2e142cb81e4e89569fff9957c7` | Repaired publication report markdown scaffold |
+| `docs/report/scientific_report.docx` | 69,271 bytes | `f33463a362e90a7b2e13bba8437ea4d3a276d1931eb4407ef8105946172fe924` | Compiled editable Microsoft Word publication report |
 | `scripts/export_report_docx.py` | 8,978 bytes | `ff4857bdf1f8eb4f9d2d0b5e54ae8848d79a209ecfecefead3f545a1f68744cb` | Markdown-to-DOCX export tool with publication styling |
-| `reports/evidence/research_report_scaffold.md` | 10,268 bytes | `d81aab5fbece9b2e102af18f2d7ffac2444f2fd572ea50e13519f3011596cfed` | Phase S1 evidence document |
+| `reports/evidence/research_report_scaffold.md` | 10,750 bytes | `4ae6dcb1080f043b5fa91c81a6e3c2f9faee780ddf1986407f461459392e01bf` | Phase S1 evidence document |
 
-### 5.2 Test Regression Verification
+### 5.2 Minor Metadata Refinements (PR #25 Follow-Up)
+1. **Reference 7 (Yang & Hsu):** Springer primary page explicitly confirms online publication date is **2 July 2026** (pp. 235–251, SIST vol. 8767, SITAIBA 2025). `[PARTIAL / METADATA ONLY]` status retained as full chapter is subscription paywalled.
+2. **Reference 6 (H-TechniqueRAG, Morbiato et al.):** The arXiv primary page displays submission date as **24 March 2026** (despite the `2604` identifier prefix). Recorded "submitted 24 March 2026" explicitly.
+
+### 5.3 Test Regression Verification
 Full offline test regression executed via `scripts/run_offline_tests.py`:
 - Collected: 1,266 items (1,261 selected, 5 deselected).
 - Passed: 1,260 passed, 1 skipped, 0 failed.

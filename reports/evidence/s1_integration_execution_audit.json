@@ -266,12 +266,14 @@
       "reproduce_study_verify_hashes": {
         "invocation": 1,
         "description": "Cryptographic hash & artifact integrity audit of 15 canonical artifacts + DEV cost pilot evidence bundle",
-        "command": ".venv\\Scripts\\python.exe scripts\\run_offline_tests.py scripts/reproduce_study.py --verify-hashes",
-        "interpreter": ".venv/Scripts/python.exe",
+        "command": "D:\\RAG2ATTCK-worktrees\\repro-presentation-s1\\.venv\\Scripts\\python.exe scripts\\run_offline_tests.py -c \"import runpy, sys; sys.argv=['scripts/reproduce_study.py', '--verify-hashes']; runpy.run_path('scripts/reproduce_study.py', run_name='__main__')\"",
+        "interpreter": "D:/RAG2ATTCK-worktrees/repro-presentation-s1/.venv/Scripts/python.exe (matplotlib-capable environment)",
         "cwd": "D:/RAG2ATTCK-worktrees/integrated-audit-s1",
         "exit_code": 0,
         "scope": "Audits 15 canonical locked artifacts, frozen protocol decisions, critical code manifest, 10 DEV cost pilot files (dev_cost_pilot_20261001), launcher hash, Windows atomic rename wrapper",
         "egress": 0,
+        "guard_status": "installed=True attempted_egress=0",
+        "guard_protocol": "Guarded socket wrapper (scripts/run_offline_tests.py) strictly enforces -m or -c invocation; executed via -c runner using Track D matplotlib-capable virtual environment.",
         "log_file": "reports/evidence/reproduce_study_verify_hashes.log",
         "log_sha256": "a0fd9dc08d0a166c5c6c492e3f20b31377819bb1132becc66a72d785af56e388"
       },
@@ -323,6 +325,7 @@
     "pinned_a_source_commit": "1477a9fde092939e771883a588386326c2ba5519",
     "prior_evidence_commit": "aeb53f963fe3e98a31704b2142f9bc941b12b911",
     "parent_proposal_revision": "4d7abab070ee985a789fd07fbaad4f0a7300949c",
+    "verification_independence": "All hashes, file statuses, and command logs independently evaluated from read-only target worktree and owned worktree by Subagent A.",
     "evidence_commit_provenance": "Tracked externally via Git history / parent coordination index (no self-referential own commit SHA embedded in audit file)."
   }
 }

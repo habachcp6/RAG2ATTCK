@@ -113,7 +113,9 @@ def build_robust_methods(
     orig_anchor: Callable[..., Any],
     sleep_fn: Callable[[float], None] = time.sleep,
 ) -> tuple[Callable[..., Any], Callable[..., Any]]:
-    """Build the robust write and anchor methods by dynamically executing the archived RAW_WRAPPER_BLOCK."""
+    """Build the robust write and anchor methods by dynamically executing
+    the archived RAW_WRAPPER_BLOCK.
+    """
 
     class _LedgerProxy:
         _write_atomically_unlocked = orig_write

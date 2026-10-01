@@ -112,7 +112,9 @@ def bound_canonical_wrapper(monkeypatch):
 
 
 class TestFiniteRetryBound:
-    """Test 1: Finite retry bound (raises after max 12 retries, exponential backoff, non-retriable fail fast)."""
+    """Test 1: Finite retry bound (raises after max 12 retries, exponential backoff,
+    non-retriable fail fast).
+    """
 
     def test_launcher_hash_and_wrapper_binding(self, bound_canonical_wrapper):
         assert bound_canonical_wrapper["launcher_sha256"] == CANONICAL_LAUNCHER_SHA256
@@ -299,11 +301,17 @@ class TestNoProviderDispatchOnRetryFailure:
             )
 
         # Strictly ZERO provider calls dispatched
-        assert len(mock_provider.calls) == 0, f"Expected 0 provider calls, got {len(mock_provider.calls)}"
+        assert (
+            len(mock_provider.calls) == 0
+        ), f"Expected 0 provider calls, got {len(mock_provider.calls)}"
 
         # Verify no prediction records were committed
         for pred_file in output.glob("*_predictions.jsonl"):
-            lines = [l for l in pred_file.read_text(encoding="utf-8").splitlines() if l.strip()]
+            lines = [
+                line_content
+                for line_content in pred_file.read_text(encoding="utf-8").splitlines()
+                if line_content.strip()
+            ]
             assert len(lines) == 0
 
         # Verify journal did not log monetary_reserve or DISPATCH_STARTED

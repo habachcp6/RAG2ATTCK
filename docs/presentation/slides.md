@@ -15,6 +15,7 @@
 - **Tiêu đề tiếng Anh:** Evaluating MITRE ATT&CK-Grounded Retrieval-Augmented Generation for Technique Attribution from Windows Endpoint Logs (RAG2ATT&CK)
 - **Tác giả:** Nhóm Nghiên Cứu RAG2ATT&CK
 - **Phân loại nghiên cứu:** Thực nghiệm đối chứng có kiểm soát (Controlled Empirical Study)
+- **Công cụ tạo bản trình chiếu:** Deck 16:9 widescreen được tạo tự động bởi python-pptx (`scripts/generate_slides.py`)
 - **Trạng thái kỹ thuật & pháp lý:**
   - Giao thức khoa học: `experiment-protocol-v1.1` (Frozen Protocol)
   - Khóa mật mã thực nghiệm: `canonical-lock-v1` (15 Canonical Artifacts Verified)
@@ -22,6 +23,8 @@
 
 ### Ghi chú diễn giả (Speaker Notes)
 > "Kính thưa Hội đồng và các chuyên gia, hôm nay tôi xin trình bày báo cáo nghiên cứu RAG2ATT&CK: Đánh giá tác động của MITRE ATT&CK-grounded RAG đối với việc ánh xạ Windows endpoint logs sang ATT&CK techniques. Toàn bộ nghiên cứu được thiết kế theo phương pháp thực nghiệm đối chứng nghiêm ngặt dưới giao thức đóng băng experiment-protocol-v1.1, khóa mật mã 15 canonical artifacts, và có thể tái lập hoàn toàn ngoại tuyến với chi phí 0 đồng.
+> 
+> *Khai báo công cụ:* Toàn bộ slide deck này được tạo tự động bằng kịch bản Python `scripts/generate_slides.py` thông qua thư viện `python-pptx` định dạng 16:9 widescreen, được thẩm định hiển thị bằng các bundled artifact tools nội bộ.
 > 
 > *Bằng chứng dự án:* `config/canonical_experiment_lock_v1.json` (SHA-256: `961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac`); `reports/experiment_protocol_v1.md` (SHA-256: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`); `scripts/reproduce_study.py`."
 
@@ -40,13 +43,13 @@
   - *Nhầm lẫn Sub-techniques:* Khó phân biệt giữa các kỹ thuật lân cận (ví dụ: `T1059.001` PowerShell vs `T1059.003` Command Shell; hoặc `T1059.009` Cloud API vs `T1218.012` Verclsid).
 - **Động lực của RAG2ATT&CK:**
   - Thiết kế nghiên cứu thực nghiệm có kiểm soát (Controlled Empirical Study).
-  - Đo lường chính xác delta hiệu năng do RAG mang lại trên cùng mô hình LLM.
+  - Đo lường khách quan delta hiệu năng do RAG mang lại trên cùng mô hình LLM.
   - Bóc tách độc lập lỗi tìm kiếm (Retrieval Failure) và lỗi phân loại (Classification Failure).
   - Đóng băng giao thức v1.1: Thực thi xác định (Deterministic Execution under Frozen Environment & Seeds).
-  - Tái lập ngoại tuyến chi phí 0 đồng với bộ `offline_guard` chặn tuyệt đối kết nối mạng ngoài.
+  - Tái lập ngoại tuyến chi phí 0 đồng với bộ `offline_guard` chặn kết nối mạng ngoài ý muốn ở tầng socket.
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Trong thực tế giám sát SOC, các kỹ sư thường kỳ vọng LLM có thể đọc log và gán ngay mã ATT&CK. Tuy nhiên, nếu không có cơ chế neo tri thức, LLM thường gặp ảo giác hoặc nhầm lẫn giữa các kỹ thuật lân cận. Nghiên cứu này đo lường khoa học mức độ hỗ trợ của RAG dưới các điều kiện đối chứng chặt chẽ. Toàn bộ thực thi đạt tính xác định (Deterministic Execution under Frozen Environment & Seeds), loại trừ hoàn toàn tính tùy tiện trong diễn giải số liệu.
+> "Trong thực tế giám sát SOC, các kỹ sư thường kỳ vọng LLM có thể đọc log và gán ngay mã ATT&CK. Tuy nhiên, nếu không có cơ chế neo tri thức, LLM thường gặp ảo giác hoặc nhầm lẫn giữa các kỹ thuật lân cận. Nghiên cứu này định lượng khách quan mức độ hỗ trợ của RAG dưới các điều kiện đối chứng chặt chẽ, không phóng đại hiệu năng. Toàn bộ thực thi đạt tính xác định (Deterministic Execution under Frozen Environment & Seeds), loại trừ hoàn toàn tính tùy tiện trong diễn giải số liệu.
 > 
 > *Bằng chứng dự án:* `docs/README_PROPOSED.md`; `config/canonical_experiment_lock_v1.json` (SHA-256: `961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac`); `tests/test_attack_id_validation.py`."
 
@@ -106,23 +109,26 @@
 ### Nội dung trình chiếu
 - **Mô hình đe dọa & Danh mục ATT&CK v19.2 (Threat Model & Corpus):**
   - Tiêu chuẩn danh mục: Pinned MITRE ATT&CK v19.2 Enterprise Windows (474 techniques/sub-techniques).
-  - **Chính sách kỹ thuật lịch sử (`D2g: ALLOW_HISTORICAL`):**
-    - Chấp nhận các mã kỹ thuật lịch sử hoặc đã bị thu hồi (revoked/deprecated) có trong bộ kiểm chuẩn.
-    - Báo cáo dưới dạng distinct observation count, không tự ý gán lại (no silent remapping).
-  - **Không gian lớp mục tiêu (`D2d: FROZEN_BENCHMARK_UNIVERSE`):**
-    - Macro-F1 tính trên tập các lớp kỹ thuật chuẩn đóng băng, đảm bảo tính nhất quán giữa các lần chạy.
-  - **Loại trừ mẫu rỗng / mơ hồ (`D2b-c: EXCLUDE`):** Mẫu không gán được nhãn hoặc nhãn mơ hồ bị loại khỏi mẫu số Attribution Accuracy.
-  - **Lưu vết nguyên bản (`D1: RECORD_ONLY`):** Lưu toàn văn phản hồi thô phục vụ kiểm toán độc lập.
-- **4 Tiêu chí đánh giá cốt lõi (Core Evaluation Criteria):**
-  - **D2h (Multi-GT Retrieval Success):** `ANY_GT_RETRIEVED` - Retrieval được tính là thành công nếu BẤT KỲ ground-truth technique ID nào có trong Top-k candidates.
-  - **D2i (Failure Decomposition):** `INDEPENDENT_AXES` - Bóc tách độc lập lỗi tìm kiếm và phân loại trên các trục trực giao; ghi nhận đầy đủ phần giao thoa (overlap).
-  - **D2e (Invalid ID Denominator):** `INCLUDE_IN_DENOMINATOR` - Mã ATT&CK ảo giác, sai cú pháp đều bị tính là thất bại (Fail-Closed).
-  - **D2f (Provider Failure Denominator):** `INCLUDE_IN_DENOMINATOR` - Lỗi API, timeout, refusal đều tính vào mẫu số, không được loại trừ.
-  - **D3:** Khóa mô hình: `ALLOW_LATEST_WITH_TIMESTAMP_BINDING` (tem UTC thực tế).
-  - **D4-D5:** Thực thi tuần tự (`SEQUENTIAL_ONLY`), chặn cứng ngân sách (`HARD_CAP`).
+  - **Mã hóa giao thức chuẩn tắc (Giao thức v1.1):**
+    - `D2d: FROZEN_BENCHMARK_UNIVERSE = 474` (không gian lớp mục tiêu cố định, Macro-F1 tính trên tập đóng băng).
+    - `D2g: ALLOW_HISTORICAL` (chấp nhận mã lịch sử/thu hồi trong benchmark, báo cáo distinct counts, không silent remapping).
+    - `D2e: invalid_id_as_failure` (`INCLUDE_IN_DENOMINATOR`, fail-closed khi mô hình sinh mã sai cú pháp hoặc ngoài danh mục).
+    - `D2f: api_failure_as_failure` (`INCLUDE_IN_DENOMINATOR`, không loại trừ mẫu khi gặp lỗi mạng/API refusal/timeout).
+    - `D2b-c: EXCLUDE` (loại trừ các mẫu ground-truth rỗng hoặc mơ hồ khỏi mẫu số đo lường).
+    - `D1: RECORD_ONLY` (lưu vết đầy đủ toàn bộ phản hồi thô phục vụ kiểm toán độc lập).
+- **Tiêu chí đánh giá cốt lõi & Kỷ cương thực nghiệm:**
+  - **Bốn tiêu chí đo lường trọng tâm:**
+    - `D2h: ANY_GT_RETRIEVED` (truy xuất thành công nếu có ít nhất 1 kỹ thuật mục tiêu trong Top-k).
+    - `D2i: INDEPENDENT_AXES` (phân rã lỗi theo 3 trục đo lường độc lập, ghi nhận đầy đủ overlap, không giả định độc lập ngẫu nhiên).
+    - `D2e: invalid_id_as_failure` (mã ATT&CK ảo giác tính là lỗi phân loại).
+    - `D2f: api_failure_as_failure` (lỗi provider / gián đoạn API tính vào mẫu số).
+  - **Kỷ cương thực nghiệm bất biến:**
+    - `D3:` Khóa mô hình: `ALLOW_LATEST_WITH_TIMESTAMP_BINDING` (tem UTC thực tế).
+    - `D4:` Thực thi tuần tự (`SEQUENTIAL_ONLY`), tuyệt đối không chạy song song.
+    - `D5:` Chặn cứng ngân sách đóng băng (`HARD_CAP`, trần $19.99 USD).
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Giao thức thực nghiệm v1.1 đóng băng 7 quyết định phương pháp luận cốt lõi D1-D7. Về mô hình đe dọa, danh mục kỹ thuật được neo tại STIX ATT&CK v19.2 Enterprise Windows (474 techniques). Điểm đặc biệt quan trọng là chính sách D2g ALLOW_HISTORICAL: các mã kỹ thuật lịch sử hoặc đã bị thu hồi có trong benchmark được chấp nhận và báo cáo dạng distinct observation count, không tự ý gán lại mã thay thế. Bốn tiêu chí đánh giá cốt lõi gồm D2h (ANY_GT_RETRIEVED cho multi-label), D2i (INDEPENDENT_AXES ghi nhận đầy đủ overlap), D2e (invalid ID tính vào mẫu số), và D2f (lỗi mạng tính vào mẫu số) thiết lập nguyên tắc fail-closed nghiêm ngặt.
+> "Giao thức thực nghiệm v1.1 đóng băng 7 quyết định phương pháp luận cốt lõi D1-D7. Về mô hình đe dọa, danh mục kỹ thuật được neo tại STIX ATT&CK v19.2 Enterprise Windows (474 techniques theo quyết định D2d FROZEN_BENCHMARK_UNIVERSE). Điểm đặc biệt quan trọng là chính sách D2g ALLOW_HISTORICAL: các mã kỹ thuật lịch sử hoặc đã bị thu hồi có trong benchmark được chấp nhận và báo cáo dạng distinct observation count, không tự ý gán lại mã thay thế. Bốn tiêu chí đánh giá cốt lõi gồm D2h (ANY_GT_RETRIEVED cho multi-label), D2i (INDEPENDENT_AXES ghi nhận đầy đủ overlap giữa các trục đo lường độc lập), D2e (invalid_id_as_failure: invalid ID tính vào mẫu số), và D2f (api_failure_as_failure: lỗi mạng/API tính vào mẫu số) thiết lập nguyên tắc fail-closed nghiêm ngặt.
 > 
 > *Bằng chứng dự án:* `reports/experiment_protocol_v1.md` (SHA-256: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`); `attack/raw/enterprise-v19.2/enterprise-attack-19.2.json` (SHA-256: `dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4`); `tests/test_experiment_evaluation.py`."
 
@@ -180,14 +186,14 @@
 
 ---
 
-## Slide 8: Khung Đánh Giá End-to-End (RQ1) & Phân Rã Lỗi Độc Lập D2i (RQ2)
+## Slide 8: Khung Đánh Giá End-to-End (RQ1) & Phân Rã Lỗi Theo 3 Trục Độc Lập D2i (RQ2)
 
 ### Nội dung trình chiếu
-- **Mô hình phân rã lỗi độc lập theo Định đề D2i (RQ2 Error Decomposition):**
-  - Định đề D2i quy định retrieval failure và downstream generation failure là **CÁC TRỤC ĐỘC LẬP (Independent Axes)**, không phải phân hoạch xung khắc rời rạc (phần giao thoa khác 0).
+- **Mô hình phân rã lỗi theo 3 trục đo lường độc lập (Định đề D2i):**
+  - Định đề D2i quy định retrieval failure và downstream generation failure là **CÁC TRỤC ĐO LƯỜNG ĐỘC LẬP (Independent Measurement Axes)**, không phải phân hoạch xung khắc rời rạc và không giả định độc lập xác suất ngẫu nhiên (phần giao thoa khác 0).
   - **Trục 1 - Retrieval Miss Rate:** $1 - \text{Hit}@k$ (kỹ thuật ground-truth vắng mặt trong Top-k theo tiêu chí D2h `ANY_MATCH`).
   - **Trục 2 - Downstream Generation Failure:** mô hình phát sinh invalid ATT&CK ID (D2e), gặp lỗi provider (D2f), hoặc chọn sai kỹ thuật dù đã được cung cấp.
-  - **Trục 3 - Joint Overlap:** ghi nhận rõ các bản ghi retrieval trượt ĐỒNG THỜI mô hình hallucinate/phân loại sai, không áp đặt thứ tự loại trừ nhân tạo.
+  - **Trục 3 - Joint Overlap:** ghi nhận rõ các bản ghi retrieval trượt ĐỒNG THỜI mô hình phát sinh lỗi, không giả định độc lập ngẫu nhiên và không áp đặt thứ tự loại trừ nhân tạo.
 - **Các thước đo có điều kiện (Conditional Metrics):**
   - $P(\text{Correct} \mid \text{GT Retrieved in Top-}k)$: Đánh giá năng lực lựa chọn của LLM khi bộ tìm kiếm hoạt động chính xác.
   - $P(\text{Correct} \mid \text{GT Absent from Top-}k)$: Đánh giá khả năng LLM tự sửa sai dựa trên tri thức nội tại.
@@ -199,36 +205,39 @@
   - Kiểm định toán học Evaluator: Đã xác thực ngoại tuyến qua 5 test fixtures (`outputs/reproduction/fixture_diagnostics/`).
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Khung đánh giá RQ1 & RQ2 được xây dựng trên định đề D2i (Independent Axes). Chúng tôi bác bỏ hoàn toàn công thức cộng xác suất rời rạc sai lầm, bởi retrieval failure và downstream generation failure không hề xung khắc nhau mà có phần giao thoa rõ ràng. Các chỉ số có điều kiện P(Correct | GT in Top-k) và P(Correct | GT NOT in Top-k) cho phép định lượng chính xác xem LLM có bị đánh lừa bởi distractor hay có khả năng tự sửa sai. Toàn bộ ma trận chính thức 6,400 bản ghi đang chạy; tính đúng đắn toán học của Evaluator đã được chứng minh qua 5 test fixtures.
+> "Khung đánh giá RQ1 & RQ2 được xây dựng trên định đề D2i (Independent Axes). Chúng tôi bóc tách lỗi theo 3 trục đo lường độc lập mà không giả định tính độc lập xác suất ngẫu nhiên giữa retrieval và downstream generation, bởi hai trục này có phần giao thoa rõ ràng. Các chỉ số có điều kiện P(Correct | GT in Top-k) và P(Correct | GT NOT in Top-k) cho phép định lượng chính xác xem LLM có bị đánh lừa bởi distractor hay có khả năng tự sửa sai. Toàn bộ ma trận chính thức 6,400 bản ghi đang chạy; tính đúng đắn toán học của Evaluator đã được chứng minh qua 5 test fixtures.
 > 
 > *Bằng chứng dự án:* `reports/experiment_protocol_v1.md` (D2e, D2f, D2h, D2i; SHA-256: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`); `tests/test_experiment_evaluation.py` (94 tests pass)."
 
 ---
 
-## Slide 9: Nghiên Cứu Tiêu Thụ Tài Nguyên & Chi Phí Thực Nghiệm (RQ3)
+## Slide 9: Nghiên Cứu Tiêu Thụ Tài Nguyên & Chi Phí Hạch Toán Ước Tính (RQ3)
 
 ### Nội dung trình chiếu
-- **Kết quả thực nghiệm từ DEV Cost Pilot (20 cuộc gọi thực tế tới gpt-5.6-luna xhigh):**
-  - *Mục đích:* Đo lường token và độ ổn định schema trước khi chạy toàn bộ tập TEST.
+- **Kết quả thực nghiệm từ DEV Cost Pilot (Dữ Liệu Giả Lập DEV Split):**
+  - *Dữ liệu đo lường:* 20 cuộc gọi thực tế tới `gpt-5.6-luna` (xhigh) trên tập `synthetic-paired-v1 DEV split` (4 views).
   - Tỷ lệ tuân thủ schema JSON: **100% VALID** (20/20 bản ghi).
   - Số lần thử lại (retries): **0** (100% thành công ở lần gọi đầu tiên, trễ TB 8,127.6 ms).
-- **Mức tiêu thụ Token và Chi phí ước tính ban đầu:**
-  | Điều kiện | Input Tokens TB | Output Tokens TB | Chi phí / Yêu cầu (Telemetry ban đầu) |
+  - *Lưu ý dữ liệu:* DEV split là dữ liệu giả lập (synthetic benchmark), không phải telemetry thực địa.
+- **Mức tiêu thụ Token và Chi phí hạch toán ước tính:**
+  | Điều kiện | Input Tokens TB | Output Tokens TB | Chi phí hạch toán ước tính / Yêu cầu |
   | :--- | :---: | :---: | :---: |
   | `no_rag` ($k=0$) | 643.0 | 224.2 | ~$0.00039 |
   | `rag_k1` ($k=1$) | 1,115.0 | 332.2 | ~$0.00062 |
-  | `rag_k3` ($k=3$) | 1,740.5 | 1,087.2 | ~$0.00165 (ước tính telemetry ban đầu) |
+  | `rag_k3` ($k=3$) | 1,740.5 | 1,087.2 | ~$0.00165 (ước tính từ telemetry pilot ban đầu) |
   | `rag_k5` ($k=5$) | 2,518.2 | 840.2 | ~$0.00151 |
   | `rag_k10` ($k=10$) | 4,536.5 | 800.8 | ~$0.00187 |
 - **Phân định rõ ràng chi phí thực nghiệm:**
-  - **Quyết toán thực tế (Verified Spend):** **$0.024209 USD** cho 20 requests pilot (conservative: $0.026320 USD).
-  - **Dự phóng tập TEST (Projected Spend):** **$8.20 – $8.99 USD** cho toàn bộ 6,400 requests.
+  - **Chi phí hạch toán ước tính từ token quan sát được & biểu giá công bố:**
+    - Tính toán được: **$0.024209 USD** cho 20 pilot calls (mức thận trọng: $0.026320 USD).
+    - Dự phóng tập TEST (canonical forecast): **$8.20 – $8.99 USD** cho 6,400 calls.
+  - **Khoản giữ chỗ tạm thời (provisional reservation):**
+    - `prior_pilot_provisional_hold_usd`: **$0.05264010 USD** (khoản giữ chỗ conservative trong cấu hình hệ thống).
   - **Trần ngân sách đóng băng (Hard Budget Cap):** **$19.99 USD** (`hard_budget_limit_usd`).
-  - **Khoản giữ chỗ conservative pilot:** **$0.05264010 USD** (`reserved_budget_usd`).
-- **Quy luật đánh đổi (Trade-off):** Tăng $k$ từ 1 lên 10 giúp tăng Hit rate từ 4.2% lên 45.1%, nhưng lượng token đầu vào tăng ~4x. Chi phí dự phóng TEST (< $10 USD) nằm an toàn dưới trần ngân sách $19.99 USD.
+- **Quy luật đánh đổi (Trade-off):** Tăng $k$ từ 1 lên 10 giúp tăng Hit rate từ 4.2% lên 45.1%, nhưng lượng token đầu vào tăng ~4x. Chi phí dự phóng TEST (< $9 USD) nằm an toàn dưới trần ngân sách $19.99 USD.
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Trong phân tích RQ3, chúng tôi làm rõ số liệu chi phí từ DEV Cost Pilot (20 requests thực tế trên gpt-5.6-luna). Con số ~$0.00165/query là ước tính từ telemetry pilot ban đầu tại nhánh k=3 do độ dài reasoning output. Chi phí quyết toán thực tế (verified spend) là $0.024209 USD (conservative rate: $0.026320 USD). Chi phí dự phóng cho toàn bộ 6,400 requests của tập TEST là $8.20 – $8.99 USD. Toàn bộ tiến trình được kiểm soát bởi trần ngân sách đóng băng $19.99 USD và khoản giữ chỗ conservative pilot $0.05264010 USD, bảo đảm không bao giờ vượt ngân sách.
+> "Trong phân tích RQ3, chúng tôi minh bạch số liệu chi phí từ DEV Cost Pilot trên tập synthetic-paired-v1 DEV split (20 requests thực tế tới gpt-5.6-luna). Đây là chi phí hạch toán ước tính từ token quan sát được và biểu giá công bố, không phải hóa đơn OpenAI phát hành. Chi phí hạch toán thực tế là $0.024209 USD (mức thận trọng: $0.026320 USD). Dự phóng chuẩn tắc cho toàn bộ tập TEST là $8.20 – $8.99 USD. Trong cấu hình hệ thống, khoản prior_pilot_provisional_hold_usd được giữ chỗ tạm thời ở mức $0.05264010 USD. Toàn bộ tiến trình được kiểm soát bởi trần ngân sách đóng băng $19.99 USD, bảo đảm không bao giờ vượt ngân sách.
 > 
 > *Bằng chứng dự án:* `config/experiment_config.json` (hard_budget_limit_usd: 19.99); `reports/evidence/dev_cost_pilot_20261001/summary.json` (SHA-256: `f8dfe99479346dbbeff94d6e9dc7d11019623e5932ef27a00f1c3222e4c92b23`); `tests/test_monetary_guard.py`."
 
@@ -246,10 +255,10 @@
 3. **Phạm vi mô hình & Quy trình tái lập an toàn:**
    - Toàn bộ kết quả đối chứng được đo trên mô hình đại diện `gpt-5.6-luna`.
    - Cần mở rộng kiểm nghiệm trên các mô hình mã nguồn mở (Llama-3, Qwen) để xác minh tính phổ quát của quy luật phân rã lỗi.
-   - **Quy trình tái lập an toàn:** Mọi kịch bản kiểm thử bắt buộc chạy qua runner offline `scripts/run_offline_tests.py`, tuyệt đối không dùng pytest trần không có guard để ngăn chặn rò rỉ credential và gọi API ngầm.
+   - **Quy trình tái lập ngoại tuyến:** Mọi kịch bản kiểm thử bắt buộc chạy qua runner offline `scripts/run_offline_tests.py` can thiệp socket và lọc biến môi trường nhằm hạn chế rò rỉ credential và gọi API ngầm ngoài ý muốn.
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Nghiên cứu công khai các giới hạn khoa học: Dữ liệu hiện tại nằm trong phạm vi kịch bản có cấu trúc synthetic-paired-v1; bộ nhúng dense đơn tầng chưa kết nối được từ vựng kỹ thuật hệ thống (Event ID số); và mô hình đánh giá là gpt-5.6-luna. Để đảm bảo an toàn tuyệt đối, mọi quy trình kiểm thử tái lập phải thực thi qua runner offline scripts/run_offline_tests.py nhằm bảo đảm không phát sinh bất kỳ kết nối mạng ngoài nào.
+> "Nghiên cứu công khai các giới hạn khoa học: Dữ liệu hiện tại nằm trong phạm vi kịch bản có cấu trúc synthetic-paired-v1; bộ nhúng dense đơn tầng chưa kết nối được từ vựng kỹ thuật hệ thống (Event ID số); và mô hình đánh giá là gpt-5.6-luna. Để đảm bảo an toàn, mọi quy trình kiểm thử tái lập phải thực thi qua runner offline scripts/run_offline_tests.py nhằm can thiệp socket tầng ứng dụng và loại trừ credentials khỏi môi trường.
 > 
 > *Bằng chứng dự án:* `docs/reproducibility.md`; `scripts/run_offline_tests.py`; `tests/test_offline_guard.py` (OFFLINE_GUARD egress=0)."
 
@@ -258,28 +267,31 @@
 ## Slide 11: Khả Năng Tái Lập Độc Lập & Đóng Góp Khoa Học (Reproducibility & Contributions)
 
 ### Nội dung trình chiếu
-- **Tái Lập 100% Ngoại Tuyến (Zero-Cost Offline Reproduction):**
+- **Tái Lập Ngoại Tuyến & Phạm Vi Offline Guard:**
+  - Lệnh chuẩn tắc có bảo vệ ngoại tuyến:
+    ```bash
+    python scripts/run_offline_tests.py -m pytest ... (hoặc cờ -c)
+    ```
   - Lệnh tái lập tự động toàn diện:
     ```bash
-    uv run python scripts/reproduce_study.py --all
+    python scripts/reproduce_study.py --all
     ```
-  - Lệnh kiểm thử bộ test suite có bảo vệ:
-    ```bash
-    uv run python scripts/run_offline_tests.py
-    ```
-  - Tuyệt đối không dùng pytest trần không có `OFFLINE_GUARD`.
+  - **Phạm vi kỹ thuật của `offline_guard`:**
+    - Can thiệp tầng socket Python (chặn kết nối mạng ngoài ý muốn) và lọc biến môi trường credentials.
+    - Không phải là sandbox cấp OS (không cô lập mã máy binary tùy ý ngoài Python runtime).
+    - Dependencies và artifact tiên quyết đã nạp sẵn cục bộ; lệnh `uv run` trần không có guard bảo vệ không tự động đảm bảo cách ly mạng nếu thiếu cờ offline.
   - **Điều kiện tái lập:**
     - *Tái lập ngoại tuyến:* Sử dụng 15 canonical artifacts đã khóa mật mã trong repo.
     - *Tái lập toàn diện luồng live provider:* Yêu cầu nạp credentials thực và chạy dưới cơ chế budget guard trần $19.99 USD.
   - Toàn bộ 15 artifact và giao thức thực nghiệm được neo giữ bằng mã băm SHA-256 trong `config/canonical_experiment_lock_v1.json`.
 - **Đóng góp khoa học cốt lõi:**
   1. *Quy trình thực nghiệm chuẩn hóa:* Thiết lập giao thức thực nghiệm đối chứng khép kín, chống rò rỉ nhãn đầu tiên cho bài toán Windows log attribution.
-  2. *Bóc tách độc lập các trục lỗi (RQ2 Failure Decomposition per D2i):* Phân tích riêng biệt retrieval miss, downstream generation failure và joint overlap.
+  2. *Bóc tách độc lập các trục lỗi (RQ2 Failure Decomposition per D2i):* Phân tích riêng biệt retrieval miss, downstream generation failure và joint overlap (không giả định độc lập ngẫu nhiên).
   3. *Bằng chứng định lượng về khoảng cách từ vựng và giả thuyết pha loãng ngữ cảnh (Context Dilution Hypothesis).*
   4. *Bộ công cụ nghiên cứu mở:* Cung cấp toàn bộ mã nguồn, benchmark, kịch bản tạo slide và dữ liệu chứng cứ nguyên vẹn.
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Khả năng tái lập độc lập là cam kết trọng tâm của dự án. Lệnh reproduce_study.py --all tái tạo toàn bộ chẩn đoán, bảng biểu và đồ thị từ 15 artifact đã đóng băng mà không tốn chi phí. Việc kiểm thử bắt buộc sử dụng runner scripts/run_offline_tests.py để kích hoạt OFFLINE_GUARD. Tái lập toàn diện luồng live provider yêu cầu credentials thực và chạy dưới budget guard kiểm soát ngân sách trần $19.99 USD. Bốn đóng góp khoa học cốt lõi đã thiết lập nền tảng đối chứng vững chắc cho cộng đồng RAG an ninh mạng.
+> "Khả năng tái lập độc lập là cam kết trọng tâm của dự án. Lệnh reproduce_study.py --all tái tạo toàn bộ chẩn đoán, bảng biểu và đồ thị từ 15 artifact đã đóng băng mà không tốn chi phí. Việc kiểm thử bắt buộc sử dụng runner scripts/run_offline_tests.py để kích hoạt OFFLINE_GUARD. Chúng tôi minh bạch rõ ràng: offline_guard là cơ chế đánh chặn ở tầng socket Python và lọc biến môi trường, không phải là sandbox cấp OS. Tái lập toàn diện luồng live provider yêu cầu credentials thực và chạy dưới budget guard kiểm soát ngân sách trần $19.99 USD. Bốn đóng góp khoa học cốt lõi đã thiết lập nền tảng đối chứng vững chắc cho cộng đồng RAG an ninh mạng.
 > 
 > *Bằng chứng dự án:* `config/canonical_experiment_lock_v1.json` (SHA-256: `961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac`); `scripts/reproduce_study.py`; `scripts/run_offline_tests.py`; `tests/test_smoke_cases.py`."
 
@@ -289,18 +301,20 @@
 
 ### Nội dung trình chiếu
 - **Tóm tắt kết luận:**
-  - RAG cung cấp cơ sở tri thức quan trọng, nhưng chất lượng của khâu truy xuất (Retrieval Quality) là yếu tố quyết định thành bại.
-  - Phân rã lỗi theo D2i (Independent Axes) định lượng độc lập lỗi tìm kiếm, lỗi sinh của mô hình và phần giao thoa.
-  - Quy trình tái lập an toàn: Toàn bộ kiểm thử chạy qua runner offline `scripts/run_offline_tests.py` bảo đảm không rò rỉ credential.
+  - RAG cung cấp tri thức nền tảng quan trọng; giả thuyết RQ2 về mức độ ảnh hưởng nhân quả của retrieval đang được kiểm chứng đối chứng trên ma trận TEST.
+  - Phân rã lỗi D2i theo 3 trục đo lường độc lập (retrieval miss, downstream generation failure, joint overlap), ghi nhận phần giao thoa khác 0, không giả định độc lập xác suất ngẫu nhiên.
+  - Quy trình tái lập ngoại tuyến: Sử dụng runner `scripts/run_offline_tests.py` can thiệp tầng socket và lọc biến môi trường nhằm giảm thiểu rủi ro rò rỉ credential và kết nối ngoài ý muốn.
   - Hiện tượng pha loãng ngữ cảnh (Context Dilution) khẳng định tầm quan trọng của việc tiền lọc log có chọn lọc thay vì nhúng toàn bộ nhật ký xung quanh.
 - **Định hướng phát triển:**
-  - Tích hợp công nghệ Hybrid Search (Dense + Sparse/BM25) để khắc phục triệt để khoảng cách ngữ nghĩa ở các sự kiện như `T1136.001`.
-  - Triển khai thực nghiệm đầy đủ trên tập dữ liệu Windows-APT thực tế khi hoàn thiện khâu khử khuẩn.
+  - Triển khai Hybrid Retrieval (Dense + BM25) để khắc phục triệt để khoảng cách ngữ nghĩa ở các sự kiện như `T1136.001`.
+  - Triển khai thực nghiệm mở rộng trên telemetry thực tế khi hoàn thiện khâu khử khuẩn.
 - **Kho lưu trữ & Báo cáo:** Mã nguồn, dữ liệu và báo cáo tái lập sẵn sàng tại: [GitHub PR #26](https://github.com/habachcp6/RAG2ATTCK/pull/26)
 - **Trân trọng cảm ơn Quý Thầy Cô và Hội Đồng!**  
   *Kính mời Quý Thầy Cô đặt câu hỏi thảo luận (Q&A).*
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Tóm lại, RAG2ATT&CK đã chứng minh rằng để ứng dụng RAG thành công trong SOC, chúng ta không thể chỉ kỳ vọng vào mô hình ngôn ngữ lớn, mà phải giải quyết bài toán cốt lõi là tối ưu hóa bộ truy xuất và cấu trúc hóa biểu diễn log. Toàn bộ mã nguồn, dữ liệu thực nghiệm và gói tái lập đã được công bố tại PR #26. Tôi xin chân thành cảm ơn sự lắng nghe của Quý Thầy Cô và kính mời Hội đồng đặt câu hỏi thảo luận.
+> "Tóm lại, RAG2ATT&CK đo lường thực nghiệm đối chứng vai trò của RAG trong bài toán ánh xạ log Windows sang ATT&CK techniques. Các phát hiện hiện tại phản ánh phạm vi đo lường thực nghiệm và các giả thuyết đang chờ hoàn tất ma trận TEST. Chúng tôi nhấn mạnh tính trung thực khoa học: phân rã lỗi D2i theo các trục đo lường độc lập không giả định độc lập xác suất ngẫu nhiên, và quy trình tái lập sử dụng runner can thiệp socket tầng ứng dụng.
+> 
+> *Khai báo công cụ:* Toàn bộ slide deck này được tác tạo tự động bằng kịch bản Python `scripts/generate_slides.py` (sử dụng thư viện `python-pptx` định dạng 16:9 widescreen), được thẩm định hiển thị qua bundled artifact tools.
 > 
 > *Bằng chứng dự án:* PR #26 (`https://github.com/habachcp6/RAG2ATTCK/pull/26`); `docs/sanitized_evidence_manifest.json`; `reports/evidence/reproducibility_package_manifest.md`."

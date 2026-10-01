@@ -1,6 +1,6 @@
 # RAG2ATTCK - Independent Study Reproduction Report
 - Execution Mode: STRICTLY OFFLINE (Zero API Calls, Zero Secrets)
-- Verification Timestamp (UTC): `2026-10-01T22:01:38Z`
+- Verification Timestamp (UTC): `2026-10-01T22:18:14Z`
 - Target Worktree: `D:\RAG2ATTCK-worktrees\repro-presentation-s1`
 - Scientific Provenance Tiers Audited:
   1. Canonical Locked Artifacts (15 bound artifacts)

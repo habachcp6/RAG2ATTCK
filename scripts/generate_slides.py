@@ -2,11 +2,14 @@
 
 Generates a modern, publication-grade 16:9 widescreen presentation deck
 in PPTX format for thesis defense, scientific evaluation, and technical demonstration.
-Fully compliant with CD_RENDER_REPAIR requirements:
-- Mathematical accuracy per Frozen Protocol v1.1 (D2i independent error axes)
-- Perfect typography and card geometry (zero text overflow, clear of footer)
-- Academic claim and tone hygiene
-- Comprehensive evidence citations and speaker notes on every slide
+Fully compliant with CD_FACTUAL_R2, BD_MODE_BOUNDARY, and CD_RENDER_REPAIR:
+- Authoring Backend Disclosure: Authored automatically via python-pptx pipeline
+- Explicit distinction between accounted token costs vs provisional holds vs canonical forecast
+- Transparent characterization of DEV split as synthetic data
+- Technical scope boundary of offline_guard disclosed (socket-level Python interceptor, not OS sandbox)
+- Non-causal, non-absolute academic tone; independent measurement axes per D2i
+- Strict separation of protocol labels: D2d, D2e, D2f, D2g, D2h, D2i
+- Perfect typography and card geometry (zero text overflow, safe bottom margin)
 
 Usage:
     uv run python scripts/generate_slides.py
@@ -113,8 +116,8 @@ def add_card(
     bg_color: RGBColor = CARD_BG,
     border_color: RGBColor = BORDER_COLOR,
     title_size: int = 16,
-    body_size: float = 12.0,
-    item_spacing: float = 3.5,
+    body_size: float = 11.5,
+    item_spacing: float = 3.0,
 ) -> None:
     """Add styled structured card with title and bullet points."""
     card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(left), Inches(top), Inches(width), Inches(height))
@@ -187,7 +190,7 @@ def build_slide_1_title(prs: Presentation) -> None:
     p2.space_before = Pt(8)
 
     p3 = tf.add_paragraph()
-    p3.text = "Giao thức khoa học: experiment-protocol-v1.1  |  Khóa chuẩn: canonical-lock-v1  |  Tái lập: 100% Offline"
+    p3.text = "Giao thức khoa học: experiment-protocol-v1.1  |  Khóa chuẩn: canonical-lock-v1  |  Tác tạo: Python-pptx automated pipeline"
     p3.font.name = "Calibri"
     p3.font.size = Pt(13)
     p3.font.color.rgb = RGBColor(226, 232, 240)
@@ -197,6 +200,7 @@ def build_slide_1_title(prs: Presentation) -> None:
         slide,
         "GHI CHÚ DIỄN GIẢ (Slide 1):\n"
         "Kính thưa Hội đồng và các chuyên gia, hôm nay tôi xin trình bày báo cáo nghiên cứu RAG2ATT&CK: Đánh giá tác động của MITRE ATT&CK-grounded RAG đối với việc ánh xạ Windows endpoint logs sang ATT&CK techniques. Toàn bộ nghiên cứu được thiết kế theo phương pháp thực nghiệm đối chứng nghiêm ngặt dưới giao thức đóng băng experiment-protocol-v1.1, khóa mật mã 15 canonical artifacts, và có thể tái lập hoàn toàn ngoại tuyến với chi phí 0 đồng.\n"
+        "Khai báo tác tạo: Slide deck này được tác tạo tự động bằng kịch bản Python scripts/generate_slides.py (sử dụng thư viện python-pptx định dạng 16:9 widescreen), được thẩm định hiển thị qua bundled artifact tools.\n"
         "Bằng chứng dự án: config/canonical_experiment_lock_v1.json (SHA-256: 961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac); reports/experiment_protocol_v1.md (SHA-256: d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c); scripts/reproduce_study.py."
     )
 
@@ -215,8 +219,8 @@ def build_slide_2_problem(prs: Presentation) -> None:
             "Quy trình thủ công đòi hỏi chuyên gia cấp cao, tốn thời gian và khó đáp ứng quy mô hàng triệu sự kiện mỗi ngày.",
         ],
         header_color=PRIMARY_BLUE,
-        body_size=12.0,
-        item_spacing=4.0,
+        body_size=11.5,
+        item_spacing=3.5,
     )
 
     add_card(
@@ -227,8 +231,8 @@ def build_slide_2_problem(prs: Presentation) -> None:
             "Nhầm lẫn Sub-techniques: Khó phân biệt các kỹ thuật lân cận (ví dụ: T1059.001 PowerShell vs T1059.003 Command Shell).",
         ],
         header_color=ALERT_RED,
-        body_size=12.0,
-        item_spacing=4.0,
+        body_size=11.5,
+        item_spacing=3.5,
     )
 
     add_card(
@@ -238,11 +242,11 @@ def build_slide_2_problem(prs: Presentation) -> None:
             "Đo lường chính xác delta hiệu năng do RAG mang lại trên cùng mô hình LLM.",
             "Bóc tách độc lập lỗi tìm kiếm (Retrieval Failure) và lỗi phân loại (Classification Failure).",
             "Đóng băng giao thức v1.1: Thực thi xác định (Deterministic Execution under Frozen Environment & Seeds).",
-            "Tái lập ngoại tuyến chi phí 0 đồng với bộ offline_guard chặn tuyệt đối kết nối mạng ngoài.",
+            "Tái lập ngoại tuyến chi phí 0 đồng với bộ offline_guard chặn các kết nối mạng ngoài ý muốn.",
         ],
         header_color=SUCCESS_GREEN,
-        body_size=12.0,
-        item_spacing=4.0,
+        body_size=11.5,
+        item_spacing=3.5,
     )
 
     set_speaker_notes(
@@ -268,8 +272,8 @@ def build_slide_3_architecture(prs: Presentation) -> None:
             "Mô hình: gpt-5.6-luna (reasoning_effort=xhigh, api_interface=responses).",
         ],
         header_color=SLATE_HEADER,
-        body_size=12.0,
-        item_spacing=3.5,
+        body_size=11.5,
+        item_spacing=3.0,
     )
 
     add_card(
@@ -282,8 +286,8 @@ def build_slide_3_architecture(prs: Presentation) -> None:
             "Đầu ra: Cùng cấu trúc JSON và cùng bộ kiểm tra cú pháp nghiêm ngặt.",
         ],
         header_color=DEEP_BLUE,
-        body_size=12.0,
-        item_spacing=3.5,
+        body_size=11.5,
+        item_spacing=3.0,
     )
 
     add_card(
@@ -294,8 +298,8 @@ def build_slide_3_architecture(prs: Presentation) -> None:
             "Biến duy nhất được thay đổi trong toàn bộ nghiên cứu: Retrieval ON vs. OFF.",
         ],
         header_color=SUCCESS_GREEN,
-        body_size=12.0,
-        item_spacing=3.5,
+        body_size=11.5,
+        item_spacing=3.0,
     )
 
     set_speaker_notes(
@@ -358,7 +362,7 @@ def build_slide_5_methodology(prs: Presentation) -> None:
     add_header(
         slide,
         "4. Phương Pháp Luận, Mô Hình Đe Dọa & Giao Thức v1.1",
-        "Khóa 7 quyết định khoa học D1-D7 và chính sách chấp nhận kỹ thuật lịch sử",
+        "Tách bạch rõ ràng 7 quyết định giao thức khoa học D1-D7 đóng băng",
     )
 
     add_card(
@@ -373,15 +377,15 @@ def build_slide_5_methodology(prs: Presentation) -> None:
             "Chính sách kỹ thuật lịch sử (D2g: ALLOW_HISTORICAL):",
             "  • Chấp nhận các mã kỹ thuật lịch sử hoặc đã bị thu hồi (revoked/deprecated) có trong bộ kiểm chuẩn.",
             "  • Báo cáo dưới dạng distinct observation count, không tự ý gán lại (no silent remapping).",
-            "Không gian lớp mục tiêu (D2d: FROZEN_BENCHMARK_UNIVERSE):",
-            "  • Macro-F1 tính trên tập các lớp kỹ thuật chuẩn đóng băng, đảm bảo tính nhất quán giữa các lần chạy.",
+            "Vũ trụ Macro-F1 cố định (D2d: FROZEN_BENCHMARK_UNIVERSE = 474):",
+            "  • Tính Macro-F1 trên đúng 474 lớp kỹ thuật chuẩn đóng băng, đảm bảo nhất quán giữa các lần chạy.",
             "Loại trừ mẫu rỗng / mơ hồ (D2b-c: EXCLUDE):",
             "  • Mẫu không gán được nhãn hoặc nhãn mơ hồ bị loại khỏi mẫu số Attribution Accuracy.",
             "Lưu vết đầy đủ (D1: RECORD_ONLY): Lưu toàn văn phản hồi thô phục vụ kiểm toán độc lập.",
         ],
         header_color=DEEP_BLUE,
-        body_size=11.5,
-        item_spacing=3.0,
+        body_size=11.0,
+        item_spacing=2.5,
     )
 
     add_card(
@@ -390,28 +394,34 @@ def build_slide_5_methodology(prs: Presentation) -> None:
         1.35,
         5.7,
         5.55,
-        "4 Tiêu Chí Đánh Giá Cốt Lõi (D2h, D2i, D2e, D2f)",
+        "Các Tiêu Chí Giao Thức Đánh Giá Cốt Lõi",
         [
             "D2h: Multi-GT Retrieval Success (ANY_GT_RETRIEVED):",
             "  • Retrieval được tính là thành công nếu BẤT KỲ ground-truth technique ID nào có trong Top-k candidates.",
             "D2i: Failure Decomposition (INDEPENDENT_AXES):",
-            "  • Bóc tách độc lập lỗi tìm kiếm và phân loại trên các trục trực giao; ghi nhận đầy đủ phần giao thoa (overlap).",
-            "D2e: Invalid ATT&CK ID Denominator (INCLUDE_IN_DENOMINATOR):",
-            "  • Mã kỹ thuật ảo giác, sai cú pháp đều bị tính là thất bại (Fail-Closed).",
-            "D2f: Provider Failure Denominator (INCLUDE_IN_DENOMINATOR):",
-            "  • Lỗi API, timeout, refusal đều tính vào mẫu số, không được loại trừ.",
+            "  • Bóc tách lỗi thành các trục đo lường độc lập; ghi nhận đầy đủ phần giao thoa khác 0 (non-zero overlap).",
+            "D2e: Invalid ID Denominator (invalid_id_as_failure / INCLUDE_IN_DENOMINATOR):",
+            "  • Mã kỹ thuật ảo giác, sai cú pháp đều bị tính là thất bại trong mẫu số end-to-end (Fail-Closed).",
+            "D2f: Provider Failure Denominator (api_failure_as_failure / INCLUDE_IN_DENOMINATOR):",
+            "  • Lỗi API, timeout, refusal đều tính vào mẫu số thất bại end-to-end, không được loại trừ.",
             "D3: Khóa mô hình: ALLOW_LATEST_WITH_TIMESTAMP_BINDING (tem UTC thực tế).",
             "D4-D5: Thực thi tuần tự (SEQUENTIAL_ONLY), chặn cứng ngân sách (HARD_CAP).",
         ],
         header_color=SUCCESS_GREEN,
-        body_size=11.5,
-        item_spacing=3.0,
+        body_size=11.0,
+        item_spacing=2.5,
     )
 
     set_speaker_notes(
         slide,
         "GHI CHÚ DIỄN GIẢ (Slide 5):\n"
-        "Giao thức thực nghiệm v1.1 đóng băng 7 quyết định phương pháp luận cốt lõi D1-D7. Về mô hình đe dọa, danh mục kỹ thuật được neo tại STIX ATT&CK v19.2 Enterprise Windows (474 techniques). Điểm đặc biệt quan trọng là chính sách D2g ALLOW_HISTORICAL: các mã kỹ thuật lịch sử hoặc đã bị thu hồi có trong benchmark được chấp nhận và báo cáo dạng distinct observation count, không tự ý gán lại mã thay thế. Bốn tiêu chí đánh giá cốt lõi gồm D2h (ANY_GT_RETRIEVED cho multi-label), D2i (INDEPENDENT_AXES ghi nhận đầy đủ overlap), D2e (invalid ID tính vào mẫu số), và D2f (lỗi mạng tính vào mẫu số) thiết lập nguyên tắc fail-closed nghiêm ngặt.\n"
+        "Giao thức thực nghiệm v1.1 đóng băng 7 quyết định phương pháp luận cốt lõi D1-D7 và được tách bạch rõ ràng từng nhãn:\n"
+        "- D2d: Vũ trụ Macro-F1 cố định đúng 474 lớp (FROZEN_BENCHMARK_UNIVERSE = 474).\n"
+        "- D2e: invalid_id_as_failure (INCLUDE_IN_DENOMINATOR cho mã sai cú pháp/ảo giác).\n"
+        "- D2f: api_failure_as_failure (INCLUDE_IN_DENOMINATOR cho lỗi provider/timeout/parser).\n"
+        "- D2g: ALLOW_HISTORICAL chấp nhận các mã lịch sử/thu hồi dưới dạng distinct observation count, không tự ý gán lại mã thay thế.\n"
+        "- D2h: ANY_GT_RETRIEVED cho multi-label retrieval success.\n"
+        "- D2i: INDEPENDENT_AXES ghi nhận đầy đủ phần giao thoa giữa các trục đo lường lỗi.\n"
         "Bằng chứng dự án: reports/experiment_protocol_v1.md (SHA-256: d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c); attack/raw/enterprise-v19.2/enterprise-attack-19.2.json (SHA-256: dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4); tests/test_experiment_evaluation.py."
     )
 
@@ -550,14 +560,14 @@ def build_slide_8_rq1_schema(prs: Presentation) -> None:
         2.05,
         "Mô Hình Phân Rã Lỗi Độc Lập Theo Định Đề D2i (RQ2 Error Decomposition)",
         [
-            "Định đề D2i quy định retrieval failure và downstream generation failure là CÁC TRỤC ĐỘC LẬP (Independent Axes), không phải phân hoạch xung khắc rời rạc (phần giao thoa khác 0).",
+            "Định đề D2i quy định retrieval failure và downstream generation failure là CÁC TRỤC ĐO LƯỜNG ĐỘC LẬP (Independent Measurement Axes), không phải phân hoạch xung khắc rời rạc, không giả định độc lập xác suất ngẫu nhiên (phần giao thoa khác 0).",
             "Trục 1 - Retrieval Miss Rate: 1 - Hit@k (kỹ thuật ground-truth vắng mặt trong Top-k theo tiêu chí D2h ANY_MATCH).",
             "Trục 2 - Downstream Generation Failure: mô hình phát sinh invalid ATT&CK ID (D2e), gặp lỗi provider (D2f), hoặc chọn sai kỹ thuật dù đã được cung cấp.",
             "Trục 3 - Joint Overlap: ghi nhận rõ các bản ghi retrieval trượt ĐỒNG THỜI mô hình hallucinate/phân loại sai, không áp đặt thứ tự loại trừ nhân tạo.",
         ],
         header_color=DEEP_BLUE,
-        body_size=11.5,
-        item_spacing=3.0,
+        body_size=11.0,
+        item_spacing=2.5,
     )
 
     # Bottom left card: (top 3.50, height 3.40 -> bottom at 6.90 inches, leaving 0.60 inches before bottom)
@@ -571,7 +581,7 @@ def build_slide_8_rq1_schema(prs: Presentation) -> None:
         [
             "P(Correct | GT in Top-k): Đánh giá năng lực lựa chọn của LLM khi bộ tìm kiếm hoạt động chính xác.",
             "P(Correct | GT NOT in Top-k): Đánh giá khả năng LLM tự sửa sai dựa trên tri thức nội tại.",
-            "Macro-F1 & Exact Match: Tính trên không gian kỹ thuật chuẩn Frozen Benchmark Universe (D2d).",
+            "Macro-F1 & Exact Match: Tính trên không gian kỹ thuật chuẩn Frozen Benchmark Universe (D2d = 474).",
             "Fail-Closed Invariant: Mẫu lỗi API, timeout (D2f) hay mã sai cú pháp (D2e) đều tính vào mẫu số.",
         ],
         header_color=PRIMARY_BLUE,
@@ -601,8 +611,8 @@ def build_slide_8_rq1_schema(prs: Presentation) -> None:
     set_speaker_notes(
         slide,
         "GHI CHÚ DIỄN GIẢ (Slide 8):\n"
-        "Khung đánh giá RQ1 & RQ2 được xây dựng trên định đề D2i (Independent Axes). Chúng tôi bác bỏ hoàn toàn công thức cộng xác suất rời rạc sai lầm, bởi retrieval failure và downstream generation failure không hề xung khắc nhau mà có phần giao thoa rõ ràng. Các chỉ số có điều kiện P(Correct | GT in Top-k) và P(Correct | GT NOT in Top-k) cho phép định lượng chính xác xem LLM có bị đánh lừa bởi distractor hay có khả năng tự sửa sai. Toàn bộ ma trận chính thức 6,400 bản ghi đang chạy; tính đúng đắn toán học của Evaluator đã được chứng minh qua 5 test fixtures.\n"
-        "Bằng chứng dự án: reports/experiment_protocol_v1.md (D2e, D2f, D2h, D2i; SHA-256: d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c); tests/test_experiment_evaluation.py (94 tests pass)."
+        "Khung đánh giá RQ1 & RQ2 được xây dựng trên định đề D2i (Independent Measurement Axes). Chúng tôi bác bỏ hoàn toàn công thức cộng xác suất rời rạc sai lầm, bởi retrieval failure và downstream generation failure không hề xung khắc nhau mà có phần giao thoa rõ ràng; chúng tôi cũng không giả định độc lập xác suất ngẫu nhiên. Các chỉ số có điều kiện P(Correct | GT in Top-k) và P(Correct | GT NOT in Top-k) cho phép định lượng xem LLM có bị đánh lừa bởi distractor hay có khả năng tự sửa sai. Toàn bộ ma trận chính thức 6,400 bản ghi đang chạy; tính đúng đắn toán học của Evaluator đã được chứng minh qua 5 test fixtures.\n"
+        "Bằng chứng dự án: reports/experiment_protocol_v1.md (D2e, D2f, D2h, D2i; SHA-256: d3bf3d31...); tests/test_experiment_evaluation.py (94 tests pass)."
     )
 
 
@@ -612,30 +622,30 @@ def build_slide_9_rq3_cost(prs: Presentation) -> None:
     set_slide_background(slide, LIGHT_BG)
     add_header(
         slide,
-        "8. Nghiên Cứu Tiêu Thụ Tài Nguyên & Chi Phí Thực Nghiệm (RQ3)",
-        "Đo lường từ DEV Cost Pilot trên OpenAI gpt-5.6-luna xhigh và kiểm soát ngân sách",
+        "8. Tiêu Thụ Tài Nguyên & Chi Phí Thực Nghiệm (RQ3)",
+        "Dữ liệu DEV pilot (synthetic split), hạch toán token ước tính và kiểm soát ngân sách",
     )
 
     add_card(
-        slide, 0.8, 1.35, 5.7, 5.55, "DEV Cost Pilot & Kiểm Soát Ngân Sách (RQ3)",
+        slide, 0.8, 1.35, 5.7, 5.55, "DEV Cost Pilot (Synthetic Split) & Chi Phí Hạch Toán",
         [
-            "Mục đích: Đo lường mức tăng trưởng token thực tế và kiểm tra độ ổn định schema.",
-            "Quy mô: 20 yêu cầu thực tế qua Responses API trên 4 DEV views x 5 điều kiện (100% VALID, 0 retry, trễ TB 8,127.6 ms).",
-            "Ước tính từ dữ liệu telemetry pilot ban đầu:",
+            "Bản chất dữ liệu: DEV cohort là dữ liệu tổng hợp (synthetic-paired-v1 DEV split, 4 views x 5 điều kiện). Gửi request thực lên LLM provider không biến log tổng hợp thành in-the-wild telemetry.",
+            "Quy mô pilot: 20 requests thực tế qua Responses API (100% VALID, 0 retry, trễ TB 8,127.6 ms).",
+            "Chi phí hạch toán ước tính từ token quan sát được và biểu giá công bố (Estimated / Accounted Cost):",
+            "  • Pilot 20 requests: $0.024209 USD (conservative: $0.026320 USD) theo đơn giá.",
             "  • no_rag (k=0): 643 in / 224 out (~$0.00039 / query)",
             "  • rag_k1 (k=1): 1,115 in / 332 out (~$0.00062 / query)",
             "  • rag_k3 (k=3): 1,741 in / 1,087 out (~$0.00165 / query - telemetry ban đầu)",
             "  • rag_k5 (k=5): 2,518 in / 840 out (~$0.00151 / query)",
             "  • rag_k10 (k=10): 4,537 in / 801 out (~$0.00187 / query)",
-            "Phân định rõ chi phí thực nghiệm:",
-            "  • Quyết toán thực tế (Verified Spend): $0.024209 USD (conservative: $0.026320 USD).",
-            "  • Dự phóng tập TEST (Projected Spend): $8.20 – $8.99 USD cho 6,400 requests.",
-            "  • Trần ngân sách đóng băng: $19.99 USD (hard_budget_limit_usd).",
-            "  • Khoản giữ chỗ conservative pilot: $0.05264010 USD (reserved_budget_usd).",
+            "Phân định rõ ranh giới ngân sách:",
+            "  • Giữ chỗ thận trọng tạm thời: $0.05264010 USD (prior_pilot_provisional_hold_usd).",
+            "  • Dự báo chuẩn tắc tập TEST (Canonical forecast): $8.20 – $8.99 USD cho 6,400 requests.",
+            "  • Trần ngân sách đóng băng cứng (Hard budget cap): $19.99 USD (hard_budget_limit_usd).",
         ],
         header_color=DEEP_BLUE,
-        body_size=11.5,
-        item_spacing=2.5,
+        body_size=10.5,
+        item_spacing=2.0,
     )
 
     fig_path = FIGURES_DIR / "fig_rq3_pilot_token_scaling.png"
@@ -645,7 +655,7 @@ def build_slide_9_rq3_cost(prs: Presentation) -> None:
             slide, 6.833, 4.95, 5.7, 1.95, "Quy Luật Đánh Đổi Hiệu Năng & Chi Phí (RQ3 Trade-off)",
             [
                 "Tăng k từ 1 lên 10 giúp tăng Hit rate từ 4.2% lên 45.1%, nhưng lượng token đầu vào tăng ~4x.",
-                "Toàn bộ chi phí dự phóng cho tập TEST (< $10 USD) nằm an toàn dưới trần ngân sách đóng băng $19.99 USD.",
+                "Dự báo chuẩn tắc tập TEST (< $10 USD) nằm an toàn dưới trần ngân sách đóng băng $19.99 USD.",
             ],
             header_color=SUCCESS_GREEN,
             body_size=11.0,
@@ -661,18 +671,22 @@ def build_slide_9_rq3_cost(prs: Presentation) -> None:
                 "Nguy cơ nhiễu ngữ cảnh cho LLM:",
                 "  • Với k=10, tài liệu ATT&CK chiếm hơn 4,000 tokens trong prompt.",
                 "  • Các ứng viên không liên quan trở thành 'distractors' khiến LLM dễ phân vân khi phân loại.",
-                "Dự phóng ngân sách: Toàn bộ 6,400 lượt suy luận của TEST cohort chỉ tiêu tốn ~$8.20 - $9.00 USD.",
+                "Dự báo ngân sách chuẩn tắc: Toàn bộ 6,400 lượt suy luận của TEST cohort dự phóng tiêu tốn ~$8.20 - $8.99 USD.",
             ],
             header_color=PRIMARY_BLUE,
-            body_size=11.5,
-            item_spacing=3.0,
+            body_size=11.0,
+            item_spacing=2.5,
         )
 
     set_speaker_notes(
         slide,
         "GHI CHÚ DIỄN GIẢ (Slide 9):\n"
-        "Trong phân tích RQ3, chúng tôi làm rõ số liệu chi phí từ DEV Cost Pilot (20 requests thực tế trên gpt-5.6-luna). Con số ~$0.00165/query là ước tính từ telemetry pilot ban đầu tại nhánh k=3 do độ dài reasoning output. Chi phí quyết toán thực tế (verified spend) là $0.024209 USD (conservative rate: $0.026320 USD). Chi phí dự phóng cho toàn bộ 6,400 requests của tập TEST là $8.20 – $8.99 USD. Toàn bộ tiến trình được kiểm soát bởi trần ngân sách đóng băng $19.99 USD và khoản giữ chỗ conservative pilot $0.05264010 USD, bảo đảm không bao giờ vượt ngân sách.\n"
-        "Bằng chứng dự án: config/experiment_config.json (hard_budget_limit_usd: 19.99); reports/evidence/dev_cost_pilot_20261001/summary.json (SHA-256: f8dfe99479346dbbeff94d6e9dc7d11019623e5932ef27a00f1c3222e4c92b23); tests/test_monetary_guard.py."
+        "Trong phân tích RQ3, chúng tôi làm rõ các khái niệm chi phí và dữ liệu:\n"
+        "1. Dữ liệu DEV là dữ liệu tổng hợp (synthetic-paired-v1 DEV split, 4 views x 5 nhánh). Việc gửi request lên OpenAI không biến log tổng hợp thành dữ liệu thực địa in-the-wild.\n"
+        "2. Chi phí pilot 20 request ($0.024209 USD standard, $0.026320 USD conservative) là 'Chi phí hạch toán ước tính từ token quan sát được và biểu giá công bố', vì chúng tôi chưa có hóa đơn quyết toán chính thức từ OpenAI.\n"
+        "3. Con số ~$0.00165/query là ước tính ban đầu tại nhánh k=3 do độ dài reasoning output.\n"
+        "4. Phân biệt rõ khoản giữ chỗ thận trọng tạm thời ($0.05264010 USD prior_pilot_provisional_hold_usd), dự báo chuẩn tắc tập TEST ($8.20 – $8.99 USD cho 6,400 requests), và trần ngân sách đóng băng cứng $19.99 USD (hard_budget_limit_usd).\n"
+        "Bằng chứng dự án: config/experiment_config.json (hard_budget_limit_usd: 19.99); reports/evidence/dev_cost_pilot_20261001/summary.json (SHA-256: f8dfe994...); tests/test_monetary_guard.py."
     )
 
 
@@ -690,8 +704,8 @@ def build_slide_10_limitations(prs: Presentation) -> None:
             "Nghiên cứu không khẳng định kết quả áp dụng nguyên vẹn cho môi trường thực tế cho đến khi hoàn tất T15 real pilot.",
         ],
         header_color=ALERT_RED,
-        body_size=12.0,
-        item_spacing=4.0,
+        body_size=11.5,
+        item_spacing=3.5,
     )
 
     add_card(
@@ -701,26 +715,26 @@ def build_slide_10_limitations(prs: Presentation) -> None:
             "Khoảng cách giữa ngôn ngữ nhật ký và ngôn ngữ mô tả của ATT&CK đòi hỏi phải có kiến trúc tìm kiếm lai (Hybrid Search: Dense + BM25 Lexical).",
         ],
         header_color=PRIMARY_BLUE,
-        body_size=12.0,
-        item_spacing=4.0,
+        body_size=11.5,
+        item_spacing=3.5,
     )
 
     add_card(
-        slide, 8.8, 1.35, 3.733, 5.55, "Phạm Vi Mô Hình & Tái Lập An Toàn",
+        slide, 8.8, 1.35, 3.733, 5.55, "Phạm Vi Mô Hình & Quy Trình Tái Lập",
         [
             "Nghiên cứu tập trung đánh giá trên mô hình đại diện gpt-5.6-luna nhằm kiểm soát chặt chẽ biến số.",
             "Cần mở rộng kiểm nghiệm trên các mô hình mã nguồn mở (Llama-3, Qwen) để xác minh tính phổ quát của quy luật phân rã lỗi.",
-            "Quy trình tái lập an toàn: Mọi kịch bản kiểm thử bắt buộc chạy qua runner offline scripts/run_offline_tests.py, tuyệt đối không dùng pytest trần không có guard.",
+            "Quy trình tái lập an toàn: Mọi kịch bản kiểm thử bắt buộc chạy qua runner offline scripts/run_offline_tests.py, can thiệp socket Python để chặn kết nối ngoài ý muốn.",
         ],
         header_color=SLATE_HEADER,
-        body_size=12.0,
-        item_spacing=4.0,
+        body_size=11.5,
+        item_spacing=3.5,
     )
 
     set_speaker_notes(
         slide,
         "GHI CHÚ DIỄN GIẢ (Slide 10):\n"
-        "Nghiên cứu công khai các giới hạn khoa học: Dữ liệu hiện tại nằm trong phạm vi kịch bản có cấu trúc synthetic-paired-v1; bộ nhúng dense đơn tầng chưa kết nối được từ vựng kỹ thuật hệ thống (Event ID số); và mô hình đánh giá là gpt-5.6-luna. Để đảm bảo an toàn tuyệt đối, mọi quy trình kiểm thử tái lập phải thực thi qua runner offline scripts/run_offline_tests.py nhằm bảo đảm không phát sinh bất kỳ kết nối mạng ngoài nào.\n"
+        "Nghiên cứu công khai các giới hạn khoa học: Dữ liệu hiện tại nằm trong phạm vi kịch bản có cấu trúc synthetic-paired-v1; bộ nhúng dense đơn tầng chưa kết nối được từ vựng kỹ thuật hệ thống (Event ID số); và mô hình đánh giá là gpt-5.6-luna. Để đảm bảo an toàn, mọi quy trình kiểm thử tái lập phải thực thi qua runner offline scripts/run_offline_tests.py nhằm đánh chặn các kết nối mạng ngẫu nhiên ở tầng socket Python.\n"
         "Bằng chứng dự án: docs/reproducibility.md; scripts/run_offline_tests.py; tests/test_offline_guard.py (OFFLINE_GUARD egress=0)."
     )
 
@@ -732,20 +746,20 @@ def build_slide_11_reproducibility(prs: Presentation) -> None:
     add_header(slide, "10. Khả Năng Tái Lập Độc Lập & Đóng Góp Khoa Học", "Toàn bộ nghiên cứu có thể kiểm chứng ngoại tuyến với chi phí 0 đồng")
 
     add_card(
-        slide, 0.8, 1.35, 5.7, 5.55, "Tái Lập 100% Ngoại Tuyến (Zero-Cost)",
+        slide, 0.8, 1.35, 5.7, 5.55, "Tái Lập Ngoại Tuyến & Phạm Vi Offline Guard",
         [
-            "Lệnh tái lập tự động toàn diện: uv run python scripts/reproduce_study.py --all",
-            "Lệnh kiểm thử bộ test suite có bảo vệ: uv run python scripts/run_offline_tests.py",
-            "Tuyệt đối không dùng pytest trần không có OFFLINE_GUARD.",
-            "Điều kiện tái lập:",
-            "  • Tái lập ngoại tuyến: Sử dụng 15 canonical artifacts đã khóa mật mã trong repo.",
-            "  • Tái lập toàn diện luồng live provider: Yêu cầu nạp credentials thực và chạy dưới cơ chế budget guard trần $19.99 USD.",
-            "Khóa mật mã 15 artifact cốt lõi trong canonical_experiment_lock_v1.json.",
-            "Tự động phát hiện và chặn đứng mọi hành vi rò rỉ mã bí mật hoặc gọi API ra ngoài bằng offline_guard.",
+            "Lệnh chuẩn tắc có bảo vệ ngoại tuyến:",
+            "  python scripts/run_offline_tests.py -m pytest ... (hoặc cờ -c)",
+            "Lệnh tái lập tự động toàn diện: python scripts/reproduce_study.py --all",
+            "Phạm vi kỹ thuật của offline_guard:",
+            "  • Can thiệp tầng socket Python (chặn kết nối mạng ngoài ý muốn) và lọc biến môi trường credentials.",
+            "  • Không phải là sandbox cấp OS (không cô lập mã máy binary tùy ý ngoài Python runtime).",
+            "  • Dependencies và artifact tiên quyết đã nạp sẵn cục bộ; lệnh uv run trần không có guard bảo vệ không tự động đảm bảo cách ly mạng nếu thiếu cờ offline.",
+            "Điều kiện tái lập: Ngoại tuyến dùng 15 artifact đóng băng; luồng live provider cần credentials thực dưới budget guard trần $19.99 USD.",
         ],
         header_color=SUCCESS_GREEN,
-        body_size=11.5,
-        item_spacing=3.0,
+        body_size=11.0,
+        item_spacing=2.5,
     )
 
     add_card(
@@ -764,7 +778,7 @@ def build_slide_11_reproducibility(prs: Presentation) -> None:
     set_speaker_notes(
         slide,
         "GHI CHÚ DIỄN GIẢ (Slide 11):\n"
-        "Khả năng tái lập độc lập là cam kết trọng tâm của dự án. Lệnh reproduce_study.py --all tái tạo toàn bộ chẩn đoán, bảng biểu và đồ thị từ 15 artifact đã đóng băng mà không tốn chi phí. Việc kiểm thử bắt buộc sử dụng runner scripts/run_offline_tests.py để kích hoạt OFFLINE_GUARD. Tái lập toàn diện luồng live provider yêu cầu credentials thực và chạy dưới budget guard kiểm soát ngân sách trần $19.99 USD. Bốn đóng góp khoa học cốt lõi đã thiết lập nền tảng đối chứng vững chắc cho cộng đồng RAG an ninh mạng.\n"
+        "Khả năng tái lập độc lập là cam kết trọng tâm của dự án. Lệnh reproduce_study.py --all tái tạo toàn bộ chẩn đoán, bảng biểu và đồ thị từ 15 artifact đã đóng băng mà không tốn chi phí. Việc kiểm thử bắt buộc sử dụng runner scripts/run_offline_tests.py để kích hoạt OFFLINE_GUARD. Chúng tôi minh bạch rõ ràng: offline_guard là cơ chế đánh chặn ở tầng socket Python và lọc biến môi trường, không phải là sandbox cấp OS. Tái lập toàn diện luồng live provider yêu cầu credentials thực và chạy dưới budget guard kiểm soát ngân sách trần $19.99 USD. Bốn đóng góp khoa học cốt lõi đã thiết lập nền tảng đối chứng vững chắc cho cộng đồng RAG an ninh mạng.\n"
         "Bằng chứng dự án: config/canonical_experiment_lock_v1.json (SHA-256: 961ba9b3...); scripts/reproduce_study.py; scripts/run_offline_tests.py; tests/test_smoke_cases.py."
     )
 
@@ -801,9 +815,9 @@ def build_slide_12_conclusion(prs: Presentation) -> None:
     p1.space_before = Pt(8)
 
     points = [
-        "RAG cung cấp tri thức nền tảng quan trọng, nhưng chất lượng khâu truy xuất (Retrieval) là yếu tố quyết định thành bại.",
-        "Phân rã lỗi theo D2i (Independent Axes) định lượng độc lập lỗi tìm kiếm, lỗi sinh của mô hình và phần giao thoa.",
-        "Quy trình tái lập an toàn: Toàn bộ kiểm thử chạy qua runner offline scripts/run_offline_tests.py bảo đảm không rò rỉ credential.",
+        "RAG cung cấp tri thức nền tảng quan trọng; giả thuyết RQ2 về mức độ ảnh hưởng nhân quả của retrieval đang được kiểm chứng đối chứng trên ma trận TEST.",
+        "Phân rã lỗi D2i theo 3 trục đo lường độc lập (retrieval miss, downstream generation failure, joint overlap), ghi nhận phần giao thoa khác 0, không giả định độc lập xác suất ngẫu nhiên.",
+        "Quy trình tái lập ngoại tuyến: Sử dụng runner scripts/run_offline_tests.py can thiệp tầng socket và lọc biến môi trường nhằm giảm thiểu rủi ro rò rỉ credential và kết nối ngoài ý muốn.",
         "Định hướng tiếp theo: Triển khai Hybrid Retrieval (Dense + BM25) và kiểm nghiệm mở rộng trên telemetry thực tế.",
         "Mã nguồn, dữ liệu và báo cáo tái lập sẵn sàng tại: https://github.com/habachcp6/RAG2ATTCK",
     ]
@@ -811,9 +825,9 @@ def build_slide_12_conclusion(prs: Presentation) -> None:
         p = tf.add_paragraph()
         p.text = f"•  {pt}"
         p.font.name = "Calibri"
-        p.font.size = Pt(13)
+        p.font.size = Pt(12.5)
         p.font.color.rgb = RGBColor(226, 232, 240)
-        p.space_before = Pt(8)
+        p.space_before = Pt(6)
 
     p_qa = tf.add_paragraph()
     p_qa.text = "Xin trân trọng cảm ơn Quý Thầy Cô và Hội Đồng! Kính mời đặt câu hỏi thảo luận."
@@ -821,12 +835,13 @@ def build_slide_12_conclusion(prs: Presentation) -> None:
     p_qa.font.size = Pt(15)
     p_qa.font.bold = True
     p_qa.font.color.rgb = CYAN_ACCENT
-    p_qa.space_before = Pt(18)
+    p_qa.space_before = Pt(16)
 
     set_speaker_notes(
         slide,
         "GHI CHÚ DIỄN GIẢ (Slide 12):\n"
-        "Tóm lại, RAG2ATT&CK đã chứng minh rằng để ứng dụng RAG thành công trong SOC, chúng ta không thể chỉ kỳ vọng vào mô hình ngôn ngữ lớn, mà phải giải quyết bài toán cốt lõi là tối ưu hóa bộ truy xuất và cấu trúc hóa biểu diễn log. Toàn bộ mã nguồn, dữ liệu thực nghiệm và gói tái lập đã được công bố tại PR #26. Tôi xin chân thành cảm ơn sự lắng nghe của Quý Thầy Cô và kính mời Hội đồng đặt câu hỏi thảo luận.\n"
+        "Tóm lại, RAG2ATT&CK đo lường thực nghiệm đối chứng vai trò của RAG trong bài toán ánh xạ log Windows sang ATT&CK techniques. Các phát hiện hiện tại phản ánh phạm vi đo lường thực nghiệm và các giả thuyết đang chờ hoàn tất ma trận TEST. Chúng tôi nhấn mạnh tính trung thực khoa học: phân rã lỗi D2i theo các trục đo lường độc lập không giả định độc lập xác suất ngẫu nhiên, và quy trình tái lập sử dụng runner can thiệp socket tầng ứng dụng.\n"
+        "Khai báo công cụ: Toàn bộ slide deck này được tác tạo tự động bằng kịch bản Python scripts/generate_slides.py (sử dụng thư viện python-pptx định dạng 16:9 widescreen), được thẩm định hiển thị qua bundled artifact tools.\n"
         "Bằng chứng dự án: PR #26 (https://github.com/habachcp6/RAG2ATTCK/pull/26); docs/sanitized_evidence_manifest.json; reports/evidence/reproducibility_package_manifest.md."
     )
 

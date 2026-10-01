@@ -3,7 +3,7 @@
 **Subagent Handle:** Subagent D (Reproducibility & Presentation Owner for Phase S1)  
 **Dedicated Worktree:** `D:/RAG2ATTCK-worktrees/repro-presentation-s1`  
 **Branch:** `codex/s1-reproducibility-presentation`  
-**Execution Timestamp (UTC):** 2026-10-01T22:06:00Z (Local: 2026-10-02T05:06:00+07:00)  
+**Execution Timestamp (UTC):** 2026-10-01T22:18:00Z (Local: 2026-10-02T05:18:00+07:00)  
 **Baseline PRE_SHA:** `80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315`  
 **Execution Policy:** STRICTLY ZERO live provider/API calls. Zero secret leakage. 100% offline verifiable.
 
@@ -11,19 +11,19 @@
 
 ## 1. Executive Summary & Inventory of Deliverables
 
-Subagent D has completed the inventory, D_REPAIR remediation, CD_RENDER_REPAIR enhancements, and BD_MODE_BOUNDARY execution boundaries across all Phase S1 deliverables. The presentation deck (`docs/presentation/slides.pptx` and `docs/presentation/slides.md`) and offline reproducibility pipeline have been audited and upgraded to enforce mathematical rigor (D2i independent failure axes), zero bounding-box text overflow, consistent widescreen typography, strict academic claim hygiene, artifact-cited speaker notes on every single slide, and fail-closed canonical execution mode enforcement (`execution_mode == 'live'`). A complete mock matrix (even with `split='test'`) is strictly barred from being published as canonical research results. An external researcher or reviewer can independently verify every cryptographic artifact hash, recompute the T20 retrieval diagnostics from raw records, execute the canonical evaluation pipeline under Frozen Protocol v1.1, and recompile publication-quality figures, markdown tables, and a 16:9 PowerPoint presentation deck without spending money, querying live LLM APIs, or installing external database infrastructure.
+Subagent D has completed the inventory, D_REPAIR remediation, CD_RENDER_REPAIR enhancements, BD_MODE_BOUNDARY execution boundaries, and CD_FACTUAL_R2 factual refinements across all Phase S1 deliverables. The presentation deck (`docs/presentation/slides.pptx` and `docs/presentation/slides.md`) and offline reproducibility pipeline have been audited and upgraded to enforce mathematical rigor (D2i independent measurement axes without assuming stochastic independence), zero bounding-box text overflow, consistent widescreen typography, strict academic claim hygiene (non-causal empirical hypothesis framing), accurate cost terminology (accounted token costs vs provisional holds), explicit socket-level offline guard disclosures, automated tooling disclosures, artifact-cited speaker notes on every single slide, and fail-closed canonical execution mode enforcement (`execution_mode == 'live'`). A complete mock matrix (even with `split='test'`) is strictly barred from being published as canonical research results. An external researcher or reviewer can independently verify every cryptographic artifact hash, recompute the T20 retrieval diagnostics from raw records, execute the canonical evaluation pipeline under Frozen Protocol v1.1, and recompile publication-quality figures, markdown tables, and a 16:9 PowerPoint presentation deck without spending money, querying live LLM APIs, or installing external database infrastructure.
 
 ### Complete Table of Authored Deliverables
 
 | Deliverable | File Path | File Size (Bytes) | SHA-256 Digest | Status |
 | :--- | :--- | :---: | :--- | :---: |
-| **Offline Reproducibility Guide** | `docs/reproducibility.md` | 16,761 | `e0d89163c14b0ff3e22f1a1bfe7339adbaac89b7cd08ef68bc08438097ebb358` | VERIFIED |
+| **Offline Reproducibility Guide** | `docs/reproducibility.md` | 17,033 | `be21fd04ce2879ce3d752981b71b38a7aa843753c788217c05d1b0b8bb70f13b` | VERIFIED |
 | **Offline Reproduction Pipeline** | `scripts/reproduce_study.py` | 51,485 | `b2e04e3b926c03300050a34695ca9b24daeaeb5dfdce701f2465617b17e4b36f` | VERIFIED |
 | **Proposed Reconciled README** | `docs/README_PROPOSED.md` | 19,460 | `48209e0e39ac4e2c2be1e0fa10721ff73c8a404f4cd6276537d02198d586936b` | VERIFIED |
-| **Presentation Deck Outline (MD)** | `docs/presentation/slides.md` | 30,547 | `50f573c356dd9fde4ef0f5e399de251659297b0e5ec72beb67e814d6ab084298` | VERIFIED |
-| **PowerPoint Deck Builder Script** | `scripts/generate_slides.py` | 50,280 | `471a44a214785bc1fc5af623b7b5f13890809f5f0969661747fd76f3f393ba6e` | VERIFIED |
-| **Compiled PowerPoint Deck (PPTX)**| `docs/presentation/slides.pptx` | 374,804 | `b82b25ba494dca81270ca54ee8b0163556e7eef98c1d1a8882313005aa66bc2d` | VERIFIED |
-| **Sanitized Evidence Manifest** | `docs/sanitized_evidence_manifest.json` | 12,769 | `a76be1292413f11ff31c013194f8019ac41d75397e5063f54ff7a37f49e19557` | VERIFIED |
+| **Presentation Deck Outline (MD)** | `docs/presentation/slides.md` | 32,912 | `82881eec5ed0f421cbba20b871a499fa91bf051071f9c24c3eb4bb0a4445029f` | VERIFIED |
+| **PowerPoint Deck Builder Script** | `scripts/generate_slides.py` | 52,395 | `d4431d317efbf98e25c1424a813eb0b1178c0e4932fe04759125eb80e7d17d9b` | VERIFIED |
+| **Compiled PowerPoint Deck (PPTX)**| `docs/presentation/slides.pptx` | 375,682 | `e37a74f2db91e96714e346d6d4bcbb867954e13fedd9f7b1d33ce41067243046` | VERIFIED |
+| **Sanitized Evidence Manifest** | `docs/sanitized_evidence_manifest.json` | 12,769 | `986571a4041f3a97739fba54a5b38f32390e1cf0d710e3f976d81e7958666922` | VERIFIED |
 
 ---
 
@@ -148,11 +148,12 @@ The reproduction script generated 3 high-resolution 300 DPI figures and 4 markdo
 
 1. **Zero Secret Leakage:**
    - Automated regex scanning verified that no API keys, bearer tokens, passwords, or private keys exist in any committed or generated file.
-2. **Offline Isolation:**
+2. **Offline Isolation & Scope:**
    - Verified with `scripts/run_offline_tests.py`:
      ```text
      OFFLINE_GUARD: installed=True attempted_egress=0
      ```
+   - Technical scope: `offline_guard` intercepts network connections at the Python socket level and strips credentials from `os.environ`; it is not an OS-level sandbox or container. Bare `uv run` commands without offline flags provide no network isolation guarantee.
 3. **Runtime Launcher Binding & Concurrency Handling:**
    - Runtime launcher hash: `05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa`.
    - Windows filesystem concurrency wrapper: Windows-specific `WinError 5` (Access Denied) and `WinError 32` (Sharing Violation) filesystem errors during atomic journal flushes and file replacements are handled via a dedicated 12-attempt retry wrapper in `StudyBudgetLedger._write_atomically_unlocked` and `_write_anchor_atomically_unlocked`.
@@ -163,6 +164,10 @@ The reproduction script generated 3 high-resolution 300 DPI figures and 4 markdo
    - `T1218.012` is named `'System Binary Proxy Execution: Verclsid'`.
 6. **Scope Invariant:**
    - All empirical evaluations are strictly bounded to the frozen `synthetic-paired-v1` benchmark; no unwarranted claims regarding in-the-wild real enterprise telemetry are made.
+7. **Cost Semantics (RQ3):**
+   - Observed pilot costs ($0.024209 USD) are accounted/estimated costs derived from observed tokens and published pricing, not OpenAI-issued billing invoices. Canonical TEST projection is $8.20–$8.99 USD under a $19.99 USD hard budget cap, with a conservative provisional reservation of $0.05264010 USD (`prior_pilot_provisional_hold_usd`).
+8. **Presentation Tooling Disclosure:**
+   - The presentation slide deck (`docs/presentation/slides.pptx`) is automatically authored by the Python `python-pptx` pipeline (`scripts/generate_slides.py`) in 16:9 widescreen format, with verified geometry and zero text overflow.
 
 ---
 

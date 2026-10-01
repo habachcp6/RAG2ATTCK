@@ -268,8 +268,8 @@
   "reproducibility_package": {
     "reproducibility_guide": {
       "path": "docs/reproducibility.md",
-      "sha256": "e0d89163c14b0ff3e22f1a1bfe7339adbaac89b7cd08ef68bc08438097ebb358",
-      "size_bytes": 16761
+      "sha256": "be21fd04ce2879ce3d752981b71b38a7aa843753c788217c05d1b0b8bb70f13b",
+      "size_bytes": 17033
     },
     "reproduction_script": {
       "path": "scripts/reproduce_study.py",
@@ -283,18 +283,18 @@
     },
     "presentation_markdown": {
       "path": "docs/presentation/slides.md",
-      "sha256": "50f573c356dd9fde4ef0f5e399de251659297b0e5ec72beb67e814d6ab084298",
-      "size_bytes": 30547
+      "sha256": "82881eec5ed0f421cbba20b871a499fa91bf051071f9c24c3eb4bb0a4445029f",
+      "size_bytes": 32912
     },
     "slide_generator_script": {
       "path": "scripts/generate_slides.py",
-      "sha256": "471a44a214785bc1fc5af623b7b5f13890809f5f0969661747fd76f3f393ba6e",
-      "size_bytes": 50280
+      "sha256": "d4431d317efbf98e25c1424a813eb0b1178c0e4932fe04759125eb80e7d17d9b",
+      "size_bytes": 52395
     },
     "presentation_deck_pptx": {
       "path": "docs/presentation/slides.pptx",
-      "sha256": "b82b25ba494dca81270ca54ee8b0163556e7eef98c1d1a8882313005aa66bc2d",
-      "size_bytes": 374804
+      "sha256": "e37a74f2db91e96714e346d6d4bcbb867954e13fedd9f7b1d33ce41067243046",
+      "size_bytes": 375682
     }
   }
 }

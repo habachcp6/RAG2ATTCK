@@ -202,7 +202,7 @@ uv run python scripts/reproduce_study.py --run-evaluator --run-dir reports/evide
 
 The presentation deck is provided in two complementary formats:
 1. **Markdown Outline / Scaffold:** [`docs/presentation/slides.md`](presentation/slides.md) (12 slides structured for thesis defense / technical presentation).
-2. **Materialized PowerPoint Deck:** [`docs/presentation/slides.pptx`](presentation/slides.pptx) (16:9 widescreen, custom cybersecurity color palette, embedded metric cards and figures).
+2. **Materialized PowerPoint Deck:** [`docs/presentation/slides.pptx`](presentation/slides.pptx) (16:9 widescreen, custom cybersecurity color palette, embedded metric cards and figures, automatically authored by the Python `python-pptx` pipeline via `scripts/generate_slides.py`).
 
 To re-generate the PPTX slides programmatically:
 ```bash
@@ -244,7 +244,7 @@ outputs/reproduction/
 
 - **Zero Credentials:** The codebase and all evidence bundles have been scanned with automated regex byte-scanners; no `OPENAI_API_KEY`, AWS credentials, or bearer tokens exist in any committed file.
 - **Anti-Label Leakage:** Raw inference rows (`data/ground_truth/synthetic/inference.jsonl`) undergo strict allowlist filtering (`INFERENCE_ALLOWLIST` in `src/synthetic.py`). Fields such as `technique_id`, `rule_name`, `tactic`, and `description` are strictly stripped prior to evaluation. Top-level row keys are restricted strictly to `sample_id` and `endpoint_evidence`.
-- **Offline Network Isolation:** The test suite and reproduction scripts utilize the `offline_guard` (`scripts/run_offline_tests.py`), which intercepts socket creations and logs any attempted external network egress, ensuring absolute experimental isolation.
+- **Offline Network Isolation:** The test suite and reproduction scripts utilize the `offline_guard` (`scripts/run_offline_tests.py`), which intercepts socket connections at the Python level and strips environment credentials. (Note: `offline_guard` operates at the Python application socket level rather than an OS-level sandbox container; bare `uv run` commands without offline flags or pre-cached packages have no network guarantee).
 
 ---
 

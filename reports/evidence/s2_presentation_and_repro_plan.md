@@ -16,17 +16,25 @@ This document establishes the authoritative, execution-ready **Phase S2 Presenta
 
 ### Core Scientific & Engineering Invariants:
 1. **Strictly Zero Mock Findings as Canonical:** Synthetic fixture diagnostics (`outputs/reproduction/fixture_diagnostics/`) remain explicitly labeled with `fixture_only=True` (`sample_count=5`). Canonical results require the full 1,280 samples x 5 conditions = 6,400 live-provider records.
-2. **Deterministic Placeholders-to-Deck Mapping:** Every metric slot in Slides 6, 7, 8, 9, and 10 is mapped directly to authoritative output JSON fields produced by `evaluate_experiment()` and `StudyBudgetLedger`.
-3. **Presentation Authoring Compliance Protocol:** Final slide deck modifications will be executed using the bundled JS artifact-tool pipeline (`convert_pptx_to_zip` / JS XML editing) to ensure zero text-box clipping, pixel-perfect 16:9 widescreen layout (13.333 x 7.500 inches), and strict preservation of speaker notes and styling. The Python script (`scripts/generate_slides.py`) is recognized solely as an exploratory preparation scaffold.
-4. **Zero Secret Leakage & Egress Isolation:** All request journals and manifests undergo automated allowlist filtering and regex sanitization. Offline reproduction must run with `attempted_egress=0` under `offline_guard`.
+2. **Native Evaluator Artifact Contract (Full Specialist B Alignment):** The canonical evaluator (`src/evaluation/experiment_metrics.py`) produces exactly 6 native output artifacts:
+   - `overall_metrics.json`
+   - `per_condition_metrics.json`
+   - `per_technique_metrics.json`
+   - `retrieval_conditional_metrics.json`
+   - `failure_decomposition.json`
+   - `run_provenance.json`  
+   *(Notice: There are strictly NO `evaluation_summary.json` or `condition_metrics.json` files).*
+3. **Deterministic Placeholders-to-Deck Mapping:** Every metric slot in Slides 6, 7, 8, 9, and 10 is mapped directly to authoritative output fields from these 6 native files and `StudyBudgetLedger`.
+4. **Presentation Authoring Compliance Protocol:** Final slide deck modifications will be executed using the bundled JS artifact-tool pipeline (`convert_pptx_to_zip` / JS XML editing) to ensure zero text-box clipping, pixel-perfect 16:9 widescreen layout (13.333 x 7.500 inches), and strict preservation of speaker notes and styling. The Python script (`scripts/generate_slides.py`) is recognized solely as an exploratory preparation scaffold.
+5. **Zero Secret Leakage & Egress Isolation:** All request journals and manifests undergo automated allowlist filtering and regex sanitization. Offline reproduction must run with `attempted_egress=0` under `offline_guard`.
 
 ---
 
 ## 2. Placeholders-to-Deck Mapping for Phase S2 Canonical Updating
 
-Once authoritative evaluation on the completed live run directory produces the canonical metric bundle (`canonical_study_results/*.json`), the Vietnamese presentation deck (`docs/presentation/slides.md` and `docs/presentation/slides.pptx`) will be updated by replacing placeholder tokens with verified empirical values.
+Once authoritative evaluation on the completed live run directory produces the canonical metric bundle (strictly the 6 native JSON artifacts above), the Vietnamese presentation deck (`docs/presentation/slides.md` and `docs/presentation/slides.pptx`) will be updated by replacing placeholder tokens with verified empirical values.
 
-### 2.1 Slide 6: Phương Pháp & Chi Phí Thực Nghiệm (Budget, settled Spend & Tariff)
+### 2.1 Slide 6: Phương Pháp & Chi Phí Thực Nghiệm (Budget, Settled Spend & Tariff)
 
 *Objective:* Replace provisional pilot estimates with final settled financial ledger metrics across all 6,400 live requests.
 
@@ -122,13 +130,20 @@ Once authoritative evaluation on the completed live run directory produces the c
 
 ### 2.4 Slide 9: Kết Quả RQ3 - Đánh Đổi Hiệu Năng, Chi Phí & Biểu Diễn Telemetry
 
-*Objective:* Present the Pareto frontier (Cost vs. Latency vs. Accuracy) and the impact of the representation gap on downstream reasoning.
+*Objective:* Present the Pareto frontier (Cost vs. Latency vs. Accuracy) and the impact of the representation gap on downstream reasoning, incorporating Specialist B's exact complete scorable pairs breakdown on the TEST split.
 
 | Placeholder Key | Source Field / Output Path | Semantic Description & Validation Rule |
 | :--- | :--- | :--- |
 | `{{S2_PARETO_OPTIMAL_COND}}` | Computed from cost, latency, Macro-F1 | The most cost-effective operating condition on the Pareto front. |
 | `{{S2_COST_PER_QUERY_K10}}` | `summary.json -> per_condition_cost -> rag_k10` | Average cost per query at $k=10$. |
 | `{{S2_LATENCY_GROWTH_FACTOR}}` | Computed: `latency(k=10) / latency(no_rag)` | Ratio of latency increase from No-RAG to $k=10$. |
+| `{{S2_TOTAL_TEST_PAIRS}}` | `dataset_manifest.json -> test_pairs` | Total candidate scenario pairs in TEST split (Pinned: `640` pairs / 1,280 views). |
+| `{{S2_COMPLETE_SCORABLE_PAIRS}}`| `overall_metrics.json -> complete_scorable_pairs` | Exactly `278` complete scorable pairs (where both single & contextual views are mapped). |
+| `{{S2_CONTEXTUAL_ONLY_PAIRS}}` | `overall_metrics.json -> contextual_only_pairs` | Exactly `162` pairs with only contextual view mapped. |
+| `{{S2_NEITHER_MAPPED_PAIRS}}` | `overall_metrics.json -> neither_mapped_pairs` | Exactly `200` pairs with neither view mapped (278 + 162 + 200 = 640). |
+| `{{S2_PAIRWISE_WIN_RATE_SINGLE}}`| `overall_metrics.json -> pairwise_single_better_rate` | Win rate where Single representation is superior across the 278 complete scorable pairs. |
+| `{{S2_PAIRWISE_WIN_RATE_CONTEXTUAL}}`| `overall_metrics.json -> pairwise_contextual_better_rate` | Win rate where Contextual representation is superior across the 278 complete scorable pairs. |
+| `{{S2_PAIRWISE_EQUAL_RATE}}` | `overall_metrics.json -> pairwise_equal_rate` | Proportion of equal performance across the 278 complete scorable pairs. |
 | `{{S2_SINGLE_VIEW_ACC}}` | `overall_metrics.json -> single_event_accuracy` | End-to-end attribution accuracy on Single-event views. |
 | `{{S2_CONTEXTUAL_VIEW_ACC}}` | `overall_metrics.json -> contextual_event_accuracy` | End-to-end attribution accuracy on Contextual-event views. |
 | `{{S2_BENIGN_DRIFT_IMPACT}}` | Computed: `Acc(Single) - Acc(Contextual)` | Degradation in downstream accuracy caused by contextual noise. |
@@ -137,13 +152,17 @@ Once authoritative evaluation on the completed live run directory produces the c
 - **Phân Tích Pareto Đánh Đổi (Cost - Latency - Accuracy):**
   - Tăng $k$ từ 0 lên 10 làm tăng chi phí hạch toán `{{S2_LATENCY_GROWTH_FACTOR}}`x và thời gian đáp ứng, trong khi biên độ tăng F1 có xu hướng tiệm cận.
   - Điểm tối ưu kinh tế kỹ thuật (Pareto Sweet Spot): Điều kiện `{{S2_PARETO_OPTIMAL_COND}}`.
-- **Tác Động Của Khoảng Cách Biểu Diễn (Representation Gap On Reasoning):**
-  - Single-event views đạt độ chính xác gán nhãn: `{{S2_SINGLE_VIEW_ACC}}`%.
-  - Contextual-event views đạt độ chính xác gán nhãn: `{{S2_CONTEXTUAL_VIEW_ACC}}`%.
-  - Chênh lệch `{{S2_BENIGN_DRIFT_IMPACT}}`% chứng minh hiện tượng Benign Drift không chỉ làm tụt thứ hạng tìm kiếm mà còn làm phân tán sự tập trung suy luận (reasoning dilution) của LLM.
+- **Đánh Giá Đối Ứng Cặp Kịch Bản Chuẩn TEST (278 Cặp Mẫu Hoàn Chỉnh):**
+  - Tổng số cặp kịch bản tập TEST: 640 cặp (1,280 views).
+  - Phân loại ánh xạ nhãn:
+    * **278 cặp hoàn chỉnh (Complete Scorable Pairs):** Cả hai biểu diễn Single và Contextual đều có ground-truth hợp lệ.
+    * **162 cặp chỉ có Contextual:** Chỉ biểu diễn ngữ cảnh có nhãn kỹ thuật hợp lệ.
+    * **200 cặp không có nhãn (Neither Mapped):** Cả hai biểu diễn đều không có nhãn scorable.
+  - Kết quả đối đầu trên 278 cặp hoàn chỉnh: Single tốt hơn: `{{S2_PAIRWISE_WIN_RATE_SINGLE}}`% | Contextual tốt hơn: `{{S2_PAIRWISE_WIN_RATE_CONTEXTUAL}}`% | Ngang nhau: `{{S2_PAIRWISE_EQUAL_RATE}}`%.
+  - Tác động Benign Drift đến năng lực suy luận: Chênh lệch `{{S2_BENIGN_DRIFT_IMPACT}}`% giữa Single và Contextual view khẳng định log ngữ cảnh thô gây nhiễu cho cả khâu truy xuất lẫn suy luận.
 
 #### Speaker Notes Update (Slide 9):
-> "Slide 9 chỉ ra bài toán đánh đổi kinh tế kỹ thuật: tăng độ sâu k giúp cải thiện độ phủ nhưng đẩy chi phí và độ trễ lên cao. Điểm cân bằng Pareto tối ưu được xác định tại {{S2_PARETO_OPTIMAL_COND}}. Đặc biệt, việc so sánh giữa Single và Contextual view trên tập TEST cho thấy độ chính xác downstream giảm {{S2_BENIGN_DRIFT_IMPACT}}%, khẳng định rằng việc nhúng toàn bộ log xung quanh mà không tiền lọc sẽ gây hại cho cả khâu truy xuất lẫn khâu suy luận."
+> "Slide 9 chỉ ra bài toán đánh đổi kinh tế kỹ thuật: tăng độ sâu k giúp cải thiện độ phủ nhưng đẩy chi phí và độ trễ lên cao, với điểm cân bằng Pareto tối ưu tại {{S2_PARETO_OPTIMAL_COND}}. Về tác động của hình thức biểu diễn, trên tổng số 640 cặp kịch bản tập TEST, bộ thẩm định ghi nhận chính xác 278 cặp hoàn chỉnh có đủ nhãn cả Single và Contextual (bên cạnh 162 cặp chỉ có Contextual và 200 cặp không có nhãn). Trên 278 cặp hoàn chỉnh này, tỷ lệ Single thắng vượt trội {{S2_PAIRWISE_WIN_RATE_SINGLE}}% so với {{S2_PAIRWISE_WIN_RATE_CONTEXTUAL}}% của Contextual, cùng mức giảm độ chính xác {{S2_BENIGN_DRIFT_IMPACT}}%, khẳng định rằng việc nhúng toàn bộ log xung quanh mà không tiền lọc sẽ gây hại cho cả khâu truy xuất lẫn khâu suy luận."
 
 ---
 
@@ -219,6 +238,7 @@ Phase S2 delivery requires a complete, sealed, and audited reproducibility packa
     "run_provenance.json": { "sha256": "...", "size_bytes": 0 }
   }
   ```
+- *(Specialist B Alignment: The native evaluator exports strictly these 6 JSON files. There are NO `evaluation_summary.json` or `condition_metrics.json` files).*
 - Update `reproducibility_package` entries with final digests for `slides.md`, `slides.pptx`, `reproducibility.md`, and `reproduce_study.py`.
 
 ### 4.2 Request Journal Sanitization Protocol

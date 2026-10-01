@@ -89,10 +89,10 @@ Per Codex clarification, the markdown scaffold serves as preparation, and a comp
 ### 5.1 Created Artifact Checksums
 | File Path | File Size | SHA-256 Checksum | Purpose |
 | :--- | :---: | :--- | :--- |
-| `docs/report/scientific_report.md` | 31,859 bytes | `c400cd8afe2752305992ca89d7dbe1e71a73fe2e142cb81e4e89569fff9957c7` | Repaired publication report markdown scaffold |
-| `docs/report/scientific_report.docx` | 69,271 bytes | `f33463a362e90a7b2e13bba8437ea4d3a276d1931eb4407ef8105946172fe924` | Compiled editable Microsoft Word publication report |
-| `scripts/export_report_docx.py` | 8,978 bytes | `ff4857bdf1f8eb4f9d2d0b5e54ae8848d79a209ecfecefead3f545a1f68744cb` | Markdown-to-DOCX export tool with publication styling |
-| `reports/evidence/research_report_scaffold.md` | 10,750 bytes | `4ae6dcb1080f043b5fa91c81a6e3c2f9faee780ddf1986407f461459392e01bf` | Phase S1 evidence document |
+| `docs/report/scientific_report.md` | 65,832 bytes | `d60cdba804688074bfeb95c070b0b95c52da45d1e0836cff9441e2f6f2fcb68a` | Repaired research report markdown scaffold |
+| `docs/report/scientific_report.docx` | 73,323 bytes | `309d55ad09428b8b7285808993e13b82039e772aa1d01a00ef8787a990941716` | Compiled editable Microsoft Word publication report |
+| `scripts/export_report_docx.py` | 26,768 bytes | `235b4838945ab7669b9a042f13f9f5a8ae90309664135b0ed5afa9f4487187fe` | DOCX export tool with LaTeX-to-Unicode converter and layout controls |
+| `reports/evidence/research_report_scaffold.md` | ~15.3 KB | Tracked in Git (CD_RENDER_REPAIR) | Phase S1 evidence document |
 
 ### 5.2 Minor Metadata Refinements (PR #25 Follow-Up)
 1. **Reference 7 (Yang & Hsu):** Springer primary page explicitly confirms online publication date is **2 July 2026** (pp. 235–251, SIST vol. 8767, SITAIBA 2025). `[PARTIAL / METADATA ONLY]` status retained as full chapter is subscription paywalled.
@@ -101,15 +101,33 @@ Per Codex clarification, the markdown scaffold serves as preparation, and a comp
 ### 5.3 Test Regression Verification
 Full offline test regression executed via `scripts/run_offline_tests.py`:
 - Collected: 1,266 items (1,261 selected, 5 deselected).
-- Passed: 1,260 passed, 1 skipped, 0 failed.
+- Passed: 1,260 passed, 1 skipped, 0 failed (in 298.62s).
 - Guard Verification: `OFFLINE_GUARD: installed=True attempted_egress=0`.
+
+### 5.4 Codex Reviewer Directive: CD_RENDER_REPAIR Execution & Validation
+Following the Codex Reviewer audit of the compiled Word document, four layout and rendering defects were identified and resolved:
+1. **Academic Header & Non-Novelty Tone (Page 1):** Removed all self-proclaimed badge phrases ("PUBLICATION-GRADE", "production-ready"). Replaced the document header with standard academic metadata: Title, Author (Hà Hoàng Bách), Affiliation (RAG2ATT&CK Research Project), Date (October 2026), and Status (`DRAFT — IN PROGRESS / PENDING EXPERIMENTAL EXECUTION`).
+2. **RQ1 Table Width & Margin Compliance (Page 6):** In Word portrait mode (8.5" × 11.0" with 1.0" margins), printable width is strictly bounded to 6.50 inches. The 9-column Table 2 forced columns under 0.70 inches, causing word hyphenation ("behav-ior", "techni-que") and clipping. Table 2 was split into two 6-column tables:
+   - **Table 2a (Attribution Performance):** `Condition | Retrieval Depth (k) | Scorable Views (N) | Headline Accuracy (Acc_e2e) | Valid Accuracy (Acc_valid) | 474-Class Macro F1`
+   - **Table 2b (Attribution Diagnostics):** `Condition | Scorable Views (N) | 474-Class Macro Precision | 474-Class Macro Recall | Invalid ID Rate (%) | Completed Output Count`
+   Explicit column widths summing to $\le 6.50$ inches were assigned with `table.autofit = False`.
+3. **Raw TeX Leakage Elimination (Page 17, Section 5.3):** Built a dedicated `latex_to_unicode()` converter in `scripts/export_report_docx.py` handling fractions with balanced braces, sums, sets, logic, Greek symbols, and case environments. Display math is rendered as indented formula blocks. Built-in QA assertion verified 0 matches for `\\[a-zA-Z]+|\$\$` across all paragraphs and table cells.
+4. **Table Pagination & Row Splitting (Page 19):** Injected OpenXML elements into all 7 tables:
+   - `<w:tblHeader/>` on row 0 `trPr` (repeats header across page breaks).
+   - `<w:cantSplit/>` on every row's `trPr` (prevents mid-cell row splitting across pages).
+5. **Macro-F1 474-Class Policy Clarification (Section 5.3):** Formally documented that the macro denominator is fixed at 474, and unobserved classes (`support == 0` and `predictions == 0`) contribute `0.0` to the numerator sum per Protocol Decisions D2d/D2j, matching `src/evaluation/experiment_metrics.py` lines 1170–1177 exactly.
+6. **Automated DOCX QA Audit Verification:**
+   ```
+   DOCX QA Audit PASSED: 0 raw TeX tokens across 298 paragraphs and 7 tables (61 rows).
+   All tables have cantSplit on all rows, tblHeader on row 0, and width <= 6.50 inches.
+   ```
 
 ---
 
 ## 6. Compliance Statement
 Subagent C certifies that:
 1. The research report is authored in English with a rigorous, clear synthetic scope: the benchmark is `synthetic-paired-v1` (1,280 views $\times$ 5 conditions), NOT real-world telemetry. Generalization to enterprise telemetry remains unsupported.
-2. All 10 mandatory reviewer directives are fully resolved and audited.
+2. All 10 mandatory reviewer directives and all CD_RENDER_REPAIR requirements are fully resolved and audited.
 3. PR #8 and T33 primary evidence was integrated without exaggeration, and source-access blockers were faithfully disclosed.
 4. Strictly zero invented numerical results were produced; all experimental outcome tables are formatted as formal schemas with explicit placeholders (`[TBD_AT_EXECUTION]`).
 5. The Markdown scaffold is verified and immediately convertible to a usable, editable DOCX report via `scripts/export_report_docx.py`.

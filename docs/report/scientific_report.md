@@ -1,10 +1,12 @@
 # Evaluating MITRE ATT&CK-Grounded RAG for Technique Attribution from Windows Endpoint Logs: A Replication-and-Extension Study
 
 **Author:** Hà Hoàng Bách  
+**Affiliation:** RAG2ATT&CK Research Project  
+**Date:** October 2026  
+**Status:** DRAFT — IN PROGRESS / PENDING EXPERIMENTAL EXECUTION  
 **Protocol Version:** `experiment-protocol-v1.1` (Canonical Decisions Digest: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`)  
 **Target Taxonomy:** MITRE ATT&CK Enterprise Matrix v19.2 (Active Windows Corpus: 474 techniques)  
 **Execution Horizon:** 2026  
-**Document Status:** Publication-Grade Scientific Research Report Scaffold  
 
 ---
 
@@ -16,7 +18,7 @@ In this work, we present a controlled replication-and-extension study evaluating
 
 We evaluate this system across **1,280 synthetic paired test views** (derived from 640 scenario pairs across 64 template families, featuring matched single-event and contextual-event representations). An authoritative join of test view identifiers against ground-truth records yields **718 mapped positive scorable views** (678 single-GT, 40 multi-GT), with 311 ambiguous views and 251 unmapped views excluded from headline accuracy per protocol policies D2c and D2b. Crucially, we formally bound our claims: the evaluated dataset is strictly synthetic (`synthetic-paired-v1`), as forensic analysis of historical public Windows-APT telemetry revealed unresolved cell discrepancies and precision inconsistencies during reconciliation, preventing independent verification of authoritative ground truth. Consequently, our findings are bounded to the synthetic benchmark, and generalization to production enterprise telemetry remains unsupported.
 
-Our evaluation framework employs a fixed 474-class macro-averaged F1 universe, multi-label `ANY_MATCH` correctness semantics, headline end-to-end accuracy incorporating provider and parse failures, and an independent-axes failure decomposition. In compliance with strict empirical integrity guidelines, this report establishes the formal publication scaffold, mathematical formulations, literature review, and experimental table schemas without inventing unexecuted numerical results. Preliminary offline retrieval diagnostics across positive views demonstrate that dense retrieval achieves $Hit@1 = 4.23\%$ and $Hit@10 = 45.11\%$, with no ground-truth technique retrieved within Top-10 in $54.89\%$ of positive views (the complement of view-level Any-GT Hit@10), influenced by lexical mismatch in command-line arguments and contextual event dilution. The canonical live execution matrix (6,400 requests) is strictly budgeted under a $19.99 financial guard, establishing a reproducible foundation for evaluating knowledge grounding in security reasoning.
+Our evaluation framework employs a fixed 474-class macro-averaged F1 universe, multi-label `ANY_MATCH` correctness semantics, headline end-to-end accuracy incorporating provider and parse failures, and an independent-axes failure decomposition. In compliance with strict empirical integrity guidelines, this report establishes the formal research report scaffold, mathematical formulations, literature review, and experimental table schemas without inventing unexecuted numerical results. Preliminary offline retrieval diagnostics across positive views demonstrate that dense retrieval achieves $Hit@1 = 4.23\%$ and $Hit@10 = 45.11\%$, with no ground-truth technique retrieved within Top-10 in $54.89\%$ of positive views (the complement of view-level Any-GT Hit@10), influenced by lexical mismatch in command-line arguments and contextual event dilution. The canonical live execution matrix (6,400 requests) is strictly budgeted under a $19.99 financial guard, establishing a reproducible foundation for evaluating knowledge grounding in security reasoning.
 
 ---
 
@@ -93,7 +95,7 @@ Table 1 presents an 18-dimension comparison across the eight comparator works an
 | **15. Closest Similarity** | Sysmon logs + matched No-RAG/RAG | Controlled No-RAG vs RAG on telemetry | Exact technique prediction from command logs | ATT&CK RAG with retrieval quality analysis | Investigating retrieval depth & distractor noise | Telemetry-to-ATT&CK mapping comparing RAG/prompt | Windows Sysmon mapped to ATT&CK | Host command execution traces mapped to ATT&CK | **Integrates telemetry, exact attribution, depth ablation** |
 | **16. Key Difference** | Binary detection; process tree heuristics | AWS CloudTrail API; two-step Vertex RAG | Zero-shot only (no RAG); Linux focus | Unstructured CTI text; fine-tunes generator | Unstructured CTI text; hierarchical routing | Linux eBPF provenance graphs; no depth ablation | Non-LLM rule heuristic from 2023 | Prompting only (no RAG); small sample (35 seqs) | **Windows endpoint logs + exact ID + depth ablation + error split** |
 
-*\*Note on Adediran et al. [10]: The published text contains an unresolved reporting discrepancy, stating in Section 2 that retrieval-generation gaps account for 60% of errors, while Section 6.4.1 reports 26.3% (5/19).*
+*Note on Adediran et al. [10]: The published text contains an unresolved reporting discrepancy, stating in Section 2 that retrieval-generation gaps account for 60% of errors, while Section 6.4.1 reports 26.3% (5/19).*
 
 ### 2.3 Detailed Comparative Synthesis
 1. **CTI Text vs. Endpoint Telemetry:** TechniqueRAG [5] and H-TechniqueRAG [6] serve as primary methodological anchors for ATT&CK candidate retrieval and ranking. However, both operate on human-written threat intelligence prose (reports, blogs, bulletins). CTI text is linguistically rich and shares substantial natural language vocabulary with ATT&CK descriptions. In contrast, endpoint logs consist of structured, terse execution artifacts (`CommandLine`, `ParentCommandLine`, registry paths, hex codes). Findings from CTI-based RAG cannot be assumed to transfer directly to telemetry.
@@ -266,25 +268,45 @@ Live provider execution involves non-trivial API costs. In accordance with Proto
 
 ### 5.1 Ground-Truth Semantics: Multi-Label `ANY_MATCH`
 In accordance with Protocol Decision D2a, model attribution is evaluated using `ANY_MATCH` semantics. An evaluation sample $i$ with endpoint telemetry $x_i$ has ground-truth annotation $Y_i \subseteq \mathcal{C}$, where $\mathcal{C}$ is the 474-technique universe. Given model prediction $\hat{y}_i \in \mathcal{C}$, the indicator function of correctness is:
-$$\mathbb{I}_{\text{correct}}(i) = \begin{cases} 1 & \text{if } \hat{y}_i \in Y_i \\ 0 & \text{otherwise} \end{cases}$$
+
+$$I_{\text{correct}}(i) = 1 \quad \text{if } \hat{y}_i \in Y_i, \quad 0 \quad \text{otherwise}$$
 
 ### 5.2 Headline End-to-End Accuracy vs. Valid Output Accuracy
 To prevent masking system fragility or parse errors, Protocol Decision D2f enforces dual accuracy reporting:
 - **Headline End-to-End Accuracy ($\text{Acc}_{\text{e2e}}$):** Computed over all scorable samples ($N_{\text{scorable}} = 718$ in TEST), treating provider failures (timeouts, HTTP errors) and schema parse failures as incorrect:
-  $$\text{Acc}_{\text{e2e}} = \frac{\sum_{i=1}^{N_{\text{scorable}}} \mathbb{I}_{\text{correct}}(i)}{N_{\text{scorable}}}$$
+
+  $$\text{Acc}_{\text{e2e}} = \frac{1}{N_{\text{scorable}}} \sum_{i=1}^{N_{\text{scorable}}} I_{\text{correct}}(i)$$
+
 - **Valid Output Accuracy ($\text{Acc}_{\text{valid}}$):** Computed conditionally over completed, validly parsed responses ($N_{\text{valid}}$):
-  $$\text{Acc}_{\text{valid}} = \frac{\sum_{i \in \text{Valid}} \mathbb{I}_{\text{correct}}(i)}{N_{\text{valid}}}$$
+
+  $$\text{Acc}_{\text{valid}} = \frac{1}{N_{\text{valid}}} \sum_{i \in \text{Valid}} I_{\text{correct}}(i)$$
 
 ### 5.3 Macro-Averaged F1 Across the 474-Class Universe
-Per Protocol Decision D2d, the macro-averaged F1 metric is evaluated over the fixed 474-technique benchmark universe $\mathcal{C}$ ($|\mathcal{C}| = 474$):
-1. For each class $c \in \mathcal{C}$, compute true positives ($TP_c$), false positives ($FP_c$), and false negatives ($FN_c$) across scorable samples.
-2. Per-class Precision ($P_c$) and Recall ($R_c$):
+Per Protocol Decisions D2d and D2j, the macro-averaged F1 metric is evaluated over the fixed 474-technique benchmark universe $\mathcal{C}$ ($|\mathcal{C}| = 474$). Crucially, the denominator of the macro average remains strictly frozen at 474 across all conditions, regardless of the number of techniques observed in any individual test partition.
+
+1. **Per-Class Confusion Components:** For each class $c \in \mathcal{C}$, compute true positives ($TP_c$), false positives ($FP_c$), and false negatives ($FN_c$) across scorable samples:
+   - $TP_c$: Model predicted class $c$ and $c \in Y_i$.
+   - $FP_c$: Model predicted class $c$ but $c \notin Y_i$.
+   - $FN_c$: Model predicted a class other than $c$, but $c \in Y_i$.
+   - Ground-truth support: $\text{support}_c = TP_c + FN_c$.
+   - Emitted predictions: $\text{pred}_c = TP_c + FP_c$.
+
+2. **Per-Class Precision ($P_c$) and Recall ($R_c$):**
    $$P_c = \frac{TP_c}{TP_c + FP_c}, \quad R_c = \frac{TP_c}{TP_c + FN_c}$$
-   Per Protocol Decision D2j, if a denominator is zero, the per-class metric evaluates to `null`.
-3. Per-class $F1_c$:
-   $$F1_c = \begin{cases} \frac{2 \cdot P_c \cdot R_c}{P_c + R_c} & \text{if } P_c + R_c > 0 \\ 0.0 & \text{if } TP_c = 0 \text{ and } (FP_c > 0 \lor FN_c > 0) \\ \text{null} & \text{if } TP_c = FP_c = FN_c = 0 \end{cases}$$
-4. Macro-Averaged Metric Aggregation: For classes with zero ground truth support and zero predictions in the benchmark ($TP_c = FP_c = FN_c = 0$), the class contributes $0.0$ to the macro-sum numerator. The macro denominator remains strictly fixed at 474:
-   $$\text{Macro-F1} = \frac{1}{474} \sum_{c \in \mathcal{C}} \left( F1_c \text{ if } F1_c \neq \text{null else } 0.0 \right)$$
+   Per Protocol Decision D2j, if a denominator is zero, the per-class precision or recall evaluates to `null` (or 0.0 in metric computations where denominator is 0).
+
+3. **Per-Class $F1_c$ and Zero-Denominator Policy:**
+   In exact alignment with the canonical evaluation implementation (`src/evaluation/experiment_metrics.py`, lines 1170–1177):
+   - **Unobserved Classes ($\text{support}_c = 0 \land \text{pred}_c = 0$):** Per D2d/D2j, techniques neither present in ground truth nor emitted by the model have zero denominators and contribute exactly $0.0$ to the macro-sum numerator ($F1_c = 0.0$).
+   - **Unpredicted Classes ($\text{support}_c > 0 \land \text{pred}_c = 0$):** Techniques present in ground truth but never emitted receive $P_c = 0.0, R_c = 0.0 \implies F1_c = 0.0$.
+   - **Unobserved False Positives ($\text{support}_c = 0 \land \text{pred}_c > 0$):** Techniques absent from ground truth but hallucinated by the model receive $R_c = 0.0 \implies F1_c = 0.0$.
+   - **Observed Classes with True Positives ($TP_c > 0$):**
+     $$F1_c = \frac{2 \cdot P_c \cdot R_c}{P_c + R_c}$$
+
+4. **Macro-Averaged Metric Aggregation:**
+   The macro F1 score sums per-class $F1_c$ across all 474 techniques and divides by the frozen universe size 474:
+   $$\text{Macro-F1} = \frac{1}{474} \sum_{c \in \mathcal{C}} F1_c$$
+   This formulation guarantees that macro-F1 penalizes both false attributions and omissions against the full MITRE ATT&CK Windows taxonomy, preventing artificial inflation from omitting unobserved classes from the denominator.
 
 ### 5.4 Decoupled Independent-Axes Failure Decomposition
 Protocol Decision D2i defines five independent, non-mutually-exclusive diagnostic failure axes:
@@ -305,17 +327,27 @@ Crucially, downstream generation failures are partitioned into:
 In strict compliance with empirical integrity standards, **all tables in this section present formal scientific schemas and placeholders (`[TBD_AT_EXECUTION]`)**. Numerical values will be populated exclusively from canonical execution logs post-run.
 
 ### 6.1 RQ1: Retrieval-Augmented Attribution Efficacy
-Table 2 outlines the comparative attribution performance across the five experimental conditions on the 718 scorable mapped positive TEST views (678 single-GT, 40 multi-GT).
+Table 2a and Table 2b outline the comparative attribution performance and diagnostic metrics across the five experimental conditions on the 718 scorable mapped positive TEST views (678 single-GT, 40 multi-GT).
 
-*Table 2: Primary Attribution Performance Across Experimental Conditions (Schema).*
+*Table 2a: Primary Attribution Performance Across Experimental Conditions (Schema).*
 
-| Condition | Retrieval Depth ($k$) | Scorable Views ($N$) | Headline Accuracy ($\text{Acc}_{\text{e2e}}$) | Valid Accuracy ($\text{Acc}_{\text{valid}}$) | 474-Class Macro Precision | 474-Class Macro Recall | 474-Class Macro F1 | Invalid ID Rate (%) |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| `no_rag` | 0 | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k1` | 1 | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k3` | 3 | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k5` | 5 | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k10`| 10 | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+| Condition | Retrieval Depth ($k$) | Scorable Views ($N$) | Headline Accuracy ($\text{Acc}_{\text{e2e}}$) | Valid Accuracy ($\text{Acc}_{\text{valid}}$) | 474-Class Macro F1 |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| `no_rag` | 0 | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+| `rag_k1` | 1 | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+| `rag_k3` | 3 | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+| `rag_k5` | 5 | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+| `rag_k10`| 10 | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+
+*Table 2b: Attribution Diagnostic Metrics Across Experimental Conditions (Schema).*
+
+| Condition | Scorable Views ($N$) | 474-Class Macro Precision | 474-Class Macro Recall | Invalid ID Rate (%) | Completed Output Count |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| `no_rag` | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+| `rag_k1` | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+| `rag_k3` | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+| `rag_k5` | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+| `rag_k10`| 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
 
 #### Single-Event vs. Contextual-Event Performance Breakdown
 Table 3 schemas the comparative performance partitioned by telemetry representation (278 Single-Event Views vs. 440 Contextual-Event Views).
@@ -354,7 +386,7 @@ While end-to-end LLM inference awaits canonical execution, the standalone dense 
    - **Macro Recall@10:** $43.14\%$
    - **Complement of View-Level Any-GT Hit@10:** **$54.89\%$** (in 415 of 756 positive views, no ground-truth technique was retrieved within the Top-10 candidates).
 2. **Technique-Specific Divergence:**
-   - *High-Performing Classes (Lexical Alignment):* Techniques with exact vocabulary overlap between logs and ATT&CK prose achieved strong recall: `T1685.005` (Clear Windows Event Logs) achieved **$98.39\%$ Hit@10** (due to unique tokens like `wevtutil`, `EventID 1102`); `T1547.001` (Registry Run Keys / Startup Folder) achieved **$92.45\%$ Hit@10** (due to exact registry paths `CurrentVersion\Run`).
+   - *High-Performing Classes (Lexical Alignment):* Techniques with exact vocabulary overlap between logs and ATT&CK prose achieved strong recall: `T1685.005` (Clear Windows Event Logs) achieved **$98.39\%$ Hit@10** (due to unique tokens like `wevtutil`, `EventID 1102`); `T1547.001` (Registry Run Keys / Startup Folder) achieved **$92.45\%$ Hit@10** (due to exact registry paths `CurrentVersion/Run`).
    - *Severe Failure Classes (Representation Gap):* `T1136.001` (Local Account) achieved **$0.0\%$ Hit@10 across all 99 views**. Telemetry containing `net user /add` and Event ID 4720 completely failed to retrieve the technique, matching instead generic persistence and DLL techniques.
    - *Hard Negative Crowding:* In `T1105` (Ingress Tool Transfer, $15.79\%$ Hit@10), LOLBin telemetry invoking `certutil.exe -urlcache` resulted in `T1218.012` (Verclsid) ranking #1 in $42.1\%$ of cases, crowding out `T1105`.
 3. **Contextual Event Dilution:**
@@ -413,7 +445,7 @@ To guarantee full transparency, we disclose all execution harnesses and wrapper 
 ## 8. Conclusion and Reproducibility Statement
 
 ### 8.1 Conclusion
-This scientific report establishes the publication scaffold and methodological framework for RAG2ATTCK: a controlled replication-and-extension study evaluating MITRE ATT&CK-grounded RAG for technique attribution from Windows endpoint logs. By coupling a cryptographically frozen scientific protocol (v1.1, D1–D7), symmetric prompting and model configurations (`gpt-5.6-luna`, `reasoning_effort=xhigh`), an immutable ATT&CK v19.2 Windows corpus (474 techniques), and systematic retrieval depth ablations ($k \in \{1, 3, 5, 10\}$), RAG2ATTCK provides an empirical design. Crucially, we clearly demarcate the synthetic boundaries of our dataset and disclose the reconciliation discrepancies in public telemetry that necessitate this boundary.
+This scientific report establishes the research report scaffold and methodological framework for RAG2ATTCK: a controlled replication-and-extension study evaluating MITRE ATT&CK-grounded RAG for technique attribution from Windows endpoint logs. By coupling a cryptographically frozen scientific protocol (v1.1, D1–D7), symmetric prompting and model configurations (`gpt-5.6-luna`, `reasoning_effort=xhigh`), an immutable ATT&CK v19.2 Windows corpus (474 techniques), and systematic retrieval depth ablations ($k \in \{1, 3, 5, 10\}$), RAG2ATTCK provides an empirical design. Crucially, we clearly demarcate the synthetic boundaries of our dataset and disclose the reconciliation discrepancies in public telemetry that necessitate this boundary.
 
 ### 8.2 Cryptographic Reproducibility Inventory
 In adherence to open science principles, all artifacts, code, configurations, and corpora are cryptographically bound:

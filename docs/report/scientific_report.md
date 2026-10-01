@@ -157,8 +157,9 @@ The evaluation benchmark comprises **670 scenario pairs** generating **1,340 eva
 - **Zero Family Overlap:** Template families are strictly partitioned between DEV and TEST ($Family_{\text{TEST}} \cap Family_{\text{DEV}} = \emptyset$).
 - **View Pairing Architecture:** For every scenario pair, the *single-event view* presents the isolated anchor observable (e.g., process execution or service install). The *contextual-event view* presents the identical anchor observable embedded within a sequence of 2–3 related events (e.g., parent process spawning, auxiliary file creation, or subsequent network traffic).
 - **Authoritative Join Over TEST Cohort (1,280 Views):**
-  An authoritative join of test view identifiers (`split_manifest.json` $\to$ `views.jsonl`) against the ground-truth records (`ground_truth.jsonl`) establishes the exact scorable cohorts:
+  An authoritative join of test view identifiers (`split_manifest.json` $\to$ `views.jsonl`) against the ground-truth records (`ground_truth.jsonl`) establishes the exact scorable cohorts across the 640 scenario pairs:
   - **718 Mapped Positive Views:** Scorable views with definitive technique assignments (comprising 678 single-GT views and 40 multi-GT views). Stratified by representation: **278 Single-Event Views** and **440 Contextual-Event Views** ($278 + 440 = 718$).
+  - **Complete Scorable Pairs Census:** Across the 640 TEST scenario pairs, exactly **278 complete scorable pairs** possess valid ground-truth mapping on *both* single and contextual views ($278 \times 2 = 556$ views); exactly **162 pairs** possess valid ground truth on *only* the contextual view ($162 \times 1 = 162$ views; single view unmapped/ambiguous); and exactly **200 pairs** possess valid ground truth on *neither* view ($200 \times 2 = 400$ views). Together, $556 + 162 = 718$ mapped positive views.
   - **311 Ambiguous Views:** Evaluated as ambiguous (comprising 261 single-event views and 50 contextual-event views). Excluded from primary headline accuracy per Protocol Decision D2c.
   - **251 Unmapped Views:** Evaluated as negative/benign activity without ATT&CK mapping (comprising 101 single-event views and 150 contextual-event views). Excluded from primary headline accuracy per Protocol Decision D2b.
 
@@ -286,8 +287,9 @@ The benchmark executes five distinct conditions across all 1,280 TEST views (6,4
 ### 4.6 Tariff, Monetary Accounting, and Financial Guard (USD 19.99 Budget)
 Live provider execution involves non-trivial API costs. In accordance with Protocol Decision D5, execution is governed by a financial and request-budget safeguard:
 - **Tariff Structure:** Standard commercial pricing for `gpt-5.6-luna`:
-  - Input Tokens: USD 0.20 per 1,000,000 input tokens (conservative modeling rate: USD 0.25 per 1,000,000 input tokens).
-  - Output Tokens: USD 1.20 per 1,000,000 output tokens (inclusive of hidden reasoning tokens).
+  - Input Tokens: USD 0.20 per 1,000,000 input tokens (standard list; evaluated experimental rate: USD 0.150 per 1,000,000 input tokens; conservative modeling rate: USD 0.25 per 1,000,000 input tokens).
+  - Output Tokens: USD 1.20 per 1,000,000 output tokens (standard list; evaluated experimental rate: USD 0.600 per 1,000,000 output tokens, inclusive of hidden reasoning tokens).
+  - Prior Pilot Hold: An initial provisional hold of USD 0.05264010 is accounted for prior DEV exploratory dispatches against the USD 19.99 budget ceiling.
 - **Worst-Case Attempt Cap:**
   $$\text{Cap} = N_{\text{views}} \times N_{\text{conditions}} \times (\text{max\_retries} + 1) = 1,280 \times 5 \times 4 = 25,600 \text{ attempts}$$
 - **DEV Pilot Empirical Calibration (2026-10-01):** A real-provider calibration pilot across 20 requests (evaluating 4 synthetic DEV views across 5 experimental conditions, documented in `reports/dev_cost_pilot_20261001.md`) observed:

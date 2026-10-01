@@ -30,8 +30,13 @@ The purpose of this document is to specify the **complete, deterministic populat
                                                   v
 +----------------------------------------------------------------------------------------------------+
 | 2. CANONICAL EVALUATION & ANALYSIS                                                                 |
-|    - evaluate_experiment() -> outputs/canonical_evaluation/                                        |
-|      * per_condition_metrics.json, failure_decomposition.json, retrieval_conditional_metrics.json   |
+|    - evaluate_experiment() -> outputs/canonical_evaluation/ (EXACTLY 6 NATIVE FILES):             |
+|      * overall_metrics.json                                                                        |
+|      * per_condition_metrics.json                                                                  |
+|      * per_technique_metrics.json                                                                  |
+|      * retrieval_conditional_metrics.json                                                          |
+|      * failure_decomposition.json                                                                  |
+|      * run_provenance.json                                                                         |
 |    - analysis runner -> outputs/canonical_analysis/                                                |
 |      * pairwise_representation_comparison.json, resource_scaling.json                              |
 +----------------------------------------------------------------------------------------------------+
@@ -52,6 +57,17 @@ The purpose of this document is to specify the **complete, deterministic populat
 |    - scripts/verify_report_metadata.py (re-verified under offline guard)                           |
 +----------------------------------------------------------------------------------------------------+
 ```
+
+> [!IMPORTANT]
+> **Native Evaluator Contract Alignment:** The canonical evaluation engine (`src/evaluation/experiment_metrics.py:evaluate_experiment`) exports **exactly six native JSON files**:
+> 1. `overall_metrics.json`
+> 2. `per_condition_metrics.json`
+> 3. `per_technique_metrics.json`
+> 4. `retrieval_conditional_metrics.json`
+> 5. `failure_decomposition.json`
+> 6. `run_provenance.json`
+>
+> Legacy or non-standard file identifiers (such as `evaluation_summary.json` or `condition_metrics.json`) **do NOT exist** in the RAG2ATTCK codebase and must never be referenced by population or analysis scripts. All evaluation metrics are parsed directly and authoritatively from these six native exports.
 
 ---
 
@@ -118,8 +134,13 @@ Every placeholder in `docs/report/scientific_report.md` and `docs/report/scienti
   4. `Contextual Macro-F1`: Macro-F1 over contextual views (`contextual_event.macro_f1`).
   5. `$\Delta \text{Acc}$ (Context - Single)`: Computed difference in percentage points (`contextual_event.accuracy - single_event.accuracy`). Formatted with explicit sign: `+X.XX pp` or `-X.XX pp`.
 - **Units & Formatting:** Percentages `XX.XX%`; difference in percentage points `pp`.
-- **Methodological Invariants:**
-  - Evaluated on the authoritative join: 278 Single-Event Views + 440 Contextual-Event Views = 718 Positive Scorable Views.
+- **Complete Scorable Pairs Census & Methodological Invariants:**
+  - Evaluated on the authoritative join across the 640 total TEST scenario pairs (1,280 views):
+    * **278 Complete Scorable Pairs:** Exactly 278 scenario pairs where *both* single-event and contextual-event views are mapped ($278 \times 2 = 556$ views).
+    * **162 Contextual-Only Mapped Pairs:** Exactly 162 scenario pairs where *only* the contextual-event view is mapped (the single-event view is unmapped or ambiguous, $162 \times 1 = 162$ views).
+    * **200 Unmapped Pairs:** Exactly 200 scenario pairs where *neither* view is mapped ($200 \times 2 = 400$ views; excluded per D2b/D2c).
+    * **Reconciliation to 718 Mapped Positive Views:** $556 + 162 = 718$ total mapped positive views (278 single views + 440 contextual views; $278 + 162 = 440$).
+  - **Pairwise Comparison Scope:** The pairwise representation comparison in `pairwise_representation_comparison.json` (win/loss/equal rates) evaluates strictly over the **278 complete scorable pairs** where both representations possess verified ground truth, eliminating confounding from asymmetric unmapped views.
   - Stratification evaluates whether multi-event background context aids or impairs LLM reasoning.
 
 #### D. Table 4: Decoupled Failure Decomposition Matrix
@@ -153,9 +174,12 @@ Every placeholder in `docs/report/scientific_report.md` and `docs/report/scienti
   7. `Total Cost (USD)`: Total settled condition cost formatted as `USD XX.XX` (e.g., `USD 1.84`).
   8. `Mean Cost / Query (USD)`: Average cost per query formatted as `USD X.XXXX` (e.g., `USD 0.0014`).
 - **Units & Formatting:** Token counts integer; latency seconds `X.XXs`; cost formatted as plain text `USD XX.XX` (strictly zero raw `$` to protect LaTeX math parsers).
-- **Methodological Invariants:**
+- **Tariff Parameters & Monetary Invariants:**
+  - Standard evaluated tariff rates: **USD 0.150 per 1,000,000 input tokens** and **USD 0.600 per 1,000,000 output tokens** (inclusive of hidden reasoning tokens).
+  - Study budget ceiling: **USD 19.99** (`total_study_budget_usd`).
+  - Prior pilot provisional hold: **USD 0.05264010** (`prior_pilot_hold_usd`).
+  - Net starting available balance: **USD 19.93735990** (`net_available_starting_budget_usd`).
   - Token counts extracted from authoritative Responses API `usage` headers.
-  - Cost calculated under frozen contract: USD 0.20 per 1,000,000 input tokens; USD 1.20 per 1,000,000 output tokens.
 
 #### F. Table 6: Cryptographic Reproducibility Manifest
 - **Target Section:** Section 8.2 (Cryptographic Reproducibility Inventory)

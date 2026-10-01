@@ -45,6 +45,7 @@ from src.experiment.authorization import ScientificProtocolApproval
 from src.experiment.monetary_ledger import (
     _strict_json_loads,
     calculate_attempt_token_cost,
+    calculate_request_cost_from_receipts,
     compute_pricing_contract_sha256,
     load_pricing_config,
     round_cost_up,
@@ -128,6 +129,18 @@ def validate_pricing_config(pricing_config: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("Pricing config missing 'total_study_budget_usd'")
 
     return pricing_config
+
+
+class RecordObjectAdapter:
+    """Adapts a dictionary record from run.jsonl to an object interface with attribute access."""
+
+    def __init__(self, data: Optional[dict[str, Any]]):
+        self._data = data or {}
+
+    def __getattr__(self, name: str) -> Any:
+        if name in self._data:
+            return self._data[name]
+        raise AttributeError(f"RecordObjectAdapter has no attribute {name}")
 
 
 def reconcile_journal_and_ledger(
@@ -425,59 +438,44 @@ def reconcile_journal_and_ledger(
                 f"Completed requests with unsettled active reservations: {completed_still_reserved}"
             )
 
-    # Per-request cost recalculation and settlement binding
-    bounds = pricing_config.get("reservation_bounds", {})
-    attempt_worst = Decimal(str(bounds.get("default_attempt_worst_usd", "0.53974560")))
-    logical_worst = Decimal(str(bounds.get("default_logical_worst_usd", "2.15898240")))
-
+    # Per-request cost recalculation and settlement binding via native contract
     recomputed_costs_by_key: dict[tuple[str, str], Decimal] = {}
     for key, r_list in receipts_by_key.items():
-        indices = [r["attempt_index"] for r in r_list]
-        if sorted(indices) != list(range(len(r_list))):
-            raise ValueError(
-                f"Receipt attempt_indices for {key} do not cover 0..{len(r_list) - 1}: {indices}"
-            )
+        r_list_sorted = sorted(r_list, key=lambda r: r.get("attempt_index", 0))
+        attempts_consumed = len(r_list_sorted)
 
         rec = records_by_key.get(key)
-        if rec is not None:
-            rec_attempts = rec.get("request_attempt_count")
-            if rec_attempts is not None and rec_attempts != len(r_list):
-                raise ValueError(
-                    f"Record attempt count {rec_attempts} != receipt count {len(r_list)} for {key}"
-                )
+        rec_adapter = RecordObjectAdapter(rec) if rec is not None else None
 
-        req_cost = Decimal("0.0")
-        for attempt_r in r_list:
-            st = attempt_r.get("status")
-            in_tok = attempt_r.get("input_tokens")
-            out_tok = attempt_r.get("output_tokens")
-            ca_tok = attempt_r.get("cached_tokens")
-            tier = attempt_r.get("service_tier") or "default"
+        last_ordinal = r_list_sorted[-1].get("ordinal") if r_list_sorted else None
+        exp_model = (
+            pricing_config.get("expected_model")
+            or (rec.get("model") if rec else None)
+            or pricing_config.get("model")
+            or "gpt-5.6-luna"
+        )
 
-            if st in ("TIMEOUT", "API_FAILURE") or in_tok is None or out_tok is None:
-                req_cost += attempt_worst
-            else:
-                att_cost = calculate_attempt_token_cost(
-                    in_tok,
-                    out_tok,
-                    pricing_config,
-                    cached_tokens=ca_tok,
-                    tier=tier,
-                )
-                req_cost += att_cost
+        req_cost, req_breach, breach_reason = calculate_request_cost_from_receipts(
+            attempts_consumed=attempts_consumed,
+            receipts=r_list_sorted,
+            record=rec_adapter,
+            pricing_config=pricing_config,
+            tier=pricing_config.get("service_tier", "default"),
+            expected_model=exp_model,
+            most_recent_attempt_ordinal=last_ordinal,
+        )
 
-        req_cost_rounded = round_cost_up(req_cost)
-        if req_cost_rounded > logical_worst:
-            req_cost_rounded = logical_worst
+        if req_breach:
+            raise ValueError(f"Request {key} native contract breach: {breach_reason}")
 
-        recomputed_costs_by_key[key] = req_cost_rounded
+        recomputed_costs_by_key[key] = req_cost
 
         if key in settlements_by_key:
             j_cost = Decimal(str(settlements_by_key[key]["cost_usd"]))
-            if j_cost != req_cost_rounded:
+            if j_cost != req_cost:
                 raise ValueError(
                     f"Journal settlement cost mismatch for key {key}: "
-                    f"journal_settlement={j_cost} != computed_from_receipts={req_cost_rounded}"
+                    f"journal_settlement={j_cost} != computed_from_receipts={req_cost}"
                 )
 
     # Study Ledger verification

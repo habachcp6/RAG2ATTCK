@@ -6,22 +6,23 @@
 - **Branch**: `codex/s1-evaluator-prep` (PR #27)
 - **PRE_SHA**: `80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315`
 - **Execution Mode**: Strictly OFFLINE (ZERO live provider/API calls; in-flight live matrix untouched)
-- **Timestamp**: `2026-10-01T21:05:00Z`
+- **Timestamp**: `2026-10-01T21:26:00Z`
 
 ---
 
 ## 1. Executive Summary & Purpose
 
-The purpose of this subagent assignment is to independently verify and harden the scientific evaluation infrastructure, implement publication-grade offline statistical analysis tooling, and execute comprehensive contract repairs addressing all items from the Codex Orchestration Review (`artifacts/orchestration/analysis_reproduction_review_20261002.md`).
+The purpose of this subagent assignment is to independently verify and harden the scientific evaluation infrastructure, implement publication-grade offline statistical analysis tooling, and execute comprehensive contract repairs addressing all items from the Codex Orchestration Review (`artifacts/orchestration/analysis_reproduction_review_20261002.md`) and the subsequent Codex differential probe (`FAIL | B_NATIVE_TARIFF_CONFORMANCE`).
 
 In strict adherence to the project's frozen protocol principles:
 1. **Zero live provider calls**: All testing, evaluation, and diagnostic verification was executed offline against synthetic and fixture datasets. No in-flight live matrix predictions were scored or altered (strictly 0 egress).
 2. **Canonical protocol preservation**: The canonical evaluator entrypoint in `src/evaluation/experiment_metrics.py` remains fail-closed behind the `ScientificProtocolApproval` contract (D1–D7). No flags, bypasses, or ad-hoc defaults can unblock scoring without explicit verified approval.
 3. **Dedicated offline analysis pipeline**: Created `scripts/analysis/evaluate_rqs.py` to compute publication-grade metrics and statistical tests for Research Questions **RQ1**, **RQ2**, and **RQ3**.
-4. **Comprehensive offline test suite**: Created `tests/test_evaluator_offline_contract.py` containing 24 rigorous tests validating every edge case of the evaluation contract, financial accounting, failure semantics, and analysis tools.
-5. **Codex Review Repairs Completed (Items 1–8)**:
+4. **Comprehensive offline test suite**: Created `tests/test_evaluator_offline_contract.py` containing 42 rigorous tests validating every edge case of the evaluation contract, financial accounting, failure semantics, native tariff conformance, and analysis tools.
+5. **Codex Review Repairs Completed (Items 1–8 + B_NATIVE_TARIFF_REPAIR)**:
    - **Item 1 (Strict Pricing Validation)**: Tariffs, bounds, and ceilings validated against `config/pricing_v1.json`. Fail-closed on missing keys or unknown tiers; zero-cost fallbacks are strictly prohibited.
-   - **Item 2 (Ledger/Journal Reconciliation)**: Parses `attempt_receipt` and `monetary_settle` events, verifies ordinal and attempt uniqueness, binds record SHA-256 against prediction records, accounts for retries, and preserves study-wide financial accounting with prior-pilot hold ($0.05264010) preserved without adding to individual condition costs.
+   - **Item 2 (Ledger/Journal Reconciliation - B_RECONCILE_REPAIR2 & B_NATIVE_TARIFF_REPAIR)**: Parses `attempt_receipt` and `monetary_settle` events, verifies ordinal and attempt uniqueness, binds record SHA-256 against prediction records, accounts for retries, and preserves study-wide financial accounting with prior-pilot hold ($0.05264010) preserved without adding to individual condition costs.
+   - **B_NATIVE_TARIFF_REPAIR (Native Tariff Delegation)**: Eliminated custom calculation loops in `reconcile_journal_and_ledger` and delegated directly to native frozen `calculate_request_cost_from_receipts` in `src.experiment.monetary_ledger`. Added `RecordObjectAdapter` for getattr binding, fail-closed enforcement on `req_breach`, and distinguishing tests covering positive control ($0.00000370), worst-case fee on `RATE_LIMIT` / `TIMEOUT` / `API_FAILURE` ($0.53974560), missing `service_tier`, foreign model receipts, `INCOMPLETE` status with tokens, final-receipt drift, and logical worst ceiling breaches ($2.15898240).
    - **Item 3 (Three Cost Denominators)**: Discloses `cost_per_logical_request_usd` (N=1,280), `cost_per_scorable_query_usd` (N=718), and `cost_per_correct_attribution_usd`, alongside explicit real expenditure disclosures on excluded views (311 ambiguous + 251 unmapped).
    - **Item 4 (Robust CLI Root Resolution)**: Resolves default protocol, pricing, output, and ledger paths against `--repository-root` or `repo_root` (`Path(__file__).resolve().parents[2]`), ensuring deterministic execution regardless of caller CWD.
    - **Item 5 (Distinguishing 474-Class Macro-F1 Test)**: Mathematically demonstrates that 471 unobserved classes contribute 0.0 and denominator is strictly 474, proving that an observed-only denominator (dividing by 3) fails by a factor of 158x.
@@ -249,16 +250,24 @@ A comprehensive test suite of 34 rigorous tests verifies every aspect of the eva
 | 32 | `test_mcnemar_test_statistical_properties` | McNemar chi2, exact binomial, odds ratio | **PASSED** |
 | 33 | `test_rq1_controlled_comparison_computation` | RQ1 metrics, deltas, relative gains, pair-cluster CIs | **PASSED** |
 | 34 | `test_run_rq_analysis_generates_all_artifacts` | Full analysis pipeline generating JSON & MD | **PASSED** |
+| 35 | `test_native_tariff_positive_control_success` | B_NATIVE_TARIFF: Positive control computes exact native tariff ($0.00000370) | **PASSED** |
+| 36 | `test_native_tariff_probe_rate_limit_charges_worst_case` | B_NATIVE_TARIFF: Probe rate limit charges worst case ($0.53974560) & detects undercharge | **PASSED** |
+| 37 | `test_native_tariff_probe_missing_service_tier_breaches_fail_closed` | B_NATIVE_TARIFF: Missing service tier breaches fail-closed | **PASSED** |
+| 38 | `test_native_tariff_probe_foreign_model_breaches_fail_closed` | B_NATIVE_TARIFF: Foreign model receipt breaches fail-closed | **PASSED** |
+| 39 | `test_native_tariff_incomplete_status_with_tokens_computes_exact_tariff` | B_NATIVE_TARIFF: INCOMPLETE status with tokens computes token tariff | **PASSED** |
+| 40 | `test_native_tariff_transport_failures_charged_worst_case` | B_NATIVE_TARIFF: TIMEOUT and API_FAILURE receipts charged worst attempt fee | **PASSED** |
+| 41 | `test_native_tariff_final_receipt_drift_vs_record_breaches` | B_NATIVE_TARIFF: Final receipt drift vs record (tokens, response ID, model) breaches fail-closed | **PASSED** |
+| 42 | `test_native_tariff_logical_worst_ceiling_breach_fails_closed` | B_NATIVE_TARIFF: Total cost exceeding logical worst ceiling ($2.15898240) breaches fail-closed | **PASSED** |
 
 ### 5.2 Test Execution Results
 ```bash
 uv run pytest tests/test_evaluator_offline_contract.py -v
-============================= 34 passed in 14.09s =============================
+============================= 42 passed in 14.65s =============================
 
 uv run pytest tests/test_experiment_evaluation.py -q
 ============================= 94 passed in 14.07s =============================
 
-Combined Total: 128 passed in 23.36s (OFFLINE_GUARD: installed=True attempted_egress=0)
+Combined Total: 136 passed in 24.12s (OFFLINE_GUARD: installed=True attempted_egress=0)
 ```
 
 ### 5.3 Code Quality & Linter Compliance
@@ -276,9 +285,9 @@ uv run ruff format --check scripts/analysis/evaluate_rqs.py tests/test_evaluator
 
 | File Path | SHA-256 Digest | Purpose |
 | :--- | :--- | :--- |
-| `scripts/analysis/evaluate_rqs.py` | `9890331266ff029e22208fc1f7b772afc65c0a11c65a8d579e0da644c6ee42fb` | Offline RQ1/RQ2/RQ3 analysis script with B_RECONCILE_REPAIR2 |
+| `scripts/analysis/evaluate_rqs.py` | `003f4f51d82f81d5c3845cb59b9b404e42837964ba0836e5ea630bdc952b0a1c` | Offline RQ1/RQ2/RQ3 analysis script with B_NATIVE_TARIFF_REPAIR |
 | `scripts/analysis/__init__.py` | `28b40746d09b574e95393ac9e2a95879116cd9d4c7a86afb1be7be573f9ad54a` | Analysis package initializer |
-| `tests/test_evaluator_offline_contract.py` | `3a47b6893ba5d314070e76d81f4586a56f84dbf8e3a6d6cd3cd3300bce239e0d` | Evaluator offline contract test suite (34 tests) |
+| `tests/test_evaluator_offline_contract.py` | `5cce3fefb8d0bb01bdd79c220c9b2ac37b0a2a1be6c294862e2004617d8d6c7c` | Evaluator offline contract test suite (42 tests) |
 | `reports/evidence/evaluator_contract_and_analysis_plan.md` | *This document* | Comprehensive Phase S1 evidence document |
 
 ---
@@ -299,11 +308,12 @@ uv run ruff format --check scripts/analysis/evaluate_rqs.py tests/test_evaluator
 - [x] Verified D2j NULL zero denominators.
 - [x] Completed Codex Review Repair 1: Strict pricing configuration validation (fail-closed, no zero fallback).
 - [x] Completed Codex Review Repair 2 (B_RECONCILE_REPAIR2): Full ledger and journal reconciliation with hash binding, read-only ledger validation, probe fail-closed, and 10 distinguishing mutation regressions.
+- [x] Completed Codex Review Repair (B_NATIVE_TARIFF_REPAIR): Direct delegation to native frozen `calculate_request_cost_from_receipts`, `RecordObjectAdapter`, fail-closed breach propagation, and 8 dedicated tests (positive control, worst-case fee on transport/rate-limit, missing service tier, foreign model, `INCOMPLETE` with tokens, final receipt drift, ceiling breach).
 - [x] Completed Codex Review Repair 3: Three explicit cost denominators and excluded views spend disclosure.
 - [x] Completed Codex Review Repair 4: Robust CLI root resolution (`--repository-root`).
 - [x] Completed Codex Review Repair 5: Distinguishing known-answer 474-class Macro-F1 test.
 - [x] Completed Codex Review Repair 6: Comprehensive regression suite for tariffs, retries, and malformed inputs.
 - [x] Completed Codex Review Repair 7: Pair-cluster bootstrap resampling by `pair_id` and exact view counts (278 single, 440 contextual).
 - [x] Completed Codex Review Repair 8: RQ2 D2i independent failure axes, overlap accounting, and No-RAG N/A semantics.
-- [x] Full test suite passed (34/34 offline contract tests, 94/94 evaluation suite tests; 128 total).
+- [x] Full test suite passed (42/42 offline contract tests, 94/94 evaluation suite tests; 136 total).
 - [x] Ruff lint and format checks passed with zero errors (`line-length = 100`).

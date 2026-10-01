@@ -450,6 +450,11 @@ def _create_dev_run_with_journal(tmp_path):
         {"sample_id": "s9", "pair_id": "p4", "view_type": "contextual"},
     ]
 
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+    exp_model = orig_manifest["model"]["model"]
+
     dev_manifest = dict(orig_manifest)
     dev_manifest["split"] = "dev"
     dev_manifest["sample_ids"] = dev_sample_ids
@@ -458,6 +463,7 @@ def _create_dev_run_with_journal(tmp_path):
     dev_manifest["expected_request_count"] = req_count
     dev_manifest["maximum_attempts"] = req_count * (dev_manifest["execution"]["retries"] + 1)
     dev_manifest["fixture_max_requests"] = req_count
+    dev_manifest["model"] = orig_manifest["model"]
 
     manifest_bytes = canonical_json_bytes(dev_manifest)
     manifest_digest = hashlib.sha256(manifest_bytes).hexdigest()
@@ -481,6 +487,12 @@ def _create_dev_run_with_journal(tmp_path):
             row["parsed_technique_ids"] = ["T1059.001"]
             row["parse_status"] = "VALID"
             row["success"] = True
+            row["prompt_tokens"] = 100
+            row["completion_tokens"] = 20
+            row["total_tokens"] = 120
+            row["request_attempt_count"] = 1
+            row["model"] = exp_model
+            row["response_id"] = f"resp-{s['sample_id']}-{cond}"
             row["retrieved_candidates"] = [
                 {"technique_id": fillers[idx], "rank": idx + 1, "score": 1.0 / (idx + 1)}
                 for idx in range(k)
@@ -489,9 +501,6 @@ def _create_dev_run_with_journal(tmp_path):
             all_records.append(row)
         _dump_rows(dev_dir / f"{cond}_predictions.jsonl", dev_rows)
 
-    from scripts.analysis.evaluate_rqs import load_pricing_config
-
-    pricing_cfg, _ = load_pricing_config()
     hold_amt = Decimal("2.15898240")
     cost_amt = calculate_attempt_token_cost(100, 20, pricing_cfg, cached_tokens=0)
     refund_amt = hold_amt - cost_amt
@@ -530,6 +539,8 @@ def _create_dev_run_with_journal(tmp_path):
                     "output_tokens": 20,
                     "cached_tokens": 0,
                     "service_tier": "default",
+                    "model": rec["model"],
+                    "response_id": rec["response_id"],
                 }
             )
             journal_rows.append(
@@ -748,6 +759,12 @@ def test_reconciled_financial_accounting_with_retries(tmp_path):
     )
     rec_s0 = dict(rec_s0)
     rec_s0["request_attempt_count"] = 2
+    rec_s0["prompt_tokens"] = 1000
+    rec_s0["completion_tokens"] = 100
+    rec_s0["total_tokens"] = 1100
+    rec_s0["model"] = "gpt-5.6-luna"
+    rec_s0["response_id"] = "resp-final"
+    rec_s0["parse_status"] = "VALID"
     rec_sha = hashlib.sha256(canonical_json_bytes(rec_s0)).hexdigest()
 
     events = [
@@ -777,6 +794,8 @@ def test_reconciled_financial_accounting_with_retries(tmp_path):
             "output_tokens": 100,
             "cached_tokens": None,
             "service_tier": "default",
+            "model": "gpt-5.6-luna",
+            "response_id": "resp-final",
         },
         {"event": "complete", "key": ["s0", "no_rag"], "record_sha256": rec_sha},
         {
@@ -943,6 +962,12 @@ def test_reconciliation_mutation_settlement_vs_receipt_cost_and_refund_mismatch(
         "condition": "no_rag",
         "manifest_sha256": "a" * 64,
         "request_attempt_count": 1,
+        "prompt_tokens": 100,
+        "completion_tokens": 20,
+        "total_tokens": 120,
+        "model": "gpt-5.6-luna",
+        "response_id": "resp-1",
+        "parse_status": "VALID",
     }
     rec_sha = hashlib.sha256(canonical_json_bytes(record)).hexdigest()
     key = ["s0", "no_rag"]
@@ -956,10 +981,13 @@ def test_reconciliation_mutation_settlement_vs_receipt_cost_and_refund_mismatch(
             "key": key,
             "ordinal": 1,
             "attempt_index": 0,
+            "status": "SUCCESS",
             "input_tokens": 100,
             "output_tokens": 20,
             "cached_tokens": 0,
             "service_tier": "default",
+            "model": "gpt-5.6-luna",
+            "response_id": "resp-1",
         },
         {"event": "complete", "key": key, "record_sha256": rec_sha},
         {
@@ -983,10 +1011,13 @@ def test_reconciliation_mutation_settlement_vs_receipt_cost_and_refund_mismatch(
             "key": key,
             "ordinal": 1,
             "attempt_index": 0,
+            "status": "SUCCESS",
             "input_tokens": 100,
             "output_tokens": 20,
             "cached_tokens": 0,
             "service_tier": "default",
+            "model": "gpt-5.6-luna",
+            "response_id": "resp-1",
         },
         {"event": "complete", "key": key, "record_sha256": rec_sha},
         {
@@ -1014,6 +1045,12 @@ def test_reconciliation_mutation_ledger_vs_journal_drift():
         "condition": "no_rag",
         "manifest_sha256": "a" * 64,
         "request_attempt_count": 1,
+        "prompt_tokens": 100,
+        "completion_tokens": 20,
+        "total_tokens": 120,
+        "model": "gpt-5.6-luna",
+        "response_id": "resp-1",
+        "parse_status": "VALID",
     }
     rec_sha = hashlib.sha256(canonical_json_bytes(record)).hexdigest()
     key = ["s0", "no_rag"]
@@ -1026,10 +1063,13 @@ def test_reconciliation_mutation_ledger_vs_journal_drift():
             "key": key,
             "ordinal": 1,
             "attempt_index": 0,
+            "status": "SUCCESS",
             "input_tokens": 100,
             "output_tokens": 20,
             "cached_tokens": 0,
             "service_tier": "default",
+            "model": "gpt-5.6-luna",
+            "response_id": "resp-1",
         },
         {"event": "complete", "key": key, "record_sha256": rec_sha},
         {
@@ -1261,6 +1301,12 @@ def test_reconciliation_mutation_two_retries_with_cached_usage():
         "condition": "no_rag",
         "manifest_sha256": "a" * 64,
         "request_attempt_count": 3,
+        "prompt_tokens": 5000,
+        "completion_tokens": 100,
+        "total_tokens": 5100,
+        "model": "gpt-5.6-luna",
+        "response_id": "resp-final",
+        "parse_status": "VALID",
     }
     rec_sha = hashlib.sha256(canonical_json_bytes(record)).hexdigest()
     key = ["s0", "no_rag"]
@@ -1273,7 +1319,7 @@ def test_reconciliation_mutation_two_retries_with_cached_usage():
             "key": key,
             "ordinal": 1,
             "attempt_index": 0,
-            "status": "RATE_LIMIT",
+            "status": "TIMEOUT",
             "input_tokens": None,
             "output_tokens": None,
             "cached_tokens": None,
@@ -1284,10 +1330,10 @@ def test_reconciliation_mutation_two_retries_with_cached_usage():
             "key": key,
             "ordinal": 2,
             "attempt_index": 1,
-            "status": "RETRYABLE",
-            "input_tokens": 5000,
-            "output_tokens": 50,
-            "cached_tokens": 3000,
+            "status": "API_FAILURE",
+            "input_tokens": None,
+            "output_tokens": None,
+            "cached_tokens": None,
             "service_tier": "default",
         },
         {
@@ -1300,21 +1346,23 @@ def test_reconciliation_mutation_two_retries_with_cached_usage():
             "output_tokens": 100,
             "cached_tokens": 4500,
             "service_tier": "default",
+            "model": "gpt-5.6-luna",
+            "response_id": "resp-final",
         },
         {"event": "complete", "key": key, "record_sha256": rec_sha},
         {
             "event": "monetary_settle",
             "key": key,
             "record_sha256": rec_sha,
-            "cost_usd": "0.54070060",
-            "refund_usd": "1.61828180",
+            "cost_usd": "1.07982620",
+            "refund_usd": "1.07915620",
             "breach": False,
         },
     ]
 
     reconciled = reconcile_journal_and_ledger([record], pricing_cfg, journal_events=events)
     assert reconciled["journal_present"] is True
-    assert reconciled["settled_cost_by_condition"]["no_rag"] == Decimal("0.54070060")
+    assert reconciled["settled_cost_by_condition"]["no_rag"] == Decimal("1.07982620")
     assert reconciled["retried_attempts_by_condition"]["no_rag"] == 2
 
 
@@ -1373,6 +1421,12 @@ def test_reconciliation_mutation_orphan_cancellation():
         "condition": "no_rag",
         "manifest_sha256": "a" * 64,
         "request_attempt_count": 1,
+        "prompt_tokens": 100,
+        "completion_tokens": 20,
+        "total_tokens": 120,
+        "model": "gpt-5.6-luna",
+        "response_id": "resp-1",
+        "parse_status": "VALID",
     }
     rec_sha = hashlib.sha256(canonical_json_bytes(record)).hexdigest()
 
@@ -1390,6 +1444,8 @@ def test_reconciliation_mutation_orphan_cancellation():
             "output_tokens": 20,
             "cached_tokens": 0,
             "service_tier": "default",
+            "model": "gpt-5.6-luna",
+            "response_id": "resp-1",
         },
         {"event": "complete", "key": key_settled, "record_sha256": rec_sha},
         {
@@ -1781,3 +1837,469 @@ def test_run_rq_analysis_generates_all_artifacts(tmp_path):
     assert "## RQ1: Controlled Attribution Accuracy (No-RAG vs. RAG)" in md_content
     assert "## RQ2: Retrieval vs. Generation Error Decomposition" in md_content
     assert "## RQ3: Retrieval Depth, Latency, and Cost Trade-offs" in md_content
+
+
+# ---------------------------------------------------------------------------
+# Native Tariff Conformance & Differential Verification (B_NATIVE_TARIFF_REPAIR)
+# ---------------------------------------------------------------------------
+
+
+def test_native_tariff_positive_control_success():
+    """Positive control: SUCCESS with 10 input/1 output tokens costs exactly $0.00000370."""
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+    record = {
+        "sample_id": "s0",
+        "condition": "no_rag",
+        "manifest_sha256": "a" * 64,
+        "request_attempt_count": 1,
+        "prompt_tokens": 10,
+        "completion_tokens": 1,
+        "total_tokens": 11,
+        "model": "gpt-5.6-luna",
+        "response_id": "resp-pos-1",
+        "parse_status": "VALID",
+    }
+    rec_sha = hashlib.sha256(canonical_json_bytes(record)).hexdigest()
+    key = ["s0", "no_rag"]
+
+    events = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+        {"event": "monetary_reserve", "key": key, "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": key,
+            "ordinal": 1,
+            "attempt_index": 0,
+            "status": "SUCCESS",
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cached_tokens": 0,
+            "service_tier": "default",
+            "model": "gpt-5.6-luna",
+            "response_id": "resp-pos-1",
+        },
+        {"event": "complete", "key": key, "record_sha256": rec_sha},
+        {
+            "event": "monetary_settle",
+            "key": key,
+            "record_sha256": rec_sha,
+            "cost_usd": "0.00000370",
+            "refund_usd": "2.15897870",
+            "breach": False,
+        },
+    ]
+
+    reconciled = reconcile_journal_and_ledger([record], pricing_cfg, journal_events=events)
+    assert reconciled["journal_present"] is True
+    assert reconciled["has_breach"] is False
+    assert reconciled["settled_cost_by_condition"]["no_rag"] == Decimal("0.00000370")
+
+
+def test_native_tariff_probe_rate_limit_charges_worst_case():
+    """Probe 2: Terminal RATE_LIMIT with token usage retains worst attempt fee ($0.53974560)."""
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+    record = {
+        "sample_id": "s0",
+        "condition": "no_rag",
+        "manifest_sha256": "a" * 64,
+        "request_attempt_count": 1,
+        "prompt_tokens": 10,
+        "completion_tokens": 1,
+        "total_tokens": 11,
+        "model": "gpt-5.6-luna",
+        "response_id": "resp-rl-1",
+    }
+    rec_sha = hashlib.sha256(canonical_json_bytes(record)).hexdigest()
+    key = ["s0", "no_rag"]
+
+    # If settlement claims token cost $0.00000370 instead of worst-case, fails closed
+    events_undercharged = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+        {"event": "monetary_reserve", "key": key, "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": key,
+            "ordinal": 1,
+            "attempt_index": 0,
+            "status": "RATE_LIMIT",
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cached_tokens": 0,
+            "service_tier": "default",
+            "model": "gpt-5.6-luna",
+            "response_id": "resp-rl-1",
+        },
+        {"event": "complete", "key": key, "record_sha256": rec_sha},
+        {
+            "event": "monetary_settle",
+            "key": key,
+            "record_sha256": rec_sha,
+            "cost_usd": "0.00000370",
+            "refund_usd": "2.15897870",
+            "breach": False,
+        },
+    ]
+    with pytest.raises(ValueError, match="Journal settlement cost mismatch"):
+        reconcile_journal_and_ledger([record], pricing_cfg, journal_events=events_undercharged)
+
+    # When settlement properly debits worst-case attempt fee $0.53974560, succeeds
+    events_proper = list(events_undercharged)
+    events_proper[-1] = {
+        "event": "monetary_settle",
+        "key": key,
+        "record_sha256": rec_sha,
+        "cost_usd": "0.53974560",
+        "refund_usd": "1.61923680",
+        "breach": False,
+    }
+    reconciled = reconcile_journal_and_ledger([record], pricing_cfg, journal_events=events_proper)
+    assert reconciled["settled_cost_by_condition"]["no_rag"] == Decimal("0.53974560")
+
+
+def test_native_tariff_probe_missing_service_tier_breaches_fail_closed():
+    """Probe 3: Receipt missing service_tier breaches native contract and fails closed."""
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+    record = {
+        "sample_id": "s0",
+        "condition": "no_rag",
+        "manifest_sha256": "a" * 64,
+        "request_attempt_count": 1,
+        "prompt_tokens": 10,
+        "completion_tokens": 1,
+        "total_tokens": 11,
+        "model": "gpt-5.6-luna",
+        "response_id": "resp-st-1",
+        "parse_status": "VALID",
+    }
+    rec_sha = hashlib.sha256(canonical_json_bytes(record)).hexdigest()
+    key = ["s0", "no_rag"]
+
+    events = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+        {"event": "monetary_reserve", "key": key, "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": key,
+            "ordinal": 1,
+            "attempt_index": 0,
+            "status": "SUCCESS",
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cached_tokens": 0,
+            "service_tier": None,  # Missing service tier
+            "model": "gpt-5.6-luna",
+            "response_id": "resp-st-1",
+        },
+        {"event": "complete", "key": key, "record_sha256": rec_sha},
+        {
+            "event": "monetary_settle",
+            "key": key,
+            "record_sha256": rec_sha,
+            "cost_usd": "0.53974560",
+            "refund_usd": "1.61923680",
+            "breach": True,
+        },
+    ]
+
+    with pytest.raises(
+        ValueError, match="native contract breach.*mismatch with required 'default'"
+    ):
+        reconcile_journal_and_ledger([record], pricing_cfg, journal_events=events)
+
+
+def test_native_tariff_probe_foreign_model_breaches_fail_closed():
+    """Probe 4: Receipt with foreign returned model breaches native contract and fails closed."""
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+    pricing_cfg_with_expected = dict(pricing_cfg)
+    pricing_cfg_with_expected["expected_model"] = "gpt-5.6-luna"
+
+    record = {
+        "sample_id": "s0",
+        "condition": "no_rag",
+        "manifest_sha256": "a" * 64,
+        "request_attempt_count": 1,
+        "prompt_tokens": 10,
+        "completion_tokens": 1,
+        "total_tokens": 11,
+        "model": "gpt-5.6-luna",
+        "response_id": "resp-fm-1",
+        "parse_status": "VALID",
+    }
+    rec_sha = hashlib.sha256(canonical_json_bytes(record)).hexdigest()
+    key = ["s0", "no_rag"]
+
+    events = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+        {"event": "monetary_reserve", "key": key, "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": key,
+            "ordinal": 1,
+            "attempt_index": 0,
+            "status": "SUCCESS",
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cached_tokens": 0,
+            "service_tier": "default",
+            "model": "claude-3-7-sonnet",  # Foreign model
+            "response_id": "resp-fm-1",
+        },
+        {"event": "complete", "key": key, "record_sha256": rec_sha},
+        {
+            "event": "monetary_settle",
+            "key": key,
+            "record_sha256": rec_sha,
+            "cost_usd": "0.53974560",
+            "refund_usd": "1.61923680",
+            "breach": True,
+        },
+    ]
+
+    with pytest.raises(ValueError, match="native contract breach.*!= expected 'gpt-5.6-luna'"):
+        reconcile_journal_and_ledger([record], pricing_cfg_with_expected, journal_events=events)
+
+
+def test_native_tariff_incomplete_status_with_tokens_computes_exact_tariff():
+    """Terminal INCOMPLETE status with token usage calculates token tariff without breach."""
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+    record = {
+        "sample_id": "s0",
+        "condition": "no_rag",
+        "manifest_sha256": "a" * 64,
+        "request_attempt_count": 1,
+        "prompt_tokens": 10,
+        "completion_tokens": 1,
+        "total_tokens": 11,
+        "model": "gpt-5.6-luna",
+        "response_id": "resp-inc-1",
+        "parse_status": "INCOMPLETE",
+    }
+    rec_sha = hashlib.sha256(canonical_json_bytes(record)).hexdigest()
+    key = ["s0", "no_rag"]
+
+    events = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+        {"event": "monetary_reserve", "key": key, "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": key,
+            "ordinal": 1,
+            "attempt_index": 0,
+            "status": "INCOMPLETE",
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cached_tokens": 0,
+            "service_tier": "default",
+            "model": "gpt-5.6-luna",
+            "response_id": "resp-inc-1",
+        },
+        {"event": "complete", "key": key, "record_sha256": rec_sha},
+        {
+            "event": "monetary_settle",
+            "key": key,
+            "record_sha256": rec_sha,
+            "cost_usd": "0.00000370",
+            "refund_usd": "2.15897870",
+            "breach": False,
+        },
+    ]
+
+    reconciled = reconcile_journal_and_ledger([record], pricing_cfg, journal_events=events)
+    assert reconciled["has_breach"] is False
+    assert reconciled["settled_cost_by_condition"]["no_rag"] == Decimal("0.00000370")
+
+
+def test_native_tariff_transport_failures_charged_worst_case():
+    """Transport failures (TIMEOUT/API_FAILURE) without token usage charge worst-case attempt."""
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+    record = {
+        "sample_id": "s0",
+        "condition": "no_rag",
+        "manifest_sha256": "a" * 64,
+        "request_attempt_count": 1,
+        "parse_status": "TIMEOUT",
+    }
+    rec_sha = hashlib.sha256(canonical_json_bytes(record)).hexdigest()
+    key = ["s0", "no_rag"]
+
+    events = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+        {"event": "monetary_reserve", "key": key, "amount_usd": "2.15898240"},
+        {
+            "event": "attempt_receipt",
+            "key": key,
+            "ordinal": 1,
+            "attempt_index": 0,
+            "status": "TIMEOUT",
+            "input_tokens": None,
+            "output_tokens": None,
+            "service_tier": "default",
+        },
+        {"event": "complete", "key": key, "record_sha256": rec_sha},
+        {
+            "event": "monetary_settle",
+            "key": key,
+            "record_sha256": rec_sha,
+            "cost_usd": "0.53974560",
+            "refund_usd": "1.61923680",
+            "breach": False,
+        },
+    ]
+
+    reconciled = reconcile_journal_and_ledger([record], pricing_cfg, journal_events=events)
+    assert reconciled["has_breach"] is False
+    assert reconciled["settled_cost_by_condition"]["no_rag"] == Decimal("0.53974560")
+
+
+def test_native_tariff_final_receipt_drift_vs_record_breaches():
+    """Record drift against final receipt (tokens, response_id, model) breaches native contract."""
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+    key = ["s0", "no_rag"]
+
+    base_rec = {
+        "sample_id": "s0",
+        "condition": "no_rag",
+        "manifest_sha256": "a" * 64,
+        "request_attempt_count": 1,
+        "prompt_tokens": 100,
+        "completion_tokens": 20,
+        "total_tokens": 120,
+        "model": "gpt-5.6-luna",
+        "response_id": "resp-A",
+        "parse_status": "VALID",
+    }
+
+    # 1. Token drift (prompt_tokens 100 != input_tokens 200)
+    drift_tok_receipt = {
+        "event": "attempt_receipt",
+        "key": key,
+        "ordinal": 1,
+        "attempt_index": 0,
+        "status": "SUCCESS",
+        "input_tokens": 200,
+        "output_tokens": 20,
+        "cached_tokens": 0,
+        "service_tier": "default",
+        "model": "gpt-5.6-luna",
+        "response_id": "resp-A",
+    }
+    rec_sha = hashlib.sha256(canonical_json_bytes(base_rec)).hexdigest()
+    events_tok = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+        {"event": "monetary_reserve", "key": key, "amount_usd": "2.15898240"},
+        drift_tok_receipt,
+        {"event": "complete", "key": key, "record_sha256": rec_sha},
+        {
+            "event": "monetary_settle",
+            "key": key,
+            "record_sha256": rec_sha,
+            "cost_usd": "0.53974560",
+            "refund_usd": "1.61923680",
+            "breach": True,
+        },
+    ]
+    with pytest.raises(ValueError, match="native contract breach.*Token count mismatch"):
+        reconcile_journal_and_ledger([base_rec], pricing_cfg, journal_events=events_tok)
+
+    # 2. Response ID drift (record resp-A != receipt resp-B)
+    drift_resp_receipt = dict(drift_tok_receipt)
+    drift_resp_receipt["input_tokens"] = 100
+    drift_resp_receipt["response_id"] = "resp-B"
+    events_resp = list(events_tok)
+    events_resp[2] = drift_resp_receipt
+    with pytest.raises(ValueError, match="native contract breach.*Response ID mismatch"):
+        reconcile_journal_and_ledger([base_rec], pricing_cfg, journal_events=events_resp)
+
+    # 3. Model drift (record gpt-5.6-luna != receipt foreign-model)
+    drift_model_receipt = dict(drift_tok_receipt)
+    drift_model_receipt["input_tokens"] = 100
+    drift_model_receipt["model"] = "foreign-model"
+    events_model = list(events_tok)
+    events_model[2] = drift_model_receipt
+    with pytest.raises(ValueError, match="native contract breach.*Model mismatch"):
+        reconcile_journal_and_ledger([base_rec], pricing_cfg, journal_events=events_model)
+
+
+def test_native_tariff_logical_worst_ceiling_breach_fails_closed():
+    """Requests exceeding logical worst-case reservation ($2.15898240) breach and fail closed."""
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+    # 5 attempts: 5 * 0.53974560 = 2.69872800 > logical worst 2.15898240
+    record = {
+        "sample_id": "s0",
+        "condition": "no_rag",
+        "manifest_sha256": "a" * 64,
+        "request_attempt_count": 5,
+        "prompt_tokens": 10,
+        "completion_tokens": 1,
+        "total_tokens": 11,
+        "model": "gpt-5.6-luna",
+        "response_id": "resp-final",
+        "parse_status": "VALID",
+    }
+    rec_sha = hashlib.sha256(canonical_json_bytes(record)).hexdigest()
+    key = ["s0", "no_rag"]
+
+    events = [
+        {"event": "header", "manifest_sha256": "a" * 64, "max_requests": 1},
+        {"event": "monetary_reserve", "key": key, "amount_usd": "2.15898240"},
+    ]
+    for i in range(4):
+        events.append(
+            {
+                "event": "attempt_receipt",
+                "key": key,
+                "ordinal": i + 1,
+                "attempt_index": i,
+                "status": "TIMEOUT",
+                "input_tokens": None,
+                "output_tokens": None,
+                "service_tier": "default",
+            }
+        )
+    events.append(
+        {
+            "event": "attempt_receipt",
+            "key": key,
+            "ordinal": 5,
+            "attempt_index": 4,
+            "status": "SUCCESS",
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cached_tokens": 0,
+            "service_tier": "default",
+            "model": "gpt-5.6-luna",
+            "response_id": "resp-final",
+        }
+    )
+    events.append({"event": "complete", "key": key, "record_sha256": rec_sha})
+    events.append(
+        {
+            "event": "monetary_settle",
+            "key": key,
+            "record_sha256": rec_sha,
+            "cost_usd": "2.15898240",
+            "refund_usd": "0.00000000",
+            "breach": True,
+        }
+    )
+
+    with pytest.raises(
+        ValueError, match="native contract breach.*exceeds logical worst-case reservation"
+    ):
+        reconcile_journal_and_ledger([record], pricing_cfg, journal_events=events)

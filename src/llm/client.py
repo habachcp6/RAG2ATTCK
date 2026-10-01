@@ -586,7 +586,7 @@ class LLMClient:
                             "cached_tokens": cached_tok,
                             "requested_service_tier": self.service_tier,
                             "service_tier": returned_tier,
-                            "model": getattr(response_obj, "model", self.model),
+                            "model": getattr(response_obj, "model", None),
                             "response_id": getattr(response_obj, "id", None),
                             "error_type": None,
                         })

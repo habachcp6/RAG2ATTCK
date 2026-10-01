@@ -1110,11 +1110,18 @@ def calculate_request_cost_from_receipts(
                 # Verify Response ID binding
                 rec_resp_id = getattr(record, "response_id", None)
                 recpt_resp_id = final_receipt.get("response_id")
-                if rec_resp_id and recpt_resp_id and rec_resp_id != recpt_resp_id:
-                    breach = True
-                    breach_reasons.append(
-                        f"Response ID mismatch: record '{rec_resp_id}' != receipt '{recpt_resp_id}'"
-                    )
+                if rec_resp_id:
+                    if not recpt_resp_id:
+                        breach = True
+                        breach_reasons.append(
+                            f"Missing receipt response_id for record '{rec_resp_id}'"
+                        )
+                    elif rec_resp_id != recpt_resp_id:
+                        breach = True
+                        breach_reasons.append(
+                            f"Response ID mismatch: record '{rec_resp_id}' != "
+                            f"receipt '{recpt_resp_id}'"
+                        )
 
                 # Verify Token usage binding
                 rec_p_tok = getattr(record, "prompt_tokens", None)
@@ -1131,11 +1138,17 @@ def calculate_request_cost_from_receipts(
                 # Verify Model binding
                 rec_model = getattr(record, "model", None)
                 recpt_model = final_receipt.get("model")
-                if rec_model and recpt_model and rec_model != recpt_model:
-                    breach = True
-                    breach_reasons.append(
-                        f"Model mismatch: record '{rec_model}' != receipt '{recpt_model}'"
-                    )
+                if rec_model:
+                    if not recpt_model:
+                        breach = True
+                        breach_reasons.append(
+                            f"Missing receipt model for record '{rec_model}'"
+                        )
+                    elif rec_model != recpt_model:
+                        breach = True
+                        breach_reasons.append(
+                            f"Model mismatch: record '{rec_model}' != receipt '{recpt_model}'"
+                        )
 
     # 3. Compute cost per attempt
     total_cost = Decimal("0.0")
@@ -1161,13 +1174,22 @@ def calculate_request_cost_from_receipts(
             total_cost += attempt_worst
             continue
 
-        if expected_model and r.get("model") and r.get("model") != expected_model:
-            breach = True
-            breach_reasons.append(
-                f"Attempt {i} model '{r.get('model')}' != expected '{expected_model}'"
-            )
-            total_cost += attempt_worst
-            continue
+        if expected_model:
+            r_model = r.get("model")
+            if not r_model:
+                breach = True
+                breach_reasons.append(
+                    f"Attempt {i} missing model; expected '{expected_model}'"
+                )
+                total_cost += attempt_worst
+                continue
+            elif r_model != expected_model:
+                breach = True
+                breach_reasons.append(
+                    f"Attempt {i} model '{r_model}' != expected '{expected_model}'"
+                )
+                total_cost += attempt_worst
+                continue
 
         in_tok = r.get("input_tokens")
         out_tok = r.get("output_tokens")

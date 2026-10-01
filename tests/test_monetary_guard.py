@@ -842,6 +842,139 @@ class TestRecordBindingIntegrity:
         assert "Duplicate receipt for attempt_index 0" in reason
         assert cost == Decimal("0.53974560")
 
+    def test_missing_receipt_identity_when_record_has_known_identity_flags_breach(
+        self, sample_pricing
+    ):
+        """Record has known ID/model, but receipt has model=None/response_id=None.
+
+        Must flag breach and retain full reservation (0.53974560), not token cost (0.00085000).
+        """
+        receipts = [
+            {
+                "attempt_index": 0,
+                "status": "SUCCESS",
+                "service_tier": "default",
+                "input_tokens": 1000,
+                "output_tokens": 500,
+                "model": None,
+                "response_id": None,
+            }
+        ]
+        record = SimpleNamespace(
+            request_attempt_count=1,
+            prompt_tokens=1000,
+            completion_tokens=500,
+            response_id="KNOWN_PROVIDER_RESPONSE",
+            model="gpt-5.6-luna",
+            parse_status="VALID",
+        )
+        cost, breach, reason = calculate_request_cost_from_receipts(
+            attempts_consumed=1,
+            receipts=receipts,
+            record=record,
+            pricing_config=sample_pricing,
+            tier="default",
+            expected_model="gpt-5.6-luna",
+        )
+        assert breach is True
+        assert cost == Decimal("0.53974560")
+        assert "Missing receipt response_id" in reason or "missing model" in reason
+
+    def test_missing_receipt_model_alone_flags_breach(self, sample_pricing):
+        """Record has known model, but receipt has model=None."""
+        receipts = [
+            {
+                "attempt_index": 0,
+                "status": "SUCCESS",
+                "service_tier": "default",
+                "input_tokens": 1000,
+                "output_tokens": 500,
+                "model": None,
+                "response_id": "KNOWN_PROVIDER_RESPONSE",
+            }
+        ]
+        record = SimpleNamespace(
+            request_attempt_count=1,
+            prompt_tokens=1000,
+            completion_tokens=500,
+            response_id="KNOWN_PROVIDER_RESPONSE",
+            model="gpt-5.6-luna",
+            parse_status="VALID",
+        )
+        cost, breach, reason = calculate_request_cost_from_receipts(
+            attempts_consumed=1,
+            receipts=receipts,
+            record=record,
+            pricing_config=sample_pricing,
+            tier="default",
+        )
+        assert breach is True
+        assert cost == Decimal("0.53974560")
+        assert "Missing receipt model" in reason
+
+    def test_missing_receipt_response_id_alone_flags_breach(self, sample_pricing):
+        """Record has known response_id, but receipt has response_id=None."""
+        receipts = [
+            {
+                "attempt_index": 0,
+                "status": "SUCCESS",
+                "service_tier": "default",
+                "input_tokens": 1000,
+                "output_tokens": 500,
+                "model": "gpt-5.6-luna",
+                "response_id": None,
+            }
+        ]
+        record = SimpleNamespace(
+            request_attempt_count=1,
+            prompt_tokens=1000,
+            completion_tokens=500,
+            response_id="KNOWN_PROVIDER_RESPONSE",
+            model="gpt-5.6-luna",
+            parse_status="VALID",
+        )
+        cost, breach, reason = calculate_request_cost_from_receipts(
+            attempts_consumed=1,
+            receipts=receipts,
+            record=record,
+            pricing_config=sample_pricing,
+            tier="default",
+        )
+        assert breach is True
+        assert cost == Decimal("0.53974560")
+        assert "Missing receipt response_id" in reason
+
+    def test_mock_records_with_unknown_ids_retain_legacy_compatibility(self, sample_pricing):
+        """Mock records where both response IDs are unknown retain legacy compatibility."""
+        receipts = [
+            {
+                "attempt_index": 0,
+                "status": "SUCCESS",
+                "service_tier": "default",
+                "input_tokens": 1000,
+                "output_tokens": 500,
+                "model": "gpt-5.6-luna",
+                "response_id": None,
+            }
+        ]
+        record = SimpleNamespace(
+            request_attempt_count=1,
+            prompt_tokens=1000,
+            completion_tokens=500,
+            response_id=None,
+            model="gpt-5.6-luna",
+            parse_status="VALID",
+        )
+        cost, breach, reason = calculate_request_cost_from_receipts(
+            attempts_consumed=1,
+            receipts=receipts,
+            record=record,
+            pricing_config=sample_pricing,
+            tier="default",
+        )
+        assert breach is False
+        assert cost == Decimal("0.00085000")
+
 
 class TestCanonicalProductionStudyLedgerOverrideRejection:
     """Production live execution rejects custom study_ledger_path overrides."""

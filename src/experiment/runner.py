@@ -78,6 +78,8 @@ class MockReply:
     output_tokens: int | None = 1
     refusal: str | None = None
     service_tier: str | None = "default"
+    model: str | None = "gpt-5.6-luna"
+    response_id: str | None = None
 
 
 class MockProvider:
@@ -113,6 +115,8 @@ class MockProvider:
             output_text=outcome.raw_text,
             refusal=getattr(outcome, "refusal", None),
             service_tier=getattr(outcome, "service_tier", "default"),
+            model=getattr(outcome, "model", "gpt-5.6-luna"),
+            id=getattr(outcome, "response_id", None),
             usage=SimpleNamespace(
                 input_tokens=outcome.input_tokens, output_tokens=outcome.output_tokens
             ),

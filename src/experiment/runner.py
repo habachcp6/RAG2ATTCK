@@ -13,6 +13,7 @@ import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Callable
@@ -37,12 +38,23 @@ from src.experiment.config import (
     registry_ids_from_bytes,
 )
 from src.experiment.journal import (
+    EVENT_ATTEMPT_RECEIPT,
+    EVENT_MONETARY_CANCEL_HOLD,
+    EVENT_MONETARY_CANCEL_ORPHAN,
+    EVENT_MONETARY_RESERVE,
+    EVENT_MONETARY_SETTLE,
     EVENT_RESERVATION_ABANDONED,
     RequestState,
     make_reservation_abandoned_event,
     validate_attempt_event,
     validate_live_transition,
     validate_reservation_abandonment,
+)
+from src.experiment.monetary_ledger import (
+    StudyBudgetLedger,
+    calculate_request_cost_from_receipts,
+    load_pricing_config,
+    round_credit_down,
 )
 from src.experiment.path_safety import validate_untrusted_output_path
 from src.experiment.redaction import sanitize_secrets
@@ -65,6 +77,7 @@ class MockReply:
     input_tokens: int | None = 10
     output_tokens: int | None = 1
     refusal: str | None = None
+    service_tier: str | None = "default"
 
 
 class MockProvider:
@@ -95,6 +108,7 @@ class MockProvider:
             output=[],
             output_text=outcome.raw_text,
             refusal=getattr(outcome, "refusal", None),
+            service_tier=getattr(outcome, "service_tier", "default"),
             usage=SimpleNamespace(
                 input_tokens=outcome.input_tokens, output_tokens=outcome.output_tokens
             ),
@@ -279,6 +293,32 @@ def _verify_resume_manifest_consistency(manifest: dict[str, Any], plan: Validate
         raise LiveExecutionBlockedError("cannot resume run: output schema SHA-256 drift")
 
 
+@dataclass
+class ResumeState:
+    """Encapsulates resumed journal state while maintaining 3-tuple unpack compatibility."""
+
+    records: dict[tuple[str, str], ExperimentRecord]
+    spent: int
+    recoverable_reservation: tuple[str, str] | None
+    orphan_reservation: tuple[tuple[str, str], Decimal] | None = None
+    receipts_by_key: dict[tuple[str, str], list[dict[str, Any]]] | None = None
+    settled_keys: set[tuple[str, str]] | None = None
+    settled_events: dict[tuple[str, str], dict[str, Any]] | None = None
+
+    def __post_init__(self) -> None:
+        if self.receipts_by_key is None:
+            self.receipts_by_key = {}
+        if self.settled_keys is None:
+            self.settled_keys = set()
+        if self.settled_events is None:
+            self.settled_events = {}
+
+    def __iter__(self):
+        yield self.records
+        yield self.spent
+        yield self.recoverable_reservation
+
+
 def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_ids):
     expected_files = {
         "manifest.json",
@@ -317,12 +357,27 @@ def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_i
     start = 0
     matrix = {(s, c) for s in manifest["sample_ids"] for c in CONDITIONS}
     is_live = manifest.get("execution_mode") == "live"
+    monetary_reserved_key = None
+    monetary_reserved_amount = None
+    receipts_by_key: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    settled_keys: set[tuple[str, str]] = set()
+    settled_events: dict[tuple[str, str], dict[str, Any]] = {}
+
     for event in journal[1:]:
         key = tuple(event.get("key", []))
         kind = event.get("event")
         if key not in matrix:
             raise ValueError("journal key outside experiment matrix")
-        if kind == "begin" and set(event) == {"event", "key"}:
+        if kind == EVENT_MONETARY_RESERVE:
+            if not is_live:
+                raise ValueError("monetary_reserve event only permitted in live execution")
+            if active is not None or key in completed:
+                raise ValueError("duplicate or overlapping journal monetary reserve")
+            if monetary_reserved_key is not None:
+                raise ValueError("prior monetary reserve was not closed")
+            monetary_reserved_key = key
+            monetary_reserved_amount = Decimal(str(event.get("amount_usd", "2.15898240")))
+        elif kind == "begin" and set(event) == {"event", "key"}:
             if is_live:
                 raise ValueError(
                     "legacy begin event is forbidden in live journal; "
@@ -345,6 +400,8 @@ def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_i
                     validate_live_transition(None, target_state, consumed, consumed)
                 active, start = key, consumed
                 active_state = RequestState.RESERVED
+                if monetary_reserved_key is not None and monetary_reserved_key != key:
+                    raise ValueError("monetary reserve key does not match RESERVED transition key")
             else:
                 if active != key:
                     raise ValueError("transition event for inactive request")
@@ -369,12 +426,36 @@ def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_i
                 ):
                     raise ValueError("invalid attempt journal")
             consumed += 1
+        elif kind == EVENT_ATTEMPT_RECEIPT:
+            if not is_live:
+                raise ValueError("attempt_receipt event only permitted in live execution")
+            if active != key or active_state != RequestState.DISPATCH_STARTED:
+                raise ValueError(
+                    "attempt_receipt event only permitted during active DISPATCH_STARTED"
+                )
+            receipts_by_key.setdefault(key, []).append(event)
         elif kind == EVENT_RESERVATION_ABANDONED and set(event) == {"event", "key"}:
             if not is_live:
                 raise ValueError("reservation_abandoned event only permitted in live execution")
             validate_reservation_abandonment(active_state, active, event["key"], consumed, start)
             active = None
             active_state = None
+            monetary_reserved_key = None
+            monetary_reserved_amount = None
+        elif kind == EVENT_MONETARY_CANCEL_ORPHAN:
+            if not is_live:
+                raise ValueError("monetary_cancel_orphan event only permitted in live execution")
+            if active is not None:
+                raise ValueError("monetary_cancel_orphan not permitted while request is active")
+            if monetary_reserved_key != key:
+                raise ValueError("monetary_cancel_orphan key mismatch with open reserve")
+            monetary_reserved_key = None
+            monetary_reserved_amount = None
+        elif kind == EVENT_MONETARY_CANCEL_HOLD:
+            if not is_live:
+                raise ValueError("monetary_cancel_hold event only permitted in live execution")
+            monetary_reserved_key = None
+            monetary_reserved_amount = None
         elif kind == "complete" and set(event) == {"event", "key", "record_sha256"}:
             if active != key:
                 raise ValueError("completed journal lacks a valid execution")
@@ -393,8 +474,25 @@ def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_i
             completed.add(key)
             active = None
             active_state = None
+            monetary_reserved_key = None
+            monetary_reserved_amount = None
+        elif kind == EVENT_MONETARY_SETTLE:
+            if not is_live:
+                raise ValueError("monetary_settle event only permitted in live execution")
+            if key not in completed:
+                raise ValueError("monetary_settle event for uncommitted request")
+            if key in settled_keys:
+                raise ValueError(f"duplicate monetary_settle event for {key}")
+            settled_keys.add(key)
+            settled_events[key] = event
         else:
             raise ValueError("unknown or malformed journal event")
+
+    orphan_reservation = None
+    if monetary_reserved_key is not None and active_state is None:
+        orphan_reservation = (monetary_reserved_key, monetary_reserved_amount)
+        monetary_reserved_key = None
+
     recoverable_reservation = None
     if active is not None:
         if active_state == RequestState.RESERVED and consumed == start:
@@ -405,7 +503,16 @@ def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_i
             raise ValueError("in-flight request state is ambiguous; human reconciliation required")
     if completed != set(records) or consumed > cap:
         raise ValueError("unjournaled prediction or request budget exceeded")
-    return records, consumed, recoverable_reservation
+
+    return ResumeState(
+        records=records,
+        spent=consumed,
+        recoverable_reservation=recoverable_reservation,
+        orphan_reservation=orphan_reservation,
+        receipts_by_key=receipts_by_key,
+        settled_keys=settled_keys,
+        settled_events=settled_events,
+    )
 
 
 def _record(
@@ -780,6 +887,35 @@ def run_live_experiment(
                 "LIVE_EXECUTION_BLOCKED: OPENAI_API_KEY is not configured in environment"
             )
 
+    use_guard = (provider_factory is None) or getattr(authorization, "use_money_guard", False)
+    study_ledger = None
+    pricing_config = None
+    R_logical_worst = Decimal("2.15898240")
+    if use_guard:
+        if (
+            provider_factory is None
+            and getattr(authorization, "study_ledger_path", None) is not None
+        ):
+            raise LiveExecutionBlockedError(
+                "LIVE_EXECUTION_BLOCKED: Custom study_ledger_path is not permitted "
+                "in canonical production execution"
+            )
+        target_code_root = getattr(plan, "root", None) or REPO_ROOT
+        pricing_config, _ = load_pricing_config(repo_root=target_code_root)
+        R_logical_worst = Decimal(
+            str(
+                pricing_config.get("reservation_bounds", {}).get(
+                    "default_logical_worst_usd", "2.15898240"
+                )
+            )
+        )
+        ledger_path = getattr(authorization, "study_ledger_path", None)
+        study_ledger = StudyBudgetLedger(
+            ledger_path=ledger_path,
+            pricing_config=pricing_config,
+            code_root=target_code_root,
+        )
+
     existed = directory.exists()
     if existed and not resume:
         raise ValueError("output already exists; use explicit resume")
@@ -829,10 +965,119 @@ def run_live_experiment(
             _verify_resume_manifest_consistency(manifest, plan)
 
             manifest_sha = digest(canonical_bytes(manifest))
-            records, spent, recoverable_reservation = _resume_state(
+            resume_state = _resume_state(
                 directory, manifest, manifest_sha, cap, snapshot_registry, corpus_ids
             )
-            if recoverable_reservation is not None:
+            records = resume_state.records
+            spent = resume_state.spent
+            recoverable_reservation = resume_state.recoverable_reservation
+            orphan_reservation = resume_state.orphan_reservation
+
+            if use_guard and study_ledger is not None:
+                if study_ledger.has_breach:
+                    raise LiveExecutionBlockedError(
+                        "LIVE_EXECUTION_BLOCKED: Study ledger has prior breach; "
+                        "resume dispatch permanently blocked"
+                    )
+                # 1. Recovery and verification for all completed records
+                for comp_key, comp_rec in records.items():
+                    comp_key_str = f"{comp_key[0]}:{comp_key[1]}"
+                    comp_receipts = resume_state.receipts_by_key.get(comp_key, [])
+                    cost, breach, breach_reason = calculate_request_cost_from_receipts(
+                        attempts_consumed=comp_rec.request_attempt_count,
+                        receipts=comp_receipts,
+                        record=comp_rec,
+                        pricing_config=pricing_config,
+                        tier="default",
+                        expected_model=manifest["model"]["model"],
+                    )
+                    if breach:
+                        raise LiveExecutionBlockedError(
+                            f"LIVE_EXECUTION_BLOCKED: monetary receipt breach on recovery "
+                            f"for {comp_key_str}: {breach_reason}"
+                        )
+                    rec_sha = digest(canonical_bytes(comp_rec.model_dump()))
+                    expected_refund = round_credit_down(R_logical_worst - cost)
+
+                    if comp_key in resume_state.settled_keys:
+                        # Verify consistency of already settled journal event
+                        j_event = resume_state.settled_events.get(comp_key)
+                        if j_event is not None:
+                            if (
+                                Decimal(str(j_event.get("cost_usd"))) != cost
+                                or Decimal(str(j_event.get("refund_usd"))) != expected_refund
+                                or j_event.get("record_sha256") != rec_sha
+                                or j_event.get("breach", False)
+                            ):
+                                raise LiveExecutionBlockedError(
+                                    f"LIVE_EXECUTION_BLOCKED: settled journal record drift "
+                                    f"or breach for {comp_key_str}"
+                                )
+                        # Verify consistency with ledger entry if present
+                        led_entry = study_ledger.settled_records.get(comp_key_str)
+                        if led_entry is not None:
+                            if (
+                                Decimal(str(led_entry.get("cost_usd"))) != cost
+                                or Decimal(str(led_entry.get("refund_usd"))) != expected_refund
+                                or led_entry.get("record_sha256") != rec_sha
+                                or led_entry.get("breach", False)
+                            ):
+                                raise LiveExecutionBlockedError(
+                                    f"LIVE_EXECUTION_BLOCKED: settled ledger record drift "
+                                    f"or breach for {comp_key_str}"
+                                )
+                    else:
+                        # Complete-without-settle recovery
+                        refund = study_ledger.settle(
+                            key_str=comp_key_str,
+                            cost_usd=cost,
+                            reserved_amount_usd=R_logical_worst,
+                            record_sha256=rec_sha,
+                        )
+                        _append(
+                            journal_file,
+                            {
+                                "event": EVENT_MONETARY_SETTLE,
+                                "key": list(comp_key),
+                                "cost_usd": str(cost),
+                                "refund_usd": str(refund),
+                                "record_sha256": rec_sha,
+                                "breach": False,
+                            },
+                        )
+                        resume_state.settled_keys.add(comp_key)
+
+                # 2. Orphan reservation crash before RESERVED
+                if orphan_reservation is not None:
+                    orph_key, orph_amt = orphan_reservation
+                    orph_key_str = f"{orph_key[0]}:{orph_key[1]}"
+                    study_ledger.cancel_orphan_hold(orph_key_str, orph_amt)
+                    _append(
+                        journal_file,
+                        {
+                            "event": EVENT_MONETARY_CANCEL_ORPHAN,
+                            "key": list(orph_key),
+                            "amount_usd": str(orph_amt),
+                        },
+                    )
+
+                # 3. Recoverable reservation crash in RESERVED before dispatch
+                if recoverable_reservation is not None:
+                    _append(
+                        journal_file,
+                        make_reservation_abandoned_event(recoverable_reservation),
+                    )
+                    rec_key_str = f"{recoverable_reservation[0]}:{recoverable_reservation[1]}"
+                    study_ledger.cancel_orphan_hold(rec_key_str, R_logical_worst)
+                    _append(
+                        journal_file,
+                        {
+                            "event": EVENT_MONETARY_CANCEL_HOLD,
+                            "key": list(recoverable_reservation),
+                            "amount_usd": str(R_logical_worst),
+                        },
+                    )
+            elif recoverable_reservation is not None:
                 _append(
                     journal_file,
                     make_reservation_abandoned_event(recoverable_reservation),
@@ -877,6 +1122,8 @@ def run_live_experiment(
                 "execution_mode": "live",
                 "run_id": live_run_id,
             }
+            if use_guard and study_ledger is not None:
+                summary["study_budget"] = study_ledger.get_summary()
             _write_summary(directory, summary)
             return summary
 
@@ -976,6 +1223,19 @@ def run_live_experiment(
         # -------------------------------------------------------------------
         # PROVIDER CONSTRUCTION: Strictly AFTER all pre-dispatch gates pass.
         # -------------------------------------------------------------------
+        current_attempt_receipts: list[dict[str, Any]] = []
+
+        def _on_attempt(receipt_data: dict[str, Any]) -> None:
+            nonlocal current_attempt_receipts
+            receipt = {
+                "event": EVENT_ATTEMPT_RECEIPT,
+                "key": list(budget.key) if budget.key else [],
+                "ordinal": budget.count,
+                **receipt_data,
+            }
+            _append(journal_file, receipt)
+            current_attempt_receipts.append(receipt)
+
         budget = JournalBudget(cap, journal_file, consumed=spent)
         if provider_factory is not None:
             provider = provider_factory(snapshot_model, budget)
@@ -987,6 +1247,8 @@ def run_live_experiment(
                 is_live=True,
                 sleep_fn=lambda _: None,
                 extra_secrets=sensitive_tokens,
+                service_tier="default" if use_guard else None,
+                attempt_callback=_on_attempt if use_guard else None,
             )
         else:
             client = LLMClient(
@@ -996,6 +1258,8 @@ def run_live_experiment(
                 is_live=True,
                 api_key=api_key,
                 extra_secrets=sensitive_tokens,
+                service_tier="default" if use_guard else None,
+                attempt_callback=_on_attempt if use_guard else None,
             )
             provider = client.client
 
@@ -1008,15 +1272,38 @@ def run_live_experiment(
             else (authorization.d1_raw_response_policy_approved or "DISCARD")
         )
 
-
         new_records = 0
+        stopped_reason: str | None = None
         for sample in plan.samples:
             for condition in CONDITIONS:
                 key = (sample.sample_id, condition)
+                key_str = f"{sample.sample_id}:{condition}"
                 if key in records:
                     continue
                 if budget.is_exhausted():
                     break
+
+                if use_guard and study_ledger is not None:
+                    # Clean USD exhaustion check BEFORE reservation:
+                    # No extra attempt on refused reserve
+                    if study_ledger.uncommitted_available_balance_usd < R_logical_worst:
+                        stopped_reason = "USD_BUDGET_LIMIT"
+                        break
+                    try:
+                        study_ledger.reserve(key_str, R_logical_worst)
+                    except LiveExecutionBlockedError as exc:
+                        if "Insufficient study budget" in str(exc):
+                            stopped_reason = "USD_BUDGET_LIMIT"
+                            break
+                        raise
+                    _append(
+                        journal_file,
+                        {
+                            "event": EVENT_MONETARY_RESERVE,
+                            "key": list(key),
+                            "amount_usd": str(R_logical_worst),
+                        },
+                    )
 
                 # 1. RESERVED: durable reservation
                 _append(
@@ -1035,6 +1322,7 @@ def run_live_experiment(
                     provider.activate(key)
 
                 before = budget.count
+                current_attempt_receipts.clear()
 
                 if condition == "no_rag":
                     execution = baseline.run_sample(
@@ -1082,14 +1370,66 @@ def run_live_experiment(
                 _append(directory / f"{condition}_predictions.jsonl", record.model_dump())
 
                 # 6. RECORD_COMMITTED: atomic commit event
+                rec_sha = digest(canonical_bytes(record.model_dump()))
                 _append(
                     journal_file,
                     {
                         "event": "complete",
                         "key": list(key),
-                        "record_sha256": digest(canonical_bytes(record.model_dump())),
+                        "record_sha256": rec_sha,
                     },
                 )
+
+                # 7. Settle monetary transaction
+                if use_guard and study_ledger is not None:
+                    attempts_consumed = budget.count - before
+                    cost, breach, breach_reason = calculate_request_cost_from_receipts(
+                        attempts_consumed=attempts_consumed,
+                        receipts=current_attempt_receipts,
+                        record=record,
+                        pricing_config=pricing_config,
+                        tier="default",
+                        expected_model=manifest["model"]["model"],
+                    )
+                    refund = study_ledger.settle(
+                        key_str=key_str,
+                        cost_usd=cost,
+                        reserved_amount_usd=R_logical_worst,
+                        record_sha256=rec_sha,
+                        breach=breach,
+                        breach_reason=breach_reason,
+                    )
+                    _append(
+                        journal_file,
+                        {
+                            "event": EVENT_MONETARY_SETTLE,
+                            "key": list(key),
+                            "cost_usd": str(cost),
+                            "refund_usd": str(refund),
+                            "record_sha256": rec_sha,
+                            "breach": breach,
+                            "breach_reason": breach_reason,
+                        },
+                    )
+                    if breach:
+                        summary = {
+                            "complete": False,
+                            "stopped_reason": "METADATA_BREACH",
+                            "has_breach": True,
+                            "record_count": len(records) + 1,
+                            "requests_consumed": budget.count,
+                            "consumed_provider_attempts": budget.count,
+                            "new_records": new_records + 1,
+                            "execution_mode": "live",
+                            "run_id": live_run_id,
+                            "study_budget": study_ledger.get_summary(),
+                        }
+                        _write_summary(directory, summary)
+                        raise LiveExecutionBlockedError(
+                            f"LIVE_EXECUTION_BLOCKED: Receipt ceiling or metadata breach: "
+                            f"{breach_reason}. Attempt held worst-case charge ${cost}. "
+                            f"Next dispatch blocked."
+                        )
 
                 budget.key = None
                 records[key] = record
@@ -1098,11 +1438,18 @@ def run_live_experiment(
                 if stop_after is not None and new_records == stop_after:
                     break
 
-            if budget.is_exhausted() or (stop_after is not None and new_records == stop_after):
+            if (
+                budget.is_exhausted()
+                or (stop_after is not None and new_records == stop_after)
+                or (stopped_reason is not None)
+            ):
                 break
 
         summary = {
-            "complete": len(records) == len(plan.samples) * len(CONDITIONS),
+            "complete": (
+                (len(records) == len(plan.samples) * len(CONDITIONS))
+                and (stopped_reason is None)
+            ),
             "record_count": len(records),
             "requests_consumed": budget.count,
             "consumed_provider_attempts": budget.count,
@@ -1110,5 +1457,9 @@ def run_live_experiment(
             "execution_mode": "live",
             "run_id": live_run_id,
         }
+        if stopped_reason is not None:
+            summary["stopped_reason"] = stopped_reason
+        if use_guard and study_ledger is not None:
+            summary["study_budget"] = study_ledger.get_summary()
         _write_summary(directory, summary)
         return summary

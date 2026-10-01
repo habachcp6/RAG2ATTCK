@@ -100,7 +100,8 @@ class LiveBudget:
         with self._lock:
             if self._count >= self.max_requests:
                 raise LiveBudgetExceededError(
-                    f"Live request budget exhausted: attempted call exceeds limit of {self.max_requests} requests."
+                    f"Live request budget exhausted: attempted call exceeds "
+                    f"limit of {self.max_requests} requests."
                 )
             self._count += 1
             return self._count
@@ -166,6 +167,8 @@ class LLMClient:
         is_live: Optional[bool] = None,
         sleep_fn: Optional[Callable[[float], None]] = None,
         extra_secrets: Sequence[str] = (),
+        service_tier: Optional[str] = None,
+        attempt_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
     ) -> None:
         self.ws_root = get_workspace_root()
 
@@ -204,6 +207,8 @@ class LLMClient:
         resolved_key = api_key or os.environ.get(secret_env_var, "").strip() or None
         self.api_key = resolved_key
         self.extra_secrets = tuple(extra_secrets)
+        self.service_tier = service_tier
+        self.attempt_callback = attempt_callback
 
         if openai_client is not None:
             # SDK clients may retry internally, bypassing one-budget-unit-per-request
@@ -222,8 +227,9 @@ class LLMClient:
                 raise ValueError("A real OpenAI client cannot disable live request accounting")
             if not resolved_key:
                 raise ValueError(
-                    f"{secret_env_var} environment variable is required to construct a real OpenAI client. "
-                    f"For testing, inject a mock client via openai_client parameter."
+                    f"{secret_env_var} environment variable is required to construct a "
+                    f"real OpenAI client. For testing, inject a mock client via "
+                    f"openai_client parameter."
                 )
             self.client = openai.OpenAI(
                 api_key=resolved_key,
@@ -234,7 +240,7 @@ class LLMClient:
             self.is_live = True if is_live is None else is_live
 
     def _is_retryable_error(self, exc: Exception) -> bool:
-        """Determines whether an exception is retryable (transient network/server/rate limit/timeout error)."""
+        """Determines whether an exception is retryable (transient network/server/timeout)."""
         if isinstance(exc, LiveBudgetExceededError):
             return False
 
@@ -251,12 +257,12 @@ class LLMClient:
         if not hasattr(self.client, "responses") or not hasattr(self.client.responses, "create"):
             raise NotImplementedError("OpenAI client does not support Responses API")
 
-        return self.client.responses.create(
-            model=self.model,
-            input=prompt,
-            reasoning={"effort": self.reasoning_effort},
-            max_output_tokens=self.max_output_tokens,
-            text={
+        payload: dict[str, Any] = {
+            "model": self.model,
+            "input": prompt,
+            "reasoning": {"effort": self.reasoning_effort},
+            "max_output_tokens": self.max_output_tokens,
+            "text": {
                 "format": {
                     "type": "json_schema",
                     "name": "attack_technique_prediction",
@@ -264,8 +270,12 @@ class LLMClient:
                     "strict": True,
                 }
             },
-            timeout=self.timeout_seconds,
-        )
+            "timeout": self.timeout_seconds,
+        }
+        if self.service_tier is not None:
+            payload["service_tier"] = self.service_tier
+
+        return self.client.responses.create(**payload)
 
     def _extract_response_content_and_status(
         self,
@@ -302,54 +312,102 @@ class LLMClient:
                     reason_str = incomplete_details.get("reason")
                 else:
                     reason_str = str(incomplete_details)
-            reason = f"Response incomplete: {reason_str}" if reason_str else "Response terminated before completion"
+            reason = (
+                f"Response incomplete: {reason_str}"
+                if reason_str
+                else "Response terminated before completion"
+            )
             return None, ParseStatus.INCOMPLETE, reason, input_tokens, output_tokens
 
         if resp_status == "failed":
             err = getattr(response, "error", None)
-            reason = f"Responses API status: failed ({err})" if err else "Responses API status: failed"
+            reason = (
+                f"Responses API status: failed ({err})"
+                if err
+                else "Responses API status: failed"
+            )
             return None, ParseStatus.API_FAILURE, reason, input_tokens, output_tokens
 
         if resp_status == "cancelled":
-            return None, ParseStatus.API_FAILURE, "Responses API status: cancelled", input_tokens, output_tokens
+            return (
+                None,
+                ParseStatus.API_FAILURE,
+                "Responses API status: cancelled",
+                input_tokens,
+                output_tokens,
+            )
 
         if resp_status in ("queued", "in_progress"):
-            return None, ParseStatus.API_FAILURE, f"Responses API status: {resp_status} (unexpected synchronous state)", input_tokens, output_tokens
+            return (
+                None,
+                ParseStatus.API_FAILURE,
+                f"Responses API status: {resp_status} (unexpected synchronous state)",
+                input_tokens,
+                output_tokens,
+            )
 
         if resp_status != "completed":
             # Defensive fallback for any unexpected / unknown status
-            return None, ParseStatus.API_FAILURE, f"Responses API status unknown or unexpected: '{resp_status}'", input_tokens, output_tokens
+            return (
+                None,
+                ParseStatus.API_FAILURE,
+                f"Responses API status unknown or unexpected: '{resp_status}'",
+                input_tokens,
+                output_tokens,
+            )
 
         # 2. Completed status: inspect output for refusal parts first
         outputs = getattr(response, "output", None)
         if outputs and isinstance(outputs, list):
             for item in outputs:
-                content = getattr(item, "content", None) or (item.get("content") if isinstance(item, dict) else None)
+                content = getattr(item, "content", None) or (
+                    item.get("content") if isinstance(item, dict) else None
+                )
                 if content and isinstance(content, list):
                     for part in content:
-                        part_type = getattr(part, "type", None) or (part.get("type") if isinstance(part, dict) else None)
+                        part_type = getattr(part, "type", None) or (
+                            part.get("type") if isinstance(part, dict) else None
+                        )
                         if part_type == "refusal":
                             refusal_msg = (
                                 getattr(part, "refusal", None)
                                 or (part.get("refusal") if isinstance(part, dict) else None)
                                 or "Model refused attribution request"
                             )
-                            return None, ParseStatus.REFUSAL, str(refusal_msg), input_tokens, output_tokens
+                            return (
+                                None,
+                                ParseStatus.REFUSAL,
+                                str(refusal_msg),
+                                input_tokens,
+                                output_tokens,
+                            )
 
         # Fallback check for flat refusal attribute
         if getattr(response, "refusal", None):
-            return None, ParseStatus.REFUSAL, str(getattr(response, "refusal")), input_tokens, output_tokens
+            return (
+                None,
+                ParseStatus.REFUSAL,
+                str(getattr(response, "refusal")),
+                input_tokens,
+                output_tokens,
+            )
 
         # Extract output text from output_text content parts or output_text property
         raw_text = None
         if outputs and isinstance(outputs, list):
             for item in outputs:
-                content = getattr(item, "content", None) or (item.get("content") if isinstance(item, dict) else None)
+                content = getattr(item, "content", None) or (
+                    item.get("content") if isinstance(item, dict) else None
+                )
                 if content and isinstance(content, list):
                     for part in content:
-                        part_type = getattr(part, "type", None) or (part.get("type") if isinstance(part, dict) else None)
+                        part_type = getattr(part, "type", None) or (
+                            part.get("type") if isinstance(part, dict) else None
+                        )
                         if part_type == "output_text":
-                            raw_text = getattr(part, "text", None) or (part.get("text") if isinstance(part, dict) else None)
+                            raw_text = getattr(part, "text", None) or (
+                                part.get("text") if isinstance(part, dict) else None
+                            )
                             if raw_text is not None:
                                 break
                         elif hasattr(part, "text") and getattr(part, "text", None) is not None:
@@ -381,10 +439,18 @@ class LLMClient:
             return ParseStatus.MALFORMED_RESPONSE, None, f"Response is not valid JSON: {str(e)}"
 
         if not isinstance(payload, dict):
-            return ParseStatus.MALFORMED_RESPONSE, None, f"Response JSON must be an object, got {type(payload).__name__}"
+            return (
+                ParseStatus.MALFORMED_RESPONSE,
+                None,
+                f"Response JSON must be an object, got {type(payload).__name__}",
+            )
 
         if "technique_id" not in payload:
-            return ParseStatus.MALFORMED_RESPONSE, None, "Missing required 'technique_id' field in response JSON."
+            return (
+                ParseStatus.MALFORMED_RESPONSE,
+                None,
+                "Missing required 'technique_id' field in response JSON.",
+            )
 
         # Step 2: Validate Pydantic Schema
         try:
@@ -420,7 +486,7 @@ class LLMClient:
             endpoint_evidence: Sanitized Windows endpoint log string
             retrieved_context: None or empty for No-RAG; populated for RAG
             condition: "no_rag" or "rag"
-            prompt_template: Custom prompt template string (defaults to loading prompts/baseline_v1.txt)
+            prompt_template: Custom prompt template string (defaults to prompts/baseline_v1.txt)
             prompt_version: Version identifier of prompt template
 
         Returns:
@@ -486,6 +552,44 @@ class LLMClient:
                     response_ts = datetime.now(UTC).isoformat()
 
                     # Successfully received response
+                    if self.attempt_callback is not None:
+                        usage = getattr(response_obj, "usage", None)
+                        in_tok = None
+                        out_tok = None
+                        cached_tok = None
+                        if usage is not None:
+                            in_tok = getattr(usage, "input_tokens", None)
+                            if in_tok is None:
+                                in_tok = getattr(usage, "prompt_tokens", None)
+                            out_tok = getattr(usage, "output_tokens", None)
+                            if out_tok is None:
+                                out_tok = getattr(usage, "completion_tokens", None)
+                            prompt_details = getattr(
+                                usage, "prompt_tokens_details", None
+                            ) or getattr(usage, "input_tokens_details", None)
+                            if prompt_details is not None:
+                                if isinstance(prompt_details, dict):
+                                    cached_tok = prompt_details.get("cached_tokens")
+                                elif hasattr(prompt_details, "cached_tokens"):
+                                    cached_tok = getattr(prompt_details, "cached_tokens")
+                        resp_status = getattr(response_obj, "status", "completed")
+                        returned_tier = getattr(response_obj, "service_tier", None)
+                        self.attempt_callback({
+                            "attempt_index": attempt,
+                            "status": (
+                                "SUCCESS"
+                                if resp_status == "completed"
+                                else str(resp_status).upper()
+                            ),
+                            "input_tokens": in_tok,
+                            "output_tokens": out_tok,
+                            "cached_tokens": cached_tok,
+                            "requested_service_tier": self.service_tier,
+                            "service_tier": returned_tier,
+                            "model": getattr(response_obj, "model", self.model),
+                            "response_id": getattr(response_obj, "id", None),
+                            "error_type": None,
+                        })
                     break
 
                 except OPERATIONAL_EXCEPTIONS as exc:
@@ -497,10 +601,25 @@ class LLMClient:
                         # Immediately fail on budget exhaustion without retry
                         break
 
+                    if self.attempt_callback is not None:
+                        is_timeout = isinstance(exc, (openai.APITimeoutError, TimeoutError))
+                        self.attempt_callback({
+                            "attempt_index": attempt,
+                            "status": "TIMEOUT" if is_timeout else "API_FAILURE",
+                            "input_tokens": None,
+                            "output_tokens": None,
+                            "cached_tokens": None,
+                            "requested_service_tier": self.service_tier,
+                            "service_tier": None,
+                            "model": self.model,
+                            "response_id": None,
+                            "error_type": error_type,
+                        })
+
                     if self._is_retryable_error(exc) and attempt < self.max_retries:
                         delay = min(
                             self.retry_initial_delay * (self.retry_backoff_factor ** attempt),
-                            self.retry_max_delay
+                            self.retry_max_delay,
                         )
                         sanitized_exc_str = _sanitize(str(exc), extra_tokens=extra_secrets)
                         logger.info(
@@ -509,7 +628,7 @@ class LLMClient:
                             sanitized_exc_str,
                             delay,
                             attempt + 1,
-                            self.max_retries
+                            self.max_retries,
                         )
                         self.sleep_fn(delay)
                         continue
@@ -550,7 +669,13 @@ class LLMClient:
         sys_fp = getattr(response_obj, "system_fingerprint", None)
 
         # Inspect response (Responses API only)
-        raw_text, upfront_status, upfront_reason, in_tok, out_tok = self._extract_response_content_and_status(
+        (
+            raw_text,
+            upfront_status,
+            upfront_reason,
+            in_tok,
+            out_tok,
+        ) = self._extract_response_content_and_status(
             response_obj,
         )
 

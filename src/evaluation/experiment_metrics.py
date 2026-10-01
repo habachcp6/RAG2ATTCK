@@ -507,6 +507,19 @@ def _load_evaluation_inputs(
         "maximum attempt count mismatch",
     )
     digest = hashlib.sha256(canonical_json_bytes(manifest)).hexdigest()
+    summary_path = Path(manifest_path).resolve().parent / "run_summary.json"
+    if summary_path.is_file():
+        summary_data = _json(summary_path.read_bytes())
+        _require(
+            summary_data.get("complete") is not False,
+            "evaluator rejects incomplete run (complete=false)",
+        )
+        _require(
+            not summary_data.get("stopped_reason"),
+            f"evaluator rejects stopped run: {summary_data.get('stopped_reason')}",
+        )
+        _require(not summary_data.get("has_breach"), "evaluator rejects breached run")
+
     _require(
         set(prediction_paths) == set(CONDITIONS),
         "prediction files must cover the exact five conditions",
@@ -537,6 +550,7 @@ def _load_evaluation_inputs(
             run_ids.add(row["run_id"])
             rows.append(row)
     _require(len(run_ids) == 1, "mixed run IDs are not one execution matrix")
+
     if verify_journal:
         _validate_journal(
             Path(manifest_path).resolve().parent / "request_journal.jsonl",
@@ -762,6 +776,21 @@ def _validate_journal(
             )
             completed.add(key)
             active = None
+        elif kind == "monetary_reserve":
+            _require(
+                active is None and key not in completed,
+                "duplicate or overlapping monetary reserve",
+            )
+        elif kind == "attempt_receipt":
+            _require(active == key, "attempt_receipt for inactive key")
+        elif kind == "monetary_settle":
+            _require(key in completed, "monetary_settle before complete")
+            _require(
+                not event.get("breach", False),
+                f"evaluator rejects run with monetary breach: {event.get('breach_reason')}",
+            )
+        elif kind in ("monetary_cancel_orphan", "monetary_cancel_hold", "reservation_abandoned"):
+            _require(key in by_key, f"{kind} key outside prediction matrix")
         else:
             raise ValueError("unknown or malformed journal event")
     _require(active is None, "in-flight journal cannot certify a completed matrix")

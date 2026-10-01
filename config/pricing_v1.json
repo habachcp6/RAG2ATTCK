@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0.0",
+  "pricing_version": "pricing-v1",
+  "model": "gpt-5.6-luna",
+  "service_tier": "default",
+  "currency": "USD",
+  "total_study_budget_usd": "20.00000000",
+  "prior_pilot_provisional_hold_usd": "0.05264010",
+  "ceilings": {
+    "max_input_tokens": 1050000,
+    "max_output_tokens": 8192,
+    "short_context_limit": 272000
+  },
+  "tariffs": {
+    "default": {
+      "short": {
+        "input_per_million": "0.20",
+        "cache_read_per_million": "0.02",
+        "cache_write_per_million": "0.25",
+        "output_per_million": "1.20"
+      },
+      "long": {
+        "input_per_million": "0.40",
+        "cache_read_per_million": "0.04",
+        "cache_write_per_million": "0.50",
+        "output_per_million": "1.80"
+      }
+    },
+    "auto": {
+      "short": {
+        "input_per_million": "0.40",
+        "cache_read_per_million": "0.04",
+        "cache_write_per_million": "0.50",
+        "output_per_million": "2.40"
+      },
+      "long": {
+        "input_per_million": "0.80",
+        "cache_read_per_million": "0.08",
+        "cache_write_per_million": "1.00",
+        "output_per_million": "3.60"
+      }
+    }
+  },
+  "reservation_bounds": {
+    "default_attempt_worst_usd": "0.53974560",
+    "default_logical_worst_usd": "2.15898240",
+    "auto_attempt_worst_usd": "1.07949120",
+    "auto_logical_worst_usd": "4.31796480",
+    "prior_pilot_hold_usd": "0.05264010",
+    "net_available_starting_budget_usd": "19.94735990"
+  }
+}

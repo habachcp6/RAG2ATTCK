@@ -4,7 +4,7 @@
   "experiment_id": "synthetic-paired-test-1",
   "protocol_version": "experiment-protocol-v1.1",
   "protocol_sha256": "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c",
-  "code_manifest_sha256": "989592c9bac5c8f347f400e74651488b1c604691f59a5bffed7632ac2e847cb4",
+  "code_manifest_sha256": "00509e7221f80114145e904d56ca07f791b47ad5f9b672a812c47acb6c44540d",
   "config_sha256": "961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac",
   "artifact_hashes": {
     "attack_registry": "dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4",

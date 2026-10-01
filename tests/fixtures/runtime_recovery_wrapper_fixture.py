@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import os
 import time
 from pathlib import Path
 from typing import Any, Callable
@@ -74,20 +75,15 @@ def verify_local_launcher_if_present(
     If not present (e.g. running in GitHub Actions CI), returns (True, "SKIPPED_NOT_PRESENT").
     NEVER imports the live launcher directly.
     """
-    if launcher_path is None:
-        candidate = Path(
-            r"C:\Users\hahoa\.gemini\antigravity\brain\cd393b52-6d99-4f23-878e-7afbb7e0ecf9\scratch\launch_canonical_resume.py"
-        )
-        if candidate.is_file():
-            launcher_path = candidate
-        else:
-            return True, "SKIPPED_NOT_PRESENT"
-    else:
-        launcher_path = Path(launcher_path)
-        if not launcher_path.is_file():
-            return True, "SKIPPED_NOT_PRESENT"
+    target = launcher_path or os.environ.get("RAG2ATTCK_LIVE_LAUNCHER_PATH")
+    if not target:
+        return True, "SKIPPED_NOT_PRESENT"
 
-    content = launcher_path.read_bytes()
+    target_path = Path(target)
+    if not target_path.is_file():
+        return True, "SKIPPED_NOT_PRESENT"
+
+    content = target_path.read_bytes()
     whole_sha = hashlib.sha256(content).hexdigest()
     if whole_sha != CANONICAL_LAUNCHER_SHA256:
         return (
@@ -117,32 +113,24 @@ def build_robust_methods(
     orig_anchor: Callable[..., Any],
     sleep_fn: Callable[[float], None] = time.sleep,
 ) -> tuple[Callable[..., Any], Callable[..., Any]]:
-    """Build the robust write and anchor methods binding to specified original methods and sleep function."""
+    """Build the robust write and anchor methods by dynamically executing the archived RAW_WRAPPER_BLOCK."""
 
-    def _robust_write_atomically(self: Any) -> None:
-        for attempt in range(12):
-            try:
-                return orig_write(self)
-            except (PermissionError, OSError) as exc:
-                winerror = getattr(exc, "winerror", None)
-                if winerror in (5, 32) or isinstance(exc, PermissionError):
-                    if attempt == 11:
-                        raise
-                    sleep_fn(0.05 * (1.5**attempt))
-                else:
-                    raise
+    class _LedgerProxy:
+        _write_atomically_unlocked = orig_write
+        _write_anchor_atomically_unlocked = orig_anchor
 
-    def _robust_anchor_atomically(self: Any, data: dict[str, Any]) -> None:
-        for attempt in range(12):
-            try:
-                return orig_anchor(self, data)
-            except (PermissionError, OSError) as exc:
-                winerror = getattr(exc, "winerror", None)
-                if winerror in (5, 32) or isinstance(exc, PermissionError):
-                    if attempt == 11:
-                        raise
-                    sleep_fn(0.05 * (1.5**attempt))
-                else:
-                    raise
+    class _TimeProxy:
+        @staticmethod
+        def sleep(seconds: float) -> None:
+            sleep_fn(seconds)
 
-    return _robust_write_atomically, _robust_anchor_atomically
+    exec_ns: dict[str, Any] = {
+        "StudyBudgetLedger": _LedgerProxy,
+        "time": _TimeProxy,
+        "PermissionError": PermissionError,
+        "OSError": OSError,
+    }
+    exec(compile(RAW_WRAPPER_BLOCK, "<archived_wrapper_block>", "exec"), exec_ns)
+    robust_write = exec_ns["StudyBudgetLedger"]._write_atomically_unlocked
+    robust_anchor = exec_ns["StudyBudgetLedger"]._write_anchor_atomically_unlocked
+    return robust_write, robust_anchor

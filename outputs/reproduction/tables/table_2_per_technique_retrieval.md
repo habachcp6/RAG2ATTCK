@@ -8,5 +8,5 @@
 | `T1105` | Ingress Tool Transfer | 114 | 0.0% | 0.0% | 0.0% | 15.8% | 84.2% | 8.89 |
 | `T1136.001` | Create Account: Local Account | 99 | 0.0% | 0.0% | 0.0% | 0.0% | 100.0% | N/A |
 | `T1543.003` | Create/Modify System Process: Windows Service | 114 | 0.0% | 0.0% | 3.5% | 30.7% | 69.3% | 8.03 |
-| `T1547.001` | Other ATT&CK Technique | 106 | 15.1% | 34.9% | 57.5% | 92.5% | 7.5% | 4.57 |
-| `T1685.005` | Other ATT&CK Technique | 62 | 8.1% | 54.8% | 79.0% | 98.4% | 1.6% | 3.70 |
+| `T1547.001` | Boot/Logon Autostart: Registry Run Keys / Startup Folder | 106 | 15.1% | 34.9% | 57.5% | 92.5% | 7.5% | 4.57 |
+| `T1685.005` | Cloud Administration: Control Plane Modification | 62 | 8.1% | 54.8% | 79.0% | 98.4% | 1.6% | 3.70 |

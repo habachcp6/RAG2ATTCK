@@ -383,33 +383,36 @@ def build_slide_7_representation(prs: Presentation) -> None:
     """Slide 7: Representation Gap."""
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_slide_background(slide, LIGHT_BG)
-    add_header(slide, "6. Tác Động Của Hình Thức Biểu Diễn Telemetry", "Hiện tượng pha loãng ngữ cảnh (Context Dilution) giữa Single và Contextual")
+    add_header(slide, "6. Tác Động Của Hình Thức Biểu Diễn Telemetry", "So sánh thực nghiệm Single vs Contextual trên 670 cặp kịch bản đối ứng")
 
     add_card(
-        slide, 0.8, 1.4, 5.7, 5.5, "So Sánh Cặp Đối Ứng (252 Cặp Hợp Lệ)",
+        slide, 0.8, 1.4, 5.7, 5.5, "Phân Tích Cặp Anchor Chuẩn (296 Cặp)",
         [
-            "Số cặp kịch bản đơn kỹ thuật đủ điều kiện: 252 cặp.",
-            "Kết quả so sánh trực tiếp:",
-            "  • Single-event tốt hơn: 59 cặp (23.4%)",
-            "  • Contextual-event tốt hơn: 23 cặp (9.1%)",
-            "  • Hiệu năng ngang nhau: 170 cặp (67.5%)",
-            "  • Trong đó cả 2 cùng trượt Top-10: 119 cặp.",
-            "Tỷ lệ Single vượt trội gấp 2.56 lần so với Contextual!",
-            "Số liệu chứng minh thực tế ngược trực giác: Thêm nhiều log ngữ cảnh làm giảm chất lượng tìm kiếm vector.",
+            "Quy mô: 670 cặp kịch bản đối ứng; 374 cặp bị loại trừ do đa nhãn/mismatch.",
+            "Tiêu chí Anchor chuẩn (scripts/verify_t20_canonical_artifacts.py):",
+            "  • Single view có duy nhất 1 kỹ thuật và kỹ thuật này có mặt trong Contextual view.",
+            "Phân bố thứ hạng thực nghiệm quan sát được:",
+            "  • Single-event đạt thứ hạng tốt hơn: 65 cặp (22.0%)",
+            "  • Contextual-event đạt thứ hạng tốt hơn: 23 cặp (7.8%)",
+            "  • Hiệu năng thứ hạng tương đương: 208 cặp (70.3%)",
+            "    - Cả hai biểu diễn cùng trượt Top-10: 147 cặp",
+            "    - Đồng hạng chính xác trong Top-10: 61 cặp",
+            "Nhóm lọc đơn kỹ thuật nghiêm ngặt (252 cặp): Single tốt hơn 59 cặp (23.4%) vs. Contextual 23 cặp (9.1%), ngang nhau 170 cặp.",
         ],
         header_color=PRIMARY_BLUE,
     )
 
     add_card(
-        slide, 6.8, 1.4, 5.7, 5.5, "Cơ Chế Pha Loãng Ngữ Cảnh (Context Dilution)",
+        slide, 6.8, 1.4, 5.7, 5.5, "Hiện Tượng Quan Sát & Hàm Ý Thiết Kế",
         [
-            "Nguyên nhân bản chất:",
-            "  • Khi gộp các sự kiện lân cận (tiến trình nền, truy vấn DNS thường quy), các token không độc hại chiếm đa số văn bản.",
-            "  • Vector nhúng tổng thể (dense embedding) bị kéo về phía các sự kiện bình thường (benign drift).",
-            "  • Hành vi tấn công cốt lõi bị làm mờ, khiến kỹ thuật ATT&CK tương ứng bị đẩy xuống thứ hạng thấp.",
-            "Hàm ý thiết kế hệ thống:",
-            "  • Không nên đưa toàn bộ chuỗi log thô vào bộ nhúng.",
-            "  • Cần có bộ lọc sự kiện nghi vấn (Event Scorer / Filter) trước khi thực hiện truy xuất RAG.",
+            "Hiện tượng suy giảm thứ hạng khi mở rộng ngữ cảnh:",
+            "  • Khi gộp các sự kiện lân cận (tiến trình nền, DNS thông thường), các token không độc hại chiếm đa số văn bản.",
+            "  • Vector nhúng tổng thể (dense embedding) bị kéo lệch về phía hành vi bình thường (benign drift).",
+            "  • Dẫn đến thứ hạng của kỹ thuật tấn công cốt lõi bị tụt lùi so với khi chỉ nhúng log sự kiện đơn lẻ.",
+            "Hàm ý thiết kế hệ thống RAG an ninh mạng:",
+            "  • Không nên đưa toàn bộ chuỗi log thô nguyên khối vào bộ nhúng vector.",
+            "  • Cần áp dụng bộ lọc sự kiện nghi vấn (Event Filter) trước khi thực hiện truy xuất dense semantic.",
+            "  • Khảo sát được ghi nhận trên synthetic-paired-v1; cần tiếp tục kiểm chứng trên telemetry thực tế.",
         ],
         header_color=ALERT_RED,
     )
@@ -422,7 +425,7 @@ def build_slide_8_rq1_schema(prs: Presentation) -> None:
     add_header(slide, "7. Khung Đánh Giá End-to-End & Phân Rã Lỗi RQ1", "Bóc tách độc lập giữa năng lực truy xuất và năng lực phân loại của LLM")
 
     add_card(
-        slide, 0.8, 1.4, 11.7, 2.3, "Công Thức Phân Rã Lỗi Có Kiểm Soát (Error Decomposition)",
+        slide, 0.8, 1.4, 11.7, 2.2, "Công Thức Phân Rã Lỗi Có Kiểm Soát (Error Decomposition)",
         [
             "Lỗi gán nhãn cuối cùng (Attribution Error) được phân rã thành 2 thành phần độc lập:",
             "  P(Attribution Error) = P(Retrieval Failure) + P(Classification Failure | Retrieval Success)",
@@ -433,44 +436,50 @@ def build_slide_8_rq1_schema(prs: Presentation) -> None:
     )
 
     add_card(
-        slide, 0.8, 3.9, 5.7, 3.0, "Các Thước Đo Có Điều Kiện",
+        slide, 0.8, 3.8, 5.7, 3.2, "Các Thước Đo Có Điều Kiện",
         [
             "P(Correct | GT in Top-k): Đánh giá năng lực của LLM khi bộ tìm kiếm hoạt động chính xác.",
             "P(Correct | GT NOT in Top-k): Đánh giá khả năng LLM tự sửa sai dựa trên tri thức nội tại.",
             "Macro-F1 & Exact Match: Tính trên vũ trụ kỹ thuật chuẩn Frozen Benchmark Universe.",
+            "Chống rò rỉ: Evaluator chỉ đọc dữ liệu offline, kiểm tra SHA-256 từng bản ghi.",
         ],
         header_color=PRIMARY_BLUE,
     )
 
     add_card(
-        slide, 6.8, 3.9, 5.7, 3.0, "Kiến Trúc Evaluator Khép Kín",
+        slide, 6.8, 3.8, 5.7, 3.2, "[PENDING EXECUTION] Trạng Thái Thực Nghiệm",
         [
-            "Tự động xuất 6 artifact chuẩn: overall_metrics.json, per_condition_metrics.json, per_technique_metrics.json, retrieval_conditional_metrics.json, failure_decomposition.json, run_provenance.json.",
-            "Chống rò rỉ: Evaluator chỉ đọc dữ liệu offline, không kết nối mạng.",
+            "Trạng thái thực nghiệm chính thức: [AWAITING LIVE RUN TERMINATION]",
+            "  • Ma trận hoàn chỉnh 1,280 mẫu x 5 nhánh (6,400 bản ghi) đang chạy (PID 50192).",
+            "  • Nguyên tắc Fail-Closed: Evaluator từ chối công bố điểm chính thức khi chưa đủ 6,400 records.",
+            "Kiểm định toán học ngoại tuyến của Evaluator:",
+            "  • Đã kiểm tra qua 5 fixture mẫu chuẩn (outputs/reproduction/fixture_diagnostics/).",
+            "  • Tự động xuất đủ 6 metric artifacts với _fixture_metadata.json (fixture_only=True).",
         ],
-        header_color=SUCCESS_GREEN,
+        header_color=ALERT_RED,
     )
 
 
 def build_slide_9_rq3_cost(prs: Presentation) -> None:
-    """Slide 9: RQ3 Cost & Ablation Analysis."""
+    """Slide 9: RQ3 Cost & Resource Scaling."""
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_slide_background(slide, LIGHT_BG)
-    add_header(slide, "8. Nghiên Cứu Cắt Giảm & Chi Phí Thực Nghiệm RQ3", "Kết quả thực nghiệm từ DEV Cost Pilot trên OpenAI gpt-5.6-luna (20 requests)")
+    add_header(slide, "8. Nghiên Cứu Tiêu Thụ Tài Nguyên & Chi Phí Thực Nghiệm RQ3", "Dữ liệu đo lường thực tế từ DEV Cost Pilot trên OpenAI gpt-5.6-luna (20 requests)")
 
     add_card(
-        slide, 0.8, 1.4, 5.7, 5.5, "Số Liệu Thực Nghiệm DEV Cost Pilot (2026-10-01)",
+        slide, 0.8, 1.4, 5.7, 5.5, "DEV Cost Pilot: 20 Mẫu Thăm Dò Thực Tế",
         [
-            "Quy mô: 20 yêu cầu thực tế qua Responses API trên 4 DEV views.",
-            "Tuân thủ Schema: 100% VALID  |  Số lần Retry: 0.",
+            "Mục đích: Đo lường mức tăng trưởng token thực tế và kiểm tra độ ổn định schema.",
+            "Quy mô: 20 yêu cầu thực tế qua Responses API trên 4 DEV views x 5 nhánh điều kiện.",
+            "Tuân thủ Schema: 100% VALID  |  Số lần Retry: 0 (Độ trễ TB: 8,127.6 ms).",
             "Mức tiêu thụ Token trung bình theo điều kiện k:",
             "  • no_rag (k=0): 643 input tokens  |  224 output tokens",
             "  • rag_k1 (k=1): 1,115 input tokens (tăng 1.7x)",
             "  • rag_k3 (k=3): 1,741 input tokens (tăng 2.7x)",
             "  • rag_k5 (k=5): 2,518 input tokens (tăng 3.9x)",
             "  • rag_k10 (k=10): 4,537 input tokens (tăng 7.1x)",
-            "Chi phí thanh toán thực tế cho 20 requests: $0.0242 USD.",
-            "Dự phóng chi phí toàn bộ 6,400 requests tập TEST: $8.20 – $8.99 USD.",
+            "Chi phí thanh toán thực tế cho 20 requests: $0.0242 USD (~600 VNĐ).",
+            "[PENDING] Toàn bộ ma trận TEST 6,400 requests dự phóng chi phí: $8.20 – $8.99 USD.",
         ],
         header_color=DEEP_BLUE,
     )

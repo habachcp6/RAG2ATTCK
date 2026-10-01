@@ -3,27 +3,27 @@
 **Subagent Handle:** Subagent D (Reproducibility & Presentation Owner for Phase S1)  
 **Dedicated Worktree:** `D:/RAG2ATTCK-worktrees/repro-presentation-s1`  
 **Branch:** `codex/s1-reproducibility-presentation`  
-**Execution Timestamp:** 2026-10-02T03:25:00Z  
-**PRE_SHA:** `80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315`  
+**Execution Timestamp:** 2026-10-02T03:38:00Z  
+**Baseline PRE_SHA:** `80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315`  
 **Execution Policy:** STRICTLY ZERO live provider/API calls. Zero secret leakage. 100% offline verifiable.
 
 ---
 
 ## 1. Executive Summary & Inventory of Deliverables
 
-Subagent D has completed the inventory of all Phase S1 deliverables and established a turnkey, zero-cost, 100% offline reproduction and presentation package for RAG2ATT&CK. An external researcher or reviewer can independently verify every cryptographic artifact hash, recompute the T20 retrieval diagnostics from raw records, execute the canonical evaluation pipeline under Frozen Protocol v1.1, and recompile publication-quality figures, markdown tables, and a 16:9 PowerPoint presentation deck without spending money, querying live LLM APIs, or installing external database infrastructure.
+Subagent D has completed the inventory and remediation of all Phase S1 deliverables (`D_REPAIR`) and established a turnkey, zero-cost, 100% offline reproduction and presentation package for RAG2ATT&CK. An external researcher or reviewer can independently verify every cryptographic artifact hash, recompute the T20 retrieval diagnostics from raw records, execute the canonical evaluation pipeline under Frozen Protocol v1.1, and recompile publication-quality figures, markdown tables, and a 16:9 PowerPoint presentation deck without spending money, querying live LLM APIs, or installing external database infrastructure.
 
 ### Complete Table of Authored Deliverables
 
 | Deliverable | File Path | File Size (Bytes) | SHA-256 Digest | Status |
 | :--- | :--- | :---: | :--- | :---: |
-| **Offline Reproducibility Guide** | `docs/reproducibility.md` | 12,766 | `f65f07758b2f668ecbd042ea714066873938f82dac786265484dadd2eb975c8f` | VERIFIED |
-| **Offline Reproduction Pipeline** | `scripts/reproduce_study.py` | 34,727 | `8572a10b39ccf08234bfff6f423650f37f583cd5a468ca17df2ee0633d5d026a` | VERIFIED |
-| **Proposed Reconciled README** | `docs/README_PROPOSED.md` | 18,894 | `7a5d282906800dc33945076892f4aaab03a359b68949b3b796ce360a13ad380e` | VERIFIED |
-| **Presentation Deck Outline (MD)** | `docs/presentation/slides.md` | 22,085 | `fb35a62cadaff3640455dce203b044d93d880dabc316a37eb4685ed3632cc581` | VERIFIED |
-| **PowerPoint Deck Builder Script** | `scripts/generate_slides.py` | 32,571 | `21c23d24d54b067c0e5342e18a54e85090064a02b90e865f3c63799562915832` | VERIFIED |
-| **Compiled PowerPoint Deck (PPTX)**| `docs/presentation/slides.pptx` | 350,371 | `ee8a365b42f583e9f47c0e5b326bce8096416e1ba12dd6621ec32e1022ba40f8` | VERIFIED |
-| **Sanitized Evidence Manifest** | `docs/sanitized_evidence_manifest.json` | 10,682 | `15125fdcd6ab873ce320b5757e89c979dd0a6a2e9ccfb7b760a037ccd79dc532` | VERIFIED |
+| **Offline Reproducibility Guide** | `docs/reproducibility.md` | 16,389 | `7d67bc28671f2fa4bba21abe616d2f21273498c0a6ffe1ad13921d42b32c204f` | VERIFIED |
+| **Offline Reproduction Pipeline** | `scripts/reproduce_study.py` | 50,405 | `5d645eb7f70ace7adde1b012db2e4fad2e06a7e5f431ba5d145987abfb167fc2` | VERIFIED |
+| **Proposed Reconciled README** | `docs/README_PROPOSED.md` | 19,460 | `48209e0e39ac4e2c2be1e0fa10721ff73c8a404f4cd6276537d02198d586936b` | VERIFIED |
+| **Presentation Deck Outline (MD)** | `docs/presentation/slides.md` | 23,769 | `ab2aa929b226d69dc14030067cc8d07d273d4ae39bd577dc7c94bd356b16bd9e` | VERIFIED |
+| **PowerPoint Deck Builder Script** | `scripts/generate_slides.py` | 33,760 | `e1cfb966e34fb91dd10f06e3030c910f041019216325ca05bbd70a39211dddb5` | VERIFIED |
+| **Compiled PowerPoint Deck (PPTX)**| `docs/presentation/slides.pptx` | 350,979 | `223bf40528431abfe2ea07101f97441c28eb8c3b47f11150e063663e0b9ba512` | VERIFIED |
+| **Sanitized Evidence Manifest** | `docs/sanitized_evidence_manifest.json` | 12,769 | `c9fdfb4f753a8a2b57e9375b47c24b2e8549f14ccd07b0c8c56ced360465a8a0` | VERIFIED |
 
 ---
 
@@ -69,11 +69,17 @@ The reproduction pipeline recomputed all T20 retrieval metrics independently fro
   - $\text{Macro Recall}@10 = 0.4314$
 - **Retrieval Failure Rate:**
   - Ground-truth absent from Top-10: **415 / 756 views (54.89%)**.
-- **Pairwise Representation Comparison (670 pairs, 252 eligible single-technique pairs):**
-  - Single-event view better: **59 pairs (23.4%)**
-  - Contextual-event view better: **23 pairs (9.1%)**
-  - Equal rank: **170 pairs (67.5%)**, of which **119 pairs** had both views absent from Top-10.
-  - *Finding:* Single-event views outperform Contextual views by a factor of 2.56 due to context dilution.
+- **Pairwise Representation Comparison (670 candidate pairs):**
+  - **Canonical Anchor Cohort (296 eligible pairs):**
+    - Single-event view better: **65 pairs (22.0%)**
+    - Contextual-event view better: **23 pairs (7.8%)**
+    - Equal rank: **208 pairs (70.3%)**, of which **147 pairs** had both views absent from Top-10 and **61 pairs** had identical rank.
+    - Excluded pairs: **374 pairs** (due to multi-label single view or missing anchor).
+  - **Secondary Strict Single-Technique Cohort (252 eligible pairs):**
+    - Single-event better: **59 pairs (23.4%)**
+    - Contextual-event better: **23 pairs (9.1%)**
+    - Equal rank: **170 pairs (67.5%)**
+  - *Empirical Note:* These represent observed retrieval rank differences under dense semantic search (`all-MiniLM-L6-v2`) on `synthetic-paired-v1`.
 - **Semantic Gap Discovery (`T1136.001` Local Account):**
   - $Hit@10 = 0.0\%$ (0 / 99 positive views). Windows Event ID 4720 technical terms ("SamAccountName", "A user account was created") fail to match ATT&CK persistence objective descriptions in standard dense semantic embeddings.
 
@@ -102,21 +108,26 @@ The reproduction pipeline independently checked the byte-preserved real-provider
 
 ---
 
-## 5. Canonical Evaluator Execution (RQ1 Schema)
+## 5. Evaluator Fixture Diagnostics & Completed-Run Reproduction Path
 
-The canonical evaluator (`src/evaluation/experiment_metrics.py`) was executed under Protocol v1.1 on full 5-condition test matrices. All 6 canonical metric artifacts were exported atomically into `outputs/reproduction/evaluator_outputs/`:
-1. `overall_metrics.json` (1,867 bytes)
-2. `per_condition_metrics.json` (4,199 bytes)
-3. `per_technique_metrics.json` (6,365 bytes)
-4. `retrieval_conditional_metrics.json` (1,420 bytes)
-5. `failure_decomposition.json` (2,545 bytes)
-6. `run_provenance.json` (2,180 bytes)
+### 5.1 Evaluator Fixture Diagnostics (`outputs/reproduction/fixture_diagnostics/`)
+The canonical evaluator (`src/evaluation/experiment_metrics.py`) was executed on synthetic unit test fixtures to verify mathematical correctness offline. All 6 metric artifacts were exported into `outputs/reproduction/fixture_diagnostics/` along with an explicit `_fixture_metadata.json` declaring `fixture_only = True`:
+1. `_fixture_metadata.json` (`fixture_only: true`, `sample_count: 5`)
+2. `overall_metrics.json`
+3. `per_condition_metrics.json`
+4. `per_technique_metrics.json`
+5. `retrieval_conditional_metrics.json`
+6. `failure_decomposition.json`
+7. `run_provenance.json`
+
+### 5.2 Authoritative Completed-Run Reproduction Path
+The reproduction pipeline includes `--manifest` and `--run-dir` CLI options enabling verification of completed 1,280-sample test runs. It enforces fail-closed validation of the full 1,280 x 5 matrix (6,400 records) under Frozen Protocol v1.1. Incomplete runs (e.g. DEV pilot or in-flight live execution) fail closed with clear diagnostic notices.
 
 ---
 
 ## 6. Generated Publication Figures & Tables
 
-The reproduction script generated 3 high-resolution 300 DPI figures and 3 markdown tables:
+The reproduction script generated 3 high-resolution 300 DPI figures and 4 markdown tables:
 - **Figures (`outputs/reproduction/figures/`):**
   - `fig_rq2_retrieval_hit_rates.png`: Hit@k and Recall@k curves vs candidate depth $k \in \{1, 3, 5, 10\}$.
   - `fig_rq2_per_technique_breakdown.png`: Top-10 Hit Rate vs Absent Rate for target techniques.
@@ -124,7 +135,8 @@ The reproduction script generated 3 high-resolution 300 DPI figures and 3 markdo
 - **Tables (`outputs/reproduction/tables/`):**
   - `table_1_retrieval_diagnostics.md`: Complete T20 retrieval performance metrics.
   - `table_2_per_technique_retrieval.md`: Per-technique breakdown of hits, absences, and mean ranks.
-  - `table_3_pilot_resource_usage.md`: DEV cost pilot empirical token counts and financial costs.
+  - `table_3_dev_pilot_resource_usage.md`: DEV cost pilot empirical token counts and financial costs.
+  - `table_4_pairwise_representation_comparison.md`: Detailed breakdown of both canonical anchor (296 pairs) and strict single-technique (252 pairs) cohorts.
 
 ---
 
@@ -139,10 +151,13 @@ The reproduction script generated 3 high-resolution 300 DPI figures and 3 markdo
      ```
 3. **Runtime Launcher Binding & Concurrency Handling:**
    - Runtime launcher hash: `05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa`.
-   - Windows filesystem concurrency wrapper: Windows-specific `WinError 5` (Access Denied) and `WinError 32` (Sharing Violation) filesystem errors during atomic journal flushes and file replacements are handled via an exponential backoff retry wrapper to ensure state immutability.
+   - Windows filesystem concurrency wrapper: Windows-specific `WinError 5` (Access Denied) and `WinError 32` (Sharing Violation) filesystem errors during atomic journal flushes and file replacements are handled via a dedicated 12-attempt retry wrapper in `StudyBudgetLedger._write_atomically_unlocked` and `_write_anchor_atomically_unlocked`.
 4. **License Status:**
    - Root `README.md` declares MIT License; note that a standalone `LICENSE` text file is not present in the repository tree.
-5. **Scope Invariant:**
+5. **Technique Naming Alignment:**
+   - `T1059.009` is named `'Command & Scripting: Cloud API'` (active).
+   - `T1218.012` is named `'System Binary Proxy Execution: Verclsid'`.
+6. **Scope Invariant:**
    - All empirical evaluations are strictly bounded to the frozen `synthetic-paired-v1` benchmark; no unwarranted claims regarding in-the-wild real enterprise telemetry are made.
 
 ---
@@ -154,7 +169,13 @@ The reproduction script generated 3 high-resolution 300 DPI figures and 3 markdo
 uv run python scripts/reproduce_study.py
 
 # Verified offline egress guard:
-uv run python scripts/run_offline_tests.py -c "import sys; from scripts.reproduce_study import main; sys.exit(main())"
+uv run python scripts/run_offline_tests.py -c "import sys; from scripts.reproduce_study import main; sys.exit(main(['--verify-hashes']))"
+
+# Evaluator fixture diagnostics only:
+uv run python scripts/reproduce_study.py --run-fixture-diagnostics
+
+# Completed run evaluation (fail-closed if incomplete):
+uv run python scripts/reproduce_study.py --run-evaluator --run-dir reports/evidence/dev_cost_pilot_20261001
 
 # PowerPoint slide generation & QA:
 uv run python scripts/generate_slides.py

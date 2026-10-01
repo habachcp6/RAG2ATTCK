@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "manifest_name": "RAG2ATTCK Sanitized Evidence & Reproducibility Manifest",
-  "manifest_version": "1.0.0",
-  "created_at_utc": "2026-10-02T03:20:00Z",
+  "manifest_version": "1.1.0",
+  "created_at_utc": "2026-10-02T03:35:00Z",
   "repository": "habachcp6/RAG2ATTCK",
   "base_commit_sha": "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315",
   "security_audit": {
@@ -15,8 +15,19 @@
   },
   "runtime_provenance": {
     "launcher_sha256": "05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa",
-    "windows_filesystem_wrapper": "WinError 5/32 exponential backoff retry wrapper for atomic renames",
-    "license_status": "Project root README declares MIT License; standalone LICENSE file is not present in tree"
+    "windows_filesystem_wrapper": "12-attempt exponential backoff retry wrapper for WinError 5/32 on StudyBudgetLedger atomic writes",
+    "license_status": "Project root README declares MIT License; standalone LICENSE file is not present in tree",
+    "technique_naming": {
+      "T1059.009": "Command & Scripting: Cloud API",
+      "T1218.012": "System Binary Proxy Execution: Verclsid"
+    }
+  },
+  "scientific_provenance_tiers": {
+    "tier_1_canonical_artifacts": "15 bound repository artifacts frozen under canonical-lock-v1",
+    "tier_2_evaluator_fixture_diagnostics": "Offline unit test fixture diagnostics verifying evaluator mathematical correctness (fixture_only: true)",
+    "tier_3_dev_cost_pilot_evidence": "Byte-preserved real-provider pilot records across 4 DEV views (20 samples, $0.0242 USD spend)",
+    "tier_4_t20_retrieval_diagnostics": "Full benchmark dense retrieval diagnostics across 756 positive views and 670 scenario pairs",
+    "tier_5_canonical_test_study": "Complete 1,280 samples x 5 conditions = 6,400 records test study; awaiting completion under PID 50192 (fail-closed evaluation)"
   },
   "canonical_experiment_lock": {
     "lock_version": "canonical-lock-v1",
@@ -100,33 +111,32 @@
       "retrieval_config": {
         "path": "config/retrieval.json",
         "sha256": "b33a93913e7f6de36f6f9021f77b2c9dcb1d426929162acb250a3c73ac8e6e25",
-        "size_bytes": 920,
-        "description": "Retrieval hyperparameter specification (depths 1, 3, 5, 10)"
+        "size_bytes": 905,
+        "description": "Retrieval hyperparameter specifications (MiniLM-L6-v2, cosine sim)"
       },
       "retrieval_manifest": {
         "path": "attack/index/enterprise-windows-v19.2.manifest.json",
         "sha256": "ad1fc8c8118ef897943597e30c3ab71cf30556f675b38bbeba6772537127ed0a",
-        "size_bytes": 770,
-        "description": "Index provenance and hash verification manifest"
+        "size_bytes": 794,
+        "description": "Knowledge corpus building and index provenance manifest"
       },
       "split_manifest": {
         "path": "data/ground_truth/synthetic/split_manifest.json",
         "sha256": "37fce63ccaa6db8e13604b7e3783997a10635f58995881b5e41913e6f550f43f",
-        "size_bytes": 10739,
-        "description": "Deterministic TEST (640 pairs) and DEV (30 pairs) split manifest"
+        "size_bytes": 10769,
+        "description": "Deterministic split assignments (DEV: 60 views, TEST: 1,280 views)"
       },
       "views": {
         "path": "data/ground_truth/synthetic/views.jsonl",
         "sha256": "1e6b0d3bd525b8fe9f97ba9e5656905597a3939e47c130a9e6f74535e2cd421d",
-        "size_bytes": 153500,
+        "size_bytes": 153472,
         "line_count": 1340,
-        "description": "Individual view definitions for single and contextual representations"
+        "description": "Representation views binding single vs contextual telemetry"
       }
     }
   },
-  "retrieval_diagnostics_evidence": {
-    "task": "T20",
-    "description": "Offline independent evaluation of FAISS retriever on 756 positive views",
+  "retrieval_evidence": {
+    "evaluation_target": "T20 Overall Retrieval Performance (756 positive views)",
     "artifacts": {
       "diagnostics_rows": {
         "path": "artifacts/retrieval/retrieval_diagnostics.jsonl",
@@ -154,6 +164,26 @@
       "macro_recall_at_1": 0.03461199294532628,
       "macro_recall_at_10": 0.4314373897707231,
       "gt_absent_from_top10_rate": 0.548941798941799
+    },
+    "pairwise_anchor_comparison": {
+      "candidate_pairs": 670,
+      "eligible_pairs": 296,
+      "excluded_pairs": 374,
+      "single_better": 65,
+      "contextual_better": 23,
+      "equal": 208,
+      "both_absent_top10": 147,
+      "top10_equal": 61
+    },
+    "pairwise_strict_single_technique_comparison": {
+      "candidate_pairs": 670,
+      "eligible_pairs": 252,
+      "excluded_pairs": 418,
+      "single_better": 59,
+      "contextual_better": 23,
+      "equal": 170,
+      "both_absent_top10": 119,
+      "top10_equal": 51
     }
   },
   "dev_cost_pilot_evidence": {
@@ -219,37 +249,52 @@
     "valid_record_rate": 1.0,
     "provider_retry_count": 0
   },
+  "evaluator_fixture_diagnostics": {
+    "output_directory": "outputs/reproduction/fixture_diagnostics",
+    "metadata_file": "outputs/reproduction/fixture_diagnostics/_fixture_metadata.json",
+    "fixture_only": true,
+    "purpose": "known_answer_fixture_only",
+    "description": "Synthetic unit test fixture diagnostic demonstrating evaluator mathematical correctness. NOT live experiment results.",
+    "sample_count": 5,
+    "exported_artifacts": [
+      "overall_metrics.json",
+      "per_condition_metrics.json",
+      "per_technique_metrics.json",
+      "retrieval_conditional_metrics.json",
+      "failure_decomposition.json",
+      "run_provenance.json"
+    ]
+  },
   "reproducibility_package": {
     "reproducibility_guide": {
       "path": "docs/reproducibility.md",
-      "sha256": "f65f07758b2f668ecbd042ea714066873938f82dac786265484dadd2eb975c8f",
-      "size_bytes": 12766
+      "sha256": "7d67bc28671f2fa4bba21abe616d2f21273498c0a6ffe1ad13921d42b32c204f",
+      "size_bytes": 16389
     },
     "reproduction_script": {
       "path": "scripts/reproduce_study.py",
-      "sha256": "8572a10b39ccf08234bfff6f423650f37f583cd5a468ca17df2ee0633d5d026a",
-      "size_bytes": 34727
+      "sha256": "5d645eb7f70ace7adde1b012db2e4fad2e06a7e5f431ba5d145987abfb167fc2",
+      "size_bytes": 50405
     },
     "proposed_readme": {
       "path": "docs/README_PROPOSED.md",
-      "sha256": "7a5d282906800dc33945076892f4aaab03a359b68949b3b796ce360a13ad380e",
-      "size_bytes": 18894
+      "sha256": "48209e0e39ac4e2c2be1e0fa10721ff73c8a404f4cd6276537d02198d586936b",
+      "size_bytes": 19460
     },
     "presentation_markdown": {
       "path": "docs/presentation/slides.md",
-      "sha256": "fb35a62cadaff3640455dce203b044d93d880dabc316a37eb4685ed3632cc581",
-      "size_bytes": 22085
+      "sha256": "ab2aa929b226d69dc14030067cc8d07d273d4ae39bd577dc7c94bd356b16bd9e",
+      "size_bytes": 23769
     },
     "slide_generator_script": {
       "path": "scripts/generate_slides.py",
-      "sha256": "21c23d24d54b067c0e5342e18a54e85090064a02b90e865f3c63799562915832",
-      "size_bytes": 32571
+      "sha256": "e1cfb966e34fb91dd10f06e3030c910f041019216325ca05bbd70a39211dddb5",
+      "size_bytes": 33760
     },
     "presentation_deck_pptx": {
       "path": "docs/presentation/slides.pptx",
-      "sha256": "ee8a365b42f583e9f47c0e5b326bce8096416e1ba12dd6621ec32e1022ba40f8",
-      "size_bytes": 350371
+      "sha256": "223bf40528431abfe2ea07101f97441c28eb8c3b47f11150e063663e0b9ba512",
+      "size_bytes": 350979
     }
   }
 }
-

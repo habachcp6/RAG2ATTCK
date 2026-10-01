@@ -8,8 +8,7 @@
 | `rag_k3` | 4 | 1740.5 | 1087.2 | 6,962 | 4,349 | 100% VALID |
 | `rag_k5` | 4 | 2518.2 | 840.2 | 10,073 | 3,361 | 100% VALID |
 
-### Cost Summary & Scaling Projections
-- **Empirical Pilot Cost (20 requests):** $0.024209 (conservative: $0.026320)
-- **Observed Output Mean:** 656.95 tokens/request
-- **Observed Latency Mean:** 8127.6 ms
-- **Canonical 6,400-Request TEST Projection:** $8.20 (conservative input: $8.99)
+- **Measured Run Cost (20 requests):** $0.024209 USD
+- **Conservative Input Price Model:** $0.026320 USD
+- **Observed Mean Latency:** 8127.6 ms
+- **Extrapolated 6,400-Request TEST Matrix Spend:** ~$8.20 – $8.99 USD

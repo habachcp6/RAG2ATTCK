@@ -129,17 +129,22 @@
 
 ### Nội dung trình chiếu
 - **So sánh cặp kịch bản đối ứng (Pairwise Single vs. Contextual across 670 pairs):**
-  - Tổng số cặp hợp lệ (Eligible single-technique pairs): 252 cặp.
-  - **Single-event tốt hơn Contextual-event:** **59 cặp** (23.4%).
-  - **Contextual-event tốt hơn Single-event:** **23 cặp** (9.1%).
-  - **Hiệu năng tương đương:** 170 cặp (trong đó cả hai cùng trượt Top-10: 119 cặp).
-- **Hiện tượng Pha Loãng Ngữ Cảnh (Context Dilution):**
+  - **Phân tích Cặp Anchor Chuẩn (296 cặp hợp lệ - Primary):**
+    - Tiêu chí: Single view có duy nhất 1 kỹ thuật và kỹ thuật này xuất hiện trong Contextual view (374 cặp bị loại trừ do đa nhãn/mismatch).
+    - **Single-event đạt thứ hạng tốt hơn:** **65 cặp** (22.0%).
+    - **Contextual-event đạt thứ hạng tốt hơn:** **23 cặp** (7.8%).
+    - **Hiệu năng thứ hạng ngang nhau:** **208 cặp** (70.3%), trong đó:
+      - Cả hai biểu diễn cùng trượt Top-10: **147 cặp**.
+      - Đồng hạng chính xác trong Top-10: **61 cặp**.
+  - **Nhóm lọc đơn kỹ thuật nghiêm ngặt (252 cặp - Secondary):**
+    - Cả Single và Contextual view đều có đúng 1 kỹ thuật trùng nhau: Single tốt hơn 59 cặp (23.4%) vs. Contextual 23 cặp (9.1%), ngang nhau 170 cặp.
+- **Hiện tượng suy giảm thứ hạng khi mở rộng ngữ cảnh:**
   - Khi gom nhiều sự kiện trong cùng một cửa sổ thời gian (Contextual representation), các sự kiện nền thông thường (như Explorer, DnsQuery, svchost) bổ sung thêm các token nhiễu.
-  - Vector nhúng của toàn bộ đoạn văn bản bị kéo lệch khỏi hành vi độc hại cốt lõi, khiến kỹ thuật tấn công thực sự bị tụt hạng trong danh sách Top-k.
-  - *Hàm ý thiết kế:* Cần có cơ chế lọc sự kiện liên quan (Event Filtering) trước khi đưa vào bộ nhúng.
+  - Vector nhúng dense (`all-MiniLM-L6-v2`) bị kéo lệch khỏi hành vi độc hại cốt lõi (benign drift), khiến kỹ thuật tấn công thực sự bị tụt hạng trong danh sách Top-k.
+  - *Hàm ý thiết kế:* Cần có cơ chế lọc sự kiện liên quan (Event Filtering) trước khi đưa vào bộ nhúng vector. Khảo sát trên `synthetic-paired-v1`; cần tiếp tục kiểm chứng trên telemetry thực địa.
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Một phát hiện trực quan hóa sâu sắc là sự chênh lệch biểu diễn: Single-event vượt trội hơn Contextual-event ở 59 cặp so với chỉ 23 cặp chiều ngược lại. Thêm nhiều log xung quanh không giúp bộ truy xuất thông minh hơn, mà ngược lại gây ra hiện tượng pha loãng ngữ cảnh (Context Dilution). Điều này đặt ra yêu cầu phải tiền lọc log trước khi nhúng vector."
+> "Một phát hiện thực nghiệm quan trọng là sự chênh lệch biểu diễn: Trên 296 cặp anchor hợp lệ, Single-event đạt thứ hạng tốt hơn ở 65 cặp so với 23 cặp của Contextual-event, trong khi hơn 70% trường hợp có thứ hạng tương đương (phần lớn do cả hai cùng trượt Top-10). Thêm nhiều log xung quanh chưa qua chọn lọc không giúp bộ truy xuất thông minh hơn mà có xu hướng làm loãng ngữ cảnh. Điều này đặt ra yêu cầu phải tiền lọc log nghi vấn trước khi nhúng vector."
 
 ---
 
@@ -157,11 +162,14 @@
 - **Tính toán có điều kiện (Conditional Metrics):**
   - $P(\text{Correct} \mid \text{GT Retrieved in Top-}k)$: Đo lường năng lực lựa chọn của LLM khi bộ tìm kiếm đã làm việc thành công.
   - $P(\text{Correct} \mid \text{GT Absent from Top-}k)$: Đo lường khả năng LLM tự sửa sai dựa trên tri thức có sẵn khi bộ tìm kiếm thất bại.
-- **Nguyên tắc Fail-Closed của Evaluator:**
-  - Evaluator từ chối cho ra điểm số khoa học chính thức nếu tập ma trận chưa chạy trọn vẹn (bảo vệ tính toàn vẹn 6,400 bản ghi của tập TEST).
+- **Trạng thái thực nghiệm & Nguyên tắc Fail-Closed:**
+  - `[PENDING EXECUTION OF CANONICAL STUDY]` / `[CHỜ THỰC NGHIỆM CHÍNH THỨC HOÀN TẤT]`
+  - Ma trận chính thức 1,280 mẫu x 5 nhánh (6,400 bản ghi) đang trong tiến trình chạy (PID 50192).
+  - Evaluator từ chối cho ra điểm số khoa học chính thức nếu tập ma trận chưa chạy trọn vẹn 100%.
+  - Năng lực toán học của Evaluator đã được kiểm chứng ngoại tuyến hoàn toàn qua test fixtures (`outputs/reproduction/fixture_diagnostics/`).
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Khung đánh giá RQ1 của chúng tôi phân rã thành hai trục độc lập: Bộ truy xuất tìm sai, hay LLM phân loại sai dù thông tin đã được cung cấp? Phương pháp này giúp tránh việc đổ lỗi chung chung cho LLM khi thực chất nguyên nhân cốt lõi bắt nguồn từ khâu truy xuất thông tin."
+> "Khung đánh giá RQ1 của chúng tôi phân rã thành hai trục độc lập: Bộ truy xuất tìm sai, hay LLM phân loại sai dù thông tin đã được cung cấp? Hiện tại, toàn bộ ma trận 6,400 lượt suy luận của nghiên cứu chính thức đang trong tiến trình chạy thực nghiệm. Evaluator tuân thủ nguyên tắc fail-closed: chỉ công bố kết quả khi toàn bộ 6,400 bản ghi hoàn tất, trong khi tính đúng đắn về mặt thuật toán đã được kiểm chứng độc lập qua các fixture mẫu ngoại tuyến."
 
 ---
 
@@ -169,6 +177,7 @@
 
 ### Nội dung trình chiếu
 - **Kết quả thực nghiệm từ DEV Cost Pilot (20 cuộc gọi thực tế tới gpt-5.6-luna xhigh):**
+  - *Mục đích:* Đo lường token và độ ổn định schema trước khi chạy toàn bộ tập TEST.
   - Tỷ lệ tuân thủ schema JSON: **100% VALID** (20/20 bản ghi).
   - Số lần thử lại (retries): **0** (100% thành công ở lần gọi đầu tiên).
   - Độ trễ trung bình: **8,127.6 ms** (~8.1 giây / request).
@@ -180,13 +189,14 @@
   | `rag_k3` ($k=3$) | 1,740.5 | 1,087.2 | ~$0.00165 |
   | `rag_k5` ($k=5$) | 2,518.2 | 840.2 | ~$0.00151 |
   | `rag_k10` ($k=10$) | 4,536.5 | 800.8 | ~$0.00187 |
-- **Đánh giá chi phí tài chính:**
+- **Đánh giá chi phí tài chính & Trạng thái chạy:**
   - Chi phí thực tế đã thanh toán cho Pilot 20 requests: **$0.0242 USD** (~600 VNĐ).
-  - Chi phí ước tính cho toàn bộ 6,400 requests của tập TEST chuẩn: **$8.20 – $8.99 USD** (hoàn toàn nằm trong ngưỡng ngân sách khả thi).
+  - Chi phí ước tính cho toàn bộ 6,400 requests của tập TEST chuẩn: **$8.20 – $8.99 USD** (hoàn toàn khả thi).
+  - `[PENDING]` Ma trận TEST chính thức đang được thực thi trên môi trường bảo đảm ngân sách có trần khóa cứng.
   - **Quy luật đánh đổi:** Tăng $k$ từ 1 lên 10 giúp tăng Hit rate từ 4.2% lên 45.1%, nhưng token đầu vào tăng gấp 4 lần, làm tăng chi phí và thời gian phản hồi.
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Dựa trên số liệu thực nghiệm từ DEV Cost Pilot, việc tăng độ sâu k từ 0 lên 10 làm tăng token đầu vào khoảng 7 lần. Toàn bộ 20 request pilot đều tuân thủ schema tuyệt đối và không phát sinh retry nào. Với mức chi phí dự phóng chỉ khoảng 8 đến 9 USD cho toàn bộ 6,400 lượt suy luận của tập TEST, nghiên cứu chứng minh tính khả thi cao về mặt kinh tế khi áp dụng giải pháp này trong môi trường thực nghiệm."
+> "Dựa trên số liệu thực nghiệm từ DEV Cost Pilot 20 mẫu thăm dò, việc tăng độ sâu k từ 0 lên 10 làm tăng token đầu vào khoảng 7 lần. Toàn bộ 20 request pilot đều tuân thủ schema tuyệt đối và không phát sinh retry nào. Với mức chi phí dự phóng chỉ khoảng 8 đến 9 USD cho toàn bộ 6,400 lượt suy luận của tập TEST, nghiên cứu chứng minh tính khả thi kinh tế cao. Hiện tại tập TEST chính thức đang chờ hoàn tất để tiến hành tổng kết số liệu cuối cùng."
 
 ---
 

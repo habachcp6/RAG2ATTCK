@@ -272,13 +272,13 @@ RAG2ATTCK/
 - **Retrieval Diagnostics (T20):** Independently evaluated on 756 positive views:
   - $Hit@1 = 4.23\%$, $Hit@3 = 16.80\%$, $Hit@5 = 24.21\%$, $Hit@10 = 45.11\%$.
   - Ground-truth absent from Top-10 rate: $54.89\%$.
-  - Single-event views outperform contextual-event views in pairwise analysis (59 vs. 23 pairs) due to context dilution.
+  - Canonical anchor analysis on 296 eligible pairs yields strictly better retrieval ranks for single-event views in 65 pairs (22.0%) vs. 23 pairs (7.8%) for contextual-event views (208 equal). Under a secondary strict single-technique cohort (252 pairs), single-event achieved better ranks in 59 pairs vs. 23 pairs (170 equal). These represent observed empirical retrieval rank differences under dense semantic search.
   - Semantic gap identified in `T1136.001` (0% Top-10 hits across 99 positive views).
 - **Approved DEV Cost Pilot (2026-10-01):**
   - Executed 20 real OpenAI Responses API calls across 4 DEV views and all 5 conditions (`no_rag`, `rag_k1`, `rag_k3`, `rag_k5`, `rag_k10`) using `gpt-5.6-luna` with `reasoning_effort=xhigh`.
   - 100% valid schema adherence, zero provider retries.
   - Measured spend: **$0.0242094**; projected uncached Standard-price test cost: **$8.20** (conservative input: **$8.99**).
-- **Canonical 1,280-View TEST Execution:** Fully implemented and cryptographically locked. Execution remains paused awaiting final budget grant and execution authorization.
+- **Canonical 1,280-View TEST Execution:** Fully implemented and cryptographically locked. Execution is in-flight or awaiting live run termination under PID 50192. Evaluator enforces a strict fail-closed contract requiring all 6,400 records.
 - **Real Telemetry Availability:** T15 real-data pilot remains separated (`DATA_UNAVAILABLE`) pending an approved, legitimate, sanitized real-world Windows telemetry dataset.
 
 ---
@@ -306,3 +306,4 @@ For full step-by-step instructions, see the [`docs/reproducibility.md`](docs/rep
 
 - **License:** This project is distributed under the terms of the MIT License. Note that while the repository metadata declares MIT licensing, a standalone `LICENSE` text file is currently not present in the repository tree.
 - **Runtime Launcher Binding:** The pinned executable runtime launcher hash is `05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa` (incorporating a Windows WinError 5/32 exponential backoff retry wrapper for atomic filesystem operations).
+- **Technique Naming Alignment:** Active ATT&CK technique `T1059.009` is named `'Command & Scripting: Cloud API'`. ATT&CK technique `T1218.012` is named `'System Binary Proxy Execution: Verclsid'`.

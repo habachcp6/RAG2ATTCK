@@ -5634,6 +5634,7 @@ def test_production_runner_enforces_retry_exponential_backoff(bundle, tmp_path, 
             id="resp_backoff_test",
             model="gpt-5.6-luna",
             system_fingerprint="fp_backoff",
+            service_tier="default",
         )
 
     mock_client = mock.MagicMock()
@@ -5646,6 +5647,10 @@ def test_production_runner_enforces_retry_exponential_backoff(bundle, tmp_path, 
         mock.patch("openai.OpenAI", return_value=mock_client) as mock_openai_cls,
         mock.patch("src.experiment.runner.SentenceTransformerEmbedder", return_value=stub_embedder),
         mock.patch("time.sleep", side_effect=sleep_delays.append),
+        mock.patch(
+            "src.experiment.monetary_ledger.get_canonical_study_ledger_path",
+            return_value=tmp_path / "study_ledger.json",
+        ),
     ):
         summary = _prod_run_live_experiment(
             plan,

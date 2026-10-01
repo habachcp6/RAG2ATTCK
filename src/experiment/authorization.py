@@ -23,6 +23,7 @@ CRITICAL_CODE_PATTERNS: tuple[str, ...] = (
     "src",
     "prompts",
     "config/model.json",
+    "config/pricing_v1.json",
     "config/retrieval.json",
     "pyproject.toml",
     "uv.lock",
@@ -355,6 +356,9 @@ class ExecutionAuthorization:
     scientific_protocol_approved: bool = False
     d1_raw_response_policy_approved: str | None = None
     d7_dataset_scope_approved: str | None = None
+    study_ledger_path: str | None = None
+    study_anchor_path: str | None = None
+    use_money_guard: bool = False
 
 
 def validate_live_authorization(

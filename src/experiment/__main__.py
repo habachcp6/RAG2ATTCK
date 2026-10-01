@@ -322,6 +322,34 @@ def _handle_evaluate(args: argparse.Namespace) -> int:
         )
         return 1
 
+def _inspect_historical_counts(output_dir: Path | str | None) -> tuple[int, int]:
+    """Inspect output directory journal to extract historical provider calls and writes.
+
+    Returns (provider_calls, prediction_writes).
+    """
+    if output_dir is None:
+        return 0, 0
+    calls = 0
+    writes = 0
+    try:
+        journal_path = Path(output_dir) / "request_journal.jsonl"
+        if journal_path.is_file():
+            for line in journal_path.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    ev = json.loads(line)
+                    if ev.get("event") == "attempt":
+                        calls += 1
+                    elif ev.get("event") == "complete":
+                        writes += 1
+                except Exception:
+                    pass
+    except Exception:
+        pass
+    return calls, writes
+
 
 def _handle_live(args: argparse.Namespace, *, provider_factory=None) -> int:
     try:
@@ -365,11 +393,16 @@ def _handle_live(args: argparse.Namespace, *, provider_factory=None) -> int:
     # Construct authorization
     auth = None
     if args.auth_token:
+        ledger_path_str = (
+            str(args.study_ledger_path) if getattr(args, "study_ledger_path", None) else None
+        )
         auth = ExecutionAuthorization(
             human_approval_token=args.auth_token,
             approved_protocol_sha256=protocol.protocol_sha256 if protocol else None,
             authorized_max_provider_attempts=args.max_attempts,
             allow_live_dispatch=args.allow_live_dispatch,
+            use_money_guard=getattr(args, "use_money_guard", False),
+            study_ledger_path=ledger_path_str,
         )
 
     if not args.output_dir:
@@ -432,14 +465,15 @@ def _handle_live(args: argparse.Namespace, *, provider_factory=None) -> int:
         )
         print(json.dumps(summary, indent=2, sort_keys=True))
         return 0
-    except (LiveExecutionBlockedError, ProtocolNotFrozenError, ValueError) as exc:
+    except Exception as exc:
+        calls, writes = _inspect_historical_counts(args.output_dir)
         print(
             json.dumps(
                 {
                     "status": "LIVE_EXECUTION_BLOCKED",
                     "error": str(exc),
-                    "provider_calls": 0,
-                    "prediction_writes": 0,
+                    "provider_calls": calls,
+                    "prediction_writes": writes,
                 },
                 sort_keys=True,
             ),
@@ -564,11 +598,16 @@ def _handle_resume(args: argparse.Namespace, *, provider_factory=None) -> int:
             else manifest.get("authorized_max_provider_attempts")
         )
 
+        ledger_path_str = (
+            str(args.study_ledger_path) if getattr(args, "study_ledger_path", None) else None
+        )
         auth = ExecutionAuthorization(
             human_approval_token=args.auth_token,
             approved_protocol_sha256=protocol.protocol_sha256,
             authorized_max_provider_attempts=max_attempts,
             allow_live_dispatch=args.allow_live_dispatch,
+            use_money_guard=getattr(args, "use_money_guard", False),
+            study_ledger_path=ledger_path_str,
         )
 
         plan = load_plan(args.config)
@@ -619,13 +658,14 @@ def _handle_resume(args: argparse.Namespace, *, provider_factory=None) -> int:
         print(json.dumps(summary, indent=2, sort_keys=True))
         return 0
     except Exception as exc:
+        calls, writes = _inspect_historical_counts(args.output_dir)
         print(
             json.dumps(
                 {
                     "status": "LIVE_EXECUTION_BLOCKED",
                     "error": str(exc),
-                    "provider_calls": 0,
-                    "prediction_writes": 0,
+                    "provider_calls": calls,
+                    "prediction_writes": writes,
                 },
                 sort_keys=True,
             ),
@@ -695,6 +735,16 @@ def main(argv=None, *, provider_factory=None) -> int:
             "(test-only, rejected for canonical TEST)"
         ),
     )
+    live_parser.add_argument(
+        "--use-money-guard",
+        action="store_true",
+        help="Enable $20 monetary guard for live execution",
+    )
+    live_parser.add_argument(
+        "--study-ledger-path",
+        type=Path,
+        help="Optional path to study-wide budget ledger file (test-only)",
+    )
 
     # resume subcommand
     resume_parser = subparsers.add_parser("resume", help="Resume interrupted live experiment")
@@ -731,6 +781,16 @@ def main(argv=None, *, provider_factory=None) -> int:
             "Allow uncommitted git status in tracked directories "
             "(test-only, rejected for canonical TEST)"
         ),
+    )
+    resume_parser.add_argument(
+        "--use-money-guard",
+        action="store_true",
+        help="Enable $20 monetary guard for live execution",
+    )
+    resume_parser.add_argument(
+        "--study-ledger-path",
+        type=Path,
+        help="Optional path to study-wide budget ledger file (test-only)",
     )
 
     # preflight subcommand

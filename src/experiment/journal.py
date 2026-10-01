@@ -22,6 +22,11 @@ from typing import Any
 from src.experiment.config import canonical_bytes, parse_jsonl
 
 EVENT_RESERVATION_ABANDONED = "reservation_abandoned"
+EVENT_MONETARY_RESERVE = "monetary_reserve"
+EVENT_ATTEMPT_RECEIPT = "attempt_receipt"
+EVENT_MONETARY_SETTLE = "monetary_settle"
+EVENT_MONETARY_CANCEL_ORPHAN = "monetary_cancel_orphan"
+EVENT_MONETARY_CANCEL_HOLD = "monetary_cancel_hold"
 
 
 class RequestState(str, Enum):
@@ -310,6 +315,11 @@ def read_journal_events(journal_path: Path) -> list[dict[str, Any]]:
 
 
 __all__ = [
+    "EVENT_ATTEMPT_RECEIPT",
+    "EVENT_MONETARY_CANCEL_HOLD",
+    "EVENT_MONETARY_CANCEL_ORPHAN",
+    "EVENT_MONETARY_RESERVE",
+    "EVENT_MONETARY_SETTLE",
     "EVENT_RESERVATION_ABANDONED",
     "RequestJournalStateMachine",
     "RequestState",

@@ -164,6 +164,8 @@ def validate_safe_ledger_path(ledger_path: Path | str) -> Path:
         raise ValueError(f"symlink ledger path rejected: {raw_p}")
 
     if raw_p.exists():
+        if raw_p.is_dir():
+            raise ValueError(f"ledger path must be a file, not a directory: {raw_p}")
         st = raw_p.stat()
         if st.st_nlink > 1 and not _is_cloud_sync_hardlink(raw_p):
             raise ValueError(f"hardlinked ledger file rejected: {raw_p} (st_nlink={st.st_nlink})")
@@ -173,6 +175,8 @@ def validate_safe_ledger_path(ledger_path: Path | str) -> Path:
     if is_symlink_or_junction(tmp_p):
         raise ValueError(f"symlink temporary file rejected: {tmp_p}")
     if tmp_p.exists():
+        if tmp_p.is_dir():
+            raise ValueError(f"temporary file must be a file, not a directory: {tmp_p}")
         st_tmp = tmp_p.stat()
         if st_tmp.st_nlink > 1 and not _is_cloud_sync_hardlink(tmp_p):
             raise ValueError(
@@ -184,6 +188,8 @@ def validate_safe_ledger_path(ledger_path: Path | str) -> Path:
     if is_symlink_or_junction(resolved_p):
         raise ValueError(f"symlink ledger path rejected: {resolved_p}")
     if resolved_p.exists():
+        if resolved_p.is_dir():
+            raise ValueError(f"ledger path must be a file, not a directory: {resolved_p}")
         st_res = resolved_p.stat()
         if st_res.st_nlink > 1 and not _is_cloud_sync_hardlink(resolved_p):
             raise ValueError(
@@ -194,6 +200,8 @@ def validate_safe_ledger_path(ledger_path: Path | str) -> Path:
     if is_symlink_or_junction(resolved_tmp):
         raise ValueError(f"symlink temporary file rejected: {resolved_tmp}")
     if resolved_tmp.exists():
+        if resolved_tmp.is_dir():
+            raise ValueError(f"temporary file must be a file, not a directory: {resolved_tmp}")
         st_res_tmp = resolved_tmp.stat()
         if st_res_tmp.st_nlink > 1 and not _is_cloud_sync_hardlink(resolved_tmp):
             raise ValueError(
@@ -234,10 +242,14 @@ def study_ledger_lock(lock_path: Path) -> Iterator[None]:
         ValueError: If another process currently holds the lock, lock is hardlinked,
             or lock creation fails.
     """
-    validate_safe_ledger_path(lock_path.parent)
-    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    safe_parent = validate_untrusted_output_path(lock_path.parent)
+    if is_symlink_or_junction(lock_path):
+        raise ValueError(f"symlink lock path rejected: {lock_path}")
+    safe_parent.mkdir(parents=True, exist_ok=True)
 
     if lock_path.exists():
+        if lock_path.is_dir():
+            raise ValueError(f"lock path must be a file, not a directory: {lock_path}")
         st = lock_path.stat()
         if st.st_nlink > 1 and not _is_cloud_sync_hardlink(lock_path):
             raise ValueError(f"hardlinked lock file rejected: {lock_path} (st_nlink={st.st_nlink})")

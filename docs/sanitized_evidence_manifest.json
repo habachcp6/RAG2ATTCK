@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "manifest_name": "RAG2ATTCK Sanitized Evidence & Reproducibility Manifest",
   "manifest_version": "1.1.0",
-  "created_at_utc": "2026-10-02T03:35:00Z",
+  "created_at_utc": "2026-10-01T20:48:00Z",
   "repository": "habachcp6/RAG2ATTCK",
   "base_commit_sha": "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315",
   "security_audit": {
@@ -273,8 +273,8 @@
     },
     "reproduction_script": {
       "path": "scripts/reproduce_study.py",
-      "sha256": "5d645eb7f70ace7adde1b012db2e4fad2e06a7e5f431ba5d145987abfb167fc2",
-      "size_bytes": 50405
+      "sha256": "118676a617f46b40fad0d87c532b606a8f19d43a9a21a7471ac24a46ae0bb0c7",
+      "size_bytes": 50585
     },
     "proposed_readme": {
       "path": "docs/README_PROPOSED.md",

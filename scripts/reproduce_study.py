@@ -34,6 +34,7 @@ import sys
 import tempfile
 from collections import Counter, defaultdict
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -901,9 +902,11 @@ def main(argv: list[str] | None = None) -> int:
     output_dir: Path = args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    utc_timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     report_lines: list[str] = [
         "# RAG2ATTCK - Independent Study Reproduction Report",
         "- Execution Mode: STRICTLY OFFLINE (Zero API Calls, Zero Secrets)",
+        f"- Verification Timestamp (UTC): `{utc_timestamp}`",
         f"- Target Worktree: `{REPO_ROOT}`",
         "- Scientific Provenance Tiers Audited:",
         "  1. Canonical Locked Artifacts (15 bound artifacts)",

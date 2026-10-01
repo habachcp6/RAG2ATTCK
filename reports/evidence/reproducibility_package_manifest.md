@@ -3,7 +3,7 @@
 **Subagent Handle:** Subagent D (Reproducibility & Presentation Owner for Phase S1)  
 **Dedicated Worktree:** `D:/RAG2ATTCK-worktrees/repro-presentation-s1`  
 **Branch:** `codex/s1-reproducibility-presentation`  
-**Execution Timestamp:** 2026-10-02T03:38:00Z  
+**Execution Timestamp (UTC):** 2026-10-01T20:48:00Z (Local: 2026-10-02T03:48:00+07:00)  
 **Baseline PRE_SHA:** `80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315`  
 **Execution Policy:** STRICTLY ZERO live provider/API calls. Zero secret leakage. 100% offline verifiable.
 
@@ -18,12 +18,12 @@ Subagent D has completed the inventory and remediation of all Phase S1 deliverab
 | Deliverable | File Path | File Size (Bytes) | SHA-256 Digest | Status |
 | :--- | :--- | :---: | :--- | :---: |
 | **Offline Reproducibility Guide** | `docs/reproducibility.md` | 16,389 | `7d67bc28671f2fa4bba21abe616d2f21273498c0a6ffe1ad13921d42b32c204f` | VERIFIED |
-| **Offline Reproduction Pipeline** | `scripts/reproduce_study.py` | 50,405 | `5d645eb7f70ace7adde1b012db2e4fad2e06a7e5f431ba5d145987abfb167fc2` | VERIFIED |
+| **Offline Reproduction Pipeline** | `scripts/reproduce_study.py` | 50,585 | `118676a617f46b40fad0d87c532b606a8f19d43a9a21a7471ac24a46ae0bb0c7` | VERIFIED |
 | **Proposed Reconciled README** | `docs/README_PROPOSED.md` | 19,460 | `48209e0e39ac4e2c2be1e0fa10721ff73c8a404f4cd6276537d02198d586936b` | VERIFIED |
 | **Presentation Deck Outline (MD)** | `docs/presentation/slides.md` | 23,769 | `ab2aa929b226d69dc14030067cc8d07d273d4ae39bd577dc7c94bd356b16bd9e` | VERIFIED |
 | **PowerPoint Deck Builder Script** | `scripts/generate_slides.py` | 33,760 | `e1cfb966e34fb91dd10f06e3030c910f041019216325ca05bbd70a39211dddb5` | VERIFIED |
 | **Compiled PowerPoint Deck (PPTX)**| `docs/presentation/slides.pptx` | 350,979 | `223bf40528431abfe2ea07101f97441c28eb8c3b47f11150e063663e0b9ba512` | VERIFIED |
-| **Sanitized Evidence Manifest** | `docs/sanitized_evidence_manifest.json` | 12,769 | `c9fdfb4f753a8a2b57e9375b47c24b2e8549f14ccd07b0c8c56ced360465a8a0` | VERIFIED |
+| **Sanitized Evidence Manifest** | `docs/sanitized_evidence_manifest.json` | 12,769 | `5c4b10e639a988f40614a0319838eb9897eefe924d8ff0b57adcc0b11242ccc6` | VERIFIED |
 
 ---
 

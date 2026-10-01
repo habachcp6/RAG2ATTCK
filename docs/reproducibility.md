@@ -183,11 +183,11 @@ for cond in ['no_rag', 'rag_k1', 'rag_k3', 'rag_k5', 'rag_k10']:
 ---
 
 ### Step 4.4: Canonical Evaluator Execution & Contract Check
-Run the unit test suite verifying evaluator behavior and fail-closed security properties:
+Run the unit test suite verifying evaluator behavior and fail-closed security properties under OFFLINE_GUARD:
 ```bash
-uv run pytest tests/test_experiment_evaluation.py -q
+uv run python scripts/run_offline_tests.py -m pytest tests/test_experiment_evaluation.py -q
 ```
-*Expected result:* All 34 tests pass in ~2 seconds.
+*Expected result:* 94 tests pass in ~15 seconds with `OFFLINE_GUARD: installed=True attempted_egress=0`. Note: Raw pytest without OFFLINE_GUARD is forbidden. Full reproduction of live provider runs requires running with real credentials under the strict budget guard ($19.99 USD hard cap), whereas offline reproduction validates against committed frozen artifacts.
 
 To test the authoritative evaluation path on an incomplete or pilot run (verifying fail-closed enforcement):
 ```bash

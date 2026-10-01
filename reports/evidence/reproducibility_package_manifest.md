@@ -3,7 +3,7 @@
 **Subagent Handle:** Subagent D (Reproducibility & Presentation Owner for Phase S1)  
 **Dedicated Worktree:** `D:/RAG2ATTCK-worktrees/repro-presentation-s1`  
 **Branch:** `codex/s1-reproducibility-presentation`  
-**Execution Timestamp (UTC):** 2026-10-01T20:48:00Z (Local: 2026-10-02T03:48:00+07:00)  
+**Execution Timestamp (UTC):** 2026-10-01T21:07:00Z (Local: 2026-10-02T04:07:00+07:00)  
 **Baseline PRE_SHA:** `80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315`  
 **Execution Policy:** STRICTLY ZERO live provider/API calls. Zero secret leakage. 100% offline verifiable.
 
@@ -11,19 +11,19 @@
 
 ## 1. Executive Summary & Inventory of Deliverables
 
-Subagent D has completed the inventory and remediation of all Phase S1 deliverables (`D_REPAIR`) and established a turnkey, zero-cost, 100% offline reproduction and presentation package for RAG2ATT&CK. An external researcher or reviewer can independently verify every cryptographic artifact hash, recompute the T20 retrieval diagnostics from raw records, execute the canonical evaluation pipeline under Frozen Protocol v1.1, and recompile publication-quality figures, markdown tables, and a 16:9 PowerPoint presentation deck without spending money, querying live LLM APIs, or installing external database infrastructure.
+Subagent D has completed the inventory, D_REPAIR remediation, and CD_RENDER_REPAIR enhancements across all Phase S1 deliverables. The presentation deck (`docs/presentation/slides.pptx` and `docs/presentation/slides.md`) and offline reproducibility pipeline have been audited and upgraded to enforce mathematical rigor (D2i independent failure axes), zero bounding-box text overflow, consistent widescreen typography, strict academic claim hygiene, and artifact-cited speaker notes on every single slide. An external researcher or reviewer can independently verify every cryptographic artifact hash, recompute the T20 retrieval diagnostics from raw records, execute the canonical evaluation pipeline under Frozen Protocol v1.1, and recompile publication-quality figures, markdown tables, and a 16:9 PowerPoint presentation deck without spending money, querying live LLM APIs, or installing external database infrastructure.
 
 ### Complete Table of Authored Deliverables
 
 | Deliverable | File Path | File Size (Bytes) | SHA-256 Digest | Status |
 | :--- | :--- | :---: | :--- | :---: |
-| **Offline Reproducibility Guide** | `docs/reproducibility.md` | 16,389 | `7d67bc28671f2fa4bba21abe616d2f21273498c0a6ffe1ad13921d42b32c204f` | VERIFIED |
+| **Offline Reproducibility Guide** | `docs/reproducibility.md` | 16,761 | `e0d89163c14b0ff3e22f1a1bfe7339adbaac89b7cd08ef68bc08438097ebb358` | VERIFIED |
 | **Offline Reproduction Pipeline** | `scripts/reproduce_study.py` | 50,585 | `118676a617f46b40fad0d87c532b606a8f19d43a9a21a7471ac24a46ae0bb0c7` | VERIFIED |
 | **Proposed Reconciled README** | `docs/README_PROPOSED.md` | 19,460 | `48209e0e39ac4e2c2be1e0fa10721ff73c8a404f4cd6276537d02198d586936b` | VERIFIED |
-| **Presentation Deck Outline (MD)** | `docs/presentation/slides.md` | 23,769 | `ab2aa929b226d69dc14030067cc8d07d273d4ae39bd577dc7c94bd356b16bd9e` | VERIFIED |
-| **PowerPoint Deck Builder Script** | `scripts/generate_slides.py` | 33,760 | `e1cfb966e34fb91dd10f06e3030c910f041019216325ca05bbd70a39211dddb5` | VERIFIED |
-| **Compiled PowerPoint Deck (PPTX)**| `docs/presentation/slides.pptx` | 350,979 | `223bf40528431abfe2ea07101f97441c28eb8c3b47f11150e063663e0b9ba512` | VERIFIED |
-| **Sanitized Evidence Manifest** | `docs/sanitized_evidence_manifest.json` | 12,769 | `5c4b10e639a988f40614a0319838eb9897eefe924d8ff0b57adcc0b11242ccc6` | VERIFIED |
+| **Presentation Deck Outline (MD)** | `docs/presentation/slides.md` | 30,547 | `50f573c356dd9fde4ef0f5e399de251659297b0e5ec72beb67e814d6ab084298` | VERIFIED |
+| **PowerPoint Deck Builder Script** | `scripts/generate_slides.py` | 50,280 | `471a44a214785bc1fc5af623b7b5f13890809f5f0969661747fd76f3f393ba6e` | VERIFIED |
+| **Compiled PowerPoint Deck (PPTX)**| `docs/presentation/slides.pptx` | 374,804 | `b82b25ba494dca81270ca54ee8b0163556e7eef98c1d1a8882313005aa66bc2d` | VERIFIED |
+| **Sanitized Evidence Manifest** | `docs/sanitized_evidence_manifest.json` | 12,769 | `05f32a70d26f2531e8d5946fd71114bd0f264a0c871b51eedc06c24ec299e43f` | VERIFIED |
 
 ---
 

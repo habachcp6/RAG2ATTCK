@@ -1,0 +1,95 @@
+{
+  "attempts": 20,
+  "benchmark": "synthetic-paired-v1",
+  "billing_invoice_queried": false,
+  "canonical_test_executed": false,
+  "checks": {
+    "api_key_byte_scan": "PASS",
+    "independent_journal_and_record_bindings": "PASS",
+    "offline_mock_tests": {
+      "attempted_egress": 0,
+      "passed": 2
+    },
+    "response_ids_unique": "PASS",
+    "source_config_protocol_bindings": "PASS",
+    "timestamps_ordered": "PASS"
+  },
+  "config_sha256": "9061673f61d79cf68d72e012829736940d41b1937ed39b8d23514bc87b1f351e",
+  "estimated_cost_usd_conservative_input": 0.02632005,
+  "estimated_cost_usd_standard_uncached": 0.0242094,
+  "evidence_kind": "real_provider_partial_synthetic_dev_cost_pilot",
+  "executed_source_sha": "e94447f47a8eee96fb2aa4c3f05be6e37031b705",
+  "experiment_config_artifact_path": "config/dev_experiment_config.json",
+  "observed_input_tokens": 42213,
+  "observed_max_output_tokens": 2421,
+  "observed_mean_latency_ms": 8127.648389999376,
+  "observed_mean_output_tokens": 656.95,
+  "observed_output_tokens": 13139,
+  "per_condition": {
+    "no_rag": {
+      "input_tokens": 2572,
+      "output_tokens": 897,
+      "records": 4
+    },
+    "rag_k1": {
+      "input_tokens": 4460,
+      "output_tokens": 1329,
+      "records": 4
+    },
+    "rag_k10": {
+      "input_tokens": 18146,
+      "output_tokens": 3203,
+      "records": 4
+    },
+    "rag_k3": {
+      "input_tokens": 6962,
+      "output_tokens": 4349,
+      "records": 4
+    },
+    "rag_k5": {
+      "input_tokens": 10073,
+      "output_tokens": 3361,
+      "records": 4
+    }
+  },
+  "projection": {
+    "input_estimate_excludes_exact_service_overhead": true,
+    "kind": "illustrative_not_a_guarantee",
+    "no_retry_conservative_input_usd": 8.9870395,
+    "no_retry_standard_usd": 8.1987068,
+    "paired_accuracy_not_evaluated": true,
+    "pilot_view_count": 4,
+    "test_input_tokens_offline_estimate": 15766654,
+    "test_request_count": 6400
+  },
+  "protocol_sha256": "9aba55cb942d72cb4922c12fee263af8e4d491f153f5b5ed47aac22d3b00b3a7",
+  "records": 20,
+  "retries": 0,
+  "run_id": "live-dc6b3166114d401e",
+  "selected_sample_ids": [
+    "view_03f93863",
+    "view_0b5e295e",
+    "view_0bec9523",
+    "view_0d8155cd"
+  ],
+  "selected_view_types": [
+    "single",
+    "contextual"
+  ],
+  "sha256": {
+    "dev_experiment_config.json": "9061673f61d79cf68d72e012829736940d41b1937ed39b8d23514bc87b1f351e",
+    "dev_protocol_v1.json": "fe39e403fdbf9b2c6fbee765a80dc4d8a1273c0421cdfa91939a61f003242cb6",
+    "manifest.json": "2ae55058c6fcb2d740f6b11ef536635059bde7aa20e9b5249915960e511e8aa8",
+    "no_rag_predictions.jsonl": "99fbf3b1aaaf40e11c00c97aaabbb10804eac23243afcffce52517fe56d02dcf",
+    "rag_k10_predictions.jsonl": "db43b0b8bc42c8e0f462a9d308514a25f75a48eb89094221bf54606caa706718",
+    "rag_k1_predictions.jsonl": "dc8ae9208bea77cdb3244508b1f1973205706b58198cf96e792f431b216f24bc",
+    "rag_k3_predictions.jsonl": "801538052bf50a60afeaa7de7f73860ade01b0513b9562239706e1edd1d08f69",
+    "rag_k5_predictions.jsonl": "2535542c9ce74dee6343d7e2143132c0cab0d7df0575ebf092fbc0d93588b713",
+    "request_journal.jsonl": "1f00e3f34fb78aec51eaf00c90e7f67cd3fcbe44ea4e0a39b7277e32cf64c4ac",
+    "run_summary.json": "e5789a9fac84c8e304f869d827cce48e243a6adacee8d7310e87e66e58d372fb"
+  },
+  "split": "dev",
+  "statuses": {
+    "VALID": 20
+  }
+}

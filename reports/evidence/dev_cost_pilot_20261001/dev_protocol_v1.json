@@ -1,0 +1,22 @@
+{
+  "protocol_version": "experiment-protocol-v1.1",
+  "protocol_sha256": "9aba55cb942d72cb4922c12fee263af8e4d491f153f5b5ed47aac22d3b00b3a7",
+  "d1_raw_response_policy": "RECORD_ONLY",
+  "d2a_ground_truth_semantics": "ANY_MATCH",
+  "d2b_empty_ground_truth": "EXCLUDE",
+  "d2c_ambiguous_ground_truth": "EXCLUDE",
+  "d2d_macro_f1_universe": "FROZEN_BENCHMARK_UNIVERSE",
+  "d2e_invalid_id_denominator": "INCLUDE_IN_DENOMINATOR",
+  "d2f_api_error_denominator": "INCLUDE_IN_DENOMINATOR",
+  "d2g_retired_attack_id": "ALLOW_HISTORICAL",
+  "d2h_conditional_retrieval": "ANY_GT_RETRIEVED",
+  "d2i_failure_precedence": "INDEPENDENT_AXES",
+  "d2j_zero_denominator": "NULL",
+  "d3_model_version_policy": "ALLOW_LATEST_WITH_TIMESTAMP_BINDING",
+  "d4_concurrency_policy": "SEQUENTIAL_ONLY",
+  "d5_budget_policy": "HARD_CAP_WORST_CASE_ATTEMPTS",
+  "d6_t15_prerequisite_policy": "NOT_REQUIRED_FOR_SYNTHETIC_BENCHMARK",
+  "d7_dataset_scope": "DEV_SMOKE",
+  "approval_timestamp": "2026-09-30T22:03:53+00:00",
+  "approval_reference": "HUMAN-PILOT-APPROVAL-20261001"
+}

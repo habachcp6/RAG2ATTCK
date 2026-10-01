@@ -1,24 +1,36 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "audit_type": "S1_INTEGRATION_EXECUTION_AUDIT",
-  "audit_timestamp_utc": "2026-10-01T23:22:29Z",
+  "audit_timestamp_utc": "2026-10-01T23:35:00Z",
   "auditor": "Subagent A (Audit Recovery & Integration Verification)",
   "verdict": "PASS_INTEGRATION_VERIFIED",
-  "target_worktree_state": {
+  "tested_target_worktree": {
     "worktree_path": "D:/RAG2ATTCK-worktrees/integrated-audit-s1",
     "branch": "codex/s1-integrated-audit",
-    "head_sha": "95b924638c03e7ddeb9f65a1d500fb212b256fd2",
-    "base_sha": "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315",
+    "pre_test_sha": "95b924638c03e7ddeb9f65a1d500fb212b256fd2",
+    "post_test_sha": "95b924638c03e7ddeb9f65a1d500fb212b256fd2",
+    "base_commit": "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315",
     "cleanliness": "CLEAN",
-    "source_code_diff_empty": true,
-    "source_code_diff_command": "git diff 80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315 -- src/",
-    "source_code_protection_verdict": "ZERO_MODIFICATIONS_TO_SRC"
+    "source_code_diff": {
+      "command": "git diff 80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315 -- src/",
+      "diff_bytes": 0,
+      "files_changed_in_src": 0,
+      "verdict": "ZERO_MODIFICATIONS_TO_SRC"
+    },
+    "scoped_lint_and_diffcheck": {
+      "diff_config": "git diff 80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315 -- config/ -> 0 files altered",
+      "diff_prompts": "git diff 80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315 -- prompts/ -> 0 files altered",
+      "diff_data_ground_truth": "git diff 80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315 -- data/ground_truth/ -> 0 files altered"
+    }
   },
   "merge_lineage_and_disjoint_file_sets": {
+    "merge_strategy": "NON_FAST_FORWARD (--no-ff) sequential merges",
+    "note": "All four merges were executed as non-fast-forward merge commits (0f4c593, 36057c7, 19f4cc6, 95b9246), preserving individual track commit identities and distinct branch lineage; NOT fast-forward or squash merges.",
     "tracks": {
       "track_a": {
         "name": "Audit Recovery",
-        "commit": "1477a9fde092939e771883a588386326c2ba5519",
+        "pinned_source_commit": "1477a9fde092939e771883a588386326c2ba5519",
+        "merge_commit": "0f4c593b4a24c251d1469e3ea9569766bb088be3",
         "files_count": 5,
         "files": [
           "reports/evidence/runtime_recovery_audit.md",
@@ -30,7 +42,8 @@
       },
       "track_b": {
         "name": "Evaluator Prep",
-        "commit": "7cc7a784e06505317626b97bad575fec1f8670d6",
+        "pinned_source_commit": "7cc7a784e06505317626b97bad575fec1f8670d6",
+        "merge_commit": "36057c77c6da99e4b6795f9e2d33458ef1ce3575",
         "files_count": 4,
         "files": [
           "reports/evidence/evaluator_contract_and_analysis_plan.md",
@@ -41,7 +54,8 @@
       },
       "track_c": {
         "name": "Report & Related Work",
-        "commit": "3d7a06cb0eaf6a45a876e3d8c450b689831dfee4",
+        "pinned_source_commit": "3d7a06cb0eaf6a45a876e3d8c450b689831dfee4",
+        "merge_commit": "19f4cc6fa0292723382747353f47c0b8bcfcb031",
         "files_count": 5,
         "files": [
           "docs/report/scientific_report.docx",
@@ -53,7 +67,8 @@
       },
       "track_d": {
         "name": "Reproducibility & Presentation",
-        "commit": "0c244e5bdf0f586416650d69530301e5ceb4fac3",
+        "pinned_source_commit": "0c244e5bdf0f586416650d69530301e5ceb4fac3",
+        "merge_commit": "95b924638c03e7ddeb9f65a1d500fb212b256fd2",
         "files_count": 24,
         "files": [
           "docs/README_PROPOSED.md",
@@ -94,7 +109,33 @@
     "core_manifest_verified": true,
     "protocol_sha256": "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c",
     "protocol_sha256_verified": true,
+    "canonical_artifacts_15_count": 15,
     "all_15_canonical_artifacts_verified": true,
+    "protected_baseline_22_files": {
+      "attack/corpus/enterprise-windows-v19.2.jsonl": "b219341154ddf2f12e97d622158a04ab7d57641df6a865559258d365852c3c75",
+      "attack/corpus/enterprise-windows-v19.2.manifest.json": "6bd769324f6ac9193d7df82e7f54f5a1397a41b9bc72be767da5a72b54b3a47c",
+      "attack/index/enterprise-windows-v19.2.docmap.json": "a7de3dfcf2b6e186e639d2922fcbc27766c160ae58bbafea74b5efc0faf30586",
+      "attack/index/enterprise-windows-v19.2.index": "7e3b9944870860766ebd5ba76f19a420c1bbe57cebd4e4238b06fd31128578e5",
+      "attack/index/enterprise-windows-v19.2.manifest.json": "ad1fc8c8118ef897943597e30c3ab71cf30556f675b38bbeba6772537127ed0a",
+      "attack/raw/enterprise-v19.2/enterprise-attack-19.2.json": "dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4",
+      "config/benchmark_scope.json": "d6aa89831dec75362b4fd48de0fd6e7082290f2be0cb7bd0afc6bc518148db8b",
+      "config/canonical_experiment_lock_v1.json": "d0ce198ad4853f4c41ef2bfbafbe10a395e4927a6c6561b3e72c055c4b887e9f",
+      "config/experiment_config.json": "961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac",
+      "config/experiment_protocol_v1.json": "a402b04ab463172f9d4079bff27b089ca8a21ffd0805d097af6cb1f3c7b5a8fb",
+      "config/model.json": "312c34cedd84106f2004c6070b72aeac1dd84209a464e2993fee3ec87822697f",
+      "config/pricing_v1.json": "e8afd6311f04dbbf5c34bb030e88a5b9d394f92c84d3e51feb32b327a08655a5",
+      "config/retrieval.json": "b33a93913e7f6de36f6f9021f77b2c9dcb1d426929162acb250a3c73ac8e6e25",
+      "data/ground_truth/synthetic/dataset_manifest.json": "4576b793360d02b60d619d199fd34d4555ace33215303ee847715c162a50dcc2",
+      "data/ground_truth/synthetic/ground_truth.jsonl": "8f3d73bac7e81336a3e90bfa5a5d0850a51ac5588385ee53ad940bcbc3612608",
+      "data/ground_truth/synthetic/inference.jsonl": "90d5f59e64f669f95d5ddccd86f1f047e10ee3dc46e4b67a8cd13d1ddf2cd4b8",
+      "data/ground_truth/synthetic/pairs.jsonl": "079e57a441b18d127739f610e7f62c263d943eefa19ca4ea5c6eab8b8a07665d",
+      "data/ground_truth/synthetic/split_manifest.json": "37fce63ccaa6db8e13604b7e3783997a10635f58995881b5e41913e6f550f43f",
+      "data/ground_truth/synthetic/views.jsonl": "1e6b0d3bd525b8fe9f97ba9e5656905597a3939e47c130a9e6f74535e2cd421d",
+      "docs/context/RAG_ATTCK_Project_Tracker_Updated.xlsx": "ed946fa1918af54a0634a317b6bf3d2b4291501219524de691c5da8b15725ef8",
+      "docs/context/RAG_ATTCK_Research_Plan_Updated.docx": "39499aa68188530eed81d1426af4d2f0217e17e10d9d016ddc0b38c0ae7a91af",
+      "prompts/baseline_v1.txt": "b751fde1ee33b03ec0bdc07cbba10267002d2086cf22b91a74bdfd123856f206"
+    },
+    "protected_baseline_22_verified": true,
     "stix_v19_2_census": {
       "total_attack_patterns": 858,
       "revoked": 149,
@@ -106,54 +147,140 @@
     }
   },
   "offline_test_evidence": {
-    "targeted_tests": {
-      "count": 69,
+    "targeted_regressions": {
+      "task_id": "task-2574",
+      "command": ".venv\\Scripts\\python.exe scripts/run_offline_tests.py -m pytest tests/test_runtime_recovery_wrapper.py tests/test_evaluator_offline_contract.py tests/test_canonical_reproduction_boundary.py -q",
+      "interpreter": "D:/RAG2ATTCK-worktrees/integrated-audit-s1/.venv/Scripts/python.exe",
+      "cwd": "D:/RAG2ATTCK-worktrees/integrated-audit-s1",
+      "exit_code": 0,
+      "egress": "installed=True attempted_egress=0",
+      "collected": 69,
       "passed": 69,
       "failed": 0,
-      "status": "PASSED",
-      "suites": [
-        "tests/test_runtime_recovery_wrapper.py (16 passed)",
-        "tests/test_evaluator_offline_contract.py (44 passed)",
-        "tests/test_canonical_reproduction_boundary.py (9 passed)"
-      ]
+      "duration_seconds": 20.47,
+      "log_path": "C:/Users/hahoa/.gemini/antigravity/brain/cd393b52-6d99-4f23-878e-7afbb7e0ecf9/.system_generated/tasks/task-2574.log",
+      "log_sha256": "96e606f4239627918b05c7b75d69375db20e265f7e2fb638344d2cf43f38129d"
     },
-    "unit_tests": {
-      "total_collected": 1335,
+    "comprehensive_unit_suite": {
+      "task_id": "task-2587",
+      "command": ".venv\\Scripts\\python.exe scripts/run_offline_tests.py -m pytest -m \"not integration\" -q",
+      "interpreter": "D:/RAG2ATTCK-worktrees/integrated-audit-s1/.venv/Scripts/python.exe",
+      "cwd": "D:/RAG2ATTCK-worktrees/integrated-audit-s1",
+      "exit_code": 0,
+      "egress": "installed=True attempted_egress=0",
+      "collected": 1335,
+      "selected": 1330,
+      "deselected": 5,
       "passed": 1329,
       "skipped": 1,
       "failed": 0,
-      "status": "PASSED"
+      "skipped_test": "tests/test_experiment_t22.py::test_filesystem_symlink_rejected",
+      "skipped_reason": "pytest.skip(\"Symlinks not permitted on this Windows environment\") - non-admin Windows requires SeCreateSymbolicLinkPrivilege; raises OSError which intentionally triggers fallback skip. On Linux CI (ubuntu-24.04), symlinks are permitted and all tests pass.",
+      "duration_seconds": 294.47,
+      "log_path": "C:/Users/hahoa/.gemini/antigravity/brain/cd393b52-6d99-4f23-878e-7afbb7e0ecf9/.system_generated/tasks/task-2587.log",
+      "log_sha256": "8117ff53785c6f55cb19d2fb9d3da330aff02b65e13700d9c685a8cc5be08634"
     },
-    "faiss_integration_tests": {
-      "count": 5,
+    "faiss_retrieval_integration": {
+      "task_id": "task-2678",
+      "command": ".venv\\Scripts\\python.exe scripts/run_offline_tests.py -m pytest -m integration -q",
+      "interpreter": "D:/RAG2ATTCK-worktrees/integrated-audit-s1/.venv/Scripts/python.exe",
+      "cwd": "D:/RAG2ATTCK-worktrees/integrated-audit-s1",
+      "exit_code": 0,
+      "egress": "installed=True attempted_egress=0",
+      "collected": 1335,
+      "deselected": 1330,
+      "selected": 5,
       "passed": 5,
-      "status": "PASSED",
-      "suite": "tests/test_retriever.py::TestFAISSRetrieverIntegration"
+      "failed": 0,
+      "suite": "tests/test_retriever.py::TestFAISSRetrieverIntegration",
+      "duration_seconds": 32.28,
+      "log_path": "C:/Users/hahoa/.gemini/antigravity/brain/cd393b52-6d99-4f23-878e-7afbb7e0ecf9/.system_generated/tasks/task-2678.log",
+      "log_sha256": "640a6433c7cfcf363ed18244520f4994f52dc1972ce296541821ecdb44ab016b"
     },
-    "verify_synthetic": {
-      "script": "scripts/validate_synthetic_registry.py",
+    "synthetic_same_seed_gate": {
+      "task_id": "task-2682",
+      "command": ".venv\\Scripts\\python.exe scripts/run_offline_tests.py -m src.data_ground_truth verify-synthetic",
+      "interpreter": "D:/RAG2ATTCK-worktrees/integrated-audit-s1/.venv/Scripts/python.exe",
+      "cwd": "D:/RAG2ATTCK-worktrees/integrated-audit-s1",
+      "source_file": "src/data_ground_truth.py",
+      "source_sha256": "e35891c29c6a970b4a5b916a7f16093592ee2b29403f542650bbb4eeddfc2f7c",
+      "exit_code": 0,
+      "egress": "installed=True attempted_egress=0",
       "passed": true,
-      "status": "PASSED"
+      "pairs_count": 670,
+      "views_count": 1340,
+      "artifact_hash_mismatches": 0,
+      "reproducibility_hash_mismatches": 0,
+      "log_path": "C:/Users/hahoa/.gemini/antigravity/brain/cd393b52-6d99-4f23-878e-7afbb7e0ecf9/.system_generated/tasks/task-2682.log",
+      "log_sha256": "4c22304ae1762dd579185a9593178cd38df63e51c733a64bc52c8b6c0e5467d4"
     },
-    "verify_report_metadata": {
-      "script": "scripts/verify_report_metadata.py",
-      "passed": true,
-      "status": "PASSED"
+    "report_metadata_and_invariants": {
+      "command": "D:/RAG2ATTCK-worktrees/report-s1/.venv/Scripts/python.exe scripts/run_offline_tests.py -c \"import runpy; runpy.run_path('scripts/verify_report_metadata.py', run_name='__main__')\"",
+      "interpreter": "D:/RAG2ATTCK-worktrees/report-s1/.venv/Scripts/python.exe (Track C Python with docx)",
+      "cwd": "D:/RAG2ATTCK-worktrees/integrated-audit-s1",
+      "exit_code": 0,
+      "egress": "installed=True attempted_egress=0",
+      "checks_verified": [
+        "Table 6 markdown hashes match disk",
+        "DOCX Table 6 manifest matches disk",
+        "Evaluator zero-denominator invariants (Case A, B, C)",
+        "DOCX formatting invariants (title pure black, 13 static refs, table width <= 6.50in)",
+        "STIX v19.2 census invariants (858 patterns, 149 revoked, 12 deprecated, 161 inactive, 697 active, 474 active Windows)"
+      ],
+      "log_path": "reports/evidence/verify_report_metadata.log",
+      "log_sha256": "77a4fd042e2adcb3a21c8ab413d0e5784b3e5a46a87220eee9730067906d0a55"
     },
-    "reproduce_study": {
-      "script": "scripts/reproduce_study.py --verify-hashes",
-      "passed": true,
-      "status": "PASSED"
+    "reproduce_study_invocations": {
+      "invocation_1_verify_hashes": {
+        "purpose": "Audit SHA-256 hashes of canonical locks and evidence bundle",
+        "command": "D:/RAG2ATTCK-worktrees/repro-presentation-s1/.venv/Scripts/python.exe scripts/run_offline_tests.py -c \"import sys, runpy; sys.argv=['scripts/reproduce_study.py', '--verify-hashes', '--output-dir', '.tmp/s1-offline-reproduction']; runpy.run_path('scripts/reproduce_study.py', run_name='__main__')\"",
+        "interpreter": "D:/RAG2ATTCK-worktrees/repro-presentation-s1/.venv/Scripts/python.exe",
+        "cwd": "D:/RAG2ATTCK-worktrees/integrated-audit-s1",
+        "output_dir": ".tmp/s1-offline-reproduction",
+        "exit_code": 0,
+        "egress": "installed=True attempted_egress=0",
+        "log_path": "reports/evidence/reproduce_study_verify_hashes.log",
+        "log_sha256": "a0fd9dc08d0a166c5c6c492e3f20b31377819bb1132becc66a72d785af56e388"
+      },
+      "invocation_2_full_reproduction": {
+        "purpose": "Full offline study reproduction pipeline: hash audit, T20 retrieval diagnostics, evaluator fixture diagnostics, publication figures, summary tables",
+        "command": "D:/RAG2ATTCK-worktrees/repro-presentation-s1/.venv/Scripts/python.exe scripts/run_offline_tests.py -c \"import sys, runpy; sys.argv=['scripts/reproduce_study.py', '--all', '--output-dir', '.tmp/s1-offline-reproduction']; runpy.run_path('scripts/reproduce_study.py', run_name='__main__')\"",
+        "interpreter": "D:/RAG2ATTCK-worktrees/repro-presentation-s1/.venv/Scripts/python.exe",
+        "cwd": "D:/RAG2ATTCK-worktrees/integrated-audit-s1",
+        "output_dir": ".tmp/s1-offline-reproduction",
+        "execution_mode": "offline_fixture_diagnostics",
+        "fixture_only": true,
+        "scientific_boundary_disclosure": "DIAGNOSTIC FIXTURE OUTPUT ONLY. NEVER CALL MOCK / FIXTURE PREDICTIONS CANONICAL SCIENTIFIC RESULTS.",
+        "exit_code": 0,
+        "egress": "installed=True attempted_egress=0",
+        "log_path": "reports/evidence/reproduce_study_all.log",
+        "log_sha256": "32fff66a26450b533f33885f7aeccec5115c69e2cfea684468a11aa618cb7d2f"
+      }
     },
-    "network_egress": {
-      "live_calls_made": 0,
-      "policy": "FAIL_CLOSED_ZERO_EGRESS"
+    "tracked_output_mutation_explanation": {
+      "mechanism": "When scripts/reproduce_study.py is invoked without --output-dir, it defaults to outputting to outputs/reproduction/. Earlier verify-only runs produced modifications to outputs/reproduction/reproduction_report.md. To eliminate working tree mutations, all subsequent commands explicitly specify --output-dir .tmp/s1-offline-reproduction.",
+      "restoration_command": "git checkout HEAD -- outputs/reproduction/reproduction_report.md (or git restore outputs/reproduction/reproduction_report.md)",
+      "current_tracked_tree_status": "CLEAN (0 unstaged modifications, 0 untracked files in tracked source tree)"
+    },
+    "remote_ci_evidence": {
+      "run_id": 36940102222,
+      "run_url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36940102222",
+      "ref": "codex/s1-integrated-audit",
+      "head_sha": "95b924638c03e7ddeb9f65a1d500fb212b256fd2",
+      "jobs": {
+        "registry_validation": "SUCCESS in 43s (ID 110629357273)",
+        "synthetic_tests": "SUCCESS in 1m14s (ID 110629356910)",
+        "full_test_suite_ubuntu": "SUCCESS in 2m43s (ID 110629357147)",
+        "full_test_suite_windows": "SUCCESS in 4m9s (ID 110629357204)"
+      },
+      "overall_status": "ALL_4_CHECKS_SUCCESS"
     }
   },
   "auditor_worktree_provenance": {
-    "worktree": "D:/RAG2ATTCK-worktrees/audit-recovery-s1",
+    "auditor_worktree": "D:/RAG2ATTCK-worktrees/audit-recovery-s1",
     "branch": "codex/s1-audit-recovery",
-    "pre_sha": "1477a9fde092939e771883a588386326c2ba5519",
-    "post_sha": "aeb53f963fe3e98a31704b2142f9bc941b12b911"
+    "pinned_a_source_sha": "1477a9fde092939e771883a588386326c2ba5519",
+    "prior_evidence_commit": "aeb53f963fe3e98a31704b2142f9bc941b12b911",
+    "note": "Audit evidence commit provenance is tracked externally via Git history. No self-referential future own commit SHA is embedded inside this file."
   }
 }

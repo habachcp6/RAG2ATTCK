@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 750 460" width="750" height="460">
+  <defs>
+    <style>
+      .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #111827; }
+      .subtitle { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; fill: #6b7280; }
+      .axis-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; fill: #374151; }
+      .tick-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 10px; fill: #4b5563; text-anchor: middle; }
+      .data-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: bold; fill: #1f2937; text-anchor: middle; }
+      .grid-line { stroke: #e5e7eb; stroke-width: 1; stroke-dasharray: 4,4; }
+      .legend-text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; fill: #374151; }
+      .fixture-banner { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 9px; font-weight: bold; fill: #b91c1c; text-anchor: end; }
+    </style>
+  </defs>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <rect x="510" y="8" width="232" height="18" rx="3" ry="3" fill="#fee2e2" stroke="#ef4444" stroke-width="1"/>
+  <text x="738" y="21" class="fixture-banner">[FIXTURE PREVIEW — NOT CANONICAL DATA]</text>
+  <text x="375" y="32" class="title">Figure 8: Independent Failure Decomposition (k=10)</text>
+  <text x="375" y="52" class="subtitle">Evaluation under Protocol Decision D2i: Non-mutually exclusive independent diagnostic axes</text>
+  <rect x="80" y="80" width="590" height="280" rx="10" ry="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="100" y="110" font-size="13" font-weight="bold" fill="#334155">Total Scorable Mapped Cohort: N = 718</text>
+  <rect x="120" y="130" width="340" height="200" rx="8" ry="8" fill="#fee2e2" stroke="#ef4444" stroke-width="2" opacity="0.75"/>
+  <text x="140" y="160" font-size="12" font-weight="bold" fill="#b91c1c">Retrieval Misses: 397</text>
+  <text x="140" y="180" font-size="11" fill="#7f1d1d">Correct Attribution Despite Miss: 278 (70.0%)</text>
+  <rect x="360" y="160" width="280" height="150" rx="8" ry="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2" opacity="0.75"/>
+  <text x="470" y="190" font-size="12" font-weight="bold" fill="#b45309">Classification Errors: 147</text>
+  <text x="470" y="210" font-size="11" fill="#92400e">Wrong Despite Hit: 28 (19.0%)</text>
+  <rect x="360" y="230" width="100" height="70" rx="4" ry="4" fill="#fbbf24" stroke="#d97706" stroke-width="2"/>
+  <text x="410" y="255" font-size="11" font-weight="bold" fill="#78350f" text-anchor="middle">Overlap: 119</text>
+  <text x="410" y="275" font-size="10" fill="#78350f" text-anchor="middle">Miss ∩ Wrong</text>
+  <text x="410" y="290" font-size="9" fill="#78350f" text-anchor="middle">(80.95% of Errors)</text>
+  <text x="375" y="390" font-size="11" fill="#475569" text-anchor="middle">Decision D2i Note: Axes are evaluated independently. Retrieval miss does not prove causation of error.</text>
+  <text x="375" y="410" font-size="11" fill="#475569" text-anchor="middle">Invalid ATT&amp;CK IDs: 0 | Parse Failures: 0 | Transport Errors: 0 on mapped scorable cohort.</text>
+</svg>

@@ -1,5 +1,7 @@
 # Table 6: Complete Provenance, Execution Artifacts & Cryptographic Hash Bindings
 
+> **[FIXTURE DATA ONLY — PREVIEW ARTIFACT]** This table contains synthetic fixture numbers for validation and review purposes only. Not canonical scientific evidence.
+
 | Artifact / Milestone | Digest / Identifier | Scope & Cryptographic Binding |
 | :--- | :--- | :--- |
 | **Execution Git SHA** | `80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315` | Source code state during live experiment execution |

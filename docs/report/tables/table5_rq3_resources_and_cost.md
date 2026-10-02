@@ -1,5 +1,7 @@
 # Table 5: RQ3 Operational Resources, Token Consumption & Financial Accounting
 
+> **[FIXTURE DATA ONLY — PREVIEW ARTIFACT]** This table contains synthetic fixture numbers for validation and review purposes only. Not canonical scientific evidence.
+
 | Condition | Mean Latency (ms) | Median Latency (ms) | Prompt Tokens | Completion Tokens | Cached Tokens | Settled Cost ($ USD) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **No-RAG (k=0)** | 2,904.5 | 2,302.8 | 863,139 | 209,466 | 0 | $0.46714395 |
@@ -16,4 +18,4 @@
 - **Uncommitted Available Balance:** $13.36160100
 - **Active Reservations / Breaches:** $0.00 / 0 breaches
 
-*Notes: P95 Latency is NOT REPORTED pending authority approval. RAG k=1 settled cost includes $0.5397 missing-usage penalty from an initial network failure attempt (ordinal 5387) successfully retried on ordinal 5388.*
+*Notes: All resource metrics are measured across the full execution cohort (N=1,280 requests per condition). P95 Latency is NOT REPORTED pending authority approval. RAG k=1 settled cost includes $0.5397 missing-usage penalty from an initial network failure attempt (ordinal 5387) successfully retried on ordinal 5388.*

@@ -1,5 +1,7 @@
 # Table 3: RQ1 Technique Attribution Performance & Paired Statistical Inference
 
+> **[FIXTURE DATA ONLY — PREVIEW ARTIFACT]** This table contains synthetic fixture numbers for validation and review purposes only. Not canonical scientific evidence.
+
 | Condition | Attribution Accuracy (%) | Macro-F1 (474 Classes) | Delta vs. No-RAG (pp) | 95% Bootstrap CI (pp) | McNemar Exact $p$ | Significant at $\alpha=0.05$ |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **No-RAG (k=0)** | 77.99% | 0.0126 | Baseline | — | — | — |

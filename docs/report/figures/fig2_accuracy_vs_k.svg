@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 750 450" width="750" height="450">
+  <defs>
+    <style>
+      .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #111827; }
+      .subtitle { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; fill: #6b7280; }
+      .axis-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; fill: #374151; }
+      .tick-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 10px; fill: #4b5563; text-anchor: middle; }
+      .data-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: bold; fill: #1f2937; text-anchor: middle; }
+      .grid-line { stroke: #e5e7eb; stroke-width: 1; stroke-dasharray: 4,4; }
+      .legend-text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; fill: #374151; }
+      .fixture-banner { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 9px; font-weight: bold; fill: #b91c1c; text-anchor: end; }
+    </style>
+  </defs>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <rect x="510" y="8" width="232" height="18" rx="3" ry="3" fill="#fee2e2" stroke="#ef4444" stroke-width="1"/>
+  <text x="738" y="21" class="fixture-banner">[FIXTURE PREVIEW — NOT CANONICAL DATA]</text>
+  <text x="375" y="32" class="title">Figure 2: Technique Attribution Accuracy vs. Retrieval Depth (k)</text>
+  <text x="375" y="52" class="subtitle">Evaluated on N=718 mapped TEST views; error bars represent 95% pair-clustered bootstrap CIs</text>
+  <line x1="120" y1="360" x2="660" y2="360" class="grid-line"/>
+  <text x="110" y="364" class="tick-label" style="text-anchor: end;">70%</text>
+  <line x1="120" y1="290" x2="660" y2="290" class="grid-line"/>
+  <text x="110" y="294" class="tick-label" style="text-anchor: end;">75%</text>
+  <line x1="120" y1="220" x2="660" y2="220" class="grid-line"/>
+  <text x="110" y="224" class="tick-label" style="text-anchor: end;">80%</text>
+  <line x1="120" y1="150" x2="660" y2="150" class="grid-line"/>
+  <text x="110" y="154" class="tick-label" style="text-anchor: end;">85%</text>
+  <line x1="120" y1="80" x2="120" y2="360" stroke="#374151" stroke-width="1.5"/>
+  <line x1="120" y1="360" x2="660" y2="360" stroke="#374151" stroke-width="1.5"/>
+  <text x="40" y="220" class="axis-label" transform="rotate(-90 40 220)" text-anchor="middle">Attribution Accuracy (%)</text>
+  <rect x="145" y="248.13999999999987" width="50" height="111.86000000000013" fill="#94a3b8" rx="4" ry="4" opacity="0.85"/>
+  <text x="170" y="234.13999999999987" class="data-label">77.99%</text>
+  <text x="170" y="380" class="tick-label">No-RAG (k=0)</text>
+  <line x1="170" y1="207.68000000000006" x2="170" y2="295.03999999999996" stroke="#1e293b" stroke-width="1.5"/>
+  <line x1="164" y1="207.68000000000006" x2="176" y2="207.68000000000006" stroke="#1e293b" stroke-width="1.5"/>
+  <line x1="164" y1="295.03999999999996" x2="176" y2="295.03999999999996" stroke="#1e293b" stroke-width="1.5"/>
+  <rect x="255" y="261.72" width="50" height="98.27999999999997" fill="#3b82f6" rx="4" ry="4" opacity="0.85"/>
+  <text x="280" y="247.72000000000003" class="data-label">77.02%</text>
+  <text x="280" y="380" class="tick-label">RAG (k=1)</text>
+  <line x1="280" y1="218.31999999999994" x2="280" y2="306.80000000000007" stroke="#1e293b" stroke-width="1.5"/>
+  <line x1="274" y1="218.31999999999994" x2="286" y2="218.31999999999994" stroke="#1e293b" stroke-width="1.5"/>
+  <line x1="274" y1="306.80000000000007" x2="286" y2="306.80000000000007" stroke="#1e293b" stroke-width="1.5"/>
+  <rect x="365" y="240.30000000000004" width="50" height="119.69999999999996" fill="#3b82f6" rx="4" ry="4" opacity="0.85"/>
+  <text x="390" y="226.30000000000004" class="data-label">78.55%</text>
+  <text x="390" y="380" class="tick-label">RAG (k=3)</text>
+  <line x1="390" y1="196.89999999999992" x2="390" y2="285.5200000000001" stroke="#1e293b" stroke-width="1.5"/>
+  <line x1="384" y1="196.89999999999992" x2="396" y2="196.89999999999992" stroke="#1e293b" stroke-width="1.5"/>
+  <line x1="384" y1="285.5200000000001" x2="396" y2="285.5200000000001" stroke="#1e293b" stroke-width="1.5"/>
+  <rect x="475" y="236.38000000000002" width="50" height="123.61999999999998" fill="#3b82f6" rx="4" ry="4" opacity="0.85"/>
+  <text x="500" y="222.38000000000002" class="data-label">78.83%</text>
+  <text x="500" y="380" class="tick-label">RAG (k=5)</text>
+  <line x1="500" y1="192.9799999999999" x2="500" y2="281.46000000000004" stroke="#1e293b" stroke-width="1.5"/>
+  <line x1="494" y1="192.9799999999999" x2="506" y2="192.9799999999999" stroke="#1e293b" stroke-width="1.5"/>
+  <line x1="494" y1="281.46000000000004" x2="506" y2="281.46000000000004" stroke="#1e293b" stroke-width="1.5"/>
+  <rect x="585" y="226.57999999999998" width="50" height="133.42000000000002" fill="#3b82f6" rx="4" ry="4" opacity="0.85"/>
+  <text x="610" y="212.57999999999998" class="data-label">79.53%</text>
+  <text x="610" y="380" class="tick-label">RAG (k=10)</text>
+  <line x1="610" y1="183.73999999999995" x2="610" y2="271.1000000000001" stroke="#1e293b" stroke-width="1.5"/>
+  <line x1="604" y1="183.73999999999995" x2="616" y2="183.73999999999995" stroke="#1e293b" stroke-width="1.5"/>
+  <line x1="604" y1="271.1000000000001" x2="616" y2="271.1000000000001" stroke="#1e293b" stroke-width="1.5"/>
+  <polyline points="170,248.13999999999987 280,261.72 390,240.30000000000004 500,236.38000000000002 610,226.57999999999998" fill="none" stroke="#1d4ed8" stroke-width="2.5"/>
+  <circle cx="170" cy="248.13999999999987" r="4" fill="#1e3a8a"/>
+  <circle cx="280" cy="261.72" r="4" fill="#1e3a8a"/>
+  <circle cx="390" cy="240.30000000000004" r="4" fill="#1e3a8a"/>
+  <circle cx="500" cy="236.38000000000002" r="4" fill="#1e3a8a"/>
+  <circle cx="610" cy="226.57999999999998" r="4" fill="#1e3a8a"/>
+  <rect x="460" y="90" width="200" height="45" rx="5" ry="5" fill="#f0fdf4" stroke="#22c55e" stroke-width="1"/>
+  <text x="560" y="108" font-size="11" font-weight="bold" fill="#15803d" text-anchor="middle">k=10 vs No-RAG: +1.540 pp</text>
+  <text x="560" y="124" font-size="10" fill="#166534" text-anchor="middle">McNemar p = 0.422 (Not Significant)</text>
+</svg>

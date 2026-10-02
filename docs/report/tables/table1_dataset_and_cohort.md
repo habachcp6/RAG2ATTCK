@@ -1,5 +1,7 @@
 # Table 1: Dataset Partition & Benchmark Cohort Specifications
 
+> **[FIXTURE DATA ONLY — PREVIEW ARTIFACT]** This table contains synthetic fixture numbers for validation and review purposes only. Not canonical scientific evidence.
+
 | Metric / Attribute | Count / Value | Proportion of Cohort | Description & Governance Role |
 | :--- | :---: | :---: | :--- |
 | **Total Physical Query Views** | 1,280 | 100.00% | 640 Paired Tests (Single-Event + Contextual-Event) |

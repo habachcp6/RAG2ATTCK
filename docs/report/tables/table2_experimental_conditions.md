@@ -1,5 +1,7 @@
 # Table 2: Experimental Conditions & System Configuration
 
+> **[FIXTURE DATA ONLY — PREVIEW ARTIFACT]** This table contains synthetic fixture numbers for validation and review purposes only. Not canonical scientific evidence.
+
 | Condition | Retrieval Depth ($k$) | Dense Retriever | Embedding Model | LLM Reasoner | Reasoning Effort | Output Format |
 | :--- | :---: | :--- | :--- | :--- | :---: | :--- |
 | **No-RAG** | $k=0$ | None | None | `gpt-5.6-luna` | `xhigh` | Strict JSON Schema |

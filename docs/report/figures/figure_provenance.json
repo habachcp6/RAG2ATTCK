@@ -1,19 +1,20 @@
 {
-  "fixture_only": false,
-  "scope": "Verified native metrics, RQ1 intervals and settled costs only; known RQ2 consumer v1 defects not used",
-  "source_digests": {
-    "C:\\Users\\hahoa\\.codex\\artifacts\\rag2attck\\canonical-metrics-208ac00-v1\\native\\per_condition_metrics.json": "e6592f9a0f97739be1168f9d1448e0d209fe4a300727ff6ad78902523f1591d6",
-    "C:\\Users\\hahoa\\.codex\\artifacts\\rag2attck\\canonical-metrics-208ac00-v1\\rq\\rq_analysis.json": "20747fab4150e05e5c816ed072c35d6c99482d83206508632378ab2e256adbc1",
-    "D:\\RAG2ATT&CK\\artifacts\\orchestration\\root_independent_canonical_numbers.json": "6ca7338b534f70d9c6cddd160ed46ad2652beb340cca82888aaaf06f5f22870e"
+  "bundle_sha256": "fixture-mode-no-bundle",
+  "figures_count": 8,
+  "figures_format": "vector_svg",
+  "fixture_only": true,
+  "generated_figures": {
+    "fig1_system_architecture.svg": "12e3304aece46979d3732f88d4cc2dfa76783545939d47a493049def61d7498b",
+    "fig2_accuracy_vs_k.svg": "025c9d61f363e74fb4de2f6359e3c72dbd9c8c3bc7672153981e19ab1b76f5b0",
+    "fig3_macro_f1_vs_k.svg": "eab413d32d7a689504e7b7d997e218e239bde134fc13d8f39c6435be57633743",
+    "fig4_retrieval_hit_rate.svg": "6136fae9ba6b62ba56e07226693cf385aee0fe0c3088fa118c6e3424fcbcc331",
+    "fig5_conditional_accuracy.svg": "6b80df60200d9923f657c762bf4b88d6bf2b52a297e8a2e80c20bf5d4798d2c8",
+    "fig6_latency_vs_k.svg": "296782cca299a8c99ab2ab74b7608b9e501135f10f2c4c40c65c5519316f19e5",
+    "fig7_cost_and_tokens_vs_k.svg": "0aa4d5e790b32576baa50004799883cddeff2da351b4dc7c7890f92c66c880c1",
+    "fig8_failure_decomposition.svg": "f595ef82f5d1cf046fbd47e313635719e9b873f2a812dcec5c2fca98a5195b55"
   },
-  "outputs": {
-    "canonical_rq1_accuracy_and_macro.pdf": "798b7e3c7ead2a701bc2045e548e0554ee8d495bc2157ea33b6025da722010a3",
-    "canonical_rq1_accuracy_and_macro.png": "fbeb37c324360cf31081f802b523999c2ca59a999c353c7ccbb6ad122f77dc19",
-    "canonical_rq2_retrieval.pdf": "43d496abcaabe3fb4966438845f10596b7cc771455ca1e2bf8a8e985e2ad0a51",
-    "canonical_rq2_retrieval.png": "7c15f5d04db785c2f211cbb6bfd0f8c0a45a48229a2723fa36ae11b79e3de513",
-    "canonical_rq3_cost_and_latency.pdf": "51cf74ed24bfea090f53aede762cf6a3529aa8be8b286d6770fb05eb4083d9eb",
-    "canonical_rq3_cost_and_latency.png": "5b9c31be2b37cad34f76624171b9f7fdc8a4686d3c13e452dc8ca8369e472941"
-  },
-  "analysis_source": "208ac00/c48",
-  "run_id": "live-66b94b1676bf46a9"
+  "p95_latency_status": "NOT REPORTED \u2014 approval evidence not established",
+  "run_id": "fixture-66b94b1676bf46a9",
+  "schema_version": "2.0.0",
+  "workstation_paths_sanitized": true
 }

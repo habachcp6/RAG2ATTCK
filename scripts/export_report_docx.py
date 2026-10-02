@@ -196,10 +196,10 @@ def apply_table_pagination_rules(table):
     """
     for r_idx, row in enumerate(table.rows):
         trPr = row._tr.get_or_add_trPr()
-        cantSplit = parse_xml(f'<w:cantSplit {nsdecls("w")}/>')
+        cantSplit = parse_xml(f"<w:cantSplit {nsdecls('w')}/>")
         trPr.append(cantSplit)
         if r_idx == 0:
-            tblHeader = parse_xml(f'<w:tblHeader {nsdecls("w")}/>')
+            tblHeader = parse_xml(f"<w:tblHeader {nsdecls('w')}/>")
             trPr.append(tblHeader)
 
 
@@ -397,7 +397,7 @@ def add_display_math(doc, math_text: str):
     shd = parse_xml(f'<w:shd {nsdecls("w")} w:fill="F8FAFC"/>')
     pPr.append(shd)
     pBdr = parse_xml(
-        f'<w:pBdr {nsdecls("w")}>'
+        f"<w:pBdr {nsdecls('w')}>"
         '<w:left w:val="single" w:sz="18" w:space="8" w:color="0969DA"/>'
         "</w:pBdr>"
     )
@@ -671,7 +671,7 @@ def build_docx_from_markdown(md_path: Path, output_docx_path: Path):
             p.paragraph_format.space_after = Pt(6)
             pPr = p._element.get_or_add_pPr()
             pBdr = parse_xml(
-                f'<w:pBdr {nsdecls("w")}>'
+                f"<w:pBdr {nsdecls('w')}>"
                 '<w:bottom w:val="single" w:sz="6" w:space="1" w:color="D0D7DE"/>'
                 "</w:pBdr>"
             )
@@ -686,7 +686,7 @@ def build_docx_from_markdown(md_path: Path, output_docx_path: Path):
             format_inline_runs(p, quote_text)
             pPr = p._element.get_or_add_pPr()
             pBdr = parse_xml(
-                f'<w:pBdr {nsdecls("w")}>'
+                f"<w:pBdr {nsdecls('w')}>"
                 '<w:left w:val="single" w:sz="24" w:space="8" w:color="0969DA"/>'
                 "</w:pBdr>"
             )

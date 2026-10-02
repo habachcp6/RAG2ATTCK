@@ -394,22 +394,25 @@ def verify_bundle_hashes(
         actual_manifest_sha = compute_sha256(manifest_bytes)
         bundle_data = json.loads(manifest_bytes.decode("utf-8"))
 
-        target_manifest_sha = expected_manifest_sha
-        if target_manifest_sha is None and (
-            bundle_data.get("package_id") == "canonical-bundle-public-v1"
-            or bundle_dir == LOCAL_STAGED_BUNDLE_DIR.resolve()
-        ):
-            target_manifest_sha = EXPECTED_PUBLIC_MANIFEST_SHA256
+        derived_sha = bundle_data.get("derived_from", {}).get("bundle_sha256")
+        if derived_sha != CANONICAL_BUNDLE_SHA256:
+            logs.append(
+                f"[MISMATCH] Portable bundle derived_from SHA-256:\n"
+                f"  Expected: {CANONICAL_BUNDLE_SHA256}\n"
+                f"  Actual:   {derived_sha}"
+            )
+            return False, logs
 
-        if target_manifest_sha is not None:
-            if actual_manifest_sha != target_manifest_sha:
-                logs.append(
-                    f"[MISMATCH] Public release manifest SHA-256:\n"
-                    f"  Expected: {target_manifest_sha}\n"
-                    f"  Actual:   {actual_manifest_sha}"
-                )
-                all_ok = False
-            else:
+        target_manifest_sha = expected_manifest_sha or EXPECTED_PUBLIC_MANIFEST_SHA256
+        if actual_manifest_sha != target_manifest_sha:
+            logs.append(
+                f"[MISMATCH] Public release manifest SHA-256:\n"
+                f"  Expected: {target_manifest_sha}\n"
+                f"  Actual:   {actual_manifest_sha}"
+            )
+            all_ok = False
+        else:
+            if target_manifest_sha == EXPECTED_PUBLIC_MANIFEST_SHA256:
                 committed_desc_path = (
                     REPO_ROOT / "artifacts/public_package_staging/public_package_manifest.json"
                 )
@@ -423,19 +426,11 @@ def verify_bundle_hashes(
                             f"  Actual:   {committed_sha}"
                         )
                         all_ok = False
-
-        derived_sha = bundle_data.get("derived_from", {}).get("bundle_sha256")
-        if derived_sha != CANONICAL_BUNDLE_SHA256:
-            logs.append(
-                f"[MISMATCH] Portable bundle derived_from SHA-256:\n"
-                f"  Expected: {CANONICAL_BUNDLE_SHA256}\n"
-                f"  Actual:   {derived_sha}"
-            )
-            return False, logs
-        logs.append(
-            f"[PASS] Portable bundle manifest authenticated ({p_path.name}): "
-            f"sha256={actual_manifest_sha} (derived from canonical bundle {derived_sha})"
-        )
+            if all_ok:
+                logs.append(
+                    f"[PASS] Portable bundle manifest authenticated ({p_path.name}): "
+                    f"sha256={actual_manifest_sha} (derived from canonical bundle {derived_sha})"
+                )
 
         if "source_file_digests" in bundle_data:
             source_digests = bundle_data["source_file_digests"]

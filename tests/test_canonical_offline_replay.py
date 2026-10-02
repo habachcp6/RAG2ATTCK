@@ -649,6 +649,55 @@ class TestPublicStagingManifestAuthenticationAndRQBinding:
         assert ok is False
         assert any("secondary_scope_authorization_sha256 binding" in line for line in logs)
 
+    def test_verifier_fails_closed_on_renamed_package_id_in_other_dir(self, tmp_path):
+        """Negative test: Changing package_id to untrusted in other dir MUST fail closed."""
+        import shutil
+
+        from scripts.reproduce_canonical_study import (
+            EXPECTED_PUBLIC_MANIFEST_SHA256,
+            compute_sha256,
+            verify_bundle_hashes,
+        )
+
+        if not LOCAL_STAGED_BUNDLE_DIR.exists():
+            pytest.skip("Local staged bundle not found")
+
+        bundle_copy = tmp_path / "copied_package"
+        shutil.copytree(LOCAL_STAGED_BUNDLE_DIR, bundle_copy)
+
+        manifest_path = bundle_copy / "canonical_bundle_manifest.json"
+        manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+        manifest_data["package_id"] = "untrusted-package"
+        manifest_bytes = json.dumps(manifest_data, indent=2).encode("utf-8")
+        manifest_path.write_bytes(manifest_bytes)
+
+        mutated_sha = compute_sha256(manifest_bytes)
+        assert mutated_sha != EXPECTED_PUBLIC_MANIFEST_SHA256
+
+        ok, logs = verify_bundle_hashes(bundle_copy)
+        assert ok is False, (
+            "verify_bundle_hashes must fail closed on renamed package_id in other dir"
+        )
+        assert any("[MISMATCH] Public release manifest SHA-256" in line for line in logs)
+
+    def test_verifier_succeeds_on_unmutated_package_in_other_dir(self, tmp_path):
+        """Positive control: Clean copy of package in other dir succeeds with default hash."""
+        import shutil
+
+        from scripts.reproduce_canonical_study import (
+            verify_bundle_hashes,
+        )
+
+        if not LOCAL_STAGED_BUNDLE_DIR.exists():
+            pytest.skip("Local staged bundle not found")
+
+        bundle_copy = tmp_path / "clean_copy"
+        shutil.copytree(LOCAL_STAGED_BUNDLE_DIR, bundle_copy)
+
+        ok, logs = verify_bundle_hashes(bundle_copy)
+        assert ok is True, f"Clean copy in other dir must be accepted by default. Logs: {logs}"
+
     def test_main_fails_closed_before_computation(self, monkeypatch):
         """Negative test: main() MUST exit with code 1 immediately without running replay."""
         import scripts.reproduce_canonical_study as rep

@@ -73,7 +73,7 @@ D2i Independent Measurement Axes (Non-Mutually-Exclusive, Overlaps Quantified)
 The following hypotheses served as working assumptions for experimental validation, evaluated against the canonical benchmark:
 
 * **H1:** MITRE ATT&CK-grounded RAG improves technique attribution performance compared with the same LLM without retrieval.
-  - *Empirical Finding:* While RAG $k=10$ achieves the highest tested accuracy (79.53% vs No-RAG 77.99%, $\Delta = +1.53$ pp), all paired difference 95% bootstrap confidence intervals contain 0 ($k=10$ delta CI $[-2.355, +5.300]$ pp; McNemar exploratory $p = 0.4223 > 0.05$). RAG $k=1$ (77.02%) and No-RAG (77.99%) have overlapping 95% CIs. **No statistically significant superiority or equivalence is claimed** on this benchmark.
+  - *Empirical Finding:* While RAG $k=10$ achieves the highest tested accuracy (79.53% vs No-RAG 77.99%, $\Delta = +1.53$ pp), all paired difference 95% bootstrap confidence intervals contain 0 ($k=10$ delta CI $[-2.355, +5.300]$ pp; McNemar exploratory $p = 0.4219 > 0.05$). RAG $k=1$ (77.02%) and No-RAG (77.99%) have overlapping 95% CIs. **No statistically significant superiority or equivalence is claimed** on this benchmark.
 * **H2:** Higher retrieval $\text{Recall}@k$ is positively associated with higher end-to-end mapping accuracy.
   - *Empirical Finding:* Increasing candidate depth from $k=1$ to $k=10$ improves Hit@k from 3.76% to 44.71%. Conditional accuracy shows $P(\text{Correct} \mid \text{GT Retrieved in Top-}10) = 91.28\%$ (293/321) versus $P(\text{Correct} \mid \text{GT Absent from Top-}10) = 70.03\%$ (278/397). Missing retrieval context does not preclude correct classification from parametric memory; no causal self-correction is assumed.
 * **H3:** Increasing $k$ initially improves mapping performance, but excessive retrieved context introduces distractors (noise) and increases token/latency cost.
@@ -224,6 +224,16 @@ The study evaluated all 5 conditions on the 718 scorable TEST views under Protoc
 - `D2h: ANY_GT_RETRIEVED` (multi-label retrieval hit if at least 1 GT technique is in Top-k).
 - `D2i: INDEPENDENT_AXES` (failure axes measured independently with explicit overlaps).
 
+### Canonical Candidate Summary & Cryptographic Anchors (Frozen Bundle v2)
+
+The canonical empirical evaluation and report rendering are cryptographically bound to the frozen canonical metric bundle v2:
+- **Canonical Metric Bundle v2 SHA-256 Digest:** `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`
+- **Candidate Status:** `CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW`
+- **Scientific Protocol Decisions Digest:** `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c` (`config/experiment_protocol_v1.json`)
+- **Protocol Configuration SHA-256:** `a402b04ab463172f9d4079bff27b089ca8a21ffd0805d097af6cb1f3c7b5a8fb`
+- **Evaluated Scope:** 718 scorable mapped positive TEST views ($N=718$) over 440 valid pair clusters across 474 active Windows ATT&CK techniques.
+- **DOCX Typed Locators:** Table cells in `docs/report/scientific_report.docx` wrap visible text runs inside OpenXML `<w:sdtContent>` tagged with machine-readable `<w:tag>` and `<w:alias>` locators; Table 6 remains un-wrapped for direct cell reading by verification tooling.
+
 ### Primary Attribution Performance (RQ1)
 
 | Condition | Top-k | Accuracy | Macro-F1 (474 Classes) | $\Delta$ Acc vs No-RAG | $\Delta$ F1 vs No-RAG | Absolute Accuracy 95% CI |
@@ -232,14 +242,14 @@ The study evaluated all 5 conditions on the 718 scorable TEST views under Protoc
 | `rag_k1` | 1 | 77.02% (553/718) | 0.0127 | -0.97 pp | +0.0001 | [73.50%, 80.17%] |
 | `rag_k3` | 3 | 78.55% (564/718) | 0.0136 | +0.56 pp | +0.0010 | [75.00%, 81.74%] |
 | `rag_k5` | 5 | 78.83% (566/718) | 0.0139 | +0.84 pp | +0.0013 | [75.07%, 82.35%] |
-| `rag_k10`| 10 | **79.53% (571/718)** | **0.0140** | **+1.53 pp** | **+0.0014** | [75.81%, 82.85%] |
+| `rag_k10`| 10 | **79.53% (571/718)** | **0.0140** | **+1.532 pp** | **+0.0014** | [75.81%, 82.85%] |
 
 > [!IMPORTANT]
 > **Statistical Significance & Uncertainty Boundary:**
 > - Absolute Accuracy 95% CIs are listed above.
 > - **All paired difference bootstrap confidence intervals vs No-RAG contain 0:**
 >   - $k=10$ delta CI: **[-2.355, +5.300] pp**
->   - McNemar exploratory test ($k=10$ vs No-RAG): $p = 0.4223 > 0.05$ (not statistically significant).
+>   - Exact two-sided McNemar test ($k=10$ vs No-RAG): $p = 0.4219$ (reported to 3 decimals as $p = 0.422 > 0.05$; not statistically significant).
 > - RAG $k=10$ is reported as the **highest tested accuracy observed in the experiment alongside its uncertainty**. The study does **NOT** claim a statistically significant advantage or production superiority over No-RAG.
 
 ### Whole-Study Financial Accounting (RQ3)
@@ -250,6 +260,7 @@ The study evaluated all 5 conditions on the 718 scorable TEST views under Protoc
 - **Total Accounted Committed Spend:** **$6.63 USD** ($6.62839900 USD).
 - **Net Remaining Uncommitted Balance:** **$13.36 USD** ($13.36160100 USD; 0 budget breach, 0 active holds).
 - **Execution Log Quality:** 6,387 VALID dispatches out of 6,400 total dispatches across 5 conditions; 13 INCOMPLETE records preserved for transparency; 1 transient API failure retry with $0.53974560 hold settled cleanly.
+- **P95 Latency Status:** P95 latency is **NOT REPORTED** (withheld per Root policy; `p95_status: "NOT REPORTED — approval evidence not established"`). Observed mean latencies range from $2.90\text{ s}$ to $4.37\text{ s}$ and medians from $2.30\text{ s}$ to $2.87\text{ s}$.
 
 ---
 
@@ -340,7 +351,7 @@ python scripts/reproduce_study.py
 
 **Current Research & Empirical Status:**
 - **Synthetic Benchmark (`synthetic-paired-v1`):** Complete (670 total benchmark scenario pairs / 1,340 total paired views across benchmark; partitioned to 440 distinct eligible clusters in the canonical TEST evaluation cohort yielding 718 scorable views across 8 ground-truth techniques).
-- **RQ1 Comparative Attribution:** Verified and packaged in candidate (ready for formal publication; not yet published). RAG $k=10$ observed accuracy 79.53% vs No-RAG 77.99% ($\Delta = +1.53$ pp; paired difference 95% CI $[-2.355, +5.300]$ pp contains 0, McNemar $p = 0.4223 > 0.05$).
+- **RQ1 Comparative Attribution:** Verified and packaged in candidate (ready for formal publication; not yet published). RAG $k=10$ observed accuracy 79.53% vs No-RAG 77.99% ($\Delta = +1.53$ pp; paired difference 95% CI $[-2.355, +5.300]$ pp contains 0, McNemar $p = 0.4219 > 0.05$).
 - **RQ2 Retrieval Diagnostics:** Verified and packaged in candidate. Hit@10 = 44.71%, Recall@10 = 42.80% on 718 scorable views; $T1136.001$ semantic gap 0% hit rate.
 - **RQ3 Resource & Financial Accounting:** Verified and packaged in candidate. $6.58 settled spend / $6.63 committed spend on $19.99 hard cap ($13.36 net remaining).
 - **Real Telemetry Availability (T15):** Status remains `DATA_UNAVAILABLE` (preserved strictly).

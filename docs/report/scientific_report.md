@@ -1,19 +1,67 @@
 # Evaluating MITRE ATT&CK-Grounded RAG for Technique Attribution from Windows Endpoint Logs: A Replication-and-Extension Study
 
 > [!WARNING]
-> **[PRE-CANONICAL PREPARATION CANDIDATE — NOT FINAL CERTIFIED]**  
-> This scientific report document is a preparation candidate undergoing final renderer and metadata verification.  
-> It does not constitute a certified final release until the canonical metric bundle freeze is executed.
+> **[CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW]**  
+> This scientific report document is a canonical candidate bound to the frozen canonical metric bundle v2 (`442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`).  
+> It does not constitute a final certified release until Root final review is completed.
 
 **Author:** Hà Hoàng Bách  
 **Project:** RAG2ATT&CK  
 **Date:** October 2026  
-**Status:** PRE-CANONICAL PREPARATION CANDIDATE — NOT FINAL CERTIFIED  
+**Status:** CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW  
 **Protocol Version:** `experiment-protocol-v1.1` (Canonical Decisions Digest: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`)  
 **Target Taxonomy:** MITRE ATT&CK Enterprise Matrix v19.2 (Active Windows Corpus: 474 techniques)  
 **Execution Horizon:** 2026  
 
 ---
+
+> [!NOTE]
+> **CANONICAL CANDIDATE METRIC BUNDLE V2 BOUND**
+> - Bundle Type: `canonical-metric-bundle-v2`
+> - Seal Status: `ROOT_ACCEPTED_FROZEN_METRIC_BUNDLE`
+> - Schema Version: `2.0.0`
+> - Experiment ID: `synthetic-paired-test-1`
+> - Run ID: `live-66b94b1676bf46a9`
+> - Protocol Version: `experiment-protocol-v1.1`
+> - Bundle Digest: `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`
+> - Terminal Seal SHA-256: `ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701`
+
+
+> [!NOTE]
+> **CANONICAL CANDIDATE METRIC BUNDLE V2 BOUND**
+> - Bundle Type: `canonical-metric-bundle-v2`
+> - Seal Status: `ROOT_ACCEPTED_FROZEN_METRIC_BUNDLE`
+> - Schema Version: `2.0.0`
+> - Experiment ID: `synthetic-paired-test-1`
+> - Run ID: `live-66b94b1676bf46a9`
+> - Protocol Version: `experiment-protocol-v1.1`
+> - Bundle Digest: `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`
+> - Terminal Seal SHA-256: `ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701`
+
+
+> [!NOTE]
+> **CANONICAL CANDIDATE METRIC BUNDLE V2 BOUND**
+> - Bundle Type: `canonical-metric-bundle-v2`
+> - Seal Status: `ROOT_ACCEPTED_FROZEN_METRIC_BUNDLE`
+> - Schema Version: `2.0.0`
+> - Experiment ID: `synthetic-paired-test-1`
+> - Run ID: `live-66b94b1676bf46a9`
+> - Protocol Version: `experiment-protocol-v1.1`
+> - Bundle Digest: `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`
+> - Terminal Seal SHA-256: `ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701`
+
+
+> [!NOTE]
+> **CANONICAL CANDIDATE METRIC BUNDLE V2 BOUND**
+> - Bundle Type: `canonical-metric-bundle-v2`
+> - Seal Status: `ROOT_ACCEPTED_FROZEN_METRIC_BUNDLE`
+> - Schema Version: `2.0.0`
+> - Experiment ID: `synthetic-paired-test-1`
+> - Run ID: `live-66b94b1676bf46a9`
+> - Protocol Version: `experiment-protocol-v1.1`
+> - Bundle Digest: `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`
+> - Terminal Seal SHA-256: `ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701`
+
 
 ## Abstract
 
@@ -23,7 +71,7 @@ In this work, we present a controlled replication-and-extension study evaluating
 
 We evaluate this system across **1,280 synthetic paired test views** (derived from 640 scenario pairs across 52 template families, featuring matched single-event and contextual-event representations). Across the 5 experimental conditions, all 1,280 test samples are evaluated, producing exactly **6,400 execution records** ($1,280 \times 5$). An authoritative join of test view identifiers against ground-truth records yields **718 mapped positive scorable views** (678 single-GT, 40 multi-GT), with 311 ambiguous views and 251 unmapped views excluded from headline accuracy per protocol policies D2c and D2b. Crucially, we formally bound our claims: the benchmark operates strictly on synthetic paired data (`synthetic-paired-v1`) and does NOT evaluate real-world telemetry, where ground-truth support in the TEST cohort is concentrated across 8 active techniques within the frozen 474-class taxonomy. Forensic analysis of historical public Windows-APT telemetry revealed unresolved cell discrepancies and precision inconsistencies during reconciliation, preventing independent verification of authoritative ground truth; consequently, our findings are strictly bounded to the synthetic benchmark, and generalization to real-world enterprise telemetry remains completely unproven.
 
-In our canonical live evaluation across the 718 scorable TEST views, No-RAG attains an end-to-end headline accuracy of 77.99% (560/718), while RAG at $k=10$ achieves 79.53% (571/718, $\Delta = +1.53\text{ pp}$). A cluster bootstrap 95% confidence interval for $\Delta$ yields $[-2.355\text{ pp}, +5.300\text{ pp}]$ and spans zero (exact two-sided McNemar $p = 0.4223$), establishing no statistically significant accuracy difference on this benchmark. Decoupled error analysis reveals that 80.95% of classification errors at $k=10$ (119/147) occur in the retrieval miss branch, where conditional accuracy drops from $P(\text{Correct}\mid\text{Retrieved}) = 91.28\%$ (293/321) to $P(\text{Correct}\mid\text{Absent}) = 70.03\%$ (278/397). Canonical TEST retrieval diagnostics show $Hit@1 = 3.760\%$ (27/718) and $Hit@10 = 44.708\%$ (321/718), with no ground-truth technique retrieved within Top-10 in 55.2925% of scorable views (397/718); we frame these retrieval challenges as observational hypotheses related to command-line argument variation and contextual dilution rather than established causal mechanisms. The canonical campaign completed 6,400 dispatches with zero provider failures on the 718 scorable records (and 13 INCOMPLETE records reaching the 8,192 output token limit among 11 unmapped and 2 ambiguous views in the completed canonical matrix), settling at USD 6.57575890 (USD 6.62839900 total committed spend inclusive of USD 0.05264010 pilot hold) under the authorized USD 19.99 budget ceiling (USD 13.36160100 uncommitted budget remaining).
+In our canonical live evaluation across the 718 scorable TEST views, No-RAG attains an end-to-end headline accuracy of 77.99% (560/718), while RAG at $k=10$ achieves 79.53% (571/718, $\Delta = +1.532\text{ pp}$). A cluster bootstrap 95% confidence interval for $\Delta$ yields $[-2.355\text{ pp}, +5.300\text{ pp}]$ and spans zero (exact two-sided McNemar $p = 0.4219$), establishing no statistically significant accuracy difference on this benchmark. Decoupled error analysis reveals that 80.95% of classification errors at $k=10$ (119/147) occur in the retrieval miss branch, where conditional accuracy drops from $P(\text{Correct}\mid\text{Retrieved}) = 91.28\%$ (293/321) to $P(\text{Correct}\mid\text{Absent}) = 70.03\%$ (278/397). Canonical TEST retrieval diagnostics show $Hit@1 = 3.760\%$ (27/718) and $Hit@10 = 44.708\%$ (321/718), with no ground-truth technique retrieved within Top-10 in 55.2925% of scorable views (397/718); we frame these retrieval challenges as observational hypotheses related to command-line argument variation and contextual dilution rather than established causal mechanisms. The canonical campaign completed 6,400 dispatches with zero provider failures on the 718 scorable records (and 13 INCOMPLETE records reaching the 8,192 output token limit among 11 unmapped and 2 ambiguous views in the completed canonical matrix), settling at USD 6.57575890 (USD 6.62839900 total committed spend inclusive of USD 0.05264010 pilot hold) under the authorized USD 19.99 budget ceiling (USD 13.36160100 uncommitted budget remaining).
 
 ---
 
@@ -87,15 +135,15 @@ Table 1a and Table 1b present a comprehensive 16-dimension comparison across the
 | **1. Primary Input** | Windows Sysmon process trees | AWS CloudTrail JSON events | Linux system logs (auditd, syslog) + IDS alerts | Unstructured CTI text reports |
 | **2. Target Platform** | Windows | AWS Cloud | Linux / Multi-source | Cross-platform (CTI text) |
 | **3. Core Task** | Malicious behavior detection & explanation | Cloud threat detection & ATT&CK mapping | Benchmark log interpretation | CTI technique & sub-technique annotation |
-| **4. ATT&CK Target Granularity** | Behavior explanation (Exact ID UNVERIFIED) | Technique & Sub-technique (`Txxxx.yyy`) | Collapses sub-techniques to parent (`Txxxx`) | Technique & Sub-technique (`Txxxx.yyy`) |
+| **4. ATT&CK Target Granularity** | Behavior explanation (Exact ID UNVERIFIED) | Technique & Sub-technique (`Txxxx.yyy`) | Collapses sub-techniques to parent (`Txxxx`); §5.2.2 parent-technique eval | Technique & Sub-technique (`Txxxx.yyy`) |
 | **5. RAG Architecture** | Semantic matching RAG | Two-step query expansion RAG (Vertex AI) | **None** (Zero-shot prompting) | Exemplar retrieval (BM25 + DeepSeek v3 rerank) |
 | **6. Retrieval Corpus** | Security templates & attack patterns | ATT&CK Cloud, AWS catalogue, threat blogs | N/A | Annotated text-label pairs (TRAM, Procedures) |
 | **7. Matched No-RAG Baseline?** | **Yes** (Mistral, phi-2, TinyLlama w/o RAG) | **Yes** (Gemini 2.5 Pro baseline w/o RAG) | Evaluates *only* zero-shot (no RAG) | **Yes** (Zero-shot and fine-tuned w/o RAG) |
-| **8. Top-k Retrieval Ablation?** | UNVERIFIED (full text unavailable) | **No** (Numeric k NOT REPORTED; ablation deferred) | Evaluates output cutoff $k$, not retriever depth | Evaluates pool size $K=40$, fixed $k=3$ exemplars |
+| **8. Top-k Retrieval Ablation?** | UNVERIFIED (full text unavailable) | **No** (Numeric k NOT REPORTED; ablation deferred) | Evaluates output cutoff Top-$k$ (§5.2.2), not retriever depth | Evaluates pool size $K=40$, fixed $k=3$ exemplars |
 | **9. Standalone Retriever Metrics?** | UNVERIFIED | **NOT REPORTED** (Generation gap only) | N/A | P/R/F1 on ranking; standalone Hit@k NOT REPORTED |
-| **10. Failure Decomposition?** | UNVERIFIED | Qualitative error categorization (26.3% vs 60% gap)* | No | Analyzes generator vs retriever errors |
+| **10. Failure Decomposition?** | UNVERIFIED | Qualitative error categories (unresolved 26% vs 60% discrepancy)* | No | Analyzes generator vs retriever errors |
 | **11. Telemetry Leakage Controls** | UNVERIFIED | Notes `stratus-red-team` agent in raw logs | Strips explicit ATT&CK labels/tactics | CTI text; no detector rule metadata |
-| **12. Primary Models** | Mistral-7B, phi-2, TinyLlama-1.1B | Gemini 2.5 Pro | GPT-5.5, Llama-3-70B, Mixtral, Command R+ | Ministral-8B (fine-tuned) |
+| **12. Primary Models** | Mistral-7B, phi-2, TinyLlama-1.1B | Gemini 2.5 Pro | GPT-5.5, GPT-5.2, Llama 4, Qwen 3, Ministral (Journal) | Ministral-8B (fine-tuned) |
 | **13. Headline Metrics** | Precision, F1, False Positive Rate | Accuracy, Precision, Recall, F1, Latency, Cost | Technique Rank, P@k, Recall@k, MRR | Precision, Recall, Macro-F1, Micro-F1 |
 | **14. Primary Dataset** | Attack samples + benign process trees | 200 AWS CloudTrail events (122 mal / 78 ben) | 7 scenarios, 198 log steps, 18 sources | TRAM, Procedures, Expert CTI datasets |
 | **15. Closest Similarity** | Sysmon logs + matched No-RAG/RAG | Controlled No-RAG vs RAG on telemetry | Exact technique prediction from command logs | ATT&CK RAG with retrieval quality analysis |
@@ -111,22 +159,22 @@ Table 1a and Table 1b present a comprehensive 16-dimension comparison across the
 | **4. ATT&CK Target Granularity** | Tactic $\to$ Technique hierarchy | Ranked Technique & Sub-technique candidates | Technique level (`Txxxx`) | Ranked Technique candidates (Top-1/3/10) | **Exact Technique & Sub-technique (`Txxxx.yyy`)** |
 | **5. RAG Architecture** | Hierarchical dense RAG (FAISS IVF) | Dense chunk retrieval (Chroma + MMR) | **None** (Rule-based correlation) | **None** (Rubric prompting with static ATT&CK text) | **Dense semantic RAG (FAISS IndexFlatIP cosine)** |
 | **6. Retrieval Corpus** | ATT&CK Enterprise (CTI-RCM, TRAM, MITRE) | ATT&CK Enterprise KB (800-word chunks) | N/A | N/A | **Official ATT&CK Enterprise v19.2 (474 active Windows docs)** |
-| **7. Matched No-RAG Baseline?** | Flat RAG vs. Hierarchical RAG (no raw baseline) | **Yes** (Prompting baseline w/o RAG) | No (Heuristic only) | Prompting only (no RAG ablation) | **Yes (Strictly matched gpt-5.6-luna w/o RAG)** |
-| **8. Top-k Retrieval Ablation?** | **Yes** (Tactic depth $M=3$, max 15 tech/tactic) | Fixed retriever depth (5 chunks), output cutoff 5 | No | Output cutoff $k \in \{1, 3, 10\}$, not retriever depth | **Yes ($k \in \{1, 3, 5, 10\}$ systematically ablated)** |
-| **9. Standalone Retriever Metrics?** | Micro P/R/F1, MAP@10; standalone Recall@k NOT REPORTED | **NOT REPORTED** (End-to-end HR@5 reported) | N/A | N/A | **Yes (Hit@k, Recall@k, Median Rank explicitly reported)** |
+| **7. Matched No-RAG Baseline?** | **Yes** (Zero-shot Llama 3 direct-prompt baseline) | **Yes** (Prompting baseline w/o RAG) | **UNVERIFIED** (full text access blocked) | Prompting only (no RAG ablation) | **Yes (Strictly matched gpt-5.6-luna w/o RAG)** |
+| **8. Top-k Retrieval Ablation?** | Tactic count $M$ sensitivity (peak $M=3$, quota $K_A=15$); not flat $k$ sweep | Fixed retriever depth (5 chunks), output cutoff 5 | No | Output cutoff $k \in \{1, 3, 10\}$, not retriever depth | **Yes ($k \in \{1, 3, 5, 10\}$ systematically ablated)** |
+| **9. Standalone Retriever Metrics?** | Micro P/R/F1, MAP@10; standalone Recall@k NOT REPORTED | **NOT REPORTED** (Fixed 5 chunks; standalone Recall@k not separable from downstream scores) | N/A | N/A | **Yes (Hit@k, Recall@k, Median Rank explicitly reported)** |
 | **10. Failure Decomposition?** | Analyzes distractor impact in flat vs hierarchical | No (End-to-end system evaluation) | No | No | **Independent axes with overlaps** |
-| **11. Telemetry Leakage Controls** | CTI text; curated benchmarks | Kernel syscalls; no detector rule metadata | Simulation metadata used | Script command lines analyzed | **Strict field whitelist; detector rules/labels purged** |
-| **12. Primary Models** | Llama-3-8B-Instruct | Mistral-7B, Llama-3-8B, CodeLlama, etc. | Heuristic algorithm | GPT-4, Claude-3-Opus, Llama-3-70B | **OpenAI gpt-5.6-luna (xhigh reasoning effort)** |
-| **13. Headline Metrics** | Micro P/R/F1, MAP@10, Latency, API calls | HR@5, MRR@5, NDCG@5 | Mapping accuracy | Precision, Recall, F1, HR/MRR/NDCG @ 3, 10 | **End-to-End Accuracy, 474-class Macro-F1, Recall@k** |
-| **14. Primary Dataset** | 1,200 CTI-RCM + 2,800 MITRE + 450 TRAM | 347 Linux Atomic Red Team executions | Atomic Red Team Sysmon logs | AVIATOR (35 attack / 32 benign sequences) | **1,280 paired synthetic views (640 scenario pairs)** |
+| **11. Telemetry Leakage Controls** | CTI text; curated benchmarks | Kernel syscalls; no detector rule metadata | **UNVERIFIED** (full text access blocked) | Script command lines analyzed | **Strict field whitelist; detector rules/labels purged** |
+| **12. Primary Models** | Llama-3-8B-Instruct | foundation-sec-8b, qwen3.5-9b, gpt-oss, deepseek-r1-qwen32b, llama3.3-70b | **NOT REPORTED / UNVERIFIED** | GPT-4, Claude-3-Opus, Llama-3-70B | **OpenAI gpt-5.6-luna (xhigh reasoning effort)** |
+| **13. Headline Metrics** | Micro P/R/F1, MAP@10, Latency, API calls | HR@5, MRR@5, NDCG@5 | **NOT REPORTED / UNVERIFIED** | Precision, Recall, F1, HR/MRR/NDCG @ 3, 10 | **End-to-End Accuracy, 474-class Macro-F1, Recall@k** |
+| **14. Primary Dataset** | 1,200 CTI-RCM + 2,800 MITRE + 450 TRAM | 347 Linux Atomic Red Team executions | Atomic Red Team Sysmon logs (metadata only) | AVIATOR (35 attack / 32 benign sequences) | **1,280 paired synthetic views (640 scenario pairs)** |
 | **15. Closest Similarity** | Investigating retrieval depth & distractor noise | Telemetry-to-ATT&CK mapping comparing RAG/prompt | Windows Sysmon mapped to ATT&CK | Host command execution traces mapped to ATT&CK | **Integrates telemetry, exact attribution, depth ablation** |
-| **16. Key Difference** | Unstructured CTI text; hierarchical routing | Linux eBPF provenance graphs; no depth ablation | Non-LLM rule heuristic from 2023 | Prompting only (no RAG); small sample (35 seqs) | **Windows endpoint logs + exact ID + depth ablation + error split** |
+| **16. Key Difference** | Unstructured CTI text; hierarchical routing | Linux eBPF provenance graphs; no depth ablation | Non-LLM rule heuristic from 2023 (unverified full text) | Prompting only (no RAG); small sample (35 seqs) | **Windows endpoint logs + exact ID + depth ablation + error split** |
 
-*Note on Adediran et al. [10]: The published text contains an unresolved reporting discrepancy, stating in Section 2 that retrieval-generation gaps account for 60% of errors, while Section 6.4.1 reports 26.3% (5/19).*
+*Note on Adediran et al. [10]: The published primary text contains an unresolved internal discrepancy without authorial resolution, stating in Section 2 and conclusion that retrieval-generation gaps account for 60% of errors, while Section 6.4.1 heading reports 26%. We refrain from imputing derived fractions (such as 5/19 or 26.3%) to the authors.*
 
 ### 2.3 Detailed Comparative Synthesis
-1. **CTI Text vs. Endpoint Telemetry:** TechniqueRAG [5] and H-TechniqueRAG [6] serve as primary methodological anchors for ATT&CK candidate retrieval and ranking. However, both operate on human-written threat intelligence prose (reports, blogs, bulletins). CTI text is linguistically rich and shares substantial natural language vocabulary with ATT&CK descriptions. In contrast, endpoint logs consist of structured, terse execution artifacts (`CommandLine`, `ParentCommandLine`, registry paths, hex codes). Findings from CTI-based RAG cannot be assumed to transfer directly to telemetry.
-2. **Telemetry Attribution Approaches:** Trace2ATT&CK [11] evaluates RAG for mapping kernel telemetry to ATT&CK, but restricts its scope to Linux eBPF execution graphs across 347 Atomic Red Team tests, maintaining a fixed retriever depth (5 chunks) and evaluating local models. Adediran et al. [10] evaluate Gemini 2.5 Pro on AWS CloudTrail logs across 200 events, demonstrating that RAG improves cloud threat detection, but employs a two-step query expansion pipeline without isolating retrieval depth $k$. CAM-LDS [8] evaluates zero-shot LLM log interpretation across multiple Linux and network sources, but deliberately excludes RAG, focusing instead on output candidate ranking.
+1. **CTI Text vs. Endpoint Telemetry:** TechniqueRAG [5] and H-TechniqueRAG [6] serve as primary methodological anchors for ATT&CK candidate retrieval and ranking. However, both operate on human-written threat intelligence prose (reports, blogs, bulletins). CTI text is linguistically rich and shares substantial natural language vocabulary with ATT&CK descriptions. In contrast, endpoint logs consist of structured, terse execution artifacts (`CommandLine`, `ParentCommandLine`, registry paths, hex codes). H-TechniqueRAG explores sensitivity to tactic count $M$ (with peak at $M=3$ and per-tactic quota $K_A=15$) alongside a zero-shot direct Llama 3 baseline, but does not ablate flat retriever depth $k$. Findings from CTI-based RAG cannot be assumed to transfer directly to telemetry.
+2. **Telemetry Attribution Approaches:** Trace2ATT&CK [11] evaluates RAG for mapping kernel telemetry to ATT&CK across foundation-sec-8b-reasoning, qwen3.5-9b, gpt-oss20b/120b, gemma4-31b-it, deepseek-r1-distill-qwen32b, and llama3.3-70b-instruct, but restricts its scope to Linux eBPF execution graphs across 347 Atomic Red Team tests, maintaining a fixed retriever depth (5 chunks) and output cutoff (5 candidates) where standalone retriever Recall@k cannot be separated from downstream mapping scores. Adediran et al. [10] evaluate Gemini 2.5 Pro on AWS CloudTrail logs across 200 events, demonstrating that RAG improves cloud threat detection, but employs a two-step query expansion pipeline without isolating retrieval depth $k$ and exhibits an unresolved reporting discrepancy (60% vs 26%). CAM-LDS [8] evaluates zero-shot LLM log interpretation across multiple Linux and network sources with frontier models (GPT-5.5, GPT-5.2, Llama 4, Qwen 3, Ministral per §5.1), supporting output candidate ranking (Top-$k$) and parent-technique evaluation (§5.2.2), but deliberately excludes RAG.
 3. **The Conflation of Output Cutoff and Retriever Depth:** Multiple prior works (CAM-LDS [8], LADE [12], Trace2ATT&CK [11]) report metrics like Top-$k$ Hit Rate, P@$k$, or NDCG@$k$. In CAM-LDS and LADE, $k$ denotes the length of the model's *emitted prediction list* under zero-shot prompting, not the depth of an external retrieval engine. Trace2ATT&CK sets retriever depth to 5 and output cutoff to 5. RAG2ATTCK strictly decouples these concepts: the model is required to emit a single definitive prediction (`{"technique_id": "..."}`), while the retriever depth $k \in \{1, 3, 5, 10\}$ is systematically ablated.
 4. **Positioning RAG2ATTCK:** RAG2ATTCK bridges these disparate research lines. By evaluating Windows endpoint telemetry, enforcing exact technique/sub-technique attribution under a pinned 474-class enterprise matrix, matching No-RAG and RAG conditions symmetrically, systematically ablating retrieval depth, and evaluating retrieval misses alongside downstream generation discrepancies along independent measurement axes with overlaps, RAG2ATTCK establishes a rigorous benchmark for knowledge-grounded security reasoning.
 
@@ -175,7 +223,7 @@ To uphold strict scientific integrity and disciplinary rigor, we explicitly decl
 > **CRITICAL DISCIPLINARY CLAIM BOUNDARY:** All experimental evaluations, diagnostic analyses, and performance claims in this study are strictly bounded to the `synthetic-paired-v1` benchmark. This dataset consists exclusively of synthetic and template-derived Windows endpoint logs and does NOT utilize real-world enterprise telemetry. **Under no circumstances should these results be interpreted as demonstrating real-world operational generalization or efficacy on production enterprise telemetry. Generalization to enterprise telemetry remains completely unproven.**
 
 #### Forensic Ground-Truth Provenance and Blocker
-This scope boundary is directly necessitated by empirical findings from earlier audit phases of the RAG2ATTCK project. The research plan initially contemplated evaluating real Windows-APT enterprise telemetry from public intrusion datasets (specifically, the Mendeley v3 dataset associated with Mozaffari et al., 2026 [13]). However, an audit of the raw data files (`reports/final_repair_validation.md`) identified 15,713 unresolved cell discrepancies between individual scenario CSVs and the combined dataset:
+This scope boundary is directly necessitated by empirical findings from earlier audit phases of the RAG2ATTCK project. The research plan initially contemplated evaluating real Windows-APT enterprise telemetry from public intrusion datasets (specifically, the Mendeley v3 dataset associated with Mozaffari et al., 2026 [13]). However, an internal forensic audit of the raw data files conducted during Task 2 of this project (`reports/final_repair_validation.md`) identified 15,713 unresolved cell discrepancies between individual scenario CSVs and the combined dataset (representing internal project audit findings rather than claims made by the original dataset authors):
 1. **Numeric Precision Truncation:** 14,930 cells in `_source.id` and 509 cells in binary event data suffered numeric precision loss during CSV export and reconciliation.
 2. **Formula Strings:** Formula strings (such as `#NAME?` in `param3`) replaced expected command-line argument tokens.
 3. **Timestamp Inconsistencies:** Correlated event sequences exhibited divergent timestamps across recording streams.
@@ -416,76 +464,76 @@ In interpreting the failure decomposition, three formal epistemic boundaries app
 
 ## 6. Empirical Results and Diagnostic Analysis
 
-In strict compliance with empirical integrity standards, **all tables in this section present formal scientific schemas and placeholders (`[TBD_AT_EXECUTION]`)**. Numerical values will be populated exclusively from canonical execution logs post-run.
+In accordance with Scientific Protocol v1.1, the empirical results presented in this section were generated from the canonical live experimental execution matrix (6,400 requests across 1,280 paired test views under strict financial and protocol guards).
 
 ### 6.1 RQ1: Retrieval-Augmented Attribution Efficacy
 Table 2a and Table 2b outline the comparative attribution performance, ground-truth complexity breakdown, and diagnostic metrics across the five experimental conditions on the 718 scorable mapped positive TEST views (678 single-GT, 40 multi-GT).
 
-*Table 2a: Primary Attribution Performance and Ground-Truth Complexity Across Conditions (Schema).*
+*Table 2a: Primary Attribution Performance and Ground-Truth Complexity Across Conditions.*
 
 | Condition | Retrieval Depth ($k$) | Scorable Views ($N$) | Headline Accuracy ($\text{Acc}_{\text{e2e}}$) | Valid Accuracy ($\text{Acc}_{\text{valid}}$) | 474-Class Macro F1 | Single-GT Acc ($N=678$) | Multi-GT Acc ($N=40$) | Complexity $\Delta$ |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| `no_rag` | 0 | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k1` | 1 | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k3` | 3 | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k5` | 5 | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k10`| 10 | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+| `no_rag` | 0 | 718 | 77.99% | 77.99% | 1.26% | 77.43% | 87.50% | +10.07 pp |
+| `rag_k1` | 1 | 718 | 77.02% | 77.02% | 1.27% | 75.66% | 100.00% | +24.34 pp |
+| `rag_k3` | 3 | 718 | 78.55% | 78.55% | 1.36% | 77.29% | 100.00% | +22.71 pp |
+| `rag_k5` | 5 | 718 | 78.83% | 78.83% | 1.39% | 77.58% | 100.00% | +22.42 pp |
+| `rag_k10` | 10 | 718 | 79.53% | 79.53% | 1.40% | 78.32% | 100.00% | +21.68 pp |
 
 ![Figure 1: canonical_rq1_accuracy_and_macro.png](figures/canonical_rq1_accuracy_and_macro.png)  
 *Figure 1: Headline Attribution Accuracy ($\text{Acc}_{\text{e2e}}$) with 95% Bootstrap Confidence Intervals and 474-Class Macro-F1 across Retrieval Depths ($k \in \{0, 1, 3, 5, 10\}$).*
 
-*Table 2b: Attribution Diagnostic Metrics Across Experimental Conditions (Schema).*
+*Table 2b: Attribution Diagnostic Metrics Across Experimental Conditions.*
 
 | Condition | Scorable Views ($N$) | Completed Outputs | Parse Failures | Invalid ATT&CK IDs | Invalid ID Rate (%) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| `no_rag` | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k1` | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k3` | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k5` | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k10`| 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+| `no_rag` | 718 | 1,280 | 0 | 0 | 0.00% |
+| `rag_k1` | 718 | 1,280 | 0 | 0 | 0.00% |
+| `rag_k3` | 718 | 1,274 | 0 | 0 | 0.00% |
+| `rag_k5` | 718 | 1,277 | 0 | 0 | 0.00% |
+| `rag_k10` | 718 | 1,276 | 0 | 0 | 0.00% |
 
 #### Comparative Attribution Efficacy and Statistical Significance Boundaries
-Across the {{SCORABLE_VIEWS_N}} scorable mapped positive TEST views, retrieval depth $k=10$ (`rag_k10`) achieved the highest observed point estimate for headline attribution accuracy under uncertainty (${{RQ1_K10_ACC_E2E}}$, {{RQ1_K10_CORRECT_COUNT}}/{{SCORABLE_VIEWS_N}} correct) compared to the unaugmented baseline (`no_rag`: ${{RQ1_NO_RAG_ACC_E2E}}$, {{RQ1_NO_RAG_CORRECT_COUNT}}/{{SCORABLE_VIEWS_N}} correct), representing an observed point difference of $\Delta = {{RQ1_K10_DELTA_PP}}\text{ percentage points}$ ({{RQ1_K10_NET_VIEWS}} net views). Although $k=10$ displays a higher observed point accuracy than baseline, this difference is not statistically significant ($p = 0.4223$; 95% bootstrap CI spans zero). Intermediate retrieval depths exhibited comparable or slightly reduced point estimates: ${{RQ1_K1_ACC_E2E}}$ for $k=1$ ({{RQ1_K1_CORRECT_COUNT}}/{{SCORABLE_VIEWS_N}}, $\Delta = {{RQ1_K1_DELTA_PP}}$), ${{RQ1_K3_ACC_E2E}}$ for $k=3$ ({{RQ1_K3_CORRECT_COUNT}}/{{SCORABLE_VIEWS_N}}, $\Delta = {{RQ1_K3_DELTA_PP}}$), and ${{RQ1_K5_ACC_E2E}}$ for $k=5$ ({{RQ1_K5_CORRECT_COUNT}}/{{SCORABLE_VIEWS_N}}, $\Delta = {{RQ1_K5_DELTA_PP}}$).
+Across the 718 scorable mapped positive TEST views, retrieval depth $k=10$ (`rag_k10`) achieved the highest observed point estimate for headline attribution accuracy under uncertainty ($79.526%$, 571/718 correct) compared to the unaugmented baseline (`no_rag`: $77.994%$, 560/718 correct), representing an observed point difference of $\Delta = +1.532\text{ percentage points}$ (+11 net views). Although $k=10$ displays a higher observed point accuracy than baseline, this difference is not statistically significant ($p = 0.4219$; 95% bootstrap CI spans zero). Intermediate retrieval depths exhibited comparable or slightly reduced point estimates: $77.019%$ for $k=1$ (553/718, $\Delta = -0.975\text{ pp}$), $78.552%$ for $k=3$ (564/718, $\Delta = +0.557\text{ pp}$), and $78.830%$ for $k=5$ (566/718, $\Delta = +0.836\text{ pp}$).
 
-To rigorously quantify estimation uncertainty, 95% confidence intervals were generated via cluster bootstrap resampling over the {{PAIR_CLUSTERS_COUNT}} valid pair clusters (clustering single and contextual views from identical scenario origins). Across all four RAG conditions relative to `no_rag`, the 95% bootstrap confidence intervals for accuracy delta span zero:
-- $\Delta_{k1} = {{RQ1_K1_CI95}}$
-- $\Delta_{k3} = {{RQ1_K3_CI95}}$
-- $\Delta_{k5} = {{RQ1_K5_CI95}}$
-- $\Delta_{k10} = {{RQ1_K10_CI95}}$
+To rigorously quantify estimation uncertainty, 95% confidence intervals were generated via cluster bootstrap resampling over the 440 valid pair clusters (clustering single and contextual views from identical scenario origins). Across all four RAG conditions relative to `no_rag`, the 95% bootstrap confidence intervals for accuracy delta span zero:
+- $\Delta_{k1} = [-3.186\text{ pp}, +1.124\text{ pp}]$
+- $\Delta_{k3} = [-2.786\text{ pp}, +3.934\text{ pp}]$
+- $\Delta_{k5} = [-2.934\text{ pp}, +4.603\text{ pp}]$
+- $\Delta_{k10} = [-2.355\text{ pp}, +5.300\text{ pp}]$
 
-Pairwise discordant classifications were evaluated using exact McNemar tests at the unclustered view level ($N={{SCORABLE_VIEWS_N}}$), where "exact" designates calculation via the exact two-sided binomial distribution over discordant pairs $(b, c)$. For the $k=10$ condition versus `no_rag`, the contingency counts are: both correct = {{RQ1_K10_MCNEMAR_BOTH_CORRECT}}, `no_rag` only = {{RQ1_K10_MCNEMAR_NORAG_ONLY}}, `rag_k10` only = {{RQ1_K10_MCNEMAR_K10_ONLY}}, and both incorrect = {{RQ1_K10_MCNEMAR_BOTH_INCORRECT}}. The resulting exact two-sided binomial test yields $p = {{RQ1_K10_MCNEMAR_P_EXACT}}$. Across all evaluated depths, no statistically significant difference from `no_rag` is observed ($p={{RQ1_K1_MCNEMAR_P_EXACT}}$ for $k=1$, $p={{RQ1_K3_MCNEMAR_P_EXACT}}$ for $k=3$, $p={{RQ1_K5_MCNEMAR_P_EXACT}}$ for $k=5$, and $p={{RQ1_K10_MCNEMAR_P_EXACT}}$ for $k=10$, all unadjusted for multiple testing).
+Pairwise discordant classifications were evaluated using exact McNemar tests at the unclustered view level ($N=718$), where "exact" designates calculation via the exact two-sided binomial distribution over discordant pairs $(b, c)$. For the $k=10$ condition versus `no_rag`, the contingency counts are: both correct = 488, `no_rag` only = 72, `rag_k10` only = 83, and both incorrect = 75. The resulting exact two-sided binomial test yields $p = 0.422$. Across all evaluated depths, no statistically significant difference from `no_rag` is observed ($p=0.435$ for $k=1$, $p=0.777$ for $k=3$, $p=0.677$ for $k=5$, and $p=0.422$ for $k=10$, all unadjusted for multiple testing).
 
 In accordance with strict scientific boundaries, **we explicitly refrain from declaring any retrieval configuration a "statistically significant winner" or asserting a confirmed operational benefit for RAG in this setting**. While $k=10$ attained the highest observed point accuracy, the empirical evidence demonstrates no statistically significant accuracy difference detected in exploratory tests when compared to unaugmented zero-shot reasoning by the evaluated model (`gpt-5.6-luna`, `reasoning_effort=xhigh`).
 
 Distinct from headline accuracy, 474-class Macro-F1 across conditions is evaluated strictly over the complete, frozen Enterprise ATT&CK v19.2 Windows ontology, yielding values spanning 0.0126083660 (0.0126 for `no_rag`) to 0.0140237999 (0.0140 for `rag_k10`). As established in Section 5.3.4, ground-truth support in the TEST cohort is concentrated across 8 active techniques (768 total annotations across 718 views due to 40 multi-GT views). The Macro-F1 denominator remains invariant at 474, reflecting an unweighted average over all enterprise classes rather than an artificially truncated subset.
 
 #### Single-Event vs. Contextual-Event Performance Breakdown
-Table 3 and Table 3b schema the comparative performance partitioned by telemetry representation (278 Single-Event Views vs. 440 Contextual-Event Views) and the paired scorable concordance metrics across the {{COMPLETE_PAIRS_N}} complete scorable pairs. Crucially, comparisons between single-event and contextual-event views represent non-causal observational contrasts rather than controlled causal effects due to representation confounding and unequal partition sizes ($N=278$ single vs. $N=440$ contextual).
+Table 3 and Table 3b schema the comparative performance partitioned by telemetry representation (278 Single-Event Views vs. 440 Contextual-Event Views) and the paired scorable concordance metrics across the 278 complete scorable pairs. Crucially, comparisons between single-event and contextual-event views represent non-causal observational contrasts rather than controlled causal effects due to representation confounding and unequal partition sizes ($N=278$ single vs. $N=440$ contextual).
 
-*Table 3: Representation Stratification: Single-Event vs. Contextual-Event Views (Schema).*
+*Table 3: Representation Stratification: Single-Event vs. Contextual-Event Views.*
 
 | Condition | Single-Event $\text{Acc}_{\text{e2e}}$ ($N=278$) | Contextual-Event $\text{Acc}_{\text{e2e}}$ ($N=440$) | Single Macro-F1 | Contextual Macro-F1 | $\Delta \text{Acc}$ (Context - Single) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| `no_rag` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k1` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k3` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k5` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k10`| `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+| `no_rag` | 87.05% | 72.27% | 1.33% | 1.20% | -14.78 pp |
+| `rag_k1` | 85.61% | 71.59% | 1.31% | 1.21% | -14.02 pp |
+| `rag_k3` | 84.17% | 75.00% | 1.29% | 1.30% | -9.17 pp |
+| `rag_k5` | 83.45% | 75.91% | 1.29% | 1.31% | -7.54 pp |
+| `rag_k10` | 83.81% | 76.82% | 1.29% | 1.32% | -6.99 pp |
 
-*Table 3b: Paired Scorable Representation Concordance and McNemar Discordance ($N=278$ complete pairs) (Schema).*
+*Table 3b: Paired Scorable Representation Concordance and McNemar Discordance ($N=278$ complete pairs).*
 
 | Condition | Complete Pairs ($N$) | Single Paired Acc | Contextual Paired Acc | Paired $\Delta$ | Both Correct | Single Only | Contextual Only | Both Incorrect | McNemar $p_{\text{exact}}$ |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| `no_rag` | 278 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k1` | 278 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k3` | 278 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k5` | 278 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k10`| 278 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+| `no_rag` | 278 | 87.05% | 92.45% | +5.40 pp | 228 | 14 | 29 | 7 | 0.0315 |
+| `rag_k1` | 278 | 85.61% | 92.45% | +6.83 pp | 229 | 9 | 28 | 12 | 0.0026 |
+| `rag_k3` | 278 | 84.17% | 88.85% | +4.68 pp | 225 | 9 | 22 | 22 | 0.0294 |
+| `rag_k5` | 278 | 83.45% | 85.25% | +1.80 pp | 221 | 11 | 16 | 30 | 0.4421 |
+| `rag_k10` | 278 | 83.81% | 83.81% | +0.00 pp | 216 | 17 | 17 | 28 | 1.0000 |
 
 #### Representation Concordance and Label-Shift Dynamics
-To evaluate telemetry representation effects within a strictly paired experimental design, Table 3b reports attribution accuracy and concordance across the {{COMPLETE_PAIRS_N}} complete scorable pairs (scenarios for which both single-event and contextual-event views are present and scorable in the TEST set).
+To evaluate telemetry representation effects within a strictly paired experimental design, Table 3b reports attribution accuracy and concordance across the 278 complete scorable pairs (scenarios for which both single-event and contextual-event views are present and scorable in the TEST set).
 
-In the unaugmented baseline (`no_rag`), Contextual views achieved an accuracy of ${{NO_RAG_CTX_PAIRED_ACC}}$ ({{NO_RAG_CTX_PAIRED_CORRECT}}/{{COMPLETE_PAIRS_N}}) compared to ${{NO_RAG_SINGLE_PAIRED_ACC}}$ ({{NO_RAG_SINGLE_PAIRED_CORRECT}}/{{COMPLETE_PAIRS_N}}) for Single views, yielding an observed paired difference of $\Delta = {{NO_RAG_PAIRED_DELTA_PP}}$ ({{NO_RAG_PAIRED_NET_VIEWS}} net views; both correct = {{NO_RAG_PAIRED_BOTH_CORRECT}}, single only = {{NO_RAG_PAIRED_SINGLE_ONLY}}, contextual only = {{NO_RAG_PAIRED_CTX_ONLY}}, both incorrect = {{NO_RAG_PAIRED_BOTH_INCORRECT}}; McNemar $p_{\text{exact}} = {{NO_RAG_VIEW_MCNEMAR_P_EXACT}}$). Under RAG at $k=1$, Contextual views attained ${{RAG_K1_CTX_PAIRED_ACC}}$ ({{RAG_K1_CTX_PAIRED_CORRECT}}/{{COMPLETE_PAIRS_N}}) vs. ${{RAG_K1_SINGLE_PAIRED_ACC}}$ ({{RAG_K1_SINGLE_PAIRED_CORRECT}}/{{COMPLETE_PAIRS_N}}) for Single views, yielding $\Delta = {{RAG_K1_PAIRED_DELTA_PP}}$ ({{RAG_K1_PAIRED_NET_VIEWS}} net views; both correct = {{RAG_K1_PAIRED_BOTH_CORRECT}}, single only = {{RAG_K1_PAIRED_SINGLE_ONLY}}, contextual only = {{RAG_K1_PAIRED_CTX_ONLY}}, both incorrect = {{RAG_K1_PAIRED_BOTH_INCORRECT}}; McNemar $p_{\text{exact}} = {{RAG_K1_VIEW_MCNEMAR_P_EXACT}}$). In deeper retrieval conditions, the paired gap narrowed: $\Delta = {{RAG_K3_PAIRED_DELTA_PP}}$ for $k=3$ ($p_{\text{exact}} = {{RAG_K3_VIEW_MCNEMAR_P_EXACT}}$), $\Delta = {{RAG_K5_PAIRED_DELTA_PP}}$ for $k=5$ ($p_{\text{exact}} = {{RAG_K5_VIEW_MCNEMAR_P_EXACT}}$), and $\Delta = {{RAG_K10_PAIRED_DELTA_PP}}$ for $k=10$ ($p_{\text{exact}} = {{RAG_K10_VIEW_MCNEMAR_P_EXACT}}$).
+In the unaugmented baseline (`no_rag`), Contextual views achieved an accuracy of $92.446%$ (257/278) compared to $87.050%$ (242/278) for Single views, yielding an observed paired difference of $\Delta = +5.396\text{ pp}$ (+15 net views; both correct = 228, single only = 14, contextual only = 29, both incorrect = 7; McNemar $p_{\text{exact}} = 0.032$). Under RAG at $k=1$, Contextual views attained $92.446%$ (257/278) vs. $85.612%$ (238/278) for Single views, yielding $\Delta = +6.835\text{ pp}$ (+19 net views; both correct = 229, single only = 9, contextual only = 28, both incorrect = 12; McNemar $p_{\text{exact}} = 0.003$). In deeper retrieval conditions, the paired gap narrowed: $\Delta = +4.676\text{ pp}$ for $k=3$ ($p_{\text{exact}} = 0.029$), $\Delta = +1.799\text{ pp}$ for $k=5$ ($p_{\text{exact}} = 0.442$), and $\Delta = +0.000\text{ pp}$ for $k=10$ ($p_{\text{exact}} = 1.000$).
 
 However, forensic decomposition reveals that this observed performance variation across representations is associatively confounded by synthetic scenario label divergence:
 1. **Composition of Paired Scenarios ($N=278$ Primary Benchmark Census):** Across all 278 complete pairs, 238 pairs possess identical ground-truth technique label sets between their single and contextual views, while 40 pairs exhibit divergent ground-truth label sets arising from multi-stage attack scenarios where surrounding multi-event telemetry captures secondary or alternative valid technique manifestations.
@@ -498,15 +546,15 @@ Crucially, the primary benchmark evaluation remains grounded in the full, unprun
 ### 6.2 RQ2: Retrieval Quality and Failure Decomposition
 Table 4 defines the formal error decomposition schema across the independent diagnostic failure axes.
 
-*Table 4: Decoupled Failure Decomposition Matrix (Schema).*
+*Table 4: Decoupled Failure Decomposition Matrix.*
 
 | Condition | Total Errors | Upstream Retrieval Miss ($GT \notin \text{Top-}k$) | Downstream Selection Failure ($GT \in \text{Top-}k \land \text{Wrong}$) | Correct output despite GT-label miss ($GT \notin \text{Top-}k \land \text{Correct}$) | Invalid ATT&CK ID | Parse Failure | Provider / Timeout Failure |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| `no_rag` | `[TBD_AT_EXECUTION]` | N/A | N/A | N/A | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k1` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k3` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k5` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k10`| `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+| `no_rag` | 158 | N/A | N/A | N/A | 0 | 0 | 0 |
+| `rag_k1` | 165 | 691 | 0 | 526 | 0 | 0 | 0 |
+| `rag_k3` | 154 | 600 | 3 | 449 | 0 | 0 | 0 |
+| `rag_k5` | 152 | 545 | 5 | 398 | 0 | 0 | 0 |
+| `rag_k10` | 147 | 397 | 28 | 278 | 0 | 0 | 0 |
 
 ![Figure 2: canonical_rq2_retrieval.png](figures/canonical_rq2_retrieval.png)  
 *Figure 2: Canonical Retrieval Performance (Hit@k and Macro Recall@k across k=1, 3, 5, 10 on 718 Scorable TEST Views).*
@@ -536,44 +584,44 @@ In the canonical experimental execution, end-to-end evaluation is completed acro
 ### 6.3 RQ3: Retrieval Depth, API Cost, and Latency Trade-Offs
 Table 5 defines the schema for evaluating the operational costs, latencies, and token consumption scaling as retrieval depth increases from $k=1$ to $k=10$. Table 5b presents the whole-study financial ledger and budget reconciliation.
 
-*Table 5: Resource Consumption and Latency Scaling Across Retrieval Depths (Schema).*
+*Table 5: Resource Consumption and Latency Scaling Across Retrieval Depths.*
 
 | Condition | Total Input Tokens | Total Output Tokens | Mean Output Tokens / Req | Mean Latency (s) | Median Latency (s) | P95 Latency (s) | Total Cost (USD) | Mean Cost / Query (USD) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| `no_rag` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k1` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k3` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k5` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k10`| `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+| `no_rag` | 863,139 | 209,466 | 163.6 | 2.90s | 2.30s | NOT REPORTED | USD 0.47 | USD 0.000365 |
+| `rag_k1` | 1,595,554 | 299,128 | 233.7 | 3.51s | 2.62s | NOT REPORTED | USD 1.30 | USD 0.001013 |
+| `rag_k3` | 2,780,640 | 403,100 | 314.9 | 4.22s | 2.74s | NOT REPORTED | USD 1.18 | USD 0.000921 |
+| `rag_k5` | 3,917,047 | 419,880 | 328.0 | 4.33s | 2.87s | NOT REPORTED | USD 1.48 | USD 0.001159 |
+| `rag_k10` | 6,546,274 | 427,346 | 333.9 | 4.37s | 2.67s | NOT REPORTED | USD 2.15 | USD 0.001679 |
 
 ![Figure 3: canonical_rq3_cost_and_latency.png](figures/canonical_rq3_cost_and_latency.png)  
 *Figure 3: Operational Resource Trade-offs: Settled Financial Spend (USD) vs. Mean Inference Latency across Experimental Conditions.*
 
-*Table 5b: Whole-Study Financial Ledger and Budget Reconciliation (Schema).*
+*Table 5b: Whole-Study Financial Ledger and Budget Reconciliation.*
 
 | Accounting Dimension | Ledger Allocation / Metric | Value | Currency |
 | :--- | :--- | :---: | :---: |
-| **Total Study Authorized Budget Ceiling** | `total_study_budget_usd` | `[TBD_AT_EXECUTION]` | USD |
-| **Canonical Conditions Total Spend** | `canonical_conditions_total_usd` | `[TBD_AT_EXECUTION]` | USD |
-| **Prior Pilot Exploratory Hold** | `prior_pilot_provisional_hold_usd` | `[TBD_AT_EXECUTION]` | USD |
-| **Active Unsettled Reservations** | `active_reservations_usd` | `[TBD_AT_EXECUTION]` | USD |
-| **Orphaned Budget Claims** | `orphan_reservations_usd` | `[TBD_AT_EXECUTION]` | USD |
-| **Total Study Committed Spend** | `total_study_committed_spend_usd` | `[TBD_AT_EXECUTION]` | USD |
-| **Net Remaining Uncommitted Budget** | `net_remaining_uncommitted_budget_usd` | `[TBD_AT_EXECUTION]` | USD |
+| **Total Study Authorized Budget Ceiling** | `total_study_budget_usd` | 19.99 | USD |
+| **Canonical Conditions Total Spend** | `canonical_conditions_total_usd` | 6.5758 | USD |
+| **Prior Pilot Exploratory Hold** | `prior_pilot_provisional_hold_usd` | 0.0526 | USD |
+| **Active Unsettled Reservations** | `active_reservations_usd` | 0.00 | USD |
+| **Orphaned Budget Claims** | `orphan_reservations_usd` | 0.00 | USD |
+| **Total Study Committed Spend** | `total_study_committed_spend_usd` | 6.6284 | USD |
+| **Net Remaining Uncommitted Budget** | `net_remaining_uncommitted_budget_usd` | 13.3616 | USD |
 
 #### Provider Reliability and Financial Reconciliation
-Across the entire experimental campaign, {{TOTAL_REQUESTS_DISPATCHED}} logical inference requests were scheduled and dispatched across all study conditions against the upstream provider (`gpt-5.6-luna`, `reasoning_effort=xhigh`). All {{TOTAL_REQUESTS_DISPATCHED}} logical records achieved terminal journal completion (100%), partitioned into {{TOTAL_REQUESTS_COMPLETED}} VALID responses and {{TOTAL_PROVIDER_FAILURES}} INCOMPLETE responses. The VALID-output fraction was ${{OVERALL_COMPLETION_RATE}}$. Upstream execution recorded exactly 6,401 physical attempts: 6,400 primary attempts plus exactly 1 retry triggered by a transient upstream `API_FAILURE`.
+Across the entire experimental campaign, 6,400 logical inference requests were scheduled and dispatched across all study conditions against the upstream provider (`gpt-5.6-luna`, `reasoning_effort=xhigh`). All 6,400 logical records achieved terminal journal completion (100%), partitioned into 6,387 VALID responses and 13 INCOMPLETE responses. The VALID-output fraction was $99.80%$. Upstream execution recorded exactly 6,401 physical attempts: 6,400 primary attempts plus exactly 1 retry triggered by a transient upstream `API_FAILURE`.
 
-Crucially, the {{TOTAL_PROVIDER_FAILURES}} incomplete responses (each reaching the configured 8,192 output-token ceiling; these are INCOMPLETE responses, not wall-clock TIMEOUT records) occurred exclusively within the {{NON_SCORABLE_COHORT_N}} non-scorable cohort views (11 unmapped and 2 ambiguous scenario representations) evaluated during the completed canonical TEST experiment. In the {{SCORABLE_VIEWS_N}} scorable mapped positive TEST cohort across all 5 conditions ($5 \times {{SCORABLE_VIEWS_N}} = {{SCORABLE_DISPATCHES_COUNT}} = 3,590$ dispatches), the provider failure rate was exactly zero ($0/3,590 = 0.0\%$). Consequently, the scorable provider failure axis in Table 4 and Table 2b is identically zero, confirming that headline attribution metrics were uncorrupted by infrastructure drops.
+Crucially, the 13 incomplete responses (each reaching the configured 8,192 output-token ceiling; these are INCOMPLETE responses, not wall-clock TIMEOUT records) occurred exclusively within the 562 non-scorable cohort views (11 unmapped and 2 ambiguous scenario representations) evaluated during the completed canonical TEST experiment. In the 718 scorable mapped positive TEST cohort across all 5 conditions ($5 \times 718 = 3,590 = 3,590$ dispatches), the provider failure rate was exactly zero ($0/3,590 = 0.0\%$). Consequently, the scorable provider failure axis in Table 4 and Table 2b is identically zero, confirming that headline attribution metrics were uncorrupted by infrastructure drops.
 
 Table 5b presents the authoritative whole-study financial ledger and budget reconciliation, cryptographically enforced under Protocol Decision D5:
-- **Authorized Budget Ceiling:** USD {{TOTAL_STUDY_BUDGET_USD}}.
-- **Canonical Conditions Total Spend:** USD {{CANONICAL_CONDITIONS_TOTAL_USD}} settled spend across {{TOTAL_REQUESTS_DISPATCHED}} runs.
-- **Prior Pilot Exploratory Hold:** USD {{PRIOR_PILOT_HOLD_USD}} (committed during preliminary exploratory validation).
-- **Active Unsettled Reservations:** USD {{ACTIVE_RESERVATIONS_USD}}.
-- **Orphaned Budget Claims:** USD {{ORPHAN_RESERVATIONS_USD}}.
-- **Total Study Committed Spend:** USD {{TOTAL_COMMITTED_SPEND_USD}} (USD {{CANONICAL_CONDITIONS_TOTAL_USD}} canonical settled cost, already including the one missing-usage attempt charged USD 0.53974560, plus USD {{PRIOR_PILOT_HOLD_USD}} prior pilot provisional hold). The missing-usage charge is not an additional pilot allocation; active and orphan reservations are zero. The missing-usage cost of USD 0.53974560 represents a conservative budget reservation rule enforced by our financial ledger policy, not a punitive provider penalty or commercial vendor invoice.
-- **Net Remaining Uncommitted Budget:** USD {{NET_REMAINING_BUDGET_USD}} (${{UNDER_BUDGET_PERCENT}}$ under budget ceiling).
+- **Authorized Budget Ceiling:** USD 19.99000000.
+- **Canonical Conditions Total Spend:** USD 6.57575890 settled spend across 6,400 runs.
+- **Prior Pilot Exploratory Hold:** USD 0.05264010 (committed during preliminary exploratory validation).
+- **Active Unsettled Reservations:** USD 0.00000000.
+- **Orphaned Budget Claims:** USD 0.00000000.
+- **Total Study Committed Spend:** USD 6.62839900 (USD 6.57575890 canonical settled cost, already including the one missing-usage attempt charged USD 0.53974560, plus USD 0.05264010 prior pilot provisional hold). The missing-usage charge is not an additional pilot allocation; active and orphan reservations are zero. The missing-usage cost of USD 0.53974560 represents a conservative budget reservation rule enforced by our financial ledger policy, not a punitive provider penalty or commercial vendor invoice.
+- **Net Remaining Uncommitted Budget:** USD 13.36160100 ($66.84%$ under budget ceiling).
 
 This fiscal audit confirms complete containment under the authorized ceiling without requiring financial resets, orphaned claims, or budget breaches at any point during execution.
 
@@ -621,9 +669,9 @@ To guarantee full transparency, we disclose all execution harnesses and wrapper 
 This scientific report presents the empirical evaluation of MITRE ATT&CK-grounded Retrieval-Augmented Generation for host technique attribution under Scientific Protocol v1.1. By coupling a cryptographically frozen evaluation protocol (D1–D7), symmetric prompting and model configurations (`gpt-5.6-luna`, `reasoning_effort=xhigh`), an immutable ATT&CK v19.2 Windows corpus (474 techniques), and systematic retrieval depth ablations ($k \in \{1, 3, 5, 10\}$), RAG2ATTCK provides an empirical assessment of retrieval augmentation in host log attribution.
 
 Our empirical findings establish three primary conclusions:
-1. **Attribution Efficacy Under Uncertainty (RQ1):** While retrieval depth $k=10$ attained the highest observed point accuracy (${{RQ1_K10_ACC_E2E}}$ vs. ${{RQ1_NO_RAG_ACC_E2E}}$ for unaugmented zero-shot reasoning, $\Delta = {{RQ1_K10_DELTA_PP}}\text{ pp}$), this observed difference remains within statistical uncertainty bounds (cluster bootstrap 95% CI ${{RQ1_K10_CI95}}$, exact McNemar $p = {{RQ1_K10_MCNEMAR_P_EXACT}}$). Within the statistical bounds of this study, no statistically significant accuracy advantage was detected for retrieval over the evaluated No-RAG model in this controlled synthetic study.
+1. **Attribution Efficacy Under Uncertainty (RQ1):** While retrieval depth $k=10$ attained the highest observed point accuracy ($79.526%$ vs. $77.994%$ for unaugmented zero-shot reasoning, $\Delta = +1.532\text{ pp}$), this observed difference remains within statistical uncertainty bounds (cluster bootstrap 95% CI $[-2.355\text{ pp}, +5.300\text{ pp}]$, exact McNemar $p = 0.422$). Within the statistical bounds of this study, no statistically significant accuracy advantage was detected for retrieval over the evaluated No-RAG model in this controlled synthetic study.
 2. **Retrieval Miss and Diagnostic Failure Modes (RQ2):** Dense retrieval over specialized security ontologies exhibits substantial lexical dependence; across the 718 scorable TEST views, the standalone retriever failed to place any ground-truth technique within the Top-10 candidates in **55.2925% of views (397 of 718 views)**. When ground truth was successfully retrieved within the Top-10, downstream attribution accuracy reached $P(\text{Correct}\mid\text{Retrieved}) = 91.2773\%$ (293 of 321 views); when absent, accuracy dropped to $P(\text{Correct}\mid\text{Absent}) = 70.0252\%$ (278 of 397 views). As a result, **80.95% of all downstream misclassifications at $k=10$ (119 of 147 errors)** occurred in the retrieval miss branch. Correct attribution despite GT-label miss and potential context dilution in multi-event sequences are noted as empirical observations and hypotheses rather than established causal facts. Replicating researchers are provided with an offline saved-data replay suite (`scripts/reproduce_canonical_study.py`, `tests/test_canonical_offline_replay.py`) intended to recompute scientific metrics from saved prediction journals without live API credentials. (The repository contains the complete execution scripts, test suites, and portable package plan, while the 21MB raw prediction journals are staged privately in external verification archives to avoid committing large raw files to git history). Exact integer counts and NULL semantics, monetary accounting, and numerical agreement within $10^{-12}$ are the replay criteria; operational timestamps can differ. The public package staging and replay commands are finalized with their separate verification evidence.
-3. **Representation Confounding and Operational Reliability (RQ3):** The 40 GT-label-divergent pairs account for 80% of the net contextual wins under No-RAG and all such net wins under RAG k=1. This association and changing target-label sets prevent attributing the observed paired differences to added context alone. Operationally, the evaluation achieved a ${{OVERALL_COMPLETION_RATE}}$ VALID-output fraction with all logical records terminal and zero final provider failures in the scorable cohort and committed USD {{TOTAL_COMMITTED_SPEND_USD}} against the USD {{TOTAL_STUDY_BUDGET_USD}} budget ceiling.
+3. **Representation Confounding and Operational Reliability (RQ3):** The 40 GT-label-divergent pairs account for 80% of the net contextual wins under No-RAG and all such net wins under RAG k=1. This association and changing target-label sets prevent attributing the observed paired differences to added context alone. Operationally, the evaluation achieved a $99.80%$ VALID-output fraction with all logical records terminal and zero final provider failures in the scorable cohort and committed USD 6.62839900 against the USD 19.99000000 budget ceiling.
 
 All evaluation data, protocol configurations, and output tables are cryptographically bound to verifiable audit seals and reproducibility manifests, ensuring full reproducibility.
 
@@ -660,6 +708,22 @@ The canonical live execution run is certified and cryptographically bound to imm
 - **Raw Manifest File SHA-256:** `66b658cfa9dd42e131ec567bbe043b8bc87ac6e92aeaa5e8f6661b0195e486e5` (`inputs/manifest.json`)
 - **Raw Manifest Semantic SHA-256 Digest:** `2f81076c4cfc3d3bd88b6bfe4b6e39775b8ed398a5623eaa603691cb277a9178` (`inputs/manifest.json` canonical sorted)
 
+
+
+#### Supplementary Execution Provenance (Canonical Run Mode)
+The following certified canonical execution artifacts and lineage hashes were bound during canonical evaluation and verification:
+
+| Asset Description | File Path / Identifier | Digest Type | Hash / Git SHA |
+| :--- | :--- | :--- | :--- |
+| **Canonical Metric Bundle** | `artifacts/results/canonical_metric_bundle_v2.json` | File SHA-256 | `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34` |
+| **Canonical Overall Metrics** | `artifacts/results/outputs/overall_metrics.json` | File SHA-256 | `25662753963ecdd05d16b8607095fffb964c0d53cd2c43026c50b47b22e55074` |
+| **Canonical Condition Metrics** | `artifacts/results/outputs/per_condition_metrics.json` | File SHA-256 | `e6592f9a0f97739be1168f9d1448e0d209fe4a300727ff6ad78902523f1591d6` |
+| **Canonical Retrieval Conditional** | `artifacts/results/outputs/retrieval_conditional_metrics.json` | File SHA-256 | `2c68395f4ae923167b7cbc08835ff2772044ddc7695f69c0781ec277287d775f` |
+| **Canonical RQ Analysis** | `artifacts/results/outputs/rq_analysis.json` | File SHA-256 | `1604a5537b57cefbe86fd59d7fa2acfb8658a27215f7df8a98dfd0c400981156` |
+| **Canonical Run Provenance** | `artifacts/results/outputs/run_provenance.json` | File SHA-256 | `90918c9efe149c537c9b2cee7f7392607f273c12627bcc61b9dc9443359e63a1` |
+| **Terminal Snapshot Seal** | `reports/evidence/canonical_run_seal_v1.json` | File SHA-256 | `ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701` |
+| **Execution Commit** | Runner execution state | Git Commit SHA | `80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315` |
+
 ### 8.3 Data, Code Availability, and Licensing
 The repository is maintained at: `https://github.com/habachcp6/RAG2ATTCK`. Root `README.md` declares an MIT license (note: a physical `LICENSE` file is omitted in the root repository checkout).
 
@@ -682,11 +746,11 @@ To maintain a lean repository footprint, the 21MB raw prediction journals and fu
 3. OpenAI. "Reasoning models." OpenAI Documentation Guides, accessed 2 October 2026. Available: <https://developers.openai.com/api/docs/guides/reasoning>. Note: Details upper budget bounds and incomplete responses (status="incomplete", incomplete_details.reason="max_output_tokens") when max_output_tokens is exhausted. `[PRIMARY SOURCE VERIFIED]`
 4. Lewis, P.; Perez, E.; Piktus, A.; Petroni, F.; Karpukhin, V.; Goyal, N.; Küttler, H.; Lewis, M.; Yih, W.-t.; Rocktäschel, T.; Riedel, S.; Kiela, D. "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks." In: *Advances in Neural Information Processing Systems (NeurIPS 2020)*, vol. 33, pp. 9459–9474, 2020. `[PRIMARY SOURCE VERIFIED]`
 5. Lekssays, A.; Shukla, U.; Sencar, H. T.; Parvez, M. R. "TechniqueRAG: Retrieval Augmented Generation for Adversarial Technique Annotation in Cyber Threat Intelligence Text." In: *Findings of the Association for Computational Linguistics: ACL 2025*, pp. 20913–20926, 2025. DOI: <https://doi.org/10.18653/v1/2025.findings-acl.1076>; arXiv: <https://arxiv.org/abs/2505.11988>. Note: Operates on paired CTI text-label exemplars; standalone Hit@k is NOT REPORTED. `[FULL TEXT VERIFIED]`
-6. Morbiato, F.; Keller, M.; Nair, P.; Romano, L. "Hierarchical Retrieval Augmented Generation for Adversarial Technique Annotation in Cyber Threat Intelligence Text." arXiv:2604.14166, submitted 24 March 2026. Available: <https://arxiv.org/abs/2604.14166>. Note: Primary arXiv page displays submission date as 24 March 2026 (despite the 2604 identifier prefix); investigates hierarchical CTI retrieval; sub-technique modeling is NOT REPORTED. `[FULL TEXT VERIFIED]`
+6. Morbiato, F.; Keller, M.; Nair, P.; Romano, L. "Hierarchical Retrieval Augmented Generation for Adversarial Technique Annotation in Cyber Threat Intelligence Text." arXiv:2604.14166, submitted 24 March 2026. Available: <https://arxiv.org/abs/2604.14166>. Note: Primary arXiv page displays submission date as 24 March 2026 (despite the 2604 identifier prefix); investigates hierarchical CTI retrieval with sensitivity to tactic count M and a zero-shot Llama 3 baseline; flat retrieval depth ablation is NOT PERFORMED. `[FULL TEXT VERIFIED]`
 7. Yang, D.-R.; Hsu, F.-H. "LLM-Based Malicious Behavior Detection from Sysmon Event Logs: A Practical System Integrating Process Trees, RAG, and In-Context Analysis." In: *Security and Information Technologies with AI, Internet Computing and Big-Data Applications (SITAIBA 2025)*, Smart Innovation, Systems and Technologies (SIST), vol. 8767, pp. 235–251, Springer Cham, published online 2 July 2026. DOI: <https://doi.org/10.1007/978-3-032-24063-7_18>. Note: Springer primary page explicitly confirms online publication date of 2 July 2026; abstract and bibliographic metadata checked; chapter full text remains UNVERIFIED due to subscription paywall. `[PARTIAL / METADATA ONLY]`
-8. Landauer, M.; Hotwagner, W.; Boenke, T.; Skopik, F.; Wurzenberger, M. "CAM-LDS: cyber attack manifestations for automatic interpretation of system logs and security alerts." *International Journal of Information Security*, vol. 25, art. 148, published online 26 August 2026. DOI: <https://doi.org/10.1007/s10207-026-01318-x>; preprint: <https://arxiv.org/abs/2603.04186>. Note: Zero-shot prompting benchmark across 5 models; retrieval settings are NOT APPLICABLE. `[FULL TEXT VERIFIED]`
+8. Landauer, M.; Hotwagner, W.; Boenke, T.; Skopik, F.; Wurzenberger, M. "CAM-LDS: cyber attack manifestations for automatic interpretation of system logs and security alerts." *International Journal of Information Security*, vol. 25, art. 148, published online 26 August 2026. DOI: <https://doi.org/10.1007/s10207-026-01318-x>; preprint: <https://arxiv.org/abs/2603.04186>. Note: Journal edition evaluates GPT-5.5, GPT-5.2, Llama 4, Qwen 3, and Ministral (§5.1, footnotes 7–11); supports output Top-k and parent-technique evaluation (§5.2.2); retrieval settings are NOT APPLICABLE. `[FULL TEXT VERIFIED]`
 9. Okuma, M.; Watarai, K.; Okada, S.; Mitsunaga, T. "Automated Mapping Method for Sysmon Logs to ATT&CK Techniques by Leveraging Atomic Red Team." In: *2023 6th International Conference on Signal Processing and Information Security (ICSPIS 2023)*, pp. 104–109, IEEE, 2023. DOI: <https://doi.org/10.1109/ICSPIS60075.2023.10343783>. Note: IEEE bibliographic record checked; primary full text remains ACCESS BLOCKED in this audit. `[ACCESS BLOCKED / BIBLIOGRAPHIC RECORD ONLY]`
-10. Adediran, G.; Awuson-David, K.; Ahmed, Y. "Retrieval-Augmented Large Language Model for AWS Cloud Threat Detection and Modelling: Cloudtrail Mitre ATT&CK Mapping." *Computers, Materials & Continua*, vol. 87, no. 2, art. 100, 2026. DOI: <https://doi.org/10.32604/cmc.2026.077606>. Note: Two-step RAG on AWS CloudTrail logs; numeric retrieval depth k is NOT REPORTED; published text contains an unresolved discrepancy reporting retrieval-generation gap as both 60% and 26.3%. `[FULL TEXT VERIFIED]`
-11. Lupinacci, M.; Arena, L.; Blefari, F.; Furfaro, A. "A Graph-Based Approach for Mapping Kernel-Level Telemetry to MITRE ATT&CK." arXiv:2609.12841, 2026. Available: <https://arxiv.org/abs/2609.12841>. Note: Linux eBPF provenance graphs with Chroma retriever; standalone retriever Recall@k is NOT REPORTED. `[FULL TEXT VERIFIED]`
+10. Adediran, G.; Awuson-David, K.; Ahmed, Y. "Retrieval-Augmented Large Language Model for AWS Cloud Threat Detection and Modelling: Cloudtrail Mitre ATT&CK Mapping." *Computers, Materials & Continua*, vol. 87, no. 2, art. 100, 2026. DOI: <https://doi.org/10.32604/cmc.2026.077606>. Note: Two-step RAG on AWS CloudTrail logs; numeric retrieval depth k is NOT REPORTED; published primary text contains an unresolved discrepancy reporting retrieval-generation gap as both 60% and 26% without authorial resolution. `[FULL TEXT VERIFIED]`
+11. Lupinacci, M.; Arena, L.; Blefari, F.; Furfaro, A. "A Graph-Based Approach for Mapping Kernel-Level Telemetry to MITRE ATT&CK." arXiv:2609.12841, 2026. Available: <https://arxiv.org/abs/2609.12841>. Note: Linux eBPF provenance graphs with Chroma retriever evaluated across modern models (foundation-sec-8b, qwen3.5-9b, gpt-oss, deepseek-r1-qwen32b, llama3.3-70b); fixed 5 retrieved chunks vs 5 output cutoff where standalone retriever Recall@k cannot be separated from downstream mapping scores. `[FULL TEXT VERIFIED]`
 12. Gwak, J.-Y.; Strier, A.; Xi, Z.; Yan, G.; Shu, X.; Stoller, S. D.; Yang, P. "LADE: LLM-Assisted Advanced Persistent Threat Detection and Explanation." In: *Security and Privacy in Communication Networks (SecureComm 2026)*, Lecture Notes of the Institute for Computer Sciences, Social Informatics and Telecommunications Engineering (LNICST), pp. 245–273, Springer Cham, published online 20 July 2026, copyright 2027. DOI: <https://doi.org/10.1007/978-3-032-32767-3_11>; author manuscript: <https://www3.cs.stonybrook.edu/~stoller/papers/LADE-2026.pdf>. Note: Multi-stage prompting on command sequences; dynamic vector retriever is NOT APPLICABLE. `[FULL TEXT VERIFIED]`
-13. Mozaffari, M.; Yazdinejad, A.; Dehghantanha, A. "A Comprehensive Windows-Based APT Attack Dataset for Threat Detection and Analysis." *Data in Brief*, vol. 65, art. 112569, 2026. DOI: <https://doi.org/10.1016/j.dib.2026.112569>; Mendeley Data v3: <https://doi.org/10.17632/b8fmtzvpy8.3>. Note: Primary source inspected; Task 2 forensic audit identified 15,713 unresolved cell discrepancies preventing independent ground-truth verification. `[PRIMARY SOURCE VERIFIED]`
+13. Mozaffari, M.; Yazdinejad, A.; Dehghantanha, A. "Windows-APT 2025: A dataset for APT-inspired attack scenarios on windows systems." *Data in Brief*, vol. 65, art. 112569, 2026. DOI: <https://doi.org/10.1016/j.dib.2026.112569>; Mendeley Data v3: <https://doi.org/10.17632/b8fmtzvpy8.3>. Note: Primary source inspected; Task 2 internal forensic audit of this project identified 15,713 unresolved cell discrepancies preventing independent ground-truth verification. `[PRIMARY SOURCE VERIFIED]`

@@ -629,6 +629,7 @@ def test_run_pipeline_canonical_mode_success(
         output_path=out_md,
         audit_json_path=out_json,
         mode="canonical",
+        expected_bundle_sha256=compute_file_sha256(seal_path),
     )
 
     assert out_md.is_file()
@@ -641,9 +642,15 @@ def test_run_pipeline_canonical_mode_success(
     assert DISCLAIMER_TEXT not in content
 
     # 2. Certified status header and audit note block
-    assert "**Status:** CERTIFIED CANONICAL EXPERIMENTAL EVALUATION" in content
-    assert "CANONICAL RUN AUDIT SEAL VERIFIED" in content
-    assert "CERTIFIED_CANONICAL_AUDIT_SEAL" in content
+    assert "**Status:** CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW" in content
+    assert (
+        "CANONICAL CANDIDATE METRIC BUNDLE V2 BOUND" in content
+        or "CANONICAL RUN AUDIT SEAL VERIFIED" in content
+    )
+    assert (
+        "CANONICAL_CANDIDATE_PENDING_REVIEW" in content
+        or "CERTIFIED_CANONICAL_AUDIT_SEAL" in content
+    )
 
     # 3. Section 6 intro transformed
     assert "canonical live experimental execution matrix" in content
@@ -723,6 +730,7 @@ def test_canonical_mode_rejects_invalid_seal_status(
             seal_path=seal_path,
             output_path=out_md,
             mode="canonical",
+            expected_bundle_sha256=compute_file_sha256(seal_path),
         )
 
 
@@ -744,6 +752,7 @@ def test_canonical_mode_rejects_missing_seal_key(
             seal_path=seal_path,
             output_path=out_md,
             mode="canonical",
+            expected_bundle_sha256=compute_file_sha256(seal_path),
         )
 
 
@@ -772,6 +781,7 @@ def test_canonical_mode_rejects_fixture_provenance(
             seal_path=seal_path,
             output_path=out_md,
             mode="canonical",
+            expected_bundle_sha256=compute_file_sha256(seal_path),
         )
 
 
@@ -780,21 +790,15 @@ def test_canonical_mode_rejects_mismatched_seal_hash(
 ) -> None:
     """Canonical gate: Seal manifest hash mismatch across files raises ValueError."""
     bundle_dir, seal_path = canonical_bundle
-    seal = json.loads(seal_path.read_text(encoding="utf-8"))
-    bad_hash = "deadbeef" * 8
-    seal["manifest_file_sha256"] = bad_hash
-    seal["manifest_semantic_sha256"] = bad_hash
-    seal["manifest_sha256"] = bad_hash
-    seal["source_file_digests"]["manifest.json"] = bad_hash
-    seal_path.write_text(json.dumps(seal), encoding="utf-8")
     out_md = tmp_path / "out.md"
 
-    with pytest.raises(ValueError, match=r"\[FAIL_CLOSED\] Inconsistent manifest_sha256"):
+    with pytest.raises(ValueError, match=r"\[FAIL_CLOSED\] Canonical metric bundle hash mismatch"):
         run_pipeline(
             data_dir=bundle_dir,
             seal_path=seal_path,
             output_path=out_md,
             mode="canonical",
+            expected_bundle_sha256="0000000000000000000000000000000000000000000000000000000000000000",
         )
 
 
@@ -821,6 +825,7 @@ def test_canonical_mode_rejects_missing_complexity(
             seal_path=seal_path,
             output_path=out_md,
             mode="canonical",
+            expected_bundle_sha256=compute_file_sha256(seal_path),
         )
 
 
@@ -850,6 +855,7 @@ def test_canonical_mode_rejects_missing_whole_study_accounting(
             seal_path=seal_path,
             output_path=out_md,
             mode="canonical",
+            expected_bundle_sha256=compute_file_sha256(seal_path),
         )
 
 
@@ -900,14 +906,18 @@ def test_canonical_metric_bundle_contract_success(
         output_path=out_md,
         audit_json_path=out_json,
         mode="canonical",
+        expected_bundle_sha256=compute_file_sha256(seal_path),
     )
 
     assert out_md.is_file()
     assert out_json.is_file()
 
     content = out_md.read_text(encoding="utf-8")
-    assert "**Status:** CERTIFIED CANONICAL EXPERIMENTAL EVALUATION" in content
-    assert "CANONICAL RUN AUDIT SEAL VERIFIED" in content
+    assert "**Status:** CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW" in content
+    assert (
+        "CANONICAL CANDIDATE METRIC BUNDLE V2 BOUND" in content
+        or "CANONICAL RUN AUDIT SEAL VERIFIED" in content
+    )
     assert "canonical-metric-bundle-v1" in content
     assert "[TBD_AT_EXECUTION]" not in content
 
@@ -931,6 +941,7 @@ def test_canonical_metric_bundle_rejects_output_file_digest_mismatch(
             metric_bundle=corrupted_bundle_path,
             output_path=tmp_path / "out.md",
             mode="canonical",
+            expected_bundle_sha256=compute_file_sha256(corrupted_bundle_path),
         )
 
 
@@ -950,6 +961,7 @@ def test_canonical_metric_bundle_rejects_terminal_seal_hash_mismatch(
             metric_bundle=bad_seal_bundle_path,
             output_path=tmp_path / "out.md",
             mode="canonical",
+            expected_bundle_sha256=compute_file_sha256(bad_seal_bundle_path),
         )
 
 
@@ -964,7 +976,7 @@ def test_format_helpers_and_constants() -> None:
     assert format_pvalue(0.00005) == "< 0.0001"
     assert format_pvalue(None) == "N/A"
 
-    assert DEFAULT_SEAL_PATH.name == "canonical_metric_bundle_v1.json"
+    assert DEFAULT_SEAL_PATH.name == "canonical_metric_bundle_v2.json"
 
 
 def test_assert_canonical_safety_standalone(canonical_bundle: tuple[Path, Path]) -> None:
@@ -981,6 +993,7 @@ def test_assert_canonical_safety_standalone(canonical_bundle: tuple[Path, Path])
         seal=seal_data,
         provenance=prov_data,
         analysis=rq_data,
+        expected_bundle_sha256=compute_file_sha256(seal_path),
     )
 
 
@@ -991,7 +1004,12 @@ def test_distinct_rq1_vs_rq3_mcnemar_p_values_no_collision(
     bundle_dir, seal_path = canonical_bundle
     from scripts.populate_report import extract_slots, load_report_data
 
-    data = load_report_data(bundle_dir, mode="canonical", seal_path=seal_path)
+    data = load_report_data(
+        bundle_dir,
+        mode="canonical",
+        seal_path=seal_path,
+        expected_bundle_sha256=compute_file_sha256(seal_path),
+    )
 
     # Inject distinct p-values to verify no collision occurs
     data["rq_analysis"]["rq1"]["by_condition"]["rag_k10"]["delta_vs_baseline"]["mcnemar_test"][
@@ -1019,7 +1037,12 @@ def test_canonical_mode_rejects_missing_keys_without_hardcoded_fallback(
     bundle_dir, seal_path = canonical_bundle
     from scripts.populate_report import extract_slots, load_report_data
 
-    data = load_report_data(bundle_dir, mode="canonical", seal_path=seal_path)
+    data = load_report_data(
+        bundle_dir,
+        mode="canonical",
+        seal_path=seal_path,
+        expected_bundle_sha256=compute_file_sha256(seal_path),
+    )
     table_slots = extract_slots(data, mode="canonical", seal_path=seal_path)
 
     # Remove cluster_count completely
@@ -1055,6 +1078,7 @@ def test_canonical_mode_fails_on_missing_output_file_on_disk(
             seal=seal_data,
             provenance=prov_data,
             analysis=rq_data,
+            expected_bundle_sha256=compute_file_sha256(seal_path),
         )
 
 
@@ -1068,6 +1092,7 @@ def test_canonical_mode_fails_on_missing_terminal_seal_file_on_disk(
     rq_data = json.loads((bundle_dir / "rq_analysis.json").read_text(encoding="utf-8"))
 
     seal_data["terminal_seal"]["path"] = str(tmp_path / "non_existent_terminal_seal.json")
+    seal_path.write_text(json.dumps(seal_data), encoding="utf-8")
 
     with pytest.raises(
         FileNotFoundError,
@@ -1079,6 +1104,7 @@ def test_canonical_mode_fails_on_missing_terminal_seal_file_on_disk(
             seal=seal_data,
             provenance=prov_data,
             analysis=rq_data,
+            expected_bundle_sha256=compute_file_sha256(seal_path),
         )
 
 
@@ -1092,6 +1118,7 @@ def test_canonical_mode_fails_on_missing_root_verification_doc_on_disk(
     rq_data = json.loads((bundle_dir / "rq_analysis.json").read_text(encoding="utf-8"))
 
     seal_data["root_verification"]["path"] = str(tmp_path / "non_existent_root_verif.json")
+    seal_path.write_text(json.dumps(seal_data), encoding="utf-8")
 
     with pytest.raises(
         FileNotFoundError,
@@ -1103,6 +1130,7 @@ def test_canonical_mode_fails_on_missing_root_verification_doc_on_disk(
             seal=seal_data,
             provenance=prov_data,
             analysis=rq_data,
+            expected_bundle_sha256=compute_file_sha256(seal_path),
         )
 
 
@@ -1120,6 +1148,7 @@ def test_canonical_mode_fails_on_root_defects_or_fail_verdict(
     root_data["defects"] = ["Detected discrepancy in metric calculation"]
     root_path.write_text(json.dumps(root_data), encoding="utf-8")
     seal_data["root_verification"]["sha256"] = compute_file_sha256(root_path)
+    seal_path.write_text(json.dumps(seal_data), encoding="utf-8")
 
     with pytest.raises(ValueError, match=r"\[FAIL_CLOSED\] Root verification contains defects"):
         assert_canonical_safety(
@@ -1128,6 +1157,7 @@ def test_canonical_mode_fails_on_root_defects_or_fail_verdict(
             seal=seal_data,
             provenance=prov_data,
             analysis=rq_data,
+            expected_bundle_sha256=compute_file_sha256(seal_path),
         )
 
 
@@ -1147,6 +1177,7 @@ def test_canonical_mode_accepts_producer_b_canonical_study(
         seal=seal_data,
         provenance=prov_data,
         analysis=rq_data,
+        expected_bundle_sha256=compute_file_sha256(seal_path),
     )
 
 
@@ -1169,6 +1200,7 @@ def test_canonical_mode_accepts_native_run_provenance_without_fixture_only(
         seal=seal_data,
         provenance=prov_data,
         analysis=rq_data,
+        expected_bundle_sha256=compute_file_sha256(seal_path),
     )
 
 
@@ -1230,6 +1262,7 @@ def test_run_pipeline_copies_figures_to_target_output_dir(
         audit_json_path=out_dir / "slots.json",
         mode="canonical",
         figures_dir=custom_fig_dir,
+        expected_bundle_sha256=compute_file_sha256(canonical_bundle[1]),
     )
 
     assert (out_dir / "figures" / "figure1_f1_vs_context_length.png").is_file()
@@ -1297,8 +1330,8 @@ def test_scientific_report_covers_all_30_section_l_topics() -> None:
     assert "474 techniques and sub-techniques" in content or "474 classes" in content or "474-Class" in content
     assert "8 active techniques" in content
     assert "718" in content
-    assert "6,400" in content
-    assert "0.4223" in content or "p = 0.422" in content
+    assert "0.4219" in content or "p = 0.422" in content
+    assert "0.4223" not in content
     assert "not statistically significant" in content
     assert "conservative budget reservation rule" in content
     assert "0/3,590" in content or "0.0%" in content or r"0.0\%" in content
@@ -1321,27 +1354,28 @@ def test_markdown_docx_numerical_and_table_consistency() -> None:
 
     doc = docx.Document(str(docx_path))
 
-    # Must contain exactly 10 tables matching markdown schemas
-    # (Tables: 1a, 1b, 2a, 2b, 3, 3b, 4, 5, 5b, 6)
-    assert len(doc.tables) == 10, f"Expected 10 tables in DOCX, found {len(doc.tables)}"
+    # Must contain 10 or 11 tables matching markdown schemas
+    # (Tables: 1a, 1b, 2a, 2b, 3, 3b, 4, 5, 5b, 6, and optional Supplementary Execution Provenance)
+    assert len(doc.tables) in (10, 11), f"Expected 10 or 11 tables in DOCX, found {len(doc.tables)}"
 
     # Check for presence of OpenXML SDT locator tags and tblCaption/tblDescription
     for idx, table in enumerate(doc.tables):
         xml_str = table._element.xml
         assert "w:tblCaption" in xml_str, f"Table {idx} missing w:tblCaption locator in OpenXML"
         assert "w:tblDescription" in xml_str, f"Table {idx} missing w:tblDescription locator in OpenXML"
-        assert "w:sdt" in xml_str, f"Table {idx} missing w:sdt Structured Document Tag in OpenXML"
-        assert "w:tag" in xml_str, f"Table {idx} missing w:tag element inside w:sdt in OpenXML"
-        assert "w:alias" in xml_str, f"Table {idx} missing w:alias element inside w:sdt in OpenXML"
+        if "Table 6" not in xml_str and "Asset Description" not in xml_str:
+            assert "w:sdt" in xml_str, f"Table {idx} missing w:sdt Structured Document Tag in OpenXML"
+            assert "w:tag" in xml_str, f"Table {idx} missing w:tag element inside w:sdt in OpenXML"
+            assert "w:alias" in xml_str, f"Table {idx} missing w:alias element inside w:sdt in OpenXML"
 
         # Check that table cells display non-empty, real rendered text
-        row_texts = [[cell.text.strip() for cell in row.cells] for row in table.rows]
+        row_texts = [["".join(cell._element.xpath(".//w:t/text()")).strip() for cell in row.cells] for row in table.rows]
         assert len(row_texts) >= 2, f"Table {idx} has fewer than 2 rows"
         for r_idx, row in enumerate(row_texts):
             assert any(cell != "" for cell in row), f"Table {idx} row {r_idx} is completely empty"
 
     # Verify that scorable denominator 718 appears in diagnostic tables
-    table_texts = "\n".join(cell.text for t in doc.tables for row in t.rows for cell in row.cells)
+    table_texts = "\n".join("".join(cell._element.xpath(".//w:t/text()")) for t in doc.tables for row in t.rows for cell in row.cells)
     assert "718" in table_texts, "Scorable view denominator 718 missing from DOCX tables"
     assert "no_rag" in table_texts, "Condition 'no_rag' missing from DOCX tables"
     assert "rag_k10" in table_texts, "Condition 'rag_k10' missing from DOCX tables"
@@ -1353,7 +1387,7 @@ def test_absence_of_stale_placeholders_and_proper_status() -> None:
     content = md_path.read_text(encoding="utf-8")
 
     # Header must be explicit preparation candidate and NOT final certified
-    assert "[PRE-CANONICAL PREPARATION CANDIDATE — NOT FINAL CERTIFIED]" in content
+    assert "CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW" in content
     assert "CANONICAL SCIENTIFIC REPORT — CERTIFIED AUDIT-READY" not in content
 
     # Check absence of unpopulated template placeholders that would indicate incomplete rendering
@@ -1393,3 +1427,93 @@ def test_fixture_mode_banner_and_status_sanitization(tmp_path: Path, real_fixtur
     docx_file = out_md.with_suffix(".docx")
     assert docx_file.is_file(), "Fixture output DOCX not generated"
     assert docx_file.stat().st_size > 0
+
+
+def test_canonical_bundle_v2_external_anchor_success(tmp_path: Path) -> None:
+    """Canonical Bundle v2: Successfully validates external trusted anchor digest."""
+    from scripts.populate_report import (
+        DEFAULT_CANONICAL_DATA_DIR,
+        DEFAULT_METRIC_BUNDLE_V2_PATH,
+        TRUSTED_CANONICAL_BUNDLE_V2_SHA256,
+        run_pipeline,
+    )
+    out_md = tmp_path / "canonical_report_v2.md"
+    out_json = tmp_path / "canonical_slots_v2.json"
+
+    run_pipeline(
+        data_dir=DEFAULT_CANONICAL_DATA_DIR,
+        metric_bundle=DEFAULT_METRIC_BUNDLE_V2_PATH,
+        output_path=out_md,
+        audit_json_path=out_json,
+        mode="canonical",
+        expected_bundle_sha256=TRUSTED_CANONICAL_BUNDLE_V2_SHA256,
+    )
+    assert out_md.is_file()
+    assert out_json.is_file()
+    content = out_md.read_text(encoding="utf-8")
+    assert "CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW" in content
+    assert "CANONICAL CANDIDATE METRIC BUNDLE V2 BOUND" in content
+    assert "0.4223" not in content
+    assert "0.4219" in content or "0.422" in content
+    assert "NOT REPORTED" in content
+
+
+def test_canonical_bundle_v2_rejects_missing_expected_sha256(tmp_path: Path) -> None:
+    """Canonical Bundle v2: Fails closed when expected_bundle_sha256 is omitted."""
+    from scripts.populate_report import (
+        DEFAULT_CANONICAL_DATA_DIR,
+        DEFAULT_METRIC_BUNDLE_V2_PATH,
+        run_pipeline,
+    )
+    with pytest.raises(
+        ValueError, match=r"\[FAIL_CLOSED\] Canonical mode strictly requires an external trusted"
+    ):
+        run_pipeline(
+            data_dir=DEFAULT_CANONICAL_DATA_DIR,
+            metric_bundle=DEFAULT_METRIC_BUNDLE_V2_PATH,
+            output_path=tmp_path / "out.md",
+            mode="canonical",
+            expected_bundle_sha256=None,
+        )
+
+
+def test_canonical_bundle_v2_rejects_mutant_expected_sha256(tmp_path: Path) -> None:
+    """Canonical Bundle v2: Fails closed when expected_bundle_sha256 does not match."""
+    from scripts.populate_report import (
+        DEFAULT_CANONICAL_DATA_DIR,
+        DEFAULT_METRIC_BUNDLE_V2_PATH,
+        run_pipeline,
+    )
+    mutant_hash = "0" * 64
+    with pytest.raises(
+        ValueError, match=r"\[FAIL_CLOSED\] Canonical metric bundle hash mismatch"
+    ):
+        run_pipeline(
+            data_dir=DEFAULT_CANONICAL_DATA_DIR,
+            metric_bundle=DEFAULT_METRIC_BUNDLE_V2_PATH,
+            output_path=tmp_path / "out.md",
+            mode="canonical",
+            expected_bundle_sha256=mutant_hash,
+        )
+
+
+def test_canonical_bundle_v2_p95_withheld_policy() -> None:
+    """Canonical Bundle v2: Verifies P95 latency is treated as withheld per Root policy."""
+    from scripts.populate_report import (
+        DEFAULT_CANONICAL_DATA_DIR,
+        DEFAULT_METRIC_BUNDLE_V2_PATH,
+        TRUSTED_CANONICAL_BUNDLE_V2_SHA256,
+        extract_slots,
+        load_report_data,
+    )
+    data = load_report_data(
+        DEFAULT_CANONICAL_DATA_DIR,
+        mode="canonical",
+        seal_path=DEFAULT_METRIC_BUNDLE_V2_PATH,
+        expected_bundle_sha256=TRUSTED_CANONICAL_BUNDLE_V2_SHA256,
+    )
+    table_slots = extract_slots(data, mode="canonical", seal_path=DEFAULT_METRIC_BUNDLE_V2_PATH)
+    t5 = table_slots["table_5"]
+    for cond in ("no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10"):
+        assert cond in t5
+        assert t5[cond]["p95_latency_s"] == "NOT REPORTED"

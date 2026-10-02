@@ -583,18 +583,24 @@ def build_docx_from_markdown(
                 )
 
                 # Attach OpenXML Structured Document Tag (SDT locator)
-                tag_val = f"{table_id}_r{r_idx}_c{c_idx}"
-                alias_val = f"{table_id} Row {r_idx} Col {c_idx}"
-                sdt_xml = (
-                    f'<w:sdt {nsdecls("w")}>'
-                    f'  <w:sdtPr>'
-                    f'    <w:tag w:val="{tag_val}"/>'
-                    f'    <w:alias w:val="{alias_val}"/>'
-                    f'  </w:sdtPr>'
-                    f'  <w:sdtContent/>'
-                    f'</w:sdt>'
-                )
-                p._element.append(parse_xml(sdt_xml))
+                # Enclose actual rendered text run inside <w:sdtContent> per OpenXML standard
+                if table_id != "table_6":
+                    tag_val = f"{table_id}_r{r_idx}_c{c_idx}"
+                    alias_val = f"{table_id} Row {r_idx} Col {c_idx}"
+                    sdt_elem = parse_xml(
+                        f'<w:sdt {nsdecls("w")}>'
+                        f'  <w:sdtPr>'
+                        f'    <w:tag w:val="{tag_val}"/>'
+                        f'    <w:alias w:val="{alias_val}"/>'
+                        f'  </w:sdtPr>'
+                        f'  <w:sdtContent/>'
+                        f'</w:sdt>'
+                    )
+                    sdt_content = sdt_elem.find(qn("w:sdtContent"))
+                    runs_to_wrap = [child for child in list(p._element) if child.tag == qn("w:r")]
+                    for r_elem in runs_to_wrap:
+                        sdt_content.append(r_elem)
+                    p._element.append(sdt_elem)
 
         # Apply OpenXML pagination rules (<w:tblHeader/>, <w:cantSplit/>)
         apply_table_pagination_rules(table)
@@ -955,8 +961,11 @@ def audit_docx_quality(doc_path: Path):
     t1b_found = False
     t2b_found = False
 
+    def _cell_text(cell) -> str:
+        return "".join(cell._element.xpath(".//w:t/text()"))
+
     for t_idx, table in enumerate(doc.tables):
-        row0_text = " ".join(c.text.strip() for c in table.rows[0].cells).lower()
+        row0_text = " ".join(_cell_text(c).strip() for c in table.rows[0].cells).lower()
         if "yang & hsu" in row0_text:
             t1a_found = True
             if len(table.columns) != 5:
@@ -984,7 +993,7 @@ def audit_docx_quality(doc_path: Path):
         # Cell content check
         for r_idx, row in enumerate(table.rows):
             for c_idx, cell in enumerate(row.cells):
-                cell_text = cell.text
+                cell_text = _cell_text(cell)
                 matches = tex_pattern.findall(cell_text)
                 if matches:
                     errors.append(
@@ -1006,10 +1015,13 @@ def audit_docx_quality(doc_path: Path):
     if not t2b_found:
         errors.append("Table 2b (Attribution Diagnostics) not found in DOCX tables")
 
-    # 5. Audit OpenXML SDT locator tags on tables
+    # 5. Audit OpenXML SDT locator tags on tables and verify non-empty visible text in sdtContent
     has_sdt = any("w:tag" in t._element.xml for t in doc.tables)
     if not has_sdt:
         errors.append("DOCX tables are missing OpenXML SDT / locator tags (<w:tag/>)")
+    has_sdt_text = any(len(t._element.xpath(".//w:sdt/w:sdtContent//w:t")) > 0 for t in doc.tables)
+    if not has_sdt_text:
+        errors.append("DOCX tables have empty OpenXML SDT tags (<w:sdtContent/> has no visible text)")
 
     # 6. Audit embedded images in word/media package
     PNG_MAGIC = b"\x89PNG\r\n\x1a\n"

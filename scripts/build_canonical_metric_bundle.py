@@ -19,7 +19,7 @@ import os
 import sys
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 # Fixed Protocol & Provenance Constants
 EXPECTED_CORE_MANIFEST_SHA256 = "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4"
@@ -64,6 +64,7 @@ PILOT_HOLD_USD = Decimal("0.05264010")
 SETTLED_USD = Decimal("6.57575890")
 TOTAL_ACCOUNTED_USD = Decimal("6.62839900")
 AVAILABLE_BALANCE_USD = Decimal("13.36160100")
+LOGICAL_WORST_CASE_RESERVATION_USD = Decimal("2.15898240")
 
 P95_STATUS_POLICY = "NOT REPORTED — approval evidence not established"
 
@@ -129,7 +130,7 @@ def verify_public_package(public_package_dir: Path) -> Tuple[Dict[str, Any], Dic
     """
     manifest_path = public_package_dir / "canonical_bundle_manifest.json"
     manifest = load_and_verify_json(manifest_path, EXPECTED_PUBLIC_MANIFEST_SHA256, "public package manifest")
-    
+
     file_bytes_cache: Dict[str, bytes] = {}
 
     # 1. Byte-preserved files
@@ -209,11 +210,13 @@ def parse_request_journal_cache(
     journal_path: Path,
     predictions_dir: Optional[Path] = None,
     raw_journal_bytes: Optional[bytes] = None,
+    predictions_bytes_cache: Optional[Dict[str, bytes]] = None,
 ) -> Dict[str, Any]:
     """
     Parse request_journal.jsonl to extract precise cached_tokens telemetry.
     Strictly verifies receipt bindings, single physical failure, and retry success.
-    Cross-verifies terminal attempt receipts against predictions if available.
+    Enforces complete join across all 6,400 terminal receipts and prediction records
+    (including 6,387 SUCCESS and 13 INCOMPLETE) without TOCTOU or silent mismatch pass.
     """
     total_receipts = 0
     total_cached_tokens = 0
@@ -225,9 +228,25 @@ def parse_request_journal_cache(
     transport_failure_info: Optional[Dict[str, Any]] = None
     retry_success_info: Optional[Dict[str, Any]] = None
 
-    # Load predictions for terminal join if directory provided
+    # Load predictions for terminal join
+    # Prefer verified predictions_bytes_cache to prevent TOCTOU and redundant disk reads
     predictions_map: Dict[Tuple[str, str], Dict[str, Any]] = {}
-    if predictions_dir is not None and predictions_dir.is_dir():
+    if predictions_bytes_cache is not None:
+        for cond in CONDITIONS:
+            pred_bytes = predictions_bytes_cache.get(f"inputs/{cond}_predictions.jsonl")
+            if pred_bytes is None:
+                pred_bytes = predictions_bytes_cache.get(f"{cond}_predictions.jsonl")
+            if pred_bytes is not None:
+                for pline in pred_bytes.decode("utf-8").splitlines():
+                    if not pline.strip():
+                        continue
+                    pentry = json.loads(pline, parse_constant=_reject_nonfinite)
+                    sample_id = pentry.get("sample_id")
+                    c_val = pentry.get("condition")
+                    if sample_id and c_val:
+                        predictions_map[(sample_id, c_val)] = pentry
+
+    if not predictions_map and predictions_dir is not None and predictions_dir.is_dir():
         for cond in CONDITIONS:
             pred_file = predictions_dir / f"{cond}_predictions.jsonl"
             if not pred_file.is_file():
@@ -246,12 +265,23 @@ def parse_request_journal_cache(
                         if sample_id and c_val:
                             predictions_map[(sample_id, c_val)] = pentry
 
+    # If predictions were loaded, enforce strict completeness upfront
+    if predictions_map:
+        if len(predictions_map) != 6400:
+            raise ValueError(f"Expected 6400 predictions across all conditions, got {len(predictions_map)}")
+        for cond in CONDITIONS:
+            cond_count = sum(1 for (sid, c) in predictions_map.keys() if c == cond)
+            if cond_count != 1280:
+                raise ValueError(f"Expected 1280 predictions for condition {cond}, got {cond_count}")
+
     # Read journal
     if raw_journal_bytes is not None:
         lines = raw_journal_bytes.decode("utf-8").splitlines()
     else:
         with open(journal_path, "r", encoding="utf-8") as f:
             lines = f.read().splitlines()
+
+    terminal_receipts: Dict[Tuple[str, str], Dict[str, Any]] = {}
 
     for line_num, line in enumerate(lines, 1):
         if not line.strip():
@@ -295,7 +325,15 @@ def parse_request_journal_cache(
                 # Type validation: must be exact integer, not boolean
                 if isinstance(cached, bool) or not isinstance(cached, int):
                     raise TypeError(f"cached_tokens must be an integer, got {type(cached).__name__}: {cached}")
-                
+                if cached < 0:
+                    raise ValueError(f"Negative cached_tokens at line {line_num}: {cached}")
+                inp_val = entry.get("input_tokens")
+                if inp_val is not None and isinstance(inp_val, int) and not isinstance(inp_val, bool) and cached > inp_val:
+                    raise ValueError(f"cached_tokens ({cached}) exceeds input_tokens ({inp_val}) at line {line_num}")
+
+                if ordinal != 5388 and attempt_idx != 0:
+                    raise ValueError(f"Invalid attempt_index {attempt_idx} for ordinal {ordinal} at line {line_num}")
+
                 observed_receipts_by_condition[condition] += 1
                 cached_tokens_by_condition[condition] += cached
                 total_cached_tokens += cached
@@ -316,11 +354,14 @@ def parse_request_journal_cache(
 
                     if status != "SUCCESS":
                         raise ValueError(f"Retry receipt status must be SUCCESS, got: {status}")
-                    
+
                     # Verify exact token counts
                     input_toks = entry.get("input_tokens")
                     if input_toks != 1543:
                         raise ValueError(f"Retry receipt input_tokens mismatch: {input_toks} != 1543")
+                    output_toks = entry.get("output_tokens")
+                    if output_toks != 452:
+                        raise ValueError(f"Retry receipt output_tokens mismatch: {output_toks} != 452")
 
                     resp_id = entry.get("response_id")
                     if resp_id != "resp_0efb218e56a6ecc1006abf0be6419887d0bca3815a8a0b3f0d":
@@ -333,20 +374,13 @@ def parse_request_journal_cache(
                         "status": status,
                         "cached_tokens": cached,
                         "input_tokens": input_toks,
-                        "output_tokens": entry.get("output_tokens"),
+                        "output_tokens": output_toks,
                         "response_id": resp_id,
                     }
 
-            # If predictions map available, cross-check terminal receipt against prediction
-            if (view_id, condition) in predictions_map:
-                pred = predictions_map[(view_id, condition)]
-                # Check terminal prediction join
-                if status == "SUCCESS" and entry.get("response_id") is not None:
-                    if entry.get("response_id") == pred.get("response_id"):
-                        if entry.get("input_tokens") != pred.get("prompt_tokens"):
-                            raise ValueError(f"Receipt input_tokens does not match prediction prompt_tokens for {key}")
-                        if entry.get("output_tokens") != pred.get("completion_tokens"):
-                            raise ValueError(f"Receipt output_tokens does not match prediction completion_tokens for {key}")
+            # Record terminal receipt for this request key (last attempt is terminal)
+            # Since journal ordinals are monotonically increasing, latest entry overwrites earlier retry
+            terminal_receipts[(view_id, condition)] = entry
 
     if total_receipts != 6401:
         raise ValueError(f"Expected exactly 6401 attempt receipts, got {total_receipts}")
@@ -355,13 +389,100 @@ def parse_request_journal_cache(
     if transport_failure_info is None or retry_success_info is None:
         raise ValueError("Failed to locate expected transport failure and retry pair in journal")
 
+    # Strict terminal receipts join against predictions
+    if predictions_map:
+        if len(terminal_receipts) != 6400:
+            raise ValueError(f"Expected exactly 6400 terminal receipts, got {len(terminal_receipts)}")
+
+        receipt_keys = set(terminal_receipts.keys())
+        pred_keys = set(predictions_map.keys())
+        if receipt_keys != pred_keys:
+            missing_in_receipts = pred_keys - receipt_keys
+            missing_in_preds = receipt_keys - pred_keys
+            raise ValueError(
+                f"Receipt and prediction keys mismatch!\n"
+                f"  Missing in receipts: {len(missing_in_receipts)}\n"
+                f"  Missing in predictions: {len(missing_in_preds)}"
+            )
+
+        success_join_count = 0
+        incomplete_join_count = 0
+
+        for req_key in sorted(pred_keys):
+            receipt = terminal_receipts[req_key]
+            pred = predictions_map[req_key]
+
+            r_status = receipt.get("status")
+            if r_status not in ("SUCCESS", "INCOMPLETE"):
+                raise ValueError(f"Unexpected terminal status in receipt for {req_key}: {r_status}")
+
+            # Verify response_id exists, non-empty, and strictly matches
+            r_resp_id = receipt.get("response_id")
+            p_resp_id = pred.get("response_id")
+            if not r_resp_id or not isinstance(r_resp_id, str):
+                raise ValueError(f"Missing or invalid response_id in receipt for {req_key}: {r_resp_id}")
+            if not p_resp_id or not isinstance(p_resp_id, str):
+                raise ValueError(f"Missing or invalid response_id in prediction for {req_key}: {p_resp_id}")
+            if r_resp_id != p_resp_id:
+                raise ValueError(
+                    f"response_id mismatch for {req_key}!\n"
+                    f"  Receipt:    {r_resp_id}\n"
+                    f"  Prediction: {p_resp_id}"
+                )
+
+            # Verify model identity to prevent model drift
+            r_model = receipt.get("model")
+            p_model = pred.get("model")
+            if not r_model or r_model != "gpt-5.6-luna":
+                raise ValueError(f"Receipt model drift for {req_key}: expected gpt-5.6-luna, got {r_model}")
+            if r_model != p_model:
+                raise ValueError(f"Model mismatch for {req_key}: receipt={r_model} != pred={p_model}")
+
+            # Verify input_tokens == prompt_tokens
+            r_inp = receipt.get("input_tokens")
+            p_prompt = pred.get("prompt_tokens")
+            if isinstance(r_inp, bool) or not isinstance(r_inp, int):
+                raise TypeError(f"Receipt input_tokens must be int for {req_key}, got {type(r_inp).__name__}")
+            if isinstance(p_prompt, bool) or not isinstance(p_prompt, int):
+                raise TypeError(f"Prediction prompt_tokens must be int for {req_key}, got {type(p_prompt).__name__}")
+            if r_inp != p_prompt:
+                raise ValueError(f"input_tokens mismatch for {req_key}: receipt={r_inp} != pred={p_prompt}")
+
+            # Verify output_tokens == completion_tokens
+            r_out = receipt.get("output_tokens")
+            p_comp = pred.get("completion_tokens")
+            if isinstance(r_out, bool) or not isinstance(r_out, int):
+                raise TypeError(f"Receipt output_tokens must be int for {req_key}, got {type(r_out).__name__}")
+            if isinstance(p_comp, bool) or not isinstance(p_comp, int):
+                raise TypeError(f"Prediction completion_tokens must be int for {req_key}, got {type(p_comp).__name__}")
+            if r_out != p_comp:
+                raise ValueError(f"output_tokens mismatch for {req_key}: receipt={r_out} != pred={p_comp}")
+
+            # Verify terminal status correspondence with prediction success
+            p_success = pred.get("success")
+            if r_status == "SUCCESS":
+                if p_success is not True:
+                    raise ValueError(f"Status SUCCESS requires pred success=True for {req_key}, got {p_success}")
+                success_join_count += 1
+            elif r_status == "INCOMPLETE":
+                if p_success is not False:
+                    raise ValueError(f"Status INCOMPLETE requires pred success=False for {req_key}, got {p_success}")
+                if r_out != 8192:
+                    raise ValueError(f"Status INCOMPLETE must have 8192 output tokens for {req_key}, got {r_out}")
+                incomplete_join_count += 1
+
+        if success_join_count != 6387:
+            raise ValueError(f"Expected 6387 SUCCESS joined receipts, got {success_join_count}")
+        if incomplete_join_count != 13:
+            raise ValueError(f"Expected 13 INCOMPLETE joined receipts, got {incomplete_join_count}")
+
     # Invariants for each condition
     cache_summary_by_condition: Dict[str, Any] = {}
     for c in CONDITIONS:
         sum_c = cached_tokens_by_condition[c]
         obs_c = observed_receipts_by_condition[c]
         miss_c = missing_receipts_by_condition[c]
-        
+
         # In our study, 1280 logical requests per condition
         # For rag_k1: 1281 receipts (1 missing physical attempt + 1280 observed physical attempts)
         # For other conditions: 1280 receipts (0 missing + 1280 observed)
@@ -467,6 +588,11 @@ def verify_financial_invariants(
         if cond not in CONDITIONS:
             raise ValueError(f"Unknown condition in settled record: {cond}")
         cost = Decimal(str(rec_data["cost_usd"]))
+        refund = Decimal(str(rec_data.get("refund_usd", "0")))
+        if cost + refund != LOGICAL_WORST_CASE_RESERVATION_USD:
+            raise ValueError(
+                f"Record {rec_id} reservation balance broken: cost {cost} + refund {refund} != {LOGICAL_WORST_CASE_RESERVATION_USD}"
+            )
         derived_cond_costs[cond] += cost
         sum_items += cost
 
@@ -508,7 +634,7 @@ def build_canonical_metric_bundle(
     """
     # Step 1: Verify public package and load manifest + byte cache
     manifest, file_bytes_cache = verify_public_package(public_package_dir)
-    
+
     # Step 2: Verify run seal
     seal = verify_run_seal(seal_path)
 
@@ -518,6 +644,7 @@ def build_canonical_metric_bundle(
         journal_path=journal_path,
         predictions_dir=public_package_dir / "inputs",
         raw_journal_bytes=file_bytes_cache.get("inputs/request_journal.jsonl"),
+        predictions_bytes_cache=file_bytes_cache,
     )
 
     # Step 4: Verify financial ledger invariants with item reconciliation
@@ -544,11 +671,16 @@ def build_canonical_metric_bundle(
     rq_analysis = _parse_output("outputs/rq_analysis.json")
     run_provenance = _parse_output("outputs/run_provenance.json")
 
-    # Step 6: Verify analysis source code sha256
+    # Step 6: Verify analysis source code sha256 and top-level timestamp
     run_params = rq_analysis.get("analysis_run_parameters", {})
     if run_params.get("analysis_source_sha256") != EXPECTED_ANALYSIS_SOURCE_SHA256:
         raise ValueError(
             f"rq_analysis source_sha mismatch: {run_params.get('analysis_source_sha256')} != {EXPECTED_ANALYSIS_SOURCE_SHA256}"
+        )
+    source_analysis_timestamp = rq_analysis.get("analysis_timestamp")
+    if not source_analysis_timestamp or not isinstance(source_analysis_timestamp, str):
+        raise ValueError(
+            f"Missing or invalid top-level analysis_timestamp in rq_analysis.json: {source_analysis_timestamp}"
         )
 
     # Step 7: Build Conditions Metric Objects
@@ -993,7 +1125,7 @@ def build_canonical_metric_bundle(
         "public_package_manifest_sha256": EXPECTED_PUBLIC_MANIFEST_SHA256,
         "evaluator_analysis_source_file": "scripts/analysis/evaluate_rqs.py",
         "evaluator_analysis_source_sha256": EXPECTED_ANALYSIS_SOURCE_SHA256,
-        "analysis_timestamp_utc": run_params.get("analysis_timestamp", "2026-10-02T16:09:00+00:00"),
+        "analysis_timestamp_utc": source_analysis_timestamp,
         "bundle_build_timestamp_utc": "2026-10-03T03:20:00+00:00",
         "terminal_seal": {
             "path": "reports/evidence/canonical_run_seal_v1.json",
@@ -1057,15 +1189,15 @@ def build_canonical_metric_bundle(
         output_path.parent.mkdir(parents=True, exist_ok=True)
         bundle_json_str = json.dumps(bundle, indent=2, sort_keys=True, allow_nan=False)
         bundle_bytes = bundle_json_str.encode("utf-8") + b"\n"
-        
+
         with open(output_path, "wb") as f:
             f.write(bundle_bytes)
-        
+
         # Read back actual bytes from disk to guarantee hash matches physical storage
         actual_written_bytes = output_path.read_bytes()
         if b"\r" in actual_written_bytes:
             raise ValueError("Deterministic byte assertion failed: CRLF found in output file")
-        
+
         bundle_sha256 = hashlib.sha256(actual_written_bytes).hexdigest()
         sha_path = output_path.with_name(f"{output_path.name}.sha256")
         sidecar_bytes = f"{bundle_sha256}  {output_path.name}\n".encode("utf-8")
@@ -1086,7 +1218,7 @@ def generate_lineage_markdown(bundle: Dict[str, Any], output_md_path: Path) -> s
     conds = bundle["conditions"]
     fin = bundle["whole_study_financial_accounting"]
     lineage = bundle["supplementary_source_lineage"]
-    
+
     rows = []
     for c in CONDITIONS:
         rq1 = conds[c]["rq1_attribution"]
@@ -1105,7 +1237,7 @@ def generate_lineage_markdown(bundle: Dict[str, Any], output_md_path: Path) -> s
             delta_ci_str = f"[{delta_ci[0] * 100.0:+.3f}, {delta_ci[1] * 100.0:+.3f}] pp"
             mcnemar_p = d_info["mcnemar_test"]["display_p_exact"]
             sig_str = "Có" if d_info["mcnemar_test"]["significant_at_05"] else "Không"
-        
+
         name_display = "**No-RAG**" if c == "no_rag" else f"**RAG k={conds[c]['retrieval_k']}**"
         rows.append(
             f"| {name_display} | {rq1['correct_count']} / 718 | {acc_str} | {ci_str} | {macro_f1} | "
@@ -1283,7 +1415,7 @@ def verify_canonical_metric_bundle_file(
     bundle_data = json.loads(actual_bytes.decode("utf-8"), parse_constant=_reject_nonfinite)
     check_finite(bundle_data, "bundle_root")
 
-    # Invariants check
+    # Invariants check: top-level metadata & execution invariants
     if bundle_data.get("schema_version") != "2.0.0":
         raise ValueError(f"Invalid schema_version: {bundle_data.get('schema_version')}")
     if bundle_data.get("bundle_type") != "canonical-metric-bundle-v2":
@@ -1292,18 +1424,266 @@ def verify_canonical_metric_bundle_file(
         raise ValueError("fixture_only must be False")
     if bundle_data.get("execution_mode") != "live":
         raise ValueError("execution_mode must be live")
+    if bundle_data.get("protocol_version") != "experiment-protocol-v1.1":
+        raise ValueError(f"Invalid protocol_version: {bundle_data.get('protocol_version')}")
 
+    # 1. Authoritative 11 Source Pins & Provenance Bindings
+    if bundle_data.get("protocol_sha256") != EXPECTED_PROTOCOL_SHA256:
+        raise ValueError("protocol_sha256 mismatch")
+    if bundle_data.get("pricing_contract_sha256") != EXPECTED_PRICING_CONTRACT_SHA256:
+        raise ValueError("pricing_contract_sha256 mismatch")
+    if bundle_data.get("core_code_manifest_sha256") != EXPECTED_CORE_MANIFEST_SHA256:
+        raise ValueError("core_code_manifest_sha256 mismatch")
+    if bundle_data.get("execution_git_sha") != EXECUTION_GIT_SHA:
+        raise ValueError("execution_git_sha mismatch")
+    if bundle_data.get("native_evaluation_git_sha") != NATIVE_EVALUATION_GIT_SHA:
+        raise ValueError("native_evaluation_git_sha mismatch")
+    if bundle_data.get("rq_v2_integrated_git_sha") != RQ_V2_INTEGRATED_GIT_SHA:
+        raise ValueError("rq_v2_integrated_git_sha mismatch")
+    if bundle_data.get("candidate_base_git_sha") != CANDIDATE_BASE_GIT_SHA:
+        raise ValueError("candidate_base_git_sha mismatch")
+    if bundle_data.get("public_package_manifest_sha256") != EXPECTED_PUBLIC_MANIFEST_SHA256:
+        raise ValueError("public_package_manifest_sha256 mismatch")
+    if bundle_data.get("evaluator_analysis_source_sha256") != EXPECTED_ANALYSIS_SOURCE_SHA256:
+        raise ValueError("evaluator_analysis_source_sha256 mismatch")
+
+    seal_info = bundle_data.get("terminal_seal", {})
+    if seal_info.get("sha256") != EXPECTED_TERMINAL_SEAL_SHA256:
+        raise ValueError("terminal_seal.sha256 mismatch")
+    if seal_info.get("terminal_proof_sha256") != EXPECTED_TERMINAL_PROOF_SHA256:
+        raise ValueError("terminal_seal.terminal_proof_sha256 mismatch")
+
+    supp = bundle_data.get("supplementary_source_lineage", {})
+    if supp.get("historical_analysis_source_sha256") != HISTORICAL_ANALYSIS_SOURCE_SHA256:
+        raise ValueError("historical_analysis_source_sha256 mismatch")
+    if supp.get("superseding_authorizing_packet_sha256") != SUPERSEDING_AUTHORIZING_PACKET_SHA256:
+        raise ValueError("superseding_authorizing_packet_sha256 mismatch")
+    if supp.get("root_integrated_source_audit_sha256") != ROOT_INTEGRATED_SOURCE_AUDIT_SHA256:
+        raise ValueError("root_integrated_source_audit_sha256 mismatch")
+    if supp.get("root_private_replay_acceptance_sha256") != ROOT_PRIVATE_REPLAY_ACCEPTANCE_SHA256:
+        raise ValueError("root_private_replay_acceptance_sha256 mismatch")
+
+    # 2. Authoritative Source Timestamp Check
+    source_ts = bundle_data.get("analysis_timestamp_utc")
+    if not source_ts or not source_ts.startswith("2026-10-02T04:32:51"):
+        raise ValueError(f"analysis_timestamp_utc must match authoritative source timestamp, got: {source_ts}")
+
+    # 3. 11 Cohort Breakdown & Denominators Invariants
+    cohort = bundle_data.get("cohort_breakdown", {})
+    if cohort.get("total_views") != COHORT_TOTAL_VIEWS:
+        raise ValueError("cohort total_views mismatch")
+    if cohort.get("total_pairs") != COHORT_TOTAL_PAIRS:
+        raise ValueError("cohort total_pairs mismatch")
+    if cohort.get("mapped_scorable_views") != COHORT_MAPPED_VIEWS:
+        raise ValueError("cohort mapped_scorable_views mismatch")
+    if cohort.get("ambiguous_excluded_views") != COHORT_AMBIGUOUS_VIEWS:
+        raise ValueError("cohort ambiguous_excluded_views mismatch")
+    if cohort.get("unmapped_excluded_views") != COHORT_UNMAPPED_VIEWS:
+        raise ValueError("cohort unmapped_excluded_views mismatch")
+    if cohort.get("single_gt_mapped_views") != COHORT_SINGLE_GT_VIEWS:
+        raise ValueError("cohort single_gt_mapped_views mismatch")
+    if cohort.get("multi_gt_mapped_views") != COHORT_MULTI_GT_VIEWS:
+        raise ValueError("cohort multi_gt_mapped_views mismatch")
+    if cohort.get("total_gt_support_instances") != COHORT_TOTAL_GT_SUPPORT_INSTANCES:
+        raise ValueError("cohort total_gt_support_instances mismatch")
+    if cohort.get("eligible_bootstrap_clusters") != COHORT_ELIGIBLE_BOOTSTRAP_CLUSTERS:
+        raise ValueError("cohort eligible_bootstrap_clusters mismatch")
+    if cohort.get("macro_universe_classes") != COHORT_MACRO_UNIVERSE:
+        raise ValueError("cohort macro_universe_classes mismatch")
+    if cohort.get("supported_classes") != COHORT_SUPPORTED_CLASSES:
+        raise ValueError("cohort supported_classes mismatch")
+    if cohort.get("unsupported_classes") != COHORT_UNSUPPORTED_CLASSES:
+        raise ValueError("cohort unsupported_classes mismatch")
+
+    if (
+        cohort["mapped_scorable_views"]
+        + cohort["ambiguous_excluded_views"]
+        + cohort["unmapped_excluded_views"]
+        != COHORT_TOTAL_VIEWS
+    ):
+        raise ValueError("Cohort partition conservation breached")
+    if (
+        cohort["single_gt_mapped_views"] + cohort["multi_gt_mapped_views"]
+        != COHORT_MAPPED_VIEWS
+    ):
+        raise ValueError("Mapped cohort complexity conservation breached")
+    if (
+        cohort["supported_classes"] + cohort["unsupported_classes"]
+        != COHORT_MACRO_UNIVERSE
+    ):
+        raise ValueError("Class universe conservation breached")
+
+    # 4. p95 Latency Suppression Policy Enforcement
+    p95_pol = bundle_data.get("p95_policy", {})
+    if p95_pol.get("status") != P95_STATUS_POLICY:
+        raise ValueError(f"Top-level p95_policy status mismatch: {p95_pol.get('status')}")
+
+    # 5. Conditions Check & Authoritative Metric/Cost Oracle
     conds = bundle_data.get("conditions", {})
     if set(conds.keys()) != set(CONDITIONS):
         raise ValueError(f"Missing conditions in bundle: {set(conds.keys())}")
 
-    fin = bundle_data.get("whole_study_financial_accounting", {})
-    if fin.get("cumulative_settled_cost_usd") != str(SETTLED_USD):
-        raise ValueError(f"Financial accounting mismatch: {fin.get('cumulative_settled_cost_usd')}")
+    expected_condition_oracle = {
+        "no_rag": {
+            "retrieval_k": 0,
+            "correct_count": 560,
+            "error_count": 158,
+            "cost_usd": "0.46714395",
+            "cached_tokens": 0,
+            "is_baseline": True,
+            "p_exact_display": "—",
+        },
+        "rag_k1": {
+            "retrieval_k": 1,
+            "correct_count": 553,
+            "error_count": 165,
+            "cost_usd": "1.29723350",
+            "cached_tokens": 1540,
+            "is_baseline": False,
+            "p_exact_display": "0.435",
+        },
+        "rag_k3": {
+            "retrieval_k": 3,
+            "correct_count": 564,
+            "error_count": 154,
+            "cost_usd": "1.17888000",
+            "cached_tokens": 0,
+            "is_baseline": False,
+            "p_exact_display": "0.777",
+        },
+        "rag_k5": {
+            "retrieval_k": 5,
+            "correct_count": 566,
+            "error_count": 152,
+            "cost_usd": "1.48311775",
+            "cached_tokens": 0,
+            "is_baseline": False,
+            "p_exact_display": "0.677",
+        },
+        "rag_k10": {
+            "retrieval_k": 10,
+            "correct_count": 571,
+            "error_count": 147,
+            "cost_usd": "2.14938370",
+            "cached_tokens": 0,
+            "is_baseline": False,
+            "p_exact_display": "0.422",
+        },
+    }
 
-    cohort = bundle_data.get("cohort_breakdown", {})
-    if cohort.get("mapped_scorable_views") != 718 or cohort.get("macro_universe_classes") != 474:
-        raise ValueError(f"Cohort specification mismatch: {cohort}")
+    for c in CONDITIONS:
+        c_data = conds[c]
+        oracle = expected_condition_oracle[c]
+
+        if c_data.get("retrieval_k") != oracle["retrieval_k"]:
+            raise ValueError(f"retrieval_k mismatch for {c}: {c_data.get('retrieval_k')} != {oracle['retrieval_k']}")
+
+        # Enforce p95 suppression policy per condition
+        rq3 = c_data.get("rq3_resources_and_cost", {})
+        lat = rq3.get("latency_ms", {})
+        if lat.get("p95") is not None:
+            raise ValueError(f"p95 suppression policy violated in {c}: p95 must be None, got {lat.get('p95')}")
+        if lat.get("p95_status") != P95_STATUS_POLICY:
+            raise ValueError(f"p95_status mismatch in {c}: {lat.get('p95_status')}")
+
+        # Enforce RQ3 resources and observation denominator
+        if rq3.get("observations_count") != 1280:
+            raise ValueError(f"observations_count must be 1280 for {c}, got {rq3.get('observations_count')}")
+
+        # Enforce exact financial settled cost and cached tokens
+        cost_info = rq3.get("financial_cost_usd", {})
+        if Decimal(str(cost_info.get("ledger_settled_cost_usd"))) != Decimal(oracle["cost_usd"]):
+            raise ValueError(
+                f"Settled cost mismatch for {c}: {cost_info.get('ledger_settled_cost_usd')} != {oracle['cost_usd']}"
+            )
+        cached_tok = rq3.get("tokens", {}).get("cached_tokens", {}).get("sum")
+        if cached_tok != oracle["cached_tokens"]:
+            raise ValueError(f"Cached tokens mismatch for {c}: {cached_tok} != {oracle['cached_tokens']}")
+
+        # Enforce RQ1 attribution metrics
+        rq1 = c_data.get("rq1_attribution", {})
+        corr_cnt = rq1.get("correct_count")
+        if isinstance(corr_cnt, bool) or not isinstance(corr_cnt, int):
+            raise TypeError(f"correct_count must be strict int for {c}, got {type(corr_cnt).__name__}")
+        if corr_cnt != oracle["correct_count"]:
+            raise ValueError(f"correct_count mismatch for {c}: {corr_cnt} != {oracle['correct_count']}")
+        if rq1.get("error_count") != oracle["error_count"]:
+            raise ValueError(f"error_count mismatch for {c}: {rq1.get('error_count')} != {oracle['error_count']}")
+        if rq1.get("scorable_sample_count") != COHORT_MAPPED_VIEWS:
+            raise ValueError(f"scorable_sample_count mismatch for {c}: {rq1.get('scorable_sample_count')}")
+
+        exp_acc = oracle["correct_count"] / float(COHORT_MAPPED_VIEWS)
+        if abs(float(rq1.get("accuracy_end_to_end", 0.0)) - exp_acc) > 1e-6:
+            raise ValueError(f"accuracy_end_to_end mismatch for {c}")
+
+        if oracle["is_baseline"]:
+            if rq1.get("is_baseline") is not True:
+                raise ValueError("no_rag is_baseline must be True")
+        else:
+            if rq1.get("is_baseline") is not False:
+                raise ValueError(f"{c} is_baseline must be False")
+            delta = rq1.get("delta_vs_baseline", {})
+            exp_delta = (oracle["correct_count"] - 560) / float(COHORT_MAPPED_VIEWS)
+            if abs(float(delta.get("delta_accuracy_end_to_end", 0.0)) - exp_delta) > 1e-6:
+                raise ValueError(f"delta_accuracy_end_to_end mismatch for {c}")
+            mcnemar = delta.get("mcnemar_test", {})
+            if mcnemar.get("significant_at_05") is not False:
+                raise ValueError(f"significant_at_05 must be False for {c}")
+            if mcnemar.get("significant_at_01") is not False:
+                raise ValueError(f"significant_at_01 must be False for {c}")
+            if mcnemar.get("display_p_exact") != oracle["p_exact_display"]:
+                raise ValueError(
+                    f"mcnemar display_p_exact mismatch for {c}: {mcnemar.get('display_p_exact')} != {oracle['p_exact_display']}"
+                )
+
+    # 5b. Metric Definitions Consistency
+    boot = bundle_data.get("metric_definitions", {}).get("bootstrap_parameters", {})
+    if (
+        boot.get("seed") != 42
+        or boot.get("samples") != 1000
+        or boot.get("cluster_count") != COHORT_ELIGIBLE_BOOTSTRAP_CLUSTERS
+    ):
+        raise ValueError("bootstrap_parameters mismatch in metric_definitions")
+
+    # 6. Whole Study Financial Accounting & Money Conservation
+    fin = bundle_data.get("whole_study_financial_accounting", {})
+    cap = Decimal(str(fin.get("study_budget_cap_usd")))
+    hold = Decimal(str(fin.get("prior_pilot_provisional_hold_usd")))
+    settled = Decimal(str(fin.get("cumulative_settled_cost_usd")))
+    accounted = Decimal(str(fin.get("total_accounted_expenditure_usd")))
+    avail = Decimal(str(fin.get("uncommitted_available_balance_usd")))
+
+    if cap != BUDGET_CAP_USD:
+        raise ValueError(f"Financial cap mismatch: {cap} != {BUDGET_CAP_USD}")
+    if hold != PILOT_HOLD_USD:
+        raise ValueError(f"Pilot hold mismatch: {hold} != {PILOT_HOLD_USD}")
+    if settled != SETTLED_USD:
+        raise ValueError(f"Settled cost mismatch: {settled} != {SETTLED_USD}")
+    if accounted != TOTAL_ACCOUNTED_USD:
+        raise ValueError(f"Total accounted mismatch: {accounted} != {TOTAL_ACCOUNTED_USD}")
+    if avail != AVAILABLE_BALANCE_USD:
+        raise ValueError(f"Available balance mismatch: {avail} != {AVAILABLE_BALANCE_USD}")
+    if settled + hold != accounted:
+        raise ValueError(f"Money conservation breach: {settled} + {hold} != {accounted}")
+    if accounted + avail != cap:
+        raise ValueError(f"Money conservation breach: {accounted} + {avail} != {cap}")
+    if fin.get("has_breach", True) is not False:
+        raise ValueError("Financial has_breach is not False")
+
+    # 7. Campaign Failure Taxonomy
+    ft = bundle_data.get("failure_taxonomy", {})
+    if ft.get("campaign_total_logical_requests") != 6400:
+        raise ValueError("campaign_total_logical_requests mismatch")
+    if ft.get("campaign_total_physical_attempts") != 6401:
+        raise ValueError("campaign_total_physical_attempts mismatch")
+    if ft.get("completed_records_count") != 6387:
+        raise ValueError("completed_records_count mismatch")
+    if ft.get("valid_json_outputs_count") != 6387:
+        raise ValueError("valid_json_outputs_count mismatch")
+    if ft.get("terminal_incomplete_count") != 13:
+        raise ValueError("terminal_incomplete_count mismatch")
+    if ft.get("transport_network_failures_count") != 1:
+        raise ValueError("transport_network_failures_count mismatch")
 
     print(f"PASS: Canonical metric bundle verified successfully: {bundle_path}")
     print(f"Verified SHA256: {actual_sha}")

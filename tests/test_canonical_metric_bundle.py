@@ -18,10 +18,8 @@ Validates:
 
 from __future__ import annotations
 
-import copy
 import hashlib
 import json
-import math
 import os
 import shutil
 from decimal import Decimal
@@ -32,18 +30,7 @@ from unittest.mock import patch
 import pytest
 
 from scripts.build_canonical_metric_bundle import (
-    AUTHORIZING_PACKET_ORIGINAL_SHA256,
-    AUTHORIZING_PACKET_PUBLIC_SHA256,
-    BUDGET_CAP_USD,
     CANDIDATE_BASE_GIT_SHA,
-    COHORT_AMBIGUOUS_VIEWS,
-    COHORT_MAPPED_VIEWS,
-    COHORT_MULTI_GT_VIEWS,
-    COHORT_SINGLE_GT_VIEWS,
-    COHORT_TOTAL_PAIRS,
-    COHORT_TOTAL_VIEWS,
-    COHORT_UNMAPPED_VIEWS,
-    CONDITIONS,
     EXECUTION_GIT_SHA,
     EXPECTED_ANALYSIS_SOURCE_SHA256,
     EXPECTED_CORE_MANIFEST_SHA256,
@@ -55,18 +42,13 @@ from scripts.build_canonical_metric_bundle import (
     HISTORICAL_ANALYSIS_SOURCE_SHA256,
     NATIVE_EVALUATION_GIT_SHA,
     P95_STATUS_POLICY,
-    PILOT_HOLD_USD,
     ROOT_INTEGRATED_SOURCE_AUDIT_SHA256,
     ROOT_PRIVATE_REPLAY_ACCEPTANCE_SHA256,
     RQ_V2_INTEGRATED_GIT_SHA,
-    SETTLED_USD,
     SUPERSEDING_AUTHORIZING_PACKET_SHA256,
-    TOTAL_ACCOUNTED_USD,
     build_canonical_metric_bundle,
-    generate_lineage_markdown,
     parse_request_journal_cache,
     verify_canonical_metric_bundle_file,
-    verify_file_hash,
     verify_financial_invariants,
     verify_public_package,
     verify_run_seal,
@@ -222,7 +204,7 @@ def test_rq1_exact_numerical_metrics():
     delta_info = k10["delta_vs_baseline"]
     assert pytest.approx(delta_info["delta_accuracy_end_to_end"], abs=1e-6) == 0.01532033426
     assert delta_info["delta_accuracy_display_pp"] == "+1.532 pp"
-    
+
     ci = delta_info["delta_accuracy_ci_95"]
     assert pytest.approx(ci[0] * 100, abs=1e-3) == -2.355
     assert pytest.approx(ci[1] * 100, abs=1e-3) == +5.300
@@ -264,7 +246,7 @@ def test_rq2_retrieval_and_error_decomposition():
     # RAG k10: retrieval is applicable
     k10_rq2 = conds["rag_k10"]["rq2_retrieval_and_error"]
     assert k10_rq2["retrieval_applicable"] is True
-    
+
     ret_m = k10_rq2["retrieval_metrics"]
     assert ret_m["retrieval_hit_count"] == 321
     assert ret_m["retrieval_miss_count"] == 397
@@ -607,3 +589,164 @@ def test_fail_closed_tampered_analysis_source_sha(tmp_path: Path):
 
     with pytest.raises(ValueError):
         build_canonical_metric_bundle(copied_pkg, GENUINE_SEAL_PATH, None)
+
+
+def test_rehashed_tampered_metric_rejected(tmp_path: Path):
+    """Mutating scientific metrics (e.g. correct_count) and rehashing sidecar must fail closed."""
+    if not COMMITTED_BUNDLE_PATH.is_file():
+        pytest.skip("Committed bundle not found on disk")
+
+    bundle_data = json.loads(COMMITTED_BUNDLE_PATH.read_bytes().decode("utf-8"))
+    bundle_data["conditions"]["no_rag"]["rq1_attribution"]["correct_count"] = 700
+
+    tampered_bundle_file = tmp_path / "canonical_metric_bundle_v2.json"
+    tampered_bytes = json.dumps(bundle_data, indent=2, sort_keys=True).encode("utf-8") + b"\n"
+    tampered_bundle_file.write_bytes(tampered_bytes)
+
+    rehashed_sha = hashlib.sha256(tampered_bytes).hexdigest()
+    sidecar_file = tmp_path / "canonical_metric_bundle_v2.json.sha256"
+    sidecar_file.write_bytes(f"{rehashed_sha}  canonical_metric_bundle_v2.json\n".encode("utf-8"))
+
+    with pytest.raises(ValueError, match="correct_count mismatch|accuracy_end_to_end mismatch"):
+        verify_canonical_metric_bundle_file(tampered_bundle_file)
+
+
+def test_rehashed_p95_policy_breach_rejected(tmp_path: Path):
+    """Adding numeric p95 value and rehashing sidecar must fail closed."""
+    if not COMMITTED_BUNDLE_PATH.is_file():
+        pytest.skip("Committed bundle not found on disk")
+
+    bundle_data = json.loads(COMMITTED_BUNDLE_PATH.read_bytes().decode("utf-8"))
+    bundle_data["conditions"]["rag_k10"]["rq3_resources_and_cost"]["latency_ms"]["p95"] = 1250.5
+
+    tampered_bundle_file = tmp_path / "canonical_metric_bundle_v2.json"
+    tampered_bytes = json.dumps(bundle_data, indent=2, sort_keys=True).encode("utf-8") + b"\n"
+    tampered_bundle_file.write_bytes(tampered_bytes)
+
+    rehashed_sha = hashlib.sha256(tampered_bytes).hexdigest()
+    sidecar_file = tmp_path / "canonical_metric_bundle_v2.json.sha256"
+    sidecar_file.write_bytes(f"{rehashed_sha}  canonical_metric_bundle_v2.json\n".encode("utf-8"))
+
+    with pytest.raises(ValueError, match="p95 suppression policy violated"):
+        verify_canonical_metric_bundle_file(tampered_bundle_file)
+
+
+def test_rehashed_tampered_source_pins_rejected(tmp_path: Path):
+    """Tampering with execution Git commit and rehashing sidecar must fail closed."""
+    if not COMMITTED_BUNDLE_PATH.is_file():
+        pytest.skip("Committed bundle not found on disk")
+
+    bundle_data = json.loads(COMMITTED_BUNDLE_PATH.read_bytes().decode("utf-8"))
+    bundle_data["execution_git_sha"] = "0" * 40
+
+    tampered_bundle_file = tmp_path / "canonical_metric_bundle_v2.json"
+    tampered_bytes = json.dumps(bundle_data, indent=2, sort_keys=True).encode("utf-8") + b"\n"
+    tampered_bundle_file.write_bytes(tampered_bytes)
+
+    rehashed_sha = hashlib.sha256(tampered_bytes).hexdigest()
+    sidecar_file = tmp_path / "canonical_metric_bundle_v2.json.sha256"
+    sidecar_file.write_bytes(f"{rehashed_sha}  canonical_metric_bundle_v2.json\n".encode("utf-8"))
+
+    with pytest.raises(ValueError, match="execution_git_sha mismatch"):
+        verify_canonical_metric_bundle_file(tampered_bundle_file)
+
+
+def test_rehashed_tampered_timestamp_rejected(tmp_path: Path):
+    """Tampering with analysis_timestamp_utc and rehashing sidecar must fail closed."""
+    if not COMMITTED_BUNDLE_PATH.is_file():
+        pytest.skip("Committed bundle not found on disk")
+
+    bundle_data = json.loads(COMMITTED_BUNDLE_PATH.read_bytes().decode("utf-8"))
+    bundle_data["analysis_timestamp_utc"] = "2026-10-02T16:09:00+00:00"
+
+    tampered_bundle_file = tmp_path / "canonical_metric_bundle_v2.json"
+    tampered_bytes = json.dumps(bundle_data, indent=2, sort_keys=True).encode("utf-8") + b"\n"
+    tampered_bundle_file.write_bytes(tampered_bytes)
+
+    rehashed_sha = hashlib.sha256(tampered_bytes).hexdigest()
+    sidecar_file = tmp_path / "canonical_metric_bundle_v2.json.sha256"
+    sidecar_file.write_bytes(f"{rehashed_sha}  canonical_metric_bundle_v2.json\n".encode("utf-8"))
+
+    with pytest.raises(ValueError, match="analysis_timestamp_utc must match authoritative"):
+        verify_canonical_metric_bundle_file(tampered_bundle_file)
+
+
+def test_receipt_join_response_id_mismatch_rejected():
+    """Lệch response_id giữa receipt và prediction phải fail closed."""
+    pkg_dir = get_public_package_dir()
+    if pkg_dir is None:
+        pytest.skip("Raw public canonical package not available in CI environment")
+
+    manifest, cache = verify_public_package(pkg_dir)
+    journal_path = pkg_dir / "inputs" / "request_journal.jsonl"
+
+    # Mutate 1 prediction's response_id in byte cache
+    k1_bytes = cache["inputs/rag_k1_predictions.jsonl"]
+    lines = k1_bytes.decode("utf-8").splitlines()
+    first_pred = json.loads(lines[0])
+    first_pred["response_id"] = "resp_mutated_id_12345"
+    lines[0] = json.dumps(first_pred)
+    mutated_k1_bytes = "\n".join(lines).encode("utf-8")
+    cache["inputs/rag_k1_predictions.jsonl"] = mutated_k1_bytes
+
+    with pytest.raises(ValueError, match="response_id mismatch"):
+        parse_request_journal_cache(
+            journal_path=journal_path,
+            raw_journal_bytes=cache["inputs/request_journal.jsonl"],
+            predictions_bytes_cache=cache,
+        )
+
+
+def test_receipt_join_model_drift_rejected():
+    """Model drift trong attempt receipt phải fail closed."""
+    pkg_dir = get_public_package_dir()
+    if pkg_dir is None:
+        pytest.skip("Raw public canonical package not available in CI environment")
+
+    manifest, cache = verify_public_package(pkg_dir)
+    journal_path = pkg_dir / "inputs" / "request_journal.jsonl"
+    journal_lines = [json.loads(line) for line in cache["inputs/request_journal.jsonl"].decode("utf-8").splitlines() if line.strip()]
+
+    # Mutate model of first receipt
+    for row in journal_lines:
+        if row.get("event") == "attempt_receipt" and row.get("status") == "SUCCESS":
+            row["model"] = "gpt-4o"
+            break
+
+    mutant_journal_bytes = "\n".join(json.dumps(r) for r in journal_lines).encode("utf-8")
+    with pytest.raises(ValueError, match="Receipt model drift|Model mismatch"):
+        parse_request_journal_cache(
+            journal_path=journal_path,
+            raw_journal_bytes=mutant_journal_bytes,
+            predictions_bytes_cache=cache,
+        )
+
+
+def test_receipt_join_incomplete_status_mismatch_rejected():
+    """Mâu thuẫn trạng thái giữa terminal INCOMPLETE receipt và prediction success phải fail closed."""
+    pkg_dir = get_public_package_dir()
+    if pkg_dir is None:
+        pytest.skip("Raw public canonical package not available in CI environment")
+
+    manifest, cache = verify_public_package(pkg_dir)
+    journal_path = pkg_dir / "inputs" / "request_journal.jsonl"
+
+    k3_bytes = cache["inputs/rag_k3_predictions.jsonl"]
+    lines = k3_bytes.decode("utf-8").splitlines()
+    mutated = False
+    for idx, line_entry in enumerate(lines):
+        pentry = json.loads(line_entry)
+        if pentry.get("sample_id") == "view_1b91ff45":
+            pentry["success"] = True
+            lines[idx] = json.dumps(pentry)
+            mutated = True
+            break
+    assert mutated
+    cache["inputs/rag_k3_predictions.jsonl"] = "\n".join(lines).encode("utf-8")
+
+    with pytest.raises(ValueError, match="Status INCOMPLETE requires pred success=False"):
+        parse_request_journal_cache(
+            journal_path=journal_path,
+            raw_journal_bytes=cache["inputs/request_journal.jsonl"],
+            predictions_bytes_cache=cache,
+        )

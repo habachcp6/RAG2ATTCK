@@ -58,6 +58,7 @@ from scripts.isolated_snapshot_controller import (
     compute_expanded_snapshot_inventory,
     compute_quick_snapshot_fingerprint,
     execute_snapshot_task,
+    extract_required_dependencies_from_uv_lock,
     resolve_snapshot_python,
     sanitize_environment,
     validate_output_path_containment,
@@ -74,10 +75,18 @@ from scripts.isolated_snapshot_worker import (
 GENUINE_SNAPSHOT_ROOT = Path("C:/Users/hahoa/.codex/artifacts/rag2attck/finalization_snapshots/b69a690")
 
 
+def require_genuine_snapshot() -> None:
+    """Skip cleanly if genuine snapshot or dedicated .venv is not available (e.g. CI runner)."""
+    if not GENUINE_SNAPSHOT_ROOT.is_dir():
+        pytest.skip(f"Snapshot directory '{GENUINE_SNAPSHOT_ROOT}' not found")
+    venv_dir = GENUINE_SNAPSHOT_ROOT / ".venv"
+    if not venv_dir.is_dir() or not (venv_dir / "pyvenv.cfg").is_file():
+        pytest.skip(f"Snapshot directory '{GENUINE_SNAPSHOT_ROOT}' is missing a valid dedicated .venv with pyvenv.cfg")
+
+
 def test_positive_snapshot_preflight(tmp_path: Path):
     """Verify that detached clean b69 snapshot succeeds under isolated child preflight."""
-    if not GENUINE_SNAPSHOT_ROOT.is_dir():
-        pytest.skip("Snapshot directory not found")
+    require_genuine_snapshot()
 
     out_file = tmp_path / "preflight_attestation.json"
     result = execute_snapshot_task(
@@ -112,8 +121,7 @@ def test_positive_snapshot_preflight(tmp_path: Path):
 
 def test_positive_snapshot_baselines(tmp_path: Path):
     """Verify baseline hashes, evaluate_rqs f85 hash, BOM hash, and expanded inventory on snapshot."""
-    if not GENUINE_SNAPSHOT_ROOT.is_dir():
-        pytest.skip("Snapshot directory not found")
+    require_genuine_snapshot()
 
     out_file = tmp_path / "baselines_attestation.json"
     result = execute_snapshot_task(
@@ -186,8 +194,7 @@ def test_negative_missing_git_directory_rejected(tmp_path: Path):
 
 def test_negative_minimal_pass_payload_rejected_by_controller(tmp_path: Path):
     """Controller must reject a minimal PASS payload missing required schema fields."""
-    if not GENUINE_SNAPSHOT_ROOT.is_dir():
-        pytest.skip("Snapshot directory not found")
+    require_genuine_snapshot()
 
     out_file = tmp_path / "minimal_pass.json"
     orig_subprocess_run = subprocess.run
@@ -211,8 +218,7 @@ def test_negative_minimal_pass_payload_rejected_by_controller(tmp_path: Path):
 
 def test_negative_wrong_task_payload_rejected_by_controller(tmp_path: Path):
     """Controller must reject worker output reporting a different task than expected."""
-    if not GENUINE_SNAPSHOT_ROOT.is_dir():
-        pytest.skip("Snapshot directory not found")
+    require_genuine_snapshot()
 
     fake_output = {
         "status": "PASS",
@@ -237,8 +243,7 @@ def test_negative_wrong_task_payload_rejected_by_controller(tmp_path: Path):
 
 def test_negative_missing_origins_or_guard_in_pass_rejected(tmp_path: Path):
     """Worker output claiming PASS with empty loaded_origins or uninstalled guard must fail closed."""
-    if not GENUINE_SNAPSHOT_ROOT.is_dir():
-        pytest.skip("Snapshot directory not found")
+    require_genuine_snapshot()
 
     base_payload = {
         "status": "PASS",
@@ -279,26 +284,70 @@ def test_negative_missing_origins_or_guard_in_pass_rejected(tmp_path: Path):
 # --- Gap 3 Tests ---
 
 def test_positive_worker_runtime_attestation_and_uv_lock_verification(tmp_path: Path):
-    """Verify that controller correctly cross-checks installed dependencies against uv.lock."""
-    if not GENUINE_SNAPSHOT_ROOT.is_dir():
-        pytest.skip("Snapshot directory not found")
+    """Verify that controller correctly validates all 87 required locked distributions against uv.lock."""
+    require_genuine_snapshot()
+
+    required_deps = extract_required_dependencies_from_uv_lock(GENUINE_SNAPSHOT_ROOT / "uv.lock")
+    assert len(required_deps) == 87, f"Expected 87 required dependencies, got {len(required_deps)}"
 
     valid_attestation = {
-        "sys_prefix": str(GENUINE_SNAPSHOT_ROOT / ".venv"),
-        "sys_executable": str(resolve_snapshot_python(GENUINE_SNAPSHOT_ROOT)),
+        "sys_prefix": str((GENUINE_SNAPSHOT_ROOT / ".venv").absolute()),
+        "sys_executable": str(resolve_snapshot_python(GENUINE_SNAPSHOT_ROOT).absolute()),
+        "installed_dependencies": dict(required_deps),
+    }
+    # Must succeed without error
+    verify_snapshot_venv_dependencies(GENUINE_SNAPSHOT_ROOT, valid_attestation)
+
+
+def test_negative_uv_lock_dependency_small_subset_rejected(tmp_path: Path):
+    """Attestation reporting only a small subset of dependencies must fail closed."""
+    require_genuine_snapshot()
+
+    subset_attestation = {
+        "sys_prefix": str((GENUINE_SNAPSHOT_ROOT / ".venv").absolute()),
+        "sys_executable": str(resolve_snapshot_python(GENUINE_SNAPSHOT_ROOT).absolute()),
         "installed_dependencies": {
             "pytest": "9.1.1",
             "pydantic": "2.13.5",
         },
     }
-    # Should not raise
-    verify_snapshot_venv_dependencies(GENUINE_SNAPSHOT_ROOT, valid_attestation)
+    with pytest.raises(RuntimeError, match=r"Venv dependency attestation missing .* required packages from uv\.lock"):
+        verify_snapshot_venv_dependencies(GENUINE_SNAPSHOT_ROOT, subset_attestation)
+
+
+def test_negative_uv_lock_unknown_package_rejected(tmp_path: Path):
+    """Attestation reporting an unauthorized or unknown package not in uv.lock must fail closed."""
+    require_genuine_snapshot()
+
+    required_deps = extract_required_dependencies_from_uv_lock(GENUINE_SNAPSHOT_ROOT / "uv.lock")
+    rogue_deps = dict(required_deps)
+    rogue_deps["audit-unknown-package"] = "1.0"
+
+    rogue_attestation = {
+        "sys_prefix": str((GENUINE_SNAPSHOT_ROOT / ".venv").absolute()),
+        "sys_executable": str(resolve_snapshot_python(GENUINE_SNAPSHOT_ROOT).absolute()),
+        "installed_dependencies": rogue_deps,
+    }
+    with pytest.raises(RuntimeError, match=r"Unauthorized or unknown installed package\(s\) not found in uv\.lock"):
+        verify_snapshot_venv_dependencies(GENUINE_SNAPSHOT_ROOT, rogue_attestation)
+
+
+def test_negative_uv_lock_empty_installed_dependencies_rejected(tmp_path: Path):
+    """Empty installed dependencies map must fail closed."""
+    require_genuine_snapshot()
+
+    empty_attestation = {
+        "sys_prefix": str((GENUINE_SNAPSHOT_ROOT / ".venv").absolute()),
+        "sys_executable": str(resolve_snapshot_python(GENUINE_SNAPSHOT_ROOT).absolute()),
+        "installed_dependencies": {},
+    }
+    with pytest.raises(RuntimeError, match="missing or empty installed_dependencies"):
+        verify_snapshot_venv_dependencies(GENUINE_SNAPSHOT_ROOT, empty_attestation)
 
 
 def test_negative_venv_mismatched_sys_prefix_rejected(tmp_path: Path):
     """Attestation reporting sys.prefix outside snapshot venv must be rejected."""
-    if not GENUINE_SNAPSHOT_ROOT.is_dir():
-        pytest.skip("Snapshot directory not found")
+    require_genuine_snapshot()
 
     bad_payload = {
         "status": "PASS",
@@ -322,8 +371,7 @@ def test_negative_venv_mismatched_sys_prefix_rejected(tmp_path: Path):
 
 def test_negative_uv_lock_dependency_version_mismatch_rejected(tmp_path: Path):
     """Attestation reporting a package version differing from uv.lock must fail closed."""
-    if not GENUINE_SNAPSHOT_ROOT.is_dir():
-        pytest.skip("Snapshot directory not found")
+    require_genuine_snapshot()
 
     tampered_attestation = {
         "sys_prefix": str(GENUINE_SNAPSHOT_ROOT / ".venv"),
@@ -340,8 +388,7 @@ def test_negative_uv_lock_dependency_version_mismatch_rejected(tmp_path: Path):
 
 def test_negative_expanded_inventory_drift_in_evaluate_rqs_rejected(tmp_path: Path):
     """Drift in evaluate_rqs.py between pre and post must trigger immutability breach."""
-    if not GENUINE_SNAPSHOT_ROOT.is_dir():
-        pytest.skip("Snapshot directory not found")
+    require_genuine_snapshot()
 
     out_file = tmp_path / "rq_drift.json"
     pre_expanded = compute_expanded_snapshot_inventory(GENUINE_SNAPSHOT_ROOT)
@@ -362,8 +409,7 @@ def test_negative_expanded_inventory_drift_in_evaluate_rqs_rejected(tmp_path: Pa
 
 def test_negative_expanded_inventory_drift_in_baselines_or_protocol_rejected(tmp_path: Path):
     """Drift in protected baselines or protocol between pre and post must trigger immutability breach."""
-    if not GENUINE_SNAPSHOT_ROOT.is_dir():
-        pytest.skip("Snapshot directory not found")
+    require_genuine_snapshot()
 
     out_file = tmp_path / "baseline_drift.json"
     pre_expanded = compute_expanded_snapshot_inventory(GENUINE_SNAPSHOT_ROOT)
@@ -384,8 +430,7 @@ def test_negative_expanded_inventory_drift_in_baselines_or_protocol_rejected(tmp
 
 def test_negative_expanded_inventory_drift_in_git_state_rejected(tmp_path: Path):
     """Drift in Git commit or working directory between pre and post must trigger immutability breach."""
-    if not GENUINE_SNAPSHOT_ROOT.is_dir():
-        pytest.skip("Snapshot directory not found")
+    require_genuine_snapshot()
 
     out_file = tmp_path / "git_drift.json"
     pre_expanded = compute_expanded_snapshot_inventory(GENUINE_SNAPSHOT_ROOT)
@@ -421,8 +466,7 @@ def test_negative_wrong_snapshot_root(tmp_path: Path):
 
 def test_negative_arbitrary_python_override_rejected(tmp_path: Path):
     """Providing an interpreter outside the snapshot's dedicated virtualenv must be rejected."""
-    if not GENUINE_SNAPSHOT_ROOT.is_dir():
-        pytest.skip("Snapshot directory not found")
+    require_genuine_snapshot()
 
     out_file = tmp_path / "out_py.json"
     system_python = Path(sys.executable)
@@ -438,6 +482,8 @@ def test_negative_arbitrary_python_override_rejected(tmp_path: Path):
 
 def test_negative_partial_or_corrupt_snapshot_rejected(tmp_path: Path):
     """Partial snapshot missing core files or with drifted files must fail closed before execution."""
+    require_genuine_snapshot()
+
     fake_snap = tmp_path / "partial_snapshot"
     (fake_snap / "config").mkdir(parents=True)
     (fake_snap / "src" / "experiment").mkdir(parents=True)
@@ -461,8 +507,7 @@ def test_negative_partial_or_corrupt_snapshot_rejected(tmp_path: Path):
 
 def test_negative_child_exit_nonzero_with_pass_payload_fails_closed(tmp_path: Path):
     """If child exits with non-zero exit code while claiming PASS, controller fails closed."""
-    if not GENUINE_SNAPSHOT_ROOT.is_dir():
-        pytest.skip("Snapshot directory not found")
+    require_genuine_snapshot()
 
     out_file = tmp_path / "out_exit7.json"
     orig_subprocess_run = subprocess.run
@@ -525,6 +570,8 @@ def test_negative_socket_getaddrinfo_intercepted_and_blocked():
 
 def test_negative_foreign_module_file_or_spec_rejected(tmp_path: Path):
     """Module where __file__ is outside snapshot root must be rejected."""
+    require_genuine_snapshot()
+
     outside_file = tmp_path / "shadow_module.py"
     outside_file.write_text("X = 1\n", encoding="utf-8")
 
@@ -546,6 +593,8 @@ def test_negative_foreign_module_file_or_spec_rejected(tmp_path: Path):
 
 def test_negative_foreign_callable_code_filename_rejected(tmp_path: Path):
     """Module inside snapshot containing a function with foreign co_filename must be rejected."""
+    require_genuine_snapshot()
+
     outside_code = tmp_path / "foreign_code.py"
     outside_code.write_text("def foreign_func(): return 42\n", encoding="utf-8")
 
@@ -568,6 +617,8 @@ def test_negative_foreign_callable_code_filename_rejected(tmp_path: Path):
 
 def test_negative_output_path_inside_snapshot_or_control_rejected(tmp_path: Path):
     """Output path pointing inside snapshot root or targeting control scripts must be rejected."""
+    require_genuine_snapshot()
+
     inside_snap = GENUINE_SNAPSHOT_ROOT / "config" / "dest.json"
     with pytest.raises(ValueError, match="SECURITY REJECTION: output_path .* is inside snapshot root"):
         validate_output_path_containment(inside_snap, GENUINE_SNAPSHOT_ROOT)
@@ -579,8 +630,7 @@ def test_negative_output_path_inside_snapshot_or_control_rejected(tmp_path: Path
 
 def test_negative_offline_guard_egress_interception(tmp_path: Path):
     """Worker attempting network egress must be intercepted by audit guard and fail closed."""
-    if not GENUINE_SNAPSHOT_ROOT.is_dir():
-        pytest.skip("Snapshot directory not found")
+    require_genuine_snapshot()
 
     out_file = tmp_path / "egress_test_attestation.json"
     result = execute_snapshot_task(
@@ -598,8 +648,7 @@ def test_negative_offline_guard_egress_interception(tmp_path: Path):
 
 def test_negative_snapshot_immutability_violation(tmp_path: Path):
     """If snapshot critical files change during execution, controller detects immutability breach."""
-    if not GENUINE_SNAPSHOT_ROOT.is_dir():
-        pytest.skip("Snapshot directory not found")
+    require_genuine_snapshot()
 
     out_file = tmp_path / "immutability_test.json"
     pre_expanded = compute_expanded_snapshot_inventory(GENUINE_SNAPSHOT_ROOT)

@@ -18,10 +18,11 @@ import argparse
 import hashlib
 import json
 import os
+import platform
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 try:
     import tomllib
@@ -58,6 +59,8 @@ def resolve_snapshot_python(snapshot_root: Path) -> Path:
     """
     Find the dedicated virtual environment Python executable in snapshot_root/.venv.
     Verifies that .venv is a dedicated directory and contains pyvenv.cfg.
+    Returns the absolute invocation path without dereferencing symlinks,
+    preserving dedicated virtual environment identity on Linux/macOS.
     """
     venv_dir = snapshot_root / ".venv"
     if not venv_dir.is_dir():
@@ -78,7 +81,7 @@ def resolve_snapshot_python(snapshot_root: Path) -> Path:
     ]
     for c in candidates:
         if c.is_file():
-            return c.resolve()
+            return c.absolute()
 
     raise FileNotFoundError(
         f"Could not locate frozen virtual environment python in {venv_dir}. "
@@ -243,13 +246,89 @@ def compute_expanded_snapshot_inventory(snapshot_root: Path) -> Dict[str, Any]:
     }
 
 
+def _evaluate_marker(marker_str: Optional[str]) -> bool:
+    """
+    Safely evaluate environment markers using standard library platform/sys attributes.
+    """
+    if not marker_str:
+        return True
+    ctx = {
+        "sys_platform": sys.platform,
+        "platform_system": platform.system(),
+        "platform_machine": platform.machine(),
+        "platform_python_implementation": platform.python_implementation(),
+        "implementation_name": sys.implementation.name,
+        "python_version": f"{sys.version_info.major}.{sys.version_info.minor}",
+        "python_full_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+        "extra": "",
+    }
+    try:
+        return bool(eval(marker_str, {"__builtins__": {}}, ctx))
+    except Exception:
+        return False
+
+
+def extract_required_dependencies_from_uv_lock(uv_lock_path: Path) -> Dict[str, str]:
+    """
+    Extract all required dependencies and locked versions for the current platform
+    by traversing from the root virtual package (e.g. rag2attck) in uv.lock.
+    """
+    if not uv_lock_path.is_file():
+        raise FileNotFoundError(f"Missing uv.lock file: {uv_lock_path}")
+
+    with open(uv_lock_path, "rb") as f:
+        uv_data = tomllib.load(f)
+
+    all_pkgs = {
+        p["name"].lower().replace("_", "-"): p
+        for p in uv_data.get("package", [])
+        if "name" in p and "version" in p
+    }
+
+    root_candidates = [
+        p["name"].lower().replace("_", "-")
+        for p in uv_data.get("package", [])
+        if p.get("source", {}).get("virtual") or p.get("name") == "rag2attck"
+    ]
+    if not root_candidates:
+        root_candidates = ["rag2attck"]
+
+    visited: Set[str] = set()
+
+    def _walk(pkg_name: str) -> None:
+        if pkg_name in visited or pkg_name not in all_pkgs:
+            return
+        visited.add(pkg_name)
+        pkg_info = all_pkgs[pkg_name]
+        for d in pkg_info.get("dependencies", []):
+            if _evaluate_marker(d.get("marker")):
+                _walk(d["name"].lower().replace("_", "-"))
+        for dev_list in pkg_info.get("dev-dependencies", {}).values():
+            for d in dev_list:
+                if _evaluate_marker(d.get("marker")):
+                    _walk(d["name"].lower().replace("_", "-"))
+
+    for r in root_candidates:
+        _walk(r)
+
+    for r in root_candidates:
+        visited.discard(r)
+
+    return {pkg: all_pkgs[pkg]["version"] for pkg in visited if pkg in all_pkgs}
+
+
 def verify_snapshot_venv_dependencies(
     snapshot_root: Path, worker_attestation: Dict[str, Any]
 ) -> None:
     """
     Directly cross-check installed dependency versions attested by child worker
     against the snapshot venv original uv.lock.
-    Fails closed if any installed package version differs from the lockfile.
+    Enforces that:
+    1. installed_dependencies is a non-empty dictionary.
+    2. All required installed distributions extracted from uv.lock are present (no missing packages,
+       no empty map, no small subset).
+    3. No unauthorized or unknown packages are installed (fails closed if any package is not in uv.lock).
+    4. Every installed package version matches the locked version in uv.lock.
     """
     uv_lock_path = snapshot_root / "uv.lock"
     if not uv_lock_path.is_file():
@@ -258,24 +337,44 @@ def verify_snapshot_venv_dependencies(
     with open(uv_lock_path, "rb") as f:
         uv_data = tomllib.load(f)
 
-    locked_packages: Dict[str, str] = {
+    all_locked_packages: Dict[str, str] = {
         p["name"].lower().replace("_", "-"): p["version"]
         for p in uv_data.get("package", [])
         if "name" in p and "version" in p
     }
 
-    installed = worker_attestation.get("installed_dependencies", {})
+    installed = worker_attestation.get("installed_dependencies")
     if not isinstance(installed, dict) or not installed:
         raise RuntimeError("Worker runtime attestation has missing or empty installed_dependencies!")
 
-    for pkg_name, locked_ver in locked_packages.items():
-        if pkg_name in installed:
-            act_ver = installed[pkg_name]
-            if act_ver != locked_ver:
-                raise RuntimeError(
-                    f"Venv dependency version mismatch for '{pkg_name}': "
-                    f"installed {act_ver} != expected in uv.lock {locked_ver}"
-                )
+    norm_installed: Dict[str, str] = {
+        k.lower().replace("_", "-"): str(v) for k, v in installed.items()
+    }
+
+    # 1. Reject unauthorized or unknown packages not in uv.lock
+    unknown_packages = set(norm_installed.keys()) - set(all_locked_packages.keys())
+    if unknown_packages:
+        raise RuntimeError(
+            f"Unauthorized or unknown installed package(s) not found in uv.lock: {sorted(unknown_packages)}"
+        )
+
+    # 2. Reject version mismatches against uv.lock
+    for pkg_name, act_ver in norm_installed.items():
+        locked_ver = all_locked_packages[pkg_name]
+        if act_ver != locked_ver:
+            raise RuntimeError(
+                f"Venv dependency version mismatch for '{pkg_name}': "
+                f"installed {act_ver} != expected in uv.lock {locked_ver}"
+            )
+
+    # 3. Reject missing required packages / small subset / empty map
+    required_deps = extract_required_dependencies_from_uv_lock(uv_lock_path)
+    missing_required = set(required_deps.keys()) - set(norm_installed.keys())
+    if missing_required:
+        raise RuntimeError(
+            f"Venv dependency attestation missing {len(missing_required)} required packages from uv.lock: "
+            f"{sorted(missing_required)[:10]} (small subset or incomplete installation rejected)"
+        )
 
 
 def validate_worker_attestation_schema(
@@ -370,18 +469,27 @@ def validate_worker_attestation_schema(
         )
 
     sys_prefix = runtime_attestation.get("sys_prefix")
-    expected_venv = (snapshot_root / ".venv").resolve()
-    if not sys_prefix or Path(sys_prefix).resolve() != expected_venv:
+    expected_venv = (snapshot_root / ".venv").absolute()
+    if not sys_prefix:
+        raise RuntimeError("Worker attestation schema rejection: sys_prefix is missing!")
+    actual_prefix_path = Path(sys_prefix).absolute()
+    if actual_prefix_path != expected_venv and actual_prefix_path.resolve() != expected_venv.resolve():
         raise RuntimeError(
             f"Worker attestation schema rejection: sys_prefix '{sys_prefix}' does not match snapshot venv '{expected_venv}'!"
         )
 
     sys_exe = runtime_attestation.get("sys_executable")
-    expected_python = resolve_snapshot_python(snapshot_root).resolve()
-    if not sys_exe or Path(sys_exe).resolve() != expected_python:
-        raise RuntimeError(
-            f"Worker attestation schema rejection: sys_executable '{sys_exe}' does not match expected snapshot python '{expected_python}'!"
-        )
+    expected_python = resolve_snapshot_python(snapshot_root).absolute()
+    if not sys_exe:
+        raise RuntimeError("Worker attestation schema rejection: sys_executable is missing!")
+    actual_exe_path = Path(sys_exe).absolute()
+    if actual_exe_path != expected_python and actual_exe_path.resolve() != expected_python.resolve():
+        try:
+            actual_exe_path.relative_to(expected_venv)
+        except ValueError:
+            raise RuntimeError(
+                f"Worker attestation schema rejection: sys_executable '{sys_exe}' does not match expected snapshot python '{expected_python}'!"
+            )
 
     # 7. Locked dependency versions verification against uv.lock
     verify_snapshot_venv_dependencies(snapshot_root, runtime_attestation)
@@ -472,17 +580,17 @@ def execute_snapshot_task(
     # Validate python interpreter and dedicated .venv
     venv_dir = snapshot_root / ".venv"
     if override_python is not None:
-        override_resolved = Path(override_python).resolve()
+        override_abs = Path(override_python).absolute()
         if venv_dir.is_dir():
             expected_python = resolve_snapshot_python(snapshot_root)
-            if override_resolved != expected_python.resolve():
+            if override_abs != expected_python.absolute() and override_abs.resolve() != expected_python.resolve():
                 raise ValueError(
                     f"REJECTED: Arbitrary override_python '{override_python}' is outside snapshot venv!\n"
                     f"  Snapshot venv python: {expected_python}"
                 )
             python_exe = expected_python
         else:
-            python_exe = override_resolved
+            python_exe = override_abs
     else:
         python_exe = resolve_snapshot_python(snapshot_root)
 

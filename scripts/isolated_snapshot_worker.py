@@ -184,25 +184,26 @@ def gather_worker_runtime_attestation(snapshot_root: Path) -> Dict[str, Any]:
     Attest sys.executable, sys.prefix, and actual installed dependencies within the dedicated venv.
     Fails closed if sys.prefix or sys.executable is outside the snapshot .venv.
     """
-    expected_venv = (snapshot_root / ".venv").resolve()
+    expected_venv = (snapshot_root / ".venv").absolute()
     if not expected_venv.is_dir():
         raise SnapshotGuardSecurityError(
             f"Snapshot .venv directory missing or invalid: {expected_venv}"
         )
 
-    actual_prefix = Path(sys.prefix).resolve()
-    if actual_prefix != expected_venv:
+    actual_prefix = Path(sys.prefix).absolute()
+    if actual_prefix != expected_venv and actual_prefix.resolve() != expected_venv.resolve():
         raise SnapshotGuardSecurityError(
             f"Venv boundary breach: sys.prefix '{actual_prefix}' != expected snapshot venv '{expected_venv}'"
         )
 
-    actual_exe = Path(sys.executable).resolve()
+    actual_exe = Path(sys.executable).absolute()
     try:
         actual_exe.relative_to(expected_venv)
     except ValueError:
-        raise SnapshotGuardSecurityError(
-            f"Python executable breach: sys.executable '{actual_exe}' is outside snapshot venv '{expected_venv}'"
-        )
+        if actual_prefix != expected_venv and actual_prefix.resolve() != expected_venv.resolve():
+            raise SnapshotGuardSecurityError(
+                f"Python executable breach: sys.executable '{actual_exe}' is outside snapshot venv '{expected_venv}'"
+            )
 
     import importlib.metadata
 

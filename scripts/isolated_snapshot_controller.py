@@ -513,9 +513,10 @@ def validate_worker_attestation_schema(
     if not sys_prefix:
         raise RuntimeError("Worker attestation schema rejection: sys_prefix is missing!")
     actual_prefix_path = Path(sys_prefix).absolute()
-    if actual_prefix_path != expected_venv and actual_prefix_path.resolve() != expected_venv.resolve():
+    if actual_prefix_path != expected_venv:
         raise RuntimeError(
-            f"Worker attestation schema rejection: sys_prefix '{sys_prefix}' does not match snapshot venv '{expected_venv}'!"
+            f"Worker attestation schema rejection: sys_prefix '{sys_prefix}' "
+            f"does not match snapshot venv '{expected_venv}'!"
         )
 
     sys_exe = runtime_attestation.get("sys_executable")
@@ -523,12 +524,13 @@ def validate_worker_attestation_schema(
     if not sys_exe:
         raise RuntimeError("Worker attestation schema rejection: sys_executable is missing!")
     actual_exe_path = Path(sys_exe).absolute()
-    if actual_exe_path != expected_python and actual_exe_path.resolve() != expected_python.resolve():
+    if actual_exe_path != expected_python:
         try:
             actual_exe_path.relative_to(expected_venv)
         except ValueError:
             raise RuntimeError(
-                f"Worker attestation schema rejection: sys_executable '{sys_exe}' does not match expected snapshot python '{expected_python}'!"
+                f"Worker attestation schema rejection: sys_executable '{sys_exe}' "
+                f"does not match expected snapshot python '{expected_python}'!"
             )
 
     # 7. Locked dependency versions verification against uv.lock
@@ -623,10 +625,12 @@ def execute_snapshot_task(
         override_abs = Path(override_python).absolute()
         if venv_dir.is_dir():
             expected_python = resolve_snapshot_python(snapshot_root)
-            if override_abs != expected_python.absolute() and override_abs.resolve() != expected_python.resolve():
+            # Do NOT call .resolve() on Linux/macOS venv python symlinks to avoid base
+            # interpreter collision
+            if override_abs.absolute() != expected_python.absolute():
                 raise ValueError(
-                    f"REJECTED: Arbitrary override_python '{override_python}' is outside snapshot venv!\n"
-                    f"  Snapshot venv python: {expected_python}"
+                    f"REJECTED: Arbitrary override_python '{override_python}' is outside "
+                    f"snapshot venv!\n  Snapshot venv python: {expected_python}"
                 )
             python_exe = expected_python
         else:

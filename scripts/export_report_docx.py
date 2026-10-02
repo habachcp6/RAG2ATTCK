@@ -448,9 +448,11 @@ def build_docx_from_markdown(
     in_table = False
     table_lines = []
     in_references = False
+    last_caption_text: str | None = None
+    table_seq_idx: int = 0
 
     def flush_table():
-        nonlocal in_table, table_lines
+        nonlocal in_table, table_lines, last_caption_text, table_seq_idx
         if not table_lines:
             in_table = False
             return
@@ -476,8 +478,53 @@ def build_docx_from_markdown(
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
         table.autofit = False
 
-        # Select font size and margins based on column count
+        # Identify table ID and title for OpenXML SDT / locator tags
         hdr_str = " ".join(raw_rows[0]).lower() if raw_rows else ""
+        caption_str = last_caption_text or ""
+
+        if "table 1a" in caption_str.lower() or "comparators 1-4" in hdr_str or "yang & hsu" in hdr_str:
+            table_id = "table_1a"
+            table_caption = "Table 1a: Multi-Dimensional Comparator Matrix (Part 1)"
+        elif "table 1b" in caption_str.lower() or "comparators 5-8" in hdr_str or "h-techniquerag" in hdr_str:
+            table_id = "table_1b"
+            table_caption = "Table 1b: Multi-Dimensional Comparator Matrix (Part 2)"
+        elif "table 2a" in caption_str.lower() or ("complexity" in hdr_str and "headline" in hdr_str):
+            table_id = "table_2a"
+            table_caption = "Table 2a: Primary Attribution Performance and Ground-Truth Complexity"
+        elif "table 2b" in caption_str.lower() or "completed outputs" in hdr_str:
+            table_id = "table_2b"
+            table_caption = "Table 2b: Attribution Diagnostic Metrics"
+        elif "table 3b" in caption_str.lower() or "complete pairs" in hdr_str:
+            table_id = "table_3b"
+            table_caption = "Table 3b: Paired Scorable Representation Concordance"
+        elif "table 3" in caption_str.lower() or "single-event" in hdr_str:
+            table_id = "table_3"
+            table_caption = "Table 3: Representation Stratification (Single vs Contextual)"
+        elif "table 4" in caption_str.lower() or "downstream selection failure" in hdr_str or "upstream retrieval miss" in hdr_str:
+            table_id = "table_4"
+            table_caption = "Table 4: Decoupled Failure Decomposition Matrix"
+        elif "table 5b" in caption_str.lower() or "financial ledger" in hdr_str or "accounting dimension" in hdr_str:
+            table_id = "table_5b"
+            table_caption = "Table 5b: Whole-Study Financial Ledger and Budget Reconciliation"
+        elif "table 5" in caption_str.lower() or "total input tokens" in hdr_str:
+            table_id = "table_5"
+            table_caption = "Table 5: Resource Consumption and Latency Scaling"
+        elif "table 6" in caption_str.lower() or "cryptographic reproducibility" in hdr_str or "asset description" in hdr_str:
+            table_id = "table_6"
+            table_caption = "Table 6: Cryptographic Reproducibility Manifest"
+        else:
+            table_seq_idx += 1
+            table_id = f"table_{table_seq_idx}"
+            table_caption = caption_str or f"Table {table_seq_idx}"
+
+        # Add tblCaption and tblDescription to tblPr for OpenXML locator inspection
+        tblPr = table._element.tblPr
+        tblCaption_elem = parse_xml(f'<w:tblCaption {nsdecls("w")} w:val="{table_caption}"/>')
+        tblDesc_elem = parse_xml(f'<w:tblDescription {nsdecls("w")} w:val="{table_id}"/>')
+        tblPr.append(tblCaption_elem)
+        tblPr.append(tblDesc_elem)
+
+        # Select font size and margins based on column count
         if num_cols >= 9:
             cell_font_size = Pt(7.5)
             pad_top, pad_bot, pad_left, pad_right = 60, 60, 60, 60
@@ -535,11 +582,28 @@ def build_docx_from_markdown(
                     right={"sz": 2, "val": "single", "color": "E1E4E8"},
                 )
 
+                # Attach OpenXML Structured Document Tag (SDT locator)
+                tag_val = f"{table_id}_r{r_idx}_c{c_idx}"
+                alias_val = f"{table_id} Row {r_idx} Col {c_idx}"
+                sdt_xml = (
+                    f'<w:sdt {nsdecls("w")}>'
+                    f'  <w:sdtPr>'
+                    f'    <w:tag w:val="{tag_val}"/>'
+                    f'    <w:alias w:val="{alias_val}"/>'
+                    f'  </w:sdtPr>'
+                    f'  <w:sdtContent/>'
+                    f'</w:sdt>'
+                )
+                p._element.append(parse_xml(sdt_xml))
+
         # Apply OpenXML pagination rules (<w:tblHeader/>, <w:cantSplit/>)
         apply_table_pagination_rules(table)
         # Apply explicit column widths
         header_texts = raw_rows[0] if raw_rows else []
         assign_table_column_widths(table, num_cols, header_texts)
+
+        # Reset last_caption_text
+        last_caption_text = None
 
         # Spacing after table
         post_p = doc.add_paragraph()
@@ -589,6 +653,11 @@ def build_docx_from_markdown(
 
         if in_code_block:
             code_lines.append(line)
+            i += 1
+            continue
+
+        # Skip HTML comments (e.g. <!-- FIXTURE_ONLY: true -->)
+        if line.strip().startswith("<!--") and line.strip().endswith("-->"):
             i += 1
             continue
 
@@ -795,6 +864,19 @@ def build_docx_from_markdown(
                 default_italic=True,
                 default_color=RGBColor(0x57, 0x60, 0x6A),
             )
+        elif line.strip().startswith("*Table "):
+            last_caption_text = line.strip().strip("*").rstrip(".*")
+            p = doc.add_paragraph()
+            p.paragraph_format.space_before = Pt(8)
+            p.paragraph_format.space_after = Pt(3)
+            format_inline_runs(
+                p,
+                line.strip(),
+                font_size=Pt(10),
+                default_italic=True,
+                default_bold=False,
+                default_color=RGBColor(0x1F, 0x23, 0x28),
+            )
         elif line.strip():
             p = doc.add_paragraph()
             format_inline_runs(p, line.strip())
@@ -923,7 +1005,14 @@ def audit_docx_quality(doc_path: Path):
         errors.append("Table 1b (Comparators 5-8 + RAG2ATTCK) not found in DOCX tables")
     if not t2b_found:
         errors.append("Table 2b (Attribution Diagnostics) not found in DOCX tables")
-    # 5. Audit embedded images in word/media package
+
+    # 5. Audit OpenXML SDT locator tags on tables
+    has_sdt = any("w:tag" in t._element.xml for t in doc.tables)
+    if not has_sdt:
+        errors.append("DOCX tables are missing OpenXML SDT / locator tags (<w:tag/>)")
+
+    # 6. Audit embedded images in word/media package
+    PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
     with zipfile.ZipFile(doc_path) as z:
         media_files = [f for f in z.namelist() if f.startswith("word/media/")]
         if len(media_files) < 3:
@@ -931,6 +1020,11 @@ def audit_docx_quality(doc_path: Path):
                 "DOCX QA: Expected at least 3 embedded figures in word/media/, "
                 f"found {len(media_files)}: {media_files}"
             )
+        for mf in media_files:
+            if mf.endswith(".png"):
+                m_data = z.read(mf)
+                if not m_data.startswith(PNG_MAGIC):
+                    errors.append(f"Embedded image {mf} is not a valid PNG file (bad magic bytes)")
 
     if errors:
         error_msg = f"DOCX QA Audit FAILED with {len(errors)} error(s):\n" + "\n".join(errors)

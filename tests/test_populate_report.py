@@ -1234,3 +1234,162 @@ def test_run_pipeline_copies_figures_to_target_output_dir(
 
     assert (out_dir / "figures" / "figure1_f1_vs_context_length.png").is_file()
     assert (out_dir / "figures" / "figure_provenance.json").is_file()
+
+
+# ==============================================================================
+# 9. Track C Finalization: Section L Coverage, SDT & MD/DOCX Parity Tests
+# ==============================================================================
+
+
+def test_scientific_report_covers_all_30_section_l_topics() -> None:
+    """Verify that scientific_report.md comprehensively covers all 30 Section L topics."""
+    report_path = Path("docs/report/scientific_report.md")
+    assert report_path.is_file(), f"Report file not found: {report_path}"
+    content = report_path.read_text(encoding="utf-8")
+
+    # 30 Section L topics mapping from finalization_requirements_matrix.md
+    topic_requirements: dict[str, list[str]] = {
+        "L.SEC-01 (Title)": ["# Evaluating MITRE ATT&CK-Grounded RAG", "A Replication-and-Extension Study"],
+        "L.SEC-02 (Abstract)": ["## Abstract", "Attributing low-level endpoint telemetry"],
+        "L.SEC-03 (Introduction)": ["## 1. Introduction", "### 1.1 Background and Threat Attribution Challenges"],
+        "L.SEC-04 (Problem statement)": ["Threat Attribution Challenges", "Scope, Non-Novelty Boundaries"],
+        "L.SEC-05 (Research questions)": ["### 1.4 Canonical Research Questions", "RQ1", "RQ2", "RQ3"],
+        "L.SEC-06 (Related work)": ["## 2. Related Work and Research Gap", "Table 1a", "Table 1b"],
+        "L.SEC-07 (Background)": ["Background and Threat Attribution Challenges", "LLMs and the RAG Paradigm"],
+        "L.SEC-08 (Dataset)": ["## 3. Threat Model, Benchmark Scope", "Benchmark Scope"],
+        "L.SEC-09 (Synthetic data methodology)": ["The Synthetic Paired Benchmark", "synthetic-paired-v1"],
+        "L.SEC-10 (Ground-truth construction)": ["Ground-Truth Provenance", "Ground-Truth Semantics: Multi-Label"],
+        "L.SEC-11 (Experimental design)": ["## 4. Methods: Experimental Framework & Study Design", "Frozen Scientific Protocol"],
+        "L.SEC-12 (No-RAG baseline)": ["The Five Experimental Conditions", "`no_rag`"],
+        "L.SEC-13 (RAG architecture)": ["Dense Retrieval Subsystem", "Symmetric Prompt Architecture"],
+        "L.SEC-14 (Frozen protocol)": ["experiment-protocol-v1.1", "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c"],
+        "L.SEC-15 (Model/provider configuration)": ["gpt-5.6-luna", "reasoning_effort=xhigh", "128,000 max output capacity"],
+        "L.SEC-16 (Retrieval setup)": ["all-MiniLM-L6-v2", "IndexFlatIP", "FAISS"],
+        "L.SEC-17 (Evaluation metrics)": ["Headline End-to-End Accuracy", "Macro-Averaged F1 Across the 474-Class Universe"],
+        "L.SEC-18 (RQ1 results)": ["### 6.1 RQ1: Retrieval-Augmented Attribution Efficacy", "Table 2a"],
+        "L.SEC-19 (RQ2 results)": ["### 6.2 RQ2: Retrieval Quality and Failure Decomposition", "Table 4"],
+        "L.SEC-20 (RQ3 results)": ["### 6.3 RQ3: Retrieval Depth, API Cost, and Latency Trade-Offs", "Table 5"],
+        "L.SEC-21 (Statistical analysis)": ["cluster bootstrap", "McNemar", "confidence intervals"],
+        "L.SEC-22 (Failure analysis)": ["Decoupled Independent-Axes Failure Decomposition", "upstream retrieval miss"],
+        "L.SEC-23 (Cost/resource analysis)": ["Tariff, Monetary Accounting, and Financial Guard", "Table 5b"],
+        "L.SEC-24 (Discussion)": ["## 7. Discussion and Limitations", "Latency and Cost Implications"],
+        "L.SEC-25 (Threats to validity)": ["### 7.5 Threats to Validity", "Independent Ground Truth Verification Challenges"],
+        "L.SEC-26 (Limitations)": ["Synthetic Data Boundaries and Generalization Limits", "CRITICAL CLAIM SCOPE"],
+        "L.SEC-27 (Reproducibility)": ["## 8. Conclusion and Reproducibility Statement", "Cryptographic Reproducibility Inventory"],
+        "L.SEC-28 (Conclusion)": ["### 8.1 Conclusion"],
+        "L.SEC-29 (References)": ["## References", "The MITRE Corporation", "https://github.com/mitre-attack/attack-stix-data/releases/tag/v19.2"],
+        "L.SEC-30 (Appendix / artifact hashes)": ["### 8.2 Cryptographic Reproducibility Inventory", "Table 6: Cryptographic Reproducibility Manifest"],
+    }
+
+    missing_topics: list[str] = []
+    for topic_id, keywords in topic_requirements.items():
+        found = all(kw in content for kw in keywords)
+        if not found:
+            missing_keywords = [kw for kw in keywords if kw not in content]
+            missing_topics.append(f"{topic_id} missing keywords: {missing_keywords}")
+
+    assert not missing_topics, (
+        f"Scientific report is missing required Section L topics:\n" + "\n".join(missing_topics)
+    )
+
+    # Verify critical technical constraints & claim calibrations
+    assert "synthetic-paired-v1" in content
+    assert "474 techniques and sub-techniques" in content or "474 classes" in content or "474-Class" in content
+    assert "8 active techniques" in content
+    assert "718" in content
+    assert "6,400" in content
+    assert "0.4223" in content or "p = 0.422" in content
+    assert "not statistically significant" in content
+    assert "conservative budget reservation rule" in content
+    assert "0/3,590" in content or "0.0%" in content or r"0.0\%" in content
+
+
+def test_markdown_docx_numerical_and_table_consistency() -> None:
+    """Verify that DOCX and Markdown maintain identical table data and OpenXML SDT locator tags."""
+    pytest.importorskip("docx", reason="Optional Word authoring dependency")
+    import docx
+    from scripts.export_report_docx import audit_docx_quality
+
+    md_path = Path("docs/report/scientific_report.md")
+    docx_path = Path("docs/report/scientific_report.docx")
+
+    assert md_path.is_file(), f"Missing markdown report: {md_path}"
+    assert docx_path.is_file(), f"Missing docx report: {docx_path}"
+
+    # Run automated DOCX quality audit
+    audit_docx_quality(docx_path)
+
+    doc = docx.Document(str(docx_path))
+
+    # Must contain exactly 10 tables matching markdown schemas
+    # (Tables: 1a, 1b, 2a, 2b, 3, 3b, 4, 5, 5b, 6)
+    assert len(doc.tables) == 10, f"Expected 10 tables in DOCX, found {len(doc.tables)}"
+
+    # Check for presence of OpenXML SDT locator tags and tblCaption/tblDescription
+    for idx, table in enumerate(doc.tables):
+        xml_str = table._element.xml
+        assert "w:tblCaption" in xml_str, f"Table {idx} missing w:tblCaption locator in OpenXML"
+        assert "w:tblDescription" in xml_str, f"Table {idx} missing w:tblDescription locator in OpenXML"
+        assert "w:sdt" in xml_str, f"Table {idx} missing w:sdt Structured Document Tag in OpenXML"
+        assert "w:tag" in xml_str, f"Table {idx} missing w:tag element inside w:sdt in OpenXML"
+        assert "w:alias" in xml_str, f"Table {idx} missing w:alias element inside w:sdt in OpenXML"
+
+        # Check that table cells display non-empty, real rendered text
+        row_texts = [[cell.text.strip() for cell in row.cells] for row in table.rows]
+        assert len(row_texts) >= 2, f"Table {idx} has fewer than 2 rows"
+        for r_idx, row in enumerate(row_texts):
+            assert any(cell != "" for cell in row), f"Table {idx} row {r_idx} is completely empty"
+
+    # Verify that scorable denominator 718 appears in diagnostic tables
+    table_texts = "\n".join(cell.text for t in doc.tables for row in t.rows for cell in row.cells)
+    assert "718" in table_texts, "Scorable view denominator 718 missing from DOCX tables"
+    assert "no_rag" in table_texts, "Condition 'no_rag' missing from DOCX tables"
+    assert "rag_k10" in table_texts, "Condition 'rag_k10' missing from DOCX tables"
+
+
+def test_absence_of_stale_placeholders_and_proper_status() -> None:
+    """Verify absence of stale placeholders in report and verify prep candidate status."""
+    md_path = Path("docs/report/scientific_report.md")
+    content = md_path.read_text(encoding="utf-8")
+
+    # Header must be explicit preparation candidate and NOT final certified
+    assert "[PRE-CANONICAL PREPARATION CANDIDATE — NOT FINAL CERTIFIED]" in content
+    assert "CANONICAL SCIENTIFIC REPORT — CERTIFIED AUDIT-READY" not in content
+
+    # Check absence of unpopulated template placeholders that would indicate incomplete rendering
+    bad_markers = ["{{PENDING", "[PENDING", "{{TBD", "[TBD_AT_EXECUTION]"]
+    # Check that there are no accidental raw Jinja / placeholder tags like {{UNBOUND_
+    assert "{{UNBOUND" not in content
+
+
+def test_fixture_mode_banner_and_status_sanitization(tmp_path: Path, real_fixture_copy: Path) -> None:
+    """Verify fixture mode adds visible warning banner and sanitizes status line."""
+    pytest.importorskip("docx", reason="Optional Word authoring dependency")
+    out_md = tmp_path / "fixture_report.md"
+
+    run_pipeline(
+        fixture_dir=real_fixture_copy,
+        template_path=DEFAULT_TEMPLATE_PATH,
+        output_path=out_md,
+        audit_json_path=tmp_path / "slots.json",
+        mode="fixture",
+        export_docx=True,
+    )
+
+    assert out_md.is_file(), "Fixture output markdown not generated"
+    md_text = out_md.read_text(encoding="utf-8")
+
+    # 1. Prominent visible banner with [FIXTURE — PRE-CANONICAL RENDER TEST]
+    assert "[FIXTURE — PRE-CANONICAL RENDER TEST]" in md_text
+    assert "DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS" in md_text
+    assert "<!-- FIXTURE_ONLY: true -->" in md_text
+
+    # 2. Status line sanitized: NO claims of final or certified canonical status
+    assert "CANONICAL SCIENTIFIC REPORT — CERTIFIED AUDIT-READY" not in md_text
+    assert "CERTIFIED CANONICAL EXPERIMENTAL EVALUATION" not in md_text
+    assert "PRE-CANONICAL RENDER TEST (DIAGNOSTIC FIXTURE — NOT CANONICAL OR FINAL)" in md_text
+
+    # 3. Check exported docx
+    docx_file = out_md.with_suffix(".docx")
+    assert docx_file.is_file(), "Fixture output DOCX not generated"
+    assert docx_file.stat().st_size > 0

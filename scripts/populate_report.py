@@ -35,7 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.evaluation.experiment_metrics import CONDITIONS  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DISCLAIMER_TEXT = "DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS"
+DISCLAIMER_TEXT = "[FIXTURE — PRE-CANONICAL RENDER TEST] DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS"
 COMMITTED_FIXTURE_DIR = REPO_ROOT / "tests" / "fixtures" / "report_fixtures"
 LOCAL_REPRODUCTION_FIXTURE_DIR = (
     REPO_ROOT / ".tmp" / "s1-offline-reproduction" / "fixture_diagnostics"
@@ -1887,6 +1887,9 @@ def populate_report_text(
         if mode == "canonical" and stripped.startswith("**Status:**"):
             new_lines.append("**Status:** CERTIFIED CANONICAL EXPERIMENTAL EVALUATION  ")
             continue
+        elif mode == "fixture" and stripped.startswith("**Status:**"):
+            new_lines.append("**Status:** PRE-CANONICAL RENDER TEST (DIAGNOSTIC FIXTURE — NOT CANONICAL OR FINAL)  ")
+            continue
 
         # In canonical mode: inject canonical audit seal note block after first header rule
         if mode == "canonical" and in_header and not inserted_seal_note and stripped == "---":
@@ -2191,7 +2194,7 @@ def populate_report_text(
             supp_lines.extend(["", ""])
             populated = populated.replace("### 8.3", "\n".join(supp_lines) + "### 8.3")
 
-        # Add prominent private labeling warning banner at the very top for fixture mode
+        # Add prominent private labeling warning banner in fixture mode
         banner = [
             "<!-- FIXTURE_ONLY: true -->",
             "> [!WARNING]",
@@ -2203,7 +2206,29 @@ def populate_report_text(
             "---",
             "",
         ]
-        populated = "\n".join(banner) + populated
+        banner_str = "\n".join(banner)
+
+        # Ensure title remains Paragraph 0 for academic formatting and audit_docx_quality
+        title_match = re.search(r"^(# [^\n]+\n+)", populated)
+        if title_match:
+            title_header = title_match.group(1)
+            rest = populated[title_match.end():]
+            # Strip any existing prep warning blockquote
+            rest = re.sub(
+                r"^> \[!WARNING\][^\n]*\n(?:> [^\n]*\n)*\n*",
+                "",
+                rest,
+            )
+            populated = title_header + banner_str + rest
+        else:
+            populated = banner_str + populated
+
+        # Ensure zero claims of FINAL or CERTIFIED status in fixture mode
+        populated = re.sub(
+            r"(\*\*Status:\*\*|\bStatus:)\s*(CANONICAL|CERTIFIED|FINAL|PRE-CANONICAL PREPARATION)[^\n]*",
+            r"\1 PRE-CANONICAL RENDER TEST (DIAGNOSTIC FIXTURE — NOT CANONICAL OR FINAL)",
+            populated,
+        )
 
     if mode == "canonical":
         validate_canonical_output(populated)
@@ -2326,12 +2351,14 @@ def run_pipeline(
     # 7. Optional DOCX compilation
     if export_docx:
         from scripts.export_report_docx import (
+            audit_docx_quality,
             build_docx_from_markdown,
         )
 
         docx_path = target_output_path.with_suffix(".docx")
         active_figures_dir = dest_figures_dir if dest_figures_dir.is_dir() else resolved_figures_src
         build_docx_from_markdown(target_output_path, docx_path, figures_dir=active_figures_dir)
+        audit_docx_quality(docx_path)
         print(f"[OK] Exported Word document to: {docx_path}")
 
     return target_output_path, slots

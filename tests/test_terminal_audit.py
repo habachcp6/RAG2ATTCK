@@ -44,6 +44,18 @@ def _valid_terminal_proof_data(
         "execution_mode": "live",
         "run_id": run_id,
         "record_count": 6400,
+        "requests_consumed": 6401,
+        "consumed_provider_attempts": 6401,
+        "study_budget": {
+            "has_breach": False,
+            "total_budget_usd": "19.99000000",
+            "cumulative_settled_cost_usd": "6.57575890",
+            "uncommitted_available_balance_usd": "13.36160100",
+            "prior_pilot_provisional_hold_usd": "0.05264010",
+            "active_reservations_usd": "0E-8",
+            "pricing_contract_sha256": TEST_PRICING_SHA,
+            "settlement_records_count": 6400,
+        },
     }
     return {
         "run_id": run_id,
@@ -1071,12 +1083,13 @@ def test_audit_terminal_process_proof_success(tmp_path):
     assert len(info["sha256"]) == 64
     assert info["run_id"] == "live-66b94b1676bf46a9"
     assert info["process_status"] == "terminated"
-    assert info["final_summary"] == {
-        "complete": True,
-        "execution_mode": "live",
-        "run_id": "live-66b94b1676bf46a9",
-        "record_count": 6400,
-    }
+    assert info["final_summary"]["complete"] is True
+    assert info["final_summary"]["execution_mode"] == "live"
+    assert info["final_summary"]["run_id"] == "live-66b94b1676bf46a9"
+    assert info["final_summary"]["record_count"] == 6400
+    assert info["final_summary"]["requests_consumed"] == 6401
+    assert info["final_summary"]["consumed_provider_attempts"] == 6401
+    assert info["final_summary"]["study_budget"]["total_budget_usd"] == "19.99000000"
 
 
 def test_audit_fails_on_reordered_journal_events(tmp_path):
@@ -1196,6 +1209,8 @@ def test_terminal_proof_fails_on_summary_wrong_run_count_mode(tmp_path):
             "run_id": "foreign-run",
             "record_count": 1,
             "execution_mode": "mock",
+            "requests_consumed": 1,
+            "consumed_provider_attempts": 1,
         }
     )
     proof_path.write_text(json.dumps(data), encoding="utf-8")
@@ -1366,3 +1381,212 @@ def test_preloader_and_lifecycle_fails_on_orphan_reservation(tmp_path):
 
     with pytest.raises(AuditVerificationError, match="monetary reserve|lifecycle audit failed"):
         audit_production_preloader_and_lifecycle(root, output, manifest)
+
+
+def test_terminal_proof_fails_on_consistent_wrong_attempts(tmp_path):
+    """Probe regression: consistent wrong attempts (0/0 or 6400/6400) are rejected."""
+    proof_path = tmp_path / "zero_attempts.json"
+    summary = _valid_terminal_proof_data()["final_summary"].copy()
+    summary.update(requests_consumed=0, consumed_provider_attempts=0)
+    data = _valid_terminal_proof_data(final_summary=summary)
+    proof_path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="must be a positive integer, got 0"):
+        audit_terminal_process_proof(
+            proof_path,
+            expected_run_id="live-66b94b1676bf46a9",
+            expected_task_id="task-1264",
+            expected_record_count=6400,
+        )
+
+    # 6400/6400 when canonical live run requires 6401
+    summary2 = _valid_terminal_proof_data()["final_summary"].copy()
+    summary2.update(requests_consumed=6400, consumed_provider_attempts=6400)
+    data2 = _valid_terminal_proof_data(final_summary=summary2)
+    proof_path2 = tmp_path / "attempts_6400.json"
+    proof_path2.write_text(json.dumps(data2), encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="Canonical live run expects exactly 6,401"):
+        audit_terminal_process_proof(
+            proof_path2,
+            expected_run_id="live-66b94b1676bf46a9",
+            expected_task_id="task-1264",
+            expected_record_count=6400,
+        )
+
+
+def test_terminal_proof_fails_on_null_attempts(tmp_path):
+    """Probe regression: null attempts fields are rejected."""
+    proof_path = tmp_path / "null_attempts.json"
+    summary = _valid_terminal_proof_data()["final_summary"].copy()
+    summary.update(requests_consumed=None, consumed_provider_attempts=None)
+    data = _valid_terminal_proof_data(final_summary=summary)
+    proof_path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="must be a positive integer, got None"):
+        audit_terminal_process_proof(
+            proof_path,
+            expected_run_id="live-66b94b1676bf46a9",
+            expected_task_id="task-1264",
+            expected_record_count=6400,
+        )
+
+
+def test_terminal_proof_fails_on_invalid_cap_swallowed(tmp_path):
+    """Probe regression: total_budget_usd=20.00 is strictly rejected without being swallowed."""
+    proof_path = tmp_path / "cap_20.json"
+    summary = _valid_terminal_proof_data()["final_summary"].copy()
+    summary["study_budget"]["total_budget_usd"] = "20.00"
+    data = _valid_terminal_proof_data(final_summary=summary)
+    proof_path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="budget cap exceeded: 20.00 > 19.99"):
+        audit_terminal_process_proof(
+            proof_path,
+            expected_run_id="live-66b94b1676bf46a9",
+            expected_task_id="task-1264",
+            expected_record_count=6400,
+        )
+
+
+def test_terminal_proof_fails_on_nan_and_inf_budget(tmp_path):
+    """Probe regression: non-finite or negative budget amounts are strictly rejected."""
+    # NaN
+    proof_path = tmp_path / "nan_budget.json"
+    summary = _valid_terminal_proof_data()["final_summary"].copy()
+    summary["study_budget"]["total_budget_usd"] = "NaN"
+    data = _valid_terminal_proof_data(final_summary=summary)
+    proof_path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="must be finite|not a valid Decimal"):
+        audit_terminal_process_proof(proof_path)
+
+    # Infinity
+    proof_path2 = tmp_path / "inf_budget.json"
+    summary2 = _valid_terminal_proof_data()["final_summary"].copy()
+    summary2["study_budget"]["total_budget_usd"] = "Infinity"
+    data2 = _valid_terminal_proof_data(final_summary=summary2)
+    proof_path2.write_text(json.dumps(data2), encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="must be finite"):
+        audit_terminal_process_proof(proof_path2)
+
+    # Negative
+    proof_path3 = tmp_path / "neg_budget.json"
+    summary3 = _valid_terminal_proof_data()["final_summary"].copy()
+    summary3["study_budget"]["total_budget_usd"] = "-1.00"
+    data3 = _valid_terminal_proof_data(final_summary=summary3)
+    proof_path3.write_text(json.dumps(data3), encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="must be strictly positive"):
+        audit_terminal_process_proof(proof_path3)
+
+
+def test_terminal_proof_fails_on_mismatched_nested_money(tmp_path):
+    """Probe regression: money conservation violation in study_budget is rejected."""
+    proof_path = tmp_path / "drifted_money.json"
+    summary = _valid_terminal_proof_data()["final_summary"].copy()
+    summary["study_budget"]["cumulative_settled_cost_usd"] = "10.00000000"
+    data = _valid_terminal_proof_data(final_summary=summary)
+    proof_path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="money conservation mismatch"):
+        audit_terminal_process_proof(proof_path)
+
+
+def test_generate_audit_seal_fails_on_tampered_terminal_proof(tmp_path):
+    """Direct API: generate_audit_seal validates terminal proof details under is_production=True."""
+    exp_dir = tmp_path / "exp"
+    exp_dir.mkdir()
+    study_root = tmp_path / "study"
+    study_root.mkdir()
+    val_root = REPO_ROOT
+    dummy_rec = _create_mock_record("v_0", "no_rag")
+    records = {(f"v_{i}", "no_rag"): dummy_rec for i in range(6400)}
+    valid_baseline = {
+        "all_22_files_verified": True,
+        "verified_file_count": 22,
+        "baseline_sha": "b" * 64,
+        "protocol_canonical_digest": "c" * 64,
+        "pricing_contract_sha256": TEST_PRICING_SHA,
+    }
+
+    # Tampered exit code
+    tampered_proof = _valid_terminal_proof_data(exit_code=1)
+    with pytest.raises(AuditVerificationError, match="requires terminal proof exit_code=0"):
+        generate_audit_seal(
+            exp_dir,
+            study_root,
+            val_root,
+            tmp_path / "seal.json",
+            records,
+            Decimal("6.57"),
+            Decimal("13.36"),
+            is_production=True,
+            terminal_proof_info=tampered_proof,
+            protected_baseline_info=valid_baseline,
+        )
+
+    # Tampered attempts
+    tampered_proof2 = _valid_terminal_proof_data()
+    tampered_proof2["final_summary"]["requests_consumed"] = 0
+    with pytest.raises(AuditVerificationError, match="requires exactly 6,401 attempts"):
+        generate_audit_seal(
+            exp_dir,
+            study_root,
+            val_root,
+            tmp_path / "seal.json",
+            records,
+            Decimal("6.57"),
+            Decimal("13.36"),
+            is_production=True,
+            terminal_proof_info=tampered_proof2,
+            protected_baseline_info=valid_baseline,
+        )
+
+
+def test_cli_fails_on_mismatched_run_summary_and_proof(tmp_path):
+    """Production CLI strictly rejects mismatched run_summary and terminal proof attempts."""
+    exp_dir = tmp_path / "exp"
+    exp_dir.mkdir()
+    study_root = tmp_path / "study"
+    study_root.mkdir()
+    (study_root / "scripts").mkdir()
+    launcher_path = study_root / "scripts" / "run_experiments.py"
+    launcher_path.write_text("#!/usr/bin/env python\n", encoding="utf-8")
+
+    dummy_log = tmp_path / "task.log"
+    dummy_log.write_bytes(b"authoritative log\n")
+    log_sha = hashlib.sha256(dummy_log.read_bytes()).hexdigest()
+
+    (exp_dir / "manifest.json").write_text(
+        json.dumps({"execution_mode": "live", "run_id": "live-66b94b1676bf46a9"}), encoding="utf-8"
+    )
+    (exp_dir / "run_summary.json").write_text(
+        json.dumps({
+            "complete": True,
+            "record_count": 6400,
+            "requests_consumed": 6401,
+            "consumed_provider_attempts": 6401,
+        }),
+        encoding="utf-8",
+    )
+
+    proof_file = tmp_path / "proof_mismatch.json"
+    summary = _valid_terminal_proof_data()["final_summary"].copy()
+    summary["requests_consumed"] = 5000
+    summary["consumed_provider_attempts"] = 5000
+    proof_data = _valid_terminal_proof_data(
+        artifact_log_sha256=log_sha,
+        final_summary=summary,
+    )
+    proof_data["authoritative_log"] = str(dummy_log)
+    proof_file.write_text(json.dumps(proof_data), encoding="utf-8")
+
+    with pytest.raises(AuditVerificationError, match="mismatch|Canonical live run expects"):
+        main(
+            [
+                "--exp-dir",
+                str(exp_dir),
+                "--study-root",
+                str(study_root),
+                "--terminal-proof-file",
+                str(proof_file),
+                "--log-file-path",
+                str(dummy_log),
+                "--is-production",
+            ]
+        )
+

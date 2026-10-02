@@ -301,9 +301,9 @@ class TestNoProviderDispatchOnRetryFailure:
             )
 
         # Strictly ZERO provider calls dispatched
-        assert (
-            len(mock_provider.calls) == 0
-        ), f"Expected 0 provider calls, got {len(mock_provider.calls)}"
+        assert len(mock_provider.calls) == 0, (
+            f"Expected 0 provider calls, got {len(mock_provider.calls)}"
+        )
 
         # Verify no prediction records were committed
         for pred_file in output.glob("*_predictions.jsonl"):
@@ -396,9 +396,7 @@ class TestNoBudgetOrStateReset:
 class TestCrashConsistencyLedgerAndAnchor:
     """Test 4: Crash consistency if ledger written but anchor fails (and vice-versa)."""
 
-    def test_anchor_exists_without_ledger_fails_closed(
-        self, tmp_dir, sample_pricing
-    ):
+    def test_anchor_exists_without_ledger_fails_closed(self, tmp_dir, sample_pricing):
         ledger_path = tmp_dir / "study_budget" / "study_ledger.json"
         anchor_path = tmp_dir / ".study_anchor.json"
         ledger_path.parent.mkdir(parents=True, exist_ok=True)
@@ -430,9 +428,7 @@ class TestCrashConsistencyLedgerAndAnchor:
                 pricing_config=sample_pricing,
             )
 
-    def test_request_runtime_does_not_mutate_anchor(
-        self, tmp_dir, sample_pricing
-    ):
+    def test_request_runtime_does_not_mutate_anchor(self, tmp_dir, sample_pricing):
         ledger_path = tmp_dir / "study_budget" / "study_ledger.json"
         anchor_path = tmp_dir / ".study_anchor.json"
         ledger_path.parent.mkdir(parents=True, exist_ok=True)
@@ -486,9 +482,7 @@ class TestExceptionPropagationAndDualLockSafety:
             acquired = True
         assert acquired, "Subsequent dual lock acquisition failed"
 
-    def test_reserve_lock_cleanup_on_write_failure(
-        self, tmp_dir, sample_pricing, monkeypatch
-    ):
+    def test_reserve_lock_cleanup_on_write_failure(self, tmp_dir, sample_pricing, monkeypatch):
         ledger_path = tmp_dir / "study_ledger.json"
         anchor_path = tmp_dir / ".study_anchor.json"
         ledger = StudyBudgetLedger(

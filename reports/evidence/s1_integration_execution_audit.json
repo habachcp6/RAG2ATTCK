@@ -266,16 +266,21 @@
       "reproduce_study_verify_hashes": {
         "invocation": 1,
         "description": "Cryptographic hash & artifact integrity audit of 15 canonical artifacts + DEV cost pilot evidence bundle",
-        "command": "D:\\RAG2ATTCK-worktrees\\repro-presentation-s1\\.venv\\Scripts\\python.exe scripts\\run_offline_tests.py -c \"import runpy, sys; sys.argv=['scripts/reproduce_study.py', '--verify-hashes']; runpy.run_path('scripts/reproduce_study.py', run_name='__main__')\"",
+        "command": "D:\\RAG2ATTCK-worktrees\\repro-presentation-s1\\.venv\\Scripts\\python.exe scripts\\run_offline_tests.py -c \"import runpy, sys; sys.argv=['scripts/reproduce_study.py', '--verify-hashes', '--output-dir', '.tmp/s1-offline-reproduction']; runpy.run_path('scripts/reproduce_study.py', run_name='__main__')\"",
         "interpreter": "D:/RAG2ATTCK-worktrees/repro-presentation-s1/.venv/Scripts/python.exe (matplotlib-capable environment)",
         "cwd": "D:/RAG2ATTCK-worktrees/integrated-audit-s1",
+        "output_directory": ".tmp/s1-offline-reproduction",
         "exit_code": 0,
         "scope": "Audits 15 canonical locked artifacts, frozen protocol decisions, critical code manifest, 10 DEV cost pilot files (dev_cost_pilot_20261001), launcher hash, Windows atomic rename wrapper",
         "egress": 0,
         "guard_status": "installed=True attempted_egress=0",
         "guard_protocol": "Guarded socket wrapper (scripts/run_offline_tests.py) strictly enforces -m or -c invocation; executed via -c runner using Track D matplotlib-capable virtual environment.",
         "log_file": "reports/evidence/reproduce_study_verify_hashes.log",
-        "log_sha256": "a0fd9dc08d0a166c5c6c492e3f20b31377819bb1132becc66a72d785af56e388"
+        "log_sha256": "a0fd9dc08d0a166c5c6c492e3f20b31377819bb1132becc66a72d785af56e388",
+        "invocation_history_clarification": {
+          "initial_default_invocation": "An earlier exploratory test invocation executed scripts/reproduce_study.py --verify-hashes without --output-dir, writing by default to outputs/reproduction/reproduction_report.md (restored cleanly via git checkout HEAD).",
+          "captured_replay_invocation": "The official verified log reports/evidence/reproduce_study_verify_hashes.log (recorded at 23:34:47 UTC) captures the replay command with explicit isolated output directory --output-dir .tmp/s1-offline-reproduction, preventing any tracked tree mutations."
+        }
       },
       "reproduce_study_all_offline": {
         "invocation": 2,
@@ -310,8 +315,12 @@
     }
   },
   "tracked_output_mutation_explanation": {
-    "phenomenon": "During initial test invocation of scripts/reproduce_study.py --verify-hashes without an explicit --output-dir parameter, outputs/reproduction/reproduction_report.md was regenerated with the verification timestamp.",
-    "root_cause": "scripts/reproduce_study.py defaults its output directory to outputs/reproduction when --output-dir is not specified. The script honors --output-dir when explicitly provided (as in invocation 2 with --output-dir .tmp/s1-offline-reproduction).",
+    "phenomenon": "During exploratory validation of scripts/reproduce_study.py --verify-hashes without an explicit --output-dir parameter, outputs/reproduction/reproduction_report.md was regenerated with the verification timestamp.",
+    "root_cause": "scripts/reproduce_study.py defaults its output directory to outputs/reproduction when --output-dir is not specified. The script honors --output-dir when explicitly provided.",
+    "distinction_of_invocations": {
+      "original_default_invocation": "Executed without --output-dir, modifying outputs/reproduction/reproduction_report.md; restored cleanly with narrow git restore command.",
+      "isolated_replay_invocation": "Executed with --output-dir .tmp/s1-offline-reproduction, which generated reports/evidence/reproduce_study_verify_hashes.log with 0 working tree modifications."
+    },
     "narrow_restore_command": "git checkout HEAD -- outputs/reproduction/reproduction_report.md",
     "target_cleanliness_after_restore": "git status confirmed 'nothing to commit, working tree clean' at HEAD 95b924638c03e7ddeb9f65a1d500fb212b256fd2."
   },

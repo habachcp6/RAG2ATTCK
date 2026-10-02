@@ -819,12 +819,26 @@ def build_canonical_metric_bundle(
     return bundle
 
 
+def resolve_default_public_package_dir() -> Path:
+    env_dir = os.environ.get("RAG2ATTCK_PUBLIC_PACKAGE_DIR")
+    if env_dir:
+        return Path(env_dir)
+    candidates = [
+        Path("artifacts/public_package_staging/03_public_canonical_package"),
+        Path.home() / ".codex" / "artifacts" / "rag2attck" / "final_handover_package_v3_20261002" / "03_public_canonical_package",
+    ]
+    for c in candidates:
+        if c.is_dir():
+            return c
+    return candidates[0]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build and validate Canonical Metric Bundle v2")
     parser.add_argument(
         "--public-package-dir",
         type=Path,
-        default=Path("C:/Users/hahoa/.codex/artifacts/rag2attck/final_handover_package_v3_20261002/03_public_canonical_package"),
+        default=resolve_default_public_package_dir(),
         help="Path to public canonical package v3 directory",
     )
     parser.add_argument(

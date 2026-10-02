@@ -831,50 +831,46 @@ async function runArtifactToolDeckUpdater(options = {}) {
 
   // Slide 9: Shape sh/ofq5svm5 (Separate DEV pilot telemetry vs Diagnostic Fixture Projection - 10 slots)
   const shOfq = presentation.resolve("sh/ofq5svm5");
-  shOfq.text.fontSize = 11.5;
   const slide9Heading = isCanonical
     ? "Phân Tích Tài Nguyên & Chi Phí Chuẩn Tắc (TEST 718) [CANONICAL STUDY]"
     : `DEV Pilot Telemetry & Hạch Toán Nghiên Cứu [${DISCLAIMER_TEXT}]`;
   const zone2Heading = isCanonical
     ? "▶ ZONE 2: TÀI NGUYÊN & ĐỘ TRỄ (Mẫu số 1,280 views/điều kiện, N=6,400 dispatches)"
     : "▶ ZONE 2: DIAGNOSTIC TEST FIXTURE TELEMETRY (N=718 Scorable Views)";
-  const slide9Content = isCanonical
-    ? [
-        slide9Heading,
-        "•  Lưu ý: Ước tính thận trọng từ bảng giá đóng băng (conservative accounted tariff estimate).",
-        "",
-        "▶ TÀI NGUYÊN & ĐỘ TRỄ (1,280 views/điều kiện, 6,400 dispatches):",
-        `•  no_rag:  trễ trung vị ${slots["{{S2_MEDIAN_LAT_NO_RAG_SEC}}"]}s (TB 2.90s) | ${slots["{{S2_MEAN_PROMPT_TOK_NO_RAG}}"]} tokens | $${slots["{{S2_COST_LOGICAL_REQ_NO_RAG}}"]} / query.`,
-        `•  rag_k10: trễ trung vị ${slots["{{S2_MEDIAN_LAT_K10_SEC}}"]}s (TB 4.37s) | ${slots["{{S2_MEAN_PROMPT_TOK_K10}}"]} tokens | $${slots["{{S2_COST_LOGICAL_REQ_K10}}"]} / query.`,
-        "•  Đánh đổi tài nguyên: Tăng k từ 0 lên 10 làm prompt tokens tăng ~7.6x, chi phí/query tăng ~4.6x.",
-        "",
-        "▶ HẠCH TOÁN TOÀN BỘ NGHIÊN CỨU (Whole Study Financial Accounting):",
-        `•  Đã quyết toán điều kiện chính thức: $${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD ($6.58 settled spend).`,
-        `•  Khoản giữ chỗ thận trọng pilot tạm thời: ${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD (DEV pilot hold).`,
-        `•  Tổng cam kết: $6.63 USD committed spend trên trần $${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD.`,
-        `•  Ngân sách khả dụng còn lại: $${slots["{{S2_NET_REMAINING_USD}}"]} USD ($13.36 net remaining; 0 breach).`,
-        "•  Ngoại lệ: 13 INCOMPLETE records; 1 retry hoàn tất (chi tiết trong speaker notes).",
-      ].join("\n")
-    : [
-        slide9Heading,
-        "",
-        "▶ ZONE 1: HISTORICAL DEV PILOT BASELINE (20 Requests Responses API)",
-        "•  Dữ liệu DEV pilot lịch sử: 20 requests (4 views x 5 điều kiện, tổng chi phí ~$0.0242 USD).",
-        "•  Ghi chú phân định tuyệt đối: Request thực tế không biến log tổng hợp thành in-the-wild telemetry.",
-        "",
-        zone2Heading,
-        `•  no_rag: trễ trung vị ${slots["{{S2_MEDIAN_LAT_NO_RAG_SEC}}"]}s (trung bình 2.90s) | ${slots["{{S2_MEAN_PROMPT_TOK_NO_RAG}}"]} prompt tokens | ~${slots["{{S2_COST_LOGICAL_REQ_NO_RAG}}"]} USD / logical req.`,
-        `•  rag_k10: trễ trung vị ${slots["{{S2_MEDIAN_LAT_K10_SEC}}"]}s (trung bình 4.37s) | ${slots["{{S2_MEAN_PROMPT_TOK_K10}}"]} prompt tokens | ~${slots["{{S2_COST_LOGICAL_REQ_K10}}"]} USD / logical req.`,
-        "",
-        "▶ ZONE 3: WHOLE STUDY FINANCIAL ACCOUNTING (6,400 Matrix Canonical Conditions)",
-        `•  Hạch toán toàn thể điều kiện chuẩn (Canonical Total): ${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD ($6.57575890 USD đã quyết toán).`,
-        `•  Khoản giữ chỗ thận trọng pilot tạm thời: ${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD (prior_pilot_provisional_hold_usd).`,
-        `•  Tổng chi phí đã cam kết hạch toán: $6.63 USD ($6.62839900 USD total accounted spend).`,
-        `•  Ngân sách chưa cam kết còn lại (Net Remaining): ${slots["{{S2_NET_REMAINING_USD}}"]} USD ($13.36160100 USD khả dụng).`,
-        `•  Trần ngân sách đóng băng cứng (Hard Budget Cap): ${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD.`,
-      ].join("\n");
 
-  shOfq.text.set(slide9Content);
+  if (isCanonical) {
+    shOfq.text.fontSize = 18;
+    const slide9Content = [
+      "Hạch Toán Tài Chính & Tiêu Điểm Chi Phí (RQ3)",
+      `•  no_rag: trễ trung vị ${slots["{{S2_MEDIAN_LAT_NO_RAG_SEC}}"]}s | ${slots["{{S2_MEAN_PROMPT_TOK_NO_RAG}}"]} prompt tokens | $${slots["{{S2_COST_LOGICAL_REQ_NO_RAG}}"]} / req.`,
+      `•  rag_k10: trễ trung vị ${slots["{{S2_MEDIAN_LAT_K10_SEC}}"]}s | ${slots["{{S2_MEAN_PROMPT_TOK_K10}}"]} prompt tokens | $${slots["{{S2_COST_LOGICAL_REQ_K10}}"]} / req.`,
+      `•  Đã quyết toán 5 điều kiện chính thức (Canonical Total): $${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD ($6.58 settled spend).`,
+      `•  Khoản giữ chỗ pilot tạm thời: ${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD (tổng cam kết hạch toán: $6.63 USD).`,
+      `•  Ngân sách khả dụng còn lại: ${slots["{{S2_NET_REMAINING_USD}}"]} USD (trần ngân sách đóng băng: $${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD).`,
+    ].join("\n\n");
+    shOfq.text.set(slide9Content);
+  } else {
+    shOfq.text.fontSize = 11.5;
+    const slide9Content = [
+      slide9Heading,
+      "",
+      "▶ ZONE 1: HISTORICAL DEV PILOT BASELINE (20 Requests Responses API)",
+      "•  Dữ liệu DEV pilot lịch sử: 20 requests (4 views x 5 điều kiện, tổng chi phí ~$0.0242 USD).",
+      "•  Ghi chú phân định tuyệt đối: Request thực tế không biến log tổng hợp thành in-the-wild telemetry.",
+      "",
+      zone2Heading,
+      `•  no_rag: trễ trung vị ${slots["{{S2_MEDIAN_LAT_NO_RAG_SEC}}"]}s (trung bình 2.90s) | ${slots["{{S2_MEAN_PROMPT_TOK_NO_RAG}}"]} prompt tokens | ~${slots["{{S2_COST_LOGICAL_REQ_NO_RAG}}"]} USD / logical req.`,
+      `•  rag_k10: trễ trung vị ${slots["{{S2_MEDIAN_LAT_K10_SEC}}"]}s (trung bình 4.37s) | ${slots["{{S2_MEAN_PROMPT_TOK_K10}}"]} prompt tokens | ~${slots["{{S2_COST_LOGICAL_REQ_K10}}"]} USD / logical req.`,
+      "",
+      "▶ ZONE 3: WHOLE STUDY FINANCIAL ACCOUNTING (6,400 Matrix Canonical Conditions)",
+      `•  Hạch toán toàn thể điều kiện chuẩn (Canonical Total): ${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD ($6.57575890 USD đã quyết toán).`,
+      `•  Khoản giữ chỗ thận trọng pilot tạm thời: ${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD (prior_pilot_provisional_hold_usd).`,
+      `•  Tổng chi phí đã cam kết hạch toán: $6.63 USD ($6.62839900 USD total accounted spend).`,
+      `•  Ngân sách chưa cam kết còn lại (Net Remaining): ${slots["{{S2_NET_REMAINING_USD}}"]} USD ($13.36160100 USD khả dụng).`,
+      `•  Trần ngân sách đóng băng cứng (Hard Budget Cap): ${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD.`,
+    ].join("\n");
+    shOfq.text.set(slide9Content);
+  }
   disclaimerEditsCount++;
   modifiedShapeIds.add("sh/ofq5svm5");
 
@@ -882,7 +878,7 @@ async function runArtifactToolDeckUpdater(options = {}) {
   const shOza = presentation.resolve("sh/oza1gfyh");
   if (shOza && shOza.text) {
     if (isCanonical) {
-      shOza.text.fontSize = 11.5;
+      shOza.text.fontSize = 15;
       shOza.text.set([
         "Quy Luật Đánh Đổi Hiệu Năng & Chi Phí (RQ3 Canonical Trade-off)",
         "•  Hit rate chuẩn tắc (TEST 718): RAG k=1 đạt 3.760% -> RAG k=10 đạt 44.708% (No-RAG: N/A, không retriever).",
@@ -903,18 +899,46 @@ async function runArtifactToolDeckUpdater(options = {}) {
     }
   }
 
-  // Slide 9: Replace picture with verified native plot in canonical mode
+  // Slide 9: Replace picture with editable 5-row resource table in canonical mode
   if (isCanonical) {
-    const verifiedFigDir = "C:/Users/hahoa/.codex/artifacts/rag2attck/verified-native-figures-v1";
-    const fig9Path = path.join(verifiedFigDir, "canonical_rq3_cost_and_latency.png");
-    if (fsSync.existsSync(fig9Path)) {
-      const img9 = presentation.resolve("im/u987u5cf");
-      if (img9) {
-        const fig9Bytes = await fs.readFile(fig9Path);
-        img9.replace({ data: new Uint8Array(fig9Bytes), contentType: "image/png" });
-        console.log(`[+] Replaced Slide 9 picture with verified native plot: canonical_rq3_cost_and_latency.png`);
+    const img9 = presentation.resolve("im/u987u5cf");
+    if (img9) {
+      if (img9.delete) img9.delete();
+      else presentation.delete("im/u987u5cf");
+      console.log(`[+] Deleted Slide 9 picture im/u987u5cf to replace with editable resource table.`);
+    }
+
+    const table9 = slides[8].tables.add({
+      rows: 6,
+      columns: 4,
+      values: [
+        ["Condition", "Mean Prompt Tok", "Mean Latency (s)", "Total Fee ($ USD)"],
+        ["no_rag", "674.3", "2.90", "$0.46714395"],
+        ["rag_k1", "1,246.5", "3.51", "$1.29723350"],
+        ["rag_k3", "2,172.4", "4.22", "$1.17888000"],
+        ["rag_k5", "3,060.2", "4.33", "$1.48311775"],
+        ["rag_k10", "5,114.3", "4.37", "$2.14938370"],
+      ],
+      columnWidths: [105, 140, 135, 167],
+    });
+
+    table9.frame = { left: 655.97, top: 129.6, width: 547.2, height: 280 };
+
+    for (let c = 0; c < 4; c++) {
+      const cell = table9.getCell(0, c);
+      cell.text.fontSize = 20;
+      cell.text.bold = true;
+      cell.text.color = "#1E3A8A";
+    }
+    for (let r = 1; r <= 5; r++) {
+      for (let c = 0; c < 4; c++) {
+        const cell = table9.getCell(r, c);
+        cell.text.fontSize = 18;
+        cell.text.color = "#0F172A";
+        if (c === 0) cell.text.bold = true;
       }
     }
+    console.log(`[+] Created editable 5-row resource table on Slide 9 (headers 20pt, body 18pt).`);
   }
 
   // Slide 10, 11, 12 shape content updates in canonical mode

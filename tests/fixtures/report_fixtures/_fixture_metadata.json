@@ -1,0 +1,11 @@
+{
+  "fixture_only": true,
+  "purpose": "known_answer_fixture_only",
+  "description": "Synthetic unit test fixture diagnostic demonstrating evaluator mathematical correctness. NOT live experiment results.",
+  "protocol_version": "experiment-protocol-v1",
+  "experiment_id": "known-answer-only",
+  "manifest_sha256": "acf4f5383ad2387e6a21006aae83ba728c7ccb15c9114052e48babfd00e6081e",
+  "sample_count": 5,
+  "overall_accuracy": 0.5,
+  "completed_records": 35
+}

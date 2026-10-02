@@ -1,3 +1,11 @@
+<!-- FIXTURE_ONLY: true -->
+> [!WARNING]
+> **DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS**
+> This scientific report preview was populated using synthetic offline test fixtures
+> for pipeline verification and presentation readiness purposes only.
+> It contains **NO** canonical live experimental results or live model predictions.
+
+---
 # Evaluating MITRE ATT&CK-Grounded RAG for Technique Attribution from Windows Endpoint Logs: A Replication-and-Extension Study
 
 **Author:** Hà Hoàng Bách  
@@ -386,21 +394,21 @@ Table 2a and Table 2b outline the comparative attribution performance and diagno
 
 | Condition | Retrieval Depth ($k$) | Scorable Views ($N$) | Headline Accuracy ($\text{Acc}_{\text{e2e}}$) | Valid Accuracy ($\text{Acc}_{\text{valid}}$) | 474-Class Macro F1 |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| `no_rag` | 0 | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k1` | 1 | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k3` | 3 | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k5` | 5 | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k10`| 10 | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+| `no_rag` | 0 | 6 | 50.00% | 60.00% | 9.29% |
+| `rag_k1` | 1 | 6 | 50.00% | 60.00% | 9.29% |
+| `rag_k3` | 3 | 6 | 50.00% | 60.00% | 9.29% |
+| `rag_k5` | 5 | 6 | 50.00% | 60.00% | 9.29% |
+| `rag_k10` | 10 | 6 | 50.00% | 60.00% | 9.29% |
 
 *Table 2b: Attribution Diagnostic Metrics Across Experimental Conditions (Schema).*
 
 | Condition | Scorable Views ($N$) | Completed Outputs | Parse Failures | Invalid ATT&CK IDs | Invalid ID Rate (%) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| `no_rag` | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k1` | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k3` | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k5` | 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k10`| 718 | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+| `no_rag` | 6 | 7 | 1 | 1 | 14.29% |
+| `rag_k1` | 6 | 7 | 1 | 1 | 14.29% |
+| `rag_k3` | 6 | 7 | 1 | 1 | 14.29% |
+| `rag_k5` | 6 | 7 | 1 | 1 | 14.29% |
+| `rag_k10` | 6 | 7 | 1 | 1 | 14.29% |
 
 #### Single-Event vs. Contextual-Event Performance Breakdown
 Table 3 schemas the comparative performance partitioned by telemetry representation (278 Single-Event Views vs. 440 Contextual-Event Views).
@@ -409,11 +417,11 @@ Table 3 schemas the comparative performance partitioned by telemetry representat
 
 | Condition | Single-Event $\text{Acc}_{\text{e2e}}$ ($N=278$) | Contextual-Event $\text{Acc}_{\text{e2e}}$ ($N=440$) | Single Macro-F1 | Contextual Macro-F1 | $\Delta \text{Acc}$ (Context - Single) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| `no_rag` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k1` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k3` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k5` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k10`| `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+| `no_rag` | 50.00% | 50.00% | N/A | N/A | +0.00 pp |
+| `rag_k1` | 50.00% | 50.00% | N/A | N/A | +0.00 pp |
+| `rag_k3` | 50.00% | 50.00% | N/A | N/A | +0.00 pp |
+| `rag_k5` | 50.00% | 50.00% | N/A | N/A | +0.00 pp |
+| `rag_k10` | 50.00% | 50.00% | N/A | N/A | +0.00 pp |
 
 ### 6.2 RQ2: Retrieval Quality and Failure Decomposition
 Table 4 defines the formal error decomposition schema across the independent diagnostic failure axes.
@@ -422,11 +430,11 @@ Table 4 defines the formal error decomposition schema across the independent dia
 
 | Condition | Total Errors | Upstream Retrieval Miss ($GT \notin \text{Top-}k$) | Downstream Selection Failure ($GT \in \text{Top-}k \land \text{Wrong}$) | Parametric Recovery ($GT \notin \text{Top-}k \land \text{Correct}$) | Invalid ATT&CK ID | Parse Failure | Provider / Timeout Failure |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| `no_rag` | `[TBD_AT_EXECUTION]` | N/A | N/A | N/A | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k1` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k3` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k5` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k10`| `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+| `no_rag` | 3 | N/A | N/A | N/A | 1 | 0 | 0 |
+| `rag_k1` | 3 | 3 | 1 | 1 | 1 | 0 | 0 |
+| `rag_k3` | 3 | 1 | 2 | 0 | 1 | 0 | 0 |
+| `rag_k5` | 3 | 1 | 2 | 0 | 1 | 0 | 0 |
+| `rag_k10` | 3 | 1 | 2 | 0 | 1 | 0 | 0 |
 
 #### Empirical Retrieval Baseline (Task T20 Diagnostic Findings)
 While end-to-end LLM inference awaits canonical execution, the standalone dense retriever (`all-MiniLM-L6-v2` + FAISS `IndexFlatIP`) was evaluated offline across all 756 positive benchmark views (full benchmark: 718 TEST + 38 DEV) in Task T20 (`reports/T20_retrieval_failure_analysis.md`). These empirical findings establish critical baseline context for interpreting future RAG performance:
@@ -452,11 +460,11 @@ Table 5 defines the schema for evaluating the operational costs, latencies, and 
 
 | Condition | Total Input Tokens | Total Output Tokens | Mean Output Tokens / Req | Mean Latency (s) | Median Latency (s) | P95 Latency (s) | Total Cost (USD) | Mean Cost / Query (USD) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| `no_rag` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k1` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k3` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k5` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
-| `rag_k10`| `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` | `[TBD_AT_EXECUTION]` |
+| `no_rag` | 3,215 | 1,121 | 224.2 | 8.13s | 7.89s | 9.50s | USD 0.00 | USD 0.000390 |
+| `rag_k1` | 5,575 | 1,661 | 332.2 | 8.50s | 8.20s | 9.80s | USD 0.00 | USD 0.000620 |
+| `rag_k3` | 8,702 | 5,436 | 1087.2 | 9.20s | 8.90s | 10.50s | USD 0.01 | USD 0.001650 |
+| `rag_k5` | 12,591 | 4,201 | 840.2 | 9.60s | 9.30s | 11.00s | USD 0.01 | USD 0.001510 |
+| `rag_k10` | 22,682 | 4,004 | 800.8 | 10.20s | 9.90s | 11.80s | USD 0.01 | USD 0.001870 |
 
 ---
 
@@ -520,6 +528,19 @@ In adherence to open science principles, all artifacts, code, configurations, an
 | **Index Document Mapping File** | `attack/index/enterprise-windows-v19.2.docmap.json` | File SHA-256 | `a7de3dfcf2b6e186e639d2922fcbc27766c160ae58bbafea74b5efc0faf30586` |
 | **Dataset Manifest File** | `data/ground_truth/synthetic/dataset_manifest.json` | File SHA-256 | `4576b793360d02b60d619d199fd34d4555ace33215303ee847715c162a50dcc2` |
 | **Live Execution Launcher Hash** | Runtime wrapper entrypoint | Code SHA-256 | `05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa` |
+
+
+#### Supplementary Execution Provenance (Diagnostic Fixture Mode)
+The following diagnostic fixture files were consumed during this offline verification run:
+
+| Asset Description | File Path | Digest Type | SHA-256 Digest |
+| :--- | :--- | :--- | :--- |
+| **Diagnostic Overall Metrics** | `tests/fixtures/report_fixtures/overall_metrics.json` | File SHA-256 | `77b1d115b699f054ee5e58c692b192147a8a37bf4f1232a1a5da65e3a81bfe95` |
+| **Diagnostic Condition Metrics** | `tests/fixtures/report_fixtures/per_condition_metrics.json` | File SHA-256 | `1cf53cd5f376960a18a9c6d1662f4b800db9836a73fff1b645e99e70eb60dc5b` |
+| **Diagnostic Failure Decomposition** | `tests/fixtures/report_fixtures/failure_decomposition.json` | File SHA-256 | `a0f1b5e95314170fad73068411db953dc87921c4a02ae67210dbec87b1866749` |
+| **Diagnostic Retrieval Conditional** | `tests/fixtures/report_fixtures/retrieval_conditional_metrics.json` | File SHA-256 | `a1860631bb29e95370932acfbcd4d72881a91b6b2a7692ebd8326f9483048384` |
+| **Diagnostic RQ Analysis** | `tests/fixtures/report_fixtures/rq_analysis.json` | File SHA-256 | `bdebae6d99533c580eddf4ec3e0e07446f2e917001068d4ba635f56569e67a1e` |
+| **Diagnostic Run Provenance** | `tests/fixtures/report_fixtures/run_provenance.json` | File SHA-256 | `20603131854454c864d0543e6e3c0e299844f3f1384bb40654016960af2022ab` |
 
 ### 8.3 Data, Code Availability, and Licensing
 The repository is maintained at: `https://github.com/habachcp6/RAG2ATTCK`. Root `README.md` declares an MIT license (note: a physical `LICENSE` file is omitted in the root repository checkout).

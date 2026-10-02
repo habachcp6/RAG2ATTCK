@@ -89,8 +89,8 @@ Per Codex clarification, the markdown scaffold serves as preparation, and a comp
 ### 5.1 Created Artifact Checksums
 | File Path | File Size | SHA-256 Checksum | Purpose |
 | :--- | :---: | :--- | :--- |
-| `docs/report/scientific_report.md` | 73,519 bytes | `7a8102b6e865a00c1cf6e5c9c598c36681185a17364e712930293b07c254cedf` | Repaired research report markdown scaffold |
-| `docs/report/scientific_report.docx` | 77,319 bytes | `932bf6ad2977cdddd53ea15aa1e80c3b9aabff23599a1d35d228592a9dbc4cb3` | Compiled editable Microsoft Word publication report |
+| `docs/report/scientific_report.md` | 74,384 bytes | `65469e598586f727464a5a2a2dd570f669878a0a471b3e90f1c47d40313f1b15` | Repaired research report markdown scaffold |
+| `docs/report/scientific_report.docx` | 77,660 bytes | `679cbc9e2f3a3b684a2fe88f37af0f06c903754660a7184e42cd1b84e1a2526e` | Compiled editable Microsoft Word publication report |
 | `scripts/export_report_docx.py` | 32,532 bytes | `6c94a9a499ba22639c322419089dc6349fdfcc2ce46cd4da4b7346427cad373f` | DOCX export tool with LaTeX-to-Unicode converter and layout controls |
 | `scripts/verify_report_metadata.py` | 14,755 bytes | `eb842755420b420a07f99a2f2f489e5bd91c199fb26df51112f835ac35f074e8` | Automated verifier for report hashes, evaluator invariants, and DOCX QA |
 | `reports/evidence/research_report_scaffold.md` | ~23 KB | Tracked in Git (C_METHODS_FINAL_ALIGNMENT) | Phase S1 evidence document |

@@ -9,7 +9,8 @@ Verifies:
    - Case B: Unpredicted class (support>0, pred=0) -> precision=None, recall=0.0, f1=0.0
    - Case C: Unobserved false positive (support=0, pred>0) -> precision=0.0, recall=None, f1=0.0
    - All three cases contribute 0.0 to the condition Macro-F1 numerator sum divided by 474.
-5. Word document formatting invariants (Title color/borders, References [1]..[13], Table widths <= 6.50in).
+5. Word document formatting invariants (Title color/borders, References [1]..[13],
+   Table widths <= 6.50in).
 """
 
 from __future__ import annotations
@@ -56,7 +57,9 @@ def verify_markdown_table6(md_path: Path) -> dict[str, str]:
         raise AssertionError("Table 6 marker not found in scientific_report.md")
 
     t6_section = text.split(t6_marker)[1].split("### 8.3")[0]
-    rows = [line.strip() for line in t6_section.strip().splitlines() if line.strip().startswith("|")]
+    rows = [
+        line.strip() for line in t6_section.strip().splitlines() if line.strip().startswith("|")
+    ]
 
     # Skip header and separator
     data_rows = [r for r in rows if not re.match(r"^\|\s*:?---+", r)][1:]
@@ -73,15 +76,15 @@ def verify_markdown_table6(md_path: Path) -> dict[str, str]:
         if digest_type == "Protocol Digest":
             proto_json = json.loads(Path(clean_path).read_text(encoding="utf-8"))
             actual_digest = proto_json.get("protocol_sha256")
-            assert (
-                actual_digest == clean_hash
-            ), f"Protocol digest mismatch: cited {clean_hash}, actual {actual_digest}"
+            assert actual_digest == clean_hash, (
+                f"Protocol digest mismatch: cited {clean_hash}, actual {actual_digest}"
+            )
             print(f"  [OK] Protocol Digest: {clean_path} -> {clean_hash[:16]}...")
         elif digest_type == "File SHA-256":
             actual_hash = compute_file_sha256(Path(clean_path))
-            assert (
-                actual_hash == clean_hash
-            ), f"File hash mismatch for {clean_path}: cited {clean_hash}, actual {actual_hash}"
+            assert actual_hash == clean_hash, (
+                f"File hash mismatch for {clean_path}: cited {clean_hash}, actual {actual_hash}"
+            )
             print(f"  [OK] File SHA-256: {clean_path} -> {clean_hash[:16]}...")
         elif digest_type == "Code SHA-256":
             # Launcher wrapper hash
@@ -95,9 +98,9 @@ def verify_markdown_table6(md_path: Path) -> dict[str, str]:
     assert m, "Section 3.2 benchmark_scope.json hash mention not found"
     sec32_hash = m.group(1)
     actual_scope_hash = compute_file_sha256(Path("config/benchmark_scope.json"))
-    assert (
-        sec32_hash == actual_scope_hash
-    ), f"Section 3.2 hash mismatch: cited {sec32_hash}, actual {actual_scope_hash}"
+    assert sec32_hash == actual_scope_hash, (
+        f"Section 3.2 hash mismatch: cited {sec32_hash}, actual {actual_scope_hash}"
+    )
     print(f"  [OK] Section 3.2 benchmark_scope.json citation matches disk: {sec32_hash[:16]}...")
 
     return verified_hashes
@@ -121,14 +124,16 @@ def verify_docx_table6(docx_path: Path, verified_hashes: dict[tuple[str, str], s
         key = (path_cell, type_cell)
         if key in verified_hashes:
             expected = verified_hashes[key]
-            assert (
-                expected == hash_cell
-            ), f"DOCX Table 6 mismatch for {key}: expected {expected}, got {hash_cell}"
+            assert expected == hash_cell, (
+                f"DOCX Table 6 mismatch for {key}: expected {expected}, got {hash_cell}"
+            )
             print(f"  [OK] DOCX Table 6 matches: {path_cell} ({type_cell}) -> {hash_cell[:16]}...")
 
 
 def verify_evaluator_zero_denominator_cases():
-    """Perform read-only known-answer verification for all 3 zero-denominator cases under D2j NULL."""
+    """Perform read-only known-answer verification for all 3 zero-denominator cases
+    under D2j NULL.
+    """
     print("--- 3. Verifying Evaluator Zero-Denominator Invariants ---")
     proto_data = json.loads(Path("config/experiment_protocol_v1.json").read_text(encoding="utf-8"))
     protocol = ScientificProtocolApproval(**proto_data)
@@ -165,41 +170,46 @@ def verify_evaluator_zero_denominator_cases():
 
     # Case A: T1000 (Unobserved)
     t1000 = no_rag_techs["T1000"]
-    assert (
-        t1000["support"] == 0 and t1000["tp"] == 0 and t1000["fp"] == 0 and t1000["fn"] == 0
-    ), f"T1000 confusion error: {t1000}"
-    assert (
-        t1000["precision"] is None and t1000["recall"] is None and t1000["f1"] is None
-    ), f"Case A failure: {t1000}"
+    assert t1000["support"] == 0 and t1000["tp"] == 0 and t1000["fp"] == 0 and t1000["fn"] == 0, (
+        f"T1000 confusion error: {t1000}"
+    )
+    assert t1000["precision"] is None and t1000["recall"] is None and t1000["f1"] is None, (
+        f"Case A failure: {t1000}"
+    )
     print("  [OK] Case A (Unobserved Class T1000): precision=None, recall=None, f1=None")
 
     # Case B: T1001 (Unpredicted)
     t1001 = no_rag_techs["T1001"]
-    assert (
-        t1001["support"] == 1 and t1001["tp"] == 0 and t1001["fp"] == 0 and t1001["fn"] == 1
-    ), f"T1001 confusion error: {t1001}"
-    assert (
-        t1001["precision"] is None and t1001["recall"] == 0.0 and t1001["f1"] == 0.0
-    ), f"Case B failure: {t1001}"
+    assert t1001["support"] == 1 and t1001["tp"] == 0 and t1001["fp"] == 0 and t1001["fn"] == 1, (
+        f"T1001 confusion error: {t1001}"
+    )
+    assert t1001["precision"] is None and t1001["recall"] == 0.0 and t1001["f1"] == 0.0, (
+        f"Case B failure: {t1001}"
+    )
     print("  [OK] Case B (Unpredicted Class T1001): precision=None, recall=0.0, f1=0.0")
 
     # Case C: T1002 (Unobserved False Positive)
     t1002 = no_rag_techs["T1002"]
-    assert (
-        t1002["support"] == 0 and t1002["tp"] == 0 and t1002["fp"] == 1 and t1002["fn"] == 0
-    ), f"T1002 confusion error: {t1002}"
-    assert (
-        t1002["precision"] == 0.0 and t1002["recall"] is None and t1002["f1"] == 0.0
-    ), f"Case C failure: {t1002}"
+    assert t1002["support"] == 0 and t1002["tp"] == 0 and t1002["fp"] == 1 and t1002["fn"] == 0, (
+        f"T1002 confusion error: {t1002}"
+    )
+    assert t1002["precision"] == 0.0 and t1002["recall"] is None and t1002["f1"] == 0.0, (
+        f"Case C failure: {t1002}"
+    )
     print("  [OK] Case C (Unobserved False Positive T1002): precision=0.0, recall=None, f1=0.0")
 
     # 2. Test condition-level aggregation (compute_condition_metrics)
     cond_metrics = compute_condition_metrics(records, inputs, protocol, "no_rag")
     # All 3 techniques contribute 0.0 to f1_sum, so macro_f1 = 0.0 / 3 = 0.0
     assert cond_metrics["macro_f1"] == 0.0, f"Expected macro_f1=0.0, got {cond_metrics['macro_f1']}"
-    assert "macro_precision" not in cond_metrics, "Macro precision should not be in condition metrics"
+    assert "macro_precision" not in cond_metrics, (
+        "Macro precision should not be in condition metrics"
+    )
     assert "macro_recall" not in cond_metrics, "Macro recall should not be in condition metrics"
-    print("  [OK] Condition Macro-F1 correctly sums unobserved classes as 0.0 without precision/recall bleed")
+    print(
+        "  [OK] Condition Macro-F1 correctly sums unobserved classes as 0.0 "
+        "without precision/recall bleed"
+    )
 
 
 def verify_docx_formatting_invariants(docx_path: Path):
@@ -217,9 +227,7 @@ def verify_docx_formatting_invariants(docx_path: Path):
     print("  [OK] Title paragraph: pure black, no border")
 
     # References numbering check
-    ref_paragraphs = [
-        p for p in doc.paragraphs if re.match(r"^\[\d+\]\s+", p.text.strip())
-    ]
+    ref_paragraphs = [p for p in doc.paragraphs if re.match(r"^\[\d+\]\s+", p.text.strip())]
     assert len(ref_paragraphs) == 13, f"Expected 13 references, got {len(ref_paragraphs)}"
     for idx, p in enumerate(ref_paragraphs, 1):
         assert p.text.strip().startswith(f"[{idx}]"), f"Ref {idx} does not start with [{idx}]"
@@ -229,9 +237,9 @@ def verify_docx_formatting_invariants(docx_path: Path):
     # Table widths check
     for idx, table in enumerate(doc.tables):
         total_w = sum(col.width.inches for col in table.columns if col.width)
-        assert (
-            total_w <= 6.55
-        ), f"Table {idx} total width {total_w:.2f}in exceeds printable width 6.50in"
+        assert total_w <= 6.55, (
+            f"Table {idx} total width {total_w:.2f}in exceeds printable width 6.50in"
+        )
     print(f"  [OK] All {len(doc.tables)} tables have width <= 6.50in in portrait mode")
 
 
@@ -274,7 +282,8 @@ def verify_stix_v19_2_census(md_path: Path):
 
     print(
         f"  [OK] Raw STIX v19.2 Census: {total_ap} attack-patterns, {len(revoked)} revoked, "
-        f"{len(deprecated)} deprecated, {len(unique_inactive)} unique inactive (0 overlap), {len(active)} active"
+        f"{len(deprecated)} deprecated, {len(unique_inactive)} unique inactive (0 overlap), "
+        f"{len(active)} active"
     )
     print(
         f"  [OK] Active Windows Corpus: {len(active_windows)} techniques "
@@ -283,13 +292,17 @@ def verify_stix_v19_2_census(md_path: Path):
 
     # Verify report markdown text consistency
     md_text = md_path.read_text(encoding="utf-8")
-    assert "**Project:** RAG2ATT&CK" in md_text, "Report header must declare **Project:** RAG2ATT&CK"
+    assert "**Project:** RAG2ATT&CK" in md_text, (
+        "Report header must declare **Project:** RAG2ATT&CK"
+    )
     assert "858" in md_text, "STIX total count 858 missing from report"
     assert "149 revoked" in md_text, "149 revoked count missing from report"
     assert "12 deprecated" in md_text, "12 deprecated count missing from report"
     assert "161 unique inactive" in md_text, "161 unique inactive count missing from report"
     assert "697 active enterprise techniques" in md_text, "697 active count missing from report"
-    assert "474 techniques and sub-techniques" in md_text, "474 active Windows count missing from report"
+    assert "474 techniques and sub-techniques" in md_text, (
+        "474 active Windows count missing from report"
+    )
     assert "176 Root Techniques" in md_text, "176 root techniques count missing from report"
     assert "298 Sub-techniques" in md_text, "298 sub-techniques count missing from report"
     print("  [OK] Report markdown text exact match with STIX v19.2 census breakdown and header")
@@ -312,4 +325,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

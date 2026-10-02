@@ -1170,3 +1170,13 @@ def test_canonical_mode_accepts_native_run_provenance_without_fixture_only(
         provenance=prov_data,
         analysis=rq_data,
     )
+
+
+def test_docx_renderer_preserves_distinct_conditional_probability_labels():
+    pytest.importorskip("docx", reason="Optional Word authoring dependency")
+    from scripts.export_report_docx import latex_to_unicode
+
+    hit = latex_to_unicode(r"P(\text{Correct}\mid\text{Retrieved}) = 91.28\%")
+    miss = latex_to_unicode(r"P(\text{Correct}\mid\text{Absent}) = 70.03\%")
+    assert hit == "P(Correct | Retrieved) = 91.28%"
+    assert miss == "P(Correct | Absent) = 70.03%"

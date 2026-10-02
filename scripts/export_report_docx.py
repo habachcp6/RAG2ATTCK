@@ -66,6 +66,10 @@ def latex_to_unicode(text: str) -> str:
     """Convert LaTeX mathematical notation to clean, structured Unicode math text."""
     s = text.strip()
 
+    # Preserve conditioning before unwrapping text: otherwise \mid\text{Hit}
+    # becomes \midHit and is erased as an unknown command below.
+    s = re.sub(r"\\mid(?![a-zA-Z])", " | ", s)
+
     # Replace escaped percent and currency amounts
     s = s.replace(r"\%", "%")
     s = re.sub(r"\\\$([0-9.]+)", r"$\1", s)

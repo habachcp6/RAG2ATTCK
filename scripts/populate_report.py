@@ -2066,7 +2066,7 @@ def populate_report_text(
         if supp_marker not in populated and "### 8.3" in populated:
             actual_seal_path = seal_path or DEFAULT_SEAL_PATH
             canonical_files = [
-                ("Canonical Audit Seal", actual_seal_path),
+                ("Canonical Metric Bundle", actual_seal_path),
                 ("Canonical Overall Metrics", data_dir / "overall_metrics.json"),
                 ("Canonical Condition Metrics", data_dir / "per_condition_metrics.json"),
                 (

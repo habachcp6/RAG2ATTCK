@@ -33,10 +33,15 @@ from pptx import Presentation
 
 from scripts.generate_slides import (
     CANONICAL_BANNER_TEXT,
+    EXPECTED_ROOT_MEDIA_PIN_SHA256,
     FIXTURE_BANNER_TEXT,
+    PINNED_MEDIA_DIGESTS,
+    ROOT_MEDIA_PIN_PATH,
     TRUSTED_CANONICAL_BUNDLE_SHA256,
+    export_slides_markdown,
     generate_deck,
     load_and_verify_metric_bundle,
+    resolve_and_verify_presentation_figure,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -524,4 +529,126 @@ def test_slide_8_macro_f1_universe_and_slide_9_token_ratios() -> None:
     # Slide 9: Prompt token ratios: ~4.103x (k1 -> k10) and ~7.58x vs No-RAG baseline
     assert "4.103x" in s9_text or "4.103x" in s9_notes
     assert "7.58x" in s9_text or "7.58x" in s9_notes
+
+
+def test_fail_closed_media_guard_rejects_missing_or_tampered(tmp_path: Path) -> None:
+    """Verifies that resolve_and_verify_presentation_figure fails closed on any invalid state."""
+    # Unknown role
+    with pytest.raises(ValueError, match=r"\[FAIL_CLOSED\] Unknown presentation figure role"):
+        resolve_and_verify_presentation_figure("non_existent_role", canonical_mode=True)
+
+    # Valid roles in canonical mode resolve and match pinned digests
+    rq2_fig = resolve_and_verify_presentation_figure("rq2_retrieval_hit_rate", canonical_mode=True)
+    assert rq2_fig is not None and rq2_fig.is_file()
+    assert hashlib.sha256(rq2_fig.read_bytes()).hexdigest() == PINNED_MEDIA_DIGESTS["rq2_retrieval_hit_rate"]["sha256"]
+    assert len(rq2_fig.read_bytes()) == PINNED_MEDIA_DIGESTS["rq2_retrieval_hit_rate"]["byte_size"]
+
+    rq3_fig = resolve_and_verify_presentation_figure("rq3_resource_consumption", canonical_mode=True)
+    assert rq3_fig is not None and rq3_fig.is_file()
+    assert hashlib.sha256(rq3_fig.read_bytes()).hexdigest() == PINNED_MEDIA_DIGESTS["rq3_resource_consumption"]["sha256"]
+    assert len(rq3_fig.read_bytes()) == PINNED_MEDIA_DIGESTS["rq3_resource_consumption"]["byte_size"]
+
+
+def test_root_presentation_media_pin_descriptor_integrity() -> None:
+    """Verifies existence, cryptographic digest, and pinned asset entries in root pin descriptor."""
+    assert ROOT_MEDIA_PIN_PATH.is_file(), f"Missing root pin descriptor: {ROOT_MEDIA_PIN_PATH}"
+    actual_sha = hashlib.sha256(ROOT_MEDIA_PIN_PATH.read_bytes()).hexdigest()
+    assert actual_sha == EXPECTED_ROOT_MEDIA_PIN_SHA256, (
+        f"Root pin descriptor SHA-256 mismatch: expected {EXPECTED_ROOT_MEDIA_PIN_SHA256}, got {actual_sha}"
+    )
+
+    data = json.loads(ROOT_MEDIA_PIN_PATH.read_text(encoding="utf-8"))
+    assert "assets" in data
+    assert data.get("schema_version") == "root-candidate-presentation-media-pin-v1"
+    raw_text = ROOT_MEDIA_PIN_PATH.read_text(encoding="utf-8")
+    assert PINNED_MEDIA_DIGESTS["rq2_retrieval_hit_rate"]["sha256"] in raw_text
+    assert PINNED_MEDIA_DIGESTS["rq3_resource_consumption"]["sha256"] in raw_text
+
+
+def test_slide_8_all_5_conditions_table() -> None:
+    """Verifies that Slide 8 renders all 5 conditions in both PPTX and slides.md."""
+    prs = _get_presentation()
+    slide_8_data = _extract_all_slide_texts(prs)[7]
+    s8_text = " ".join(slide_8_data["texts"])
+    s8_notes = slide_8_data["notes"]
+    md_text = SLIDES_MD_PATH.read_text(encoding="utf-8")
+
+    conditions = ["No-RAG", "k=1", "k=3", "k=5", "k=10"]
+    for cond in conditions:
+        assert cond in s8_text, f"Condition '{cond}' missing from Slide 8 text"
+        assert cond in s8_notes, f"Condition '{cond}' missing from Slide 8 notes"
+        assert cond in md_text, f"Condition '{cond}' missing from slides.md"
+
+    # Specific metrics for all conditions
+    assert "77.99%" in s8_text  # Baseline & k=3
+    assert "77.02%" in s8_text or "553" in s8_text  # k=1
+    assert "78.55%" in s8_text or "564" in s8_text  # k=3
+    assert "78.83%" in s8_text or "566" in s8_text  # k=5
+    assert "79.53%" in s8_text  # k=10
+
+    # Macro-F1 values
+    assert "0.0126" in s8_text
+    assert "0.0127" in s8_text
+    assert "0.0136" in s8_text
+    assert "0.0139" in s8_text
+    assert "0.0140" in s8_text
+
+
+def test_slide_9_token_limit_and_protocol_sha_distinction() -> None:
+    """Verifies 8,192 configured max_output_tokens clarification and protocol SHA separation."""
+    prs = _get_presentation()
+    slides_data = _extract_all_slide_texts(prs)
+    s9_text = " ".join(slides_data[8]["texts"])
+    s9_notes = slides_data[8]["notes"]
+    md_text = SLIDES_MD_PATH.read_text(encoding="utf-8")
+
+    # 8,192 max_output_tokens vs context window ceiling
+    assert "8,192" in s9_text
+    assert "max_output_tokens" in s9_text or "max_output_tokens" in s9_notes
+    assert "1.05M" in s9_text or "1.05M" in s9_notes or "cửa sổ ngữ cảnh" in s9_notes
+
+    # Protocol SHA separation: raw file vs canonical decisions digest
+    expected_file_sha = "639fd68ae16deec86e9f6baab0980c1abb265c6cd7bb9b4662f562b87e54e819"
+    expected_digest_sha = "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c"
+
+    all_notes = " \n ".join(s["notes"] for s in slides_data)
+    assert expected_file_sha in all_notes, "Protocol raw file SHA-256 missing from speaker notes"
+    assert expected_digest_sha in all_notes, "Protocol decisions digest missing from speaker notes"
+
+    assert expected_file_sha in md_text, "Protocol raw file SHA-256 missing from slides.md"
+    assert expected_digest_sha in md_text, "Protocol decisions digest missing from slides.md"
+
+
+def test_absence_of_unsupported_claims_and_causal_statements() -> None:
+    """Verifies removal of 'đầu tiên', causal claims, and 'nhờ năng lực nội tại'."""
+    prs = _get_presentation()
+    slides_data = _extract_all_slide_texts(prs)
+    all_slide_texts = [" ".join(s["texts"]) for s in slides_data]
+    all_slide_notes = [s["notes"] for s in slides_data]
+    md_text = SLIDES_MD_PATH.read_text(encoding="utf-8")
+
+    # Slide 11: No "đầu tiên"
+    s11_text = all_slide_texts[10]
+    assert "đầu tiên cho bài toán" not in s11_text
+    assert "nhãn đầu tiên" not in s11_text
+    assert "đầu tiên" not in s11_text
+    assert "đầu tiên cho bài toán" not in md_text
+    assert "nhãn đầu tiên" not in md_text
+
+    # Slide 6: Phrased as lexical divergence hypothesis, no causal claims
+    s6_text = all_slide_texts[5]
+    s6_notes = all_slide_notes[5]
+    assert "nhưng tăng nguy cơ nhiễu distractor; đang được kiểm chứng đối chứng trên ma trận TEST." in s6_text
+    assert "nhưng tăng nguy cơ nhiễu distractor; đang được kiểm chứng đối chứng trên ma trận TEST." in s6_notes
+    assert "phân kỳ từ vựng" in s6_text.lower() or "lexical divergence" in s6_text.lower() or "phân kỳ từ vựng" in s6_notes.lower()
+
+    # Slide 7: No "nhờ năng lực nội tại", observational association only
+    s7_text = all_slide_texts[6]
+    s7_notes = all_slide_notes[6]
+    assert "nhờ năng lực nội tại" not in s7_text
+    assert "nhờ năng lực nội tại" not in s7_notes
+    assert "nhờ năng lực nội tại" not in md_text
+    assert "tương quan quan sát" in s7_text.lower() or "tương quan quan sát" in s7_notes.lower()
+    assert "Schema So Sánh Đối Chứng Scaffold: Không sử dụng prompt scaffold trong giao thức chuẩn tắc." in s7_text
+
 

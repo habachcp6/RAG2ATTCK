@@ -3,14 +3,14 @@
   "canonical_mode": false,
   "provenance_status": "diagnostic_fixture",
   "disclaimer": "DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS",
-  "timestamp_utc": "2026-10-02T22:07:50.748Z",
+  "timestamp_utc": "2026-10-02T23:51:03.562Z",
   "roundtrip_reimported_verified": true,
   "source_deck_path": "C:\\Users\\hahoa\\.codex\\artifacts\\rag2attck\\finalization_worktrees_20261003\\native-slides\\docs\\presentation\\slides.pptx",
   "candidate_deck_path": "C:\\Users\\hahoa\\.codex\\artifacts\\rag2attck\\finalization_worktrees_20261003\\native-slides\\reports\\evidence\\fixture_populated_slides.pptx",
-  "before_sha256": "f05fe0e8d972acb5589c282b02c7e8faf277c658ba06c9e0ef71eff100ab899f",
-  "after_sha256": "b4f46072806e3616a08be68ded7d8e8bd103dd14637c7987a3fba440aa16b887",
+  "before_sha256": "6139d76d13dacd1fc4ba95b5e3d6a2aab86417362c7ecbfdb6b61d7fb948d458",
+  "after_sha256": "e0663db4c741b56d08d332cc1f149691043553f6f323f30ed132591622c034a7",
   "sha_changed": true,
-  "candidate_file_size_bytes": 386962,
+  "candidate_file_size_bytes": 135346,
   "total_slides_count": 12,
   "total_notes_count": 12,
   "modified_shape_ids": [
@@ -859,7 +859,7 @@
       "slide_number": 7,
       "injected_value": "0",
       "bound_condition": "rag_k10",
-      "bound_line": "• Diagnostic Cohort Pairwise Comparison (n=718 views across 440 clusters):",
+      "bound_line": "•  Tổng số lỗi phân loại tại k=10: 147 views (718 - 571 = 147).",
       "verified": true
     },
     {
@@ -871,7 +871,7 @@
       "slide_number": 7,
       "injected_value": "0",
       "bound_condition": "rag_k10",
-      "bound_line": "• Diagnostic Cohort Pairwise Comparison (n=718 views across 440 clusters):",
+      "bound_line": "•  Tổng số lỗi phân loại tại k=10: 147 views (718 - 571 = 147).",
       "verified": true
     },
     {

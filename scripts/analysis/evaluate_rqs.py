@@ -54,7 +54,7 @@ from src.experiment.monetary_ledger import (
     validate_token_count,
 )
 
-ANALYSIS_TOOL_VERSION = "1.2.0"
+ANALYSIS_TOOL_VERSION = "2.0.0"
 
 
 # ---------------------------------------------------------------------------
@@ -208,6 +208,9 @@ def reconcile_journal_and_ledger(
             "settled_cost_by_condition": {c: None for c in CONDITIONS},
             "token_estimated_cost_by_condition": {c: None for c in CONDITIONS},
             "retried_attempts_by_condition": {c: 0 for c in CONDITIONS},
+            "missing_usage_attempts_by_condition": {c: 0 for c in CONDITIONS},
+            "missing_usage_attempt_cost_by_condition": {c: Decimal("0.0") for c in CONDITIONS},
+            "affected_logical_records_by_condition": {c: 0 for c in CONDITIONS},
             "active_reservations_usd": Decimal("0.0"),
             "orphan_reservations_usd": Decimal("0.0"),
             "has_breach": False,
@@ -582,6 +585,12 @@ def reconcile_journal_and_ledger(
     settled_cost_by_cond: dict[str, Optional[Decimal]] = {}
     token_est_cost_by_cond: dict[str, Optional[Decimal]] = {}
     retried_attempts_by_cond: dict[str, int] = {}
+    missing_usage_attempts_by_cond: dict[str, int] = {}
+    missing_usage_attempt_cost_by_cond: dict[str, Decimal] = {}
+    affected_logical_records_by_cond: dict[str, int] = {}
+
+    bounds = pricing_config.get("reservation_bounds", {})
+    attempt_worst = Decimal(str(bounds.get("default_attempt_worst_usd", "0.53974560")))
 
     for cond in CONDITIONS:
         cond_records = [r for r in records if r["condition"] == cond]
@@ -604,9 +613,25 @@ def reconcile_journal_and_ledger(
                 if r.get("attempt_index", 0) > 0
             )
             retried_attempts_by_cond[cond] = retried_count
+
+            mu_attempts = 0
+            mu_cost = Decimal("0.0")
+            affected_keys = set()
+            for k in cond_receipt_keys:
+                for r in receipts_by_key[k]:
+                    if r.get("input_tokens") is None or r.get("output_tokens") is None:
+                        mu_attempts += 1
+                        mu_cost += attempt_worst
+                        affected_keys.add(k)
+            missing_usage_attempts_by_cond[cond] = mu_attempts
+            missing_usage_attempt_cost_by_cond[cond] = round_cost_up(mu_cost)
+            affected_logical_records_by_cond[cond] = len(affected_keys)
         else:
             receipts_cost_by_cond[cond] = None
             retried_attempts_by_cond[cond] = 0
+            missing_usage_attempts_by_cond[cond] = 0
+            missing_usage_attempt_cost_by_cond[cond] = Decimal("0.0")
+            affected_logical_records_by_cond[cond] = 0
 
         cond_settle_keys = [k for k in settlements_by_key if k[1] == cond]
         if cond_settle_keys:
@@ -629,6 +654,9 @@ def reconcile_journal_and_ledger(
         "settled_cost_by_condition": settled_cost_by_cond,
         "token_estimated_cost_by_condition": token_est_cost_by_cond,
         "retried_attempts_by_condition": retried_attempts_by_cond,
+        "missing_usage_attempts_by_condition": missing_usage_attempts_by_cond,
+        "missing_usage_attempt_cost_by_condition": missing_usage_attempt_cost_by_cond,
+        "affected_logical_records_by_condition": affected_logical_records_by_cond,
         "active_reservation_count": len(active_reservations),
         "active_reservations_usd": active_res_sum,
         "orphan_reservations_usd": orphan_reservations_usd,
@@ -1008,9 +1036,7 @@ def compute_rq1(
     cluster_ids = [sample_pair_map.get(sid, sid) for sid in common_scorable_sids]
 
     universe_size = (
-        len(inputs.corpus_ids)
-        if inputs.corpus_ids
-        else (len(inputs.registry) if inputs.registry else 474)
+        len(inputs.corpus_ids) if getattr(inputs, "corpus_ids", None) else len(inputs.registry)
     )
 
     by_condition_rq1 = {}
@@ -1195,24 +1221,223 @@ def compute_rq2(
 
         # 1. Retrieval & Conditional Metrics (None for No-RAG)
         if is_rag:
-            ret_info = retrieval_cond_metrics["by_condition"].get(cond, {})
+            if "by_condition" in retrieval_cond_metrics:
+                by_cond_map = retrieval_cond_metrics["by_condition"]
+            else:
+                by_cond_map = retrieval_cond_metrics
+
+            if cond not in by_cond_map:
+                raise ValueError(
+                    f"Missing retrieval conditional metrics for applicable condition '{cond}'"
+                )
+            ret_info = by_cond_map[cond]
+
+            def _get_alias_field(k1: str, k2: str, *, is_prob: bool = False) -> Any:
+                h1 = k1 in ret_info
+                h2 = k2 in ret_info
+                if not h1 and not h2:
+                    raise KeyError(f"Missing '{k1}' (or alias '{k2}') for condition '{cond}'")
+                if h1 and h2:
+                    v1 = ret_info[k1]
+                    v2 = ret_info[k2]
+                    if v1 is None and v2 is None:
+                        return None
+                    if v1 is None or v2 is None:
+                        raise ValueError(
+                            f"Conflicting alias values for '{k1}' and '{k2}' in "
+                            f"condition '{cond}': {v1!r} vs {v2!r}"
+                        )
+                    if is_prob:
+                        if isinstance(v1, bool) or isinstance(v2, bool):
+                            raise TypeError(
+                                f"Probability alias cannot be boolean in condition '{cond}': "
+                                f"{v1!r} vs {v2!r}"
+                            )
+                        if not isinstance(v1, (int, float)) or not isinstance(v2, (int, float)):
+                            raise TypeError(
+                                f"Non-numeric probability alias for '{k1}' and '{k2}' in "
+                                f"condition '{cond}': {v1!r} vs {v2!r}"
+                            )
+                        if abs(float(v1) - float(v2)) > 1e-9:
+                            raise ValueError(
+                                f"Conflicting alias values for '{k1}' and '{k2}' in "
+                                f"condition '{cond}': {v1} vs {v2}"
+                            )
+                    else:
+                        if v1 != v2:
+                            raise ValueError(
+                                f"Conflicting alias values for '{k1}' and '{k2}' in "
+                                f"condition '{cond}': {v1!r} vs {v2!r}"
+                            )
+                    return v1
+                return ret_info[k1] if h1 else ret_info[k2]
+
+            p_succ = _get_alias_field(
+                "P_correct_given_retrieval_success",
+                "p_correct_given_retrieval_success",
+                is_prob=True,
+            )
+            p_fail = _get_alias_field(
+                "P_correct_given_retrieval_failure",
+                "p_correct_given_retrieval_failure",
+                is_prob=True,
+            )
+            succ_cnt = _get_alias_field(
+                "retrieval_success_count",
+                "retrieval_success_sample_count",
+                is_prob=False,
+            )
+            fail_cnt = _get_alias_field(
+                "retrieval_failure_count",
+                "retrieval_failure_sample_count",
+                is_prob=False,
+            )
+
+            # Directly compute retrieval metrics and ground truth conditional correctness
+            recalls = []
+            retrieved_positive_count = 0
+            succ_correct_count = 0
+            fail_correct_count = 0
+
+            for r in scorable_records:
+                gt = set(inputs.ground_truth.get(r["sample_id"], ()))
+                retrieved = {c["technique_id"] for c in r.get("retrieved_candidates", [])}
+                has_hit = bool(retrieved & gt)
+                if has_hit:
+                    retrieved_positive_count += 1
+                recalls.append(len(retrieved & gt) / len(gt) if gt else 0.0)
+
+                parsed_ids = r.get("parsed_technique_ids", [])
+                is_corr = (
+                    r.get("parse_status") == "VALID" and bool(parsed_ids) and parsed_ids[0] in gt
+                )
+                if has_hit:
+                    if is_corr:
+                        succ_correct_count += 1
+                else:
+                    if is_corr:
+                        fail_correct_count += 1
+
+            total_pos_samples = total_scorable
+            hit_rate = (
+                (retrieved_positive_count / total_pos_samples) if total_pos_samples > 0 else None
+            )
+            macro_recall = float(np.mean(recalls)) if recalls else None
+
+            # Strict count consistency checks
+            if type(succ_cnt) is not int:
+                raise TypeError(
+                    f"retrieval_success_count must be int for condition '{cond}', "
+                    f"got {type(succ_cnt).__name__} ({succ_cnt!r})"
+                )
+            if type(fail_cnt) is not int:
+                raise TypeError(
+                    f"retrieval_failure_count must be int for condition '{cond}', "
+                    f"got {type(fail_cnt).__name__} ({fail_cnt!r})"
+                )
+            if succ_cnt < 0 or fail_cnt < 0:
+                raise ValueError(
+                    f"Retrieval counts must be non-negative for condition '{cond}': "
+                    f"succ_cnt={succ_cnt}, fail_cnt={fail_cnt}"
+                )
+            if succ_cnt != retrieved_positive_count:
+                raise ValueError(
+                    f"Drift between computed retrieved_positive_count ({retrieved_positive_count}) "
+                    f"and producer retrieval_success_count ({succ_cnt}) for condition '{cond}'"
+                )
+            expected_fail_cnt = total_scorable - retrieved_positive_count
+            if fail_cnt != expected_fail_cnt:
+                raise ValueError(
+                    f"Drift between computed scorable retrieval failures ({expected_fail_cnt}) "
+                    f"and producer retrieval_failure_count ({fail_cnt}) for condition '{cond}'"
+                )
+
+            # Strict probability consistency checks
+            if succ_cnt == 0:
+                if p_succ is not None:
+                    raise ValueError(
+                        f"P_correct_given_retrieval_success must be None for 0-denominator "
+                        f"(succ_cnt=0) in condition '{cond}', got {p_succ!r}"
+                    )
+            else:
+                if p_succ is None:
+                    raise ValueError(
+                        f"P_correct_given_retrieval_success cannot be None when "
+                        f"succ_cnt={succ_cnt} > 0 in condition '{cond}'"
+                    )
+                if (
+                    isinstance(p_succ, bool)
+                    or not isinstance(p_succ, (int, float))
+                    or not math.isfinite(p_succ)
+                ):
+                    raise ValueError(
+                        f"P_correct_given_retrieval_success must be a finite float in [0, 1] "
+                        f"for condition '{cond}', got {p_succ!r}"
+                    )
+                if not (0.0 <= p_succ <= 1.0):
+                    raise ValueError(
+                        f"P_correct_given_retrieval_success out of bounds [0, 1] "
+                        f"for condition '{cond}': {p_succ}"
+                    )
+                expected_p_succ = succ_correct_count / succ_cnt
+                if abs(p_succ - expected_p_succ) > 1e-4:
+                    raise ValueError(
+                        f"Probability drift for P_correct_given_retrieval_success in "
+                        f"condition '{cond}': expected {expected_p_succ:.6f} "
+                        f"({succ_correct_count}/{succ_cnt}), got {p_succ:.6f}"
+                    )
+
+            if fail_cnt == 0:
+                if p_fail is not None:
+                    raise ValueError(
+                        f"P_correct_given_retrieval_failure must be None for 0-denominator "
+                        f"(fail_cnt=0) in condition '{cond}', got {p_fail!r}"
+                    )
+            else:
+                if p_fail is None:
+                    raise ValueError(
+                        f"P_correct_given_retrieval_failure cannot be None when "
+                        f"fail_cnt={fail_cnt} > 0 in condition '{cond}'"
+                    )
+                if (
+                    isinstance(p_fail, bool)
+                    or not isinstance(p_fail, (int, float))
+                    or not math.isfinite(p_fail)
+                ):
+                    raise ValueError(
+                        f"P_correct_given_retrieval_failure must be a finite float in [0, 1] "
+                        f"for condition '{cond}', got {p_fail!r}"
+                    )
+                if not (0.0 <= p_fail <= 1.0):
+                    raise ValueError(
+                        f"P_correct_given_retrieval_failure out of bounds [0, 1] "
+                        f"for condition '{cond}': {p_fail}"
+                    )
+                expected_p_fail = fail_correct_count / fail_cnt
+                if abs(p_fail - expected_p_fail) > 1e-4:
+                    raise ValueError(
+                        f"Probability drift for P_correct_given_retrieval_failure in "
+                        f"condition '{cond}': expected {expected_p_fail:.6f} "
+                        f"({fail_correct_count}/{fail_cnt}), got {p_fail:.6f}"
+                    )
+
             retrieval_metrics = {
                 "applicable": True,
-                "macro_recall": ret_info.get("macro_recall"),
-                "retrieval_hit_rate": ret_info.get("retrieval_hit_rate"),
-                "retrieved_positive_count": ret_info.get("retrieved_positive_count"),
-                "total_positive_sample_count": ret_info.get("total_positive_sample_count"),
+                "macro_recall": macro_recall,
+                "retrieval_hit_rate": hit_rate,
+                "retrieved_positive_count": retrieved_positive_count,
+                "total_positive_sample_count": total_pos_samples,
             }
             generation_conditional = {
                 "applicable": True,
-                "p_correct_given_retrieval_success": ret_info.get(
-                    "p_correct_given_retrieval_success"
-                ),
-                "p_correct_given_retrieval_failure": ret_info.get(
-                    "p_correct_given_retrieval_failure"
-                ),
-                "retrieval_success_sample_count": ret_info.get("retrieval_success_sample_count"),
-                "retrieval_failure_sample_count": ret_info.get("retrieval_failure_sample_count"),
+                "p_correct_given_retrieval_success": p_succ,
+                "p_correct_given_retrieval_failure": p_fail,
+                "P_correct_given_retrieval_success": p_succ,
+                "P_correct_given_retrieval_failure": p_fail,
+                "retrieval_success_count": succ_cnt,
+                "retrieval_failure_count": fail_cnt,
+                "retrieval_success_sample_count": succ_cnt,
+                "retrieval_failure_sample_count": fail_cnt,
             }
         else:
             retrieval_metrics = {
@@ -1227,6 +1452,10 @@ def compute_rq2(
                 "applicable": False,
                 "p_correct_given_retrieval_success": None,
                 "p_correct_given_retrieval_failure": None,
+                "P_correct_given_retrieval_success": None,
+                "P_correct_given_retrieval_failure": None,
+                "retrieval_success_count": None,
+                "retrieval_failure_count": None,
                 "retrieval_success_sample_count": None,
                 "retrieval_failure_sample_count": None,
                 "note": "Retrieval-conditioned metrics not applicable to No-RAG baseline (k=0).",
@@ -1278,14 +1507,26 @@ def compute_rq2(
                 return None
             return count / denom
 
-        ret_miss_rate = _rate_or_none(ret_misses, total_scorable)
+        ret_miss_rate = _rate_or_none(ret_misses, total_scorable) if is_rag else None
         prov_rate = _rate_or_none(prov_failures, total_scorable)
         parse_rate = _rate_or_none(parse_failures, total_scorable)
         inv_rate = _rate_or_none(invalid_attack_ids, total_scorable)
         wrong_rate = _rate_or_none(valid_but_wrong, total_scorable)
 
         # Fractions among failures (None per D2j if total_failures == 0)
-        frac_ret_miss = _rate_or_none(ret_misses, total_failures)
+        # Bounded in [0, 1]: retrieval miss among attribution failures is
+        # overlap_miss_and_failures / total_failures across all 4 disjoint failure types
+        overlap_miss_and_failures = (
+            (
+                (overlap_miss_and_wrong or 0)
+                + (overlap_miss_and_provider or 0)
+                + (overlap_miss_and_parse or 0)
+                + (overlap_miss_and_invalid or 0)
+            )
+            if is_rag
+            else None
+        )
+        frac_ret_miss = _rate_or_none(overlap_miss_and_failures, total_failures) if is_rag else None
         frac_prov = _rate_or_none(prov_failures, total_failures)
         frac_parse = _rate_or_none(parse_failures, total_failures)
         frac_inv = _rate_or_none(invalid_attack_ids, total_failures)
@@ -1313,6 +1554,7 @@ def compute_rq2(
                 "overlap_retrieval_miss_and_provider_failure": overlap_miss_and_provider,
                 "overlap_retrieval_miss_and_parse_failure": overlap_miss_and_parse,
                 "overlap_retrieval_miss_and_invalid_id": overlap_miss_and_invalid,
+                "overlap_retrieval_miss_and_failures": overlap_miss_and_failures,
                 "rates_among_failures": {
                     "retrieval_miss": frac_ret_miss,
                     "provider_failure": frac_prov,
@@ -1332,6 +1574,7 @@ def compute_rq2(
                 "generation_misattribution_count": valid_but_wrong,
                 "system_or_parse_error_count": prov_failures + parse_failures,
                 "overlap_retrieval_miss_and_wrong_classification": overlap_miss_and_wrong,
+                "overlap_retrieval_miss_and_failures": overlap_miss_and_failures,
                 "retrieval_miss_fraction_of_failures": frac_ret_miss,
                 "generation_misattribution_fraction_of_failures": frac_wrong,
                 "system_or_parse_fraction_of_failures": _rate_or_none(
@@ -1430,8 +1673,8 @@ def compute_rq3(
 
         # Token-based estimation per record (worst-case charged on missing usage)
         rec_token_cost = Decimal("0.0")
-        missing_usage_count = 0
-        missing_usage_cost = Decimal("0.0")
+        missing_usage_terminal_count = 0
+        missing_usage_terminal_cost = Decimal("0.0")
         cost_ambiguous = Decimal("0.0")
         cost_unmapped = Decimal("0.0")
 
@@ -1441,9 +1684,9 @@ def compute_rq3(
             ca_tok = r.get("cached_tokens")
 
             if p_tok is None or c_tok is None:
-                missing_usage_count += 1
+                missing_usage_terminal_count += 1
                 item_cost = worst_charge
-                missing_usage_cost += worst_charge
+                missing_usage_terminal_cost += worst_charge
             else:
                 item_cost = calculate_attempt_token_cost(
                     p_tok, c_tok, pricing_config, cached_tokens=ca_tok, tier="default"
@@ -1459,6 +1702,21 @@ def compute_rq3(
                 cost_ambiguous += item_cost
             elif status == "unmapped" or not gt:
                 cost_unmapped += item_cost
+
+        # Attempt-level missing usage accounting from journal/reconciliation
+        attempt_mu_count = reconciliation.get("missing_usage_attempts_by_condition", {}).get(
+            cond, 0
+        )
+        mu_cost_map = reconciliation.get("missing_usage_attempt_cost_by_condition", {})
+        attempt_mu_cost = Decimal(str(mu_cost_map.get(cond, "0.0")))
+        aff_map = reconciliation.get("affected_logical_records_by_condition", {})
+        affected_logical_count = aff_map.get(cond, 0)
+
+        # Fallback if journal not present but terminal records had missing tokens
+        if not reconciliation.get("journal_present", False) and missing_usage_terminal_count > 0:
+            attempt_mu_count = missing_usage_terminal_count
+            attempt_mu_cost = missing_usage_terminal_cost
+            affected_logical_count = missing_usage_terminal_count
 
         # Determine authoritative condition cost from ledger/receipts if available
         receipts_cost = reconciliation["receipts_cost_by_condition"].get(cond)
@@ -1519,8 +1777,14 @@ def compute_rq3(
                 "cost_per_scorable_query_usd": cost_per_scorable,
                 "cost_per_correct_attribution_usd": cost_per_correct,
                 "marginal_cost_vs_baseline_usd": total_cost_usd - base_cost_usd,
-                "missing_usage_records_count": missing_usage_count,
-                "missing_usage_worst_charge_usd": float(missing_usage_cost),
+                "missing_usage_terminal_records_count": missing_usage_terminal_count,
+                "missing_usage_attempt_receipts_count": attempt_mu_count,
+                "missing_usage_attempt_worst_charge_usd": float(attempt_mu_cost),
+                "affected_logical_records_count": affected_logical_count,
+                "missing_usage_records_count": missing_usage_terminal_count,
+                "missing_usage_worst_charge_usd": float(
+                    attempt_mu_cost if attempt_mu_count > 0 else missing_usage_terminal_cost
+                ),
                 "retried_attempts_count": retried_count,
                 "cost_of_excluded_ambiguous_views_usd": float(cost_ambiguous),
                 "cost_of_excluded_unmapped_views_usd": float(cost_unmapped),
@@ -1555,16 +1819,28 @@ def compute_rq3(
         "orphan_reservations_usd": float(orphan_res),
         "total_study_committed_spend_usd": float(total_committed),
         "net_remaining_uncommitted_budget_usd": float(uncommitted),
-        "study_wide_missing_usage_records_count": sum(
-            tradeoff_by_condition[c]["financial_cost_usd"]["missing_usage_records_count"]
+        "study_wide_missing_usage_terminal_records_count": sum(
+            tradeoff_by_condition[c]["financial_cost_usd"]["missing_usage_terminal_records_count"]
             for c in CONDITIONS
         ),
-        "study_wide_missing_usage_charged_usd": sum(
-            tradeoff_by_condition[c]["financial_cost_usd"]["missing_usage_worst_charge_usd"]
+        "study_wide_missing_usage_attempt_receipts_count": sum(
+            tradeoff_by_condition[c]["financial_cost_usd"]["missing_usage_attempt_receipts_count"]
+            for c in CONDITIONS
+        ),
+        "study_wide_missing_usage_attempt_charged_usd": sum(
+            tradeoff_by_condition[c]["financial_cost_usd"]["missing_usage_attempt_worst_charge_usd"]
             for c in CONDITIONS
         ),
         "study_wide_retried_attempts_count": sum(
             tradeoff_by_condition[c]["financial_cost_usd"]["retried_attempts_count"]
+            for c in CONDITIONS
+        ),
+        "study_wide_missing_usage_records_count": sum(
+            tradeoff_by_condition[c]["financial_cost_usd"]["missing_usage_terminal_records_count"]
+            for c in CONDITIONS
+        ),
+        "study_wide_missing_usage_charged_usd": sum(
+            tradeoff_by_condition[c]["financial_cost_usd"]["missing_usage_attempt_worst_charge_usd"]
             for c in CONDITIONS
         ),
         "accounting_policy_disclosure": (
@@ -1932,6 +2208,7 @@ def run_rq_analysis(
     journal_events: Optional[Sequence[dict[str, Any]]] = None,
     study_ledger_path: Optional[Path | str] = None,
     study_ledger_data: Optional[dict[str, Any]] = None,
+    secondary_scope_packet: Optional[Path | str] = None,
     repo_root: Optional[Path] = None,
 ) -> dict[str, Any]:
     """Execute complete RQ1, RQ2, and RQ3 analyses and optionally write reports."""
@@ -1974,9 +2251,51 @@ def run_rq_analysis(
         else "diagnostic_fixture"
     )
 
+    # Dynamically derive analysis run parameters
+    scorable_sample_ids = [
+        sid
+        for sid, gt in inputs.ground_truth.items()
+        if inputs.ground_truth_status.get(sid, "mapped" if gt else "unmapped") == "mapped" and gt
+    ]
+    sample_pair_map = {
+        r["sample_id"]: r.get("pair_id") or r["sample_id"]
+        for r in inputs.records
+        if "sample_id" in r
+    }
+    eligible_pair_ids = {sample_pair_map.get(sid, sid) for sid in scorable_sample_ids}
+    gt_technique_ids = sorted(
+        {t for sid in scorable_sample_ids for t in inputs.ground_truth.get(sid, ())}
+    )
+    total_support_instances = sum(
+        len(set(inputs.ground_truth.get(sid, ()))) for sid in scorable_sample_ids
+    )
+    macro_universe = (
+        len(inputs.corpus_ids) if getattr(inputs, "corpus_ids", None) else len(inputs.registry)
+    )
+    unsupported_count = max(0, macro_universe - len(gt_technique_ids))
+
+    source_file_path = Path(__file__).resolve()
+    source_sha256 = (
+        hashlib.sha256(source_file_path.read_bytes()).hexdigest()
+        if source_file_path.is_file()
+        else None
+    )
+
+    sec_packet_rel = None
+    sec_packet_sha256 = None
+    if secondary_scope_packet is not None:
+        p = Path(secondary_scope_packet).resolve()
+        if not p.is_file():
+            raise FileNotFoundError(
+                f"Secondary scope authorization packet not found: {secondary_scope_packet}"
+            )
+        sec_packet_rel = str(secondary_scope_packet)
+        sec_packet_sha256 = hashlib.sha256(p.read_bytes()).hexdigest()
+
     overall_summary = {
         "schema_version": "1.0.0",
         "analysis_tool_version": ANALYSIS_TOOL_VERSION,
+        "analysis_version": "2.0.0",
         "analysis_timestamp": datetime.now(UTC).isoformat(),
         "experiment_id": inputs.experiment_id,
         "manifest_sha256": inputs.manifest_sha256,
@@ -1986,6 +2305,23 @@ def run_rq_analysis(
         "dataset_split": dataset_split,
         "fixture_only": is_fixture,
         "provenance_status": provenance_status,
+        "analysis_run_parameters": {
+            "bootstrap_samples_count": bootstrap_samples,
+            "bootstrap_seed": seed,
+            "bootstrap_alpha": 0.05,
+            "bootstrap_method": "percentile_ci",
+            "bootstrap_cluster_unit": "pair_id",
+            "eligible_clusters_count": len(eligible_pair_ids),
+            "frozen_benchmark_macro_universe": macro_universe,
+            "actual_test_gt_technique_support_count": len(gt_technique_ids),
+            "actual_test_gt_technique_ids": gt_technique_ids,
+            "total_gt_support_instances": total_support_instances,
+            "unsupported_macro_classes_count": unsupported_count,
+            "analysis_source_file": "scripts/analysis/evaluate_rqs.py",
+            "analysis_source_sha256": source_sha256,
+            "secondary_scope_authorization_packet": sec_packet_rel,
+            "secondary_scope_authorization_sha256": sec_packet_sha256,
+        },
         "rq1": rq1,
         "rq2": rq2,
         "rq3": rq3,
@@ -2231,6 +2567,17 @@ def generate_rq_markdown_report(analysis_dict: dict[str, Any]) -> str:
             f"{log_c} | {scor_c} | {corr_c} | {excl_c} |"
         )
 
+    mu_term = whole_fin.get(
+        "study_wide_missing_usage_terminal_records_count",
+        whole_fin.get("study_wide_missing_usage_records_count", 0),
+    )
+    mu_att = whole_fin.get("study_wide_missing_usage_attempt_receipts_count", 0)
+    mu_usd = whole_fin.get(
+        "study_wide_missing_usage_attempt_charged_usd",
+        whole_fin.get("study_wide_missing_usage_charged_usd", 0.0),
+    )
+    retries_count = whole_fin.get("study_wide_retried_attempts_count", 0)
+
     lines.extend(
         [
             "",
@@ -2246,9 +2593,11 @@ def generate_rq_markdown_report(analysis_dict: dict[str, Any]) -> str:
             f"`${whole_fin.get('total_study_committed_spend_usd', 0.0):.8f}`",
             f"- **Net Available Uncommitted Budget**: "
             f"`${whole_fin.get('net_remaining_uncommitted_budget_usd', 0.0):.8f}`",
-            f"- **Study-Wide Missing Usage Charges**: "
-            f"{whole_fin.get('study_wide_missing_usage_records_count', 0)} records "
-            f"(${whole_fin.get('study_wide_missing_usage_charged_usd', 0.0):.8f})",
+            (
+                f"- **Study-Wide Missing Usage Charges**: {mu_term} terminal records, "
+                f"{mu_att} attempt receipts (${mu_usd:.8f})"
+            ),
+            f"- **Study-Wide Retried Attempts**: {retries_count}",
             f"- **Financial Policy**: {whole_fin.get('accounting_policy_disclosure', '')}",
             "",
             "### Paired View Diagnostics (Single-View vs Contextual-View)",
@@ -2505,6 +2854,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         type=Path,
         help="Repository root for artifact path resolution (defaults to git repo root)",
     )
+    parser.add_argument(
+        "--secondary-scope-packet",
+        type=Path,
+        help="Path to Root supervisor execution authorization packet markdown file",
+    )
 
     args = parser.parse_args(argv)
 
@@ -2582,6 +2936,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if not out_dir.is_absolute():
         out_dir = (repo_root / out_dir).resolve()
 
+    # 7. Resolve secondary scope authorization packet if provided
+    sec_packet_path = None
+    if args.secondary_scope_packet is not None:
+        sec_packet_path = (
+            args.secondary_scope_packet.resolve()
+            if args.secondary_scope_packet.is_absolute()
+            else (repo_root / args.secondary_scope_packet).resolve()
+        )
+
     manifest_dir = manifest_path.parent
     prediction_paths = {c: manifest_dir / f"{c}_predictions.jsonl" for c in CONDITIONS}
 
@@ -2599,6 +2962,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         output_dir=out_dir,
         journal_path=journal_path,
         study_ledger_path=study_ledger_path,
+        secondary_scope_packet=sec_packet_path,
         repo_root=repo_root,
     )
 

@@ -443,3 +443,112 @@ class TestDispatchSpiesAndFailClosedReplay:
         ok, logs = replay_saved_evaluation(DEFAULT_BUNDLE_DIR, tmp_path, REPO_ROOT)
         assert ok is False, "replay_saved_evaluation MUST return False when evaluator is missing"
         assert any("[FAIL] Missing required evaluation module" in line for line in logs)
+
+
+class TestBuilderSafetyAndVerifierStrictness:
+    """Verifies target directory non-empty fail-closed and strict verifier allowlists."""
+
+    def test_builder_refuses_non_empty_directory_and_preserves_marker(self, tmp_path):
+        """Negative test: builder MUST fail closed on non-empty output_dir, preserving marker."""
+        from scripts.stage_portable_public_package import build_staged_package
+
+        target_dir = tmp_path / "staged_target"
+        target_dir.mkdir(parents=True)
+        marker_file = target_dir / "marker_evidence.txt"
+        marker_content = "CANONICAL_PRESERVED_EVIDENCE_DO_NOT_DELETE_12345"
+        marker_file.write_text(marker_content, encoding="utf-8")
+
+        fake_source = tmp_path / "fake_source"
+        fake_source.mkdir(parents=True)
+        fake_orch = tmp_path / "fake_orch"
+        fake_orch.mkdir(parents=True)
+
+        with pytest.raises(FileExistsError) as exc_info:
+            build_staged_package(fake_source, fake_orch, target_dir)
+
+        assert "already exists and is not empty" in str(exc_info.value)
+        # Marker must remain 100% intact and undamaged
+        assert marker_file.exists(), "Marker file was deleted or moved!"
+        assert marker_file.read_text(encoding="utf-8") == marker_content, (
+            "Marker file content modified!"
+        )
+        # No extra files or directories staged
+        assert list(target_dir.iterdir()) == [marker_file], "Builder created files despite raising!"
+
+    def test_verifier_fails_closed_on_empty_manifest_inventory(self, tmp_path):
+        """Negative test: public verifier MUST return False on empty manifest inventory."""
+        from scripts.reproduce_canonical_study import verify_bundle_hashes
+
+        bundle_dir = tmp_path / "empty_bundle"
+        bundle_dir.mkdir(parents=True)
+        manifest_file = bundle_dir / "canonical_bundle_manifest.json"
+        empty_manifest = {
+            "bundle_schema_version": "2.0.0",
+            "derived_from": {
+                "bundle_sha256": CANONICAL_BUNDLE_SHA256,
+            },
+            "source_file_digests": {},
+            "output_file_digests": {},
+        }
+        manifest_file.write_text(json.dumps(empty_manifest), encoding="utf-8")
+
+        ok, logs = verify_bundle_hashes(bundle_dir)
+        assert ok is False, "Verifier must fail closed on empty inventory!"
+        assert any("[FAIL] Invalid canonical inputs inventory" in line for line in logs)
+
+    def test_verifier_fails_closed_on_incomplete_inventory(self, tmp_path):
+        """Negative test: verifier MUST return False when even 1 input or output is missing."""
+        from scripts.reproduce_canonical_study import (
+            REQUIRED_INPUT_FILES,
+            REQUIRED_OUTPUT_FILES,
+            verify_bundle_hashes,
+        )
+
+        bundle_dir = tmp_path / "incomplete_bundle"
+        bundle_dir.mkdir(parents=True)
+        manifest_file = bundle_dir / "canonical_bundle_manifest.json"
+
+        # Missing one input file
+        partial_inputs = {k: "a" * 64 for k in list(REQUIRED_INPUT_FILES)[:-1]}
+        full_outputs = {k: "b" * 64 for k in REQUIRED_OUTPUT_FILES}
+
+        manifest = {
+            "bundle_schema_version": "2.0.0",
+            "derived_from": {
+                "bundle_sha256": CANONICAL_BUNDLE_SHA256,
+            },
+            "source_file_digests": partial_inputs,
+            "output_file_digests": full_outputs,
+        }
+        manifest_file.write_text(json.dumps(manifest), encoding="utf-8")
+
+        ok, logs = verify_bundle_hashes(bundle_dir)
+        assert ok is False, "Verifier must fail closed when input files count < 10!"
+        assert any("[FAIL] Invalid canonical inputs inventory" in line for line in logs)
+
+    def test_verifier_fails_closed_on_missing_provenance_or_runtime_assets(self, tmp_path):
+        """Negative test: public verifier MUST return False if provenance/runtime assets missing."""
+        from scripts.reproduce_canonical_study import (
+            REQUIRED_INPUT_FILES,
+            REQUIRED_OUTPUT_FILES,
+            verify_bundle_hashes,
+        )
+
+        bundle_dir = tmp_path / "missing_prov_bundle"
+        bundle_dir.mkdir(parents=True)
+        manifest_file = bundle_dir / "canonical_bundle_manifest.json"
+
+        manifest = {
+            "bundle_schema_version": "2.0.0",
+            "derived_from": {
+                "bundle_sha256": CANONICAL_BUNDLE_SHA256,
+            },
+            "source_file_digests": {k: "a" * 64 for k in REQUIRED_INPUT_FILES},
+            "output_file_digests": {k: "b" * 64 for k in REQUIRED_OUTPUT_FILES},
+            # Missing sanitized_provenance_assets and runtime_assets
+        }
+        manifest_file.write_text(json.dumps(manifest), encoding="utf-8")
+
+        ok, logs = verify_bundle_hashes(bundle_dir)
+        assert ok is False, "Verifier must fail closed on missing provenance/runtime assets!"
+        assert any("[FAIL] Invalid public provenance inventory" in line for line in logs)

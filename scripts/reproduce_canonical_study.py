@@ -54,6 +54,57 @@ CANONICAL_PROTOCOL_SEMANTIC_SHA256 = (
 CANONICAL_RQ_ANALYSIS_SOURCE_SHA256 = (
     "f85d7f7373e825dcc7171ce4491fd15c6fb755955da245041783fe317bc80351"
 )
+CANONICAL_WRAPPER_BLOCK_SHA256 = "e4a0115ff2d712bf6a0b896b50d9f4d412b786707d9721f47c74a4ac174e5f68"
+
+# Strict allowlists: exactly 10 canonical inputs and 8 canonical outputs required
+REQUIRED_INPUT_FILES: frozenset[str] = frozenset(
+    {
+        ".study_anchor.json",
+        "manifest.json",
+        "no_rag_predictions.jsonl",
+        "rag_k1_predictions.jsonl",
+        "rag_k3_predictions.jsonl",
+        "rag_k5_predictions.jsonl",
+        "rag_k10_predictions.jsonl",
+        "request_journal.jsonl",
+        "run_summary.json",
+        "study_ledger.json",
+    }
+)
+
+REQUIRED_OUTPUT_FILES: frozenset[str] = frozenset(
+    {
+        "failure_decomposition.json",
+        "overall_metrics.json",
+        "per_condition_metrics.json",
+        "per_technique_metrics.json",
+        "retrieval_conditional_metrics.json",
+        "rq_analysis.json",
+        "rq_analysis_summary.md",
+        "run_provenance.json",
+    }
+)
+
+APPROVED_PUBLIC_PROVENANCE_SPEC: dict[str, str] = {
+    "provenance/s2_evaluation_execute_public.md": (
+        "d515f70426435e9edb79cdc415e91c23b16e189fd171d4db4b04074c9b580aa1"
+    ),
+    "provenance/root_canonical_export_validation_public.json": (
+        "4767e1512741733874b20a3b8d6e420b24f887b5c6517b5f05a3e19521a19e35"
+    ),
+    "provenance/terminal_process_proof_public.json": (
+        "1a720d799315d8384fef62c357eb66632f0509de592248302b37c45e8711a87e"
+    ),
+    "provenance/terminal_original_bytes_inventory_public.json": (
+        "5a2d7a892510c3c6c825974683fb9fd8c9a36f7797613873762ffff495e2ca10"
+    ),
+}
+
+APPROVED_PUBLIC_RUNTIME_SPEC: dict[str, str] = {
+    "runtime/runtime_recovery_wrapper.py": (
+        "6eabc4f0a2065780fab6e6bdf28711f7902e97d3738b3f200543a8d86939113f"
+    ),
+}
 
 # 22 Protected Baseline Files & Cryptographic SHA-256 Hashes
 PROTECTED_BASELINE_22 = {
@@ -300,11 +351,13 @@ def compare_metrics_trees(
 
 
 def verify_bundle_hashes(bundle_dir: Path) -> tuple[bool, list[str]]:
-    """Audit SHA-256 hashes of all files in canonical accepted bundle."""
+    """Audit SHA-256 hashes of all files in canonical accepted bundle or portable package."""
     logs: list[str] = []
     bundle_manifest_path = bundle_dir / "canonical_metric_bundle_v1.json"
     portable_manifest_path = bundle_dir / "canonical_bundle_manifest.json"
     public_staging_manifest_path = bundle_dir / "public_package_manifest.json"
+
+    is_portable_package = False
 
     if bundle_manifest_path.exists():
         manifest_bytes = bundle_manifest_path.read_bytes()
@@ -321,13 +374,13 @@ def verify_bundle_hashes(bundle_dir: Path) -> tuple[bool, list[str]]:
         source_digests: dict[str, str] = bundle_data.get("source_file_digests", {})
         output_digests: dict[str, str] = bundle_data.get("output_file_digests", {})
     elif portable_manifest_path.exists() or public_staging_manifest_path.exists():
+        is_portable_package = True
         p_path = (
             portable_manifest_path
             if portable_manifest_path.exists()
             else public_staging_manifest_path
         )
         manifest_bytes = p_path.read_bytes()
-        manifest_sha = compute_sha256(manifest_bytes)
         bundle_data = json.loads(manifest_bytes.decode("utf-8"))
         derived_sha = bundle_data.get("derived_from", {}).get("bundle_sha256")
         if derived_sha != CANONICAL_BUNDLE_SHA256:
@@ -366,10 +419,80 @@ def verify_bundle_hashes(bundle_dir: Path) -> tuple[bool, list[str]]:
 
     all_ok = True
 
-    # Audit inputs
+    # 1. Enforce strict allowlists: never allow empty inventory or missing required files
+    if not isinstance(source_digests, dict) or set(source_digests.keys()) != REQUIRED_INPUT_FILES:
+        missing_inputs = sorted(REQUIRED_INPUT_FILES - set(source_digests.keys()))
+        extra_inputs = sorted(set(source_digests.keys()) - REQUIRED_INPUT_FILES)
+        logs.append(
+            f"[FAIL] Invalid canonical inputs inventory (expected exact 10 files).\n"
+            f"  Missing: {missing_inputs}\n"
+            f"  Extra:   {extra_inputs}"
+        )
+        all_ok = False
+
+    if not isinstance(output_digests, dict) or set(output_digests.keys()) != REQUIRED_OUTPUT_FILES:
+        missing_outputs = sorted(REQUIRED_OUTPUT_FILES - set(output_digests.keys()))
+        extra_outputs = sorted(set(output_digests.keys()) - REQUIRED_OUTPUT_FILES)
+        logs.append(
+            f"[FAIL] Invalid canonical outputs inventory (expected exact 8 files).\n"
+            f"  Missing: {missing_outputs}\n"
+            f"  Extra:   {extra_outputs}"
+        )
+        all_ok = False
+
+    # 2. For portable public package, enforce provenance and runtime inventories
+    if is_portable_package:
+        prov_assets = bundle_data.get("sanitized_provenance_assets")
+        if not isinstance(prov_assets, dict) or set(prov_assets.keys()) != set(
+            APPROVED_PUBLIC_PROVENANCE_SPEC.keys()
+        ):
+            missing_prov = sorted(
+                set(APPROVED_PUBLIC_PROVENANCE_SPEC.keys())
+                - set(prov_assets.keys() if isinstance(prov_assets, dict) else [])
+            )
+            logs.append(
+                f"[FAIL] Invalid public provenance inventory (expected exact 4 assets).\n"
+                f"  Missing: {missing_prov}"
+            )
+            all_ok = False
+        else:
+            for rel_p, exp_sha in sorted(APPROVED_PUBLIC_PROVENANCE_SPEC.items()):
+                decl_sha = prov_assets[rel_p].get("sanitized_sha256")
+                if decl_sha != exp_sha:
+                    logs.append(
+                        f"  [MISMATCH] Manifest provenance hash for {rel_p}: "
+                        f"expected {exp_sha[:12]}..., got {str(decl_sha)[:12]}..."
+                    )
+                    all_ok = False
+
+        runtime_assets = bundle_data.get("runtime_assets")
+        if not isinstance(runtime_assets, dict) or set(runtime_assets.keys()) != set(
+            APPROVED_PUBLIC_RUNTIME_SPEC.keys()
+        ):
+            missing_runtime = sorted(
+                set(APPROVED_PUBLIC_RUNTIME_SPEC.keys())
+                - set(runtime_assets.keys() if isinstance(runtime_assets, dict) else [])
+            )
+            logs.append(
+                f"[FAIL] Invalid public runtime inventory (expected exact 1 asset).\n"
+                f"  Missing: {missing_runtime}"
+            )
+            all_ok = False
+        else:
+            for rel_p, exp_sha in sorted(APPROVED_PUBLIC_RUNTIME_SPEC.items()):
+                decl_sha = runtime_assets[rel_p].get("sha256")
+                if decl_sha != exp_sha:
+                    logs.append(
+                        f"  [MISMATCH] Manifest runtime hash for {rel_p}: "
+                        f"expected {exp_sha[:12]}..., got {str(decl_sha)[:12]}..."
+                    )
+                    all_ok = False
+
+    # 3. Audit physical inputs on disk
     inputs_dir = bundle_dir / "inputs"
     logs.append(f"\nVerifying {len(source_digests)} Canonical Input Files:")
-    for filename, expected_sha in sorted(source_digests.items()):
+    for filename in sorted(source_digests.keys()):
+        expected_sha = source_digests[filename]
         target = inputs_dir / filename
         if not target.exists():
             logs.append(f"  [MISSING] {target}")
@@ -385,9 +508,10 @@ def verify_bundle_hashes(bundle_dir: Path) -> tuple[bool, list[str]]:
         else:
             logs.append(f"  [OK] {filename:<30} {actual_sha}")
 
-    # Audit outputs
+    # 4. Audit physical outputs on disk
     logs.append(f"\nVerifying {len(output_digests)} Canonical Output Files:")
-    for filename, expected_sha in sorted(output_digests.items()):
+    for filename in sorted(output_digests.keys()):
+        expected_sha = output_digests[filename]
         target = bundle_dir / filename
         if not target.exists():
             target = bundle_dir / "outputs" / filename
@@ -405,9 +529,9 @@ def verify_bundle_hashes(bundle_dir: Path) -> tuple[bool, list[str]]:
         else:
             logs.append(f"  [OK] {filename:<30} {actual_sha}")
 
-    # Audit provenance assets if declared in portable manifest
-    prov_assets = bundle_data.get("sanitized_provenance_assets", {})
-    if prov_assets:
+    # 5. Audit physical provenance assets on disk for portable package
+    if is_portable_package and isinstance(bundle_data.get("sanitized_provenance_assets"), dict):
+        prov_assets = bundle_data["sanitized_provenance_assets"]
         logs.append(f"\nVerifying {len(prov_assets)} Sanitized Provenance Assets:")
         for rel_p, p_info in sorted(prov_assets.items()):
             target = bundle_dir / rel_p
@@ -425,9 +549,9 @@ def verify_bundle_hashes(bundle_dir: Path) -> tuple[bool, list[str]]:
             else:
                 logs.append(f"  [OK] {rel_p:<45} {actual_sha}")
 
-    # Audit runtime recovery wrapper if declared in portable manifest
-    runtime_assets = bundle_data.get("runtime_assets", {})
-    if runtime_assets:
+    # 6. Audit physical runtime wrapper asset and internal wrapper block on disk
+    if is_portable_package and isinstance(bundle_data.get("runtime_assets"), dict):
+        runtime_assets = bundle_data["runtime_assets"]
         logs.append(f"\nVerifying {len(runtime_assets)} Portable Runtime Assets:")
         for rel_p, r_info in sorted(runtime_assets.items()):
             target = bundle_dir / rel_p
@@ -443,7 +567,34 @@ def verify_bundle_hashes(bundle_dir: Path) -> tuple[bool, list[str]]:
                 )
                 all_ok = False
             else:
-                logs.append(f"  [OK] {rel_p:<45} {actual_sha}")
+                # Also verify raw wrapper block digest invariant
+                try:
+                    import importlib.util
+
+                    fixture_spec = importlib.util.spec_from_file_location(
+                        "public_runtime_wrapper_check", target
+                    )
+                    if fixture_spec and fixture_spec.loader:
+                        fixture_mod = importlib.util.module_from_spec(fixture_spec)
+                        fixture_spec.loader.exec_module(fixture_mod)
+                        raw_block = getattr(fixture_mod, "RAW_WRAPPER_BLOCK", "")
+                        block_sha = compute_sha256(raw_block.encode("utf-8"))
+                        if block_sha != CANONICAL_WRAPPER_BLOCK_SHA256:
+                            logs.append(
+                                f"  [MISMATCH] RAW_WRAPPER_BLOCK digest in {rel_p}: "
+                                f"expected {CANONICAL_WRAPPER_BLOCK_SHA256[:12]}..., "
+                                f"got {block_sha[:12]}..."
+                            )
+                            all_ok = False
+                except Exception as exc:
+                    logs.append(f"  [FAIL] Failed inspecting runtime recovery wrapper: {exc}")
+                    all_ok = False
+                if all_ok:
+                    logs.append(f"  [OK] {rel_p:<45} {actual_sha}")
+
+    # Final guard: must have at least 10 inputs and 8 outputs checked
+    if len(source_digests) != 10 or len(output_digests) != 8:
+        all_ok = False
 
     return all_ok, logs
 

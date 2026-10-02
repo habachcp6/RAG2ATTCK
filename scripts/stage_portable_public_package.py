@@ -116,7 +116,15 @@ def build_staged_package(
             f"Source bundle cannot be a parent of output directory: {source_bundle_dir}"
         )
 
-    # 2. Cryptographic verification of original bundle manifest BEFORE loading
+    # 2. Enforce strict destination safety: output_dir must be new or empty
+    if output_dir.exists() and any(output_dir.iterdir()):
+        raise FileExistsError(
+            f"Target output directory already exists and is not empty: {output_dir}. "
+            "Builder strictly requires a new non-existent path or an empty directory "
+            "to prevent accidental file destruction or evidence contamination."
+        )
+
+    # 3. Cryptographic verification of original bundle manifest BEFORE loading
     source_manifest_path = source_bundle_dir / "canonical_metric_bundle_v1.json"
     if not source_manifest_path.exists():
         raise FileNotFoundError(f"Missing original bundle manifest: {source_manifest_path}")
@@ -130,16 +138,6 @@ def build_staged_package(
             f"  Got:      {source_manifest_sha}"
         )
     print(f"[PASS] Original bundle manifest SHA-256 verified: {source_manifest_sha}")
-
-    # 3. Clean and recreate target directory structure
-    if output_dir.exists():
-        for item in sorted(output_dir.rglob("*")):
-            if item.is_file():
-                try:
-                    os.chmod(item, 0o777)
-                    item.unlink()
-                except Exception:
-                    pass
 
     inputs_staging = output_dir / "inputs"
     outputs_staging = output_dir / "outputs"
@@ -476,13 +474,7 @@ def build_staged_package(
         f"{len(wrapper_bytes):>8} bytes  {wrapper_sha}"
     )
 
-    # 8. Clean up any loose redundant output files at root if previously staged
-    for fname in CANONICAL_OUTPUT_SPEC:
-        root_loose = output_dir / fname
-        if root_loose.exists():
-            root_loose.unlink()
-
-    # 9. Build Comprehensive Sanitized Manifest
+    # 8. Build Comprehensive Sanitized Manifest
     print("\nGenerating Portable Manifest canonical_bundle_manifest.json...")
     # Build backward compatible digests mapping
     source_file_digests: dict[str, str] = {}
@@ -565,7 +557,7 @@ def build_staged_package(
         git_manifest_path.write_bytes(manifest_bytes)
         print(f"  [SYNCED GIT MANIFEST] public_package_manifest.json ({len(manifest_bytes)} bytes)")
 
-    # 10. Robust Byte Scanning and Strict Fail-Closed Security Gate
+    # 9. Robust Byte Scanning and Strict Fail-Closed Security Gate
     print("\nExecuting Byte Scanning and Private Path / Secret Security Audit:")
     forbidden_path_regexes = [
         re.compile(

@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "byte_preserved_files": {
+    "inputs/manifest.json": {
+      "classification": "byte_exact_preserved",
+      "sha256": "66b658cfa9dd42e131ec567bbe043b8bc87ac6e92aeaa5e8f6661b0195e486e5",
+      "size_bytes": 127772
+    },
+    "inputs/no_rag_predictions.jsonl": {
+      "classification": "byte_exact_preserved",
+      "sha256": "70034c5e3c417fc4a28c357d00d6a046751175ed03e7815645fa09e0411e228a",
+      "size_bytes": 2207966
+    },
+    "inputs/rag_k10_predictions.jsonl": {
+      "classification": "byte_exact_preserved",
+      "sha256": "40cd9d2b19c691ed8bcb97ff5dfbebd378857346e9a06b00a9ab54e51fd9a122",
+      "size_bytes": 3046881
+    },
+    "inputs/rag_k1_predictions.jsonl": {
+      "classification": "byte_exact_preserved",
+      "sha256": "745cb883a90b4d1bac7c76c4007b143893834530a843e153fc24277aae5da7ac",
+      "size_bytes": 2292294
+    },
+    "inputs/rag_k3_predictions.jsonl": {
+      "classification": "byte_exact_preserved",
+      "sha256": "29f215d74a3139df53036c642c8a14762bec4542d04685125cf28d024571b006",
+      "size_bytes": 2459866
+    },
+    "inputs/rag_k5_predictions.jsonl": {
+      "classification": "byte_exact_preserved",
+      "sha256": "896d900d10e25af748e00235c33cace84511c450bf7cfb0da2b4d1a658124178",
+      "size_bytes": 2626661
+    },
+    "inputs/request_journal.jsonl": {
+      "classification": "byte_exact_preserved",
+      "sha256": "f36e0f3099ef704e6ed5e0bc0097affbe98932e1620563a6db22e631ae114f31",
+      "size_bytes": 7571342
+    },
+    "inputs/run_summary.json": {
+      "classification": "byte_exact_preserved",
+      "sha256": "67df38e336b4250b5a5c044b754ab02e8cc1826b8569f76d9bdf265ae4f84c2a",
+      "size_bytes": 593
+    },
+    "inputs/study_ledger.json": {
+      "classification": "byte_exact_preserved",
+      "sha256": "21e4c49b1f19bba5310bc0e9897d828b16ab27420c1d25b14b9f3e727dce94d8",
+      "size_bytes": 1012943
+    },
+    "outputs/failure_decomposition.json": {
+      "classification": "byte_exact_preserved",
+      "sha256": "1ea3a899fefc7f92bcb739ab16e70036c269ebff16a7ec7e38240d2cc2c1c05d",
+      "size_bytes": 2522
+    },
+    "outputs/overall_metrics.json": {
+      "classification": "byte_exact_preserved",
+      "sha256": "25662753963ecdd05d16b8607095fffb964c0d53cd2c43026c50b47b22e55074",
+      "size_bytes": 1967
+    },
+    "outputs/per_condition_metrics.json": {
+      "classification": "byte_exact_preserved",
+      "sha256": "e6592f9a0f97739be1168f9d1448e0d209fe4a300727ff6ad78902523f1591d6",
+      "size_bytes": 4292
+    },
+    "outputs/per_technique_metrics.json": {
+      "classification": "byte_exact_preserved",
+      "sha256": "a2f96027439ba876b1c48b155a18f99872d3c4cc2c62c1bdc573a09aa73f49ef",
+      "size_bytes": 206543
+    },
+    "outputs/retrieval_conditional_metrics.json": {
+      "classification": "byte_exact_preserved",
+      "sha256": "2c68395f4ae923167b7cbc08835ff2772044ddc7695f69c0781ec277287d775f",
+      "size_bytes": 1541
+    },
+    "outputs/rq_analysis_summary.md": {
+      "classification": "byte_exact_preserved",
+      "sha256": "712d495d5d71e5d96fd844fcb3dfdbc88e722056e265cf4a19d3813d9d9446c6",
+      "size_bytes": 7437
+    },
+    "outputs/run_provenance.json": {
+      "classification": "byte_exact_preserved",
+      "sha256": "90918c9efe149c537c9b2cee7f7392607f273c12627bcc61b9dc9443359e63a1",
+      "size_bytes": 2929
+    }
+  },
+  "derived_from": {
+    "bundle_sha256": "00cd9df247af395e924235b42108b91e1fdc7ca3e7a190499cb7544f6bc6612f",
+    "rationale": "Neutralize private workstation filesystem paths while strictly preserving 100% byte-exact copies of all 16 pure experimental data files and 100% mathematical invariance across transformed metadata.",
+    "root_acceptance_sha256": "551d0ca63101701837365a845078ab3b2f0e14a0b6c6f4946092f8cfd3ef1f39",
+    "runtime_wrapper_block_sha256": "e4a0115ff2d712bf6a0b896b50d9f4d412b786707d9721f47c74a4ac174e5f68",
+    "secondary_scope_authorization_sha256": "b988a599800bbbb01b0418e60bfd00fbbce3ab2c4d631da678f99bfd2141c4b5",
+    "terminal_original_bytes_inventory_sha256": "f50f4da12b23502f26ff9c3ba948dc25e7441c34dec61b5c732943440f579c7b",
+    "terminal_process_proof_sha256": "cbffe862b60c49b5c872837f81b580d5a59197b681f7b7623fd844b897a0981e"
+  },
+  "execution_context": {
+    "core_manifest_sha256": "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4",
+    "dataset_split": "test",
+    "execution_mode": "live",
+    "experiment_id": "synthetic-paired-test-1",
+    "protocol_file_sha256": "a402b04ab463172f9d4079bff27b089ca8a21ffd0805d097af6cb1f3c7b5a8fb",
+    "protocol_version": "experiment-protocol-v1.1",
+    "run_id": "live-66b94b1676bf46a9"
+  },
+  "output_file_digests": {
+    "failure_decomposition.json": "1ea3a899fefc7f92bcb739ab16e70036c269ebff16a7ec7e38240d2cc2c1c05d",
+    "overall_metrics.json": "25662753963ecdd05d16b8607095fffb964c0d53cd2c43026c50b47b22e55074",
+    "per_condition_metrics.json": "e6592f9a0f97739be1168f9d1448e0d209fe4a300727ff6ad78902523f1591d6",
+    "per_technique_metrics.json": "a2f96027439ba876b1c48b155a18f99872d3c4cc2c62c1bdc573a09aa73f49ef",
+    "retrieval_conditional_metrics.json": "2c68395f4ae923167b7cbc08835ff2772044ddc7695f69c0781ec277287d775f",
+    "rq_analysis.json": "1604a5537b57cefbe86fd59d7fa2acfb8658a27215f7df8a98dfd0c400981156",
+    "rq_analysis_summary.md": "712d495d5d71e5d96fd844fcb3dfdbc88e722056e265cf4a19d3813d9d9446c6",
+    "run_provenance.json": "90918c9efe149c537c9b2cee7f7392607f273c12627bcc61b9dc9443359e63a1"
+  },
+  "package_id": "canonical-bundle-public-v1",
+  "runtime_assets": {
+    "runtime/runtime_recovery_wrapper.py": {
+      "canonical_launcher_sha256": "05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa",
+      "raw_wrapper_block_sha256": "e4a0115ff2d712bf6a0b896b50d9f4d412b786707d9721f47c74a4ac174e5f68",
+      "sha256": "6eabc4f0a2065780fab6e6bdf28711f7902e97d3738b3f200543a8d86939113f",
+      "size_bytes": 5235
+    }
+  },
+  "sanitized_provenance_assets": {
+    "provenance/root_canonical_export_validation_public.json": {
+      "derivation": "Neutralized rq_path to outputs/rq_analysis.json; all 16,740 checked fields, verdicts, and financial breakdowns preserved.",
+      "original_sha256": "551d0ca63101701837365a845078ab3b2f0e14a0b6c6f4946092f8cfd3ef1f39",
+      "sanitized_sha256": "4767e1512741733874b20a3b8d6e420b24f887b5c6517b5f05a3e19521a19e35",
+      "size_bytes": 1581
+    },
+    "provenance/s2_evaluation_execute_public.md": {
+      "derivation": "Neutralized private workstation absolute paths into relative POSIX paths; all evaluation directives, frozen protocols, thresholds, and execution requirements preserved.",
+      "original_sha256": "b988a599800bbbb01b0418e60bfd00fbbce3ab2c4d631da678f99bfd2141c4b5",
+      "sanitized_sha256": "d515f70426435e9edb79cdc415e91c23b16e189fd171d4db4b04074c9b580aa1",
+      "size_bytes": 5981
+    },
+    "provenance/terminal_original_bytes_inventory_public.json": {
+      "derivation": "Mapped absolute filesystem keys to relative inputs/<file> paths; all original SHA-256 digests and byte sizes preserved.",
+      "original_sha256": "f50f4da12b23502f26ff9c3ba948dc25e7441c34dec61b5c732943440f579c7b",
+      "sanitized_sha256": "5a2d7a892510c3c6c825974683fb9fd8c9a36f7797613873762ffff495e2ca10",
+      "size_bytes": 1618
+    },
+    "provenance/terminal_process_proof_public.json": {
+      "derivation": "Neutralized authoritative_log to relative logs path; all run IDs, process parameters, and accounting summaries preserved.",
+      "original_sha256": "cbffe862b60c49b5c872837f81b580d5a59197b681f7b7623fd844b897a0981e",
+      "sanitized_sha256": "1a720d799315d8384fef62c357eb66632f0509de592248302b37c45e8711a87e",
+      "size_bytes": 1390
+    }
+  },
+  "sanitized_transformed_files": {
+    "inputs/.study_anchor.json": {
+      "numerical_invariance": "Strictly invariant: total_budget_usd, prior_pilot_provisional_hold_usd, initial_available_usd, pricing_contract_sha256 remain 100% identical.",
+      "original_sha256": "d03aec39091e77defd90ea2756332d60305e6350a5b15fe724e806264e61fb25",
+      "sanitized_sha256": "6a15639c213782a6ef7863a960b064d604185297b121ab41197a057774d23097",
+      "size_bytes": 423,
+      "transform_map": {
+        ".ledger_path": "Neutralized private workstation path to relative inputs/study_ledger.json",
+        ".output_directory": "Neutralized private workstation path to relative outputs"
+      },
+      "transformed_keypaths": [
+        ".ledger_path",
+        ".output_directory"
+      ]
+    },
+    "outputs/rq_analysis.json": {
+      "numerical_invariance": "Strictly invariant: all delta-F1 values, McNemar p-values, bootstrap confidence intervals, recall rates, token counts, and financial amounts remain 100% mathematically identical.",
+      "original_secondary_scope_authorization_sha256": "b988a599800bbbb01b0418e60bfd00fbbce3ab2c4d631da678f99bfd2141c4b5",
+      "original_sha256": "945d413b1c55483c27b16d22dbdfddbcfc773419b06b463f4430530b17c94615",
+      "sanitized_secondary_scope_authorization_sha256": "d515f70426435e9edb79cdc415e91c23b16e189fd171d4db4b04074c9b580aa1",
+      "sanitized_sha256": "1604a5537b57cefbe86fd59d7fa2acfb8658a27215f7df8a98dfd0c400981156",
+      "size_bytes": 51842,
+      "transform_map": {
+        ".analysis_run_parameters.secondary_scope_authorization_packet": "Neutralized private workstation path to relative provenance/s2_evaluation_execute_public.md",
+        ".analysis_run_parameters.secondary_scope_authorization_sha256": "Updated binding digest from original private packet hash (b988a599800bbbb01b0418e60bfd00fbbce3ab2c4d631da678f99bfd2141c4b5) to sanitized public packet hash (d515f70426435e9edb79cdc415e91c23b16e189fd171d4db4b04074c9b580aa1)"
+      },
+      "transformed_keypaths": [
+        ".analysis_run_parameters.secondary_scope_authorization_packet",
+        ".analysis_run_parameters.secondary_scope_authorization_sha256"
+      ]
+    }
+  },
+  "schema_version": "2.0.0",
+  "secondary_scope_authorization": {
+    "original_sha256": "b988a599800bbbb01b0418e60bfd00fbbce3ab2c4d631da678f99bfd2141c4b5",
+    "path": "provenance/s2_evaluation_execute_public.md",
+    "sha256": "d515f70426435e9edb79cdc415e91c23b16e189fd171d4db4b04074c9b580aa1"
+  },
+  "source_file_digests": {
+    ".study_anchor.json": "6a15639c213782a6ef7863a960b064d604185297b121ab41197a057774d23097",
+    "manifest.json": "66b658cfa9dd42e131ec567bbe043b8bc87ac6e92aeaa5e8f6661b0195e486e5",
+    "no_rag_predictions.jsonl": "70034c5e3c417fc4a28c357d00d6a046751175ed03e7815645fa09e0411e228a",
+    "rag_k10_predictions.jsonl": "40cd9d2b19c691ed8bcb97ff5dfbebd378857346e9a06b00a9ab54e51fd9a122",
+    "rag_k1_predictions.jsonl": "745cb883a90b4d1bac7c76c4007b143893834530a843e153fc24277aae5da7ac",
+    "rag_k3_predictions.jsonl": "29f215d74a3139df53036c642c8a14762bec4542d04685125cf28d024571b006",
+    "rag_k5_predictions.jsonl": "896d900d10e25af748e00235c33cace84511c450bf7cfb0da2b4d1a658124178",
+    "request_journal.jsonl": "f36e0f3099ef704e6ed5e0bc0097affbe98932e1620563a6db22e631ae114f31",
+    "run_summary.json": "67df38e336b4250b5a5c044b754ab02e8cc1826b8569f76d9bdf265ae4f84c2a",
+    "study_ledger.json": "21e4c49b1f19bba5310bc0e9897d828b16ab27420c1d25b14b9f3e727dce94d8"
+  }
+}

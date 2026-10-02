@@ -32,16 +32,22 @@ import pytest
 
 from scripts.populate_report import (
     DEFAULT_FIXTURE_DIR,
+    DEFAULT_SEAL_PATH,
     DEFAULT_TEMPLATE_PATH,
     DISCLAIMER_TEXT,
+    REQUIRED_CANONICAL_FILES,
     REQUIRED_FIXTURE_FILES,
+    assert_canonical_safety,
     assert_fixture_safety,
+    format_currency_value,
     format_int,
     format_latency,
     format_pct,
     format_pp,
+    format_pvalue,
     format_usd,
     run_pipeline,
+    validate_canonical_output,
     validate_finite_number,
 )
 
@@ -64,17 +70,19 @@ def real_fixture_copy(tmp_path: Path) -> Path:
 # ==============================================================================
 
 
-def test_canonical_mode_disabled(tmp_path: Path) -> None:
-    """Safety gate: Canonical mode is disabled pending root S2 terminal audit seal."""
+def test_canonical_mode_fails_closed_without_seal(tmp_path: Path) -> None:
+    """Safety gate: Canonical mode fails closed when root terminal audit seal is missing."""
     out_md = tmp_path / "out.md"
+    non_existent_seal = tmp_path / "non_existent_seal.json"
     with pytest.raises(
-        RuntimeError,
-        match=r"\[FAIL_CLOSED\] Canonical mode is disabled pending root S2 terminal audit seal\.",
+        FileNotFoundError,
+        match=r"\[FAIL_CLOSED\] Canonical run seal not found at:",
     ):
         run_pipeline(
-            fixture_dir=DEFAULT_FIXTURE_DIR,
+            data_dir=DEFAULT_FIXTURE_DIR,
             template_path=DEFAULT_TEMPLATE_PATH,
             output_path=out_md,
+            seal_path=non_existent_seal,
             mode="canonical",
         )
 
@@ -466,3 +474,463 @@ def test_run_pipeline_end_to_end_authoritative_fixture(tmp_path: Path) -> None:
     # 8. Audit JSON structure and safety metadata
     assert slots["_metadata"]["fixture_only"] is True
     assert slots["_metadata"]["disclaimer"] == DISCLAIMER_TEXT
+
+
+@pytest.fixture
+def canonical_bundle(tmp_path: Path) -> tuple[Path, Path]:
+    """Create an isolated temporary canonical evaluation bundle and valid seal."""
+    bundle_dir = tmp_path / "canonical_diagnostics"
+    bundle_dir.mkdir(parents=True)
+    for fname in REQUIRED_CANONICAL_FILES:
+        src = DEFAULT_FIXTURE_DIR / fname
+        if not src.is_file():
+            raise FileNotFoundError(f"Fixture file missing: {src}")
+        shutil.copy2(src, bundle_dir / fname)
+
+    # Update run_provenance.json to canonical / live
+    prov_path = bundle_dir / "run_provenance.json"
+    prov = json.loads(prov_path.read_text(encoding="utf-8"))
+    prov["fixture_only"] = False
+    prov["execution_mode"] = "live"
+    prov_path.write_text(json.dumps(prov, indent=2), encoding="utf-8")
+
+    # Update rq_analysis.json to canonical / live
+    rq_path = bundle_dir / "rq_analysis.json"
+    rq = json.loads(rq_path.read_text(encoding="utf-8"))
+    rq["fixture_only"] = False
+    rq["execution_mode"] = "live"
+    rq["provenance_status"] = "canonical"
+    rq_path.write_text(json.dumps(rq, indent=2), encoding="utf-8")
+
+    # Create certified seal matching bundle hashes
+    seal_path = tmp_path / "canonical_run_seal_v1.json"
+    seal_data = {
+        "seal_version": "1.0.0",
+        "seal_status": "CERTIFIED_CANONICAL_AUDIT_SEAL",
+        "experiment_id": "known-answer-only",
+        "manifest_sha256": "acf4f5383ad2387e6a21006aae83ba728c7ccb15c9114052e48babfd00e6081e",
+        "protocol_version": "experiment-protocol-v1",
+        "created_at_utc": "2026-10-02T10:00:00Z",
+    }
+    seal_path.write_text(json.dumps(seal_data, indent=2), encoding="utf-8")
+
+    return bundle_dir, seal_path
+
+
+# ==============================================================================
+# 5. Canonical Mode & Validation Gate Tests
+# ==============================================================================
+
+
+def test_run_pipeline_canonical_mode_success(
+    canonical_bundle: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """Canonical mode functional test: Executes end-to-end with certified seal."""
+    bundle_dir, seal_path = canonical_bundle
+    out_md = tmp_path / "canonical_report.md"
+    out_json = tmp_path / "canonical_slots.json"
+
+    run_pipeline(
+        data_dir=bundle_dir,
+        seal_path=seal_path,
+        template_path=DEFAULT_TEMPLATE_PATH,
+        output_path=out_md,
+        audit_json_path=out_json,
+        mode="canonical",
+    )
+
+    assert out_md.is_file()
+    assert out_json.is_file()
+
+    content = out_md.read_text(encoding="utf-8")
+
+    # 1. No fixture warning banner or disclaimer
+    assert "<!-- FIXTURE_ONLY: true -->" not in content
+    assert DISCLAIMER_TEXT not in content
+
+    # 2. Certified status header and audit note block
+    assert "**Status:** CERTIFIED CANONICAL EXPERIMENTAL EVALUATION" in content
+    assert "CANONICAL RUN AUDIT SEAL VERIFIED" in content
+    assert "CERTIFIED_CANONICAL_AUDIT_SEAL" in content
+
+    # 3. Section 6 intro transformed
+    assert "canonical live experimental execution matrix" in content
+
+    # 4. Schema markers stripped from table titles
+    assert (
+        "*Table 2a: Primary Attribution Performance and Ground-Truth Complexity Across Conditions.*"
+        in content
+    )
+    assert (
+        "*Table 3b: Paired Scorable Representation Concordance and Exploratory McNemar Test.*"
+        in content
+    )
+    assert "*Table 5b: Whole-Study Financial Ledger and Budget Reconciliation.*" in content
+
+    # 5. Zero unpopulated execution placeholders
+    assert "[TBD_AT_EXECUTION]" not in content
+    assert "[PENDING" not in content
+
+    # 6. Supplementary provenance table
+    assert "#### Supplementary Execution Provenance (Canonical Run Mode)" in content
+    assert "canonical_run_seal_v1.json" in content
+
+    # 7. Audit JSON metadata
+    slots = json.loads(out_json.read_text(encoding="utf-8"))
+    assert slots["_metadata"]["fixture_only"] is False
+    assert slots["_metadata"]["seal_status"] == "CERTIFIED_CANONICAL_AUDIT_SEAL"
+    assert slots["_metadata"]["experiment_id"] == "known-answer-only"
+
+    # 8. Table 2a has 9 columns populated
+    t2a_no_rag = slots["table_2a"]["no_rag"]
+    assert "single_gt_accuracy_e2e" in t2a_no_rag
+    assert "multi_gt_accuracy_e2e" in t2a_no_rag
+    assert "complexity_accuracy_delta" in t2a_no_rag
+
+    # 9. Table 3b has 10 columns populated
+    t3b_no_rag = slots["table_3b"]["no_rag"]
+    assert t3b_no_rag["complete_pairs"] == "278"
+    assert t3b_no_rag["mcnemar_p_exact"] == "1.0000"
+
+    # 10. Table 5b has 7 ledger metrics populated
+    t5b = slots["table_5b"]
+    assert t5b["total_study_budget_usd"] == "19.99"
+    assert t5b["canonical_conditions_total_usd"] == "8.50"
+
+
+def test_canonical_mode_rejects_missing_seal_file(
+    canonical_bundle: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """Canonical gate: Missing seal file raises FileNotFoundError."""
+    bundle_dir, _ = canonical_bundle
+    missing_seal = tmp_path / "non_existent.json"
+    out_md = tmp_path / "out.md"
+
+    with pytest.raises(FileNotFoundError, match=r"\[FAIL_CLOSED\] Canonical run seal not found"):
+        run_pipeline(
+            data_dir=bundle_dir,
+            seal_path=missing_seal,
+            output_path=out_md,
+            mode="canonical",
+        )
+
+
+def test_canonical_mode_rejects_invalid_seal_status(
+    canonical_bundle: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """Canonical gate: Non-certified seal status raises ValueError."""
+    bundle_dir, seal_path = canonical_bundle
+    seal = json.loads(seal_path.read_text(encoding="utf-8"))
+    seal["seal_status"] = "PROVISIONAL_SEAL"
+    seal_path.write_text(json.dumps(seal), encoding="utf-8")
+    out_md = tmp_path / "out.md"
+
+    with pytest.raises(ValueError, match=r"\[FAIL_CLOSED\] Invalid seal_status"):
+        run_pipeline(
+            data_dir=bundle_dir,
+            seal_path=seal_path,
+            output_path=out_md,
+            mode="canonical",
+        )
+
+
+def test_canonical_mode_rejects_missing_seal_key(
+    canonical_bundle: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """Canonical gate: Missing required key in seal raises KeyError."""
+    bundle_dir, seal_path = canonical_bundle
+    seal = json.loads(seal_path.read_text(encoding="utf-8"))
+    del seal["manifest_sha256"]
+    seal_path.write_text(json.dumps(seal), encoding="utf-8")
+    out_md = tmp_path / "out.md"
+
+    with pytest.raises(
+        KeyError, match=r"\[FAIL_CLOSED\] .* missing required key: 'manifest_sha256'"
+    ):
+        run_pipeline(
+            data_dir=bundle_dir,
+            seal_path=seal_path,
+            output_path=out_md,
+            mode="canonical",
+        )
+
+
+def test_canonical_mode_rejects_fixture_provenance(
+    canonical_bundle: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """Canonical gate: Mock fixture provenance in canonical mode raises ValueError."""
+    bundle_dir, seal_path = canonical_bundle
+    prov_file = bundle_dir / "run_provenance.json"
+    prov = json.loads(prov_file.read_text(encoding="utf-8"))
+    prov["fixture_only"] = True
+    prov_file.write_text(json.dumps(prov), encoding="utf-8")
+    out_md = tmp_path / "out.md"
+
+    with pytest.raises(
+        ValueError, match=r"\[FAIL_CLOSED\] run_provenance\.json .* fixture_only=False strictly"
+    ):
+        run_pipeline(
+            data_dir=bundle_dir,
+            seal_path=seal_path,
+            output_path=out_md,
+            mode="canonical",
+        )
+
+
+def test_canonical_mode_rejects_mismatched_seal_hash(
+    canonical_bundle: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """Canonical gate: Seal manifest hash mismatch across files raises ValueError."""
+    bundle_dir, seal_path = canonical_bundle
+    seal = json.loads(seal_path.read_text(encoding="utf-8"))
+    seal["manifest_sha256"] = "deadbeef" * 8
+    seal_path.write_text(json.dumps(seal), encoding="utf-8")
+    out_md = tmp_path / "out.md"
+
+    with pytest.raises(ValueError, match=r"\[FAIL_CLOSED\] Inconsistent manifest_sha256"):
+        run_pipeline(
+            data_dir=bundle_dir,
+            seal_path=seal_path,
+            output_path=out_md,
+            mode="canonical",
+        )
+
+
+def test_canonical_mode_rejects_missing_complexity(
+    canonical_bundle: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """Canonical gate: Missing ground-truth complexity in rq_analysis raises KeyError."""
+    bundle_dir, seal_path = canonical_bundle
+    rq_file = bundle_dir / "rq_analysis.json"
+    rq = json.loads(rq_file.read_text(encoding="utf-8"))
+    del rq["new_proposed_producer_stratified_gt_complexity"]
+    rq_file.write_text(json.dumps(rq), encoding="utf-8")
+    out_md = tmp_path / "out.md"
+
+    with pytest.raises(KeyError, match=r"new_proposed_producer_stratified_gt_complexity"):
+        run_pipeline(
+            data_dir=bundle_dir,
+            seal_path=seal_path,
+            output_path=out_md,
+            mode="canonical",
+        )
+
+
+def test_canonical_mode_rejects_missing_whole_study_accounting(
+    canonical_bundle: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """Canonical gate: Missing whole study accounting in rq_analysis raises KeyError."""
+    bundle_dir, seal_path = canonical_bundle
+    rq_file = bundle_dir / "rq_analysis.json"
+    rq = json.loads(rq_file.read_text(encoding="utf-8"))
+    del rq["rq3"]["whole_study_accounting"]
+    rq_file.write_text(json.dumps(rq), encoding="utf-8")
+    out_md = tmp_path / "out.md"
+
+    with pytest.raises(KeyError, match=r"rq3\.whole_study_accounting"):
+        run_pipeline(
+            data_dir=bundle_dir,
+            seal_path=seal_path,
+            output_path=out_md,
+            mode="canonical",
+        )
+
+
+def test_canonical_output_gate_catches_unpopulated_placeholders() -> None:
+    """Output gate: Leftover execution placeholders in canonical output raise RuntimeError."""
+    sample_text = "Some report section with [TBD_AT_EXECUTION] in a row."
+    with pytest.raises(
+        RuntimeError, match=r"\[CANONICAL_GATE_VIOLATION\] Found 1 execution placeholders"
+    ):
+        validate_canonical_output(sample_text)
+
+    sample_text_pending = "Another section with [PENDING_CANONICAL_EXECUTION]."
+    with pytest.raises(
+        RuntimeError, match=r"\[CANONICAL_GATE_VIOLATION\] Found 1 execution placeholders"
+    ):
+        validate_canonical_output(sample_text_pending)
+
+
+def test_canonical_output_gate_catches_fixture_and_scaffold_markers() -> None:
+    """Output gate: Fixture markers or scaffold conclusions raise RuntimeError."""
+    sample_text = (
+        "This report contains DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS."
+    )
+    with pytest.raises(
+        RuntimeError, match=r"\[CANONICAL_GATE_VIOLATION\] Found 1 fixture/scaffold markers"
+    ):
+        validate_canonical_output(sample_text)
+
+    sample_scaffold = "This is a scaffold conclusion phrase."
+    with pytest.raises(
+        RuntimeError, match=r"\[CANONICAL_GATE_VIOLATION\] Found 1 fixture/scaffold markers"
+    ):
+        validate_canonical_output(sample_scaffold)
+
+
+def test_canonical_metric_bundle_contract_success(
+    canonical_bundle: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """Metric Bundle Contract: Executes canonical pipeline using canonical-metric-bundle-v1."""
+    bundle_dir, seal_path = canonical_bundle
+    out_md = tmp_path / "bundle_canonical_report.md"
+    out_json = tmp_path / "bundle_canonical_slots.json"
+
+    from scripts.populate_report import compute_file_sha256
+
+    output_digests = {
+        fname: compute_file_sha256(bundle_dir / fname) for fname in REQUIRED_CANONICAL_FILES
+    }
+    seal_hash = compute_file_sha256(seal_path)
+
+    prov_doc = json.loads((bundle_dir / "run_provenance.json").read_text(encoding="utf-8"))
+    prov_git_sha = prov_doc.get("git_commit_sha", "1111111111111111111111111111111111111111")
+
+    metric_bundle_data = {
+        "schema_version": "1.0.0",
+        "bundle_type": "canonical-metric-bundle-v1",
+        "fixture_only": False,
+        "execution_mode": "live",
+        "dataset_split": "test",
+        "experiment_id": "known-answer-only",
+        "run_id": "live-66b94b1676bf46a9",
+        "manifest_file_sha256": "acf4f5383ad2387e6a21006aae83ba728c7ccb15c9114052e48babfd00e6081e",
+        "protocol_version": "experiment-protocol-v1",
+        "protocol_sha256": "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c",
+        "protocol_file_sha256": "a402b04ab463172f9d4079bff27b089ca8a21ffd0805d097af6cb1f3c7b5a8fb",
+        "execution_git_sha": prov_git_sha,
+        "evaluation_git_sha": prov_git_sha,
+        "terminal_seal": {
+            "path": str(seal_path),
+            "sha256": seal_hash,
+        },
+        "output_file_digests": output_digests,
+        "root_verification": {
+            "path": "reports/evidence/root_canonical_export_validation_v2.json",
+            "sha256": "abcdef" * 10 + "1234",
+            "scope": "ROOT_APPROVED_CANONICAL_NUMERICAL_RESULTS",
+        },
+    }
+
+    bundle_path = tmp_path / "canonical_metric_bundle_v1.json"
+    bundle_path.write_text(json.dumps(metric_bundle_data, indent=2), encoding="utf-8")
+
+    run_pipeline(
+        data_dir=bundle_dir,
+        metric_bundle=bundle_path,
+        template_path=DEFAULT_TEMPLATE_PATH,
+        output_path=out_md,
+        audit_json_path=out_json,
+        mode="canonical",
+    )
+
+    assert out_md.is_file()
+    assert out_json.is_file()
+
+    content = out_md.read_text(encoding="utf-8")
+    assert "**Status:** CERTIFIED CANONICAL EXPERIMENTAL EVALUATION" in content
+    assert "CANONICAL RUN AUDIT SEAL VERIFIED" in content
+    assert "canonical-metric-bundle-v1" in content
+    assert "[TBD_AT_EXECUTION]" not in content
+
+
+def test_canonical_metric_bundle_rejects_output_file_digest_mismatch(
+    canonical_bundle: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """Metric Bundle Gate: Output file digest mismatch raises ValueError."""
+    bundle_dir, seal_path = canonical_bundle
+    from scripts.populate_report import compute_file_sha256
+
+    output_digests = {
+        fname: compute_file_sha256(bundle_dir / fname) for fname in REQUIRED_CANONICAL_FILES
+    }
+    output_digests["per_condition_metrics.json"] = "deadbeef" * 8
+    seal_hash = compute_file_sha256(seal_path)
+
+    metric_bundle_data = {
+        "schema_version": "1.0.0",
+        "bundle_type": "canonical-metric-bundle-v1",
+        "fixture_only": False,
+        "execution_mode": "live",
+        "experiment_id": "known-answer-only",
+        "protocol_version": "experiment-protocol-v1",
+        "terminal_seal": {
+            "path": str(seal_path),
+            "sha256": seal_hash,
+        },
+        "output_file_digests": output_digests,
+    }
+    bundle_path = tmp_path / "corrupted_bundle.json"
+    bundle_path.write_text(json.dumps(metric_bundle_data, indent=2), encoding="utf-8")
+
+    with pytest.raises(
+        ValueError,
+        match=r"\[FAIL_CLOSED\] Output file digest mismatch for per_condition_metrics\.json",
+    ):
+        run_pipeline(
+            data_dir=bundle_dir,
+            metric_bundle=bundle_path,
+            output_path=tmp_path / "out.md",
+            mode="canonical",
+        )
+
+
+def test_canonical_metric_bundle_rejects_terminal_seal_hash_mismatch(
+    canonical_bundle: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """Metric Bundle Gate: Terminal seal hash mismatch raises ValueError."""
+    bundle_dir, seal_path = canonical_bundle
+
+    metric_bundle_data = {
+        "schema_version": "1.0.0",
+        "bundle_type": "canonical-metric-bundle-v1",
+        "fixture_only": False,
+        "execution_mode": "live",
+        "experiment_id": "known-answer-only",
+        "protocol_version": "experiment-protocol-v1",
+        "terminal_seal": {
+            "path": str(seal_path),
+            "sha256": "badsealhash" * 5 + "1234",
+        },
+    }
+    bundle_path = tmp_path / "bad_seal_bundle.json"
+    bundle_path.write_text(json.dumps(metric_bundle_data, indent=2), encoding="utf-8")
+
+    with pytest.raises(ValueError, match=r"\[FAIL_CLOSED\] Terminal seal hash mismatch"):
+        run_pipeline(
+            data_dir=bundle_dir,
+            metric_bundle=bundle_path,
+            output_path=tmp_path / "out.md",
+            mode="canonical",
+        )
+
+
+def test_format_helpers_and_constants() -> None:
+    """Format helpers format p-values and currency, and constants are verified."""
+    assert format_currency_value(6.5757589) == "6.5758"
+    assert format_currency_value(19.99) == "19.99"
+    assert format_currency_value(0.0) == "0.00"
+    assert format_currency_value(None) == "N/A"
+
+    assert format_pvalue(0.040123) == "0.0401"
+    assert format_pvalue(0.00005) == "< 0.0001"
+    assert format_pvalue(None) == "N/A"
+
+    assert DEFAULT_SEAL_PATH.name == "canonical_metric_bundle_v1.json"
+
+
+def test_assert_canonical_safety_standalone(canonical_bundle: tuple[Path, Path]) -> None:
+    """Standalone unit check on assert_canonical_safety function."""
+    bundle_dir, seal_path = canonical_bundle
+    seal_data = json.loads(seal_path.read_text(encoding="utf-8"))
+    prov_data = json.loads((bundle_dir / "run_provenance.json").read_text(encoding="utf-8"))
+    rq_data = json.loads((bundle_dir / "rq_analysis.json").read_text(encoding="utf-8"))
+
+    # Should succeed without error on valid canonical inputs
+    assert_canonical_safety(
+        data_dir=bundle_dir,
+        seal_path=seal_path,
+        seal=seal_data,
+        provenance=prov_data,
+        analysis=rq_data,
+    )

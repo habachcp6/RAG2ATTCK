@@ -479,6 +479,50 @@
       }
     }
   },
+  "new_proposed_producer_stratified_gt_complexity": {
+    "by_condition": {
+      "no_rag": {
+        "condition": "no_rag",
+        "single_gt_sample_count": 678,
+        "multi_gt_sample_count": 40,
+        "single_gt_accuracy_e2e": 0.5,
+        "multi_gt_accuracy_e2e": 0.5,
+        "complexity_accuracy_delta": 0.0
+      },
+      "rag_k1": {
+        "condition": "rag_k1",
+        "single_gt_sample_count": 678,
+        "multi_gt_sample_count": 40,
+        "single_gt_accuracy_e2e": 0.5,
+        "multi_gt_accuracy_e2e": 0.5,
+        "complexity_accuracy_delta": 0.0
+      },
+      "rag_k3": {
+        "condition": "rag_k3",
+        "single_gt_sample_count": 678,
+        "multi_gt_sample_count": 40,
+        "single_gt_accuracy_e2e": 0.5,
+        "multi_gt_accuracy_e2e": 0.5,
+        "complexity_accuracy_delta": 0.0
+      },
+      "rag_k5": {
+        "condition": "rag_k5",
+        "single_gt_sample_count": 678,
+        "multi_gt_sample_count": 40,
+        "single_gt_accuracy_e2e": 0.5,
+        "multi_gt_accuracy_e2e": 0.5,
+        "complexity_accuracy_delta": 0.0
+      },
+      "rag_k10": {
+        "condition": "rag_k10",
+        "single_gt_sample_count": 678,
+        "multi_gt_sample_count": 40,
+        "single_gt_accuracy_e2e": 0.5,
+        "multi_gt_accuracy_e2e": 0.5,
+        "complexity_accuracy_delta": 0.0
+      }
+    }
+  },
   "source_file": "scripts/analysis/evaluate_rqs.py",
   "execution_mode": "mock_fixture"
 }

@@ -42,6 +42,7 @@ from scripts.analysis.evaluate_rqs import (
     compute_rq1,
     compute_rq2,
     compute_rq3,
+    compute_stratified_gt_complexity_producer,
     reconcile_journal_and_ledger,
     run_rq_analysis,
     validate_pricing_config,
@@ -1758,6 +1759,49 @@ def test_rq3_view_diagnostics_scorable_counts(tmp_path):
     assert "view_split_notes" in v_diag
     assert v_diag["single_view_scorable_count"] + v_diag["contextual_view_scorable_count"] == 6
 
+    # UNIFIED_MAPPING_R2 complete paired diagnostics
+    assert "single_paired_accuracy" in v_diag
+    assert "contextual_paired_accuracy" in v_diag
+    assert "paired_delta" in v_diag
+    assert "gt_concordance_decomposition" in v_diag
+    assert v_diag["paired_complete_pairs_count"] == 3
+    assert v_diag["single_paired_accuracy"] == 1.0
+    assert v_diag["contextual_paired_accuracy"] == 0.0
+    assert v_diag["paired_delta"] == -1.0
+    assert "identical_gt_pairs" in v_diag["gt_concordance_decomposition"]
+    div_decomp = v_diag["gt_concordance_decomposition"]["divergent_gt_pairs"]
+    assert div_decomp["pair_count"] == 3
+    assert div_decomp["single_paired_accuracy"] == 1.0
+
+
+def test_stratified_gt_complexity_producer(tmp_path):
+    """Verify NEW PROPOSED PRODUCER partitions scorable views and preserves 474 universe."""
+    fixture = _fixture(tmp_path)
+    inputs = _load(tmp_path, fixture)
+    proto = _test_protocol()
+
+    producer_out = compute_stratified_gt_complexity_producer(inputs, proto)
+    assert (
+        producer_out["producer_label"]
+        == "NEW PROPOSED PRODUCER: Stratified Ground Truth Complexity & Subset Analysis"
+    )
+    assert producer_out["protocol_approval_required"] is True
+    assert producer_out["frozen_benchmark_universe_size"] == 474
+    assert producer_out["multi_gt_semantics"] == "ANY_MATCH"
+    assert set(producer_out["by_condition"].keys()) == set(CONDITIONS)
+
+    row = producer_out["by_condition"]["rag_k3"]
+    assert row["single_gt_sample_count"] == 5
+    assert row["single_gt_correct_count"] == 2
+    assert pytest.approx(row["single_gt_accuracy_e2e"]) == 0.4
+    assert row["multi_gt_sample_count"] == 1
+    assert row["multi_gt_correct_count"] == 1
+    assert pytest.approx(row["multi_gt_accuracy_e2e"]) == 1.0
+    assert pytest.approx(row["complexity_accuracy_delta"]) == 0.6
+    assert row["overall_scorable_sample_count"] == 6
+    assert pytest.approx(row["overall_scorable_accuracy_e2e"]) == 0.5
+    assert row["macro_f1_474_universe"] is not None
+
 
 def test_mcnemar_test_statistical_properties():
     """Verify McNemar test computation on identical and divergent paired outcomes."""
@@ -1823,6 +1867,9 @@ def test_run_rq_analysis_generates_all_artifacts(tmp_path):
     assert "rq1" in analysis
     assert "rq2" in analysis
     assert "rq3" in analysis
+    assert "new_proposed_producer_stratified_gt_complexity" in analysis
+    producer_dict = analysis["new_proposed_producer_stratified_gt_complexity"]
+    assert producer_dict["protocol_approval_required"] is True
     assert analysis["execution_mode"] == "mock_fixture"
     assert analysis["fixture_only"] is True
     assert analysis["provenance_status"] == "diagnostic_fixture"
@@ -1840,6 +1887,7 @@ def test_run_rq_analysis_generates_all_artifacts(tmp_path):
     assert json_data["fixture_only"] is True
     assert json_data["provenance_status"] == "diagnostic_fixture"
     assert json_data["dataset_split"] == "test"
+    assert "new_proposed_producer_stratified_gt_complexity" in json_data
 
     md_content = md_path.read_text(encoding="utf-8")
     assert "# RAG2ATTCK Empirical Analysis Report (RQ1, RQ2, RQ3)" in md_content
@@ -1851,6 +1899,12 @@ def test_run_rq_analysis_generates_all_artifacts(tmp_path):
     assert "## RQ1: Controlled Attribution Accuracy (No-RAG vs. RAG)" in md_content
     assert "## RQ2: Retrieval vs. Generation Error Decomposition" in md_content
     assert "## RQ3: Retrieval Depth, Latency, and Cost Trade-offs" in md_content
+    assert "### Paired View Diagnostics (Single-View vs Contextual-View)" in md_content
+    assert "#### Complete Pair Ground Truth Concordance Decomposition" in md_content
+    assert (
+        "## NEW PROPOSED PRODUCER: Stratified Ground Truth Complexity & Subset Analysis"
+        in md_content
+    )
 
 
 # ---------------------------------------------------------------------------

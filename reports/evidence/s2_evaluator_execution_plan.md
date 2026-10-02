@@ -4,9 +4,9 @@
 - **Phase**: S2 (Canonical Evaluator & RQ Execution Planning)
 - **Dedicated Worktree**: `D:/RAG2ATTCK-worktrees/prep-evaluator-s1`
 - **Branch**: `codex/s1-evaluator-prep` (PR #27)
-- **PRE_SHA**: `a489bb20d653f79574fd73d9563226bbfcf0657c`
+- **PRE_SHA**: `0d10b53038b1c86d6182fe0a69e4a394090494e7`
 - **Execution Mode**: STRICTLY PLAN-ONLY (ZERO scoring of in-flight live matrix; runner PID untouched; strictly 0 egress)
-- **Timestamp**: `2026-10-01T23:46:00Z`
+- **Timestamp**: `2026-10-02T00:16:33Z`
 - **Execution Gate**: Awaiting terminal completion of live matrix runner and explicit Codex EXECUTE S2 authorization
 
 ---
@@ -83,9 +83,9 @@ When invoked via `evaluate_experiment(inputs, protocol, output_dir=...)`, the na
 > The native evaluator does **not** export files named `evaluation_summary.json` or `condition_metrics.json`, and does not export raw confusion matrices. Downstream consumers bind directly to the six canonical filenames listed above.
 
 #### Layer 2: Offline Research Questions Pipeline Exports (`scripts/analysis/evaluate_rqs.py`)
-When invoked via `run_rq_analysis(inputs, protocol, output_dir=...)`, the offline RQ pipeline exports:
-1. `rq_analysis.json`: Comprehensive structured analysis for RQ1 (deltas, CIs, McNemar), RQ2 (retrieval-conditioned generation, failure overlaps), and RQ3 (latency, tokens, reconciled costs with 3 denominators, view diagnostics).
-2. `rq_analysis_summary.md`: Publication-grade Markdown summary report with execution-mode provenance banner.
+When invoked via `run_rq_analysis(inputs, protocol, output_dir=...)` with default `--output-dir outputs/canonical_analysis/`, the offline RQ pipeline exports:
+1. `outputs/canonical_analysis/rq_analysis.json`: Comprehensive structured analysis for RQ1 (deltas, CIs, McNemar), RQ2 (retrieval-conditioned generation, failure overlaps), and RQ3 (latency, tokens, reconciled costs with 3 denominators, complete view diagnostics with standardized paired accuracies, delta, and GT concordance decomposition). Also contains `new_proposed_producer_stratified_gt_complexity` (explicitly flagged as requiring supervisor approval).
+2. `outputs/canonical_analysis/rq_analysis_summary.md`: Publication-grade Markdown summary report with execution-mode provenance banner, complete pair diagnostics tables, and proposed stratified ground truth complexity table.
 
 ---
 
@@ -186,14 +186,14 @@ python scripts/run_offline_tests.py -m src.experiment evaluate --manifest artifa
 Execute the hardened offline RQ analysis pipeline:
 
 ```powershell
-python scripts/run_offline_tests.py -m scripts.analysis.evaluate_rqs --manifest artifacts/canonical_run_snapshot/manifest.json --protocol-file config/experiment_protocol_v1.json --output-dir outputs/canonical_evaluation/ --pricing-file config/pricing_v1.json --study-ledger-file artifacts/study_budget/study_ledger.json --bootstrap-samples 1000 --seed 42 --repository-root .
+python scripts/run_offline_tests.py -m scripts.analysis.evaluate_rqs --manifest artifacts/canonical_run_snapshot/manifest.json --protocol-file config/experiment_protocol_v1.json --output-dir outputs/canonical_analysis/ --pricing-file config/pricing_v1.json --study-ledger-file artifacts/study_budget/study_ledger.json --bootstrap-samples 1000 --seed 42 --repository-root .
 ```
 
 *Expected Verification*:
 - Returns exit code 0.
 - Emits `OFFLINE_GUARD: installed=True attempted_egress=0`.
-- Generates `outputs/canonical_evaluation/rq_analysis.json` with `execution_mode="live"`, `fixture_only=False`, `provenance_status="canonical_study"`.
-- Generates `outputs/canonical_evaluation/rq_analysis_summary.md` without diagnostic fixture warnings.
+- Generates `outputs/canonical_analysis/rq_analysis.json` with `execution_mode="live"`, `fixture_only=False`, `provenance_status="canonical_study"`.
+- Generates `outputs/canonical_analysis/rq_analysis_summary.md` without diagnostic fixture warnings.
 
 ### Step 4: Output Integrity & D2j Verification
 
@@ -250,7 +250,37 @@ A complete scorable pair requires that **both views** (single and contextual) be
   * Latency distribution: Mean, median, 95th percentile, total elapsed latency (ms).
   * Token consumption: Mean prompt, completion, cached, and total tokens.
   * Financial accounting: Reconciled request expenditure per condition via native receipts; 3 explicit cost denominators ($N=1,280$, $N=718$, cost/correct attribution); excluded view spend disclosure (311 ambiguous + 251 unmapped); whole-study reconciliation against $19.99 budget cap and $0.05264010 pilot hold.
-  * Paired View Diagnostics: Single-View accuracy ($N=278$), Contextual-View accuracy ($N=440$), view accuracy delta, and paired concordance across the **278 complete scorable pairs** (both correct, contextual win, single win, both incorrect).
+  * Paired View Diagnostics:
+    - Single-View accuracy across all scorable single views ($N=278$).
+    - Contextual-View accuracy across all scorable contextual views ($N=440$).
+    - View accuracy delta across all scorable views.
+    - Standardized complete paired diagnostics across the **278 complete scorable pairs**:
+      * `single_paired_accuracy` = $\frac{\text{both\_correct} + \text{single\_only\_correct}}{278}$
+      * `contextual_paired_accuracy` = $\frac{\text{both\_correct} + \text{contextual\_only\_correct}}{278}$
+      * `paired_delta` = $\frac{\text{contextual\_only\_correct} - \text{single\_only\_correct}}{278}$
+      * Pair concordance counts: `both_correct_count`, `contextual_only_correct_count`, `single_only_correct_count`, `both_incorrect_count`.
+    - Complete Pair Ground Truth Concordance Decomposition (`gt_concordance_decomposition`):
+      * `identical_gt_pairs`: 238 pairs where single and contextual view annotate identical ground truth technique IDs.
+      * `divergent_gt_pairs`: 40 pairs where single and contextual view annotate distinct ground truth technique IDs.
+      * Reports pair counts, both correct, single-only, contextual-only, both incorrect, paired accuracies, and paired delta for each partition.
+
+### 5.5 NEW PROPOSED PRODUCER: Stratified Ground Truth Complexity & Subset Analysis
+- **Status**: NEW PROPOSED PRODUCER (Exploratory; requires explicit supervisor authorization prior to canonical reporting inclusion).
+- **Motivation & Scientific Scope**: Investigates whether model attribution difficulty differs systematically between events with a unique ground-truth technique label versus multi-label events.
+- **Partitioning**:
+  * Single-GT subset: Scorable views with exactly 1 annotated technique ID ($N=678$ on TEST).
+  * Multi-GT subset: Scorable views with $\ge 2$ annotated technique IDs ($N=40$ on TEST, evaluated under Decision D2a `ANY_MATCH`).
+- **Standardized Export Fields** (under `new_proposed_producer_stratified_gt_complexity`):
+  * `producer_label`: "NEW PROPOSED PRODUCER: Stratified Ground Truth Complexity & Subset Analysis"
+  * `protocol_approval_required`: `true`
+  * `frozen_benchmark_universe_size`: `474`
+  * `multi_gt_semantics`: "ANY_MATCH"
+  * Per-condition metrics:
+    - `single_gt_sample_count`, `single_gt_correct_count`, `single_gt_accuracy_e2e`
+    - `multi_gt_sample_count`, `multi_gt_correct_count`, `multi_gt_accuracy_e2e`
+    - `complexity_accuracy_delta` = $\text{multi\_gt\_accuracy\_e2e} - \text{single\_gt\_accuracy\_e2e}$
+    - `overall_scorable_sample_count`, `overall_scorable_accuracy_e2e`
+    - `macro_f1_474_universe`: Preserves the frozen 474-class benchmark universe unweighted Macro-F1.
 
 ---
 
@@ -282,5 +312,8 @@ A complete scorable pair requires that **both views** (single and contextual) be
 - [x] Correction 6 resolved: All execution commands routed through `scripts/run_offline_tests.py` using `-m` single-line syntax.
 - [x] Correction 7 resolved: Complete scorable pairs derived as strictly 278 pairs (640 total pairs: 278 both mapped, 162 contextual-only, 200 neither, 0 single-only).
 - [x] Correction 8 resolved: Point estimates vs exploratory cluster statistics clearly delineated; limitations disclosed.
+- [x] UNIFIED_MAPPING_R2: Standardized complete pair keys (`single_paired_accuracy`, `contextual_paired_accuracy`, `paired_delta`, and `gt_concordance_decomposition` with 238 identical vs 40 divergent GT pairs).
+- [x] UNIFIED_MAPPING_R2: Implemented `NEW PROPOSED PRODUCER: Stratified Ground Truth Complexity & Subset Analysis` (Single-GT N=678 vs Multi-GT N=40) with supervisor approval gate and frozen 474 universe preservation.
+- [x] UNIFIED_MAPPING_R2: Standardized output directories: `outputs/canonical_evaluation/` for native evaluator, `outputs/canonical_analysis/` for secondary RQ pipeline.
 - [ ] **Execution Gate 1**: Terminal state of live matrix runner verified.
 - [ ] **Execution Gate 2**: Codex EXECUTE S2 authorization received.

@@ -1,6 +1,7 @@
 # RAG2ATT&CK: Đánh Giá Tác Động Của Retrieval-Augmented Generation Dựa Trên MITRE ATT&CK Đối Với Ánh Xạ Windows Endpoint Logs
 
 **Slide Deck & Presentation Scaffold for Scientific Defense & Technical Demonstration**  
+*Trạng thái bản dựng:* `[FIXTURE — PRE-CANONICAL RENDER TEST]` (Pre-canonical render test fixture; PENDING canonical live study certification)  
 *Mã giao thức thực nghiệm:* `experiment-protocol-v1.1` (SHA-256: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`)  
 *Khóa thực nghiệm chuẩn:* `canonical-lock-v1` (SHA-256: `961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac`)  
 *Tài liệu hướng dẫn tái lập:* [`docs/reproducibility.md`](../reproducibility.md)  
@@ -168,17 +169,17 @@
 - **Hiện tượng Benign Drift khi mở rộng ngữ cảnh:**
   - Gom các sự kiện lân cận bổ sung nhiều token thông thường (Explorer, DNS, svchost).
   - Vector dense embedding bị kéo lệch về hành vi bình thường, làm tụt thứ hạng kỹ thuật tấn công.
-- **Schema So Sánh Đối Chứng Scaffold `[PENDING EXECUTION]`:**
+- **Schema So Sánh Đối Chứng Scaffold `[FIXTURE — PRE-CANONICAL RENDER TEST]`:**
   - Đối chứng: Zero-Shot No-RAG vs Zero-Shot RAG ($k=1..10$) vs Prompt Scaffolds.
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Tại Slide 7, phân tích 278 cặp hoàn chỉnh đầy đủ nhãn GT (238 cùng GT + 40 khác GT) phân bố trên 440 cụm kịch bản làm rõ cấu trúc ground truth support: toàn bộ 474 classes chỉ có 8 kỹ thuật xuất hiện trong tập TEST GT (768 support instances trên 718 scorable views do có 40 multi-GT views). Ở điều kiện RAG k=10, cả Single và Contextual view đều đạt 83.81% (paired delta = 0.0 pp, McNemar p = 1.0). Chúng tôi duy trì nhãn [PENDING EXECUTION] cho schema đối chứng scaffold, nghiêm cấm suy diễn quan hệ nhân quả thuần túy khi hình thức biểu diễn log thay đổi.
+> "Tại Slide 7, phân tích 278 cặp hoàn chỉnh đầy đủ nhãn GT (238 cùng GT + 40 khác GT) phân bố trên 440 cụm kịch bản làm rõ cấu trúc ground truth support: toàn bộ 474 classes chỉ có 8 kỹ thuật xuất hiện trong tập TEST GT (768 support instances trên 718 scorable views do có 40 multi-GT views). Ở điều kiện RAG k=10, cả Single và Contextual view đều đạt 83.81% (paired delta = 0.0 pp, McNemar p = 1.0). Chúng tôi duy trì nhãn [FIXTURE — PRE-CANONICAL RENDER TEST] cho schema đối chứng scaffold, nghiêm cấm suy diễn quan hệ nhân quả thuần túy khi hình thức biểu diễn log thay đổi.
 > 
 > *Bằng chứng dự án:* `scripts/verify_t20_canonical_artifacts.py`; `outputs/reproduction/tables/table_4_pairwise_representation_comparison.md`; `tests/test_t20_canonical_artifacts.py`."
 
 ---
 
-## Slide 8: Khung Đánh Giá End-to-End (RQ1) & Phân Rã Lỗi Theo 3 Trục Độc Lập D2i (RQ2) `[PENDING EXECUTION]`
+## Slide 8: Khung Đánh Giá End-to-End (RQ1) & Phân Rã Lỗi Theo 3 Trục Độc Lập D2i (RQ2) `[FIXTURE — PRE-CANONICAL RENDER TEST]`
 
 ### Nội dung trình chiếu
 - **Bảng Đối Chứng Hiệu Năng RQ1 & Ranh Giới Khoa Học Bắt Buộc:**
@@ -196,7 +197,7 @@
 - **Các thước đo có điều kiện (Conditional Metrics):**
   - $P(\text{Correct} \mid \text{GT Retrieved in Top-}k) = 91.28\%$ (293 / 321) tại $k=10$: Đánh giá lựa chọn khi có ngữ cảnh trúng.
   - $P(\text{Correct} \mid \text{GT Absent from Top-}k) = 70.03\%$ (278 / 397) tại $k=10$: Xác suất gán đúng quan sát được khi vắng mặt ngữ cảnh trong Top-k (không suy diễn tự sửa sai nội tại).
-- **Trạng thái thực nghiệm RQ1 & RQ2 `[PENDING EXECUTION]`:**
+- **Trạng thái thực nghiệm RQ1 & RQ2 `[FIXTURE — PRE-CANONICAL RENDER TEST]`:**
   - Kiểm định toán học Evaluator đã xác thực ngoại tuyến qua các test fixtures chuẩn tắc.
 
 ### Ghi chú diễn giả (Speaker Notes)
@@ -220,20 +221,20 @@
   - *Hit rate chuẩn tắc (TEST 718):* RAG $k=1$ đạt **3.760%** $\rightarrow$ RAG $k=10$ đạt **44.708%** (No-RAG: **N/A**, không sử dụng retriever).
   - *Prompt tokens:* Tăng **~7.6x** từ baseline đến $k=10$ (674.3 lên 5114.3 tokens).
   - *Chi phí logical query:* Tăng **~4.6x** từ baseline đến $k=10$ ($0.000365 lên $0.001679 USD).
-- **Hạch Toán Tài Chính Toàn Thể 6,400 Requests:**
+- **Hạch Toán Tài Chính Toàn Thể 6,400 Requests (6,401 physical attempts vs 6,400 logical requests trên N=1,280 queries / điều kiện):**
   - Trần ngân sách tối đa đóng băng cứng: **$19.99 USD** ($19.99000000 USD `hard_budget_limit_usd`).
   - Quyết toán thực tế 5 điều kiện chính thức: **$6.58 settled spend** ($6.57575890 USD), cộng giữ chỗ thận trọng pilot $0.05264010 USD, tổng cam kết là **$6.63 committed spend** ($6.62839900 USD).
   - Số dư chưa cam kết khả dụng còn lại: **$13.36 USD** ($13.36160100 USD net remaining; 0 holds, 0 breach).
-  - Xử lý ngoại lệ: 13 INCOMPLETE dispatches trên 6,400 requests; 1 lượt retry do lỗi API ($0.53974560 USD missing usage hold được hoàn trả/quyết toán đầy đủ; chi tiết 8 chữ số thập phân lưu trong Speaker Notes).
+  - Xử lý ngoại lệ: 13 INCOMPLETE dispatches trên 6,400 requests; 1 lượt retry do lỗi API (tổng 6,401 physical attempts so với 6,400 logical requests; $0.53974560 USD missing usage hold được hoàn trả/quyết toán đầy đủ; chi tiết 8 chữ số thập phân lưu trong Speaker Notes).
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Trong phân tích RQ3, toàn bộ chỉ số tài nguyên, độ trễ và chi phí được tính trên toàn bộ 1,280 logical views mỗi điều kiện (tổng 6,400 dispatches), không rút gọn về 718 scorable views:
+> "Trong phân tích RQ3, toàn bộ chỉ số tài nguyên, độ trễ và chi phí được tính trên toàn bộ 1,280 queries / điều kiện (tổng 6,400 logical requests, 6,401 physical attempts), không rút gọn về 718 scorable views:
 > 1. Độ trễ & Tài nguyên: Phân biệt rõ trễ trung vị (No-RAG 2.30s vs RAG k10 2.67s) và trễ trung bình (No-RAG 2.90s vs RAG k10 4.37s). Lượng prompt tokens trung bình tăng từ 674.3 lên 5114.3 (~7.6x từ baseline đến k10), chi phí mỗi request tăng từ $0.000365 lên $0.001679 USD (~4.6x từ baseline đến k10).
 > 2. Hiệu quả đánh đổi: Hit rate chuẩn tắc trên tập scorable N=718: No-RAG là N/A (không dùng retriever); RAG k=1 đạt Hit@1 = 3.760% (27/718), tăng lên RAG k=10 đạt Hit@10 = 44.708% (321/718).
 > 3. Hạch toán tài chính 8 chữ số thập phân chính xác: Chi phí 5 điều kiện chuẩn đã quyết toán là $6.57575890 USD ($6.58 settled spend), cộng với khoản giữ chỗ thận trọng pilot $0.05264010 USD, tổng chi phí đã cam kết là $6.62839900 USD ($6.63 USD committed spend). Ngân sách khả dụng còn lại là $13.36160100 USD ($13.36 USD net remaining; 0 holds, 0 breach) trên trần đóng băng cứng $19.99000000 USD ($19.99 budget cap). Chi phí được tính toán theo ước tính thận trọng từ bảng giá đóng băng (conservative accounted tariff estimate).
-> 4. Bối cảnh lịch sử & Ngoại lệ: DEV pilot lịch sử là 20 requests (~$0.0242 USD). Trên toàn bộ 6,400 requests có 13 INCOMPLETE records; 1 attempt API_FAILURE được retry có khoản phí thiếu usage là $0.53974560 USD.
+> 4. Bối cảnh lịch sử & Ngoại lệ: DEV pilot lịch sử là 20 requests (~$0.0242 USD). Trên toàn bộ 6,400 requests có 13 INCOMPLETE records; 1 attempt API_FAILURE được retry (tổng 6,401 physical attempts) có khoản phí thiếu usage là $0.53974560 USD.
 > 
-> *Bằng chứng dự án:* `C:/Users/hahoa/.codex/artifacts/rag2attck/verified-native-figures-v1/canonical_rq3_cost_and_latency.png`; `config/experiment_config.json`; `tests/test_monetary_guard.py`."
+> *Bằng chứng dự án:* `docs/report/figures/canonical_rq3_cost_and_latency.png`; `config/experiment_config.json`; `tests/test_monetary_guard.py`."
 
 ---
 

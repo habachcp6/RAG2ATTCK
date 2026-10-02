@@ -46,6 +46,7 @@ TEXT_MUTED = RGBColor(100, 116, 139)  # #64748B
 TEXT_LIGHT = RGBColor(248, 250, 252)
 SUCCESS_GREEN = RGBColor(5, 150, 105)  # #059669
 ALERT_RED = RGBColor(220, 38, 38)  # #DC2626
+FIXTURE_BANNER_TEXT = "[FIXTURE — PRE-CANONICAL RENDER TEST]"
 
 
 def create_deck() -> Presentation:
@@ -104,7 +105,7 @@ def add_header(slide: Any, title_text: str, subtitle_text: str = "") -> None:
 
     if subtitle_text:
         p2 = tf.add_paragraph()
-        p2.text = subtitle_text
+        p2.text = f"{subtitle_text}  |  {FIXTURE_BANNER_TEXT}"
         p2.font.name = "Calibri"
         p2.font.size = Pt(13)
         p2.font.color.rgb = CYAN_ACCENT
@@ -119,17 +120,20 @@ def add_card(
     title: str,
     body_items: list[str],
     *,
+    name: str | None = None,
     header_color: RGBColor = DEEP_BLUE,
     bg_color: RGBColor = CARD_BG,
     border_color: RGBColor = BORDER_COLOR,
     title_size: int = 16,
     body_size: float = 11.5,
     item_spacing: float = 3.0,
-) -> None:
+) -> Any:
     """Add styled structured card with title and bullet points."""
     card = slide.shapes.add_shape(
         MSO_SHAPE.ROUNDED_RECTANGLE, Inches(left), Inches(top), Inches(width), Inches(height)
     )
+    if name:
+        card.name = name
     card.fill.solid()
     card.fill.fore_color.rgb = bg_color
     card.line.color.rgb = border_color
@@ -138,6 +142,8 @@ def add_card(
     tx_box = slide.shapes.add_textbox(
         Inches(left + 0.2), Inches(top + 0.12), Inches(width - 0.4), Inches(height - 0.24)
     )
+    if name:
+        tx_box.name = f"{name}_textbox"
     tf = tx_box.text_frame
     tf.word_wrap = True
 
@@ -179,6 +185,7 @@ def build_slide_1_title(prs: Presentation) -> None:
     bar.line.fill.background()
 
     tx = slide.shapes.add_textbox(Inches(1.5), Inches(1.5), Inches(10.5), Inches(4.2))
+    tx.name = "shape_slide_1_title"
     tf = tx.text_frame
     tf.word_wrap = True
 
@@ -216,6 +223,14 @@ def build_slide_1_title(prs: Presentation) -> None:
     p3.font.size = Pt(13)
     p3.font.color.rgb = RGBColor(226, 232, 240)
     p3.space_before = Pt(24)
+
+    p_banner = tf.add_paragraph()
+    p_banner.text = FIXTURE_BANNER_TEXT
+    p_banner.font.name = "Calibri"
+    p_banner.font.size = Pt(13)
+    p_banner.font.bold = True
+    p_banner.font.color.rgb = ALERT_RED
+    p_banner.space_before = Pt(8)
 
     set_speaker_notes(
         slide,
@@ -262,6 +277,7 @@ def build_slide_2_problem(prs: Presentation) -> None:
             "Quy trình thủ công đòi hỏi chuyên gia cấp cao, tốn thời gian và khó đáp "
             "ứng quy mô hàng triệu sự kiện mỗi ngày.",
         ],
+        name="shape_slide_2_problem",
         header_color=PRIMARY_BLUE,
         body_size=11.5,
         item_spacing=3.5,
@@ -282,6 +298,7 @@ def build_slide_2_problem(prs: Presentation) -> None:
             "Nhầm lẫn Sub-techniques: Khó phân biệt các kỹ thuật lân cận (ví dụ: "
             "T1059.001 PowerShell vs T1059.003 Command Shell).",
         ],
+        name="shape_slide_2_challenge",
         header_color=ALERT_RED,
         body_size=11.5,
         item_spacing=3.5,
@@ -305,6 +322,7 @@ def build_slide_2_problem(prs: Presentation) -> None:
             "qua mạng), được quản lý bởi chính sách siêu dữ liệu D3 (timestamp-bound).",
             "Tái lập ngoại tuyến chi phí 0 đồng với bộ offline_guard can thiệp tầng socket.",
         ],
+        name="shape_slide_2_motivation",
         header_color=SUCCESS_GREEN,
         body_size=10.0,
         item_spacing=2.5,
@@ -354,6 +372,7 @@ def build_slide_3_architecture(prs: Presentation) -> None:
             "Đầu ra: Chuỗi JSON chứa duy nhất mã technique_id.",
             "Mô hình: gpt-5.6-luna (reasoning_effort=xhigh, api_interface=responses).",
         ],
+        name="shape_slide_3_baseline",
         header_color=SLATE_HEADER,
         body_size=11.5,
         item_spacing=3.0,
@@ -373,6 +392,7 @@ def build_slide_3_architecture(prs: Presentation) -> None:
             "Độ sâu k: Đánh giá có hệ thống k ∈ {1, 3, 5, 10}.",
             "Đầu ra: Cùng cấu trúc JSON và cùng bộ kiểm tra cú pháp nghiêm ngặt.",
         ],
+        name="shape_slide_3_rag",
         header_color=DEEP_BLUE,
         body_size=11.5,
         item_spacing=3.0,
@@ -392,6 +412,7 @@ def build_slide_3_architecture(prs: Presentation) -> None:
             "Context được chèn vào.",
             "Biến duy nhất được thay đổi trong toàn bộ nghiên cứu: Retrieval ON vs. OFF.",
         ],
+        name="shape_slide_3_invariants",
         header_color=SUCCESS_GREEN,
         body_size=11.5,
         item_spacing=3.0,
@@ -432,13 +453,14 @@ def build_slide_4_dataset(prs: Presentation) -> None:
         "Bộ Dữ Liệu Chuẩn Đóng Băng Stage B",
         [
             "Tổng thể: 670 cặp kịch bản (Scenario Pairs) tương ứng 1,340 Views.",
-            "Phân chia tập: 1,280 TEST views và 60 DEV views.",
+            "Phân chia tập: 1,280 TEST views (718 scorable views across 440 distinct clusters) và 60 DEV views.",
             "Hình thức biểu diễn Telemetry:",
             "  • Single-event view: Một sự kiện đơn lẻ kích hoạt kỹ thuật tấn công.",
             "  • Contextual-event view: Sự kiện mục tiêu kèm nhật ký ngữ cảnh lân cận.",
             "Độ bao phủ: 8 nhóm kỹ thuật mục tiêu đại diện cùng các mẫu âm tính / mơ hồ.",
-            "Toàn vẹn mật mã: Khóa bằng SHA-256 trong canonical_experiment_lock_v1.json.",
+            "Toàn vẹn mật mã: Khóa bằng SHA-256 trong canonical_experiment_lock_v1.json | 278 complete pairs, 162 contextual-only pairs, 200 neither-mapped pairs.",
         ],
+        name="shape_slide_4_dataset_topology",
         header_color=PRIMARY_BLUE,
         body_size=11.5,
         item_spacing=3.0,
@@ -462,6 +484,7 @@ def build_slide_4_dataset(prs: Presentation) -> None:
             "Phân định phạm vi: Stage B phục vụ kiểm định kỹ thuật & chẩn đoán lỗi; dữ "
             "liệu thực địa (T15 real pilot) được quản lý độc lập.",
         ],
+        name="shape_slide_4_representations",
         header_color=ALERT_RED,
         body_size=11.5,
         item_spacing=3.0,
@@ -517,6 +540,7 @@ def build_slide_5_methodology(prs: Presentation) -> None:
             "Lưu vết đầy đủ (D1: RECORD_ONLY): Lưu toàn văn phản hồi thô phục vụ kiểm "
             "toán độc lập.",
         ],
+        name="shape_slide_5_decisions",
         header_color=DEEP_BLUE,
         body_size=11.0,
         item_spacing=2.5,
@@ -545,6 +569,7 @@ def build_slide_5_methodology(prs: Presentation) -> None:
             "D3: Khóa mô hình: ALLOW_LATEST_WITH_TIMESTAMP_BINDING (tem UTC thực tế).",
             "D4-D5: Thực thi tuần tự (SEQUENTIAL_ONLY), chặn cứng ngân sách (HARD_CAP).",
         ],
+        name="shape_slide_5_criteria",
         header_color=SUCCESS_GREEN,
         body_size=11.0,
         item_spacing=2.5,
@@ -600,6 +625,7 @@ def build_slide_6_rq2_diagnostics(prs: Presentation) -> None:
             "Phát hiện: Trong hơn 54% trường hợp, kỹ thuật đúng hoàn toàn vắng bóng "
             "trong Top-10 gửi cho LLM!",
         ],
+        name="shape_slide_6_retrieval_diagnostics",
         header_color=DEEP_BLUE,
         body_size=11.5,
         item_spacing=3.0,
@@ -623,6 +649,7 @@ def build_slide_6_rq2_diagnostics(prs: Presentation) -> None:
                 "nhưng tăng nguy cơ nhiễu distractor; đang được kiểm chứng đối chứng "
                 "trên ma trận TEST.",
             ],
+            name="shape_slide_6_context_scaling",
             header_color=ALERT_RED,
             body_size=11.0,
             item_spacing=2.5,
@@ -647,6 +674,7 @@ def build_slide_6_rq2_diagnostics(prs: Presentation) -> None:
                 "Giả thuyết Context Scaling & Dilution: Đang chờ hoàn tất ma trận TEST "
                 "để kiểm định chính thức.",
             ],
+            name="shape_slide_6_context_scaling",
             header_color=ALERT_RED,
             body_size=11.5,
             item_spacing=3.0,
@@ -699,6 +727,7 @@ def build_slide_7_representation(prs: Presentation) -> None:
             "Nhóm lọc đơn kỹ thuật nghiêm ngặt (252 cặp - Secondary): Single tốt hơn "
             "59 cặp (23.4%) vs. Contextual 23 cặp (9.1%), ngang nhau 170 cặp.",
         ],
+        name="shape_slide_7_paired_analysis",
         header_color=PRIMARY_BLUE,
         body_size=11.5,
         item_spacing=3.0,
@@ -710,22 +739,22 @@ def build_slide_7_representation(prs: Presentation) -> None:
         1.35,
         5.7,
         5.55,
-        "Hiện Tượng Quan Sát & Schema So Sánh [PENDING]",
+        f"Hiện Tượng Quan Sát & Schema So Sánh {FIXTURE_BANNER_TEXT}",
         [
             "Hiện tượng Benign Drift khi mở rộng ngữ cảnh:",
             "  • Gộp các sự kiện lân cận bổ sung nhiều token thông thường (Explorer, "
             "DNS, svchost).",
             "  • Vector dense embedding bị kéo lệch về hành vi bình thường, làm tụt "
             "thứ hạng kỹ thuật tấn công.",
-            "Schema So Sánh Đối Chứng Scaffold [PENDING EXECUTION]:",
+            f"Schema So Sánh Đối Chứng Scaffold {FIXTURE_BANNER_TEXT}:",
             "  • Đối chứng: Zero-Shot No-RAG vs Zero-Shot RAG (k=1..10) vs Prompt Scaffolds.",
             "  • Giả thuyết: Khối tri thức RAG bổ trợ cần đi kèm tiền lọc sự kiện nghi "
             "vấn thay vì nhúng thô.",
-            "  • Trạng thái: Toàn bộ ma trận TEST đang thực thi; kết luận chính thức "
-            "sẽ công bố khi hoàn tất.",
+            "  • Trạng thái: Thử nghiệm sơ bộ trên fixture đối chứng; kết luận chính thức cần ma trận TEST đầy đủ.",
             "Phạm vi khảo sát: Ghi nhận trên synthetic-paired-v1; cần tiếp tục kiểm "
             "chứng trên telemetry thực tế.",
         ],
+        name="shape_slide_7_benign_drift",
         header_color=ALERT_RED,
         body_size=11.5,
         item_spacing=3.0,
@@ -779,6 +808,7 @@ def build_slide_8_rq1_schema(prs: Presentation) -> None:
             "Trục 3 - Joint Overlap: ghi nhận rõ các bản ghi retrieval trượt ĐỒNG THỜI "
             "mô hình hallucinate/phân loại sai, không áp đặt thứ tự loại trừ nhân tạo.",
         ],
+        name="shape_slide_8_d2i_axes",
         header_color=DEEP_BLUE,
         body_size=11.0,
         item_spacing=2.5,
@@ -792,20 +822,19 @@ def build_slide_8_rq1_schema(prs: Presentation) -> None:
         3.50,
         5.7,
         3.40,
-        "Các Thước Đo Có Điều Kiện (Conditional Metrics)",
+        "Các Thước Đo Có Điều Kiện & Hiệu Năng RQ1",
         [
-            "P(Correct | GT in Top-k): Đánh giá năng lực lựa chọn của LLM khi bộ tìm "
-            "kiếm hoạt động chính xác.",
-            "P(Correct | GT NOT in Top-k): Đánh giá khả năng LLM tự sửa sai dựa trên "
-            "tri thức nội tại.",
-            "Macro-F1 & Exact Match: Tính trên không gian kỹ thuật chuẩn Frozen "
-            "Benchmark Universe (D2d = 474).",
-            "Fail-Closed Invariant: Mẫu lỗi API, timeout (D2f) hay mã sai cú pháp "
-            "(D2e) đều tính vào mẫu số.",
+            "Mẫu số đánh giá chuẩn: N=718 scorable views (trên 440 distinct clusters).",
+            "P(Correct | GT in Top-k): Đánh giá khi retrieval trúng: N=321 (91.28% gán đúng, 293/321).",
+            "P(Correct | GT NOT in Top-k): Đánh giá khi retrieval trượt: N=397 (70.03% gán đúng, 278/397).",
+            "Fail-Closed Invariant: Mẫu lỗi API (D2f) hay mã sai cú pháp (D2e) tính vào mẫu số.",
+            "So sánh đối chứng RAG k=10 vs No-RAG: Chênh lệch cặp 95% CI [-2.355, +5.300] pp (chứa 0), McNemar p = 0.4223 > 0.05.",
+            "Diễn giải học thuật: RAG k=10 đạt độ chính xác quan sát được cao nhất trong thử nghiệm kèm độ bất định (không kết luận vượt trội thống kê).",
         ],
+        name="shape_slide_8_conditional_accuracy",
         header_color=PRIMARY_BLUE,
-        body_size=11.5,
-        item_spacing=3.5,
+        body_size=10.5,
+        item_spacing=2.2,
     )
 
     # Bottom right card: (top 3.50, height 3.40 -> bottom at 6.90 inches)
@@ -815,17 +844,14 @@ def build_slide_8_rq1_schema(prs: Presentation) -> None:
         3.50,
         5.7,
         3.40,
-        "[PENDING EXECUTION] Trạng Thái Thực Nghiệm RQ1 & RQ2",
+        f"{FIXTURE_BANNER_TEXT} Trạng Thái Thực Nghiệm RQ1 & RQ2",
         [
-            "Ma trận TEST chính thức: 1,280 views x 5 nhánh (6,400 bản ghi) đang trong "
-            "tiến trình chạy (PID 50192).",
-            "Nguyên tắc Fail-Closed: Evaluator từ chối công bố điểm chính thức khi "
-            "chưa đủ 6,400 records.",
-            "Kiểm định toán học Evaluator: Đã xác thực ngoại tuyến qua 5 test fixtures "
-            "(outputs/reproduction/fixture_diagnostics/).",
-            "Đầu ra chuẩn: 6 metric JSON artifacts kèm _fixture_metadata.json "
-            "(fixture_only: true).",
+            "Ma trận TEST chuẩn: N=718 scorable views x 5 nhánh (No-RAG, k=1, 3, 5, 10).",
+            "Nguyên tắc Fail-Closed: Evaluator ghi nhận đầy đủ 13 INCOMPLETE records trên 6,400 requests.",
+            "Kiểm định toán học Evaluator: Đã xác thực ngoại tuyến qua các bộ test fixtures.",
+            "Đầu ra chuẩn: 6 metric JSON artifacts kèm _fixture_metadata.json.",
         ],
+        name="shape_slide_8_rq1_attribution",
         header_color=ALERT_RED,
         body_size=11.5,
         item_spacing=3.5,
@@ -864,28 +890,21 @@ def build_slide_9_rq3_cost(prs: Presentation) -> None:
         1.35,
         5.7,
         5.55,
-        "DEV Cost Pilot (Synthetic Split) & Chi Phí Hạch Toán",
+        "DEV Cost Pilot & Hạch Toán Tài Chính Toàn Nghiên Cứu",
         [
-            "Bản chất dữ liệu: DEV cohort là dữ liệu tổng hợp (synthetic-paired-v1 DEV "
-            "split, 4 views x 5 điều kiện). Gửi request thực lên LLM provider không "
-            "biến log tổng hợp thành in-the-wild telemetry.",
-            "Quy mô pilot: 20 requests thực tế qua Responses API (100% VALID, 0 retry, "
-            "trễ TB 8,127.6 ms).",
-            "Chi phí hạch toán ước tính từ token quan sát được và biểu giá công bố "
-            "(Estimated / Accounted Cost):",
-            "  • Pilot 20 requests: $0.024209 USD (conservative: $0.026320 USD) theo đơn giá.",
-            "  • no_rag (k=0): 643 in / 224 out (~$0.00039 / query)",
-            "  • rag_k1 (k=1): 1,115 in / 332 out (~$0.00062 / query)",
-            "  • rag_k3 (k=3): 1,741 in / 1,087 out (~$0.00165 / query - telemetry ban đầu)",
-            "  • rag_k5 (k=5): 2,518 in / 840 out (~$0.00151 / query)",
-            "  • rag_k10 (k=10): 4,537 in / 801 out (~$0.00187 / query)",
-            "Phân định rõ ranh giới ngân sách:",
-            "  • Giữ chỗ thận trọng tạm thời: $0.05264010 USD (prior_pilot_provisional_hold_usd).",
-            "  • Dự báo chuẩn tắc tập TEST (Canonical forecast): $8.20 – $8.99 USD cho "
-            "6,400 requests.",
-            "  • Trần ngân sách đóng băng cứng (Hard budget cap): $19.99 USD "
-            "(hard_budget_limit_usd).",
+            "Bản chất dữ liệu: DEV cohort là dữ liệu tổng hợp (synthetic-paired-v1 DEV split, 4 views x 5 điều kiện). Gửi request thực không biến log tổng hợp thành in-the-wild telemetry.",
+            "Quy mô khảo sát: N=1,280 queries / điều kiện; 6,400 logical requests; 6,401 physical attempts (1 retry do lỗi API).",
+            "Chi phí hạch toán ước tính (Accounted Cost) & Bảng giá đóng băng:",
+            "  • Pilot lịch sử 20 requests: $0.0242 USD theo đơn giá; DEV baseline.",
+            "  • no_rag (k=0): 643 in / 224 out (~$0.000365 / query)",
+            "  • rag_k10 (k=10): 4,537 in / 801 out (~$0.001679 / query)",
+            "Hạch toán tài chính toàn thể nghiên cứu (6,400 Requests):",
+            "  • Trần ngân sách đóng băng cứng (Hard budget cap): $19.99 USD.",
+            "  • Quyết toán thực tế 5 điều kiện chính thức: $6.58 settled spend ($6.57575890 USD).",
+            "  • Khoản giữ chỗ thận trọng pilot: $0.05264010 USD; tổng cam kết: $6.63 committed spend ($6.62839900 USD).",
+            "  • Ngân sách khả dụng còn lại: $13.36 net remaining ($13.36160100 USD; 0 holds, 0 breach).",
         ],
+        name="shape_slide_9_rq3_resources",
         header_color=DEEP_BLUE,
         body_size=10.5,
         item_spacing=2.0,
@@ -907,6 +926,7 @@ def build_slide_9_rq3_cost(prs: Presentation) -> None:
                 "Dự báo chuẩn tắc tập TEST (< $10 USD) nằm an toàn dưới trần ngân sách "
                 "đóng băng $19.99 USD.",
             ],
+            name="shape_slide_9_accounting",
             header_color=SUCCESS_GREEN,
             body_size=11.0,
             item_spacing=2.5,
@@ -929,10 +949,12 @@ def build_slide_9_rq3_cost(prs: Presentation) -> None:
                 "phân vân khi phân loại.",
                 "Dự báo ngân sách chuẩn tắc: Toàn bộ 6,400 lượt suy luận của TEST "
                 "cohort dự phóng tiêu tốn ~$8.20 - $8.99 USD.",
+                "Dự báo chuẩn tắc tập TEST (< $10 USD) nằm an toàn dưới trần ngân sách đóng băng $19.99 USD.",
             ],
+            name="shape_slide_9_accounting",
             header_color=PRIMARY_BLUE,
-            body_size=11.0,
-            item_spacing=2.5,
+            body_size=10.5,
+            item_spacing=2.0,
         )
 
     set_speaker_notes(
@@ -942,10 +964,13 @@ def build_slide_9_rq3_cost(prs: Presentation) -> None:
         "1. Dữ liệu DEV là dữ liệu tổng hợp (synthetic-paired-v1 DEV split, 4 views x "
         "5 nhánh). Việc gửi request lên OpenAI không biến log tổng hợp thành dữ liệu "
         "thực địa in-the-wild.\n"
-        "2. Chi phí pilot 20 request ($0.024209 USD standard, $0.026320 USD "
-        "conservative) là 'Chi phí hạch toán ước tính từ token quan sát được và biểu "
-        "giá công bố', vì chúng tôi chưa có hóa đơn quyết toán chính thức từ OpenAI.\n"
-        "3. Con số ~$0.00165/query là ước tính ban đầu tại nhánh k=3 do độ dài reasoning output.\n"
+        "2. Toàn bộ nghiên cứu tính trên mẫu số 1,280 queries / điều kiện (tổng 6,400 "
+        "logical requests, 6,401 physical attempts bao gồm 1 retry lỗi API).\n"
+        "3. Hạch toán tài chính chính xác: trần ngân sách đóng băng cứng $19.99 USD "
+        "(hard_budget_limit_usd), chi phí quyết toán thực tế 5 điều kiện chính thức "
+        "là $6.58 settled spend ($6.57575890 USD), cộng giữ chỗ thận trọng pilot "
+        "$0.05264010 USD tổng chi phí cam kết là $6.63 committed spend ($6.62839900 USD), "
+        "ngân sách khả dụng còn lại là $13.36 net remaining ($13.36160100 USD; 0 holds, 0 breach).\n"
         "4. Phân biệt rõ khoản giữ chỗ thận trọng tạm thời ($0.05264010 USD "
         "prior_pilot_provisional_hold_usd), dự báo chuẩn tắc tập TEST ($8.20 – $8.99 "
         "USD cho 6,400 requests), và trần ngân sách đóng băng cứng $19.99 USD "
@@ -980,6 +1005,7 @@ def build_slide_10_limitations(prs: Presentation) -> None:
             "Nghiên cứu không khẳng định kết quả áp dụng nguyên vẹn cho môi trường "
             "thực tế cho đến khi hoàn tất T15 real pilot.",
         ],
+        name="shape_slide_10_limitations_1",
         header_color=ALERT_RED,
         body_size=11.5,
         item_spacing=3.5,
@@ -998,6 +1024,7 @@ def build_slide_10_limitations(prs: Presentation) -> None:
             "Khoảng cách giữa ngôn ngữ nhật ký và ngôn ngữ mô tả của ATT&CK đòi hỏi "
             "phải có kiến trúc tìm kiếm lai (Hybrid Search: Dense + BM25 Lexical).",
         ],
+        name="shape_slide_10_limitations_2",
         header_color=PRIMARY_BLUE,
         body_size=11.5,
         item_spacing=3.5,
@@ -1019,6 +1046,7 @@ def build_slide_10_limitations(prs: Presentation) -> None:
             "offline scripts/run_offline_tests.py, can thiệp socket Python để chặn kết "
             "nối ngoài ý muốn.",
         ],
+        name="shape_slide_10_limitations_3",
         header_color=SLATE_HEADER,
         body_size=11.5,
         item_spacing=3.5,
@@ -1070,6 +1098,7 @@ def build_slide_11_reproducibility(prs: Presentation) -> None:
             "Điều kiện tái lập: Ngoại tuyến dùng 15 artifact đóng băng; luồng live "
             "provider cần credentials thực dưới budget guard trần $19.99 USD.",
         ],
+        name="shape_slide_11_reproducibility_1",
         header_color=SUCCESS_GREEN,
         body_size=11.0,
         item_spacing=2.5,
@@ -1094,6 +1123,7 @@ def build_slide_11_reproducibility(prs: Presentation) -> None:
             "4. Bộ công cụ nghiên cứu mở: Cung cấp toàn bộ mã nguồn, benchmark, kịch "
             "bản tạo slide và dữ liệu chứng cứ nguyên vẹn.",
         ],
+        name="shape_slide_11_reproducibility_2",
         header_color=DEEP_BLUE,
         body_size=11.5,
         item_spacing=3.0,
@@ -1132,6 +1162,7 @@ def build_slide_12_conclusion(prs: Presentation) -> None:
     bar.line.fill.background()
 
     tx = slide.shapes.add_textbox(Inches(1.5), Inches(1.4), Inches(10.5), Inches(4.8))
+    tx.name = "shape_slide_12_conclusion"
     tf = tx.text_frame
     tf.word_wrap = True
 
@@ -1178,6 +1209,14 @@ def build_slide_12_conclusion(prs: Presentation) -> None:
     p_qa.font.bold = True
     p_qa.font.color.rgb = CYAN_ACCENT
     p_qa.space_before = Pt(16)
+
+    p_banner = tf.add_paragraph()
+    p_banner.text = FIXTURE_BANNER_TEXT
+    p_banner.font.name = "Calibri"
+    p_banner.font.size = Pt(13)
+    p_banner.font.bold = True
+    p_banner.font.color.rgb = ALERT_RED
+    p_banner.space_before = Pt(8)
 
     set_speaker_notes(
         slide,

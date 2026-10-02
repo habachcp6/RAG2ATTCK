@@ -3311,3 +3311,158 @@ def test_rq2_failure_decomposition_disjoint_overlaps_distinguishing(tmp_path):
     assert decomp["retrieval_miss_error_count"] == 5
     assert decomp["overlap_retrieval_miss_and_failures"] == 4
     assert decomp["retrieval_miss_fraction_of_failures"] == pytest.approx(1.0)
+
+
+def test_rq2_strict_mapping_and_mutant_rejection(tmp_path):
+    """ROOT MANDATE: Test strict mapping checks and rejection of mutants in compute_rq2.
+
+    Verifies:
+    1. Alias conflict rejection: conflicting alias values (e.g. P_ vs p_) raise ValueError.
+    2. positiveNull mutant: None succ_cnt or None p_succ when scorable > 0 raises
+       TypeError/ValueError.
+    3. countdrift mutant: succ_cnt != computedHit or fail_cnt != total_scorable - computedHit
+       raises ValueError.
+    4. probabilitydrift mutant: p_succ != succ_correct / succ_cnt raises ValueError.
+    5. valid0denomNULL: when cohort = 0 (e.g. 0 failures), fail_cnt=0 with p_fail=None
+       passes cleanly, while setting non-null p_fail for 0 denominator raises ValueError.
+    """
+    import copy
+
+    fixture = _fixture(tmp_path)
+    inputs = _load(tmp_path, fixture)
+    proto = _test_protocol()
+    native = evaluate_experiment(inputs, proto)
+    fail_decomp = native["failure_decomposition"]
+
+    # Baseline valid run must pass cleanly
+    clean_ret = native["retrieval_conditional"]
+    rq2_clean = compute_rq2(
+        inputs,
+        proto,
+        retrieval_cond_metrics=clean_ret,
+        failure_decomp_metrics=fail_decomp,
+    )
+    assert rq2_clean["by_condition"]["rag_k1"]["retrieval_metrics"]["applicable"] is True
+
+    # 1. Alias Conflict Mutation
+    # 1a. Conflicting probabilities
+    mut_alias_prob = copy.deepcopy(clean_ret)
+    mut_alias_prob["by_condition"]["rag_k1"]["P_correct_given_retrieval_success"] = 0.5
+    mut_alias_prob["by_condition"]["rag_k1"]["p_correct_given_retrieval_success"] = 0.8
+    with pytest.raises(ValueError, match="Conflicting alias values"):
+        compute_rq2(
+            inputs,
+            proto,
+            retrieval_cond_metrics=mut_alias_prob,
+            failure_decomp_metrics=fail_decomp,
+        )
+
+    # 1b. Conflicting counts
+    mut_alias_cnt = copy.deepcopy(clean_ret)
+    mut_alias_cnt["by_condition"]["rag_k1"]["retrieval_success_count"] = 5
+    mut_alias_cnt["by_condition"]["rag_k1"]["retrieval_success_sample_count"] = 6
+    with pytest.raises(ValueError, match="Conflicting alias values"):
+        compute_rq2(
+            inputs,
+            proto,
+            retrieval_cond_metrics=mut_alias_cnt,
+            failure_decomp_metrics=fail_decomp,
+        )
+
+    # 2. Mutant: positiveNull
+    # 2a. succ_cnt is None
+    mut_succ_null = copy.deepcopy(clean_ret)
+    mut_succ_null["by_condition"]["rag_k1"]["retrieval_success_count"] = None
+    with pytest.raises(TypeError, match="retrieval_success_count must be int"):
+        compute_rq2(
+            inputs,
+            proto,
+            retrieval_cond_metrics=mut_succ_null,
+            failure_decomp_metrics=fail_decomp,
+        )
+
+    # 2b. p_succ is None when succ_cnt > 0
+    mut_psucc_null = copy.deepcopy(clean_ret)
+    mut_psucc_null["by_condition"]["rag_k1"]["P_correct_given_retrieval_success"] = None
+    with pytest.raises(ValueError, match="P_correct_given_retrieval_success cannot be None"):
+        compute_rq2(
+            inputs,
+            proto,
+            retrieval_cond_metrics=mut_psucc_null,
+            failure_decomp_metrics=fail_decomp,
+        )
+
+    # 3. Mutant: countdrift
+    # 3a. succ_cnt drift
+    mut_succ_drift = copy.deepcopy(clean_ret)
+    mut_succ_drift["by_condition"]["rag_k1"]["retrieval_success_count"] += 1
+    with pytest.raises(ValueError, match="Drift between computed retrieved_positive_count"):
+        compute_rq2(
+            inputs,
+            proto,
+            retrieval_cond_metrics=mut_succ_drift,
+            failure_decomp_metrics=fail_decomp,
+        )
+
+    # 3b. fail_cnt drift
+    mut_fail_drift = copy.deepcopy(clean_ret)
+    mut_fail_drift["by_condition"]["rag_k1"]["retrieval_failure_count"] += 1
+    with pytest.raises(ValueError, match="Drift between computed scorable retrieval failures"):
+        compute_rq2(
+            inputs,
+            proto,
+            retrieval_cond_metrics=mut_fail_drift,
+            failure_decomp_metrics=fail_decomp,
+        )
+
+    # 4. Mutant: probabilitydrift
+    mut_prob_drift = copy.deepcopy(clean_ret)
+    orig_p = mut_prob_drift["by_condition"]["rag_k1"]["P_correct_given_retrieval_success"]
+    mut_prob_drift["by_condition"]["rag_k1"]["P_correct_given_retrieval_success"] = (
+        0.0 if orig_p > 0.5 else 1.0
+    )
+    with pytest.raises(ValueError, match="Probability drift for P_correct_given_retrieval_success"):
+        compute_rq2(
+            inputs,
+            proto,
+            retrieval_cond_metrics=mut_prob_drift,
+            failure_decomp_metrics=fail_decomp,
+        )
+
+    # 5. valid0denomNULL
+    # Construct a mini 0-retrieval-failure scenario (100% retrieval success)
+    records_100hit = []
+    for r in inputs.records:
+        rc = dict(r)
+        gt = inputs.ground_truth.get(rc["sample_id"], ())
+        if gt:
+            rc["retrieved_candidates"] = [{"technique_id": gt[0]}]
+        records_100hit.append(rc)
+    inputs_100hit = dataclasses.replace(inputs, records=records_100hit)
+    native_100hit = evaluate_experiment(inputs_100hit, proto)
+    cond_k1 = native_100hit["retrieval_conditional"]["by_condition"]["rag_k1"]
+    assert cond_k1["retrieval_failure_count"] == 0
+    assert cond_k1["P_correct_given_retrieval_failure"] is None
+
+    # Valid 0-denom NULL must PASS cleanly:
+    rq2_100hit = compute_rq2(
+        inputs_100hit,
+        proto,
+        retrieval_cond_metrics=native_100hit["retrieval_conditional"],
+        failure_decomp_metrics=native_100hit["failure_decomposition"],
+    )
+    acc_map = rq2_100hit["by_condition"]["rag_k1"]["generation_conditional_accuracy"]
+    assert acc_map["P_correct_given_retrieval_failure"] is None
+
+    # But non-null p_fail on 0-denom failure count MUST FAIL:
+    mut_0denom_nonnull = copy.deepcopy(native_100hit["retrieval_conditional"])
+    mut_0denom_nonnull["by_condition"]["rag_k1"]["P_correct_given_retrieval_failure"] = 0.0
+    with pytest.raises(
+        ValueError, match="P_correct_given_retrieval_failure must be None for 0-denominator"
+    ):
+        compute_rq2(
+            inputs_100hit,
+            proto,
+            retrieval_cond_metrics=mut_0denom_nonnull,
+            failure_decomp_metrics=native_100hit["failure_decomposition"],
+        )

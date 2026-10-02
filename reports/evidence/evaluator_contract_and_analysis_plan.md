@@ -18,8 +18,8 @@ In strict adherence to the project's frozen protocol principles:
 1. **Zero live provider calls**: All testing, evaluation, and diagnostic verification was executed offline against synthetic and fixture datasets. No in-flight live matrix predictions were scored or altered (strictly 0 egress).
 2. **Canonical protocol preservation**: The canonical evaluator entrypoint in `src/evaluation/experiment_metrics.py` remains fail-closed behind the `ScientificProtocolApproval` contract (D1–D7). No flags, bypasses, or ad-hoc defaults can unblock scoring without explicit verified approval.
 3. **Dedicated offline analysis pipeline**: Created `scripts/analysis/evaluate_rqs.py` to compute publication-grade metrics and statistical tests for Research Questions **RQ1**, **RQ2**, and **RQ3**.
-4. **Comprehensive offline test suite**: Created `tests/test_evaluator_offline_contract.py` containing 48 rigorous tests validating every edge case of the evaluation contract, financial accounting, failure semantics, native tariff conformance, execution-mode boundaries, subset Macro-F1 calculations, and analysis tools.
-5. **Codex Review Repairs Completed (Items 1–10, B_NATIVE_TARIFF_REPAIR, BD_MODE_BOUNDARY, & B_RQ_NATIVE_CONTRACT_REPAIR)**:
+4. **Comprehensive offline test suite**: Created `tests/test_evaluator_offline_contract.py` containing 49 rigorous tests validating every edge case of the evaluation contract, financial accounting, failure semantics, native tariff conformance, execution-mode boundaries, subset Macro-F1 calculations, and analysis tools.
+5. **Codex Review Repairs Completed (Items 1–11, B_NATIVE_TARIFF_REPAIR, BD_MODE_BOUNDARY, B_RQ_NATIVE_CONTRACT_REPAIR, & B_RQ2_STRICT_MAPPING)**:
    - **Item 1 (Strict Pricing Validation)**: Tariffs, bounds, and ceilings validated against `config/pricing_v1.json`. Fail-closed on missing keys or unknown tiers; zero-cost fallbacks are strictly prohibited.
    - **Item 2 (Ledger/Journal Reconciliation - B_RECONCILE_REPAIR2 & B_NATIVE_TARIFF_REPAIR)**: Parses `attempt_receipt` and `monetary_settle` events, verifies ordinal and attempt uniqueness, binds record SHA-256 against prediction records, accounts for retries, and preserves study-wide financial accounting with prior-pilot hold ($0.05264010) preserved without adding to individual condition costs.
    - **B_NATIVE_TARIFF_REPAIR (Native Tariff Delegation)**: Eliminated custom calculation loops in `reconcile_journal_and_ledger` and delegated directly to native frozen `calculate_request_cost_from_receipts` in `src.experiment.monetary_ledger`. Added `RecordObjectAdapter` for getattr binding, fail-closed enforcement on `req_breach`, and distinguishing tests covering positive control ($0.00000370), worst-case fee on `RATE_LIMIT` / `TIMEOUT` / `API_FAILURE` ($0.53974560), missing `service_tier`, foreign model receipts, `INCOMPLETE` status with tokens, final-receipt drift, and logical worst ceiling breaches ($2.15898240).
@@ -41,7 +41,13 @@ In strict adherence to the project's frozen protocol principles:
      - **Attempt vs. Terminal Missing Usage Accounting**: Populates `missing_usage_terminal_records_count` (0), `missing_usage_attempt_receipts_count` (1), `missing_usage_attempt_worst_charge_usd` ($0.53974560), and `affected_logical_records_count` (1) across per-condition tradeoffs and whole-study accounting; preserves total spend ($6.62839900 USD).
      - **Dynamic Run Metadata & Secondary Scope Authorization**: Dynamically derives `analysis_run_parameters` without hardcoding; provides optional `--secondary-scope-packet` parameter that reads and hashes authorization packets dynamically with fail-closed semantics.
      - **Tool Version Upgrade**: Bumped `ANALYSIS_TOOL_VERSION` and `analysis_version` to `"2.0.0"`.
-     - **Fresh Schema Generation**: Regenerated schema `fixture_export_schema_3625.json` bound to `evaluate_rqs.py` SHA-256 (`d4f923d3...`) with 1,748 leaf pointers.
+     - **Fresh Schema Generation**: Regenerated schema `fixture_export_schema_3625.json` bound to `evaluate_rqs.py` SHA-256 with 1,748 leaf pointers.
+   - **Item 11 (ROOT FINAL B RQ2 STRICT MAPPING CHECK & CLOSURE)**:
+     - **Strict Alias Conflict Rejection**: Rejects any attempt to pass conflicting alias values (`P_correct_given_retrieval_success` vs `p_correct_given_retrieval_success`, `retrieval_success_count` vs `retrieval_success_sample_count`, or failure counterparts); no silent fallback or first-wins.
+     - **Count Integrity & Drift Verification**: Enforces `type(x) is int`, $x \ge 0$, and exact reconciliation: `succ_cnt == retrieved_positive_count` and `fail_cnt == total_scorable - retrieved_positive_count`.
+     - **ANY_MATCH Probability Consistency Checks**: Verifies $P(\text{correct} \mid \text{success}) = \frac{\text{succ\_correct}}{\text{succ\_cnt}}$ and $P(\text{correct} \mid \text{failure}) = \frac{\text{fail\_correct}}{\text{fail\_cnt}}$ within tolerance $10^{-4}$ against ground truth.
+     - **Zero-Denominator NULL Compliance (D2j)**: When cohort is 0 (e.g., 0 retrieval failures), probability must evaluate strictly to `None`/`null`. Non-null floats on zero denominators fail closed.
+     - **Mutant Rejection Regressions**: Added `test_rq2_strict_mapping_and_mutant_rejection` testing alias conflict, `positiveNull`, `countdrift`, `probabilitydrift`, and verifying `valid0denomNULL` passes while non-null on 0-denominator fails.
 
 ---
 
@@ -223,7 +229,7 @@ Following initial implementation, an independent probe (`artifacts/orchestration
 
 ## 5. Verification Test Suite (`tests/test_evaluator_offline_contract.py`)
 
-A comprehensive test suite of 46 rigorous tests verifies every aspect of the evaluation contract, financial accounting, failure semantics, mutation edge cases, and analysis tooling.
+A comprehensive test suite of 49 rigorous tests verifies every aspect of the evaluation contract, financial accounting, failure semantics, mutation edge cases, and analysis tooling.
 
 ### 5.1 Test Inventory
 
@@ -277,16 +283,17 @@ A comprehensive test suite of 46 rigorous tests verifies every aspect of the eva
 | 46 | `test_provenance_mode_boundary_canonical_study_positive_control` | BD_MODE_BOUNDARY: Canonical live test data earns canonical_study status without warning | **PASSED** |
 | 47 | `test_rq2_and_rq3_repaired_native_contract_and_attempt_accounting` | B_RQ_NATIVE_CONTRACT: Producer-consumer mapping, bounded failure rates, attempt-level missing usage accounting ($0.53974560), and dynamic metadata | **PASSED** |
 | 48 | `test_rq2_failure_decomposition_disjoint_overlaps_distinguishing` | B_RQ_NATIVE_CONTRACT: Distinguishing test for 4 disjoint failure types plus 1 correct miss bounding frac_ret_miss to 1.0 | **PASSED** |
+| 49 | `test_rq2_strict_mapping_and_mutant_rejection` | ROOT MANDATE: Strict alias conflict rejection, countdrift/probabilitydrift mutant rejection, and valid0denomNULL | **PASSED** |
 
 ### 5.2 Test Execution Results
 ```bash
 uv run python scripts/run_offline_tests.py -m pytest tests/test_evaluator_offline_contract.py -v
-============================= 48 passed in 15.47s =============================
+============================= 49 passed in 12.20s =============================
 
 uv run pytest tests/test_experiment_evaluation.py -q
-============================= 94 passed in 14.07s =============================
+============================= 94 passed in 11.37s =============================
 
-Combined Total: 142 passed (OFFLINE_GUARD: installed=True attempted_egress=0)
+Combined Total: 143 passed (OFFLINE_GUARD: installed=True attempted_egress=0)
 ```
 
 ### 5.3 Code Quality & Linter Compliance
@@ -301,10 +308,10 @@ All checks passed!
 
 | File Path | SHA-256 Digest | Purpose |
 | :--- | :--- | :--- |
-| `scripts/analysis/evaluate_rqs.py` | `2ea97dffbe5613eb0d12139d17ef17c2320b82137a5b8128ddbedbaa14655421` | Offline RQ1/RQ2/RQ3 analysis script (v2.0.0) with B_RQ_NATIVE_CONTRACT_REPAIR |
+| `scripts/analysis/evaluate_rqs.py` | `f85d7f7373e825dcc7171ce4491fd15c6fb755955da245041783fe317bc80351` | Offline RQ1/RQ2/RQ3 analysis script (v2.0.0) with strict alias, count, and probability validation |
 | `scripts/analysis/__init__.py` | `28b40746d09b574e95393ac9e2a95879116cd9d4c7a86afb1be7be573f9ad54a` | Analysis package initializer |
-| `tests/test_evaluator_offline_contract.py` | `2ef0b9bc9e28f1aad35f460829883ebe27c616a0ff6282e9cb6944f0e9f5b05d` | Evaluator offline contract test suite (48 tests) |
-| `artifacts/orchestration/fixture_export_schema_3625.json` | `1bed6bff60f48c189a6cb74e21414f74f4b045c90666b90f782674658a9590ac` | Fresh fixture export schema with 1,748 leaf pointers bound to `evaluate_rqs.py` SHA-256 |
+| `tests/test_evaluator_offline_contract.py` | `e2e9c70a7f38d52f2b14609a113c3addd9e6aad82b633420a1ed05b7d38e6897` | Evaluator offline contract test suite (49 tests) |
+| `artifacts/orchestration/fixture_export_schema_3625.json` | `82e30652f6dc3ce29c6043ee83dcd5202c69dd19bffa14d5af4d76bab27d7484` | Fresh fixture export schema with 1,748 leaf pointers bound to `evaluate_rqs.py` SHA-256 |
 | `reports/evidence/evaluator_contract_and_analysis_plan.md` | *This document* | Comprehensive Phase S1 evidence document |
 
 ---
@@ -342,5 +349,11 @@ All checks passed!
   - Distinguishes terminal missing usage records (0) from attempt receipts (1), $0.53974560 worst charge, affected logical records (1), and study-wide retried attempts count.
   - Dynamically derived `analysis_run_parameters` and dynamic `--secondary-scope-packet` hashing with fail-closed semantics.
   - Bumped tool version to `"2.0.0"`.
-- [x] Full test suite passed (48/48 offline contract tests; 94/94 evaluation suite tests; 142 total).
+- [x] Completed Item 11 (ROOT FINAL B RQ2 STRICT MAPPING CHECK & CLOSURE):
+  - Strict alias conflict rejection: disallows conflicting alias values between `P_` and `p_`, or count aliases.
+  - Count integrity: `is int`, non-negative, and strictly reconciled against `retrieved_positive_count` and `total_scorable - retrieved_positive_count`.
+  - Probability consistency: verified against ANY_MATCH ground truth within $10^{-4}$ tolerance.
+  - Zero-denominator NULL: cohort = 0 strictly requires `None`/`null` per D2j; non-null fails closed.
+  - Added mutant rejection regression `test_rq2_strict_mapping_and_mutant_rejection`.
+- [x] Full test suite passed (49/49 offline contract tests; 94/94 evaluation suite tests; 143 total).
 - [x] Ruff lint checks passed with zero errors (`line-length = 100`).

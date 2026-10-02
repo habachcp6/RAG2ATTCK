@@ -1232,47 +1232,91 @@ def compute_rq2(
                 )
             ret_info = by_cond_map[cond]
 
-            if "P_correct_given_retrieval_success" in ret_info:
-                p_succ = ret_info["P_correct_given_retrieval_success"]
-            elif "p_correct_given_retrieval_success" in ret_info:
-                p_succ = ret_info["p_correct_given_retrieval_success"]
-            else:
-                raise KeyError(
-                    f"Missing 'P_correct_given_retrieval_success' for condition '{cond}'"
-                )
+            def _get_alias_field(k1: str, k2: str, *, is_prob: bool = False) -> Any:
+                h1 = k1 in ret_info
+                h2 = k2 in ret_info
+                if not h1 and not h2:
+                    raise KeyError(f"Missing '{k1}' (or alias '{k2}') for condition '{cond}'")
+                if h1 and h2:
+                    v1 = ret_info[k1]
+                    v2 = ret_info[k2]
+                    if v1 is None and v2 is None:
+                        return None
+                    if v1 is None or v2 is None:
+                        raise ValueError(
+                            f"Conflicting alias values for '{k1}' and '{k2}' in "
+                            f"condition '{cond}': {v1!r} vs {v2!r}"
+                        )
+                    if is_prob:
+                        if isinstance(v1, bool) or isinstance(v2, bool):
+                            raise TypeError(
+                                f"Probability alias cannot be boolean in condition '{cond}': "
+                                f"{v1!r} vs {v2!r}"
+                            )
+                        if not isinstance(v1, (int, float)) or not isinstance(v2, (int, float)):
+                            raise TypeError(
+                                f"Non-numeric probability alias for '{k1}' and '{k2}' in "
+                                f"condition '{cond}': {v1!r} vs {v2!r}"
+                            )
+                        if abs(float(v1) - float(v2)) > 1e-9:
+                            raise ValueError(
+                                f"Conflicting alias values for '{k1}' and '{k2}' in "
+                                f"condition '{cond}': {v1} vs {v2}"
+                            )
+                    else:
+                        if v1 != v2:
+                            raise ValueError(
+                                f"Conflicting alias values for '{k1}' and '{k2}' in "
+                                f"condition '{cond}': {v1!r} vs {v2!r}"
+                            )
+                    return v1
+                return ret_info[k1] if h1 else ret_info[k2]
 
-            if "P_correct_given_retrieval_failure" in ret_info:
-                p_fail = ret_info["P_correct_given_retrieval_failure"]
-            elif "p_correct_given_retrieval_failure" in ret_info:
-                p_fail = ret_info["p_correct_given_retrieval_failure"]
-            else:
-                raise KeyError(
-                    f"Missing 'P_correct_given_retrieval_failure' for condition '{cond}'"
-                )
+            p_succ = _get_alias_field(
+                "P_correct_given_retrieval_success",
+                "p_correct_given_retrieval_success",
+                is_prob=True,
+            )
+            p_fail = _get_alias_field(
+                "P_correct_given_retrieval_failure",
+                "p_correct_given_retrieval_failure",
+                is_prob=True,
+            )
+            succ_cnt = _get_alias_field(
+                "retrieval_success_count",
+                "retrieval_success_sample_count",
+                is_prob=False,
+            )
+            fail_cnt = _get_alias_field(
+                "retrieval_failure_count",
+                "retrieval_failure_sample_count",
+                is_prob=False,
+            )
 
-            if "retrieval_success_count" in ret_info:
-                succ_cnt = ret_info["retrieval_success_count"]
-            elif "retrieval_success_sample_count" in ret_info:
-                succ_cnt = ret_info["retrieval_success_sample_count"]
-            else:
-                raise KeyError(f"Missing 'retrieval_success_count' for condition '{cond}'")
-
-            if "retrieval_failure_count" in ret_info:
-                fail_cnt = ret_info["retrieval_failure_count"]
-            elif "retrieval_failure_sample_count" in ret_info:
-                fail_cnt = ret_info["retrieval_failure_sample_count"]
-            else:
-                raise KeyError(f"Missing 'retrieval_failure_count' for condition '{cond}'")
-
-            # Directly compute retrieval metrics from frozen scorable inputs
+            # Directly compute retrieval metrics and ground truth conditional correctness
             recalls = []
             retrieved_positive_count = 0
+            succ_correct_count = 0
+            fail_correct_count = 0
+
             for r in scorable_records:
                 gt = set(inputs.ground_truth.get(r["sample_id"], ()))
                 retrieved = {c["technique_id"] for c in r.get("retrieved_candidates", [])}
-                if retrieved & gt:
+                has_hit = bool(retrieved & gt)
+                if has_hit:
                     retrieved_positive_count += 1
                 recalls.append(len(retrieved & gt) / len(gt) if gt else 0.0)
+
+                parsed_ids = r.get("parsed_technique_ids", [])
+                is_corr = (
+                    r.get("parse_status") == "VALID" and bool(parsed_ids) and parsed_ids[0] in gt
+                )
+                if has_hit:
+                    if is_corr:
+                        succ_correct_count += 1
+                else:
+                    if is_corr:
+                        fail_correct_count += 1
 
             total_pos_samples = total_scorable
             hit_rate = (
@@ -1280,11 +1324,102 @@ def compute_rq2(
             )
             macro_recall = float(np.mean(recalls)) if recalls else None
 
-            if succ_cnt is not None and retrieved_positive_count != succ_cnt:
+            # Strict count consistency checks
+            if type(succ_cnt) is not int:
+                raise TypeError(
+                    f"retrieval_success_count must be int for condition '{cond}', "
+                    f"got {type(succ_cnt).__name__} ({succ_cnt!r})"
+                )
+            if type(fail_cnt) is not int:
+                raise TypeError(
+                    f"retrieval_failure_count must be int for condition '{cond}', "
+                    f"got {type(fail_cnt).__name__} ({fail_cnt!r})"
+                )
+            if succ_cnt < 0 or fail_cnt < 0:
+                raise ValueError(
+                    f"Retrieval counts must be non-negative for condition '{cond}': "
+                    f"succ_cnt={succ_cnt}, fail_cnt={fail_cnt}"
+                )
+            if succ_cnt != retrieved_positive_count:
                 raise ValueError(
                     f"Drift between computed retrieved_positive_count ({retrieved_positive_count}) "
                     f"and producer retrieval_success_count ({succ_cnt}) for condition '{cond}'"
                 )
+            expected_fail_cnt = total_scorable - retrieved_positive_count
+            if fail_cnt != expected_fail_cnt:
+                raise ValueError(
+                    f"Drift between computed scorable retrieval failures ({expected_fail_cnt}) "
+                    f"and producer retrieval_failure_count ({fail_cnt}) for condition '{cond}'"
+                )
+
+            # Strict probability consistency checks
+            if succ_cnt == 0:
+                if p_succ is not None:
+                    raise ValueError(
+                        f"P_correct_given_retrieval_success must be None for 0-denominator "
+                        f"(succ_cnt=0) in condition '{cond}', got {p_succ!r}"
+                    )
+            else:
+                if p_succ is None:
+                    raise ValueError(
+                        f"P_correct_given_retrieval_success cannot be None when "
+                        f"succ_cnt={succ_cnt} > 0 in condition '{cond}'"
+                    )
+                if (
+                    isinstance(p_succ, bool)
+                    or not isinstance(p_succ, (int, float))
+                    or not math.isfinite(p_succ)
+                ):
+                    raise ValueError(
+                        f"P_correct_given_retrieval_success must be a finite float in [0, 1] "
+                        f"for condition '{cond}', got {p_succ!r}"
+                    )
+                if not (0.0 <= p_succ <= 1.0):
+                    raise ValueError(
+                        f"P_correct_given_retrieval_success out of bounds [0, 1] "
+                        f"for condition '{cond}': {p_succ}"
+                    )
+                expected_p_succ = succ_correct_count / succ_cnt
+                if abs(p_succ - expected_p_succ) > 1e-4:
+                    raise ValueError(
+                        f"Probability drift for P_correct_given_retrieval_success in "
+                        f"condition '{cond}': expected {expected_p_succ:.6f} "
+                        f"({succ_correct_count}/{succ_cnt}), got {p_succ:.6f}"
+                    )
+
+            if fail_cnt == 0:
+                if p_fail is not None:
+                    raise ValueError(
+                        f"P_correct_given_retrieval_failure must be None for 0-denominator "
+                        f"(fail_cnt=0) in condition '{cond}', got {p_fail!r}"
+                    )
+            else:
+                if p_fail is None:
+                    raise ValueError(
+                        f"P_correct_given_retrieval_failure cannot be None when "
+                        f"fail_cnt={fail_cnt} > 0 in condition '{cond}'"
+                    )
+                if (
+                    isinstance(p_fail, bool)
+                    or not isinstance(p_fail, (int, float))
+                    or not math.isfinite(p_fail)
+                ):
+                    raise ValueError(
+                        f"P_correct_given_retrieval_failure must be a finite float in [0, 1] "
+                        f"for condition '{cond}', got {p_fail!r}"
+                    )
+                if not (0.0 <= p_fail <= 1.0):
+                    raise ValueError(
+                        f"P_correct_given_retrieval_failure out of bounds [0, 1] "
+                        f"for condition '{cond}': {p_fail}"
+                    )
+                expected_p_fail = fail_correct_count / fail_cnt
+                if abs(p_fail - expected_p_fail) > 1e-4:
+                    raise ValueError(
+                        f"Probability drift for P_correct_given_retrieval_failure in "
+                        f"condition '{cond}': expected {expected_p_fail:.6f} "
+                        f"({fail_correct_count}/{fail_cnt}), got {p_fail:.6f}"
+                    )
 
             retrieval_metrics = {
                 "applicable": True,

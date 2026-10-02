@@ -655,8 +655,7 @@ def test_run_pipeline_canonical_mode_success(
     )
     assert (
         "*Table 3b: Paired Scorable Representation Concordance and McNemar "
-        "Discordance ($N=278$ complete pairs).*"
-        in content
+        "Discordance ($N=278$ complete pairs).*" in content
     )
     assert "*Table 5b: Whole-Study Financial Ledger and Budget Reconciliation.*" in content
 

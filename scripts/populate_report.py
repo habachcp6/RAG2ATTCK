@@ -441,9 +441,7 @@ def assert_canonical_safety(
             )
         exp_h = out_digests[req_out]
         if not isinstance(exp_h, str) or len(exp_h) != 64:
-            raise ValueError(
-                f"[FAIL_CLOSED] Invalid digest for output file '{req_out}': {exp_h!r}"
-            )
+            raise ValueError(f"[FAIL_CLOSED] Invalid digest for output file '{req_out}': {exp_h!r}")
         out_fpath = data_dir / req_out
         if not out_fpath.is_file():
             raise FileNotFoundError(
@@ -2079,25 +2077,76 @@ def populate_report_text(
                 ("Canonical Run Provenance", data_dir / "run_provenance.json"),
             ]
 
+            def clean_display_path(p: Path) -> str:
+                posix_p = str(p).replace("\\", "/")
+                if "canonical-accepted-bundle-v2" in posix_p:
+                    return f"artifacts/canonical-accepted-bundle-v2/{p.name}"
+                if "canonical-authoring-candidates-v2" in posix_p:
+                    return f"artifacts/canonical-authoring-candidates-v2/report/{p.name}"
+                if "orchestration" in posix_p:
+                    return f"artifacts/orchestration/{p.name}"
+                try:
+                    return str(p.relative_to(REPO_ROOT)).replace("\\", "/")
+                except ValueError:
+                    return p.name
+
             supp_lines = [
                 "",
                 supp_marker,
                 (
-                    "The following certified canonical execution artifacts were bound during this "
-                    "verification run:"
+                    "The following certified canonical execution artifacts and lineage "
+                    "hashes were bound during canonical evaluation and verification:"
                 ),
                 "",
-                "| Asset Description | File Path | Digest Type | SHA-256 Digest |",
+                "| Asset Description | File Path / Identifier | Digest Type | Hash / Git SHA |",
                 "| :--- | :--- | :--- | :--- |",
             ]
             for desc, fpath in canonical_files:
                 if fpath.is_file():
                     f_hash = compute_file_sha256(fpath)
-                    try:
-                        rel_p = str(fpath.relative_to(REPO_ROOT)).replace("\\", "/")
-                    except ValueError:
-                        rel_p = str(fpath).replace("\\", "/")
+                    rel_p = clean_display_path(fpath)
                     supp_lines.append(f"| **{desc}** | `{rel_p}` | File SHA-256 | `{f_hash}` |")
+
+            if seal:
+                t_seal = seal.get("terminal_seal")
+                if isinstance(t_seal, dict) and t_seal.get("sha256"):
+                    t_path = clean_display_path(Path(t_seal.get("path", "")))
+                    supp_lines.append(
+                        f"| **Terminal Snapshot Seal** | `{t_path}` | "
+                        f"File SHA-256 | `{t_seal['sha256']}` |"
+                    )
+                r_verif = seal.get("root_verification")
+                if isinstance(r_verif, dict) and r_verif.get("sha256"):
+                    r_path = clean_display_path(Path(r_verif.get("path", "")))
+                    supp_lines.append(
+                        f"| **Root Verification Proof** | `{r_path}` | "
+                        f"File SHA-256 | `{r_verif['sha256']}` |"
+                    )
+                if seal.get("execution_git_sha"):
+                    supp_lines.append(
+                        f"| **Execution Commit** | Runner execution state | "
+                        f"Git Commit SHA | `{seal['execution_git_sha']}` |"
+                    )
+                if seal.get("evaluation_git_sha"):
+                    supp_lines.append(
+                        f"| **Native Evaluation Commit** | Evaluator harness state | "
+                        f"Git Commit SHA | `{seal['evaluation_git_sha']}` |"
+                    )
+                if seal.get("approved_rq_git_sha"):
+                    supp_lines.append(
+                        f"| **Repaired RQ Analysis Commit** | Specialist B analysis | "
+                        f"Git Commit SHA | `{seal['approved_rq_git_sha']}` |"
+                    )
+                if seal.get("manifest_file_sha256"):
+                    supp_lines.append(
+                        f"| **Raw Manifest File Hash** | `inputs/manifest.json` | "
+                        f"File SHA-256 | `{seal['manifest_file_sha256']}` |"
+                    )
+                if seal.get("manifest_semantic_sha256"):
+                    supp_lines.append(
+                        f"| **Raw Manifest Semantic Hash** | `inputs/manifest.json` (canonical) | "
+                        f"Semantic SHA-256 | `{seal['manifest_semantic_sha256']}` |"
+                    )
 
             supp_lines.extend(["", ""])
             populated = populated.replace("### 8.3", "\n".join(supp_lines) + "### 8.3")

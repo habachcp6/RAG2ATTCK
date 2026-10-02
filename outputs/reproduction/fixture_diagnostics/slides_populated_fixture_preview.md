@@ -1,7 +1,7 @@
 # [FIXTURE PREVIEW] Presentation Deck Numeric Slots Preview
 
 > [!WARNING] DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS
-> This preview is automatically compiled from synthetic diagnostic unit test fixtures.
+> This preview is compiled from synthetic diagnostic unit test fixtures.
 > It does NOT represent canonical empirical research outcomes or live study findings.
 > Execution mode: `mock_fixture` | `fixture_only: true`.
 

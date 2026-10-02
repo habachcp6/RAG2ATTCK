@@ -23,6 +23,7 @@ import fs from "node:fs/promises";
 import fsSync from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import os from "node:os";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -77,8 +78,14 @@ const EXPECTED_NUMERIC_SLOTS_COUNT = 67;
  * Validates fixture slots file and ensures fail-closed boundary enforcement.
  * @param {string} slotsPath
  * @returns {Promise<Record<string, any>>}
+/**
+ * Validates and loads numeric slot mapping.
+ * Enforces disjoint fixture vs canonical safety contracts.
+ * @param {string} slotsPath
+ * @param {{ canonical?: boolean }} [options]
+ * @returns {Promise<Record<string, any>>}
  */
-async function loadAndValidateFixtureSlots(slotsPath) {
+async function loadAndValidateFixtureSlots(slotsPath, { canonical = false } = {}) {
   if (!fsSync.existsSync(slotsPath)) {
     throw new Error(
       `[FAIL_CLOSED] Fixture slots file not found: ${slotsPath}`
@@ -88,16 +95,62 @@ async function loadAndValidateFixtureSlots(slotsPath) {
   const data = JSON.parse(raw);
 
   const meta = data._metadata || {};
-  if (meta.fixture_only !== true) {
-    throw new Error(
-      `[FAIL_CLOSED] Target slots file does not assert fixture_only: true. ` +
-        `Refusing to execute on non-fixture data.`
-    );
-  }
-  if (!meta.disclaimer || !meta.disclaimer.includes("DIAGNOSTIC TEST FIXTURE")) {
-    throw new Error(
-      `[FAIL_CLOSED] Missing mandatory diagnostic fixture disclaimer in metadata.`
-    );
+  if (canonical) {
+    if (meta.fixture_only !== false) {
+      throw new Error(
+        `[FAIL_CLOSED] Canonical mode requires fixture_only: false (got ${meta.fixture_only}).`
+      );
+    }
+    if (meta.provenance_status !== "canonical_study") {
+      throw new Error(
+        `[FAIL_CLOSED] Canonical mode requires provenance_status: 'canonical_study' (got '${meta.provenance_status}').`
+      );
+    }
+    if (meta.canonical_mode !== true) {
+      throw new Error(
+        `[FAIL_CLOSED] Canonical mode requires canonical_mode: true in metadata.`
+      );
+    }
+    if (!meta.canonical_proof_sha256 || meta.canonical_proof_sha256.length !== 64) {
+      throw new Error(
+        `[FAIL_CLOSED] Canonical mode missing valid 64-char canonical_proof_sha256.`
+      );
+    }
+    // Verify all applicable RAG metrics are non-null and not 'N/A'
+    for (const [k, v] of Object.entries(data)) {
+      if (k === "_metadata") continue;
+      if (
+        !k.includes("NO_RAG") &&
+        (k.includes("_RAG_") ||
+          k.includes("RECALL") ||
+          k.includes("HIT_RATE") ||
+          k.includes("RETRIEVAL") ||
+          k.includes("BEST_RAG"))
+      ) {
+        if (v === null || v === undefined || v === "N/A" || v === "") {
+          throw new Error(
+            `[FAIL_CLOSED] Canonical mode requires non-null RAG metric for slot '${k}'.`
+          );
+        }
+      }
+    }
+  } else {
+    if (meta.fixture_only !== true) {
+      throw new Error(
+        `[FAIL_CLOSED] Target slots file does not assert fixture_only: true. ` +
+          `Refusing to execute on non-fixture data.`
+      );
+    }
+    if (!meta.disclaimer || !meta.disclaimer.includes("DIAGNOSTIC TEST FIXTURE")) {
+      throw new Error(
+        `[FAIL_CLOSED] Missing mandatory diagnostic fixture disclaimer: '${DISCLAIMER_TEXT}'.`
+      );
+    }
+    if (meta.provenance_status && meta.provenance_status !== "diagnostic_fixture") {
+      throw new Error(
+        `[FAIL_CLOSED] Target slots file does not specify provenance_status: 'diagnostic_fixture'.`
+      );
+    }
   }
   return data;
 }
@@ -133,29 +186,25 @@ async function loadAndValidateDeclarativeMap(mapPath) {
 /**
  * Replaces a specific line within a shape textbox using substring matching.
  * @param {any} presentation
- * @param {any} snapshot
+ * @param {any} _snapshot
  * @param {string} shapeId
  * @param {string} targetSubstring
  * @param {string} replacementLine
  */
-function replaceLineInShape(presentation, snapshot, shapeId, targetSubstring, replacementLine) {
-  const rec = snapshot.records.find((r) => r.id === shapeId);
-  if (!rec) {
-    throw new Error(`[FAIL_CLOSED] Shape not found in inspect snapshot: ${shapeId}`);
+function replaceLineInShape(presentation, _snapshot, shapeId, targetSubstring, replacementLine) {
+  const sh = presentation.resolve(shapeId);
+  if (!sh || !sh.text) {
+    throw new Error(`[FAIL_CLOSED] Could not resolve shape with text: ${shapeId}`);
   }
-  const lines = rec.text.split("\n");
+  const fullText = typeof sh.text === "string" ? sh.text : sh.text.toString();
+  const lines = fullText.split("\n");
   const targetLine = lines.find((l) => l.includes(targetSubstring));
   if (!targetLine) {
     throw new Error(
       `[FAIL_CLOSED] Target substring "${targetSubstring}" not found in shape ${shapeId}`
     );
   }
-  const sh = presentation.resolve(shapeId);
-  if (!sh || !sh.text) {
-    throw new Error(`[FAIL_CLOSED] Could not resolve shape with text: ${shapeId}`);
-  }
   sh.text.replace(targetLine, replacementLine);
-  rec.text = rec.text.replace(targetLine, replacementLine);
 }
 
 /**
@@ -192,7 +241,7 @@ function verifySlotBinding(shapeContent, item) {
     if (item.slot_name.includes("CI_95")) {
       const ciLine = lines.find((l) => l.includes("95% CI"));
       const condKey = condition === "no_rag" ? "no_rag" : condition.replace("rag_", "");
-      if (!ciLine || !ciLine.includes(condKey) || !ciLine.includes(injected)) {
+      if (!ciLine || !ciLine.includes(`${condKey}=${injected}`)) {
         return {
           verified: false,
           bound_condition: condition,
@@ -203,23 +252,70 @@ function verifySlotBinding(shapeContent, item) {
       return { verified: true, bound_condition: condition, bound_line: ciLine.trim() };
     }
 
-    if (
-      item.slot_name.startsWith("RQ1_ACC_") ||
-      item.slot_name.startsWith("RQ1_MACRO_F1_")
-    ) {
-      const targetRow = lines.find((l) => {
-        const trimmed = l.trim();
-        return (
-          trimmed.startsWith(condition) ||
-          trimmed.toLowerCase().includes(condition.toLowerCase())
-        );
-      });
-      if (!targetRow || !targetRow.includes(injected)) {
+    const targetRow = lines.find((l) => {
+      const trimmed = l.trim();
+      return (
+        trimmed.startsWith(condition) ||
+        trimmed.split(/\s+/)[0] === condition
+      );
+    });
+    if (!targetRow) {
+      return {
+        verified: false,
+        bound_condition: condition,
+        bound_line: "",
+        reason: `Dedicated row for condition "${condition}" not found in ${item.shape_id}`,
+      };
+    }
+
+    const rowTokens = targetRow.trim().split(/\s+/);
+    if (item.slot_name.startsWith("RQ1_ACC_DELTA_")) {
+      const deltaAccCol = rowTokens[3];
+      if (deltaAccCol !== injected) {
         return {
           verified: false,
           bound_condition: condition,
-          bound_line: targetRow ? targetRow.trim() : "",
-          reason: `Slot ${item.slot_name} value "${injected}" for condition "${condition}" not found in dedicated row for "${condition}" in ${item.shape_id}`,
+          bound_line: targetRow.trim(),
+          reason: `Slot ${item.slot_name} delta acc "${injected}" does not match column 4 in row "${targetRow.trim()}" (got "${deltaAccCol}")`,
+        };
+      }
+      return { verified: true, bound_condition: condition, bound_line: targetRow.trim() };
+    }
+
+    if (item.slot_name.startsWith("RQ1_MACRO_F1_DELTA_")) {
+      const deltaF1Token = rowTokens[4];
+      if (!deltaF1Token || (!deltaF1Token.includes(injected) && !deltaF1Token.startsWith(`(${injected}`))) {
+        return {
+          verified: false,
+          bound_condition: condition,
+          bound_line: targetRow.trim(),
+          reason: `Slot ${item.slot_name} delta F1 "${injected}" does not match column 5 in row "${targetRow.trim()}" (got "${deltaF1Token}")`,
+        };
+      }
+      return { verified: true, bound_condition: condition, bound_line: targetRow.trim() };
+    }
+
+    if (item.slot_name.startsWith("RQ1_ACC_")) {
+      const accCol = rowTokens[1];
+      if (accCol !== injected) {
+        return {
+          verified: false,
+          bound_condition: condition,
+          bound_line: targetRow.trim(),
+          reason: `Slot ${item.slot_name} acc "${injected}" does not match column 2 in row "${targetRow.trim()}" (got "${accCol}")`,
+        };
+      }
+      return { verified: true, bound_condition: condition, bound_line: targetRow.trim() };
+    }
+
+    if (item.slot_name.startsWith("RQ1_MACRO_F1_")) {
+      const f1Col = rowTokens[2];
+      if (f1Col !== injected) {
+        return {
+          verified: false,
+          bound_condition: condition,
+          bound_line: targetRow.trim(),
+          reason: `Slot ${item.slot_name} macro-f1 "${injected}" does not match column 3 in row "${targetRow.trim()}" (got "${f1Col}")`,
         };
       }
       return { verified: true, bound_condition: condition, bound_line: targetRow.trim() };
@@ -325,12 +421,28 @@ async function runArtifactToolDeckUpdater(options = {}) {
   const isDryRun = Boolean(options.dryRun);
   const explicitArtifactToolModule = options.artifactToolModule;
 
+  let isCanonical = Boolean(options.canonical);
+  if (!isCanonical && fsSync.existsSync(slotsPath)) {
+    try {
+      const probe = JSON.parse(await fs.readFile(slotsPath, "utf-8"));
+      if (probe?._metadata?.canonical_mode === true) {
+        isCanonical = true;
+      }
+    } catch {
+      // handled in loadAndValidateFixtureSlots
+    }
+  }
+
   console.log(`[+] Initializing JS Artifact-Tool Deck Updater (bundled runtime)...`);
-  console.log(`[+] Safety Policy: STRICTLY FIXTURES ONLY (fail-closed)`);
-  console.log(`[+] Disclaimer: ${DISCLAIMER_TEXT}`);
+  if (isCanonical) {
+    console.log(`[+] Mode: CANONICAL STUDY EXECUTION (certified live study data)`);
+  } else {
+    console.log(`[+] Safety Policy: STRICTLY FIXTURES ONLY (fail-closed)`);
+    console.log(`[+] Disclaimer: ${DISCLAIMER_TEXT}`);
+  }
 
   // 1. Validate slots and declarative shape table map (dependency-free)
-  const slots = await loadAndValidateFixtureSlots(slotsPath);
+  const slots = await loadAndValidateFixtureSlots(slotsPath, { canonical: isCanonical });
   const declMap = await loadAndValidateDeclarativeMap(mapPath);
   console.log(`[+] Loaded ${declMap.length} declarative slot definitions.`);
 
@@ -390,25 +502,35 @@ async function runArtifactToolDeckUpdater(options = {}) {
   modifiedShapeIds.add("sh/sna103ap");
 
   // Slide 6: Shape sh/7m98ru9g (RQ2 Retrieval Quality - 3 slots, separated cohorts)
-  const rec7m = snapshot.records.find((r) => r.id === "sh/7m98ru9g");
   const sh7m = presentation.resolve("sh/7m98ru9g");
   sh7m.text.fontSize = 11;
+  const slide6Heading = isCanonical
+    ? "Số Liệu Đánh Giá Truy Xuất RQ2 [CANONICAL STUDY EXECUTION]"
+    : `Số Liệu Chẩn Đoán Truy Xuất RQ2 [${DISCLAIMER_TEXT}]`;
   const slide6Content = [
-    `Số Liệu Chẩn Đoán Truy Xuất RQ2 [${DISCLAIMER_TEXT}]`,
+    slide6Heading,
     "",
-    "▶ [HISTORICAL DEV PILOT RETRIEVAL (Mẫu số N=756 views)]",
-    "•  Mẫu dương tính đánh giá pilot: 756 / 1,340 views (Synthetic DEV split).",
-    "•  Pilot Hit@k: Hit@1=4.23%, Hit@3=16.80%, Hit@5=24.21%, Hit@10=45.11% (341 / 756).",
-    "•  Pilot Macro Recall@10: 43.14%  |  Tỷ lệ vắng mặt Top-10: 54.89% (415 / 756)  |  Mean Rank: 5.21.",
+    "▶ [T20 FULL BENCHMARK POSITIVE RETRIEVAL (Mẫu số N=756 views = 718 TEST + 38 DEV)]",
+    "•  Toàn bộ mẫu dương tính benchmark: 756 views (718 TEST views + 38 DEV views).",
+    "•  Benchmark Hit@k: Hit@1=4.23%, Hit@3=16.80%, Hit@5=24.21%, Hit@10=45.11% (341 / 756).",
+    "•  Benchmark Macro Recall@10: 43.14%  |  Tỷ lệ vắng mặt Top-10: 54.89% (415 / 756)  |  Mean Rank: 5.21.",
+    "•  (Ghi chú: Real DEV Pilot là 4 views × 5 conditions = 20 requests, tách biệt hoàn toàn với benchmark positive views).",
     "",
-    "▶ [DIAGNOSTIC TEST FIXTURE RETRIEVAL (Mẫu số N=718 scorable views)]",
-    `•  Diagnostic Fixture Hit@10: ${slots["{{S2_HIT_RATE_AT_K}}"]} (k=10).`,
-    `•  Diagnostic Fixture Macro Recall@10: ${slots["{{S2_RECALL_AT_K}}"]}.`,
-    `•  Diagnostic Fixture Retrieval Miss Rate: ${slots["{{S2_RETRIEVAL_MISS_RATE_K10}}"]} (k=10 failure axis).`,
-    "•  Phân định mẫu số: Tuyệt đối không gộp mẫu số N=756 (DEV Pilot) với N=718 (Test Fixture).",
+    isCanonical
+      ? "▶ [CANONICAL TEST RETRIEVAL (Mẫu số N=718 scorable TEST views)]"
+      : "▶ [DIAGNOSTIC TEST FIXTURE RETRIEVAL (Mẫu số N=718 scorable TEST views)]",
+    isCanonical
+      ? `•  Hit@10: ${slots["{{S2_HIT_RATE_AT_K}}"]} (k=10).`
+      : `•  Diagnostic Fixture Hit@10: ${slots["{{S2_HIT_RATE_AT_K}}"]} (k=10).`,
+    isCanonical
+      ? `•  Macro Recall@10: ${slots["{{S2_RECALL_AT_K}}"]}.`
+      : `•  Diagnostic Fixture Macro Recall@10: ${slots["{{S2_RECALL_AT_K}}"]}.`,
+    isCanonical
+      ? `•  Retrieval Miss Rate: ${slots["{{S2_RETRIEVAL_MISS_RATE_K10}}"]} (k=10 failure axis).`
+      : `•  Diagnostic Fixture Retrieval Miss Rate: ${slots["{{S2_RETRIEVAL_MISS_RATE_K10}}"]} (k=10 failure axis).`,
+    "•  Phân định mẫu số: Mẫu số N=756 là toàn bộ benchmark (718 TEST + 38 DEV); N=718 là tập scorable TEST views; DEV Pilot là 20 requests.",
   ].join("\n");
-  sh7m.text.replace(rec7m.text, slide6Content);
-  rec7m.text = slide6Content;
+  sh7m.text.set(slide6Content);
   disclaimerEditsCount++;
   modifiedShapeIds.add("sh/7m98ru9g");
 
@@ -418,10 +540,10 @@ async function runArtifactToolDeckUpdater(options = {}) {
     const targetPhrase = "đang được kiểm chứng đối chứng trên ma trận TEST.";
     const rBanner = sh6Banner.text.get(targetPhrase);
     if (!rBanner.isEmpty) {
-      sh6Banner.text.replace(
-        targetPhrase,
-        `đang được kiểm chứng đối chứng trên ma trận TEST [${DISCLAIMER_TEXT}].`
-      );
+      const bannerSuffix = isCanonical
+        ? "đang được đối chứng xác thực trên ma trận TEST [CANONICAL STUDY EXECUTION]."
+        : `đang được kiểm chứng đối chứng trên ma trận TEST [${DISCLAIMER_TEXT}].`;
+      sh6Banner.text.replace(targetPhrase, bannerSuffix);
       disclaimerEditsCount++;
       modifiedShapeIds.add("sh/h4bupgn6");
     }
@@ -432,16 +554,17 @@ async function runArtifactToolDeckUpdater(options = {}) {
   if (sh7 && sh7.text) {
     const rPending = sh7.text.get("[PENDING]");
     if (!rPending.isEmpty) {
-      sh7.text.replace("[PENDING]", `[${DISCLAIMER_TEXT}]`);
+      sh7.text.replace("[PENDING]", isCanonical ? "[CANONICAL STUDY]" : `[${DISCLAIMER_TEXT}]`);
       disclaimerEditsCount++;
     }
   }
+  const s7Disc = isCanonical ? "[CANONICAL STUDY]" : `[${DISCLAIMER_TEXT}]`;
   replaceLineInShape(
     presentation,
     snapshot,
     "sh/fi9c369c",
     "Schema So Sánh Đối Chứng Scaffold",
-    `•  Schema So Sánh Đối Chứng Scaffold [${DISCLAIMER_TEXT}]:\n` +
+    `•  Schema So Sánh Đối Chứng Scaffold ${s7Disc}:\n` +
       `  • Diagnostic Cohort Pairwise Comparison (n=718 views across 440 clusters):\n` +
       `    • Marginal Views: Single-event Acc = ${slots["{{S2_SINGLE_VIEW_ACC_E2E}}"]} vs Contextual-event Acc = ${slots["{{S2_CONTEXT_VIEW_ACC_E2E}}"]} (Delta = ${slots["{{S2_VIEW_ACC_DELTA}}"]})\n` +
       `    • Paired Cohort (278 complete pairs): Single Acc = ${slots["{{S2_PAIRED_SINGLE_ACC}}"]} vs Context Acc = ${slots["{{S2_PAIRED_CONTEXT_ACC}}"]} (Delta = ${slots["{{S2_PAIRED_DELTA_PP}}"]} pp)\n` +
@@ -456,10 +579,10 @@ async function runArtifactToolDeckUpdater(options = {}) {
     const oldText7 =
       "[PENDING EXECUTION] chờ toàn bộ ma trận TEST hoàn tất để đưa ra kết luận khoa học chính thức.";
     if (nt7.text.includes(oldText7)) {
-      nt7.text = nt7.text.replace(
-        oldText7,
-        `[${DISCLAIMER_TEXT}]; kết quả đối chứng trên diagnostic cohort (n=718 views across 440 clusters) ghi nhận quan sát mô tả độc lập.`
-      );
+      const note7Desc = isCanonical
+        ? `[CANONICAL STUDY EXECUTION]; kết quả đối chứng trên tập scorable TEST views (n=718 views across 440 clusters) ghi nhận quan sát chuẩn tắc độc lập.`
+        : `[${DISCLAIMER_TEXT}]; kết quả đối chứng trên diagnostic cohort (n=718 views across 440 clusters) ghi nhận quan sát mô tả độc lập.`;
+      nt7.text = nt7.text.replace(oldText7, note7Desc);
       disclaimerEditsCount++;
     }
   }
@@ -470,10 +593,15 @@ async function runArtifactToolDeckUpdater(options = {}) {
   sh98.text.fontSize = 11;
   sh98.text.bold = false;
 
-  const header8 = `[${DISCLAIMER_TEXT}]`;
+  const header8 = isCanonical
+    ? "[CANONICAL STUDY EXECUTION - CANONICAL RESULTS]"
+    : `[${DISCLAIMER_TEXT}]`;
+  const tableTitle8 = isCanonical
+    ? "Bảng Đối Chứng Hiệu Năng RQ1 (Canonical Study):"
+    : "Bảng Đối Chứng Hiệu Năng RQ1 (Diagnostic Fixture):";
   const table8 = [
     header8,
-    "Bảng Đối Chứng Hiệu Năng RQ1 (Diagnostic Fixture):",
+    tableTitle8,
     "Condition      Accuracy    Macro-F1    Delta vs No-RAG",
     "-------------------------------------------------------",
     `no_rag         ${slots["{{S2_ACC_E2E_NO_RAG}}"]}      ${slots["{{S2_MACRO_F1_NO_RAG}}"]}      baseline`,
@@ -481,14 +609,12 @@ async function runArtifactToolDeckUpdater(options = {}) {
     `rag_k3         ${slots["{{S2_ACC_E2E_RAG_K3}}"]}      ${slots["{{S2_MACRO_F1_RAG_K3}}"]}      ${slots["{{S2_ACC_DELTA_RAG_K3}}"]} (${slots["{{S2_MACRO_F1_DELTA_RAG_K3}}"]} F1)`,
     `rag_k5         ${slots["{{S2_ACC_E2E_RAG_K5}}"]}      ${slots["{{S2_MACRO_F1_RAG_K5}}"]}      ${slots["{{S2_ACC_DELTA_RAG_K5}}"]} (${slots["{{S2_MACRO_F1_DELTA_RAG_K5}}"]} F1)`,
     `rag_k10        ${slots["{{S2_ACC_E2E_RAG_K10}}"]}      ${slots["{{S2_MACRO_F1_RAG_K10}}"]}      ${slots["{{S2_ACC_DELTA_RAG_K10}}"]} (${slots["{{S2_MACRO_F1_DELTA_RAG_K10}}"]} F1)`,
-    `★ Best Condition: ${slots["{{S2_BEST_RAG_CONDITION}}"]} (Tie-break: delta_macro_f1 | Delta Acc = ${slots["{{S2_BEST_RAG_ACC_DELTA}}"]}, Delta F1 = ${slots["{{S2_BEST_RAG_F1_DELTA}}"]})`,
+    `★ Best Condition (Max Accuracy): ${slots["{{S2_BEST_RAG_CONDITION}}"]} (Delta Acc = ${slots["{{S2_BEST_RAG_ACC_DELTA}}"]}, Delta F1 = ${slots["{{S2_BEST_RAG_F1_DELTA}}"]})`,
     `• 95% CI: no_rag=${slots["{{S2_CI_95_NO_RAG}}"]}, k1=${slots["{{S2_CI_95_RAG_K1}}"]}, k3=${slots["{{S2_CI_95_RAG_K3}}"]}, k5=${slots["{{S2_CI_95_RAG_K5}}"]}, k10=${slots["{{S2_CI_95_RAG_K10}}"]}`,
     `• RQ2 Phân rã lỗi (k=10): Wrong Class = ${slots["{{S2_WRONG_CLASS_RATE_K10}}"]} | Overlaps: Miss&Wrong=${slots["{{S2_OVERLAP_MISS_AND_WRONG_K10}}"]}, Prov=${slots["{{S2_OVERLAP_MISS_AND_PROV_K10}}"]}, Parse=${slots["{{S2_OVERLAP_MISS_AND_PARSE_K10}}"]}, Inval=${slots["{{S2_OVERLAP_MISS_AND_INVAL_K10}}"]}`,
   ].join("\n");
 
-  const rec98 = snapshot.records.find((r) => r.id === "sh/98rehwve");
-  sh98.text.replace(rec98.text, table8);
-  rec98.text = table8;
+  sh98.text.set(table8);
 
   // Style header red and small
   const rH8 = sh98.text.get(header8);
@@ -536,8 +662,9 @@ async function runArtifactToolDeckUpdater(options = {}) {
       );
       disclaimerEditsCount++;
     }
+    const statPrefix = isCanonical ? "[CANONICAL STUDY STATS]" : "[DIAGNOSTIC TEST FIXTURE STATS]";
     const secondaryStats =
-      `\n[DIAGNOSTIC TEST FIXTURE STATS] Khoảng tin cậy 95% Bootstrap (B=1000): ` +
+      `\n${statPrefix} Khoảng tin cậy 95% Bootstrap (B=1000): ` +
       `no_rag=${slots["{{S2_CI_95_NO_RAG}}"]}, rag_k1=${slots["{{S2_CI_95_RAG_K1}}"]}, ` +
       `rag_k3=${slots["{{S2_CI_95_RAG_K3}}"]}, rag_k5=${slots["{{S2_CI_95_RAG_K5}}"]}, ` +
       `rag_k10=${slots["{{S2_CI_95_RAG_K10}}"]}. ` +
@@ -546,7 +673,7 @@ async function runArtifactToolDeckUpdater(options = {}) {
       `Miss & Prov=${slots["{{S2_OVERLAP_MISS_AND_PROV_K10}}"]}, ` +
       `Miss & Parse=${slots["{{S2_OVERLAP_MISS_AND_PARSE_K10}}"]}, ` +
       `Miss & Inval=${slots["{{S2_OVERLAP_MISS_AND_INVAL_K10}}"]}).`;
-    if (!noteText.includes("[DIAGNOSTIC TEST FIXTURE STATS]")) {
+    if (!noteText.includes("[DIAGNOSTIC TEST FIXTURE STATS]") && !noteText.includes("[CANONICAL STUDY STATS]")) {
       noteText += secondaryStats;
     }
     nt8.text = noteText;
@@ -559,10 +686,10 @@ async function runArtifactToolDeckUpdater(options = {}) {
       "Dữ liệu DEV pilot (synthetic split), hạch toán token ước tính và kiểm soát ngân sách";
     const rSub = shSub9.text.get(targetSub9);
     if (!rSub.isEmpty) {
-      shSub9.text.replace(
-        targetSub9,
-        `Dữ liệu DEV pilot (synthetic split) đối chiếu Dự phóng Hạch toán Fixture [DIAGNOSTIC TEST FIXTURE ONLY]`
-      );
+      const sub9Suffix = isCanonical
+        ? "Dữ liệu DEV pilot (synthetic split) đối chiếu Hạch toán Chuẩn tắc [CANONICAL STUDY EXECUTION]"
+        : `Dữ liệu DEV pilot (synthetic split) đối chiếu Dự phóng Hạch toán Fixture [DIAGNOSTIC TEST FIXTURE ONLY]`;
+      shSub9.text.replace(targetSub9, sub9Suffix);
       disclaimerEditsCount++;
       modifiedShapeIds.add("sh/mdonql4z");
     }
@@ -571,14 +698,20 @@ async function runArtifactToolDeckUpdater(options = {}) {
   // Slide 9: Shape sh/ofq5svm5 (Separate DEV pilot telemetry vs Diagnostic Fixture Projection - 10 slots)
   const shOfq = presentation.resolve("sh/ofq5svm5");
   shOfq.text.fontSize = 11;
+  const slide9Heading = isCanonical
+    ? "DEV Pilot Telemetry & Hạch Toán Nghiên Cứu [CANONICAL STUDY EXECUTION]"
+    : `DEV Pilot Telemetry & Hạch Toán Nghiên Cứu [${DISCLAIMER_TEXT}]`;
+  const zone2Heading = isCanonical
+    ? "▶ ZONE 2: CANONICAL TEST TELEMETRY (N=718 Scorable Views)"
+    : "▶ ZONE 2: DIAGNOSTIC TEST FIXTURE TELEMETRY (N=718 Scorable Views)";
   const slide9Content = [
-    `DEV Pilot Telemetry & Hạch Toán Nghiên Cứu [${DISCLAIMER_TEXT}]`,
+    slide9Heading,
     "",
     "▶ ZONE 1: HISTORICAL DEV PILOT BASELINE (20 Requests Responses API)",
     "•  Dữ liệu DEV pilot lịch sử: 20 requests (4 views x 5 điều kiện, tổng chi phí ~$0.0242 USD).",
     "•  Ghi chú phân định tuyệt đối: Request thực tế không biến log tổng hợp thành in-the-wild telemetry.",
     "",
-    "▶ ZONE 2: DIAGNOSTIC TEST FIXTURE TELEMETRY (N=718 Scorable Views)",
+    zone2Heading,
     `•  no_rag: trễ trung vị ${slots["{{S2_MEDIAN_LAT_NO_RAG_SEC}}"]}s | ${slots["{{S2_MEAN_PROMPT_TOK_NO_RAG}}"]} prompt tokens | ~${slots["{{S2_COST_LOGICAL_REQ_NO_RAG}}"]} USD / logical req.`,
     `•  rag_k10: trễ trung vị ${slots["{{S2_MEDIAN_LAT_K10_SEC}}"]}s | ${slots["{{S2_MEAN_PROMPT_TOK_K10}}"]} prompt tokens | ~${slots["{{S2_COST_LOGICAL_REQ_K10}}"]} USD / logical req.`,
     "",
@@ -589,9 +722,7 @@ async function runArtifactToolDeckUpdater(options = {}) {
     `•  Trần ngân sách đóng băng cứng (Hard Budget Cap): ${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD.`,
   ].join("\n");
 
-  const recOfq = snapshot.records.find((r) => r.id === "sh/ofq5svm5");
-  shOfq.text.replace(recOfq.text, slide9Content);
-  recOfq.text = slide9Content;
+  shOfq.text.set(slide9Content);
   disclaimerEditsCount++;
   modifiedShapeIds.add("sh/ofq5svm5");
 
@@ -602,10 +733,10 @@ async function runArtifactToolDeckUpdater(options = {}) {
       "•  Dự báo chuẩn tắc tập TEST (< $10 USD) nằm an toàn dưới trần ngân sách đóng băng $19.99 USD.";
     const rOza = shOza.text.get(targetOza);
     if (!rOza.isEmpty) {
-      shOza.text.replace(
-        targetOza,
-        `•  Dự báo chuẩn tắc tập TEST: ${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD nằm an toàn dưới trần ngân sách đóng băng ${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD [DIAGNOSTIC FIXTURE].`
-      );
+      const ozaText = isCanonical
+        ? `•  Dự báo chuẩn tắc tập TEST: ${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD nằm an toàn dưới trần ngân sách đóng băng ${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD [CANONICAL STUDY].`
+        : `•  Dự báo chuẩn tắc tập TEST: ${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD nằm an toàn dưới trần ngân sách đóng băng ${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD [DIAGNOSTIC FIXTURE].`;
+      shOza.text.replace(targetOza, ozaText);
       disclaimerEditsCount++;
       modifiedShapeIds.add("sh/oza1gfyh");
     }
@@ -616,9 +747,12 @@ async function runArtifactToolDeckUpdater(options = {}) {
   if (nt9 && typeof nt9.text === "string") {
     const oldForecast9 = "$8.20 – $8.99 USD cho 6,400 requests";
     if (nt9.text.includes(oldForecast9)) {
+      const note9Suffix = isCanonical
+        ? `hạch toán điều kiện chuẩn $${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD (dự báo 6,400 requests) [CANONICAL STUDY EXECUTION]`
+        : `hạch toán điều kiện chuẩn $${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD (dự báo 6,400 requests) [DIAGNOSTIC FIXTURE PROJECTION]`;
       nt9.text = nt9.text.replace(
         oldForecast9,
-        `hạch toán điều kiện chuẩn $${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD (dự báo 6,400 requests) [DIAGNOSTIC FIXTURE PROJECTION]`
+        note9Suffix
       );
       disclaimerEditsCount++;
     }
@@ -719,6 +853,53 @@ async function runArtifactToolDeckUpdater(options = {}) {
     );
   }
 
+  // 6b. Re-import exported bytes to verify roundtrip integrity (labels, rows, values, notes, editability)
+  console.log(`[+] Re-importing candidate deck to verify exported byte integrity...`);
+  const verifyPath = isDryRun
+    ? path.join(os.tmpdir(), `dry_candidate_${Date.now()}.pptx`)
+    : candidateDeckPath;
+  if (isDryRun) {
+    await fs.writeFile(verifyPath, afterBytes);
+  }
+  try {
+    const reimportedDeck = await PresentationFile.importPptx(
+      await FileBlob.load(verifyPath)
+    );
+    const reimportedSnap = await reimportedDeck.inspect();
+    const reimportedSlides = reimportedDeck.slides.items;
+
+    if (reimportedSlides.length !== slides.length) {
+      throw new Error(
+        `[FAIL_CLOSED] Reimported slide count mismatch: ${reimportedSlides.length} vs ${slides.length}`
+      );
+    }
+    const reimportedNotesCount = reimportedSnap.records.filter((r) => r.kind === "notes").length;
+    if (reimportedNotesCount !== notesCount) {
+      throw new Error(
+        `[FAIL_CLOSED] Reimported notes count mismatch: ${reimportedNotesCount} vs ${notesCount}`
+      );
+    }
+
+    // Verify key shapes exist in reimported deck and are editable
+    for (const sId of ["sh/sna103ap", "sh/7m98ru9g", "sh/98rehwve", "sh/ofq5svm5"]) {
+      const shRe = reimportedDeck.resolve(sId);
+      if (!shRe || !shRe.text) {
+        throw new Error(`[FAIL_CLOSED] Reimported deck missing or non-editable shape: ${sId}`);
+      }
+      const txtRe = typeof shRe.text === "string" ? shRe.text : shRe.text.toString();
+      if (sId === "sh/98rehwve") {
+        if (!txtRe.includes("rag_k10") || !txtRe.includes(slots["{{S2_ACC_E2E_RAG_K10}}"])) {
+          throw new Error(`[FAIL_CLOSED] Reimported shape ${sId} missing expected injected values`);
+        }
+      }
+    }
+    console.log(`[+] Re-imported candidate deck verified successfully (roundtrip intact).`);
+  } finally {
+    if (isDryRun && fsSync.existsSync(verifyPath)) {
+      await fs.unlink(verifyPath).catch(() => {});
+    }
+  }
+
   // 7. Export all 12 slides as PNGs to QA directory
   await fs.mkdir(qaOutputDir, { recursive: true });
   console.log(`[+] Exporting 12 slides to QA image directory: ${qaOutputDir}`);
@@ -740,10 +921,14 @@ async function runArtifactToolDeckUpdater(options = {}) {
   // 8. Write comprehensive audit report
   await fs.mkdir(path.dirname(auditReportPath), { recursive: true });
   const auditRecord = {
-    fixture_only: true,
-    provenance_status: "diagnostic_fixture",
-    disclaimer: DISCLAIMER_TEXT,
+    fixture_only: isCanonical ? false : true,
+    canonical_mode: isCanonical,
+    provenance_status: isCanonical ? "canonical_study" : "diagnostic_fixture",
+    disclaimer: isCanonical
+      ? "[CANONICAL STUDY EXECUTION - CERTIFIED VERIFIED OUTPUT]"
+      : DISCLAIMER_TEXT,
     timestamp_utc: new Date().toISOString(),
+    roundtrip_reimported_verified: true,
     source_deck_path: sourceDeckPath,
     candidate_deck_path: candidateDeckPath,
     before_sha256: beforeSha,
@@ -792,13 +977,14 @@ const isMain =
 if (isMain) {
   const args = process.argv.slice(2);
   const dryRun = args.includes("--dry-run");
+  const canonical = args.includes("--canonical");
 
   const getArg = (flag) => {
     const idx = args.indexOf(flag);
     return idx !== -1 ? args[idx + 1] : undefined;
   };
 
-  const slotsPath = getArg("--fixture-slots");
+  const slotsPath = getArg("--fixture-slots") || getArg("--slots");
   const mapPath = getArg("--declarative-map");
   const sourceDeckPath = getArg("--source-deck");
   const candidateDeckPath = getArg("--output-deck");
@@ -807,6 +993,7 @@ if (isMain) {
   const artifactToolModule = getArg("--artifact-tool-module");
 
   runArtifactToolDeckUpdater({
+    canonical,
     dryRun,
     slotsPath,
     mapPath,

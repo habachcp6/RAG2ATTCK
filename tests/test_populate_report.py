@@ -1,164 +1,356 @@
 """Unit tests for offline scientific report population helper tool (scripts/populate_report.py).
 
 Verifies:
-1. Safety boundary: Fails closed on uncertified non-fixture directories.
-2. Banner & Disclaimer: All emitted markdown carries prominent private labeling.
-3. Invariant: Prevents accidental in-place overwrite of canonical scientific report scaffold.
-4. Slot Extraction: Correctly extracts and formats metrics for Tables 2a, 2b, 3, 4, 5.
+1. Safety boundary & Execution modes:
+   - Canonical mode fails closed pending S2 seal.
+   - Fails closed on uncertified non-fixture directories.
+   - Requires all 6 canonical evaluator files + _fixture_metadata.json on disk.
+2. Provenance consistency & Mixed-mode rejection:
+   - Rejects mismatched protocol_version, experiment_id, manifest_sha256, execution_mode.
+   - Validates evaluate_rqs.py source_sha256 against authoritative hash.
+3. Schema & Metric bounds validation:
+   - Rejects missing required fields with KeyError (no zero-defaults).
+   - Rejects NaN, Inf, and out-of-bounds numbers with ValueError.
+   - Safely handles legitimate None without TypeError.
+4. Correctness of derived metrics:
+   - Scorable sample count derived from actual exports (not hardcoded 718).
+   - Downstream selection failure: retrieval_success_count - retrieval_success_correct_count.
+   - Table 4 for no_rag sets retrieval miss, selection failure, and recovery to 'N/A'.
+5. End-to-end execution against reproduction fixture outputs.
 """
 
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 import pytest
 
 from scripts.populate_report import (
+    DEFAULT_FIXTURE_DIR,
     DEFAULT_TEMPLATE_PATH,
     DISCLAIMER_TEXT,
+    EXPECTED_SOURCE_SHA256,
+    REQUIRED_FIXTURE_FILES,
     assert_fixture_safety,
+    format_int,
+    format_latency,
+    format_pct,
+    format_pp,
+    format_usd,
     run_pipeline,
+    validate_finite_number,
 )
 
 
 @pytest.fixture
-def mock_fixture_dir(tmp_path: Path) -> Path:
-    """Create a temporary certified diagnostic test fixture directory."""
-    diag_dir = tmp_path / "fixture_diagnostics"
-    diag_dir.mkdir(parents=True)
-
-    # 1. Companion metadata
-    (diag_dir / "_fixture_metadata.json").write_text(
-        json.dumps(
-            {
-                "fixture_only": True,
-                "purpose": "unit_test",
-                "description": "Synthetic unit test fixture",
-            }
-        ),
-        encoding="utf-8",
-    )
-
-    # 2. per_condition_metrics.json
-    conditions = {}
-    for c in ["no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10"]:
-        conditions[c] = {
-            "accuracy_end_to_end": 0.45,
-            "accuracy_valid_outputs": 0.55,
-            "macro_f1": 0.35,
-            "completed_record_count": 1280,
-            "parse_failure_count": 2,
-            "invalid_id_count": 5,
-            "invalid_id_rate": 0.0039,
-            "correct_count": 323,
-        }
-    (diag_dir / "per_condition_metrics.json").write_text(
-        json.dumps({"conditions": conditions}), encoding="utf-8"
-    )
-
-    # 3. failure_decomposition.json
-    failure_by_cond = {}
-    for c in ["no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10"]:
-        failure_by_cond[c] = {
-            "total_scorable_samples": 718,
-            "retrieval_miss_count": 100 if c != "no_rag" else 0,
-            "valid_but_wrong_classification_count": 50 if c != "no_rag" else 0,
-            "invalid_attack_id_count": 5,
-            "parse_failure_count": 2,
-            "provider_failure_count": 0,
-        }
-    (diag_dir / "failure_decomposition.json").write_text(
-        json.dumps({"by_condition": failure_by_cond}), encoding="utf-8"
-    )
-
-    # 4. retrieval_conditional_metrics.json
-    retrieval_by_cond = {}
-    for c in ["no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10"]:
-        retrieval_by_cond[c] = {
-            "retrieval_failure_correct_count": 10 if c != "no_rag" else 0,
-        }
-    (diag_dir / "retrieval_conditional_metrics.json").write_text(
-        json.dumps({"by_condition": retrieval_by_cond}), encoding="utf-8"
-    )
-
-    # 5. rq_analysis.json
-    tradeoffs = {}
-    views = {}
-    rq1 = {}
-    for c in ["no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10"]:
-        rq1[c] = {
-            "accuracy_end_to_end": 0.45,
-            "accuracy_valid_outputs": 0.55,
-            "macro_f1": 0.35,
-        }
-        tradeoffs[c] = {
-            "latency_ms": {"mean": 8000.0, "median": 7500.0, "p95": 9200.0},
-            "tokens": {
-                "mean_prompt_tokens": 1200.0,
-                "mean_completion_tokens": 600.0,
-                "sum_prompt_tokens": 1536000,
-                "sum_completion_tokens": 768000,
-            },
-            "financial_cost_usd": {
-                "total_cost_usd": 1.50,
-                "cost_per_logical_request_usd": 0.00117,
-            },
-        }
-        views[c] = {
-            "single_view_accuracy_e2e": 0.42,
-            "contextual_view_accuracy_e2e": 0.48,
-            "single_view_macro_f1": 0.30,
-            "contextual_view_macro_f1": 0.38,
-            "view_accuracy_delta": 0.06,
-        }
-
-    rq_analysis = {
-        "fixture_only": True,
-        "provenance_status": "diagnostic_fixture",
-        "rq1": {"by_condition": rq1},
-        "rq3": {"tradeoffs_by_condition": tradeoffs, "view_diagnostics": views},
-    }
-    (diag_dir / "rq_analysis.json").write_text(json.dumps(rq_analysis), encoding="utf-8")
-
-    return diag_dir
+def real_fixture_copy(tmp_path: Path) -> Path:
+    """Create an isolated temporary copy of the authoritative reproduction fixtures."""
+    dest = tmp_path / "fixture_diagnostics"
+    dest.mkdir(parents=True)
+    for fname in REQUIRED_FIXTURE_FILES:
+        src = DEFAULT_FIXTURE_DIR / fname
+        if not src.is_file():
+            pytest.skip(f"Authoritative fixture file missing: {src}")
+        shutil.copy2(src, dest / fname)
+    return dest
 
 
-def test_assert_fixture_safety_rejects_uncertified_dir(tmp_path: Path) -> None:
-    """Safety test: Fails closed when operating on uncertified directory."""
-    unsafe_dir = tmp_path / "unsafe_dir"
-    unsafe_dir.mkdir()
-
-    with pytest.raises(RuntimeError, match="FAIL_CLOSED"):
-        assert_fixture_safety(unsafe_dir)
+# ==============================================================================
+# 1. Mode Gate & Safety Boundary Tests
+# ==============================================================================
 
 
-def test_assert_fixture_safety_accepts_valid_fixture(mock_fixture_dir: Path) -> None:
-    """Safety test: Accepts certified fixture directory with fixture_only=True."""
-    # Should not raise exception
-    assert_fixture_safety(mock_fixture_dir)
+def test_canonical_mode_disabled(tmp_path: Path) -> None:
+    """Safety gate: Canonical mode is disabled pending root S2 terminal audit seal."""
+    out_md = tmp_path / "out.md"
+    with pytest.raises(
+        RuntimeError,
+        match=r"\[FAIL_CLOSED\] Canonical mode is disabled pending root S2 terminal audit seal\.",
+    ):
+        run_pipeline(
+            fixture_dir=DEFAULT_FIXTURE_DIR,
+            template_path=DEFAULT_TEMPLATE_PATH,
+            output_path=out_md,
+            mode="canonical",
+        )
+
+
+def test_unknown_mode_raises_value_error(tmp_path: Path) -> None:
+    """Safety gate: Reject unknown execution modes."""
+    out_md = tmp_path / "out.md"
+    with pytest.raises(ValueError, match="Unknown mode: unsupported"):
+        run_pipeline(
+            fixture_dir=DEFAULT_FIXTURE_DIR,
+            template_path=DEFAULT_TEMPLATE_PATH,
+            output_path=out_md,
+            mode="unsupported",
+        )
 
 
 def test_safety_prevents_accidental_template_overwrite(
-    mock_fixture_dir: Path, tmp_path: Path
+    real_fixture_copy: Path,
 ) -> None:
     """Safety test: Prohibits overwriting canonical template in-place without force flag."""
-    with pytest.raises(ValueError, match="SAFETY_GUARD"):
+    with pytest.raises(ValueError, match=r"\[SAFETY_GUARD\]"):
         run_pipeline(
-            fixture_dir=mock_fixture_dir,
+            fixture_dir=real_fixture_copy,
             template_path=DEFAULT_TEMPLATE_PATH,
             output_path=DEFAULT_TEMPLATE_PATH,
             force_in_place=False,
         )
 
 
-def test_run_pipeline_end_to_end(mock_fixture_dir: Path, tmp_path: Path) -> None:
-    """Functional test: Populates report markdown and audit JSON from mock fixtures."""
+def test_assert_fixture_safety_rejects_uncertified_dir(tmp_path: Path) -> None:
+    """Safety test: Fails closed when operating on uncertified directory without metadata."""
+    unsafe_dir = tmp_path / "unsafe_dir"
+    unsafe_dir.mkdir()
+
+    with pytest.raises(
+        RuntimeError, match=r"\[FAIL_CLOSED\] Fixture directory .* lacks _fixture_metadata\.json"
+    ):
+        assert_fixture_safety(unsafe_dir)
+
+
+def test_assert_fixture_safety_rejects_fixture_only_false(
+    real_fixture_copy: Path,
+) -> None:
+    """Safety test: Fails closed when _fixture_metadata.json declares fixture_only=False."""
+    meta_file = real_fixture_copy / "_fixture_metadata.json"
+    meta = json.loads(meta_file.read_text(encoding="utf-8"))
+    meta["fixture_only"] = False
+    meta_file.write_text(json.dumps(meta), encoding="utf-8")
+
+    err_msg = r"\[FAIL_CLOSED\] _fixture_metadata\.json .* must declare fixture_only=True"
+    with pytest.raises(RuntimeError, match=err_msg):
+        assert_fixture_safety(real_fixture_copy)
+
+
+def test_assert_fixture_safety_accepts_valid_fixture(
+    real_fixture_copy: Path,
+) -> None:
+    """Safety test: Accepts certified fixture directory."""
+    assert_fixture_safety(real_fixture_copy)
+
+
+# ==============================================================================
+# 2. File Integrity & Provenance Consistency Tests (Reject Mixed Mode)
+# ==============================================================================
+
+
+@pytest.mark.parametrize("missing_file", REQUIRED_FIXTURE_FILES)
+def test_missing_required_file_raises_file_not_found(
+    real_fixture_copy: Path, missing_file: str, tmp_path: Path
+) -> None:
+    """Zero-default integrity: Deleting any required file raises FileNotFoundError."""
+    target = real_fixture_copy / missing_file
+    target.unlink()
+    out_md = tmp_path / "out.md"
+
+    with pytest.raises(
+        FileNotFoundError,
+        match=rf"\[FAIL_CLOSED\] Required fixture file missing:.*{missing_file}",
+    ):
+        run_pipeline(
+            fixture_dir=real_fixture_copy,
+            template_path=DEFAULT_TEMPLATE_PATH,
+            output_path=out_md,
+        )
+
+
+def test_mixed_mode_protocol_version_raises_value_error(
+    real_fixture_copy: Path, tmp_path: Path
+) -> None:
+    """Reject mixed mode: Mismatched protocol_version across files raises ValueError."""
+    target_file = real_fixture_copy / "per_condition_metrics.json"
+    doc = json.loads(target_file.read_text(encoding="utf-8"))
+    doc["protocol_version"] = "mismatched-protocol-v999"
+    target_file.write_text(json.dumps(doc), encoding="utf-8")
+
+    out_md = tmp_path / "out.md"
+    with pytest.raises(ValueError, match=r"\[FAIL_CLOSED\] Inconsistent protocol_version"):
+        run_pipeline(
+            fixture_dir=real_fixture_copy,
+            template_path=DEFAULT_TEMPLATE_PATH,
+            output_path=out_md,
+        )
+
+
+def test_mixed_mode_manifest_sha256_raises_value_error(
+    real_fixture_copy: Path, tmp_path: Path
+) -> None:
+    """Reject mixed mode: Mismatched manifest_sha256 across files raises ValueError."""
+    target_file = real_fixture_copy / "per_condition_metrics.json"
+    doc = json.loads(target_file.read_text(encoding="utf-8"))
+    doc["manifest_sha256"] = "deadbeef" * 8
+    target_file.write_text(json.dumps(doc), encoding="utf-8")
+
+    out_md = tmp_path / "out.md"
+    with pytest.raises(ValueError, match=r"\[FAIL_CLOSED\] Inconsistent manifest_sha256"):
+        run_pipeline(
+            fixture_dir=real_fixture_copy,
+            template_path=DEFAULT_TEMPLATE_PATH,
+            output_path=out_md,
+        )
+
+
+def test_mixed_mode_experiment_id_raises_value_error(
+    real_fixture_copy: Path, tmp_path: Path
+) -> None:
+    """Reject mixed mode: Mismatched experiment_id across files raises ValueError."""
+    target_file = real_fixture_copy / "failure_decomposition.json"
+    doc = json.loads(target_file.read_text(encoding="utf-8"))
+    doc["experiment_id"] = "different_experiment_id"
+    target_file.write_text(json.dumps(doc), encoding="utf-8")
+
+    out_md = tmp_path / "out.md"
+    with pytest.raises(ValueError, match=r"\[FAIL_CLOSED\] Inconsistent experiment_id"):
+        run_pipeline(
+            fixture_dir=real_fixture_copy,
+            template_path=DEFAULT_TEMPLATE_PATH,
+            output_path=out_md,
+        )
+
+
+def test_provenance_execution_mode_mismatch_raises_value_error(
+    real_fixture_copy: Path, tmp_path: Path
+) -> None:
+    """Reject mixed mode: run_provenance execution_mode != 'mock_fixture' raises ValueError."""
+    prov_file = real_fixture_copy / "run_provenance.json"
+    prov = json.loads(prov_file.read_text(encoding="utf-8"))
+    prov["execution_mode"] = "live_provider"
+    prov_file.write_text(json.dumps(prov), encoding="utf-8")
+
+    out_md = tmp_path / "out.md"
+    with pytest.raises(
+        ValueError, match=r"\[FAIL_CLOSED\] run_provenance execution_mode.*must be 'mock_fixture'"
+    ):
+        run_pipeline(
+            fixture_dir=real_fixture_copy,
+            template_path=DEFAULT_TEMPLATE_PATH,
+            output_path=out_md,
+        )
+
+
+def test_mismatched_source_sha256_raises_value_error(
+    real_fixture_copy: Path, tmp_path: Path
+) -> None:
+    """Source verification: rq_analysis.json source_sha256 mismatch raises ValueError."""
+    rq_file = real_fixture_copy / "rq_analysis.json"
+    rq = json.loads(rq_file.read_text(encoding="utf-8"))
+    rq["source_sha256"] = "1111222233334444555566667777888899990000aaaabbbbccccddddeeeeffff"
+    rq_file.write_text(json.dumps(rq), encoding="utf-8")
+
+    out_md = tmp_path / "out.md"
+    with pytest.raises(
+        ValueError, match=r"\[FAIL_CLOSED\] rq_analysis\.json source_sha256 mismatch"
+    ):
+        run_pipeline(
+            fixture_dir=real_fixture_copy,
+            template_path=DEFAULT_TEMPLATE_PATH,
+            output_path=out_md,
+        )
+
+
+# ==============================================================================
+# 3. Schema & Metric Bounds Validation (No Defaults, Finite Checking)
+# ==============================================================================
+
+
+def test_missing_required_field_raises_key_error(real_fixture_copy: Path, tmp_path: Path) -> None:
+    """Zero-default schema: Missing required field raises KeyError (never defaults to 0)."""
+    per_cond_file = real_fixture_copy / "per_condition_metrics.json"
+    data = json.loads(per_cond_file.read_text(encoding="utf-8"))
+    del data["conditions"]["rag_k1"]["accuracy_end_to_end"]
+    per_cond_file.write_text(json.dumps(data), encoding="utf-8")
+
+    out_md = tmp_path / "out.md"
+    with pytest.raises(KeyError, match="rag_k1.*accuracy_end_to_end"):
+        run_pipeline(
+            fixture_dir=real_fixture_copy,
+            template_path=DEFAULT_TEMPLATE_PATH,
+            output_path=out_md,
+        )
+
+
+def test_non_finite_metric_raises_value_error(real_fixture_copy: Path, tmp_path: Path) -> None:
+    """Finite validation: NaN or Inf in evaluation metrics raises ValueError."""
+    per_cond_file = real_fixture_copy / "per_condition_metrics.json"
+    data = json.loads(per_cond_file.read_text(encoding="utf-8"))
+    data["conditions"]["rag_k1"]["macro_f1"] = float("nan")
+    per_cond_file.write_text(json.dumps(data), encoding="utf-8")
+
+    out_md = tmp_path / "out.md"
+    with pytest.raises(ValueError, match="must be finite"):
+        run_pipeline(
+            fixture_dir=real_fixture_copy,
+            template_path=DEFAULT_TEMPLATE_PATH,
+            output_path=out_md,
+        )
+
+
+def test_out_of_bounds_metric_raises_value_error(real_fixture_copy: Path, tmp_path: Path) -> None:
+    """Bounds validation: Accuracy > 1.0 raises ValueError."""
+    per_cond_file = real_fixture_copy / "per_condition_metrics.json"
+    data = json.loads(per_cond_file.read_text(encoding="utf-8"))
+    data["conditions"]["rag_k1"]["accuracy_end_to_end"] = 1.05
+    per_cond_file.write_text(json.dumps(data), encoding="utf-8")
+
+    out_md = tmp_path / "out.md"
+    with pytest.raises(ValueError, match="above allowable maximum"):
+        run_pipeline(
+            fixture_dir=real_fixture_copy,
+            template_path=DEFAULT_TEMPLATE_PATH,
+            output_path=out_md,
+        )
+
+
+def test_negative_downstream_selection_failure_raises_value_error(
+    real_fixture_copy: Path, tmp_path: Path
+) -> None:
+    """Identity guard: Negative downstream selection failure raises ValueError."""
+    ret_file = real_fixture_copy / "retrieval_conditional_metrics.json"
+    data = json.loads(ret_file.read_text(encoding="utf-8"))
+    # retrieval_success_count (1) < retrieval_success_correct_count (2) -> impossible
+    data["by_condition"]["rag_k1"]["retrieval_success_count"] = 1
+    data["by_condition"]["rag_k1"]["retrieval_success_correct_count"] = 2
+    ret_file.write_text(json.dumps(data), encoding="utf-8")
+
+    out_md = tmp_path / "out.md"
+    with pytest.raises(ValueError, match="Negative downstream selection failure for rag_k1: -1"):
+        run_pipeline(
+            fixture_dir=real_fixture_copy,
+            template_path=DEFAULT_TEMPLATE_PATH,
+            output_path=out_md,
+        )
+
+
+def test_legitimate_none_formatting() -> None:
+    """Legitimate null: None is safely formatted as 'N/A' without TypeError."""
+    assert format_pct(None) == "N/A"
+    assert format_pp(None) == "N/A"
+    assert format_int(None) == "N/A"
+    assert format_usd(None) == "N/A"
+    assert format_latency(None) == "N/A"
+
+    assert validate_finite_number(None, "opt_field", allow_none=True) is None
+    with pytest.raises(KeyError, match="Required field req_field is None"):
+        validate_finite_number(None, "req_field", allow_none=False)
+
+
+# ==============================================================================
+# 4. Functional End-to-End Pipeline Execution
+# ==============================================================================
+
+
+def test_run_pipeline_end_to_end_authoritative_fixture(tmp_path: Path) -> None:
+    """Functional test: Populates report markdown and audit JSON from authoritative fixtures."""
     out_md = tmp_path / "test_report.md"
     out_json = tmp_path / "test_slots.json"
 
     run_pipeline(
-        fixture_dir=mock_fixture_dir,
+        fixture_dir=DEFAULT_FIXTURE_DIR,
         template_path=DEFAULT_TEMPLATE_PATH,
         output_path=out_md,
         audit_json_path=out_json,
@@ -169,31 +361,49 @@ def test_run_pipeline_end_to_end(mock_fixture_dir: Path, tmp_path: Path) -> None
 
     content = out_md.read_text(encoding="utf-8")
 
-    # 1. Private label banner check
+    # 1. Private label banner & disclaimer check
     assert "<!-- FIXTURE_ONLY: true -->" in content
     assert DISCLAIMER_TEXT in content
 
-    # 2. Table population check: No TBD in Tables 2a, 2b, 3, 4, 5
+    # 2. Table population check: No TBD in populated rows
     lines = content.splitlines()
     table_rows = [line for line in lines if line.strip().startswith("| `")]
+    assert len(table_rows) > 0, "No populated table rows found"
     for row in table_rows:
         assert "[TBD_AT_EXECUTION]" not in row, f"Found unpopulated row: {row}"
 
-    # 3. Formatted metrics checks
-    assert "45.00%" in content  # acc_e2e
-    assert "55.00%" in content  # acc_valid
-    assert "35.00%" in content  # macro_f1
-    assert "1,280" in content  # completed records
-    assert "+6.00 pp" in content  # view delta
-    assert "USD 1.50" in content  # total cost
+    # 3. Dynamic scorable count verification (derived from fixture exports, e.g. 6)
+    slots = json.loads(out_json.read_text(encoding="utf-8"))
+    expected_scorable = slots["table_2a"]["no_rag"]["scorable_n"]
+    assert expected_scorable == 6, f"Expected dynamic scorable count 6, got {expected_scorable}"
 
-    # 4. Table 6 baseline preservation
+    # 4. Table 4 identity verification
+    # no_rag must have "N/A" for retrieval-conditioned metrics
+    no_rag_t4 = slots["table_4"]["no_rag"]
+    assert no_rag_t4["retrieval_miss"] == "N/A"
+    assert no_rag_t4["downstream_selection_failure"] == "N/A"
+    assert no_rag_t4["parametric_recovery"] == "N/A"
+
+    # rag_k1 downstream_selection_failure = (
+    #     retrieval_success_count - retrieval_success_correct_count
+    # )
+    # In fixture: retrieval_success_count = 2, retrieval_success_correct_count = 1 -> difference = 1
+    rag_k1_t4 = slots["table_4"]["rag_k1"]
+    assert rag_k1_t4["downstream_selection_failure"] == "1"
+
+    # 5. Table 6 cryptographic manifest preservation
     assert "*Table 6: Cryptographic Reproducibility Manifest.*" in content
     assert "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c" in content
 
-    # 5. Audit JSON structure check
-    slots = json.loads(out_json.read_text(encoding="utf-8"))
+    # 6. Supplementary Execution Provenance check
+    assert "#### Supplementary Execution Provenance (Diagnostic Fixture Mode)" in content
+    assert "run_provenance.json" in content
+    assert "retrieval_conditional_metrics.json" in content
+    assert "overall_metrics.json" in content
+
+    # 7. Audit JSON structure and safety metadata
     assert slots["_metadata"]["fixture_only"] is True
     assert slots["_metadata"]["disclaimer"] == DISCLAIMER_TEXT
-    assert "no_rag" in slots["table_2a"]
-    assert slots["table_2a"]["no_rag"]["accuracy_end_to_end"] == "45.00%"
+    assert EXPECTED_SOURCE_SHA256 == (
+        "c48eeb27b19626344e5f10b2cac674437b4053bb01f014060905702c52235f95"
+    )

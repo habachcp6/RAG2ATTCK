@@ -394,21 +394,21 @@ Table 2a and Table 2b outline the comparative attribution performance and diagno
 
 | Condition | Retrieval Depth ($k$) | Scorable Views ($N$) | Headline Accuracy ($\text{Acc}_{\text{e2e}}$) | Valid Accuracy ($\text{Acc}_{\text{valid}}$) | 474-Class Macro F1 |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| `no_rag` | 0 | 718 | 50.00% | 60.00% | 9.29% |
-| `rag_k1` | 1 | 718 | 50.00% | 60.00% | 9.29% |
-| `rag_k3` | 3 | 718 | 50.00% | 60.00% | 9.29% |
-| `rag_k5` | 5 | 718 | 50.00% | 60.00% | 9.29% |
-| `rag_k10` | 10 | 718 | 50.00% | 60.00% | 9.29% |
+| `no_rag` | 0 | 6 | 50.00% | 60.00% | 9.29% |
+| `rag_k1` | 1 | 6 | 50.00% | 60.00% | 9.29% |
+| `rag_k3` | 3 | 6 | 50.00% | 60.00% | 9.29% |
+| `rag_k5` | 5 | 6 | 50.00% | 60.00% | 9.29% |
+| `rag_k10` | 10 | 6 | 50.00% | 60.00% | 9.29% |
 
 *Table 2b: Attribution Diagnostic Metrics Across Experimental Conditions (Schema).*
 
 | Condition | Scorable Views ($N$) | Completed Outputs | Parse Failures | Invalid ATT&CK IDs | Invalid ID Rate (%) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| `no_rag` | 718 | 7 | 1 | 1 | 14.29% |
-| `rag_k1` | 718 | 7 | 1 | 1 | 14.29% |
-| `rag_k3` | 718 | 7 | 1 | 1 | 14.29% |
-| `rag_k5` | 718 | 7 | 1 | 1 | 14.29% |
-| `rag_k10` | 718 | 7 | 1 | 1 | 14.29% |
+| `no_rag` | 6 | 7 | 1 | 1 | 14.29% |
+| `rag_k1` | 6 | 7 | 1 | 1 | 14.29% |
+| `rag_k3` | 6 | 7 | 1 | 1 | 14.29% |
+| `rag_k5` | 6 | 7 | 1 | 1 | 14.29% |
+| `rag_k10` | 6 | 7 | 1 | 1 | 14.29% |
 
 #### Single-Event vs. Contextual-Event Performance Breakdown
 Table 3 schemas the comparative performance partitioned by telemetry representation (278 Single-Event Views vs. 440 Contextual-Event Views).
@@ -417,11 +417,11 @@ Table 3 schemas the comparative performance partitioned by telemetry representat
 
 | Condition | Single-Event $\text{Acc}_{\text{e2e}}$ ($N=278$) | Contextual-Event $\text{Acc}_{\text{e2e}}$ ($N=440$) | Single Macro-F1 | Contextual Macro-F1 | $\Delta \text{Acc}$ (Context - Single) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| `no_rag` | 50.00% | 50.00% | 0.00% | 0.00% | +0.00 pp |
-| `rag_k1` | 50.00% | 50.00% | 0.00% | 0.00% | +0.00 pp |
-| `rag_k3` | 50.00% | 50.00% | 0.00% | 0.00% | +0.00 pp |
-| `rag_k5` | 50.00% | 50.00% | 0.00% | 0.00% | +0.00 pp |
-| `rag_k10` | 50.00% | 50.00% | 0.00% | 0.00% | +0.00 pp |
+| `no_rag` | 50.00% | 50.00% | N/A | N/A | +0.00 pp |
+| `rag_k1` | 50.00% | 50.00% | N/A | N/A | +0.00 pp |
+| `rag_k3` | 50.00% | 50.00% | N/A | N/A | +0.00 pp |
+| `rag_k5` | 50.00% | 50.00% | N/A | N/A | +0.00 pp |
+| `rag_k10` | 50.00% | 50.00% | N/A | N/A | +0.00 pp |
 
 ### 6.2 RQ2: Retrieval Quality and Failure Decomposition
 Table 4 defines the formal error decomposition schema across the independent diagnostic failure axes.
@@ -431,7 +431,7 @@ Table 4 defines the formal error decomposition schema across the independent dia
 | Condition | Total Errors | Upstream Retrieval Miss ($GT \notin \text{Top-}k$) | Downstream Selection Failure ($GT \in \text{Top-}k \land \text{Wrong}$) | Parametric Recovery ($GT \notin \text{Top-}k \land \text{Correct}$) | Invalid ATT&CK ID | Parse Failure | Provider / Timeout Failure |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | `no_rag` | 3 | N/A | N/A | N/A | 1 | 0 | 0 |
-| `rag_k1` | 3 | 3 | 2 | 1 | 1 | 0 | 0 |
+| `rag_k1` | 3 | 3 | 1 | 1 | 1 | 0 | 0 |
 | `rag_k3` | 3 | 1 | 2 | 0 | 1 | 0 | 0 |
 | `rag_k5` | 3 | 1 | 2 | 0 | 1 | 0 | 0 |
 | `rag_k10` | 3 | 1 | 2 | 0 | 1 | 0 | 0 |
@@ -538,7 +538,9 @@ The following diagnostic fixture files were consumed during this offline verific
 | **Diagnostic Overall Metrics** | `.tmp/s1-offline-reproduction/fixture_diagnostics/overall_metrics.json` | File SHA-256 | `77b1d115b699f054ee5e58c692b192147a8a37bf4f1232a1a5da65e3a81bfe95` |
 | **Diagnostic Condition Metrics** | `.tmp/s1-offline-reproduction/fixture_diagnostics/per_condition_metrics.json` | File SHA-256 | `1cf53cd5f376960a18a9c6d1662f4b800db9836a73fff1b645e99e70eb60dc5b` |
 | **Diagnostic Failure Decomposition** | `.tmp/s1-offline-reproduction/fixture_diagnostics/failure_decomposition.json` | File SHA-256 | `a0f1b5e95314170fad73068411db953dc87921c4a02ae67210dbec87b1866749` |
-| **Diagnostic RQ Analysis** | `.tmp/s1-offline-reproduction/fixture_diagnostics/rq_analysis.json` | File SHA-256 | `70216bf51a463d0d30143915200c4e22dee1113c9e518cb42f5f2288e9408732` |
+| **Diagnostic Retrieval Conditional** | `.tmp/s1-offline-reproduction/fixture_diagnostics/retrieval_conditional_metrics.json` | File SHA-256 | `a1860631bb29e95370932acfbcd4d72881a91b6b2a7692ebd8326f9483048384` |
+| **Diagnostic RQ Analysis** | `.tmp/s1-offline-reproduction/fixture_diagnostics/rq_analysis.json` | File SHA-256 | `601de6748f2d4368e910ceca5e651fd7ea460c0bb21e32a4b250c4c3b0667216` |
+| **Diagnostic Run Provenance** | `.tmp/s1-offline-reproduction/fixture_diagnostics/run_provenance.json` | File SHA-256 | `20603131854454c864d0543e6e3c0e299844f3f1384bb40654016960af2022ab` |
 
 ### 8.3 Data, Code Availability, and Licensing
 The repository is maintained at: `https://github.com/habachcp6/RAG2ATTCK`. Root `README.md` declares an MIT license (note: a physical `LICENSE` file is omitted in the root repository checkout).

@@ -2,70 +2,70 @@
   "_metadata": {
     "fixture_only": true,
     "disclaimer": "DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS",
-    "timestamp_utc": "2026-10-02T01:38:26.220813+00:00",
-    "source_fixture_dir": ".tmp\\s1-offline-reproduction\\fixture_diagnostics"
+    "timestamp_utc": "2026-10-02T01:53:39.236414+00:00",
+    "source_fixture_dir": "D:\\RAG2ATTCK-worktrees\\report-s1\\.tmp\\s1-offline-reproduction\\fixture_diagnostics"
   },
   "table_2a": {
     "no_rag": {
       "condition": "no_rag",
       "k": 0,
-      "scorable_n": 718,
+      "scorable_n": 6,
       "accuracy_end_to_end": "50.00%",
       "accuracy_valid_outputs": "60.00%",
       "macro_f1": "9.29%",
-      "single_gt_accuracy_e2e": null,
-      "multi_gt_accuracy_e2e": null,
-      "complexity_accuracy_delta": null
+      "single_gt_accuracy_e2e": "N/A",
+      "multi_gt_accuracy_e2e": "N/A",
+      "complexity_accuracy_delta": "N/A"
     },
     "rag_k1": {
       "condition": "rag_k1",
       "k": 1,
-      "scorable_n": 718,
+      "scorable_n": 6,
       "accuracy_end_to_end": "50.00%",
       "accuracy_valid_outputs": "60.00%",
       "macro_f1": "9.29%",
-      "single_gt_accuracy_e2e": null,
-      "multi_gt_accuracy_e2e": null,
-      "complexity_accuracy_delta": null
+      "single_gt_accuracy_e2e": "N/A",
+      "multi_gt_accuracy_e2e": "N/A",
+      "complexity_accuracy_delta": "N/A"
     },
     "rag_k3": {
       "condition": "rag_k3",
       "k": 3,
-      "scorable_n": 718,
+      "scorable_n": 6,
       "accuracy_end_to_end": "50.00%",
       "accuracy_valid_outputs": "60.00%",
       "macro_f1": "9.29%",
-      "single_gt_accuracy_e2e": null,
-      "multi_gt_accuracy_e2e": null,
-      "complexity_accuracy_delta": null
+      "single_gt_accuracy_e2e": "N/A",
+      "multi_gt_accuracy_e2e": "N/A",
+      "complexity_accuracy_delta": "N/A"
     },
     "rag_k5": {
       "condition": "rag_k5",
       "k": 5,
-      "scorable_n": 718,
+      "scorable_n": 6,
       "accuracy_end_to_end": "50.00%",
       "accuracy_valid_outputs": "60.00%",
       "macro_f1": "9.29%",
-      "single_gt_accuracy_e2e": null,
-      "multi_gt_accuracy_e2e": null,
-      "complexity_accuracy_delta": null
+      "single_gt_accuracy_e2e": "N/A",
+      "multi_gt_accuracy_e2e": "N/A",
+      "complexity_accuracy_delta": "N/A"
     },
     "rag_k10": {
       "condition": "rag_k10",
       "k": 10,
-      "scorable_n": 718,
+      "scorable_n": 6,
       "accuracy_end_to_end": "50.00%",
       "accuracy_valid_outputs": "60.00%",
       "macro_f1": "9.29%",
-      "single_gt_accuracy_e2e": null,
-      "multi_gt_accuracy_e2e": null,
-      "complexity_accuracy_delta": null
+      "single_gt_accuracy_e2e": "N/A",
+      "multi_gt_accuracy_e2e": "N/A",
+      "complexity_accuracy_delta": "N/A"
     }
   },
   "table_2b": {
     "no_rag": {
       "condition": "no_rag",
-      "scorable_n": 718,
+      "scorable_n": 6,
       "completed_outputs": "7",
       "parse_failures": "1",
       "invalid_ids": "1",
@@ -73,7 +73,7 @@
     },
     "rag_k1": {
       "condition": "rag_k1",
-      "scorable_n": 718,
+      "scorable_n": 6,
       "completed_outputs": "7",
       "parse_failures": "1",
       "invalid_ids": "1",
@@ -81,7 +81,7 @@
     },
     "rag_k3": {
       "condition": "rag_k3",
-      "scorable_n": 718,
+      "scorable_n": 6,
       "completed_outputs": "7",
       "parse_failures": "1",
       "invalid_ids": "1",
@@ -89,7 +89,7 @@
     },
     "rag_k5": {
       "condition": "rag_k5",
-      "scorable_n": 718,
+      "scorable_n": 6,
       "completed_outputs": "7",
       "parse_failures": "1",
       "invalid_ids": "1",
@@ -97,7 +97,7 @@
     },
     "rag_k10": {
       "condition": "rag_k10",
-      "scorable_n": 718,
+      "scorable_n": 6,
       "completed_outputs": "7",
       "parse_failures": "1",
       "invalid_ids": "1",
@@ -109,40 +109,40 @@
       "condition": "no_rag",
       "single_acc": "50.00%",
       "context_acc": "50.00%",
-      "single_macro_f1": "0.00%",
-      "context_macro_f1": "0.00%",
+      "single_macro_f1": "N/A",
+      "context_macro_f1": "N/A",
       "delta_acc": "+0.00 pp"
     },
     "rag_k1": {
       "condition": "rag_k1",
       "single_acc": "50.00%",
       "context_acc": "50.00%",
-      "single_macro_f1": "0.00%",
-      "context_macro_f1": "0.00%",
+      "single_macro_f1": "N/A",
+      "context_macro_f1": "N/A",
       "delta_acc": "+0.00 pp"
     },
     "rag_k3": {
       "condition": "rag_k3",
       "single_acc": "50.00%",
       "context_acc": "50.00%",
-      "single_macro_f1": "0.00%",
-      "context_macro_f1": "0.00%",
+      "single_macro_f1": "N/A",
+      "context_macro_f1": "N/A",
       "delta_acc": "+0.00 pp"
     },
     "rag_k5": {
       "condition": "rag_k5",
       "single_acc": "50.00%",
       "context_acc": "50.00%",
-      "single_macro_f1": "0.00%",
-      "context_macro_f1": "0.00%",
+      "single_macro_f1": "N/A",
+      "context_macro_f1": "N/A",
       "delta_acc": "+0.00 pp"
     },
     "rag_k10": {
       "condition": "rag_k10",
       "single_acc": "50.00%",
       "context_acc": "50.00%",
-      "single_macro_f1": "0.00%",
-      "context_macro_f1": "0.00%",
+      "single_macro_f1": "N/A",
+      "context_macro_f1": "N/A",
       "delta_acc": "+0.00 pp"
     }
   },
@@ -161,7 +161,7 @@
       "condition": "rag_k1",
       "total_errors": "3",
       "retrieval_miss": "3",
-      "downstream_selection_failure": "2",
+      "downstream_selection_failure": "1",
       "parametric_recovery": "1",
       "invalid_attack_id": "1",
       "parse_failure": "0",

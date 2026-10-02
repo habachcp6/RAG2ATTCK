@@ -10,8 +10,8 @@
  * - Zero live prediction reads, zero provider calls.
  * - Never overwrites production docs/presentation/slides.pptx directly.
  * - Real @oai/artifact-tool runtime invocation: Fail-closed if module cannot be imported.
- * - Declarative Shape-Table Map: Injects all 59 numeric slots across Slides 4, 6, 7, 8, 9.
- * - Enforces separate counts for numeric_slot_edits (== 59) and disclaimer_edits.
+ * - Declarative Shape-Table Map: Injects all 67 numeric slots across Slides 4, 6, 7, 8, 9.
+ * - Enforces separate counts for numeric_slot_edits (== 67) and disclaimer_edits.
  * - Fail-closed if numeric_slot_edits === 0 or actual_numeric_slots_count !== expected_numeric_slots_count.
  * - Removes legacy causal/intrinsic phrases from Slide 8 and speaker notes.
  *
@@ -71,7 +71,7 @@ const DEFAULT_AUDIT_REPORT_PATH = path.join(
 
 const DISCLAIMER_TEXT =
   "DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS";
-const EXPECTED_NUMERIC_SLOTS_COUNT = 59;
+const EXPECTED_NUMERIC_SLOTS_COUNT = 67;
 
 /**
  * Validates fixture slots file and ensures fail-closed boundary enforcement.
@@ -156,6 +156,100 @@ function replaceLineInShape(presentation, snapshot, shapeId, targetSubstring, re
   }
   sh.text.replace(targetLine, replacementLine);
   rec.text = rec.text.replace(targetLine, replacementLine);
+}
+
+/**
+ * Verifies that a slot value is bound to the correct shape, condition, and row/label.
+ * Beyond simple substring matching, enforces that condition-specific slots
+ * appear in the condition's dedicated row/line.
+ *
+ * @param {string} shapeContent
+ * @param {Record<string, any>} item
+ * @returns {{ verified: boolean, bound_condition: string | null, bound_line: string, reason?: string }}
+ */
+function verifySlotBinding(shapeContent, item) {
+  const lines = shapeContent.split("\n");
+  const injected = String(item.injected_value);
+
+  // 1. Overall shape text must include injected value
+  if (!shapeContent.includes(injected)) {
+    return {
+      verified: false,
+      bound_condition: null,
+      bound_line: "",
+      reason: `Injected value "${injected}" not found in shape ${item.shape_id}`,
+    };
+  }
+
+  // 2. Extract condition from source pointer if applicable
+  const conditionMatch = item.source_pointer.match(
+    /\/(?:by_condition|tradeoffs_by_condition|view_diagnostics)\/([a-zA-Z0-9_]+)/
+  );
+  const condition = conditionMatch ? conditionMatch[1] : null;
+
+  // 3. For table shape sh/98rehwve with per-condition rows
+  if (item.shape_id === "sh/98rehwve" && condition) {
+    if (item.slot_name.includes("CI_95")) {
+      const ciLine = lines.find((l) => l.includes("95% CI"));
+      const condKey = condition === "no_rag" ? "no_rag" : condition.replace("rag_", "");
+      if (!ciLine || !ciLine.includes(condKey) || !ciLine.includes(injected)) {
+        return {
+          verified: false,
+          bound_condition: condition,
+          bound_line: ciLine ? ciLine.trim() : "",
+          reason: `CI slot ${item.slot_name} (${injected}) not bound to condition "${condKey}" in CI line of ${item.shape_id}`,
+        };
+      }
+      return { verified: true, bound_condition: condition, bound_line: ciLine.trim() };
+    }
+
+    if (
+      item.slot_name.startsWith("RQ1_ACC_") ||
+      item.slot_name.startsWith("RQ1_MACRO_F1_")
+    ) {
+      const targetRow = lines.find((l) => {
+        const trimmed = l.trim();
+        return (
+          trimmed.startsWith(condition) ||
+          trimmed.toLowerCase().includes(condition.toLowerCase())
+        );
+      });
+      if (!targetRow || !targetRow.includes(injected)) {
+        return {
+          verified: false,
+          bound_condition: condition,
+          bound_line: targetRow ? targetRow.trim() : "",
+          reason: `Slot ${item.slot_name} value "${injected}" for condition "${condition}" not found in dedicated row for "${condition}" in ${item.shape_id}`,
+        };
+      }
+      return { verified: true, bound_condition: condition, bound_line: targetRow.trim() };
+    }
+  }
+
+  // 4. For telemetry shape sh/ofq5svm5 with per-condition telemetry lines
+  if (item.shape_id === "sh/ofq5svm5" && condition) {
+    const targetLine = lines.find((l) => {
+      const lower = l.toLowerCase();
+      return lower.includes(condition.toLowerCase());
+    });
+    if (!targetLine || !targetLine.includes(injected)) {
+      return {
+        verified: false,
+        bound_condition: condition,
+        bound_line: targetLine ? targetLine.trim() : "",
+        reason: `Slot ${item.slot_name} value "${injected}" for condition "${condition}" not bound to "${condition}" line in ${item.shape_id}`,
+      };
+    }
+    return { verified: true, bound_condition: condition, bound_line: targetLine.trim() };
+  }
+
+  // 5. Default: find the matching line
+  const matchingLine = lines.find((l) => l.includes(injected)) || "";
+  return {
+    verified: true,
+    bound_condition: condition,
+    bound_line: matchingLine.trim(),
+  };
 }
 
 /**
@@ -295,28 +389,27 @@ async function runArtifactToolDeckUpdater(options = {}) {
   );
   modifiedShapeIds.add("sh/sna103ap");
 
-  // Slide 6: Shape sh/7m98ru9g (RQ2 Retrieval Quality - 3 slots)
-  replaceLineInShape(
-    presentation,
-    snapshot,
-    "sh/7m98ru9g",
-    "Hit@10:",
-    `  • Hit@10: 45.11% (341 / 756) -> [Diagnostic Fixture: Hit@10 = ${slots["{{S2_HIT_RATE_AT_K}}"]}]`
-  );
-  replaceLineInShape(
-    presentation,
-    snapshot,
-    "sh/7m98ru9g",
-    "Tỷ lệ vắng mặt trong Top-10",
-    `•  Tỷ lệ vắng mặt trong Top-10 (Retrieval Failure): 54.89% (415 / 756) -> [Fixture Miss Rate: ${slots["{{S2_RETRIEVAL_MISS_RATE_K10}}"]}]`
-  );
-  replaceLineInShape(
-    presentation,
-    snapshot,
-    "sh/7m98ru9g",
-    "Macro Recall@10:",
-    `•  Macro Recall@10: 43.14% [Fixture Macro Recall@10: ${slots["{{S2_RECALL_AT_K}}"]}]  |  Mean Rank khi trúng: 5.21.`
-  );
+  // Slide 6: Shape sh/7m98ru9g (RQ2 Retrieval Quality - 3 slots, separated cohorts)
+  const rec7m = snapshot.records.find((r) => r.id === "sh/7m98ru9g");
+  const sh7m = presentation.resolve("sh/7m98ru9g");
+  sh7m.text.fontSize = 11;
+  const slide6Content = [
+    `Số Liệu Chẩn Đoán Truy Xuất RQ2 [${DISCLAIMER_TEXT}]`,
+    "",
+    "▶ [HISTORICAL DEV PILOT RETRIEVAL (Mẫu số N=756 views)]",
+    "•  Mẫu dương tính đánh giá pilot: 756 / 1,340 views (Synthetic DEV split).",
+    "•  Pilot Hit@k: Hit@1=4.23%, Hit@3=16.80%, Hit@5=24.21%, Hit@10=45.11% (341 / 756).",
+    "•  Pilot Macro Recall@10: 43.14%  |  Tỷ lệ vắng mặt Top-10: 54.89% (415 / 756)  |  Mean Rank: 5.21.",
+    "",
+    "▶ [DIAGNOSTIC TEST FIXTURE RETRIEVAL (Mẫu số N=718 scorable views)]",
+    `•  Diagnostic Fixture Hit@10: ${slots["{{S2_HIT_RATE_AT_K}}"]} (k=10).`,
+    `•  Diagnostic Fixture Macro Recall@10: ${slots["{{S2_RECALL_AT_K}}"]}.`,
+    `•  Diagnostic Fixture Retrieval Miss Rate: ${slots["{{S2_RETRIEVAL_MISS_RATE_K10}}"]} (k=10 failure axis).`,
+    "•  Phân định mẫu số: Tuyệt đối không gộp mẫu số N=756 (DEV Pilot) với N=718 (Test Fixture).",
+  ].join("\n");
+  sh7m.text.replace(rec7m.text, slide6Content);
+  rec7m.text = slide6Content;
+  disclaimerEditsCount++;
   modifiedShapeIds.add("sh/7m98ru9g");
 
   // Slide 6: Disclaimer banner sh/h4bupgn6
@@ -371,7 +464,7 @@ async function runArtifactToolDeckUpdater(options = {}) {
     }
   }
 
-  // Slide 8: Shape sh/98rehwve (RQ1 5 conditions table & RQ2 error decomposition - 23 slots)
+  // Slide 8: Shape sh/98rehwve (RQ1 5 conditions table & RQ2 error decomposition - 27 slots)
   const sh98 = presentation.resolve("sh/98rehwve");
   sh98.text.color = "#0F172A";
   sh98.text.fontSize = 11;
@@ -384,12 +477,12 @@ async function runArtifactToolDeckUpdater(options = {}) {
     "Condition      Accuracy    Macro-F1    Delta vs No-RAG",
     "-------------------------------------------------------",
     `no_rag         ${slots["{{S2_ACC_E2E_NO_RAG}}"]}      ${slots["{{S2_MACRO_F1_NO_RAG}}"]}      baseline`,
-    `rag_k1         ${slots["{{S2_ACC_E2E_RAG_K1}}"]}      ${slots["{{S2_MACRO_F1_RAG_K1}}"]}      ${slots["{{S2_BEST_RAG_ACC_DELTA}}"]} (${slots["{{S2_BEST_RAG_F1_DELTA}}"]} F1)`,
-    `rag_k3         ${slots["{{S2_ACC_E2E_RAG_K3}}"]}      ${slots["{{S2_MACRO_F1_RAG_K3}}"]}      ${slots["{{S2_BEST_RAG_ACC_DELTA}}"]} (${slots["{{S2_BEST_RAG_F1_DELTA}}"]} F1)`,
-    `rag_k5         ${slots["{{S2_ACC_E2E_RAG_K5}}"]}      ${slots["{{S2_MACRO_F1_RAG_K5}}"]}      ${slots["{{S2_BEST_RAG_ACC_DELTA}}"]} (${slots["{{S2_BEST_RAG_F1_DELTA}}"]} F1)`,
-    `rag_k10        ${slots["{{S2_ACC_E2E_RAG_K10}}"]}      ${slots["{{S2_MACRO_F1_RAG_K10}}"]}      ${slots["{{S2_BEST_RAG_ACC_DELTA}}"]} (${slots["{{S2_BEST_RAG_F1_DELTA}}"]} F1)`,
-    `★ Best Condition: ${slots["{{S2_BEST_RAG_CONDITION}}"]} (Delta Acc = ${slots["{{S2_BEST_RAG_ACC_DELTA}}"]}, Delta F1 = ${slots["{{S2_BEST_RAG_F1_DELTA}}"]})`,
-    `• 95% CI: no_rag/k1/k3/k5/k10 = ${slots["{{S2_CI_95_NO_RAG}}"]} (chi tiết trong Speaker Notes)`,
+    `rag_k1         ${slots["{{S2_ACC_E2E_RAG_K1}}"]}      ${slots["{{S2_MACRO_F1_RAG_K1}}"]}      ${slots["{{S2_ACC_DELTA_RAG_K1}}"]} (${slots["{{S2_MACRO_F1_DELTA_RAG_K1}}"]} F1)`,
+    `rag_k3         ${slots["{{S2_ACC_E2E_RAG_K3}}"]}      ${slots["{{S2_MACRO_F1_RAG_K3}}"]}      ${slots["{{S2_ACC_DELTA_RAG_K3}}"]} (${slots["{{S2_MACRO_F1_DELTA_RAG_K3}}"]} F1)`,
+    `rag_k5         ${slots["{{S2_ACC_E2E_RAG_K5}}"]}      ${slots["{{S2_MACRO_F1_RAG_K5}}"]}      ${slots["{{S2_ACC_DELTA_RAG_K5}}"]} (${slots["{{S2_MACRO_F1_DELTA_RAG_K5}}"]} F1)`,
+    `rag_k10        ${slots["{{S2_ACC_E2E_RAG_K10}}"]}      ${slots["{{S2_MACRO_F1_RAG_K10}}"]}      ${slots["{{S2_ACC_DELTA_RAG_K10}}"]} (${slots["{{S2_MACRO_F1_DELTA_RAG_K10}}"]} F1)`,
+    `★ Best Condition: ${slots["{{S2_BEST_RAG_CONDITION}}"]} (Tie-break: delta_macro_f1 | Delta Acc = ${slots["{{S2_BEST_RAG_ACC_DELTA}}"]}, Delta F1 = ${slots["{{S2_BEST_RAG_F1_DELTA}}"]})`,
+    `• 95% CI: no_rag=${slots["{{S2_CI_95_NO_RAG}}"]}, k1=${slots["{{S2_CI_95_RAG_K1}}"]}, k3=${slots["{{S2_CI_95_RAG_K3}}"]}, k5=${slots["{{S2_CI_95_RAG_K5}}"]}, k10=${slots["{{S2_CI_95_RAG_K10}}"]}`,
     `• RQ2 Phân rã lỗi (k=10): Wrong Class = ${slots["{{S2_WRONG_CLASS_RATE_K10}}"]} | Overlaps: Miss&Wrong=${slots["{{S2_OVERLAP_MISS_AND_WRONG_K10}}"]}, Prov=${slots["{{S2_OVERLAP_MISS_AND_PROV_K10}}"]}, Parse=${slots["{{S2_OVERLAP_MISS_AND_PARSE_K10}}"]}, Inval=${slots["{{S2_OVERLAP_MISS_AND_INVAL_K10}}"]}`,
   ].join("\n");
 
@@ -479,21 +572,21 @@ async function runArtifactToolDeckUpdater(options = {}) {
   const shOfq = presentation.resolve("sh/ofq5svm5");
   shOfq.text.fontSize = 11;
   const slide9Content = [
-    `DEV Pilot Telemetry & Hạch Toán Dự Phóng [${DISCLAIMER_TEXT}]`,
+    `DEV Pilot Telemetry & Hạch Toán Nghiên Cứu [${DISCLAIMER_TEXT}]`,
     "",
-    "▶ [HISTORICAL DEV PILOT BASELINE (20 Requests)]",
-    "• Bản chất: DEV split tổng hợp (4 views x 5 điều kiện). Gửi request thực tế không biến log tổng hợp thành in-the-wild telemetry.",
-    "• Quy mô: 20 requests thực tế Responses API (100% VALID, 0 retry, trễ TB 8,127.6 ms).",
-    "• Tiêu thụ tài nguyên & chi phí quan sát được (Observed Telemetry):",
-    `  • no_rag (k=0): ${slots["{{S2_MEAN_PROMPT_TOK_NO_RAG}}"]} mean prompt tokens, med lat ${slots["{{S2_MEDIAN_LAT_NO_RAG_SEC}}"]}s (~${slots["{{S2_COST_LOGICAL_REQ_NO_RAG}}"]} USD / logical req)`,
-    `  • rag_k10 (k=10): ${slots["{{S2_MEAN_PROMPT_TOK_K10}}"]} mean prompt tokens, med lat ${slots["{{S2_MEDIAN_LAT_K10_SEC}}"]}s (~${slots["{{S2_COST_LOGICAL_REQ_K10}}"]} USD / logical req)`,
-    `  • Giữ chỗ thận trọng tạm thời: ${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD (prior_pilot_provisional_hold_usd).`,
+    "▶ ZONE 1: HISTORICAL DEV PILOT BASELINE (20 Requests Responses API)",
+    "•  Dữ liệu DEV pilot lịch sử: 20 requests (4 views x 5 điều kiện, tổng chi phí ~$0.0242 USD).",
+    "•  Ghi chú phân định tuyệt đối: Request thực tế không biến log tổng hợp thành in-the-wild telemetry.",
     "",
-    "▶ [DIAGNOSTIC FIXTURE PROJECTION (N=718 SCORABLE VIEWS)]",
-    "• Hạch toán toàn thể nghiên cứu theo fixture (Whole Study Accounting Fixture):",
-    `  • Hạch toán điều kiện chuẩn (Canonical Total): ${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD cho 6,400 requests.`,
-    `  • Ngân sách chưa cam kết còn lại (Net Remaining): ${slots["{{S2_NET_REMAINING_USD}}"]} USD.`,
-    `  • Trần ngân sách đóng băng cứng: ${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD (hard_budget_limit_usd).`,
+    "▶ ZONE 2: DIAGNOSTIC TEST FIXTURE TELEMETRY (N=718 Scorable Views)",
+    `•  no_rag: trễ trung vị ${slots["{{S2_MEDIAN_LAT_NO_RAG_SEC}}"]}s | ${slots["{{S2_MEAN_PROMPT_TOK_NO_RAG}}"]} prompt tokens | ~${slots["{{S2_COST_LOGICAL_REQ_NO_RAG}}"]} USD / logical req.`,
+    `•  rag_k10: trễ trung vị ${slots["{{S2_MEDIAN_LAT_K10_SEC}}"]}s | ${slots["{{S2_MEAN_PROMPT_TOK_K10}}"]} prompt tokens | ~${slots["{{S2_COST_LOGICAL_REQ_K10}}"]} USD / logical req.`,
+    "",
+    "▶ ZONE 3: WHOLE STUDY FINANCIAL ACCOUNTING (6,400 Matrix Canonical Conditions)",
+    `•  Hạch toán toàn thể điều kiện chuẩn (Canonical Total): ${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD (dự phóng ma trận 6,400 requests).`,
+    `•  Khoản giữ chỗ thận trọng pilot tạm thời: ${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD (prior_pilot_provisional_hold_usd).`,
+    `•  Ngân sách chưa cam kết còn lại (Net Remaining): ${slots["{{S2_NET_REMAINING_USD}}"]} USD.`,
+    `•  Trần ngân sách đóng băng cứng (Hard Budget Cap): ${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD.`,
   ].join("\n");
 
   const recOfq = snapshot.records.find((r) => r.id === "sh/ofq5svm5");
@@ -531,9 +624,10 @@ async function runArtifactToolDeckUpdater(options = {}) {
     }
   }
 
-  // 5. Verify all 59 declarative slot entries are injected into shapes
+  // 5. Verify all 67 declarative slot entries are injected into shapes with condition binding
   let actualNumericSlotsCount = 0;
   const enrichedDeclarativeMapping = [];
+  const verifiedBindings = [];
 
   for (const item of declMap) {
     const sh = presentation.resolve(item.shape_id);
@@ -544,14 +638,15 @@ async function runArtifactToolDeckUpdater(options = {}) {
     }
     const shapeContent =
       typeof sh.text === "string" ? sh.text : sh.text.toString();
-    if (!shapeContent || !shapeContent.includes(item.injected_value)) {
+    const bindingResult = verifySlotBinding(shapeContent, item);
+    if (!bindingResult.verified) {
       throw new Error(
-        `[FAIL_CLOSED] Numeric value injection failed for slot "${item.slot_name}". ` +
-          `Expected value "${item.injected_value}" not found in shape ${item.shape_id}`
+        `[FAIL_CLOSED] Numerical binding verification failed for slot "${item.slot_name}". ` +
+          bindingResult.reason
       );
     }
     actualNumericSlotsCount++;
-    enrichedDeclarativeMapping.push({
+    const enrichedEntry = {
       slot_name: item.slot_name,
       input_field: item.input_field,
       units: item.units,
@@ -559,11 +654,18 @@ async function runArtifactToolDeckUpdater(options = {}) {
       shape_id: item.shape_id,
       slide_number: item.slide_number,
       injected_value: item.injected_value,
+    };
+    enrichedDeclarativeMapping.push(enrichedEntry);
+    verifiedBindings.push({
+      ...enrichedEntry,
+      bound_condition: bindingResult.bound_condition,
+      bound_line: bindingResult.bound_line,
+      verified: true,
     });
   }
 
   console.log(
-    `[+] Declarative verification: ${actualNumericSlotsCount} / ${EXPECTED_NUMERIC_SLOTS_COUNT} slots verified.`
+    `[+] Declarative verification: ${actualNumericSlotsCount} / ${EXPECTED_NUMERIC_SLOTS_COUNT} slots verified with strict condition bindings.`
   );
 
   if (actualNumericSlotsCount !== EXPECTED_NUMERIC_SLOTS_COUNT) {
@@ -657,6 +759,8 @@ async function runArtifactToolDeckUpdater(options = {}) {
     disclaimer_edits: disclaimerEditsCount,
     substitutions_performed: totalSubstitutions,
     declarative_mapping: enrichedDeclarativeMapping,
+    verified_bindings: verifiedBindings,
+    verified_bindings_count: verifiedBindings.length,
     rendered_png_slides_count: slides.length,
     qa_slides_directory: qaOutputDir,
     dry_run: isDryRun,
@@ -730,6 +834,7 @@ export {
   resolveArtifactToolModule,
   loadAndValidateFixtureSlots,
   loadAndValidateDeclarativeMap,
+  verifySlotBinding,
   DISCLAIMER_TEXT,
   EXPECTED_NUMERIC_SLOTS_COUNT,
 };

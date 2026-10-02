@@ -198,7 +198,7 @@ def test_schema_pointer_resolution_against_b172_mock_structure() -> None:
                 }
                 for c in CONDITIONS
             },
-            "whole_study_accounting": {
+            "whole_study_financial_accounting": {
                 "total_study_budget_usd": 19.99,
                 "canonical_conditions_total_usd": 8.50,
                 "net_remaining_uncommitted_budget_usd": 11.4373599,
@@ -247,7 +247,13 @@ def test_schema_pointer_resolution_against_b172_mock_structure() -> None:
         )
         == 0.0012
     )
-    assert resolve_ptr(mock_b172, "/rq3/whole_study_accounting/total_study_budget_usd") == 19.99
+    assert (
+        resolve_ptr(
+            mock_b172,
+            "/rq3/whole_study_financial_accounting/total_study_budget_usd",
+        )
+        == 19.99
+    )
     assert (
         resolve_ptr(
             mock_b172,
@@ -334,9 +340,9 @@ def test_fixture_population_helper_extracts_slots_with_private_label(tmp_path: P
     assert "{{S2_SINGLE_VIEW_ACC_E2E}}" in slots
     assert "{{S2_PAIRED_DELTA_PP}}" in slots
 
-    # Verify declarative shape-table map has 59 items with complete metadata
+    # Verify declarative shape-table map has 67 items with complete metadata
     decl_map = get_declarative_shape_table_map(slots)
-    assert len(decl_map) == 59
+    assert len(decl_map) == 67
     for item in decl_map:
         assert "slot_name" in item
         assert "input_field" in item
@@ -540,14 +546,19 @@ def test_js_deck_updater_execution_and_artifacts() -> None:
     assert audit.get("total_slides_count") == 12
     assert audit.get("total_notes_count") == 12
     assert audit.get("rendered_png_slides_count") == 12
-    assert audit.get("expected_numeric_slots_count") == 59
-    assert audit.get("actual_numeric_slots_count") == 59
-    assert audit.get("numeric_slot_edits") == 59
+    assert audit.get("expected_numeric_slots_count") == 67
+    assert audit.get("actual_numeric_slots_count") == 67
+    assert audit.get("numeric_slot_edits") == 67
     assert audit.get("disclaimer_edits", 0) > 0
-    assert audit.get("substitutions_performed", 0) == 59 + audit.get("disclaimer_edits", 0)
+    assert audit.get("substitutions_performed", 0) == 67 + audit.get("disclaimer_edits", 0)
 
     decl_mapping = audit.get("declarative_mapping", [])
-    assert len(decl_mapping) == 59
+    assert len(decl_mapping) == 67
+    verified_bindings = audit.get("verified_bindings", [])
+    assert len(verified_bindings) == 67
+    for vb in verified_bindings:
+        assert vb.get("verified") is True
+        assert "bound_line" in vb
     for entry in decl_mapping:
         assert "slot_name" in entry
         assert "shape_id" in entry
@@ -648,7 +659,7 @@ def test_js_deck_updater_negative_cases(tmp_path: Path) -> None:
     assert "[FAIL_CLOSED]" in (proc_missing_map.stderr + proc_missing_map.stdout)
     assert "not found" in (proc_missing_map.stderr + proc_missing_map.stdout)
 
-    # Case E: Declarative map with wrong count (< 59 items)
+    # Case E: Declarative map with wrong count (< 67 items)
     truncated_map = tmp_path / "truncated_map.json"
     truncated_map.write_text(json.dumps([{"slot_name": "TEST"}]), encoding="utf-8")
     proc_trunc = subprocess.run(
@@ -659,7 +670,7 @@ def test_js_deck_updater_negative_cases(tmp_path: Path) -> None:
     )
     assert proc_trunc.returncode == 1
     assert "[FAIL_CLOSED]" in (proc_trunc.stderr + proc_trunc.stdout)
-    assert "59 items" in (proc_trunc.stderr + proc_trunc.stdout)
+    assert "67 items" in (proc_trunc.stderr + proc_trunc.stdout)
 
 
 def test_js_deck_updater_dependency_unavailable_on_clean_env(tmp_path: Path) -> None:
@@ -685,3 +696,231 @@ def test_js_deck_updater_dependency_unavailable_on_clean_env(tmp_path: Path) -> 
     )
     output = proc.stdout + proc.stderr
     assert "[DEPENDENCY_UNAVAILABLE]" in output
+
+
+def test_producer_consumer_contract_rq_analysis() -> None:
+    """Producer-consumer contract verification for rq_analysis.json.
+
+    Verifies that the bundle produces whole_study_financial_accounting (not just
+    whole_study_accounting), and that per-condition delta_vs_baseline exists for all RAG conditions.
+    """
+    rq_path = REPO_ROOT / "outputs" / "reproduction" / "fixture_diagnostics" / "rq_analysis.json"
+    assert rq_path.is_file(), f"Missing rq_analysis.json: {rq_path}"
+    data = json.loads(rq_path.read_text(encoding="utf-8"))
+
+    # Producer-consumer financial accounting check
+    rq3 = data.get("rq3", {})
+    assert "whole_study_financial_accounting" in rq3, (
+        "Producer contract broken: rq3 missing required key 'whole_study_financial_accounting'"
+    )
+    fin = rq3["whole_study_financial_accounting"]
+    assert "total_study_budget_usd" in fin
+    assert "canonical_conditions_total_usd" in fin
+    assert "net_remaining_uncommitted_budget_usd" in fin
+    assert "prior_pilot_provisional_hold_usd" in fin
+
+    # Per-condition deltas for RAG conditions
+    rq1_by_cond = data.get("rq1", {}).get("by_condition", {})
+    for cond in ("rag_k1", "rag_k3", "rag_k5", "rag_k10"):
+        assert cond in rq1_by_cond
+        c_row = rq1_by_cond[cond]
+        delta_info = c_row.get("delta_vs_baseline")
+        assert delta_info is not None, f"Missing delta_vs_baseline for {cond}"
+        acc_delta = delta_info.get("accuracy_delta") or delta_info.get("delta_accuracy_end_to_end")
+        f1_delta = delta_info.get("macro_f1_delta") or delta_info.get("delta_macro_f1")
+        assert acc_delta is not None, f"Missing accuracy delta for {cond}"
+        assert f1_delta is not None, f"Missing macro_f1 delta for {cond}"
+
+
+def test_slide8_table_per_condition_deltas() -> None:
+    """Slide 8 table must render dedicated, distinct deltas per RAG condition."""
+    audit_file = REPO_ROOT / "reports" / "evidence" / "deck_updater_fixture_audit.json"
+    assert audit_file.is_file(), f"Missing audit file: {audit_file}"
+    audit = json.loads(audit_file.read_text(encoding="utf-8"))
+
+    verified_bindings = audit.get("verified_bindings", [])
+    bindings_by_slot = {vb["slot_name"]: vb for vb in verified_bindings}
+
+    # Verify per-condition delta slots exist and are bound to sh/98rehwve
+    k1_acc_delta = bindings_by_slot["RQ1_ACC_DELTA_RAG_K1"]["injected_value"]
+    k3_acc_delta = bindings_by_slot["RQ1_ACC_DELTA_RAG_K3"]["injected_value"]
+    k5_acc_delta = bindings_by_slot["RQ1_ACC_DELTA_RAG_K5"]["injected_value"]
+    k10_acc_delta = bindings_by_slot["RQ1_ACC_DELTA_RAG_K10"]["injected_value"]
+
+    # Invariants: deltas must be distinct, not cloned across rows
+    deltas = {k1_acc_delta, k3_acc_delta, k5_acc_delta, k10_acc_delta}
+    assert len(deltas) == 4, f"Deltas across conditions must be distinct: {deltas}"
+
+    # Verify bound lines correspond to their respective condition
+    assert "rag_k1" in bindings_by_slot["RQ1_ACC_DELTA_RAG_K1"]["bound_line"]
+    assert "rag_k3" in bindings_by_slot["RQ1_ACC_DELTA_RAG_K3"]["bound_line"]
+    assert "rag_k5" in bindings_by_slot["RQ1_ACC_DELTA_RAG_K5"]["bound_line"]
+    assert "rag_k10" in bindings_by_slot["RQ1_ACC_DELTA_RAG_K10"]["bound_line"]
+
+
+def test_cohort_and_provenance_separation() -> None:
+    """Slide 6 and Slide 9 must have explicitly separated cohorts and zones."""
+    audit_file = REPO_ROOT / "reports" / "evidence" / "deck_updater_fixture_audit.json"
+    assert audit_file.is_file(), f"Missing audit file: {audit_file}"
+    audit = json.loads(audit_file.read_text(encoding="utf-8"))
+
+    bindings = audit.get("verified_bindings", [])
+    sh6_lines = [b["bound_line"] for b in bindings if b["shape_id"] == "sh/7m98ru9g"]
+    sh9_lines = [b["bound_line"] for b in bindings if b["shape_id"] == "sh/ofq5svm5"]
+
+    # Slide 6: Must have both pilot (N=756) and fixture (N=718) separate sections
+    assert any("Diagnostic Fixture Hit@10" in line for line in sh6_lines)
+    assert any("Diagnostic Fixture Retrieval Miss Rate" in line for line in sh6_lines)
+
+    # Slide 9: Must have telemetry separate from whole-study accounting
+    assert any("no_rag" in line and "prompt tokens" in line for line in sh9_lines)
+    assert any("rag_k10" in line and "prompt tokens" in line for line in sh9_lines)
+    assert any("Canonical Total" in line for line in sh9_lines)
+    assert any("prior_pilot_provisional_hold_usd" in line for line in sh9_lines)
+
+
+def test_numerical_fidelity_and_binding_fails_on_row_swap() -> None:
+    """verifySlotBinding must reject slot value placed in wrong condition's row."""
+    node_exe = _find_node_exe()
+
+    # Test via node invocation of verifySlotBinding
+    test_code = """
+    import { verifySlotBinding } from './scripts/artifact_tool_deck_updater.mjs';
+
+    // Mock shape content with rag_k1 and rag_k3 rows
+    const shapeContent = [
+      'Condition      Accuracy    Macro-F1    Delta vs No-RAG',
+      'rag_k1         0.4123      0.3456      +0.0456 (+0.0345 F1)',
+      'rag_k3         0.4500      0.4000      +0.0612 (+0.0521 F1)',
+    ].join('\\n');
+
+    // Case 1: Matching slot in correct row -> verified: true
+    const validItem = {
+      slot_name: 'RQ1_ACC_RAG_K1',
+      source_pointer: '/rq1/by_condition/rag_k1/accuracy_end_to_end',
+      shape_id: 'sh/98rehwve',
+      injected_value: '0.4123',
+    };
+    const res1 = verifySlotBinding(shapeContent, validItem);
+    if (!res1.verified) {
+      console.error('Expected res1 to be verified', res1);
+      process.exit(1);
+    }
+
+    // Case 2: Swapped slot (rag_k1 value looking for rag_k3 value) -> verified: false
+    const swappedItem = {
+      slot_name: 'RQ1_ACC_RAG_K1',
+      source_pointer: '/rq1/by_condition/rag_k1/accuracy_end_to_end',
+      shape_id: 'sh/98rehwve',
+      injected_value: '0.4500',
+    };
+    const res2 = verifySlotBinding(shapeContent, swappedItem);
+    if (res2.verified) {
+      console.error('Expected res2 to fail verification due to row mismatch', res2);
+      process.exit(2);
+    }
+
+    console.log('BINDING_TEST_SUCCESS');
+    process.exit(0);
+    """
+
+    proc = subprocess.run(
+        [node_exe, "--input-type=module", "-e", test_code],
+        capture_output=True,
+        text=True,
+        cwd=str(REPO_ROOT),
+    )
+    assert proc.returncode == 0, f"Binding verification failed: {proc.stderr}\n{proc.stdout}"
+    assert "BINDING_TEST_SUCCESS" in proc.stdout
+
+
+def test_canonical_mode_fails_closed_on_fixture_data() -> None:
+    """Canonical mode fails closed when pointing to fixture data."""
+    from scripts.populate_presentation_fixtures import (
+        DEFAULT_FIXTURE_DIR,
+        extract_fixture_slots,
+    )
+
+    with pytest.raises(RuntimeError, match=r"\[FAIL_CLOSED\]"):
+        extract_fixture_slots(DEFAULT_FIXTURE_DIR, canonical_mode=True)
+
+
+def test_canonical_mode_contract_with_mock_bundle(tmp_path: Path) -> None:
+    """Canonical mode verifies terminal seal and metric bundle against root contract."""
+    import hashlib
+
+    from scripts.populate_presentation_fixtures import (
+        assert_canonical_safety,
+    )
+
+    # 1. Create a mock terminal run seal
+    seal_obj = {
+        "schema_version": "1.0.0",
+        "seal_type": "canonical-run-seal-v1",
+        "experiment_id": "synthetic-paired-test-1",
+        "study_id": "study-root-s1",
+        "production_ready": True,
+        "fixture_only": False,
+        "has_breach": False,
+        "total_records": 6400,
+        "cumulative_settled_cost_usd": "6.57575890",
+        "uncommitted_available_balance_usd": "13.36160100",
+        "protocol_version": "experiment-protocol-v1.1",
+        "protocol_sha256": "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c",
+        "code_manifest_sha256": "8b1b3ea400000000000000000000000000000000000000000000000000000000",
+        "sealed_artifact_digests": {},
+        "terminal_proof": {
+            "exit_code": 0,
+            "pid": 12345,
+            "task_id": "task-test-001",
+            "run_id": "live-66b94b1676bf46a9",
+            "artifact_log_sha256": (
+                "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+            ),
+            "final_summary": "CANONICAL TEST STUDY EXECUTION COMPLETED 6400 RECORDS",
+        },
+    }
+    seal_bytes = json.dumps(seal_obj, indent=2).encode("utf-8")
+    seal_sha256 = hashlib.sha256(seal_bytes).hexdigest()
+    seal_file = tmp_path / "canonical_run_seal_v1.json"
+    seal_file.write_bytes(seal_bytes)
+
+    # 2. Create conforming canonical_metric_bundle_v1.json
+    bundle_obj = {
+        "schema_version": "1.0.0",
+        "bundle_type": "canonical-metric-bundle-v1",
+        "fixture_only": False,
+        "execution_mode": "live",
+        "dataset_split": "test",
+        "experiment_id": "synthetic-paired-test-1",
+        "run_id": "live-66b94b1676bf46a9",
+        "protocol_version": "experiment-protocol-v1.1",
+        "protocol_sha256": "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c",
+        "terminal_seal": {
+            "path": str(seal_file),
+            "sha256": seal_sha256,
+        },
+        "source_file_digests": {},
+        "output_file_digests": {},
+    }
+    bundle_file = tmp_path / "canonical_metric_bundle_v1.json"
+    bundle_file.write_text(json.dumps(bundle_obj, indent=2), encoding="utf-8")
+
+    # 3. Canonical analysis data
+    canonical_analysis = {
+        "fixture_only": False,
+        "provenance_status": "canonical_study",
+        "experiment_id": "synthetic-paired-test-1",
+    }
+
+    # Must pass without raising
+    assert_canonical_safety(tmp_path, canonical_analysis, metric_bundle_path=bundle_file)
+
+    # Corrupt terminal seal SHA -> must fail closed
+    bad_bundle = dict(bundle_obj)
+    bad_bundle["terminal_seal"] = {"path": str(seal_file), "sha256": "bad_sha_0000"}
+    bad_bundle_file = tmp_path / "bad_bundle.json"
+    bad_bundle_file.write_text(json.dumps(bad_bundle, indent=2), encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match=r"\[FAIL_CLOSED\]"):
+        assert_canonical_safety(tmp_path, canonical_analysis, metric_bundle_path=bad_bundle_file)

@@ -14,6 +14,7 @@ SAFETY BOUNDARY:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import sys
@@ -408,6 +409,86 @@ DECLARATIVE_SLOT_DEFINITIONS: list[dict[str, Any]] = [
         "category": "all_5_conditions_rq1",
     },
     {
+        "slot_name": "RQ1_ACC_DELTA_RAG_K1",
+        "input_field": "accuracy_delta",
+        "units": "delta (+/-)",
+        "source_pointer": "/rq1/by_condition/rag_k1/delta_vs_baseline/accuracy_delta",
+        "shape_id": "sh/98rehwve",
+        "slide_number": 8,
+        "slot_key": "{{S2_ACC_DELTA_RAG_K1}}",
+        "category": "all_5_conditions_rq1",
+    },
+    {
+        "slot_name": "RQ1_MACRO_F1_DELTA_RAG_K1",
+        "input_field": "macro_f1_delta",
+        "units": "delta (+/-)",
+        "source_pointer": "/rq1/by_condition/rag_k1/delta_vs_baseline/macro_f1_delta",
+        "shape_id": "sh/98rehwve",
+        "slide_number": 8,
+        "slot_key": "{{S2_MACRO_F1_DELTA_RAG_K1}}",
+        "category": "all_5_conditions_rq1",
+    },
+    {
+        "slot_name": "RQ1_ACC_DELTA_RAG_K3",
+        "input_field": "accuracy_delta",
+        "units": "delta (+/-)",
+        "source_pointer": "/rq1/by_condition/rag_k3/delta_vs_baseline/accuracy_delta",
+        "shape_id": "sh/98rehwve",
+        "slide_number": 8,
+        "slot_key": "{{S2_ACC_DELTA_RAG_K3}}",
+        "category": "all_5_conditions_rq1",
+    },
+    {
+        "slot_name": "RQ1_MACRO_F1_DELTA_RAG_K3",
+        "input_field": "macro_f1_delta",
+        "units": "delta (+/-)",
+        "source_pointer": "/rq1/by_condition/rag_k3/delta_vs_baseline/macro_f1_delta",
+        "shape_id": "sh/98rehwve",
+        "slide_number": 8,
+        "slot_key": "{{S2_MACRO_F1_DELTA_RAG_K3}}",
+        "category": "all_5_conditions_rq1",
+    },
+    {
+        "slot_name": "RQ1_ACC_DELTA_RAG_K5",
+        "input_field": "accuracy_delta",
+        "units": "delta (+/-)",
+        "source_pointer": "/rq1/by_condition/rag_k5/delta_vs_baseline/accuracy_delta",
+        "shape_id": "sh/98rehwve",
+        "slide_number": 8,
+        "slot_key": "{{S2_ACC_DELTA_RAG_K5}}",
+        "category": "all_5_conditions_rq1",
+    },
+    {
+        "slot_name": "RQ1_MACRO_F1_DELTA_RAG_K5",
+        "input_field": "macro_f1_delta",
+        "units": "delta (+/-)",
+        "source_pointer": "/rq1/by_condition/rag_k5/delta_vs_baseline/macro_f1_delta",
+        "shape_id": "sh/98rehwve",
+        "slide_number": 8,
+        "slot_key": "{{S2_MACRO_F1_DELTA_RAG_K5}}",
+        "category": "all_5_conditions_rq1",
+    },
+    {
+        "slot_name": "RQ1_ACC_DELTA_RAG_K10",
+        "input_field": "accuracy_delta",
+        "units": "delta (+/-)",
+        "source_pointer": "/rq1/by_condition/rag_k10/delta_vs_baseline/accuracy_delta",
+        "shape_id": "sh/98rehwve",
+        "slide_number": 8,
+        "slot_key": "{{S2_ACC_DELTA_RAG_K10}}",
+        "category": "all_5_conditions_rq1",
+    },
+    {
+        "slot_name": "RQ1_MACRO_F1_DELTA_RAG_K10",
+        "input_field": "macro_f1_delta",
+        "units": "delta (+/-)",
+        "source_pointer": "/rq1/by_condition/rag_k10/delta_vs_baseline/macro_f1_delta",
+        "shape_id": "sh/98rehwve",
+        "slide_number": 8,
+        "slot_key": "{{S2_MACRO_F1_DELTA_RAG_K10}}",
+        "category": "all_5_conditions_rq1",
+    },
+    {
         "slot_name": "RQ1_BEST_CONDITION",
         "input_field": "best_rag_condition",
         "units": "condition name",
@@ -625,7 +706,7 @@ DECLARATIVE_SLOT_DEFINITIONS: list[dict[str, Any]] = [
         "slot_name": "RQ3_PRIOR_PILOT_HOLD_USD",
         "input_field": "prior_pilot_provisional_hold_usd",
         "units": "USD",
-        "source_pointer": "/rq3/whole_study_accounting/prior_pilot_provisional_hold_usd",
+        "source_pointer": "/rq3/whole_study_financial_accounting/prior_pilot_provisional_hold_usd",
         "shape_id": "sh/ofq5svm5",
         "slide_number": 9,
         "slot_key": "{{S2_PRIOR_PILOT_HOLD_USD}}",
@@ -635,7 +716,7 @@ DECLARATIVE_SLOT_DEFINITIONS: list[dict[str, Any]] = [
         "slot_name": "RQ3_CANONICAL_TOTAL_USD",
         "input_field": "canonical_conditions_total_usd",
         "units": "USD",
-        "source_pointer": "/rq3/whole_study_accounting/canonical_conditions_total_usd",
+        "source_pointer": "/rq3/whole_study_financial_accounting/canonical_conditions_total_usd",
         "shape_id": "sh/ofq5svm5",
         "slide_number": 9,
         "slot_key": "{{S2_CANONICAL_TOTAL_USD}}",
@@ -645,7 +726,9 @@ DECLARATIVE_SLOT_DEFINITIONS: list[dict[str, Any]] = [
         "slot_name": "RQ3_NET_REMAINING_USD",
         "input_field": "net_remaining_uncommitted_budget_usd",
         "units": "USD",
-        "source_pointer": "/rq3/whole_study_accounting/net_remaining_uncommitted_budget_usd",
+        "source_pointer": (
+            "/rq3/whole_study_financial_accounting/net_remaining_uncommitted_budget_usd"
+        ),
         "shape_id": "sh/ofq5svm5",
         "slide_number": 9,
         "slot_key": "{{S2_NET_REMAINING_USD}}",
@@ -655,7 +738,7 @@ DECLARATIVE_SLOT_DEFINITIONS: list[dict[str, Any]] = [
         "slot_name": "RQ3_TOTAL_STUDY_BUDGET_USD",
         "input_field": "total_study_budget_usd",
         "units": "USD",
-        "source_pointer": "/rq3/whole_study_accounting/total_study_budget_usd",
+        "source_pointer": "/rq3/whole_study_financial_accounting/total_study_budget_usd",
         "shape_id": "sh/ofq5svm5",
         "slide_number": 9,
         "slot_key": "{{S2_TOTAL_STUDY_BUDGET_USD}}",
@@ -683,6 +766,134 @@ def assert_fixture_safety(fixture_dir: Path, analysis_data: dict[str, Any]) -> N
             "provenance_status='diagnostic_fixture'. "
             f"Refusing to operate on uncertified data at: {fixture_dir}"
         )
+
+
+def assert_canonical_safety(
+    analysis_dir: Path,
+    analysis_data: dict[str, Any],
+    metric_bundle_path: Path | None = None,
+) -> None:
+    """Fail closed if target is not certified as canonical study data with seal and bundle."""
+    # 1. Base validation on analysis bundle
+    if analysis_data.get("fixture_only") is not False:
+        actual_val = analysis_data.get("fixture_only")
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Canonical mode requires fixture_only=False. Target: {actual_val!r}."
+        )
+
+    provenance = analysis_data.get("provenance_status", "")
+    if provenance not in ("canonical_study", "live_test", "canonical_test", "live"):
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Canonical mode requires canonical provenance (got '{provenance}'). "
+            "Refusing to execute on non-canonical data."
+        )
+
+    # 2. Locate and validate canonical metric bundle
+    bundle_file = metric_bundle_path or (analysis_dir / "canonical_metric_bundle_v1.json")
+    if not bundle_file.is_file():
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Canonical mode requires canonical metric bundle: {bundle_file}"
+        )
+
+    try:
+        bundle = json.loads(bundle_file.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise RuntimeError(f"[FAIL_CLOSED] Corrupted canonical metric bundle: {exc}") from exc
+
+    if bundle.get("fixture_only") is not False:
+        raise RuntimeError("[FAIL_CLOSED] Metric bundle specifies fixture_only != False.")
+    if bundle.get("execution_mode") != "live":
+        mode = bundle.get("execution_mode")
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Metric bundle execution_mode must be 'live' (got '{mode}')."
+        )
+    if bundle.get("bundle_type") != "canonical-metric-bundle-v1":
+        btype = bundle.get("bundle_type")
+        raise RuntimeError(f"[FAIL_CLOSED] Unsupported bundle_type in metric bundle: '{btype}'.")
+
+    # 3. Terminal Seal verification
+    term_seal_spec = bundle.get("terminal_seal")
+    if not term_seal_spec or not isinstance(term_seal_spec, dict):
+        raise RuntimeError("[FAIL_CLOSED] Metric bundle missing 'terminal_seal' specification.")
+
+    seal_rel_path = term_seal_spec.get("path")
+    expected_seal_sha = term_seal_spec.get("sha256")
+    if not seal_rel_path or not expected_seal_sha:
+        raise RuntimeError("[FAIL_CLOSED] Incomplete terminal_seal specification in bundle.")
+
+    seal_path = Path(seal_rel_path)
+    if not seal_path.is_absolute():
+        if (REPO_ROOT / seal_path).is_file():
+            seal_path = REPO_ROOT / seal_path
+        elif (analysis_dir / seal_path).is_file():
+            seal_path = analysis_dir / seal_path
+        else:
+            seal_path = REPO_ROOT / seal_path
+
+    if not seal_path.is_file():
+        raise RuntimeError(f"[FAIL_CLOSED] Terminal run seal file missing: {seal_path}")
+
+    seal_bytes = seal_path.read_bytes()
+    computed_seal_sha = hashlib.sha256(seal_bytes).hexdigest()
+    if computed_seal_sha != expected_seal_sha:
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Terminal run seal SHA-256 mismatch. "
+            f"Expected {expected_seal_sha}, computed {computed_seal_sha} for {seal_path}"
+        )
+
+    try:
+        seal_data = json.loads(seal_bytes.decode("utf-8"))
+    except Exception as exc:
+        raise RuntimeError(f"[FAIL_CLOSED] Corrupted terminal run seal: {exc}") from exc
+
+    if seal_data.get("fixture_only") is not False:
+        raise RuntimeError("[FAIL_CLOSED] Terminal seal specifies fixture_only=True.")
+    if seal_data.get("production_ready") is not True:
+        raise RuntimeError("[FAIL_CLOSED] Terminal seal specifies production_ready=False.")
+    if seal_data.get("has_breach") is not False:
+        raise RuntimeError("[FAIL_CLOSED] Terminal seal indicates breach (has_breach=True).")
+    if seal_data.get("total_records") != 6400:
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Terminal seal total_records ({seal_data.get('total_records')}) != 6400."
+        )
+
+    term_proof = seal_data.get("terminal_proof")
+    if not term_proof or not isinstance(term_proof, dict):
+        raise RuntimeError("[FAIL_CLOSED] Terminal seal missing 'terminal_proof' object.")
+
+    for req_field in (
+        "exit_code",
+        "pid",
+        "task_id",
+        "run_id",
+        "artifact_log_sha256",
+        "final_summary",
+    ):
+        if req_field not in term_proof:
+            raise RuntimeError(
+                f"[FAIL_CLOSED] Terminal seal terminal_proof missing required field: {req_field}"
+            )
+
+    # 4. Identity consistency checks
+    if bundle.get("protocol_sha256") and seal_data.get("protocol_sha256"):
+        if bundle["protocol_sha256"] != seal_data["protocol_sha256"]:
+            raise RuntimeError(
+                "[FAIL_CLOSED] Protocol SHA-256 mismatch between metric bundle and terminal seal."
+            )
+
+    # 5. Output file digests verification
+    output_digests = bundle.get("output_file_digests")
+    if output_digests and isinstance(output_digests, dict):
+        for fname, exp_sha in output_digests.items():
+            fpath = analysis_dir / fname
+            if fpath.is_file() and exp_sha and not exp_sha.startswith("..."):
+                f_bytes = fpath.read_bytes()
+                computed_f_sha = hashlib.sha256(f_bytes).hexdigest()
+                if computed_f_sha != exp_sha:
+                    raise RuntimeError(
+                        f"[FAIL_CLOSED] Output file digest mismatch for {fname}: "
+                        f"expected {exp_sha}, computed {computed_f_sha}"
+                    )
 
 
 def _check_finite(val: float | int | None, name: str) -> None:
@@ -714,6 +925,8 @@ def extract_fixture_slots(
     fixture_dir: Path,
     analysis_file: Path | None = None,
     split_manifest_path: Path | None = None,
+    canonical_mode: bool = False,
+    metric_bundle_path: Path | None = None,
 ) -> dict[str, Any]:
     """Extract all placeholder numeric slots from canonical fixture artifacts.
 
@@ -725,7 +938,10 @@ def extract_fixture_slots(
         raise FileNotFoundError(f"Fixture analysis bundle not found: {analysis_path}")
 
     analysis = json.loads(analysis_path.read_text(encoding="utf-8"))
-    assert_fixture_safety(fixture_dir, analysis)
+    if canonical_mode:
+        assert_canonical_safety(fixture_dir, analysis, metric_bundle_path=metric_bundle_path)
+    else:
+        assert_fixture_safety(fixture_dir, analysis)
 
     manifest_p = split_manifest_path or SPLIT_MANIFEST_PATH
     manifest_rel = (
@@ -741,7 +957,7 @@ def extract_fixture_slots(
     rq2_by_cond = rq2["by_condition"]
     rq3 = analysis["rq3"]
     tradeoffs = rq3["tradeoffs_by_condition"]
-    whole_fin = rq3["whole_study_accounting"]
+    whole_fin = rq3["whole_study_financial_accounting"]
     views = rq3["view_diagnostics"]
 
     best_rag_acc_delta = rq1["best_rag_accuracy_delta"]
@@ -749,11 +965,17 @@ def extract_fixture_slots(
 
     slots: dict[str, Any] = {
         "_metadata": {
-            "fixture_only": True,
-            "disclaimer": DISCLAIMER_TEXT,
+            "fixture_only": False if canonical_mode else True,
+            "disclaimer": (
+                "CANONICAL STUDY EXECUTION - CANONICAL RESEARCH RESULTS"
+                if canonical_mode
+                else DISCLAIMER_TEXT
+            ),
+            "provenance_status": "canonical_study" if canonical_mode else "diagnostic_fixture",
             "experiment_id": analysis.get("experiment_id", "mock_fixture"),
             "source_fixture_dir": str(fixture_dir),
             "declarative_shape_table_map_count": len(DECLARATIVE_SLOT_DEFINITIONS),
+            "canonical_mode": canonical_mode,
         },
         # Slide 6: Dataset & Views Topology
         "{{S2_MANIFEST_PATH}}": manifest_rel,
@@ -789,6 +1011,30 @@ def extract_fixture_slots(
         else:
             ci_str = "[N/A, N/A]"
         slots[f"{{{{S2_CI_95_{c.upper()}}}}}"] = ci_str
+
+        # Per-condition delta vs baseline for RAG conditions
+        if c != "no_rag":
+            delta_info = c_row.get("delta_vs_baseline")
+            if delta_info is None:
+                raise KeyError(f"Missing required delta_vs_baseline in rq1.by_condition.{c}")
+            acc_delta = (
+                delta_info.get("accuracy_delta")
+                if "accuracy_delta" in delta_info
+                else delta_info.get("delta_accuracy_end_to_end")
+            )
+            f1_delta = (
+                delta_info.get("macro_f1_delta")
+                if "macro_f1_delta" in delta_info
+                else delta_info.get("delta_macro_f1")
+            )
+            if acc_delta is None or f1_delta is None:
+                raise KeyError(f"Incomplete delta_vs_baseline metrics for {c}")
+            slots[f"{{{{S2_ACC_DELTA_{c.upper()}}}}}"] = _fmt_delta(
+                acc_delta, f"{c}.accuracy_delta"
+            )
+            slots[f"{{{{S2_MACRO_F1_DELTA_{c.upper()}}}}}"] = _fmt_delta(
+                f1_delta, f"{c}.macro_f1_delta"
+            )
 
     # Slide 8: RQ2 Error Decomposition (using k=10 representative condition)
     if "rag_k10" not in rq2_by_cond:
@@ -995,15 +1241,34 @@ def generate_fixture_markdown_preview(
         f"- Paired Single Acc: `{slots.get('{{S2_PAIRED_SINGLE_ACC}}')}`",
         f"- Paired Context Acc: `{slots.get('{{S2_PAIRED_CONTEXT_ACC}}')}`",
         f"- Paired Delta: `{slots.get('{{S2_PAIRED_DELTA_PP}}')}` pp",
-        "",
         "### Slide 8: RQ1 5 Conditions & RQ2 Error Decomposition",
         f"- Accuracy (No-RAG): `{slots.get('{{S2_ACC_E2E_NO_RAG}}')}`",
-        f"- Accuracy (RAG k=10): `{slots.get('{{S2_ACC_E2E_RAG_K10}}')}`",
+        (
+            f"- Accuracy (RAG k=1): `{slots.get('{{S2_ACC_E2E_RAG_K1}}')}` "
+            f"(ΔAcc: `{slots.get('{{S2_ACC_DELTA_RAG_K1}}')}`, "
+            f"ΔF1: `{slots.get('{{S2_MACRO_F1_DELTA_RAG_K1}}')}`)"
+        ),
+        (
+            f"- Accuracy (RAG k=3): `{slots.get('{{S2_ACC_E2E_RAG_K3}}')}` "
+            f"(ΔAcc: `{slots.get('{{S2_ACC_DELTA_RAG_K3}}')}`, "
+            f"ΔF1: `{slots.get('{{S2_MACRO_F1_DELTA_RAG_K3}}')}`)"
+        ),
+        (
+            f"- Accuracy (RAG k=5): `{slots.get('{{S2_ACC_E2E_RAG_K5}}')}` "
+            f"(ΔAcc: `{slots.get('{{S2_ACC_DELTA_RAG_K5}}')}`, "
+            f"ΔF1: `{slots.get('{{S2_MACRO_F1_DELTA_RAG_K5}}')}`)"
+        ),
+        (
+            f"- Accuracy (RAG k=10): `{slots.get('{{S2_ACC_E2E_RAG_K10}}')}` "
+            f"(ΔAcc: `{slots.get('{{S2_ACC_DELTA_RAG_K10}}')}`, "
+            f"ΔF1: `{slots.get('{{S2_MACRO_F1_DELTA_RAG_K10}}')}`)"
+        ),
         f"- Macro-F1 (No-RAG): `{slots.get('{{S2_MACRO_F1_NO_RAG}}')}`",
         f"- Macro-F1 (RAG k=10): `{slots.get('{{S2_MACRO_F1_RAG_K10}}')}`",
         (
             f"- Best Condition: `{slots.get('{{S2_BEST_RAG_CONDITION}}')}` "
-            f"(Delta: `{slots.get('{{S2_BEST_RAG_ACC_DELTA}}')}`)"
+            f"(Delta Acc: `{slots.get('{{S2_BEST_RAG_ACC_DELTA}}')}`, "
+            f"Delta F1: `{slots.get('{{S2_BEST_RAG_F1_DELTA}}')}`)"
         ),
         f"- Provider Failure Rate: `{slots.get('{{S2_PROVIDER_FAIL_RATE_K10}}')}`",
         f"- Parse Failure Rate: `{slots.get('{{S2_PARSE_FAIL_RATE_K10}}')}`",
@@ -1068,10 +1333,26 @@ def main() -> int:
         default=DEFAULT_MAP_JSON,
         help="Path to write declarative shape table map as JSON.",
     )
+    parser.add_argument(
+        "--canonical",
+        action="store_true",
+        default=False,
+        help="Enforce canonical execution mode requiring verified seal and non-fixture provenance.",
+    )
+    parser.add_argument(
+        "--metric-bundle",
+        type=Path,
+        default=None,
+        help="Path to canonical metric bundle JSON (canonical_metric_bundle_v1.json).",
+    )
     args = parser.parse_args()
 
     try:
-        slots = extract_fixture_slots(args.fixture_dir)
+        slots = extract_fixture_slots(
+            args.fixture_dir,
+            canonical_mode=args.canonical,
+            metric_bundle_path=args.metric_bundle,
+        )
         decl_map = get_declarative_shape_table_map(slots)
         generate_fixture_markdown_preview(slots, args.output_md)
         args.output_json.write_text(json.dumps(slots, indent=2), encoding="utf-8")

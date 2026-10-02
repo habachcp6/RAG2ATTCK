@@ -8,8 +8,8 @@
 ## 1. Metadata & Safety Invariants
 - **Provenance Status**: `diagnostic_fixture`
 - **Disclaimer**: `DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS`
-- **Total Placeholders Extracted**: 60
-- **Declarative Shape-Table Slots**: 59
+- **Total Placeholders Extracted**: 68
+- **Declarative Shape-Table Slots**: 67
 
 ## 2. Populated Slot Values (by Presentation Slide)
 
@@ -33,13 +33,15 @@
 - Paired Single Acc: `0.5000`
 - Paired Context Acc: `0.5000`
 - Paired Delta: `+0.00` pp
-
 ### Slide 8: RQ1 5 Conditions & RQ2 Error Decomposition
 - Accuracy (No-RAG): `0.5000`
-- Accuracy (RAG k=10): `0.5000`
+- Accuracy (RAG k=1): `0.5200` (ΔAcc: `+0.0200`, ΔF1: `+0.0071`)
+- Accuracy (RAG k=3): `0.5500` (ΔAcc: `+0.0500`, ΔF1: `+0.0271`)
+- Accuracy (RAG k=5): `0.5800` (ΔAcc: `+0.0800`, ΔF1: `+0.0471`)
+- Accuracy (RAG k=10): `0.6000` (ΔAcc: `+0.1000`, ΔF1: `+0.0671`)
 - Macro-F1 (No-RAG): `0.0929`
-- Macro-F1 (RAG k=10): `0.0929`
-- Best Condition: `rag_k10` (Delta: `+0.0000`)
+- Macro-F1 (RAG k=10): `0.1600`
+- Best Condition: `rag_k10` (Delta Acc: `+0.1000`, Delta F1: `+0.0671`)
 - Provider Failure Rate: `0.0000`
 - Parse Failure Rate: `0.0000`
 - Invalid ID Rate: `0.1667`

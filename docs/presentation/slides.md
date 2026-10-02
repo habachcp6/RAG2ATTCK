@@ -137,22 +137,24 @@
 ## Slide 6: Kết Quả RQ2 - Chẩn Đoán Khâu Truy Xuất (RQ2: Retrieval Diagnostics)
 
 ### Nội dung trình chiếu
-- **Đánh giá độc lập bộ truy xuất trên 756 positive views:**
-  - *Hit@1:* $4.23\%$ (32 / 756)
-  - *Hit@3:* $16.80\%$ (127 / 756)
-  - *Hit@5:* $24.21\%$ (183 / 756)
-  - *Hit@10:* $45.11\%$ (341 / 756)
-  - *Macro Recall@10:* $43.14\%$  |  *Mean GT Rank khi trúng:* 5.21
-  - **Tỷ lệ vắng mặt trong Top-10 (Retrieval Failure):** $54.89\%$ (415 / 756)
+- **Phân định ranh giới mẫu số chẩn đoán truy xuất:**
+  - **[HISTORICAL DEV PILOT RETRIEVAL (Mẫu số N=756 views)]:**
+    - *Hit@1:* $4.23\%$ (32 / 756) | *Hit@3:* $16.80\%$ (127 / 756) | *Hit@5:* $24.21\%$ (183 / 756) | *Hit@10:* $45.11\%$ (341 / 756)
+    - *Macro Recall@10:* $43.14\%$  |  *Mean GT Rank khi trúng:* 5.21
+    - *Tỷ lệ vắng mặt trong Top-10 (Retrieval Failure):* $54.89\%$ (415 / 756)
+  - **[CANONICAL TEST RETRIEVAL (Mẫu số N=718 scorable views)]:**
+    - *Hit@10:* $44.71\%$ (321 / 718)
+    - *Retrieval Miss Rate:* $55.29\%$ (397 / 718)
+    - *Macro Recall@10:* $42.80\%$
 - **Khoảng cách ngữ nghĩa (Semantic Gap) ở `T1136.001`:**
   - Kỹ thuật `T1136.001` (Create Account: Local Account) đạt **0% Top-10 Hit Rate (0 / 99 views)**.
   - *Nguyên nhân:* Nhật ký Windows Event ID 4720 sử dụng từ ngữ hệ thống ("SamAccountName"), trong khi mô tả STIX ATT&CK nhấn mạnh mục tiêu chiến thuật ("persistence").
-- **Giả thuyết Context Scaling & Dilution ($k \in \{1, 3, 5, 10\}$):**
-  - Tăng $k$ giúp cải thiện độ phủ (Hit@k) nhưng đưa thêm nhiều token gây nhiễu distractor.
-  - Giả thuyết đang được kiểm chứng thực nghiệm đối chứng end-to-end trên ma trận TEST.
+- **Bản chất nhãn yếu (Weak-Label Diagnostic):**
+  - Retrieval miss không đồng nghĩa với vắng mặt hoàn toàn ngữ cảnh hữu ích.
+  - Việc gán đúng khi miss không chứng minh năng lực suy luận nội tại tuyệt đối.
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Chẩn đoán độc lập khâu tìm kiếm (RQ2) trên 756 positive views cho thấy Hit@10 chỉ đạt 45.11%, nghĩa là trong 54.89% trường hợp, kỹ thuật đúng hoàn toàn vắng bóng trong Top-10 gửi cho LLM. Điển hình là kỹ thuật T1136.001 với 0/99 lần trúng Top-10 do khoảng cách ngữ nghĩa giữa Event ID 4720 và STIX description. Chúng tôi đặt ra giả thuyết Context Scaling & Dilution (k=1,3,5,10): tăng k cải thiện độ phủ nhưng tăng nguy cơ nhiễu distractor; giả thuyết này đang được kiểm chứng thực nghiệm đối chứng end-to-end.
+> "Chẩn đoán độc lập khâu tìm kiếm (RQ2) tách bạch rõ ràng giữa hai mẫu số: DEV pilot lịch sử (N=756 views, Hit@10=45.11%, Miss=54.89%) và tập TEST chuẩn tắc (N=718 scorable views, Hit@10=44.71%, Miss=55.29%). Điển hình là kỹ thuật T1136.001 với 0/99 lần trúng Top-10 do khoảng cách ngữ nghĩa giữa Event ID 4720 và STIX description. Chúng tôi nêu rõ Ground Truth vắng mặt trong retrieval là chẩn đoán nhãn yếu (weak-label diagnostic): Retrieval miss không đồng nghĩa với vắng mặt ngữ cảnh hữu ích, và việc đoán đúng khi miss không chứng minh năng lực suy luận nội tại tuyệt đối.
 > 
 > *Bằng chứng dự án:* `outputs/reproduction/figures/fig_rq2_retrieval_hit_rates.png`; `outputs/reproduction/tables/table_1_retrieval_diagnostics.md`; `tests/test_retrieval_diagnostics.py`."
 
@@ -161,26 +163,20 @@
 ## Slide 7: Tác Động Của Hình Thức Biểu Diễn Telemetry (Representation Gap)
 
 ### Nội dung trình chiếu
-- **So sánh cặp kịch bản đối ứng (Pairwise Single vs. Contextual across 670 pairs):**
-  - **Phân tích Cặp Anchor Chuẩn (296 cặp hợp lệ - Primary):**
-    - Tiêu chí: Single view có duy nhất 1 kỹ thuật và kỹ thuật này xuất hiện trong Contextual view (374 cặp bị loại trừ do đa nhãn/mismatch).
-    - **Single-event đạt thứ hạng tốt hơn:** **65 cặp** (22.0%).
-    - **Contextual-event đạt thứ hạng tốt hơn:** **23 cặp** (7.8%).
-    - **Hiệu năng thứ hạng ngang nhau:** **208 cặp** (70.3%), trong đó:
-      - Cả hai biểu diễn cùng trượt Top-10: **147 cặp**.
-      - Đồng hạng chính xác trong Top-10: **61 cặp**.
-  - **Nhóm lọc đơn kỹ thuật nghiêm ngặt (252 cặp - Secondary):**
-    - Cả Single và Contextual view đều có đúng 1 kỹ thuật trùng nhau: Single tốt hơn 59 cặp (23.4%) vs. Contextual 23 cặp (9.1%), ngang nhau 170 cặp.
+- **Phân bố Ground Truth Support & Cặp Biểu Diễn:**
+  - Toàn bộ 474 frozen macro classes chỉ có **8 kỹ thuật** xuất hiện trong tập TEST GT (tổng 768 support instances trên 718 scorable views do 40 views đa nhãn multi-GT).
+  - Phân tích cặp: **278 cặp đối sánh hoàn chỉnh** (238 cùng GT + 40 khác GT) phân bố trên **440 cụm** kịch bản.
+  - Ở độ sâu $k=10$, cả Single và Contextual view đều đạt độ chính xác quan sát được là **83.81%** (Paired Delta = 0.0 pp, McNemar $p = 1.0$).
 - **Hiện tượng Benign Drift khi mở rộng ngữ cảnh:**
   - Gom các sự kiện lân cận bổ sung nhiều token thông thường (Explorer, DNS, svchost).
   - Vector dense embedding bị kéo lệch về hành vi bình thường, làm tụt thứ hạng kỹ thuật tấn công.
 - **Schema So Sánh Đối Chứng Scaffold `[PENDING EXECUTION]`:**
-  - Đối chứng: Zero-Shot No-RAG vs Zero-Shot RAG (k=1..10) vs Prompt Scaffolds.
-  - Giả thuyết: Khối tri thức RAG bổ trợ cần đi kèm tiền lọc sự kiện nghi vấn thay vì nhúng toàn bộ chuỗi log thô.
-  - Kết luận chính thức đang chờ dữ liệu hoàn tất từ ma trận TEST chuẩn (PID 50192).
+  - Đối chứng: Zero-Shot No-RAG vs Zero-Shot RAG ($k=1..10$) vs Prompt Scaffolds.
+  - Không suy diễn quan hệ nhân quả thuần túy khi nhãn thay đổi giữa các hình thức biểu diễn.
+  - Kết luận chính thức ghi nhận quan sát mô tả độc lập trên ma trận TEST.
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "So sánh đối ứng trên 296 cặp anchor chuẩn chỉ ra rằng biểu diễn Single-event đạt thứ hạng tìm kiếm tốt hơn Contextual-event (65 cặp vs 23 cặp), và hơn 70% có thứ hạng tương đương (phần lớn do cả hai cùng trượt Top-10). Điều này cho thấy việc đưa thêm log nền gây hiện tượng benign drift. Chúng tôi thiết lập schema so sánh đối chứng scaffold giữa Zero-Shot No-RAG, Zero-Shot RAG và các prompt scaffold, hiện đang được gắn nhãn [PENDING EXECUTION] chờ toàn bộ ma trận TEST hoàn tất để đưa ra kết luận khoa học chính thức.
+> "Tại Slide 7, phân tích cặp biểu diễn làm rõ cấu trúc ground truth support: toàn bộ 474 classes chỉ có 8 kỹ thuật xuất hiện trong tập TEST GT (768 support instances trên 718 scorable views do có 40 multi-GT views). Trên 278 cặp đối sánh hoàn chỉnh (238 cùng GT + 40 khác GT) trên 440 cụm, ở k=10 cả Single và Contextual view đều đạt 83.81% (paired delta = 0.0 pp, McNemar p = 1.0). Chúng tôi duy trì nhãn [PENDING EXECUTION] cho schema đối chứng scaffold, nghiêm cấm suy diễn quan hệ nhân quả thuần túy khi hình thức biểu diễn log thay đổi.
 > 
 > *Bằng chứng dự án:* `scripts/verify_t20_canonical_artifacts.py`; `outputs/reproduction/tables/table_4_pairwise_representation_comparison.md`; `tests/test_t20_canonical_artifacts.py`."
 
@@ -189,57 +185,50 @@
 ## Slide 8: Khung Đánh Giá End-to-End (RQ1) & Phân Rã Lỗi Theo 3 Trục Độc Lập D2i (RQ2)
 
 ### Nội dung trình chiếu
+- **Bảng Đối Chứng Hiệu Năng RQ1 & Ranh Giới Khoa Học Bắt Buộc:**
+  - *Hiệu năng quan sát được:* RAG $k=10$ đạt 571/718 (**79.53%**) vs No-RAG 560/718 (**77.99%**), Delta = **+1.53 pp** (+1.96% relative).
+  - *Độ bất định thống kê:* 95% Bootstrap CI của Delta là **[-2.35 pp, +5.30 pp]** (khoảng tin cậy chứa 0).
+  - *Kiểm định ý nghĩa:* McNemar test $p = 0.422 > 0.05$ (không đạt ý nghĩa thống kê ở mức $\alpha = 0.05$).
+  - *Quy chuẩn diễn đạt bắt buộc:* Mô tả $k=10$ là **"độ chính xác quan sát được cao nhất trong thử nghiệm kèm độ bất định"** (observed highest tested accuracy and uncertainty). **CẤM** tuyên bố "chiến thắng có ý nghĩa thống kê" hoặc "lợi ích vượt trội trong production".
+  - *Macro-F1 (474 Frozen Universe):* $k=10$ đạt **0.0140** vs No-RAG **0.0126** (Delta +0.0014, có CI riêng; không dùng p-value của Accuracy thay cho Macro-F1).
 - **Mô hình phân rã lỗi theo 3 trục đo lường độc lập (Định đề D2i):**
-  - Định đề D2i quy định retrieval failure và downstream generation failure là **CÁC TRỤC ĐO LƯỜNG ĐỘC LẬP (Independent Measurement Axes)**, không phải phân hoạch xung khắc rời rạc và không giả định độc lập xác suất ngẫu nhiên (phần giao thoa khác 0).
-  - **Trục 1 - Retrieval Miss Rate:** $1 - \text{Hit}@k$ (kỹ thuật ground-truth vắng mặt trong Top-k theo tiêu chí D2h `ANY_MATCH`).
-  - **Trục 2 - Downstream Generation Failure:** mô hình phát sinh invalid ATT&CK ID (D2e), gặp lỗi provider (D2f), hoặc chọn sai kỹ thuật dù đã được cung cấp.
-  - **Trục 3 - Joint Overlap:** ghi nhận rõ các bản ghi retrieval trượt ĐỒNG THỜI mô hình phát sinh lỗi, không giả định độc lập ngẫu nhiên và không áp đặt thứ tự loại trừ nhân tạo.
+  - **Trục 1 - Retrieval Miss Rate:** Kỹ thuật ground-truth vắng mặt trong Top-k theo D2h `ANY_MATCH`.
+  - **Trục 2 - Downstream Generation Failure:** Invalid ATT&CK ID (D2e), Provider Fail (D2f), hoặc phân loại sai (Wrong Classification).
+  - **Trục 3 - Joint Overlap:** Ghi nhận rõ các bản ghi vừa trượt truy xuất vừa lỗi phân loại (không giả định độc lập ngẫu nhiên).
 - **Các thước đo có điều kiện (Conditional Metrics):**
-  - $P(\text{Correct} \mid \text{GT Retrieved in Top-}k)$: Đánh giá năng lực lựa chọn của LLM khi bộ tìm kiếm hoạt động chính xác.
-  - $P(\text{Correct} \mid \text{GT Absent from Top-}k)$: Đánh giá khả năng LLM tự sửa sai dựa trên tri thức nội tại.
-  - Macro-F1 & Exact Match: Tính trên không gian kỹ thuật chuẩn Frozen Benchmark Universe (D2d).
-  - Nguyên tắc Fail-Closed: Mẫu lỗi API, timeout (D2f) hay mã sai cú pháp (D2e) đều tính vào mẫu số.
+  - $P(\text{Correct} \mid \text{GT Retrieved in Top-}k)$: Đánh giá lựa chọn khi có ngữ cảnh trúng.
+  - $P(\text{Correct} \mid \text{GT Absent from Top-}k)$: Xác suất gán đúng quan sát được khi vắng mặt ngữ cảnh trong Top-k (không giả định tự sửa sai nội tại).
 - **Trạng thái thực nghiệm RQ1 & RQ2 `[PENDING EXECUTION]`:**
-  - Ma trận TEST chính thức: 1,280 views x 5 nhánh (6,400 bản ghi) đang trong tiến trình chạy (PID 50192).
-  - Evaluator tuân thủ Fail-Closed: Từ chối công bố điểm chính thức khi chưa đủ 6,400 records.
-  - Kiểm định toán học Evaluator: Đã xác thực ngoại tuyến qua 5 test fixtures (`outputs/reproduction/fixture_diagnostics/`).
+  - Kiểm định toán học Evaluator đã xác thực ngoại tuyến qua các test fixtures chuẩn tắc.
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Khung đánh giá RQ1 & RQ2 được xây dựng trên định đề D2i (Independent Axes). Chúng tôi bóc tách lỗi theo 3 trục đo lường độc lập mà không giả định tính độc lập xác suất ngẫu nhiên giữa retrieval và downstream generation, bởi hai trục này có phần giao thoa rõ ràng. Các chỉ số có điều kiện P(Correct | GT in Top-k) và P(Correct | GT NOT in Top-k) cho phép định lượng chính xác xem LLM có bị đánh lừa bởi distractor hay có khả năng tự sửa sai. Toàn bộ ma trận chính thức 6,400 bản ghi đang chạy; tính đúng đắn toán học của Evaluator đã được chứng minh qua 5 test fixtures.
+> "Tại Slide 8, bảng đối chứng RQ1 ghi nhận RAG k=10 đạt độ chính xác quan sát được cao nhất là 79.53% (571/718) so với No-RAG 77.99% (560/718), tức Delta = +1.53 pp. Tuy nhiên, khoảng tin cậy 95% Bootstrap CI của Delta là [-2.35 pp, +5.30 pp] (chứa giá trị 0) và kiểm định McNemar cho p = 0.422 > 0.05. Do đó, nghiên cứu khẳng định đây là 'độ chính xác quan sát được cao nhất trong thử nghiệm kèm độ bất định', tuyệt đối không tuyên bố chiến thắng có ý nghĩa thống kê hay lợi ích vượt trội trong production. Macro-F1 trên không gian 474 lớp đạt 0.0140 vs 0.0126 (delta +0.0014) phản ánh sự thưa thớt của 8 kỹ thuật thực tế.
 > 
-> *Bằng chứng dự án:* `reports/experiment_protocol_v1.md` (D2e, D2f, D2h, D2i; SHA-256: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`); `tests/test_experiment_evaluation.py` (94 tests pass)."
+> *Bằng chứng dự án:* `reports/experiment_protocol_v1.md` (D2e, D2f, D2h, D2i; SHA-256: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`); `tests/test_experiment_evaluation.py`."
 
 ---
 
-## Slide 9: Nghiên Cứu Tiêu Thụ Tài Nguyên & Chi Phí Hạch Toán Ước Tính (RQ3)
+## Slide 9: Nghiên Cứu Tiêu Thụ Tài Nguyên & Hạch Toán Tài Chính Toàn Nghiên Cứu (RQ3)
 
 ### Nội dung trình chiếu
-- **Kết quả thực nghiệm từ DEV Cost Pilot (Dữ Liệu Giả Lập DEV Split):**
-  - *Dữ liệu đo lường:* 20 cuộc gọi thực tế tới `gpt-5.6-luna` (xhigh) trên tập `synthetic-paired-v1 DEV split` (4 views).
-  - Tỷ lệ tuân thủ schema JSON: **100% VALID** (20/20 bản ghi).
-  - Số lần thử lại (retries): **0** (100% thành công ở lần gọi đầu tiên, trễ TB 8,127.6 ms).
-  - *Lưu ý dữ liệu:* DEV split là dữ liệu giả lập (synthetic benchmark), không phải telemetry thực địa.
-- **Mức tiêu thụ Token và Chi phí hạch toán ước tính:**
-  | Điều kiện | Input Tokens TB | Output Tokens TB | Chi phí hạch toán ước tính / Yêu cầu |
-  | :--- | :---: | :---: | :---: |
-  | `no_rag` ($k=0$) | 643.0 | 224.2 | ~$0.00039 |
-  | `rag_k1` ($k=1$) | 1,115.0 | 332.2 | ~$0.00062 |
-  | `rag_k3` ($k=3$) | 1,740.5 | 1,087.2 | ~$0.00165 (ước tính từ telemetry pilot ban đầu) |
-  | `rag_k5` ($k=5$) | 2,518.2 | 840.2 | ~$0.00151 |
-  | `rag_k10` ($k=10$) | 4,536.5 | 800.8 | ~$0.00187 |
-- **Phân định rõ ràng chi phí thực nghiệm:**
-  - **Chi phí hạch toán ước tính từ token quan sát được & biểu giá công bố:**
-    - Tính toán được: **$0.024209 USD** cho 20 pilot calls (mức thận trọng: $0.026320 USD).
-    - Dự phóng tập TEST (canonical forecast): **$8.20 – $8.99 USD** cho 6,400 calls.
-  - **Khoản giữ chỗ tạm thời (provisional reservation):**
-    - `prior_pilot_provisional_hold_usd`: **$0.05264010 USD** (khoản giữ chỗ conservative trong cấu hình hệ thống).
-  - **Trần ngân sách đóng băng (Hard Budget Cap):** **$19.99 USD** (`hard_budget_limit_usd`).
-- **Quy luật đánh đổi (Trade-off):** Tăng $k$ từ 1 lên 10 giúp tăng Hit rate từ 4.2% lên 45.1%, nhưng lượng token đầu vào tăng ~4x. Chi phí dự phóng TEST (< $9 USD) nằm an toàn dưới trần ngân sách $19.99 USD.
+- **Phân định rõ 3 phân vùng tài nguyên & chi phí tài chính độc lập:**
+  - **▶ ZONE 1: HISTORICAL DEV PILOT BASELINE (20 Requests Responses API):**
+    - 20 requests thực tế qua Responses API trên DEV split tổng hợp (100% VALID, 0 retry, trễ TB 8,127.6 ms, chi phí ~$0.0242 USD).
+    - Tách biệt hoàn toàn khỏi dữ liệu và kết luận của tập TEST.
+  - **▶ ZONE 2: CANONICAL TEST TELEMETRY & TRADEOFFS (N=718 Scorable Views):**
+    - Độ trễ trung vị (Median Latency): $k=10$ đạt **2,667 ms** vs No-RAG **2,303 ms**.
+    - Chi phí hạch toán mỗi logical request: $k=10$ là **$0.001679 USD** vs No-RAG **$0.000365 USD**.
+  - **▶ ZONE 3: WHOLE STUDY FINANCIAL ACCOUNTING (6,400 Request Matrix):**
+    - Trần ngân sách tối đa đóng băng cứng: **$19.99000000 USD** (`hard_budget_limit_usd`).
+    - Giữ chỗ pilot DEV thận trọng tạm thời: **$0.05264010 USD** (`prior_pilot_provisional_hold_usd`).
+    - Quyết toán thực tế 5 điều kiện chính thức: **$6.57575890 USD** (trong đó $k=1$ là $1.29723350 USD, bao gồm $0.53974560 USD worst-charge của 1 lượt attempt 0 API_FAILURE trước khi retry thành công; 0 missing usage trên terminal records).
+    - Tổng cam kết (Committed Spend): **$6.62839900 USD**.
+    - Số dư chưa cam kết còn lại (Net Remaining): **$13.36160100 USD** (0 holds, 0 breach).
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Trong phân tích RQ3, chúng tôi minh bạch số liệu chi phí từ DEV Cost Pilot trên tập synthetic-paired-v1 DEV split (20 requests thực tế tới gpt-5.6-luna). Đây là chi phí hạch toán ước tính từ token quan sát được và biểu giá công bố, không phải hóa đơn OpenAI phát hành. Chi phí hạch toán thực tế là $0.024209 USD (mức thận trọng: $0.026320 USD). Dự phóng chuẩn tắc cho toàn bộ tập TEST là $8.20 – $8.99 USD. Trong cấu hình hệ thống, khoản prior_pilot_provisional_hold_usd được giữ chỗ tạm thời ở mức $0.05264010 USD. Toàn bộ tiến trình được kiểm soát bởi trần ngân sách đóng băng $19.99 USD, bảo đảm không bao giờ vượt ngân sách.
+> "Slide 9 làm rõ 3 phân vùng hạch toán tài chính độc lập: Zone 1 là DEV pilot 20 requests lịch sử (~$0.0242 USD) được phân tách tuyệt đối; Zone 2 là đo lường đánh đổi thực tế trên 718 views (k=10 trễ 2,667 ms vs no_rag 2,303 ms; chi phí $0.001679 USD vs $0.000365 USD / logical request); và Zone 3 là quyết toán toàn thể 6,400 requests chính thức: tổng chi phí 5 điều kiện là $6.57575890 USD (trong đó k1 ghi nhận $1.29723350 USD gồm $0.53974560 USD worst-charge từ 1 lần lỗi API trước khi retry thành công; toàn bộ terminal records đều có token usage đầy đủ). Tổng cam kết $6.62839900 USD nằm an toàn dưới trần ngân sách đóng băng $19.99000000 USD với số dư khả dụng còn lại là $13.36160100 USD, không phát sinh vi phạm.
 > 
-> *Bằng chứng dự án:* `config/experiment_config.json` (hard_budget_limit_usd: 19.99); `reports/evidence/dev_cost_pilot_20261001/summary.json` (SHA-256: `f8dfe99479346dbbeff94d6e9dc7d11019623e5932ef27a00f1c3222e4c92b23`); `tests/test_monetary_guard.py`."
+> *Bằng chứng dự án:* `config/experiment_config.json`; `reports/evidence/dev_cost_pilot_20261001/summary.json`; `tests/test_monetary_guard.py`."
 
 ---
 

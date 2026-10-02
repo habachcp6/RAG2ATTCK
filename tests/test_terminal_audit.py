@@ -11,9 +11,12 @@ from scripts.audit_terminal_run import (
     audit_completeness_and_cardinality,
     audit_financial_ledger_and_tariffs,
     audit_journal_join_and_lifecycle,
+    audit_protected_baseline_22_files,
     audit_provenance_and_hash_invariants,
     audit_secret_sanitization,
+    audit_terminal_process_proof,
     generate_audit_seal,
+    main,
 )
 from src.experiment.config import canonical_bytes, digest
 from src.experiment.schemas import CONDITIONS, Candidate, ExperimentRecord
@@ -729,17 +732,11 @@ def test_audit_fails_on_missing_provenance_and_launcher(tmp_path):
         )
 
 
-def test_audit_fails_on_ledger_hash_refund_count_drift(tmp_path):
-    """Drift in count, hash, or refund raises AuditVerificationError (counterexample 2)."""
+def _setup_valid_native_study(tmp_path):
     test_native_ledger_without_has_breach_passes(tmp_path)
     study_root = tmp_path / "study"
     ledger_path = study_root / "artifacts" / "study_budget" / "study_ledger.json"
     ledger = json.loads(ledger_path.read_bytes())
-    ledger["settlement_records_count"] = 999
-    ledger["settled_records"]["view_01:no_rag"]["record_sha256"] = "0" * 64
-    ledger["settled_records"]["view_01:no_rag"]["refund_usd"] = "9.00000000"
-    ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
-
     rec = _create_mock_record("view_01", "no_rag", prompt_tokens=728, completion_tokens=76)
     key = ("view_01", "no_rag")
     receipt = {
@@ -762,9 +759,285 @@ def test_audit_fails_on_ledger_hash_refund_count_drift(tmp_path):
         "record_sha256": rec_sha,
         "breach": False,
     }
+    return study_root, ledger_path, ledger, {key: rec}, {key: [receipt]}, {key: settle}
 
-    validator_root = REPO_ROOT
-    with pytest.raises(AuditVerificationError):
-        audit_financial_ledger_and_tariffs(
-            study_root, validator_root, {key: rec}, {key: [receipt]}, {key: settle}
+
+def test_audit_fails_on_ledger_count_drift(tmp_path):
+    """Drift in settlement_records_count raises AuditVerificationError."""
+    study_root, ledger_path, ledger, recs, receipts, settles = _setup_valid_native_study(tmp_path)
+    ledger["settlement_records_count"] = 999
+    ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="settlement_records_count"):
+        audit_financial_ledger_and_tariffs(study_root, REPO_ROOT, recs, receipts, settles)
+
+
+def test_audit_fails_on_ledger_record_hash_drift(tmp_path):
+    """Drift in record_sha256 raises AuditVerificationError."""
+    study_root, ledger_path, ledger, recs, receipts, settles = _setup_valid_native_study(tmp_path)
+    ledger["settled_records"]["view_01:no_rag"]["record_sha256"] = "0" * 64
+    ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="record_sha256 mismatch"):
+        audit_financial_ledger_and_tariffs(study_root, REPO_ROOT, recs, receipts, settles)
+
+
+def test_audit_fails_on_ledger_refund_drift(tmp_path):
+    """Drift in refund_usd raises AuditVerificationError."""
+    study_root, ledger_path, ledger, recs, receipts, settles = _setup_valid_native_study(tmp_path)
+    ledger["settled_records"]["view_01:no_rag"]["refund_usd"] = "9.00000000"
+    ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="Refund drift"):
+        audit_financial_ledger_and_tariffs(study_root, REPO_ROOT, recs, receipts, settles)
+
+
+def test_audit_fails_on_pilot_hold_drift(tmp_path):
+    """Drift in prior_pilot_provisional_hold_usd raises AuditVerificationError."""
+    study_root, ledger_path, ledger, recs, receipts, settles = _setup_valid_native_study(tmp_path)
+    ledger["prior_pilot_provisional_hold_usd"] = "0.10000000"
+    ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="pilot hold drift"):
+        audit_financial_ledger_and_tariffs(study_root, REPO_ROOT, recs, receipts, settles)
+
+
+def test_protected_baseline_22_files_pass():
+    """All 22 protected baseline files, protocol decisions, and pricing contract pass."""
+    res = audit_protected_baseline_22_files(REPO_ROOT)
+    assert res["all_22_files_verified"] is True
+    assert res["verified_file_count"] == 22
+    assert res["protocol_canonical_digest"] == (
+        "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c"
+    )
+
+
+def test_protected_baseline_file_byte_mismatch(tmp_path):
+    """Byte drift in any of the 22 protected baseline files raises AuditVerificationError."""
+    fake_inv = tmp_path / "baseline.json"
+    dummy_dict = {f"fake_{i}": "0" * 64 for i in range(21)}
+    dummy_dict["prompts/baseline_v1.txt"] = "0" * 64
+    fake_inv.write_text(
+        json.dumps(
+            {
+                "baseline_sha": "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315",
+                "protected_files": dummy_dict,
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(
+        AuditVerificationError,
+        match="Protected baseline hash mismatch|Missing protected baseline file",
+    ):
+        audit_protected_baseline_22_files(REPO_ROOT, fake_inv)
+
+
+def test_protocol_canonical_digest_mismatch(tmp_path):
+    """Tampered protocol decisions or hash raises AuditVerificationError."""
+    fake_root = tmp_path / "validator_root"
+    fake_root.mkdir()
+    cfg_dir = fake_root / "config"
+    cfg_dir.mkdir()
+    real_proto = json.loads((REPO_ROOT / "config" / "experiment_protocol_v1.json").read_bytes())
+    real_proto["d1_raw_response_policy"] = "DISCARD"
+    (cfg_dir / "experiment_protocol_v1.json").write_text(json.dumps(real_proto), encoding="utf-8")
+    (cfg_dir / "pricing_v1.json").write_text(
+        (REPO_ROOT / "config" / "pricing_v1.json").read_text(encoding="utf-8"), encoding="utf-8"
+    )
+
+    proto_sha = digest((cfg_dir / "experiment_protocol_v1.json").read_bytes())
+    pricing_sha = digest((cfg_dir / "pricing_v1.json").read_bytes())
+    prot_files = {
+        "config/experiment_protocol_v1.json": proto_sha,
+        "config/pricing_v1.json": pricing_sha,
+    }
+    for i in range(20):
+        (fake_root / f"dummy_{i}").write_bytes(b"dummy")
+        prot_files[f"dummy_{i}"] = digest(b"dummy")
+
+    fake_inv = tmp_path / "baseline.json"
+    fake_inv.write_text(
+        json.dumps(
+            {
+                "baseline_sha": "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315",
+                "protected_files": prot_files,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        AuditVerificationError,
+        match="Protocol canonical digest mismatch|Protocol validation failed",
+    ):
+        audit_protected_baseline_22_files(fake_root, fake_inv)
+
+
+def test_production_rejects_active_lockfiles(tmp_path):
+    """Presence of active lockfile (study_ledger.lock, etc.) triggers error in production."""
+    exp_dir = tmp_path / "exp"
+    exp_dir.mkdir()
+    study_root = tmp_path / "study"
+    study_root.mkdir()
+    artifacts_dir = study_root / "artifacts" / "study_budget"
+    artifacts_dir.mkdir(parents=True)
+
+    # Test study_ledger.lock
+    ledger_lock = artifacts_dir / "study_ledger.lock"
+    ledger_lock.write_text("lock", encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="active lockfile found"):
+        main(["--exp-dir", str(exp_dir), "--study-root", str(study_root), "--is-production"])
+
+    ledger_lock.unlink()
+
+    # Test .study_anchor.lock
+    anchor_lock = study_root / ".study_anchor.lock"
+    anchor_lock.write_text("lock", encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="active lockfile found"):
+        main(["--exp-dir", str(exp_dir), "--study-root", str(study_root), "--is-production"])
+
+    anchor_lock.unlink()
+
+    # Test .run.lock
+    run_lock = exp_dir / ".run.lock"
+    run_lock.write_text("lock", encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="active lockfile found"):
+        main(["--exp-dir", str(exp_dir), "--study-root", str(study_root), "--is-production"])
+
+
+def test_production_rejects_mock_fixture_mode(tmp_path):
+    """Production audit strictly rejects mock_fixture execution mode."""
+    exp_dir = tmp_path / "exp"
+    exp_dir.mkdir()
+    study_root = tmp_path / "study"
+    study_root.mkdir()
+    (study_root / "scripts").mkdir()
+    launcher_path = study_root / "scripts" / "run_experiments.py"
+    launcher_path.write_text("#!/usr/bin/env python\n", encoding="utf-8")
+
+    (exp_dir / "run_summary.json").write_text(
+        json.dumps({"complete": True, "record_count": 6400}), encoding="utf-8"
+    )
+    proof_file = tmp_path / "proof.json"
+    proof_file.write_text(json.dumps({"exit_code": 0, "pid": 1234}), encoding="utf-8")
+    (exp_dir / "manifest.json").write_text(
+        json.dumps({"execution_mode": "mock_fixture", "run_id": "test_run"}), encoding="utf-8"
+    )
+
+    with pytest.raises(
+        AuditVerificationError, match="Production audit requires execution_mode='live'"
+    ):
+        main(
+            [
+                "--exp-dir",
+                str(exp_dir),
+                "--study-root",
+                str(study_root),
+                "--terminal-proof-file",
+                str(proof_file),
+                "--is-production",
+            ]
+        )
+
+
+def test_production_requires_terminal_proof_file(tmp_path):
+    """Production audit requires valid zero-exit terminal proof file."""
+    exp_dir = tmp_path / "exp"
+    exp_dir.mkdir()
+    study_root = tmp_path / "study"
+    study_root.mkdir()
+    (study_root / "scripts").mkdir()
+    launcher_path = study_root / "scripts" / "run_experiments.py"
+    launcher_path.write_text("#!/usr/bin/env python\n", encoding="utf-8")
+    (exp_dir / "run_summary.json").write_text(
+        json.dumps({"complete": True, "record_count": 6400}), encoding="utf-8"
+    )
+
+    # Missing argument
+    with pytest.raises(
+        AuditVerificationError, match="Production audit requires --terminal-proof-file"
+    ):
+        main(["--exp-dir", str(exp_dir), "--study-root", str(study_root), "--is-production"])
+
+    # Non-zero exit code
+    bad_proof = tmp_path / "bad_proof.json"
+    bad_proof.write_text(json.dumps({"exit_code": 1}), encoding="utf-8")
+    with pytest.raises(
+        AuditVerificationError, match="Terminal process proof indicates non-zero exit"
+    ):
+        main(
+            [
+                "--exp-dir",
+                str(exp_dir),
+                "--study-root",
+                str(study_root),
+                "--terminal-proof-file",
+                str(bad_proof),
+                "--is-production",
+            ]
+        )
+
+
+def test_audit_terminal_process_proof_success(tmp_path):
+    """Authoritative task terminal proof validation succeeds when exit_code is 0."""
+    proof_path = tmp_path / "proof.json"
+    proof_path.write_text(
+        json.dumps({"exit_code": 0, "task_id": "task-1264", "pid": 50192}), encoding="utf-8"
+    )
+    info = audit_terminal_process_proof(proof_path)
+    assert info["exit_code"] == 0
+    assert info["task_id"] == "task-1264"
+    assert info["pid"] == 50192
+    assert len(info["sha256"]) == 64
+
+
+def test_audit_fails_on_reordered_journal_events(tmp_path):
+    """Reordered journal events trigger AuditVerificationError."""
+    exp_dir = tmp_path / "exp"
+    exp_dir.mkdir()
+    rec = _create_mock_record("view_01", "no_rag")
+    p = exp_dir / "no_rag_predictions.jsonl"
+    p.write_text(json.dumps(rec.model_dump()) + "\n", encoding="utf-8")
+    for c in CONDITIONS:
+        if c != "no_rag":
+            (exp_dir / f"{c}_predictions.jsonl").write_text("", encoding="utf-8")
+
+    rec_sha = digest(canonical_bytes(rec.model_dump()))
+
+    # Settle before complete
+    jlines = [
+        json.dumps({"event": "header", "manifest_sha256": "dummy_sha", "max_requests": 100}),
+        json.dumps({"event": "attempt", "key": ["view_01", "no_rag"], "ordinal": 1}),
+        json.dumps(
+            {
+                "event": "monetary_settle",
+                "key": ["view_01", "no_rag"],
+                "cost_usd": "0.00027320",
+                "refund_usd": "2.15870920",
+                "record_sha256": rec_sha,
+                "breach": False,
+            }
+        ),
+        json.dumps({"event": "complete", "key": ["view_01", "no_rag"], "record_sha256": rec_sha}),
+    ]
+    (exp_dir / "request_journal.jsonl").write_text("\n".join(jlines) + "\n", encoding="utf-8")
+
+    with pytest.raises(AuditVerificationError, match="Reordered journal events"):
+        audit_journal_join_and_lifecycle(exp_dir, {("view_01", "no_rag"): rec})
+
+
+def test_generate_audit_seal_fails_on_missing_required_file(tmp_path):
+    """Missing any required artifact for audit seal triggers fail-closed AuditVerificationError."""
+    exp_dir = tmp_path / "exp"
+    exp_dir.mkdir()
+    study_root = tmp_path / "study"
+    study_root.mkdir()
+    rec = _create_mock_record("view_01", "no_rag")
+
+    with pytest.raises(AuditVerificationError, match="Missing required artifact for seal"):
+        generate_audit_seal(
+            exp_dir,
+            study_root,
+            REPO_ROOT,
+            tmp_path / "seal.json",
+            {("view_01", "no_rag"): rec},
+            Decimal("0.0"),
+            Decimal("19.99"),
         )

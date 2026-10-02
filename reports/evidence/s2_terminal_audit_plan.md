@@ -1,16 +1,13 @@
-# Phase S2 Terminal Audit Plan: Independent Canonical Validation Protocol (Revision 4)
-**Document Version:** 4.0.0 (Post-Codex Review FAIL VALIDATOR_PROBE_R3 Fully Addressed)  
+# Phase S2 Terminal Audit Plan: Independent Canonical Validation Protocol (Revision 5)
+**Document Version:** 5.0.0 (Codex Review Acceptance Hardening: Protected Baseline 22, Native Preloader, Terminal Proof)  
 **Phase:** S2 Terminal Validation (PREPARATION COMPLETE — AWAITING RUNNER TERMINAL EXIT)  
 **Auditor:** Independent Canonical Validator (Strictly READ-ONLY)  
 **Branch:** `codex/s2-terminal-validator`  
-**Worktree:** `D:/RAG2ATTCK-worktrees/validator-prep-80dbeb3`  
-**Target Live Worktree:** `D:/RAG2ATTCK-worktrees/canonical-live-usd1999`  
-**Target Experiment Directory:** `D:/RAG2ATTCK-worktrees/canonical-live-usd1999/artifacts/experiments/synthetic-paired-test-1`  
-**Study Root:** `D:/RAG2ATT&CK`  
 **Target Git Commit:** `80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315`  
 **Governing Protocol:** `experiment-protocol-v1.1` (`d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`)  
 **Code Manifest:** `8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4`  
 **Pricing Contract:** `pricing-v1` (`4adfe8a0630bc1703a92e233133ea55eeff21ef5312dc3102369c267767c9565`)  
+**Protected Baseline Inventory:** `artifacts/orchestration/integration_protected_baseline.json` (22 files verified)  
 **Launcher Wrapper SHA-256:** `05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa`  
 **Canary First Line Raw SHA-256:** `83351ad996f7d4d70910051f47f7a3d4c45a46259431dcf92e764dbf5d554770`  
 **Canary Canonical Record Digest:** `dabf60970aa5a18d93f95976aafdaeef2d747e24d9bcb7b13176e63e2edde034`  
@@ -174,10 +171,10 @@ The audit distinguishes between the two distinct byte representations of the can
 
 ## 8. Executable Terminal Audit Script & Offline Unit Tests
 
-- **Production Script:** Implemented at [`scripts/audit_terminal_run.py`](file:///D:/RAG2ATTCK-worktrees/validator-prep-80dbeb3/scripts/audit_terminal_run.py).
-- **Offline Unit Test Suite:** Implemented at [`tests/test_terminal_audit.py`](file:///D:/RAG2ATTCK-worktrees/validator-prep-80dbeb3/tests/test_terminal_audit.py).
-- **Test Runner Guard:** Implemented at [`scripts/run_offline_tests.py`](file:///D:/RAG2ATTCK-worktrees/validator-prep-80dbeb3/scripts/run_offline_tests.py).
-- **Test Coverage (19/19 Passed Cleanly):**
+- **Production Script:** Implemented at [`scripts/audit_terminal_run.py`](scripts/audit_terminal_run.py).
+- **Offline Unit Test Suite:** Implemented at [`tests/test_terminal_audit.py`](tests/test_terminal_audit.py).
+- **Test Runner Guard:** Implemented at [`scripts/run_offline_tests.py`](scripts/run_offline_tests.py).
+- **Test Coverage (31/31 Passed Cleanly):**
   1. `test_audit_passes_on_valid_fixture`: Verifies valid multi-sample flow.
   2. `test_audit_fails_on_duplicate_complete`: Asserts rejection of duplicate complete events.
   3. `test_audit_fails_on_duplicate_settle`: Asserts rejection of duplicate settle events.
@@ -196,14 +193,26 @@ The audit distinguishes between the two distinct byte representations of the can
   16. `test_generate_audit_seal_fails_on_missing_artifact`: Asserts fail-closed sealing if any of 10 target files is missing.
   17. `test_audit_fails_on_invalid_money_format`: Asserts rejection of boolean or non-finite monetary values.
   18. `test_audit_fails_on_missing_provenance_and_launcher`: Asserts rejection on empty provenance directory and missing launcher script (reproducing Supervisor Counterexample 1).
-  19. `test_audit_fails_on_ledger_hash_refund_count_drift`: Asserts rejection on ledger mutation of record count, record sha, or refund usd (reproducing Supervisor Counterexample 2).
+  19. `test_audit_fails_on_ledger_count_drift`: Asserts rejection on mutated `settlement_records_count`.
+  20. `test_audit_fails_on_ledger_record_hash_drift`: Asserts rejection on mutated `record_sha256`.
+  21. `test_audit_fails_on_ledger_refund_drift`: Asserts rejection on mutated `refund_usd`.
+  22. `test_audit_fails_on_pilot_hold_drift`: Asserts rejection on mutated prior pilot hold balance.
+  23. `test_protected_baseline_22_files_pass`: Asserts clean validation of all 22 protected baseline files, canonical protocol digest, and pricing hash.
+  24. `test_protected_baseline_file_byte_mismatch`: Asserts fail-closed rejection on byte drift in any protected baseline file.
+  25. `test_protocol_canonical_digest_mismatch`: Asserts fail-closed rejection on drift in canonical protocol digest.
+  26. `test_production_rejects_active_lockfiles`: Asserts rejection when native locks (`study_ledger.lock`, `.study_anchor.lock`, `.run.lock`) exist.
+  27. `test_production_rejects_mock_fixture_mode`: Asserts rejection if mock fixture mode or test fixtures are detected in production.
+  28. `test_production_requires_terminal_proof_file`: Asserts mandatory `--terminal-proof-file` in production mode.
+  29. `test_audit_terminal_process_proof_success`: Verifies authoritative verification and SHA-256 binding of terminal process proof.
+  30. `test_audit_fails_on_reordered_journal_events`: Asserts rejection when journal events violate required sequential ordering (`attempt` -> `complete` -> `monetary_settle`).
+  31. `test_generate_audit_seal_fails_on_missing_required_file`: Asserts seal generation failure if any required production file or baseline is missing.
 
 ---
 
 ## 9. Audit Seal Separation & Secret Sanitization Hygiene
 
 - **Seal Manifest Separation:** The validator generates `reports/evidence/canonical_run_seal_v1.json` in its own private worktree directory. It does **NOT** write to or modify files in the live output directory. Original live files are preserved byte-for-byte.
-- **No Self-Digest Loop:** The seal locks digests of 10 live run artifacts (`manifest.json`, `run_summary.json`, `request_journal.jsonl`, 5 prediction files, `study_ledger.json`, `.study_anchor.json`); it does not hash itself.
+- **No Self-Digest Loop:** The seal locks digests of live run artifacts (`manifest.json`, `run_summary.json`, `request_journal.jsonl`, 5 prediction files, `study_ledger.json`, `.study_anchor.json`), terminal proof file, and 22 protected baseline files; it does not hash itself.
 - **Secret Sanitization Hygiene:**
   - Scans for regex patterns `sk-[a-zA-Z0-9_-]{20,}` and `Bearer\s+[a-zA-Z0-9_\-\.]{20,}`.
   - Logging reports match **COUNTS and FILE PATHS ONLY**, never logging matched secret text or token strings.
@@ -219,34 +228,52 @@ Upon authoritative notification of task-1264 clean terminal exit and explicit tr
 Get-Process -Id 50192 -ErrorAction SilentlyContinue
 
 # 2. Run Comprehensive Terminal Audit via CLI (Read-Only)
+$EXP_DIR = "artifacts/experiments/synthetic-paired-test-1"
+$STUDY_ROOT = ".."
+$PROOF_FILE = "reports/evidence/terminal_proof_task1264.json"
+$BASELINE_PATH = "artifacts/orchestration/integration_protected_baseline.json"
+
 python scripts/audit_terminal_run.py `
-  --exp-dir "D:/RAG2ATTCK-worktrees/canonical-live-usd1999/artifacts/experiments/synthetic-paired-test-1" `
-  --study-root "D:/RAG2ATT&CK" `
-  --launcher-path "D:/RAG2ATT&CK/scripts/run_experiments.py" `
+  --exp-dir "$EXP_DIR" `
+  --study-root "$STUDY_ROOT" `
+  --launcher-path "$STUDY_ROOT/scripts/run_experiments.py" `
+  --protected-baseline-path "$BASELINE_PATH" `
+  --terminal-proof-file "$PROOF_FILE" `
   --is-production
 ```
 
 Or via direct Python API:
 ```python
+import os
 from pathlib import Path
 from src.experiment.config import load_plan
 from scripts.audit_terminal_run import (
     audit_completeness_and_cardinality,
-    audit_journal_join_and_lifecycle,
     audit_financial_ledger_and_tariffs,
+    audit_journal_join_and_lifecycle,
+    audit_protected_baseline_22_files,
     audit_provenance_and_hash_invariants,
     audit_secret_sanitization,
+    audit_terminal_process_proof,
     generate_audit_seal,
 )
 
-VAL_ROOT = Path(__file__).resolve().parent.parent if '__file__' in locals() else Path.cwd()
-EXP_DIR = Path('D:/RAG2ATTCK-worktrees/canonical-live-usd1999/artifacts/experiments/synthetic-paired-test-1')
-STUDY_ROOT = Path('D:/RAG2ATT&CK')
-SEAL_PATH = VAL_ROOT / 'reports/evidence/canonical_run_seal_v1.json'
-LAUNCHER_PATH = STUDY_ROOT / 'scripts/run_experiments.py'
+VAL_ROOT = Path(__file__).resolve().parent.parent if "__file__" in locals() else Path.cwd()
+EXP_DIR = Path(os.environ.get("EXP_DIR", "artifacts/experiments/synthetic-paired-test-1"))
+STUDY_ROOT = Path(os.environ.get("STUDY_ROOT", ".."))
+SEAL_PATH = VAL_ROOT / "reports/evidence/canonical_run_seal_v1.json"
+LAUNCHER_PATH = STUDY_ROOT / "scripts/run_experiments.py"
+PROOF_PATH = Path(os.environ.get("TERMINAL_PROOF_FILE", "reports/evidence/terminal_proof.json"))
+BASELINE_PATH = VAL_ROOT / "artifacts/orchestration/integration_protected_baseline.json"
 
-plan = load_plan(VAL_ROOT / 'config/experiment_config.json')
+plan = load_plan(VAL_ROOT / "config/experiment_config.json")
 expected_ids = {s.sample_id for s in plan.samples}
+
+# Run 22-protected baseline verification
+baseline_info = audit_protected_baseline_22_files(BASELINE_PATH, VAL_ROOT)
+
+# Run terminal process proof verification
+proof_sha = audit_terminal_process_proof(PROOF_PATH)
 
 records = audit_completeness_and_cardinality(EXP_DIR, expected_ids, require_all_conditions=True)
 receipts, settles = audit_journal_join_and_lifecycle(EXP_DIR, records)
@@ -255,20 +282,31 @@ audit_provenance_and_hash_invariants(
     VAL_ROOT, EXP_DIR, records, launcher_wrapper_path=LAUNCHER_PATH, is_production=True
 )
 audit_secret_sanitization(
-    list(EXP_DIR.glob('*.json')) + list(EXP_DIR.glob('*.jsonl')) + [
-        STUDY_ROOT / '.study_anchor.json',
-        STUDY_ROOT / 'artifacts/study_budget/study_ledger.json',
+    list(EXP_DIR.glob("*.json")) + list(EXP_DIR.glob("*.jsonl")) + [
+        STUDY_ROOT / ".study_anchor.json",
+        STUDY_ROOT / "artifacts/study_budget/study_ledger.json",
     ]
 )
 seal = generate_audit_seal(
-    EXP_DIR, STUDY_ROOT, VAL_ROOT, SEAL_PATH, records, settled_usd, avail_usd, is_production=True
+    EXP_DIR,
+    STUDY_ROOT,
+    VAL_ROOT,
+    SEAL_PATH,
+    records,
+    settled_usd,
+    avail_usd,
+    is_production=True,
+    terminal_proof_path=PROOF_PATH,
+    protected_baseline_path=BASELINE_PATH,
 )
-print('TERMINAL AUDIT PASSED 100%. CANONICAL SEAL GENERATED.')
+print("TERMINAL AUDIT PASSED 100%. CANONICAL SEAL GENERATED.")
 ```
 
 - **Deliverables Transmitted in Handback:**
-  - Audit script: [`scripts/audit_terminal_run.py`](file:///D:/RAG2ATTCK-worktrees/validator-prep-80dbeb3/scripts/audit_terminal_run.py)
-  - Offline unit tests: [`tests/test_terminal_audit.py`](file:///D:/RAG2ATTCK-worktrees/validator-prep-80dbeb3/tests/test_terminal_audit.py) (19/19 passed)
-  - Offline test runner: [`scripts/run_offline_tests.py`](file:///D:/RAG2ATTCK-worktrees/validator-prep-80dbeb3/scripts/run_offline_tests.py)
-  - Plan document: [`reports/evidence/s2_terminal_audit_plan.md`](file:///D:/RAG2ATTCK-worktrees/validator-prep-80dbeb3/reports/evidence/s2_terminal_audit_plan.md)
-  - Audit seal destination: [`reports/evidence/canonical_run_seal_v1.json`](file:///D:/RAG2ATTCK-worktrees/validator-prep-80dbeb3/reports/evidence/canonical_run_seal_v1.json)
+  - Audit script: `scripts/audit_terminal_run.py`
+  - Offline unit tests: `tests/test_terminal_audit.py` (31/31 passed)
+  - Offline test runner: `scripts/run_offline_tests.py`
+  - Plan document: `reports/evidence/s2_terminal_audit_plan.md`
+  - Protected baseline inventory: `artifacts/orchestration/integration_protected_baseline.json` (22 files)
+  - Audit seal destination: `reports/evidence/canonical_run_seal_v1.json`
+

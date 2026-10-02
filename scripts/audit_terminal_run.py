@@ -13,7 +13,14 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
-from src.experiment.authorization import compute_code_manifest_sha256
+from src.evaluation.experiment_metrics import load_evaluation_inputs
+from src.experiment.authorization import (
+    ScientificProtocolApproval,
+    compute_code_manifest_sha256,
+    compute_protocol_sha256,
+    protocol_decision_dict,
+    validate_scientific_protocol,
+)
 from src.experiment.config import canonical_bytes, digest, load_plan
 from src.experiment.monetary_ledger import (
     _strict_json_loads,
@@ -23,6 +30,7 @@ from src.experiment.monetary_ledger import (
     round_credit_down,
     validate_finite_nonnegative_money,
 )
+from src.experiment.runner import _resume_state, _validate_record_binding
 from src.experiment.schemas import CONDITIONS, ExperimentRecord
 from src.llm.schemas import ParseStatus
 
@@ -39,6 +47,10 @@ EXPECTED_CANARY_CANONICAL_DIGEST = (
 EXPECTED_PRICING_CONTRACT_SHA256 = (
     "4adfe8a0630bc1703a92e233133ea55eeff21ef5312dc3102369c267767c9565"
 )
+EXPECTED_PROTOCOL_CANONICAL_DIGEST = (
+    "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c"
+)
+EXPECTED_BASELINE_COMMIT_SHA = "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315"
 EXPECTED_LAUNCHER_WRAPPER_SHA256 = (
     "05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa"
 )
@@ -135,6 +147,20 @@ def audit_completeness_and_cardinality(
                 f"Missing {len(missing)} sample IDs in {condition}: {list(missing)[:5]}"
             )
 
+    manifest_file = exp_dir / "manifest.json"
+    if manifest_file.exists():
+        manifest_data = _strict_json_loads(manifest_file.read_bytes())
+        m_sha = digest(canonical_bytes(manifest_data))
+        for rec in records_by_key.values():
+            try:
+                _validate_record_binding(
+                    rec, manifest_data, m_sha, registry_ids=None, corpus_ids=None
+                )
+            except ValueError as exc:
+                raise AuditVerificationError(
+                    f"Record binding error for {rec.sample_id}:{rec.condition}: {exc}"
+                ) from exc
+
     return records_by_key
 
 
@@ -166,6 +192,7 @@ def audit_journal_join_and_lifecycle(
     receipts_by_key: Dict[Tuple[str, str], List[Dict[str, Any]]] = {}
     completed_shas_by_key: Dict[Tuple[str, str], str] = {}
     settled_events_by_key: Dict[Tuple[str, str], Dict[str, Any]] = {}
+    seen_attempts_by_key: Set[Tuple[str, str]] = set()
     attempt_ordinals: List[int] = []
 
     for line_idx, line in enumerate(lines[1:], start=2):
@@ -182,6 +209,8 @@ def audit_journal_join_and_lifecycle(
             if not isinstance(ord_val, int) or isinstance(ord_val, bool):
                 raise AuditVerificationError(f"Invalid ordinal {ord_val} at line {line_idx}")
             attempt_ordinals.append(ord_val)
+            if k:
+                seen_attempts_by_key.add(k)
 
         elif kind == "attempt_receipt":
             if not k:
@@ -202,6 +231,11 @@ def audit_journal_join_and_lifecycle(
         elif kind == "complete":
             if not k:
                 raise AuditVerificationError(f"Complete missing key at line {line_idx}")
+            if k not in seen_attempts_by_key:
+                raise AuditVerificationError(
+                    f"Reordered journal events: complete before attempt for key {k} "
+                    f"at line {line_idx}"
+                )
             if k in completed_shas_by_key:
                 raise AuditVerificationError(
                     f"Duplicate complete event for key {k} at line {line_idx}"
@@ -214,6 +248,11 @@ def audit_journal_join_and_lifecycle(
         elif kind == "monetary_settle":
             if not k:
                 raise AuditVerificationError(f"Settle missing key at line {line_idx}")
+            if k not in completed_shas_by_key:
+                raise AuditVerificationError(
+                    f"Reordered journal events: monetary_settle before complete for key {k} "
+                    f"at line {line_idx}"
+                )
             if k in settled_events_by_key:
                 raise AuditVerificationError(
                     f"Duplicate monetary_settle event for key {k} at line {line_idx}"
@@ -594,6 +633,151 @@ def audit_secret_sanitization(
     return scan_summary
 
 
+def audit_protected_baseline_22_files(
+    validator_root: Path,
+    baseline_inventory_path: Optional[Path] = None,
+) -> Dict[str, Any]:
+    """Verify all 22 protected baseline files, protocol decisions, and pricing contract."""
+    inv_path = baseline_inventory_path or (
+        validator_root / "artifacts" / "orchestration" / "integration_protected_baseline.json"
+    )
+    if not inv_path.exists():
+        raise AuditVerificationError(f"Protected baseline inventory missing at {inv_path}")
+
+    inv_data = _strict_json_loads(inv_path.read_bytes())
+    baseline_sha = inv_data.get("baseline_sha")
+    if baseline_sha != EXPECTED_BASELINE_COMMIT_SHA:
+        raise AuditVerificationError(
+            f"Protected baseline SHA mismatch: expected {EXPECTED_BASELINE_COMMIT_SHA}, "
+            f"got {baseline_sha}"
+        )
+
+    protected_files = inv_data.get("protected_files", {})
+    if not isinstance(protected_files, dict) or len(protected_files) != 22:
+        raise AuditVerificationError(
+            f"Protected baseline must contain exactly 22 files, found {len(protected_files)}"
+        )
+
+    verified_hashes: Dict[str, str] = {}
+    for rel_path_str, expected_sha in protected_files.items():
+        file_path = validator_root / rel_path_str
+        if not file_path.exists():
+            raise AuditVerificationError(
+                f"Missing protected baseline file: '{rel_path_str}' at {file_path}"
+            )
+        actual_sha = hashlib.sha256(file_path.read_bytes()).hexdigest()
+        if actual_sha != expected_sha:
+            raise AuditVerificationError(
+                f"Protected baseline hash mismatch for '{rel_path_str}': "
+                f"expected {expected_sha}, got {actual_sha}"
+            )
+        verified_hashes[rel_path_str] = actual_sha
+
+    # Verify Protocol Semantic Binding & Canonical Digest
+    proto_path = validator_root / "config" / "experiment_protocol_v1.json"
+    if not proto_path.exists():
+        raise AuditVerificationError(f"Missing protocol file at {proto_path}")
+    proto_data = _strict_json_loads(proto_path.read_bytes())
+    try:
+        protocol_obj = ScientificProtocolApproval(**proto_data)
+        validate_scientific_protocol(protocol_obj)
+    except Exception as exc:
+        raise AuditVerificationError(f"Protocol validation failed: {exc}") from exc
+
+    decisions = protocol_decision_dict(protocol_obj)
+    computed_proto_hash = compute_protocol_sha256(decisions)
+    if (
+        protocol_obj.protocol_sha256 != EXPECTED_PROTOCOL_CANONICAL_DIGEST
+        or computed_proto_hash != EXPECTED_PROTOCOL_CANONICAL_DIGEST
+    ):
+        raise AuditVerificationError(
+            f"Protocol canonical digest mismatch: expected {EXPECTED_PROTOCOL_CANONICAL_DIGEST}, "
+            f"got object={protocol_obj.protocol_sha256}, computed={computed_proto_hash}"
+        )
+
+    # Verify Pricing Semantic Contract Binding
+    pricing_path = validator_root / "config" / "pricing_v1.json"
+    if not pricing_path.exists():
+        raise AuditVerificationError(f"Missing pricing config at {pricing_path}")
+    pricing_data = _strict_json_loads(pricing_path.read_bytes())
+    computed_pricing_sha = compute_pricing_contract_sha256(pricing_data)
+    if computed_pricing_sha != EXPECTED_PRICING_CONTRACT_SHA256:
+        raise AuditVerificationError(
+            f"Pricing semantic contract drift: expected {EXPECTED_PRICING_CONTRACT_SHA256}, "
+            f"got {computed_pricing_sha}"
+        )
+
+    return {
+        "baseline_sha": baseline_sha,
+        "verified_file_count": len(verified_hashes),
+        "protocol_canonical_digest": EXPECTED_PROTOCOL_CANONICAL_DIGEST,
+        "pricing_contract_sha256": EXPECTED_PRICING_CONTRACT_SHA256,
+        "all_22_files_verified": True,
+    }
+
+
+def audit_terminal_process_proof(terminal_proof_file: Path) -> Dict[str, Any]:
+    """Verify authoritative task/process terminal proof."""
+    if not terminal_proof_file.exists():
+        raise AuditVerificationError(f"Missing terminal proof file at {terminal_proof_file}")
+    raw_bytes = terminal_proof_file.read_bytes()
+    proof_sha256 = hashlib.sha256(raw_bytes).hexdigest()
+    proof_data = _strict_json_loads(raw_bytes)
+
+    if proof_data.get("exit_code") != 0:
+        raise AuditVerificationError(
+            f"Terminal process proof indicates non-zero exit: {proof_data.get('exit_code')}"
+        )
+
+    return {
+        "path": str(terminal_proof_file),
+        "sha256": proof_sha256,
+        "exit_code": proof_data.get("exit_code"),
+        "task_id": proof_data.get("task_id"),
+        "pid": proof_data.get("pid"),
+    }
+
+
+def audit_production_preloader_and_lifecycle(
+    validator_root: Path,
+    exp_dir: Path,
+    manifest: Dict[str, Any],
+) -> None:
+    """Enforce native load_evaluation_inputs and _resume_state lifecycle checks."""
+    manifest_path = exp_dir / "manifest.json"
+    pred_paths = {c: exp_dir / f"{c}_predictions.jsonl" for c in CONDITIONS}
+
+    # 1. Native preloader
+    try:
+        load_evaluation_inputs(manifest_path, pred_paths, repository_root=validator_root)
+    except ValueError as exc:
+        raise AuditVerificationError(
+            f"Production native preloader validation failed: {exc}"
+        ) from exc
+
+    # 2. Recovery-aware lifecycle with _resume_state
+    manifest_sha = digest(canonical_bytes(manifest))
+    cap = manifest.get("expected_request_count", 6400)
+    try:
+        resume_state = _resume_state(
+            exp_dir, manifest, manifest_sha, cap, registry_ids=None, corpus_ids=None
+        )
+        if resume_state.orphan_reservation is not None:
+            raise AuditVerificationError(
+                "Orphan reservation remaining in journal at complete state: "
+                f"{resume_state.orphan_reservation}"
+            )
+        if resume_state.recoverable_reservation is not None:
+            raise AuditVerificationError(
+                "Recoverable reservation remaining in journal at complete state: "
+                f"{resume_state.recoverable_reservation}"
+            )
+    except ValueError as exc:
+        raise AuditVerificationError(
+            f"Native recovery-aware lifecycle audit failed: {exc}"
+        ) from exc
+
+
 def generate_audit_seal(
     exp_dir: Path,
     study_root: Path,
@@ -603,6 +787,8 @@ def generate_audit_seal(
     cumulative_settled_usd: Decimal,
     uncommitted_avail_usd: Decimal,
     is_production: bool = False,
+    terminal_proof_info: Optional[Dict[str, Any]] = None,
+    protected_baseline_info: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Generate separate, private audit seal manifest locking all artifact digests.
 
@@ -659,6 +845,13 @@ def generate_audit_seal(
         "has_breach": False,
         "sealed_artifact_digests": sealed_digests,
     }
+    if terminal_proof_info is not None:
+        seal_payload["terminal_proof"] = {
+            "path": terminal_proof_info.get("path"),
+            "sha256": terminal_proof_info.get("sha256"),
+        }
+    if protected_baseline_info is not None:
+        seal_payload["protected_baseline"] = protected_baseline_info
 
     output_seal_path.parent.mkdir(parents=True, exist_ok=True)
     output_seal_path.write_bytes(canonical_bytes(seal_payload))
@@ -703,6 +896,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help="Path to output seal file",
     )
     parser.add_argument(
+        "--protected-baseline-path",
+        type=Path,
+        default=None,
+        help="Path to protected baseline inventory JSON file",
+    )
+    parser.add_argument(
+        "--terminal-proof-file",
+        type=Path,
+        default=None,
+        help="Authoritative task exit code / PID start identity / absence evidence file",
+    )
+    parser.add_argument(
         "--is-production",
         action="store_true",
         default=False,
@@ -710,11 +915,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     )
     args = parser.parse_args(argv)
 
+    terminal_proof_info = None
+    protected_baseline_info = None
+
     if args.is_production:
         print("Enforcing production terminal proof gates...")
         # 1. Lock release gate
         lock_paths = [
             args.exp_dir / ".run.lock",
+            args.study_root / "artifacts" / "study_budget" / "study_ledger.lock",
+            args.study_root / ".study_anchor.lock",
             args.study_root / "artifacts" / "study_budget" / "study_ledger.json.lock",
             args.study_root / ".study_anchor.json.lock",
         ]
@@ -740,8 +950,19 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 "Terminal proof failed: "
                 f"run_summary record_count={summary.get('record_count')} != 6400"
             )
+        if summary.get("has_breach") is True:
+            raise AuditVerificationError("Terminal proof failed: run_summary reports breach")
+        if summary.get("stopped_reason"):
+            raise AuditVerificationError(
+                f"Terminal proof failed: run was stopped: {summary.get('stopped_reason')}"
+            )
 
-        # 3. Launcher wrapper requirement
+        # 3. Terminal proof file gate
+        if not args.terminal_proof_file:
+            raise AuditVerificationError("Production audit requires --terminal-proof-file")
+        terminal_proof_info = audit_terminal_process_proof(args.terminal_proof_file)
+
+        # 4. Launcher wrapper requirement
         launcher_wrapper = args.launcher_path or (
             args.study_root / "scripts" / "run_experiments.py"
         )
@@ -749,8 +970,47 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             raise AuditVerificationError(
                 f"Terminal proof failed: launcher wrapper script missing at {launcher_wrapper}"
             )
+
+        # 5. Production execution mode and manifest validation
+        manifest_path = args.exp_dir / "manifest.json"
+        if not manifest_path.exists():
+            raise AuditVerificationError(f"Missing manifest file at {manifest_path}")
+        manifest = _strict_json_loads(manifest_path.read_bytes())
+        if manifest.get("execution_mode") != "live":
+            raise AuditVerificationError(
+                "Production audit requires execution_mode='live', "
+                f"got '{manifest.get('execution_mode')}'"
+            )
+        if not manifest.get("run_id") or manifest["run_id"].startswith("fixture-"):
+            raise AuditVerificationError(
+                f"Production audit requires live run_id, got '{manifest.get('run_id')}'"
+            )
+
+        # 6. Native preloader and recovery-aware lifecycle validation
+        audit_production_preloader_and_lifecycle(args.validator_root, args.exp_dir, manifest)
+
+        # 7. Protected 22 baseline gate
+        protected_baseline_info = audit_protected_baseline_22_files(
+            args.validator_root, args.protected_baseline_path
+        )
     else:
         launcher_wrapper = args.launcher_path
+        terminal_proof_info = (
+            audit_terminal_process_proof(args.terminal_proof_file)
+            if args.terminal_proof_file and args.terminal_proof_file.exists()
+            else None
+        )
+        base_path = args.protected_baseline_path or (
+            args.validator_root
+            / "artifacts"
+            / "orchestration"
+            / "integration_protected_baseline.json"
+        )
+        protected_baseline_info = (
+            audit_protected_baseline_22_files(args.validator_root, base_path)
+            if base_path.exists()
+            else None
+        )
 
     plan = load_plan(args.validator_root / "config" / "experiment_config.json")
     expected_ids = {s.sample_id for s in plan.samples}
@@ -800,6 +1060,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         settled_usd,
         avail_usd,
         is_production=args.is_production,
+        terminal_proof_info=terminal_proof_info,
+        protected_baseline_info=protected_baseline_info,
     )
     seal_type = seal["seal_type"]
     digests_count = len(seal["sealed_artifact_digests"])

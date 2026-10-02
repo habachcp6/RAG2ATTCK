@@ -520,6 +520,19 @@ async function runArtifactToolDeckUpdater(options = {}) {
   );
   modifiedShapeIds.add("sh/sna103ap");
 
+  // Slide 5: Shape sh/032tgr6d (Data Governance / Credential Sanitization under D1: RECORD_ONLY)
+  const sh032 = presentation.resolve("sh/032tgr6d");
+  if (sh032 && sh032.text) {
+    const oldD1 = "•  Lưu vết đầy đủ (D1: RECORD_ONLY): Lưu toàn văn phản hồi thô phục vụ kiểm toán độc lập.";
+    const newD1 = "•  Lưu vết an toàn (D1: RECORD_ONLY): Lưu phản hồi thô phục vụ kiểm toán độc lập; toàn bộ thông tin đăng nhập và bí mật nhạy cảm đã được làm sạch / khử khuẩn (credentials and sensitive secrets sanitized/redacted).";
+    const rD1 = sh032.text.get(oldD1);
+    if (!rD1.isEmpty) {
+      sh032.text.replace(oldD1, newD1);
+      disclaimerEditsCount++;
+      modifiedShapeIds.add("sh/032tgr6d");
+    }
+  }
+
   // Slide 6: Subtitle sh/98rqt4r6
   if (isCanonical) {
     const sh6Sub = presentation.resolve("sh/98rqt4r6");
@@ -724,9 +737,9 @@ async function runArtifactToolDeckUpdater(options = {}) {
     `rag_k10        ${slots["{{S2_ACC_E2E_RAG_K10}}"]}      ${slots["{{S2_MACRO_F1_RAG_K10}}"]}                ${slots["{{S2_ACC_DELTA_RAG_K10}}"]} (${slots["{{S2_MACRO_F1_DELTA_RAG_K10}}"]} F1)`,
     `★ Best Condition (Max Accuracy): ${slots["{{S2_BEST_RAG_CONDITION}}"]} (Delta Acc = ${slots["{{S2_BEST_RAG_ACC_DELTA}}"]}, Delta F1 = ${slots["{{S2_BEST_RAG_F1_DELTA}}"]})`,
     isCanonical
-      ? "⚠ LƯU Ý: Toàn bộ khoảng tin cậy 95% CI của chênh lệch độ chính xác đều chứa 0 (không có ý nghĩa thống kê)!"
+      ? "⚠ LƯU Ý: Toàn bộ khoảng tin cậy chênh lệch cặp (paired difference CIs vs No-RAG) đều chứa 0 (k10 delta CI [-2.355, +5.300] pp; McNemar p = 0.4223 > 0.05)!"
       : "",
-    `• 95% CI: no_rag=${slots["{{S2_CI_95_NO_RAG}}"]}, k1=${slots["{{S2_CI_95_RAG_K1}}"]}, k3=${slots["{{S2_CI_95_RAG_K3}}"]}, k5=${slots["{{S2_CI_95_RAG_K5}}"]}, k10=${slots["{{S2_CI_95_RAG_K10}}"]}`,
+    `• Absolute Accuracy 95% CIs: no_rag=${slots["{{S2_CI_95_NO_RAG}}"]}, k1=${slots["{{S2_CI_95_RAG_K1}}"]}, k3=${slots["{{S2_CI_95_RAG_K3}}"]}, k5=${slots["{{S2_CI_95_RAG_K5}}"]}, k10=${slots["{{S2_CI_95_RAG_K10}}"]}`,
     `• RQ2 Phân rã lỗi (k=10): Wrong Class = ${slots["{{S2_WRONG_CLASS_RATE_K10}}"]} | Overlaps: Miss&Wrong=${slots["{{S2_OVERLAP_MISS_AND_WRONG_K10}}"]}, Prov=${slots["{{S2_OVERLAP_MISS_AND_PROV_K10}}"]}, Parse=${slots["{{S2_OVERLAP_MISS_AND_PARSE_K10}}"]}, Inval=${slots["{{S2_OVERLAP_MISS_AND_INVAL_K10}}"]}`,
   ].filter(Boolean).join("\n");
 
@@ -818,9 +831,9 @@ async function runArtifactToolDeckUpdater(options = {}) {
 
   // Slide 9: Shape sh/ofq5svm5 (Separate DEV pilot telemetry vs Diagnostic Fixture Projection - 10 slots)
   const shOfq = presentation.resolve("sh/ofq5svm5");
-  shOfq.text.fontSize = 11;
+  shOfq.text.fontSize = 11.5;
   const slide9Heading = isCanonical
-    ? "Phân Tích Tài Nguyên và Chi Phí Chuẩn Tắc (TEST 718) [CANONICAL STUDY]"
+    ? "Phân Tích Tài Nguyên & Chi Phí Chuẩn Tắc (TEST 718) [CANONICAL STUDY]"
     : `DEV Pilot Telemetry & Hạch Toán Nghiên Cứu [${DISCLAIMER_TEXT}]`;
   const zone2Heading = isCanonical
     ? "▶ ZONE 2: TÀI NGUYÊN & ĐỘ TRỄ (Mẫu số 1,280 views/điều kiện, N=6,400 dispatches)"
@@ -828,20 +841,19 @@ async function runArtifactToolDeckUpdater(options = {}) {
   const slide9Content = isCanonical
     ? [
         slide9Heading,
-        "•  Lưu ý chi phí: Ước tính thận trọng từ bảng giá đóng băng (conservative accounted tariff estimate), không phải hóa đơn tra cứu trực tiếp.",
+        "•  Lưu ý: Ước tính thận trọng từ bảng giá đóng băng (conservative accounted tariff estimate).",
         "",
-        "▶ TÀI NGUYÊN & ĐỘ TRỄ (Toàn bộ 1,280 logical views/điều kiện, tổng 6,400 requests):",
-        `•  no_rag: trễ trung vị ${slots["{{S2_MEDIAN_LAT_NO_RAG_SEC}}"]}s (trung bình 2.90s) | ${slots["{{S2_MEAN_PROMPT_TOK_NO_RAG}}"]} prompt tokens | $${slots["{{S2_COST_LOGICAL_REQ_NO_RAG}}"]} USD / logical req.`,
-        `•  rag_k10: trễ trung vị ${slots["{{S2_MEDIAN_LAT_K10_SEC}}"]}s (trung bình 4.37s) | ${slots["{{S2_MEAN_PROMPT_TOK_K10}}"]} prompt tokens | $${slots["{{S2_COST_LOGICAL_REQ_K10}}"]} USD / logical req.`,
-        "•  Đánh đổi No-RAG vs RAG k10: Tăng k từ 0 lên 10 làm prompt tokens tăng ~7.6x, chi phí/query tăng ~4.6x, trễ trung vị tăng +0.37s. Hit rate chuẩn tắc (TEST 718) tăng từ 3.760% lên 44.708%.",
+        "▶ TÀI NGUYÊN & ĐỘ TRỄ (1,280 views/điều kiện, 6,400 dispatches):",
+        `•  no_rag:  trễ trung vị ${slots["{{S2_MEDIAN_LAT_NO_RAG_SEC}}"]}s (TB 2.90s) | ${slots["{{S2_MEAN_PROMPT_TOK_NO_RAG}}"]} tokens | $${slots["{{S2_COST_LOGICAL_REQ_NO_RAG}}"]} / query.`,
+        `•  rag_k10: trễ trung vị ${slots["{{S2_MEDIAN_LAT_K10_SEC}}"]}s (TB 4.37s) | ${slots["{{S2_MEAN_PROMPT_TOK_K10}}"]} tokens | $${slots["{{S2_COST_LOGICAL_REQ_K10}}"]} / query.`,
+        "•  Đánh đổi tài nguyên: Tăng k từ 0 lên 10 làm prompt tokens tăng ~7.6x, chi phí/query tăng ~4.6x.",
         "",
         "▶ HẠCH TOÁN TOÀN BỘ NGHIÊN CỨU (Whole Study Financial Accounting):",
         `•  Đã quyết toán điều kiện chính thức: $${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD ($6.58 settled spend).`,
-        `•  Khoản giữ chỗ thận trọng pilot tạm thời: ${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD (prior_pilot_provisional_hold_usd).`,
-        `•  Tổng chi phí đã cam kết hạch toán: $6.63 USD ($6.62839900 USD total accounted spend).`,
-        `•  Ngân sách chưa cam kết còn lại (Net Remaining): ${slots["{{S2_NET_REMAINING_USD}}"]} USD ($13.36160100 USD khả dụng).`,
-        `•  Trần ngân sách đóng băng cứng (Hard Budget Cap): ${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD.`,
-        "•  Minh bạch ngoại lệ: Ghi nhận 13 INCOMPLETE records trên 6,400 dispatches; 1 lượt retry API_FAILURE có phí thiếu usage là $0.53974560 USD.",
+        `•  Khoản giữ chỗ thận trọng pilot tạm thời: ${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD (DEV pilot hold).`,
+        `•  Tổng cam kết: $6.63 USD committed spend trên trần $${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD.`,
+        `•  Ngân sách khả dụng còn lại: $${slots["{{S2_NET_REMAINING_USD}}"]} USD ($13.36 net remaining; 0 breach).`,
+        "•  Ngoại lệ: 13 INCOMPLETE records; 1 retry hoàn tất (chi tiết trong speaker notes).",
       ].join("\n")
     : [
         slide9Heading,
@@ -870,12 +882,12 @@ async function runArtifactToolDeckUpdater(options = {}) {
   const shOza = presentation.resolve("sh/oza1gfyh");
   if (shOza && shOza.text) {
     if (isCanonical) {
+      shOza.text.fontSize = 11.5;
       shOza.text.set([
         "Quy Luật Đánh Đổi Hiệu Năng & Chi Phí (RQ3 Canonical Trade-off)",
-        "•  Hit rate chuẩn tắc (TEST 718): tăng từ 3.760% (No-RAG) lên 44.708% (RAG k=10).",
-        "•  Mean prompt tokens: 674.3 (No-RAG) -> 5114.3 (RAG k=10), tăng ~7.6x từ baseline đến k=10.",
-        "•  Chi phí mỗi logical query: $0.000365 (No-RAG) -> $0.001679 USD (RAG k=10), tăng ~4.6x từ baseline đến k=10.",
-        "•  Hạch toán toàn bộ: $6.58 settled spend / $6.63 committed spend, nằm an toàn dưới trần ngân sách đóng băng $19.99 USD.",
+        "•  Hit rate chuẩn tắc (TEST 718): RAG k=1 đạt 3.760% -> RAG k=10 đạt 44.708% (No-RAG: N/A, không retriever).",
+        "•  Scaling tài nguyên: Prompt tokens tăng ~7.6x (674.3 -> 5114.3), chi phí tăng ~4.6x ($0.000365 -> $0.001679 USD).",
+        "•  Tiêu điểm tài chính: $6.58 settled / $6.63 committed spend trên trần ngân sách đóng băng $19.99 USD.",
       ].join("\n"));
       disclaimerEditsCount++;
       modifiedShapeIds.add("sh/oza1gfyh");
@@ -950,13 +962,14 @@ async function runArtifactToolDeckUpdater(options = {}) {
     if (sh11_6 && sh11_6.text) {
       sh11_6.text.set([
         "Tái Lập Ngoại Tuyến & Phạm Vi Kỹ Thuật",
-        "•  Lệnh kiểm thử chuẩn tắc có bảo vệ ngoại tuyến:",
-        "   python scripts/run_offline_tests.py -m pytest ... (hoặc cờ -c)",
-        "•  Chẩn đoán ngoại tuyến: Kịch bản reproduce_study.py --all mặc định tái lập các chẩn đoán lịch sử/fixture từ 15 artifact đã đóng băng; việc phát hành quy trình replay canonical công khai đang được chuẩn bị theo kế hoạch tái lập.",
-        "•  Phạm vi kỹ thuật của offline_guard:",
-        "   • Can thiệp tầng socket Python (đánh chặn mọi kết nối mạng ngoài ý muốn) và lọc biến môi trường credentials.",
-        "   • Không phải là sandbox cấp OS (không cô lập binary tùy ý ngoài Python runtime).",
-        "•  Điều kiện thực thi: Tái lập ngoại tuyến sử dụng các artifact đã đóng băng; luồng live provider đòi hỏi credentials thực và chịu sự giám sát của budget guard trần $19.99 USD.",
+        "•  Lệnh tái lập khoa học chuẩn tắc (Canonical Scientific Replay):",
+        "   python scripts/reproduce_canonical_study.py --all",
+        "   (Phân biệt với kịch bản chẩn đoán lịch sử / fixture: scripts/reproduce_study.py).",
+        "•  Cơ chế kiểm chứng ngoại tuyến:",
+        "   • Đánh giá lại từ 15 artifacts đã đóng băng nhằm xác minh tính đúng đắn toán học và hạch toán tài chính; KHÔNG phát sinh gọi mô hình hay tiêu tốn token trực tiếp mới.",
+        "   • Lệnh kiểm thử có bảo vệ ngoại tuyến: python scripts/run_offline_tests.py -m pytest ...",
+        "•  Phạm vi offline_guard: Can thiệp socket Python & lọc credentials (không phải sandbox OS).",
+        "•  Gói bằng chứng công khai hiện được tổ chức dưới dạng danh mục siêu dữ liệu khả chuyển (portable metadata inventory/plan), sẵn sàng chờ thẩm định xuất bản chính thức.",
       ].join("\n"));
       modifiedShapeIds.add("sh/o7ih0r6h");
       disclaimerEditsCount++;
@@ -985,8 +998,8 @@ async function runArtifactToolDeckUpdater(options = {}) {
         "•  Độ không chắc chắn thống kê: Toàn bộ 4 khoảng tin cậy 95% CI của delta đều chứa 0; RAG không mang lại cải thiện vượt trội có ý nghĩa thống kê so với baseline No-RAG trên benchmark này.",
         `•  Chi phí vận hành thực tế: Hạch toán toàn bộ nghiên cứu là $6.63 USD ($6.628399 USD), nằm an toàn dưới trần ngân sách đóng băng $${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD.`,
         `•  Phân rã lỗi D2i: 80.95% số ca phân loại sai (${slots["{{S2_OVERLAP_MISS_AND_WRONG_K10}}"]}/147) nằm ở nhánh truy xuất trượt; các trục lỗi độc lập ghi nhận giao thoa thực tế mà không giả định độc lập ngẫu nhiên.`,
-        "•  Phạm vi & Hướng nghiên cứu: Kết luận trên dữ liệu tổng hợp synthetic-paired-v1; kiểm nghiệm phương pháp tìm kiếm lai và telemetry APT thực tế là các bước tiếp theo.",
-        "•  Mã nguồn, dữ liệu và báo cáo kiểm chứng sẵn sàng tại: https://github.com/habachcp6/RAG2ATTCK",
+        "•  Tái lập khoa học chuẩn tắc: python scripts/reproduce_canonical_study.py --all (đánh giá ngoại tuyến từ artifact đóng băng, không phát sinh chi phí).",
+        "•  Mã nguồn & Danh mục siêu dữ liệu khả chuyển: PR #26 (https://github.com/habachcp6/RAG2ATTCK/pull/26)",
         "Xin trân trọng cảm ơn Quý Thầy Cô và Hội Đồng! Kính mời đặt câu hỏi thảo luận.",
       ].join("\n"));
       modifiedShapeIds.add("sh/ra943il8");
@@ -1004,6 +1017,22 @@ async function runArtifactToolDeckUpdater(options = {}) {
         "Toàn bộ nghiên cứu được thiết kế theo phương pháp thực nghiệm đối chứng nghiêm ngặt dưới giao thức đóng băng experiment-protocol-v1.1, khóa mật mã 15 canonical artifacts, và tuân thủ nguyên tắc fail-closed chặt chẽ.",
         "Khai báo tác tạo: Slide deck này được tác tạo và cập nhật bằng công cụ bundled artifact tools, đảm bảo định dạng PowerPoint native tiếng Việt có thể chỉnh sửa từng shape.",
         "Bằng chứng dự án: PR #26 (https://github.com/habachcp6/RAG2ATTCK/pull/26); config/canonical_experiment_lock_v1.json (SHA-256: 961ba9b3...); reports/experiment_protocol_v1.md; scripts/reproduce_study.py.",
+      ].join("\n");
+      disclaimerEditsCount++;
+    }
+
+    if (slides[4].speakerNotes) {
+      slides[4].speakerNotes.text = [
+        "GHI CHÚ DIỄN GIẢ (Slide 5):",
+        "Giao thức thực nghiệm v1.1 đóng băng 7 quyết định phương pháp luận cốt lõi D1-D7 và được tách bạch rõ ràng từng nhãn:",
+        "- D1: RECORD_ONLY lưu toàn văn phản hồi thô phục vụ kiểm toán độc lập nhưng đảm bảo toàn bộ credentials và bí mật nhạy cảm đã được làm sạch / khử khuẩn (credentials and sensitive secrets sanitized/redacted), tuyệt đối không lưu lộ lọt bí mật.",
+        "- D2d: Vũ trụ Macro-F1 cố định đúng 474 lớp (FROZEN_BENCHMARK_UNIVERSE = 474).",
+        "- D2e: invalid_id_as_failure (INCLUDE_IN_DENOMINATOR cho mã sai cú pháp/ảo giác).",
+        "- D2f: api_failure_as_failure (INCLUDE_IN_DENOMINATOR cho lỗi provider/timeout/parser).",
+        "- D2g: ALLOW_HISTORICAL chấp nhận các mã lịch sử/thu hồi dưới dạng distinct observation count, không tự ý gán lại mã thay thế.",
+        "- D2h: ANY_GT_RETRIEVED cho multi-label retrieval success.",
+        "- D2i: INDEPENDENT_AXES ghi nhận đầy đủ phần giao thoa giữa các trục đo lường lỗi.",
+        "Bằng chứng dự án: reports/experiment_protocol_v1.md (SHA-256: d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c); attack/raw/enterprise-v19.2/enterprise-attack-19.2.json (SHA-256: dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4); tests/test_experiment_evaluation.py.",
       ].join("\n");
       disclaimerEditsCount++;
     }
@@ -1035,7 +1064,7 @@ async function runArtifactToolDeckUpdater(options = {}) {
       slides[7].speakerNotes.text = [
         "GHI CHÚ DIỄN GIẢ (Slide 8):",
         "Khung đánh giá RQ1 & RQ2 được xây dựng trên định đề D2i (Independent Measurement Axes), phân tích trên 718 scorable TEST views với không gian 474 lớp kỹ thuật đóng băng của MITRE ATT&CK Enterprise v19.2.",
-        `Về hiệu năng RQ1: No-RAG đạt độ chính xác ${slots["{{S2_ACC_E2E_NO_RAG}}"]} (560/718), trong khi RAG k=10 đạt ${slots["{{S2_ACC_E2E_RAG_K10}}"]} (571/718), tăng ${slots["{{S2_ACC_DELTA_RAG_K10}}"]} (${slots["{{S2_MACRO_F1_DELTA_RAG_K10}}"]} F1). Toàn bộ 4 khoảng tin cậy 95% CI của chênh lệch độ chính xác so với No-RAG đều chứa 0 (không có ý nghĩa thống kê); việc rag_k10 có độ chính xác cao nhất chỉ mang tính mô tả quan sát.`,
+        `Về hiệu năng RQ1: No-RAG đạt độ chính xác ${slots["{{S2_ACC_E2E_NO_RAG}}"]} (560/718), trong khi RAG k=10 đạt ${slots["{{S2_ACC_E2E_RAG_K10}}"]} (571/718), tăng ${slots["{{S2_ACC_DELTA_RAG_K10}}"]} (${slots["{{S2_MACRO_F1_DELTA_RAG_K10}}"]} F1). Cần phân biệt rõ: Các khoảng tin cậy liệt kê trên bảng là Absolute Accuracy 95% CIs (ví dụ no_rag là ${slots["{{S2_CI_95_NO_RAG}}"]}, k10 là ${slots["{{S2_CI_95_RAG_K10}}"]}); còn các khoảng tin cậy chênh lệch cặp (paired difference CIs vs No-RAG) đều chứa 0 (khoảng tin cậy delta của RAG k=10 là [-2.355, +5.300] pp, kiểm định McNemar thăm dò p = 0.4223 > 0.05). Do đó việc rag_k10 có độ chính xác quan sát được cao nhất chỉ mang tính mô tả thử nghiệm, không có ý nghĩa thống kê vượt trội.`,
         `Về chẩn đoán có điều kiện RQ2 (RAG k=10): P(Correct | Retrieved) = ${slots["{{S2_P_CORRECT_GIVEN_RETRIEVED}}"]} (293/321) và P(Correct | Absent) = ${slots["{{S2_P_CORRECT_GIVEN_ABSENT}}"]} (278/397; không giả định khả năng tự sửa sai nội tại). Có ${slots["{{S2_OVERLAP_MISS_AND_WRONG_K10}}"]}/147 ca phân loại sai (80.95%) nằm ở nhánh truy xuất trượt.`,
         "Về ranh giới mẫu số: Tỷ lệ provider failure trên 718 scorable records là giá trị quan sát thực nghiệm scorable failure = 0.0000. Trên toàn bộ 6,400 dispatches có 13 INCOMPLETE records được bảo toàn nguyên vẹn.",
         "Bằng chứng dự án: C:/Users/hahoa/.codex/artifacts/rag2attck/verified-native-figures-v1/canonical_rq1_accuracy_and_macro.png; reports/experiment_protocol_v1.md.",
@@ -1048,8 +1077,8 @@ async function runArtifactToolDeckUpdater(options = {}) {
         "GHI CHÚ DIỄN GIẢ (Slide 9):",
         "Trong phân tích RQ3, toàn bộ chỉ số tài nguyên, độ trễ và chi phí được tính trên toàn bộ 1,280 logical views mỗi điều kiện (tổng 6,400 dispatches), không rút gọn về 718 scorable views:",
         `1. Độ trễ & Tài nguyên: Phân biệt rõ trễ trung vị (No-RAG ${slots["{{S2_MEDIAN_LAT_NO_RAG_SEC}}"]}s vs RAG k10 ${slots["{{S2_MEDIAN_LAT_K10_SEC}}"]}s) và trễ trung bình (No-RAG 2.90s vs RAG k10 4.37s). Lượng prompt tokens trung bình tăng từ ${slots["{{S2_MEAN_PROMPT_TOK_NO_RAG}}"]} lên ${slots["{{S2_MEAN_PROMPT_TOK_K10}}"]} (~7.6x từ baseline đến k10), chi phí mỗi request tăng từ $${slots["{{S2_COST_LOGICAL_REQ_NO_RAG}}"]} lên $${slots["{{S2_COST_LOGICAL_REQ_K10}}"]} USD (~4.6x từ baseline đến k10).`,
-        `2. Hiệu quả đánh đổi: Hit rate chuẩn tắc trên tập scorable N=718 tăng từ Hit@1 = 3.760% (27/718) lên Hit@10 = 44.708% (321/718).`,
-        `3. Hạch toán tài chính chuẩn tắc: Chi phí điều kiện chuẩn đã quyết toán là $6.57575890 USD ($${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD), cộng với khoản giữ chỗ thận trọng pilot $${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD, tổng chi phí đã cam kết là $6.62839900 USD ($6.63 USD committed spend). Ngân sách khả dụng còn lại là $${slots["{{S2_NET_REMAINING_USD}}"]} USD ($13.36160100 USD) trên trần đóng băng cứng $${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD. Chi phí được tính toán theo ước tính thận trọng từ bảng giá đóng băng (conservative accounted tariff estimate).`,
+        `2. Hiệu quả đánh đổi: Hit rate chuẩn tắc trên tập scorable N=718: No-RAG là N/A (không dùng retriever); RAG k=1 đạt Hit@1 = 3.760% (27/718), tăng lên RAG k=10 đạt Hit@10 = 44.708% (321/718).`,
+        `3. Hạch toán tài chính 8 chữ số thập phân chính xác: Chi phí 5 điều kiện chuẩn đã quyết toán là $6.57575890 USD ($${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD), cộng với khoản giữ chỗ thận trọng pilot $0.05264010 USD ($${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD), tổng chi phí đã cam kết là $6.62839900 USD ($6.63 USD committed spend). Ngân sách khả dụng còn lại là $13.36160100 USD ($${slots["{{S2_NET_REMAINING_USD}}"]} USD) trên trần đóng băng cứng $19.99000000 USD ($${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD). Chi phí được tính toán theo ước tính thận trọng từ bảng giá đóng băng (conservative accounted tariff estimate).`,
         "4. Bối cảnh lịch sử & Ngoại lệ: DEV pilot lịch sử là 20 requests (~$0.0242 USD). Trên toàn bộ 6,400 requests có 13 INCOMPLETE records; 1 attempt API_FAILURE được retry có khoản phí thiếu usage là $0.53974560 USD.",
         "Bằng chứng dự án: C:/Users/hahoa/.codex/artifacts/rag2attck/verified-native-figures-v1/canonical_rq3_cost_and_latency.png; config/experiment_config.json; tests/test_monetary_guard.py.",
       ].join("\n");
@@ -1072,9 +1101,9 @@ async function runArtifactToolDeckUpdater(options = {}) {
       slides[10].speakerNotes.text = [
         "GHI CHÚ DIỄN GIẢ (Slide 11):",
         "Khả năng kiểm chứng độc lập là cam kết trọng tâm của dự án:",
-        "Lệnh reproduce_study.py --all mặc định tái tạo các chẩn đoán lịch sử và kiểm tra tính toàn vẹn của 15 artifact đóng băng với chi phí 0 đồng; quy trình tái lập canonical toàn diện đang được hoàn thiện theo lộ trình. Runner scripts/run_offline_tests.py can thiệp ở tầng socket Python và biến môi trường, không phải là sandbox cấp hệ điều hành.",
-        "Bốn đóng góp thực nghiệm cốt lõi tập trung vào việc thiết lập phương pháp luận đo lường đối chứng, phân rã lỗi D2i độc lập, minh bạch độ không chắc chắn thống kê và cung cấp gói chứng cứ có thể kiểm chứng độc lập.",
-        "Bằng chứng dự án: config/canonical_experiment_lock_v1.json (SHA-256: 961ba9b3...); scripts/reproduce_study.py; scripts/run_offline_tests.py; tests/test_smoke_cases.py.",
+        "Lệnh tái lập khoa học chuẩn tắc là: python scripts/reproduce_canonical_study.py --all, phân biệt với kịch bản chẩn đoán lịch sử/fixture scripts/reproduce_study.py. Cơ chế đánh giá ngoại tuyến từ 15 artifacts đã đóng băng nhằm xác thực tính toàn vẹn toán học và hạch toán tài chính mà KHÔNG tạo ra bất kỳ lượt gọi mô hình trực tiếp hay chi phí token mới nào. Runner scripts/run_offline_tests.py can thiệp ở tầng socket Python và biến môi trường, không phải là sandbox cấp hệ điều hành. Gói bằng chứng công khai hiện được tổ chức dưới dạng danh mục siêu dữ liệu khả chuyển (portable metadata inventory/plan) chờ thẩm định xuất bản chính thức.",
+        "Bốn đóng góp thực nghiệm cốt lõi: thiết lập phương pháp luận đo lường đối chứng, phân rã lỗi D2i độc lập, minh bạch độ không chắc chắn thống kê và cung cấp gói chứng cứ có thể kiểm chứng độc lập.",
+        "Bằng chứng dự án: config/canonical_experiment_lock_v1.json (SHA-256: 961ba9b3...); scripts/reproduce_canonical_study.py; scripts/run_offline_tests.py; tests/test_smoke_cases.py.",
       ].join("\n");
       disclaimerEditsCount++;
     }
@@ -1086,7 +1115,7 @@ async function runArtifactToolDeckUpdater(options = {}) {
         `1. Kết quả cốt lõi: No-RAG đạt ${slots["{{S2_ACC_E2E_NO_RAG}}"]} (560/718), RAG k10 quan sát thấy ${slots["{{S2_ACC_E2E_RAG_K10}}"]} (571/718, Delta = ${slots["{{S2_ACC_DELTA_RAG_K10}}"]}). Khoảng tin cậy 95% CI [-2.355, +5.300] pp chứa 0, cho thấy RAG chưa tạo khác biệt có ý nghĩa thống kê trên benchmark này.`,
         `2. Phân rã lỗi: 80.95% lỗi phân loại sai rơi vào trường hợp truy xuất trượt Top-10 (${slots["{{S2_OVERLAP_MISS_AND_WRONG_K10}}"]}/147).`,
         `3. Tài chính: Chi phí toàn bộ nghiên cứu được kiểm soát chặt chẽ ở mức $6.628399 USD trên trần ngân sách $${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD.`,
-        "4. Phạm vi: Dữ liệu thử nghiệm là log tổng hợp có cấu trúc, các giải pháp tìm kiếm lai và telemetry thực tế là định hướng nghiên cứu tiếp theo.",
+        "4. Tái lập & Công khai: Thực thi tái lập khoa học chuẩn tắc qua python scripts/reproduce_canonical_study.py --all (đánh giá ngoại tuyến từ artifact đã đóng băng, không phát sinh chi phí). Gói phát hành công khai được tổ chức dạng danh mục siêu dữ liệu khả chuyển chờ thẩm định xuất bản.",
         "Bằng chứng dự án: PR #26 (https://github.com/habachcp6/RAG2ATTCK/pull/26); docs/sanitized_evidence_manifest.json; reports/evidence/reproducibility_package_manifest.md.",
       ].join("\n");
       disclaimerEditsCount++;

@@ -20,7 +20,7 @@ Subagent D has completed the inventory, D_REPAIR remediation, CD_RENDER_REPAIR e
 | **Offline Reproducibility Guide** | `docs/reproducibility.md` | 17,033 | `be21fd04ce2879ce3d752981b71b38a7aa843753c788217c05d1b0b8bb70f13b` | VERIFIED |
 | **Offline Reproduction Pipeline** | `scripts/reproduce_study.py` | 51,485 | `b2e04e3b926c03300050a34695ca9b24daeaeb5dfdce701f2465617b17e4b36f` | VERIFIED |
 | **Proposed Reconciled README** | `docs/README_PROPOSED.md` | 19,460 | `48209e0e39ac4e2c2be1e0fa10721ff73c8a404f4cd6276537d02198d586936b` | VERIFIED |
-| **Presentation Deck Outline (MD)** | `docs/presentation/slides.md` | 33,550 | `8125abeff9e7cb4e373b101ff02a7f4a72ceb548cf2145a5306d9060faff76ee` | VERIFIED |
+| **Presentation Deck Outline (MD)** | `docs/presentation/slides.md` | 38,457 | `ffad92cf7edabb255423643f0e0da2f90f11a1212f41bce6df6cd6b23f9c3f21` | VERIFIED |
 | **PowerPoint Deck Builder Script** | `scripts/generate_slides.py` | 53,050 | `b4894f35226154965b382d2a65cd71aea73fa89ba080692ddadee648e15f2e8e` | VERIFIED |
 | **Compiled PowerPoint Deck (PPTX)**| `docs/presentation/slides.pptx` | 376,014 | `9e330fe96c506284b6b219c0b4feef458a4cfde9897d4b60c6c73bd4e918152a` | VERIFIED |
 | **Sanitized Evidence Manifest** | `docs/sanitized_evidence_manifest.json` | 12,769 | `67b4f9741ff9db1d46a3f3e01452925131d180023c5ac789085b457a4b46ad6c` | VERIFIED |
@@ -174,8 +174,11 @@ The reproduction script generated 3 high-resolution 300 DPI figures and 4 markdo
 ## 8. Verification Commands & Hashes for Reviewers
 
 ```bash
-# Full offline reproduction run:
+# Full offline reproduction run (historical diagnostic/fixture):
 uv run python scripts/reproduce_study.py
+
+# Canonical scientific replay (offline saved-data evaluation from 15 canonical artifacts):
+uv run python scripts/reproduce_canonical_study.py --all
 
 # Verified offline egress guard:
 uv run python scripts/run_offline_tests.py -c "import sys; from scripts.reproduce_study import main; sys.exit(main(['--verify-hashes']))"

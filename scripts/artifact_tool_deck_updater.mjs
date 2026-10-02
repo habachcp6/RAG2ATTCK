@@ -839,14 +839,13 @@ async function runArtifactToolDeckUpdater(options = {}) {
     : "▶ ZONE 2: DIAGNOSTIC TEST FIXTURE TELEMETRY (N=718 Scorable Views)";
 
   if (isCanonical) {
-    shOfq.text.fontSize = 18;
+    shOfq.text.fontSize = 24;
     const slide9Content = [
-      "Hạch Toán Tài Chính & Tiêu Điểm Chi Phí (RQ3)",
+      "Hạch Toán Toàn Bộ Nghiên Cứu (6,400 Requests)",
       `•  no_rag: trễ trung vị ${slots["{{S2_MEDIAN_LAT_NO_RAG_SEC}}"]}s | ${slots["{{S2_MEAN_PROMPT_TOK_NO_RAG}}"]} prompt tokens | $${slots["{{S2_COST_LOGICAL_REQ_NO_RAG}}"]} / req.`,
       `•  rag_k10: trễ trung vị ${slots["{{S2_MEDIAN_LAT_K10_SEC}}"]}s | ${slots["{{S2_MEAN_PROMPT_TOK_K10}}"]} prompt tokens | $${slots["{{S2_COST_LOGICAL_REQ_K10}}"]} / req.`,
-      `•  Đã quyết toán 5 điều kiện chính thức (Canonical Total): $${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD ($6.58 settled spend).`,
-      `•  Khoản giữ chỗ pilot tạm thời: ${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD (tổng cam kết hạch toán: $6.63 USD).`,
-      `•  Ngân sách khả dụng còn lại: ${slots["{{S2_NET_REMAINING_USD}}"]} USD (trần ngân sách đóng băng: $${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD).`,
+      `•  Đã quyết toán 5 điều kiện chính thức: $${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD ($6.58 settled spend).`,
+      `•  Khoản giữ chỗ pilot: ${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD | Số dư còn lại: ${slots["{{S2_NET_REMAINING_USD}}"]} USD (trần $${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD).`,
     ].join("\n\n");
     shOfq.text.set(slide9Content);
   } else {
@@ -905,40 +904,89 @@ async function runArtifactToolDeckUpdater(options = {}) {
     if (img9) {
       if (img9.delete) img9.delete();
       else presentation.delete("im/u987u5cf");
-      console.log(`[+] Deleted Slide 9 picture im/u987u5cf to replace with editable resource table.`);
+      console.log(`[+] Deleted Slide 9 picture im/u987u5cf to replace with native editable resource table.`);
     }
+
+    const actualHeaderPlus5Rows = [
+      ["Condition", "Mean Prompt Tok", "Mean Latency (s)", "Total Fee ($ USD)"],
+      ["no_rag", "674.3", "2.90", "$0.46714395"],
+      ["rag_k1", "1,246.5", "3.51", "$1.29723350"],
+      ["rag_k3", "2,172.4", "4.22", "$1.17888000"],
+      ["rag_k5", "3,060.2", "4.33", "$1.48311775"],
+      ["rag_k10", "5,114.3", "4.37", "$2.14938370"],
+    ];
 
     const table9 = slides[8].tables.add({
       rows: 6,
       columns: 4,
-      values: [
-        ["Condition", "Mean Prompt Tok", "Mean Latency (s)", "Total Fee ($ USD)"],
-        ["no_rag", "674.3", "2.90", "$0.46714395"],
-        ["rag_k1", "1,246.5", "3.51", "$1.29723350"],
-        ["rag_k3", "2,172.4", "4.22", "$1.17888000"],
-        ["rag_k5", "3,060.2", "4.33", "$1.48311775"],
-        ["rag_k10", "5,114.3", "4.37", "$2.14938370"],
-      ],
-      columnWidths: [105, 140, 135, 167],
+      left: 655.97,
+      top: 129.6,
+      width: 547.2,
+      height: 260,
+      values: actualHeaderPlus5Rows,
+      columnWidths: [120, 135, 130, 162.2],
     });
 
-    table9.frame = { left: 655.97, top: 129.6, width: 547.2, height: 280 };
+    table9.styleOptions = { headerRow: true, bandedRows: true };
+    if (table9.borders && table9.borders.assign) {
+      table9.borders.assign({ style: "solid", fill: "#cbd5e1", width: 1 });
+    }
 
-    for (let c = 0; c < 4; c++) {
-      const cell = table9.getCell(0, c);
-      cell.text.fontSize = 20;
-      cell.text.bold = true;
-      cell.text.color = "#1E3A8A";
-    }
+    table9.rows[0].height = 48;
     for (let r = 1; r <= 5; r++) {
-      for (let c = 0; c < 4; c++) {
-        const cell = table9.getCell(r, c);
-        cell.text.fontSize = 18;
-        cell.text.color = "#0F172A";
-        if (c === 0) cell.text.bold = true;
-      }
+      table9.rows[r].height = 40;
     }
-    console.log(`[+] Created editable 5-row resource table on Slide 9 (headers 20pt, body 18pt).`);
+
+    table9.cells.block({ row: 0, column: 0, rowCount: 6, columnCount: 4 }).assign({
+      margins: { top: 2, bottom: 2, left: 6, right: 6 },
+    });
+
+    // Header styling: 26.667px (20pt)
+    table9.cells.block({
+      row: 0,
+      column: 0,
+      rowCount: 1,
+      columnCount: 4,
+    }).assign({
+      fill: "#1e3a8a",
+      textStyle: {
+        fontSize: 26.667,
+        typeface: "Calibri",
+        bold: true,
+        color: "#ffffff",
+      },
+    });
+
+    // Body styling: 24px (18pt)
+    table9.cells.block({
+      row: 1,
+      column: 0,
+      rowCount: 5,
+      columnCount: 4,
+    }).assign({
+      textStyle: {
+        fontSize: 24,
+        typeface: "Calibri",
+        color: "#1e293b",
+      },
+    });
+
+    // First column bold:
+    table9.cells.block({
+      row: 1,
+      column: 0,
+      rowCount: 5,
+      columnCount: 1,
+    }).assign({
+      textStyle: {
+        fontSize: 24,
+        typeface: "Calibri",
+        bold: true,
+        color: "#1e293b",
+      },
+    });
+
+    console.log(`[+] Created native editable 5-row resource table on Slide 9 (header 26.667px, body 24px).`);
   }
 
   // Slide 10, 11, 12 shape content updates in canonical mode
@@ -986,14 +1034,14 @@ async function runArtifactToolDeckUpdater(options = {}) {
     if (sh11_6 && sh11_6.text) {
       sh11_6.text.set([
         "Tái Lập Ngoại Tuyến & Phạm Vi Kỹ Thuật",
-        "•  Lệnh tái lập khoa học chuẩn tắc (Canonical Scientific Replay):",
-        "   python scripts/reproduce_canonical_study.py --all",
+        "•  Lệnh tái lập khoa học chuẩn tắc (Guarded Canonical Replay):",
+        "   python scripts/run_offline_tests.py -m scripts.reproduce_canonical_study --bundle-dir <bundle> --all",
         "   (Phân biệt với kịch bản chẩn đoán lịch sử / fixture: scripts/reproduce_study.py).",
         "•  Cơ chế kiểm chứng ngoại tuyến:",
-        "   • Đánh giá lại từ 15 artifacts đã đóng băng nhằm xác minh tính đúng đắn toán học và hạch toán tài chính; KHÔNG phát sinh gọi mô hình hay tiêu tốn token trực tiếp mới.",
+        "   • Tái đánh giá từ gói dữ liệu chuẩn tắc (10 tệp đầu vào, 8 đầu ra phân tích, 22 tệp baseline đóng băng) nhằm xác minh tính đúng đắn toán học và hạch toán tài chính; KHÔNG gọi mô hình hay tiêu tốn token trực tiếp mới.",
         "   • Lệnh kiểm thử có bảo vệ ngoại tuyến: python scripts/run_offline_tests.py -m pytest ...",
         "•  Phạm vi offline_guard: Can thiệp socket Python & lọc credentials (không phải sandbox OS).",
-        "•  Gói bằng chứng công khai hiện được tổ chức dưới dạng danh mục siêu dữ liệu khả chuyển (portable metadata inventory/plan), sẵn sàng chờ thẩm định xuất bản chính thức.",
+        "•  Gói bằng chứng công khai hiện được tổ chức dưới dạng danh mục siêu dữ liệu khả chuyển (portable metadata inventory), sẵn sàng chờ thẩm định xuất bản chính thức.",
       ].join("\n"));
       modifiedShapeIds.add("sh/o7ih0r6h");
       disclaimerEditsCount++;
@@ -1022,8 +1070,8 @@ async function runArtifactToolDeckUpdater(options = {}) {
         "•  Độ không chắc chắn thống kê: Toàn bộ 4 khoảng tin cậy 95% CI của delta đều chứa 0; RAG không mang lại cải thiện vượt trội có ý nghĩa thống kê so với baseline No-RAG trên benchmark này.",
         `•  Chi phí vận hành thực tế: Hạch toán toàn bộ nghiên cứu là $6.63 USD ($6.628399 USD), nằm an toàn dưới trần ngân sách đóng băng $${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD.`,
         `•  Phân rã lỗi D2i: 80.95% số ca phân loại sai (${slots["{{S2_OVERLAP_MISS_AND_WRONG_K10}}"]}/147) nằm ở nhánh truy xuất trượt; các trục lỗi độc lập ghi nhận giao thoa thực tế mà không giả định độc lập ngẫu nhiên.`,
-        "•  Tái lập khoa học chuẩn tắc: python scripts/reproduce_canonical_study.py --all (đánh giá ngoại tuyến từ artifact đóng băng, không phát sinh chi phí).",
-        "•  Mã nguồn & Danh mục siêu dữ liệu khả chuyển: PR #26 (https://github.com/habachcp6/RAG2ATTCK/pull/26)",
+        "•  Tái lập khoa học chuẩn tắc: python scripts/run_offline_tests.py -m scripts.reproduce_canonical_study --bundle-dir <bundle> --all (đánh giá ngoại tuyến từ gói dữ liệu chuẩn tắc, không phát sinh chi phí).",
+        "•  Mã nguồn & Danh mục siêu dữ liệu khả chuyển: PR #26 (https://github.com/habachcp6/RAG2ATTCK/pull/26) — Sẵn sàng thẩm định xuất bản.",
         "Xin trân trọng cảm ơn Quý Thầy Cô và Hội Đồng! Kính mời đặt câu hỏi thảo luận.",
       ].join("\n"));
       modifiedShapeIds.add("sh/ra943il8");
@@ -1376,7 +1424,7 @@ if (isMain) {
   const mapPath = getArg("--declarative-map");
   const sourceDeckPath = getArg("--source-deck");
   const candidateDeckPath = getArg("--output-deck");
-  const qaOutputDir = getArg("--output-qa-dir");
+  const qaOutputDir = getArg("--output-qa-dir") || getArg("--qa-dir");
   const auditReportPath = getArg("--audit-report");
   const artifactToolModule = getArg("--artifact-tool-module");
 

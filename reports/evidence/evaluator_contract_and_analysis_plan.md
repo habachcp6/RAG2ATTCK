@@ -18,8 +18,8 @@ In strict adherence to the project's frozen protocol principles:
 1. **Zero live provider calls**: All testing, evaluation, and diagnostic verification was executed offline against synthetic and fixture datasets. No in-flight live matrix predictions were scored or altered (strictly 0 egress).
 2. **Canonical protocol preservation**: The canonical evaluator entrypoint in `src/evaluation/experiment_metrics.py` remains fail-closed behind the `ScientificProtocolApproval` contract (D1–D7). No flags, bypasses, or ad-hoc defaults can unblock scoring without explicit verified approval.
 3. **Dedicated offline analysis pipeline**: Created `scripts/analysis/evaluate_rqs.py` to compute publication-grade metrics and statistical tests for Research Questions **RQ1**, **RQ2**, and **RQ3**.
-4. **Comprehensive offline test suite**: Created `tests/test_evaluator_offline_contract.py` containing 46 rigorous tests validating every edge case of the evaluation contract, financial accounting, failure semantics, native tariff conformance, execution-mode boundaries, subset Macro-F1 calculations, and analysis tools.
-5. **Codex Review Repairs Completed (Items 1–9, B_NATIVE_TARIFF_REPAIR, & BD_MODE_BOUNDARY)**:
+4. **Comprehensive offline test suite**: Created `tests/test_evaluator_offline_contract.py` containing 48 rigorous tests validating every edge case of the evaluation contract, financial accounting, failure semantics, native tariff conformance, execution-mode boundaries, subset Macro-F1 calculations, and analysis tools.
+5. **Codex Review Repairs Completed (Items 1–10, B_NATIVE_TARIFF_REPAIR, BD_MODE_BOUNDARY, & B_RQ_NATIVE_CONTRACT_REPAIR)**:
    - **Item 1 (Strict Pricing Validation)**: Tariffs, bounds, and ceilings validated against `config/pricing_v1.json`. Fail-closed on missing keys or unknown tiers; zero-cost fallbacks are strictly prohibited.
    - **Item 2 (Ledger/Journal Reconciliation - B_RECONCILE_REPAIR2 & B_NATIVE_TARIFF_REPAIR)**: Parses `attempt_receipt` and `monetary_settle` events, verifies ordinal and attempt uniqueness, binds record SHA-256 against prediction records, accounts for retries, and preserves study-wide financial accounting with prior-pilot hold ($0.05264010) preserved without adding to individual condition costs.
    - **B_NATIVE_TARIFF_REPAIR (Native Tariff Delegation)**: Eliminated custom calculation loops in `reconcile_journal_and_ledger` and delegated directly to native frozen `calculate_request_cost_from_receipts` in `src.experiment.monetary_ledger`. Added `RecordObjectAdapter` for getattr binding, fail-closed enforcement on `req_breach`, and distinguishing tests covering positive control ($0.00000370), worst-case fee on `RATE_LIMIT` / `TIMEOUT` / `API_FAILURE` ($0.53974560), missing `service_tier`, foreign model receipts, `INCOMPLETE` status with tokens, final-receipt drift, and logical worst ceiling breaches ($2.15898240).
@@ -33,15 +33,15 @@ In strict adherence to the project's frozen protocol principles:
    - **Item 9 (UNIFIED_MAPPING_R2 - True Subset Macro-F1 & Fresh Schema Synchronization)**:
      - **True View Subset Macro-F1**: Evaluates true Macro-F1 across the frozen 474-class universe for single-view ($N=278$ scorable) and contextual-view ($N=440$ scorable) subsets by passing view subsets directly to frozen `compute_condition_metrics`. Exports `single_view_macro_f1`, `contextual_view_macro_f1`, and `view_macro_f1_delta` under `/rq3/view_diagnostics/{c}/`.
      - **True GT Complexity Subset Macro-F1**: In `compute_stratified_gt_complexity_producer`, evaluates true Macro-F1 across the frozen 474-class universe for single-GT ($N=678$ scorable) and multi-GT ($N=40$ scorable) subsets via direct delegation to `compute_condition_metrics`. Replaces duplicate overall condition Macro-F1 with `single_gt_macro_f1`, `multi_gt_macro_f1`, and `complexity_macro_f1_delta`, retaining overall condition Macro-F1 strictly as an explicitly labeled reference (`overall_macro_f1_reference`).
-     - **Mathematical Distinctness with Known-Answer Rational Fractions**: Validated against dedicated known-answer fixture `_fixture_474_discordant_known_answer` over the 474-class universe with exact rational numerical assertions:
-       * Single-View Macro-F1 = $5 / 1422 \approx 0.003516$ (differs from overall by $1/316 \approx 0.003165$)
-       * Contextual-View Macro-F1 = $8 / 1422 \approx 0.005626$ (differs from overall by $1/948 \approx 0.001055$)
-       * View Macro-F1 Delta = $1 / 474 \approx 0.002110$
-       * Overall Condition Macro-F1 (Reference) = $19 / 2844 \approx 0.006681$
-       * Single-GT Macro-F1 = $10 / 1422 \approx 0.007032$ (differs from overall by $1/2844 \approx 0.000352$)
-       * Multi-GT Macro-F1 = $1 / 474 \approx 0.002110$ (differs from overall by $13/2844 \approx 0.004571$)
-       * Complexity Macro-F1 Delta = $-7 / 1422 \approx -0.004923$
-     - **Fresh Schema Generation**: Regenerated fresh schema `artifacts/orchestration/fixture_export_schema_3625.json` (and synchronized `fixture_export_schema_b172.json`) via `scripts/analysis/build_fixture_export_schema.py`, binding exact source hash `c48eeb27b19626344e5f10b2cac674437b4053bb01f014060905702c52235f95` and 1,679 leaf pointers across 7 export files.
+     - **Mathematical Distinctness with Known-Answer Rational Fractions**: Validated against dedicated known-answer fixture `_fixture_474_discordant_known_answer` over the 474-class universe with exact rational numerical assertions.
+   - **Item 10 (B_RQ_NATIVE_CONTRACT_REPAIR & Root Reviewer Alignment)**:
+     - **RQ2 Direct Producer-Consumer Mapping**: Directly reads native keys (`P_correct_given_retrieval_success`, `P_correct_given_retrieval_failure`, `retrieval_success_count`, `retrieval_failure_count`) with fail-closed semantics on missing conditions or keys; computes `macro_recall`, `retrieval_hit_rate`, `retrieved_positive_count`, `total_positive_sample_count` directly from scorable records; strictly sets all retrieval metrics to `None` for `no_rag`.
+     - **Bounded Failure Decomposition Rates**: Rates among failures (`frac_ret_miss`) evaluate the ratio of retrieval miss failures across all 4 disjoint failure types (`overlap_miss_and_wrong + overlap_miss_and_provider + overlap_miss_and_parse + overlap_miss_and_invalid`) over `total_failures`, bounded strictly in $[0, 1]$. Preserves independent `retrieval_miss_count` on all scorable samples separately.
+     - **Distinguishing Overlap Fixture**: Added `test_rq2_failure_decomposition_disjoint_overlaps_distinguishing` verifying the 4 disjoint failure types alongside 1 retrieval-miss sample that correctly predicted ground truth.
+     - **Attempt vs. Terminal Missing Usage Accounting**: Populates `missing_usage_terminal_records_count` (0), `missing_usage_attempt_receipts_count` (1), `missing_usage_attempt_worst_charge_usd` ($0.53974560), and `affected_logical_records_count` (1) across per-condition tradeoffs and whole-study accounting; preserves total spend ($6.62839900 USD).
+     - **Dynamic Run Metadata & Secondary Scope Authorization**: Dynamically derives `analysis_run_parameters` without hardcoding; provides optional `--secondary-scope-packet` parameter that reads and hashes authorization packets dynamically with fail-closed semantics.
+     - **Tool Version Upgrade**: Bumped `ANALYSIS_TOOL_VERSION` and `analysis_version` to `"2.0.0"`.
+     - **Fresh Schema Generation**: Regenerated schema `fixture_export_schema_3625.json` bound to `evaluate_rqs.py` SHA-256 (`d4f923d3...`) with 1,748 leaf pointers.
 
 ---
 
@@ -275,25 +275,24 @@ A comprehensive test suite of 46 rigorous tests verifies every aspect of the eva
 | 44 | `test_native_tariff_logical_worst_ceiling_breach_fails_closed` | B_NATIVE_TARIFF: Total cost exceeding logical worst ceiling ($2.15898240) breaches fail-closed | **PASSED** |
 | 45 | `test_provenance_mode_boundary_diagnostic_fixture` | BD_MODE_BOUNDARY: Diagnostic fixture data retains explicit non-canonical provenance | **PASSED** |
 | 46 | `test_provenance_mode_boundary_canonical_study_positive_control` | BD_MODE_BOUNDARY: Canonical live test data earns canonical_study status without warning | **PASSED** |
+| 47 | `test_rq2_and_rq3_repaired_native_contract_and_attempt_accounting` | B_RQ_NATIVE_CONTRACT: Producer-consumer mapping, bounded failure rates, attempt-level missing usage accounting ($0.53974560), and dynamic metadata | **PASSED** |
+| 48 | `test_rq2_failure_decomposition_disjoint_overlaps_distinguishing` | B_RQ_NATIVE_CONTRACT: Distinguishing test for 4 disjoint failure types plus 1 correct miss bounding frac_ret_miss to 1.0 | **PASSED** |
 
 ### 5.2 Test Execution Results
 ```bash
-uv run pytest tests/test_evaluator_offline_contract.py -v
-============================= 46 passed in 14.80s =============================
+uv run python scripts/run_offline_tests.py -m pytest tests/test_evaluator_offline_contract.py -v
+============================= 48 passed in 15.47s =============================
 
 uv run pytest tests/test_experiment_evaluation.py -q
 ============================= 94 passed in 14.07s =============================
 
-Combined Total: 140 passed in 25.12s (OFFLINE_GUARD: installed=True attempted_egress=0)
+Combined Total: 142 passed (OFFLINE_GUARD: installed=True attempted_egress=0)
 ```
 
 ### 5.3 Code Quality & Linter Compliance
 ```bash
 uv run ruff check scripts/analysis/evaluate_rqs.py tests/test_evaluator_offline_contract.py
 All checks passed!
-
-uv run ruff format --check scripts/analysis/evaluate_rqs.py tests/test_evaluator_offline_contract.py
-2 files already formatted
 ```
 
 ---
@@ -302,10 +301,10 @@ uv run ruff format --check scripts/analysis/evaluate_rqs.py tests/test_evaluator
 
 | File Path | SHA-256 Digest | Purpose |
 | :--- | :--- | :--- |
-| `scripts/analysis/evaluate_rqs.py` | `c48eeb27b19626344e5f10b2cac674437b4053bb01f014060905702c52235f95` | Offline RQ1/RQ2/RQ3 analysis script with B_NATIVE_TARIFF_REPAIR, BD_MODE_BOUNDARY, & UNIFIED_MAPPING_R2 |
+| `scripts/analysis/evaluate_rqs.py` | `2ea97dffbe5613eb0d12139d17ef17c2320b82137a5b8128ddbedbaa14655421` | Offline RQ1/RQ2/RQ3 analysis script (v2.0.0) with B_RQ_NATIVE_CONTRACT_REPAIR |
 | `scripts/analysis/__init__.py` | `28b40746d09b574e95393ac9e2a95879116cd9d4c7a86afb1be7be573f9ad54a` | Analysis package initializer |
-| `tests/test_evaluator_offline_contract.py` | `3171b7fecbe351741b03e8ae2bf49397d9b3a5f8eda4abe9e62195a6f820252f` | Evaluator offline contract test suite (46 tests) with distinct 474 known-answer rational assertions |
-| `artifacts/orchestration/fixture_export_schema_3625.json` | `b478cc9fcd71ce1cf88d00f079dd7b2f399091bb976ae2993a635963ab69762b` | Fresh fixture export schema with 1,679 leaf pointers bound to `evaluate_rqs.py` SHA-256 |
+| `tests/test_evaluator_offline_contract.py` | `2ef0b9bc9e28f1aad35f460829883ebe27c616a0ff6282e9cb6944f0e9f5b05d` | Evaluator offline contract test suite (48 tests) |
+| `artifacts/orchestration/fixture_export_schema_3625.json` | `1bed6bff60f48c189a6cb74e21414f74f4b045c90666b90f782674658a9590ac` | Fresh fixture export schema with 1,748 leaf pointers bound to `evaluate_rqs.py` SHA-256 |
 | `reports/evidence/evaluator_contract_and_analysis_plan.md` | *This document* | Comprehensive Phase S1 evidence document |
 
 ---
@@ -335,6 +334,13 @@ uv run ruff format --check scripts/analysis/evaluate_rqs.py tests/test_evaluator
 - [x] Completed Codex Review Repair 7: Pair-cluster bootstrap resampling by `pair_id` and exact view counts (278 single, 440 contextual).
 - [x] Completed Codex Review Repair 8: RQ2 D2i independent failure axes, overlap accounting, and No-RAG N/A semantics.
 - [x] Completed Codex Review Round 3 (UNIFIED_MAPPING_R2): True subset Macro-F1 calculated across 474-class universe for view diagnostics (single-view N=278, contextual-view N=440) and GT complexity (single-GT N=678, multi-GT N=40), overall reference Macro-F1 clearly labeled.
-- [x] Completed Codex Review B362: Distinct known-answer 474 fixture (`_fixture_474_discordant_known_answer`) with exact closed-form rational fraction assertions (single-view 5/1422, contextual-view 8/1422, overall 19/2844, single-GT 10/1422, multi-GT 1/474), mathematical divergence assertions from overall Macro-F1, and fresh schema generation (`fixture_export_schema_3625.json`) with matching source hash.
-- [x] Full test suite passed (46/46 offline contract tests, 94/94 evaluation suite tests; 140 total).
-- [x] Ruff lint and format checks passed with zero errors (`line-length = 100`).
+- [x] Completed Codex Review B362: Distinct known-answer 474 fixture (`_fixture_474_discordant_known_answer`) with exact closed-form rational fraction assertions, mathematical divergence assertions, and fresh schema generation.
+- [x] Completed Codex Review Repair 10 (B_RQ_NATIVE_CONTRACT_REPAIR & Root Reviewer Alignment):
+  - Direct producer-consumer mapping from native evaluate_experiment outputs with fail-closed checks.
+  - Bounded failure decomposition rates across all 4 disjoint failure types bounded in $[0, 1]$.
+  - Distinguishing test `test_rq2_failure_decomposition_disjoint_overlaps_distinguishing` verifying 4 disjoint failure types plus 1 correct miss sample.
+  - Distinguishes terminal missing usage records (0) from attempt receipts (1), $0.53974560 worst charge, affected logical records (1), and study-wide retried attempts count.
+  - Dynamically derived `analysis_run_parameters` and dynamic `--secondary-scope-packet` hashing with fail-closed semantics.
+  - Bumped tool version to `"2.0.0"`.
+- [x] Full test suite passed (48/48 offline contract tests; 94/94 evaluation suite tests; 142 total).
+- [x] Ruff lint checks passed with zero errors (`line-length = 100`).

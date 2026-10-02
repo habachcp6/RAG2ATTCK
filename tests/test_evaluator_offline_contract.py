@@ -49,7 +49,9 @@ from scripts.analysis.evaluate_rqs import (
 )
 from src.evaluation.experiment_metrics import (
     CONDITIONS,
+    EvaluationInputs,
     canonical_json_bytes,
+    compute_condition_metrics,
     evaluate_experiment,
 )
 from src.experiment.monetary_ledger import calculate_attempt_token_cost
@@ -1732,6 +1734,13 @@ def test_rq2_independent_failure_axes_and_no_rag_na(tmp_path):
 
     # 2. RAG_k3: independent axes and overlaps
     k3 = rq2["by_condition"]["rag_k3"]
+    assert k3["retrieval_metrics"]["applicable"] is True
+    assert k3["retrieval_metrics"]["macro_recall"] is not None
+    assert k3["retrieval_metrics"]["retrieval_hit_rate"] is not None
+    assert k3["generation_conditional_accuracy"]["applicable"] is True
+    assert k3["generation_conditional_accuracy"]["p_correct_given_retrieval_success"] is not None
+    assert k3["generation_conditional_accuracy"]["P_correct_given_retrieval_success"] is not None
+
     axes = k3["independent_failure_axes"]
     assert axes["retrieval_miss_count"] is not None
     assert axes["provider_failure_count"] >= 0
@@ -1740,6 +1749,15 @@ def test_rq2_independent_failure_axes_and_no_rag_na(tmp_path):
     assert axes["valid_but_wrong_classification_count"] >= 0
     assert "overlap_retrieval_miss_and_wrong_classification" in axes
     assert "overlap_retrieval_miss_and_provider_failure" in axes
+
+    # Assert bounded failure decomposition rates [0, 1]
+    for rate_key, rate_val in axes["rates_among_failures"].items():
+        if rate_val is not None:
+            assert 0.0 <= rate_val <= 1.0, f"Rate {rate_key} = {rate_val} exceeds [0, 1]"
+
+    for frac_key, frac_val in k3["error_decomposition"].items():
+        if "fraction" in frac_key and frac_val is not None:
+            assert 0.0 <= frac_val <= 1.0, f"Fraction {frac_key} = {frac_val} exceeds [0, 1]"
 
     # Total failures
     assert k3["total_failures"] == (k3["total_scorable_samples"] - 3)
@@ -2833,3 +2851,463 @@ def test_provenance_mode_boundary_canonical_study_positive_control(tmp_path):
     assert "- **Provenance Status**: `canonical_study`" in md_content
     assert "Diagnostic Fixture Provenance" not in md_content
     assert "It does not constitute canonical empirical research results." not in md_content
+
+
+def test_rq2_and_rq3_repaired_native_contract_and_attempt_accounting(tmp_path):
+    """B_RQ_NATIVE_CONTRACT_REPAIR:
+
+    1. RQ2 producer-consumer mapping from native evaluate_experiment outputs:
+       - RAG conditions populate non-null macro_recall, retrieval_hit_rate,
+         retrieved_positive_count, total_positive_sample_count, P_correct_given_retrieval_success,
+         P_correct_given_retrieval_failure, and retrieval counts.
+       - No-RAG condition keeps all retrieval and conditional accuracy metrics strictly None.
+       - Missing applicable condition fails closed with ValueError.
+       - Rates among failures and error decomposition fractions are strictly bounded in [0, 1].
+    2. RQ3 attempt vs terminal missing usage accounting:
+       - Journal retried attempt with missing tokens charges worst-case attempt fee ($0.53974560).
+       - Distinguishes missing_usage_terminal_records_count (0) from
+         missing_usage_attempt_receipts_count (1),
+         missing_usage_attempt_worst_charge_usd ($0.53974560),
+         and affected_logical_records_count (1).
+       - Whole-study financial summary preserves total committed money and reports attempt-level
+         missing usage charges.
+    3. Export metadata analysis_run_parameters:
+       - Dynamically derives cluster count, universe, and actual GT technique support.
+       - Tool version is 2.0.0 and analysis_source_sha256 binds to scripts/analysis/evaluate_rqs.py.
+    """
+    from scripts.analysis.evaluate_rqs import load_pricing_config
+
+    pricing_cfg, _ = load_pricing_config()
+    fixture = _fixture(tmp_path)
+    inputs = _load(tmp_path, fixture)
+    proto = _test_protocol()
+
+    # 1. RQ2 Direct producer-consumer mapping
+    native = evaluate_experiment(inputs, proto)
+    rq2 = compute_rq2(
+        inputs,
+        proto,
+        retrieval_cond_metrics=native["retrieval_conditional"],
+        failure_decomp_metrics=native["failure_decomposition"],
+    )
+
+    for cond in CONDITIONS[1:]:  # RAG conditions
+        c_rq2 = rq2["by_condition"][cond]
+        rm = c_rq2["retrieval_metrics"]
+        assert rm["applicable"] is True
+        assert rm["macro_recall"] is not None and 0.0 <= rm["macro_recall"] <= 1.0
+        assert rm["retrieval_hit_rate"] is not None and 0.0 <= rm["retrieval_hit_rate"] <= 1.0
+        assert rm["retrieved_positive_count"] is not None and rm["retrieved_positive_count"] >= 0
+        assert rm["total_positive_sample_count"] is not None
+        assert rm["total_positive_sample_count"] > 0
+
+        gc = c_rq2["generation_conditional_accuracy"]
+        assert gc["applicable"] is True
+        assert gc["p_correct_given_retrieval_success"] is not None
+        assert gc["p_correct_given_retrieval_failure"] is not None
+        assert gc["P_correct_given_retrieval_success"] is not None
+        assert gc["P_correct_given_retrieval_failure"] is not None
+        assert gc["retrieval_success_count"] is not None
+        assert gc["retrieval_failure_count"] is not None
+
+        # Bounded rates
+        axes = c_rq2["independent_failure_axes"]
+        for rate_key, r_val in axes["rates_among_failures"].items():
+            if r_val is not None:
+                assert 0.0 <= r_val <= 1.0, f"Condition {cond} rate {rate_key} = {r_val} > 1.0"
+
+        for frac_key, f_val in c_rq2["error_decomposition"].items():
+            if "fraction" in frac_key and f_val is not None:
+                assert 0.0 <= f_val <= 1.0, f"Condition {cond} frac {frac_key} = {f_val} > 1.0"
+
+    # No-RAG condition N/A
+    no_rag = rq2["by_condition"]["no_rag"]
+    assert no_rag["retrieval_metrics"]["applicable"] is False
+    assert no_rag["retrieval_metrics"]["macro_recall"] is None
+    assert no_rag["retrieval_metrics"]["retrieval_hit_rate"] is None
+    assert no_rag["generation_conditional_accuracy"]["applicable"] is False
+    assert no_rag["generation_conditional_accuracy"]["p_correct_given_retrieval_success"] is None
+    assert no_rag["generation_conditional_accuracy"]["P_correct_given_retrieval_success"] is None
+
+    # Fail closed on missing condition
+    broken_ret = {
+        "by_condition": {
+            c: native["retrieval_conditional"]["by_condition"][c]
+            for c in ("rag_k3", "rag_k5", "rag_k10")
+        }
+    }
+    with pytest.raises(ValueError, match="Missing retrieval conditional metrics"):
+        compute_rq2(inputs, proto, retrieval_cond_metrics=broken_ret)
+
+    # 2. RQ3 Attempt vs Terminal Missing Usage Accounting
+    records_list = []
+    for r in inputs.records:
+        rc = dict(r)
+        rc["parse_status"] = "VALID"
+        rc["model"] = "gpt-5.6-luna"
+        rc["response_id"] = "resp-" + rc["sample_id"] + "-" + rc["condition"]
+        rc["prompt_tokens"] = 100
+        rc["completion_tokens"] = 20
+        records_list.append(rc)
+
+    rec_k1 = next(r for r in records_list if r["sample_id"] == "s0" and r["condition"] == "rag_k1")
+    rec_k1["request_attempt_count"] = 2
+    rec_k1["prompt_tokens"] = 1000
+    rec_k1["completion_tokens"] = 100
+
+    events = [{"event": "header", "manifest_sha256": inputs.manifest_sha256, "max_requests": 200}]
+    ordinal = 0
+    hold_amt = Decimal("2.15898240")
+    for rec in records_list:
+        key = [rec["sample_id"], rec["condition"]]
+        rec_sha = hashlib.sha256(canonical_json_bytes(rec)).hexdigest()
+        events.append({"event": "monetary_reserve", "key": key, "amount_usd": str(hold_amt)})
+        if rec["sample_id"] == "s0" and rec["condition"] == "rag_k1":
+            ordinal += 1
+            events.append(
+                {
+                    "event": "attempt_receipt",
+                    "key": key,
+                    "ordinal": ordinal,
+                    "attempt_index": 0,
+                    "status": "API_FAILURE",
+                    "input_tokens": None,
+                    "output_tokens": None,
+                    "cached_tokens": None,
+                    "service_tier": "default",
+                }
+            )
+            ordinal += 1
+            events.append(
+                {
+                    "event": "attempt_receipt",
+                    "key": key,
+                    "ordinal": ordinal,
+                    "attempt_index": 1,
+                    "status": "SUCCESS",
+                    "input_tokens": 1000,
+                    "output_tokens": 100,
+                    "cached_tokens": None,
+                    "service_tier": "default",
+                    "model": "gpt-5.6-luna",
+                    "response_id": rec["response_id"],
+                }
+            )
+            cost_usd = Decimal("0.53974560") + Decimal("0.00037000")
+        else:
+            ordinal += 1
+            events.append(
+                {
+                    "event": "attempt_receipt",
+                    "key": key,
+                    "ordinal": ordinal,
+                    "attempt_index": 0,
+                    "status": "SUCCESS",
+                    "input_tokens": 100,
+                    "output_tokens": 20,
+                    "cached_tokens": None,
+                    "service_tier": "default",
+                    "model": "gpt-5.6-luna",
+                    "response_id": rec["response_id"],
+                }
+            )
+            cost_usd = calculate_attempt_token_cost(100, 20, pricing_cfg)
+        refund_usd = hold_amt - cost_usd
+        events.append({"event": "complete", "key": key, "record_sha256": rec_sha})
+        events.append(
+            {
+                "event": "monetary_settle",
+                "key": key,
+                "cost_usd": str(cost_usd),
+                "refund_usd": str(refund_usd),
+                "record_sha256": rec_sha,
+                "breach": False,
+            }
+        )
+
+    reconciled = reconcile_journal_and_ledger(
+        records_list,
+        pricing_cfg,
+        journal_events=events,
+    )
+    assert reconciled["missing_usage_attempts_by_condition"]["rag_k1"] == 1
+    assert reconciled["missing_usage_attempt_cost_by_condition"]["rag_k1"] == Decimal("0.53974560")
+    assert reconciled["affected_logical_records_by_condition"]["rag_k1"] == 1
+
+    inputs_clean = dataclasses.replace(inputs, records=records_list)
+    cond_metrics = {
+        c: compute_condition_metrics(records_list, inputs_clean, proto, c) for c in CONDITIONS
+    }
+    rq3 = compute_rq3(
+        inputs_clean,
+        proto,
+        cond_metrics,
+        pricing_config=pricing_cfg,
+        journal_events=events,
+    )
+
+    t_k1 = rq3["tradeoffs_by_condition"]["rag_k1"]["financial_cost_usd"]
+    assert t_k1["missing_usage_terminal_records_count"] == 0
+    assert t_k1["missing_usage_attempt_receipts_count"] == 1
+    assert t_k1["missing_usage_attempt_worst_charge_usd"] == 0.53974560
+    assert t_k1["affected_logical_records_count"] == 1
+
+    whole = rq3["whole_study_financial_accounting"]
+    assert whole["study_wide_missing_usage_terminal_records_count"] == 0
+    assert whole["study_wide_missing_usage_attempt_receipts_count"] == 1
+    assert whole["study_wide_missing_usage_attempt_charged_usd"] == 0.53974560
+    assert whole["study_wide_retried_attempts_count"] == 1
+
+    # 3. Dynamic metadata and markdown report
+    out_dir = tmp_path / "rq_repaired_reports"
+    analysis = run_rq_analysis(
+        inputs_clean,
+        proto,
+        pricing_config=pricing_cfg,
+        bootstrap_samples=25,
+        seed=42,
+        output_dir=out_dir,
+        journal_events=events,
+    )
+
+    assert analysis["analysis_tool_version"] == "2.0.0"
+    assert analysis["analysis_version"] == "2.0.0"
+    params = analysis["analysis_run_parameters"]
+    assert params["bootstrap_samples_count"] == 25
+    assert params["bootstrap_seed"] == 42
+    expected_scorable = [
+        sid
+        for sid, gt in inputs_clean.ground_truth.items()
+        if inputs_clean.ground_truth_status.get(sid, "mapped" if gt else "unmapped") == "mapped"
+        and gt
+    ]
+    expected_pairs = {
+        (next((r.get("pair_id") for r in records_list if r["sample_id"] == sid), sid))
+        for sid in expected_scorable
+    }
+    expected_gt_ids = sorted(
+        {t for sid in expected_scorable for t in inputs_clean.ground_truth.get(sid, ())}
+    )
+    expected_instances = sum(
+        len(set(inputs_clean.ground_truth.get(sid, ()))) for sid in expected_scorable
+    )
+    expected_universe = (
+        len(inputs_clean.corpus_ids)
+        if getattr(inputs_clean, "corpus_ids", None)
+        else len(inputs_clean.registry)
+    )
+
+    assert params["eligible_clusters_count"] == len(expected_pairs)
+    assert params["actual_test_gt_technique_support_count"] == len(expected_gt_ids)
+    assert params["actual_test_gt_technique_ids"] == expected_gt_ids
+    assert params["total_gt_support_instances"] == expected_instances
+    assert params["frozen_benchmark_macro_universe"] == expected_universe
+    assert params["unsupported_macro_classes_count"] == max(
+        0, expected_universe - len(expected_gt_ids)
+    )
+    assert params["analysis_source_file"] == "scripts/analysis/evaluate_rqs.py"
+    expected_source_sha = hashlib.sha256(
+        Path("scripts/analysis/evaluate_rqs.py").read_bytes()
+    ).hexdigest()
+    assert params["analysis_source_sha256"] == expected_source_sha
+    assert params["secondary_scope_authorization_packet"] is None
+    assert params["secondary_scope_authorization_sha256"] is None
+
+    # Test dynamic secondary_scope_packet provision and hash binding
+    dummy_packet = tmp_path / "supervisor_packet.md"
+    dummy_packet.write_text("# Supervisor Packet\nAuthorized secondary scope.\n", encoding="utf-8")
+    dummy_hash = hashlib.sha256(dummy_packet.read_bytes()).hexdigest()
+
+    analysis_with_packet = run_rq_analysis(
+        inputs_clean,
+        proto,
+        pricing_config=pricing_cfg,
+        bootstrap_samples=10,
+        seed=42,
+        journal_events=events,
+        secondary_scope_packet=dummy_packet,
+    )
+    p_params = analysis_with_packet["analysis_run_parameters"]
+    assert p_params["secondary_scope_authorization_packet"] == str(dummy_packet)
+    assert p_params["secondary_scope_authorization_sha256"] == dummy_hash
+
+    # Test fail-closed on missing packet path
+    with pytest.raises(FileNotFoundError, match="Secondary scope authorization packet not found"):
+        run_rq_analysis(
+            inputs_clean,
+            proto,
+            secondary_scope_packet=tmp_path / "non_existent_packet.md",
+        )
+
+    md_text = (out_dir / "rq_analysis_summary.md").read_text(encoding="utf-8")
+    expected_charge_line = (
+        "- **Study-Wide Missing Usage Charges**: 0 terminal records, "
+        "1 attempt receipts ($0.53974560)"
+    )
+    assert expected_charge_line in md_text
+    assert "- **Study-Wide Retried Attempts**: 1" in md_text
+
+
+def test_rq2_failure_decomposition_disjoint_overlaps_distinguishing(tmp_path):
+    """Distinguishing test for RQ2 failure decomposition:
+
+    Verifies that frac_ret_miss (rates_among_failures['retrieval_miss']) correctly
+    sums retrieval-miss overlaps across all 4 disjoint attribution failure types:
+      - valid_but_wrong (classification error)
+      - provider_failure (TIMEOUT, REFUSAL, INCOMPLETE, API_FAILURE)
+      - parse_failure (MALFORMED_RESPONSE)
+      - invalid_attack_id (INVALID_ID)
+    divided strictly by total_failures, bounding the rate in [0, 1].
+
+    Also verifies that retrieval_miss_count preserves all retrieval misses on scorable
+    (including 1 sample that was a retrieval miss but correctly predicted), ensuring
+    retrieval_miss_count > overlap_retrieval_miss_and_failures.
+    """
+    proto = _test_protocol()
+
+    gt = {
+        "s1": ["T1059"],
+        "s2": ["T1059"],
+        "s3": ["T1059"],
+        "s4": ["T1059"],
+        "s5": ["T1059"],
+        "s6": ["T1059"],
+    }
+    gt_status = {k: "mapped" for k in gt}
+
+    records = [
+        # s1: ret miss + valid but wrong
+        {
+            "sample_id": "s1",
+            "condition": "rag_k1",
+            "retrieved_candidates": [{"technique_id": "T1000"}],
+            "parse_status": "VALID",
+            "parsed_technique_ids": ["T1001"],
+            "model": "gpt-5.6-luna",
+        },
+        # s2: ret miss + provider failure (TIMEOUT)
+        {
+            "sample_id": "s2",
+            "condition": "rag_k1",
+            "retrieved_candidates": [{"technique_id": "T1000"}],
+            "parse_status": "TIMEOUT",
+            "parsed_technique_ids": [],
+            "model": "gpt-5.6-luna",
+        },
+        # s3: ret miss + parse failure (MALFORMED_RESPONSE)
+        {
+            "sample_id": "s3",
+            "condition": "rag_k1",
+            "retrieved_candidates": [{"technique_id": "T1000"}],
+            "parse_status": "MALFORMED_RESPONSE",
+            "parsed_technique_ids": [],
+            "model": "gpt-5.6-luna",
+        },
+        # s4: ret miss + invalid ATT&CK id
+        {
+            "sample_id": "s4",
+            "condition": "rag_k1",
+            "retrieved_candidates": [{"technique_id": "T1000"}],
+            "parse_status": "INVALID_ID",
+            "parsed_technique_ids": ["T9999"],
+            "model": "gpt-5.6-luna",
+        },
+        # s5: ret miss + correct generation (model predicted T1059 despite miss!)
+        {
+            "sample_id": "s5",
+            "condition": "rag_k1",
+            "retrieved_candidates": [{"technique_id": "T1000"}],
+            "parse_status": "VALID",
+            "parsed_technique_ids": ["T1059"],
+            "model": "gpt-5.6-luna",
+        },
+        # s6: ret hit + correct generation
+        {
+            "sample_id": "s6",
+            "condition": "rag_k1",
+            "retrieved_candidates": [{"technique_id": "T1059"}],
+            "parse_status": "VALID",
+            "parsed_technique_ids": ["T1059"],
+            "model": "gpt-5.6-luna",
+        },
+    ]
+
+    # For other conditions, provide dummy valid records so CONDITIONS loop runs
+    for cond in CONDITIONS:
+        if cond != "rag_k1":
+            for sid in ("s1", "s2", "s3", "s4", "s5", "s6"):
+                records.append(
+                    {
+                        "sample_id": sid,
+                        "condition": cond,
+                        "retrieved_candidates": [{"technique_id": "T1059"}],
+                        "parse_status": "VALID",
+                        "parsed_technique_ids": ["T1059"],
+                        "model": "gpt-5.6-luna",
+                    }
+                )
+
+    exp_id = "distinguishing-rq2-disjoint-overlaps"
+    for r in records:
+        r["experiment_id"] = exp_id
+
+    corpus_ids = sorted(["T1059", "T1000", "T1001", "T9999"])
+    inputs = EvaluationInputs(
+        manifest_sha256="b" * 64,
+        experiment_id=exp_id,
+        execution_mode="DRY_RUN",
+        sample_ids=tuple(gt.keys()),
+        records=tuple(records),
+        ground_truth={k: tuple(v) for k, v in gt.items()},
+        registry={tid: {} for tid in corpus_ids},
+        ground_truth_status=gt_status,
+        manifest_data={
+            "dataset_split": "TEST",
+            "experiment_id": exp_id,
+        },
+        corpus_ids=tuple(corpus_ids),
+    )
+
+    native = evaluate_experiment(inputs, proto)
+    rq2 = compute_rq2(
+        inputs,
+        proto,
+        retrieval_cond_metrics=native["retrieval_conditional"],
+        failure_decomp_metrics=native["failure_decomposition"],
+    )
+
+    k1_rq2 = rq2["by_condition"]["rag_k1"]
+    assert k1_rq2["total_scorable_samples"] == 6
+    assert k1_rq2["total_failures"] == 4
+
+    axes = k1_rq2["independent_failure_axes"]
+    assert axes["valid_but_wrong_classification_count"] == 1
+    assert axes["provider_failure_count"] == 1
+    assert axes["parse_failure_count"] == 1
+    assert axes["invalid_attack_id_count"] == 1
+
+    # Overlaps with retrieval miss
+    assert axes["overlap_retrieval_miss_and_wrong_classification"] == 1
+    assert axes["overlap_retrieval_miss_and_provider_failure"] == 1
+    assert axes["overlap_retrieval_miss_and_parse_failure"] == 1
+    assert axes["overlap_retrieval_miss_and_invalid_id"] == 1
+    assert axes["overlap_retrieval_miss_and_failures"] == 4
+
+    # Total retrieval misses on scorable includes the 1 correct miss (s5)
+    assert axes["retrieval_miss_count"] == 5
+    assert axes["retrieval_miss_rate"] == pytest.approx(5.0 / 6.0)
+
+    # Rates among failures:
+    # frac_ret_miss MUST be 4 / 4 = 1.0 (not 1 / 4 = 0.25)
+    rates = axes["rates_among_failures"]
+    assert rates["retrieval_miss"] == pytest.approx(1.0)
+    assert rates["provider_failure"] == pytest.approx(0.25)
+    assert rates["parse_failure"] == pytest.approx(0.25)
+    assert rates["invalid_attack_id"] == pytest.approx(0.25)
+    assert rates["valid_but_wrong_classification"] == pytest.approx(0.25)
+
+    # Error decomposition view
+    decomp = k1_rq2["error_decomposition"]
+    assert decomp["retrieval_miss_error_count"] == 5
+    assert decomp["overlap_retrieval_miss_and_failures"] == 4
+    assert decomp["retrieval_miss_fraction_of_failures"] == pytest.approx(1.0)

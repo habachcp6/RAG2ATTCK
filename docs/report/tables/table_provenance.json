@@ -1,0 +1,16 @@
+{
+  "bundle_sha256": "fixture-mode-no-bundle",
+  "fixture_only": true,
+  "generated_tables": {
+    "table1_dataset_and_cohort.md": "3abf616d923516c85d028d0ce08b45b7afb14edf7620c10e3077227bd967f7cf",
+    "table2_experimental_conditions.md": "07b28aaf66d34eba6f1d76b44b2c37fa1274b19f1a3d2e268ffd79dc5abe58ed",
+    "table3_rq1_attribution_performance.md": "b140aa62f38b8ca51bfad28f4f4a241fb5c95023efbbc8c1288bd74d7a8f2af8",
+    "table4_rq2_retrieval_and_error.md": "319e85b61a6c103ae29ada04f22c9bce731fd8145f05f0f2e83a0dea756e6b4e",
+    "table5_rq3_resources_and_cost.md": "92d82af6264bf24d8d0909ee185b78a2d79e1095a61e84a2b81a1934a08e253e",
+    "table6_provenance_and_hashes.md": "d3ca2581e258e92db18429c47923fdab9119b27f616cc13b36c4c6b6d5a9b607"
+  },
+  "run_id": "fixture-66b94b1676bf46a9",
+  "schema_version": "2.0.0",
+  "tables_count": 6,
+  "workstation_paths_sanitized": true
+}

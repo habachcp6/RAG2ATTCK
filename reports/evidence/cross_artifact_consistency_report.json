@@ -1,0 +1,32 @@
+{
+  "figures_provenance": {
+    "figures_count": 8,
+    "fixture_only": true,
+    "missing_figures": [],
+    "provenance_sha256": "d0606088c48837eb791d36e7f866189f06881539573c02057a2528863511135f",
+    "status": "PASS"
+  },
+  "leak_audit": {
+    "findings": [],
+    "leak_count": 0,
+    "status": "PASS"
+  },
+  "mode": "audit",
+  "numerical_consistency": {
+    "mismatches": [],
+    "status": "NOT_AUDITED_NO_BUNDLE"
+  },
+  "placeholder_audit": {
+    "findings": [],
+    "placeholder_count": 0,
+    "status": "PASS"
+  },
+  "tables_provenance": {
+    "fixture_only": true,
+    "missing_tables": [],
+    "provenance_sha256": "42002c667bd7cfabea337d11411ccbbedfa6ba8c6b97d77bcb66949bdfc59467",
+    "status": "PASS",
+    "tables_count": 6
+  },
+  "verdict": "PASS"
+}

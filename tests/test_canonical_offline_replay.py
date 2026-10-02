@@ -417,15 +417,19 @@ class TestDispatchSpiesAndFailClosedReplay:
     )
     def test_missing_rq_module_fails_closed_never_passes(self, monkeypatch, tmp_path):
         """Verify that missing scripts.analysis.evaluate_rqs returns False, NEVER True."""
+        import builtins
+
         from scripts.reproduce_canonical_study import REPO_ROOT, replay_saved_evaluation
 
-        if "scripts.analysis.evaluate_rqs" in sys.modules:
-            monkeypatch.delitem(sys.modules, "scripts.analysis.evaluate_rqs")
-        if "scripts.analysis" in sys.modules:
-            monkeypatch.delitem(sys.modules, "scripts.analysis")
+        real_import = builtins.__import__
 
-        # In worktree A, evaluate_rqs is naturally not present in repo_root.
-        # Calling replay_saved_evaluation must fail closed and return False.
+        def fake_import(name, *args, **kwargs):
+            if "scripts.analysis.evaluate_rqs" in name:
+                raise ImportError("Mocked missing RQ analysis module")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", fake_import)
+
         ok, logs = replay_saved_evaluation(DEFAULT_BUNDLE_DIR, tmp_path, REPO_ROOT)
         assert ok is False, "replay_saved_evaluation MUST return False when RQ module is missing"
         assert any("[FAIL] Missing required RQ analysis module" in line for line in logs)

@@ -17,7 +17,11 @@ Verifies:
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 from pathlib import Path
+
+import pytest
 
 from src.evaluation.experiment_metrics import CONDITIONS
 
@@ -337,10 +341,21 @@ def test_fixture_population_helper_extracts_slots_with_private_label(tmp_path: P
     assert "DIAGNOSTIC TEST FIXTURE ONLY" in md_content
 
 
+def _find_node_exe() -> str:
+    """Locate bundled node.exe or PATH node binary."""
+    bundled_path = Path(
+        "C:/Users/hahoa/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe"
+    )
+    if bundled_path.is_file():
+        return str(bundled_path)
+    which_node = shutil.which("node")
+    if which_node:
+        return which_node
+    pytest.skip("Node.js binary not found in environment")
+
+
 def test_fixture_population_helper_fails_closed_on_uncertified_data(tmp_path: Path) -> None:
     """Population helper must raise RuntimeError if target is not certified as fixture."""
-    import pytest
-
     from scripts.populate_presentation_fixtures import assert_fixture_safety
 
     fake_live = {"fixture_only": False, "provenance_status": "canonical_study"}
@@ -348,14 +363,76 @@ def test_fixture_population_helper_fails_closed_on_uncertified_data(tmp_path: Pa
         assert_fixture_safety(tmp_path, fake_live)
 
 
-def test_js_deck_updater_helper_contract() -> None:
-    """JS deck updater script exists, adheres to artifact-tool pattern, and labels private."""
-    js_script = REPO_ROOT / "scripts" / "artifact_tool_deck_updater.js"
-    assert js_script.is_file(), "artifact_tool_deck_updater.js missing"
-    content = js_script.read_text(encoding="utf-8")
+def test_fixture_population_helper_strict_hardening(tmp_path: Path) -> None:
+    """Population helper enforces strict boolean checks, no-default KeyError, and finiteness."""
+    from scripts.populate_presentation_fixtures import (
+        DEFAULT_FIXTURE_DIR,
+        _check_finite,
+        _fmt_acc,
+        _fmt_delta,
+        assert_fixture_safety,
+        extract_fixture_slots,
+    )
 
+    # 1. Non-boolean fixture_only must fail-closed
+    string_boolean = {"fixture_only": "true", "provenance_status": "diagnostic_fixture"}
+    with pytest.raises(RuntimeError, match=r"\[FAIL_CLOSED\]"):
+        assert_fixture_safety(tmp_path, string_boolean)
+
+    int_boolean = {"fixture_only": 1, "provenance_status": "diagnostic_fixture"}
+    with pytest.raises(RuntimeError, match=r"\[FAIL_CLOSED\]"):
+        assert_fixture_safety(tmp_path, int_boolean)
+
+    # 2. Non-diagnostic provenance must fail-closed
+    bad_prov = {"fixture_only": True, "provenance_status": "live_study"}
+    with pytest.raises(RuntimeError, match=r"\[FAIL_CLOSED\]"):
+        assert_fixture_safety(tmp_path, bad_prov)
+
+    # 3. Finiteness enforcement
+    with pytest.raises(ValueError, match="Non-finite"):
+        _check_finite(float("nan"), "test_nan")
+    with pytest.raises(ValueError, match="Non-finite"):
+        _check_finite(float("inf"), "test_inf")
+    with pytest.raises(ValueError, match="Non-finite"):
+        _check_finite(float("-inf"), "test_neginf")
+    with pytest.raises(TypeError, match="Expected numeric"):
+        _check_finite("123", "test_str")  # type: ignore
+
+    # 4. Formatting handles None cleanly as "N/A"
+    assert _fmt_acc(None) == "N/A"
+    assert _fmt_delta(None) == "N/A"
+
+    # 5. No-default contract: missing required metric raises KeyError
+    rq_analysis_path = DEFAULT_FIXTURE_DIR / "rq_analysis.json"
+    valid_data = json.loads(rq_analysis_path.read_text(encoding="utf-8"))
+
+    # Corrupt a required metric in a copy
+    corrupt_data = json.loads(json.dumps(valid_data))
+    del corrupt_data["rq1"]["by_condition"]["rag_k10"]["accuracy_end_to_end"]
+    corrupt_file = tmp_path / "rq_analysis_corrupt.json"
+    corrupt_file.write_text(json.dumps(corrupt_data), encoding="utf-8")
+
+    with pytest.raises(KeyError, match="accuracy_end_to_end"):
+        extract_fixture_slots(DEFAULT_FIXTURE_DIR, analysis_file=corrupt_file)
+
+
+def test_js_deck_updater_script_contract() -> None:
+    """JS deck updater script exists as .mjs and adheres to artifact-tool pattern."""
+    mjs_script = REPO_ROOT / "scripts" / "artifact_tool_deck_updater.mjs"
+    assert mjs_script.is_file(), "artifact_tool_deck_updater.mjs missing"
+
+    # Ensure old .js is completely removed
+    old_js_script = REPO_ROOT / "scripts" / "artifact_tool_deck_updater.js"
+    assert not old_js_script.exists(), "Old artifact_tool_deck_updater.js must be deleted"
+
+    content = mjs_script.read_text(encoding="utf-8")
+
+    # Verifies real bundled @oai/artifact-tool import and zero AST fallback
     assert "@oai/artifact-tool" in content
+    assert "fallback" not in content.lower(), "Mock AST fallback must be deleted"
     assert "DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS" in content
+    assert "PresentationFile" in content
+    assert "FileBlob" in content
     assert "importPptx" in content
     assert "inspect" in content
     assert "resolve" in content
@@ -367,3 +444,113 @@ def test_js_deck_updater_helper_contract() -> None:
     assert slides_md.is_file()
     md_text = slides_md.read_text(encoding="utf-8")
     assert "[PENDING EXECUTION]" in md_text or "PENDING" in md_text
+
+
+def test_js_deck_updater_execution_and_artifacts() -> None:
+    """Executes JS deck updater via node.exe and verifies all output artifacts."""
+    node_exe = _find_node_exe()
+    mjs_script = REPO_ROOT / "scripts" / "artifact_tool_deck_updater.mjs"
+
+    proc = subprocess.run(
+        [node_exe, str(mjs_script)],
+        capture_output=True,
+        text=True,
+        cwd=str(REPO_ROOT),
+    )
+    assert proc.returncode == 0, f"JS updater failed: {proc.stderr}\n{proc.stdout}"
+
+    # 1. Candidate deck assertions
+    candidate_pptx = REPO_ROOT / "reports" / "evidence" / "fixture_populated_slides.pptx"
+    assert candidate_pptx.is_file(), f"Candidate deck missing: {candidate_pptx}"
+    pptx_bytes = candidate_pptx.read_bytes()
+    assert len(pptx_bytes) > 0, "Candidate deck must not be empty"
+    assert pptx_bytes[:4] == b"PK\x03\x04", (
+        "Candidate deck must start with ZIP magic bytes PK\\x03\\x04"
+    )
+
+    # 2. Audit report assertions
+    audit_file = REPO_ROOT / "reports" / "evidence" / "deck_updater_fixture_audit.json"
+    assert audit_file.is_file(), f"Audit file missing: {audit_file}"
+    audit = json.loads(audit_file.read_text(encoding="utf-8"))
+    assert audit.get("fixture_only") is True
+    assert audit.get("provenance_status") == "diagnostic_fixture"
+    assert "DIAGNOSTIC TEST FIXTURE" in audit.get("disclaimer", "")
+    assert audit.get("sha_changed") is True
+    assert audit.get("before_sha256") != audit.get("after_sha256")
+    assert audit.get("total_slides_count") == 12
+    assert audit.get("total_notes_count") == 12
+    assert audit.get("rendered_png_slides_count") == 12
+    assert audit.get("substitutions_performed", 0) > 0
+    modified_shapes = audit.get("modified_shape_ids", [])
+    assert "sh/fi9c369c" in modified_shapes
+    assert "sh/98rehwve" in modified_shapes
+    assert "sh/h4bupgn6" in modified_shapes
+
+    # 3. Slide PNG assertions
+    qa_dir = REPO_ROOT / "reports" / "evidence" / "qa" / "fixture_slides"
+    assert qa_dir.is_dir(), f"QA directory missing: {qa_dir}"
+    for i in range(1, 13):
+        slide_png = qa_dir / f"slide-{i}.png"
+        assert slide_png.is_file(), f"Slide PNG missing: {slide_png}"
+        png_bytes = slide_png.read_bytes()
+        assert len(png_bytes) > 10_000, f"Slide {i} PNG unexpectedly small: {len(png_bytes)} bytes"
+        assert png_bytes[:8] == b"\x89PNG\r\n\x1a\n", f"Slide {i} lacks PNG magic bytes"
+
+
+def test_js_deck_updater_negative_cases(tmp_path: Path) -> None:
+    """Negative tests: missing slots, non-fixture slots, and missing disclaimer fail closed."""
+    node_exe = _find_node_exe()
+    mjs_script = REPO_ROOT / "scripts" / "artifact_tool_deck_updater.mjs"
+
+    # Case A: Missing slots file
+    non_existent = tmp_path / "non_existent_slots.json"
+    proc_missing = subprocess.run(
+        [node_exe, str(mjs_script), "--fixture-slots", str(non_existent)],
+        capture_output=True,
+        text=True,
+        cwd=str(REPO_ROOT),
+    )
+    assert proc_missing.returncode != 0
+    assert "[FAIL_CLOSED]" in proc_missing.stderr or "[FAIL_CLOSED]" in proc_missing.stdout
+    assert "not found" in (proc_missing.stderr + proc_missing.stdout)
+
+    # Case B: Non-fixture slots file (fixture_only: false)
+    bad_slots = tmp_path / "fake_live_slots.json"
+    bad_slots.write_text(
+        json.dumps(
+            {
+                "_metadata": {
+                    "fixture_only": False,
+                    "disclaimer": "DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    proc_bad = subprocess.run(
+        [node_exe, str(mjs_script), "--fixture-slots", str(bad_slots)],
+        capture_output=True,
+        text=True,
+        cwd=str(REPO_ROOT),
+    )
+    assert proc_bad.returncode != 0
+    assert "[FAIL_CLOSED]" in proc_bad.stderr or "[FAIL_CLOSED]" in proc_bad.stdout
+    assert "Refusing to execute on non-fixture data" in (proc_bad.stderr + proc_bad.stdout)
+
+    # Case C: Missing disclaimer in slots file
+    no_disc_slots = tmp_path / "no_disclaimer_slots.json"
+    no_disc_slots.write_text(
+        json.dumps({"_metadata": {"fixture_only": True}}),
+        encoding="utf-8",
+    )
+    proc_no_disc = subprocess.run(
+        [node_exe, str(mjs_script), "--fixture-slots", str(no_disc_slots)],
+        capture_output=True,
+        text=True,
+        cwd=str(REPO_ROOT),
+    )
+    assert proc_no_disc.returncode != 0
+    assert "[FAIL_CLOSED]" in proc_no_disc.stderr or "[FAIL_CLOSED]" in proc_no_disc.stdout
+    assert "Missing mandatory diagnostic fixture disclaimer" in (
+        proc_no_disc.stderr + proc_no_disc.stdout
+    )

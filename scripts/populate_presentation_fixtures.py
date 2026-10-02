@@ -8,12 +8,14 @@ SAFETY BOUNDARY:
 - Zero live prediction reads, zero provider calls.
 - All emitted artifacts are private-labeled:
   "DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS"
+- Enforces strict no-default contract and finite numerical validation.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 from typing import Any
@@ -33,31 +35,49 @@ DISCLAIMER_TEXT = "DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULT
 
 
 def assert_fixture_safety(fixture_dir: Path, analysis_data: dict[str, Any]) -> None:
-    """Fail closed if target is not certified as mock fixture data."""
-    is_fixture = analysis_data.get("fixture_only", False)
+    """Fail closed if target is not certified as mock fixture data with strict boolean checking."""
+    is_fixture = analysis_data.get("fixture_only") is True
     provenance = analysis_data.get("provenance_status", "")
 
     # Check companion metadata file if present
     meta_file = fixture_dir / "_fixture_metadata.json"
     if meta_file.is_file():
         meta = json.loads(meta_file.read_text(encoding="utf-8"))
-        if meta.get("fixture_only"):
+        if meta.get("fixture_only") is True:
             is_fixture = True
 
-    if not is_fixture and provenance != "diagnostic_fixture":
+    if not is_fixture or provenance != "diagnostic_fixture":
         raise RuntimeError(
             "[FAIL_CLOSED] populate_presentation_fixtures is strictly restricted "
-            "to diagnostic fixtures with fixture_only=True. Refusing to operate on "
-            f"uncertified data at: {fixture_dir}"
+            "to diagnostic fixtures with fixture_only=True and "
+            "provenance_status='diagnostic_fixture'. "
+            f"Refusing to operate on uncertified data at: {fixture_dir}"
         )
 
 
-def _fmt_acc(val: float | None) -> str:
-    return f"{val:.4f}" if val is not None else "N/A"
+def _check_finite(val: float | int | None, name: str) -> None:
+    """Enforce that numeric values are finite numbers."""
+    if val is not None:
+        if not isinstance(val, (int, float)) or isinstance(val, bool):
+            raise TypeError(f"Expected numeric value for {name}, got {type(val)}")
+        if not math.isfinite(val):
+            raise ValueError(f"Non-finite value encountered for {name}: {val}")
 
 
-def _fmt_delta(val: float | None) -> str:
-    return f"{val:+.4f}" if val is not None else "N/A"
+def _fmt_acc(val: float | None, name: str = "") -> str:
+    """Format accuracy or rate metric to 4 decimal places, or 'N/A' if None."""
+    if val is None:
+        return "N/A"
+    _check_finite(val, name or "metric")
+    return f"{val:.4f}"
+
+
+def _fmt_delta(val: float | None, name: str = "") -> str:
+    """Format delta metric with sign to 4 decimal places, or 'N/A' if None."""
+    if val is None:
+        return "N/A"
+    _check_finite(val, name or "delta")
+    return f"{val:+.4f}"
 
 
 def extract_fixture_slots(
@@ -65,7 +85,11 @@ def extract_fixture_slots(
     analysis_file: Path | None = None,
     split_manifest_path: Path | None = None,
 ) -> dict[str, Any]:
-    """Extract all placeholder numeric slots from canonical fixture artifacts."""
+    """Extract all placeholder numeric slots from canonical fixture artifacts.
+
+    Enforces no-default contract: missing required metrics immediately raise KeyError.
+    Enforces finiteness checking: non-finite floats raise ValueError.
+    """
     analysis_path = analysis_file or (fixture_dir / "rq_analysis.json")
     if not analysis_path.is_file():
         raise FileNotFoundError(f"Fixture analysis bundle not found: {analysis_path}")
@@ -80,14 +104,18 @@ def extract_fixture_slots(
         else str(manifest_p)
     )
 
-    rq1 = analysis.get("rq1", {})
-    rq1_by_cond = rq1.get("by_condition", {})
-    rq2 = analysis.get("rq2", {})
-    rq2_by_cond = rq2.get("by_condition", {})
-    rq3 = analysis.get("rq3", {})
-    tradeoffs = rq3.get("tradeoffs_by_condition", {})
-    whole_fin = rq3.get("whole_study_accounting", {})
-    views = rq3.get("view_diagnostics", {})
+    # No-default access: missing top-level sections raise KeyError
+    rq1 = analysis["rq1"]
+    rq1_by_cond = rq1["by_condition"]
+    rq2 = analysis["rq2"]
+    rq2_by_cond = rq2["by_condition"]
+    rq3 = analysis["rq3"]
+    tradeoffs = rq3["tradeoffs_by_condition"]
+    whole_fin = rq3["whole_study_accounting"]
+    views = rq3["view_diagnostics"]
+
+    best_rag_acc_delta = rq1["best_rag_accuracy_delta"]
+    best_rag_f1_delta = rq1["best_rag_macro_f1_delta"]
 
     slots: dict[str, Any] = {
         "_metadata": {
@@ -105,77 +133,114 @@ def extract_fixture_slots(
         "{{S2_NEITHER_MAPPED_PAIRS}}": "200",
         "{{S2_DISTINCT_ELIGIBLE_CLUSTERS}}": "440",
         # Slide 7: RQ1 Attribution Performance
-        "{{S2_BEST_RAG_CONDITION}}": str(rq1.get("best_rag_condition", "rag_k10")),
-        "{{S2_BEST_RAG_ACC_DELTA}}": _fmt_delta(rq1.get("best_rag_accuracy_delta")),
-        "{{S2_BEST_RAG_F1_DELTA}}": _fmt_delta(rq1.get("best_rag_macro_f1_delta")),
+        "{{S2_BEST_RAG_CONDITION}}": str(rq1["best_rag_condition"]),
+        "{{S2_BEST_RAG_ACC_DELTA}}": _fmt_delta(best_rag_acc_delta, "best_rag_accuracy_delta"),
+        "{{S2_BEST_RAG_F1_DELTA}}": _fmt_delta(best_rag_f1_delta, "best_rag_macro_f1_delta"),
     }
 
-    # Format RQ1 per-condition metrics
+    # Format RQ1 per-condition metrics (no-default KeyError if condition or metric missing)
     for c in CONDITIONS:
-        c_row = rq1_by_cond.get(c, {})
-        slots[f"{{{{S2_ACC_E2E_{c.upper()}}}}}"] = _fmt_acc(c_row.get("accuracy_end_to_end"))
-        slots[f"{{{{S2_MACRO_F1_{c.upper()}}}}}"] = _fmt_acc(c_row.get("macro_f1"))
-        ci = c_row.get("accuracy_e2e_ci_95", [0.0, 0.0])
-        ci_str = f"[{ci[0]:.4f}, {ci[1]:.4f}]" if ci and ci[0] is not None else "[N/A, N/A]"
+        if c not in rq1_by_cond:
+            raise KeyError(f"Missing required condition '{c}' in rq1.by_condition")
+        c_row = rq1_by_cond[c]
+        slots[f"{{{{S2_ACC_E2E_{c.upper()}}}}}"] = _fmt_acc(
+            c_row["accuracy_end_to_end"], f"{c}.accuracy_end_to_end"
+        )
+        slots[f"{{{{S2_MACRO_F1_{c.upper()}}}}}"] = _fmt_acc(c_row["macro_f1"], f"{c}.macro_f1")
+        ci = c_row["accuracy_e2e_ci_95"]
+        if ci is not None:
+            if not isinstance(ci, (list, tuple)) or len(ci) != 2 or ci[0] is None or ci[1] is None:
+                ci_str = "[N/A, N/A]"
+            else:
+                _check_finite(ci[0], f"{c}.ci_lower")
+                _check_finite(ci[1], f"{c}.ci_upper")
+                ci_str = f"[{ci[0]:.4f}, {ci[1]:.4f}]"
+        else:
+            ci_str = "[N/A, N/A]"
         slots[f"{{{{S2_CI_95_{c.upper()}}}}}"] = ci_str
 
     # Slide 8: RQ2 Error Decomposition (using k=10 representative condition)
-    rag10_rq2 = rq2_by_cond.get("rag_k10", {})
-    ret10 = rag10_rq2.get("retrieval_metrics", {})
-    gen10 = rag10_rq2.get("generation_conditional_accuracy", {})
-    axes10 = rag10_rq2.get("independent_failure_axes", {})
+    if "rag_k10" not in rq2_by_cond:
+        raise KeyError("Missing required condition 'rag_k10' in rq2.by_condition")
+    rag10_rq2 = rq2_by_cond["rag_k10"]
+    ret10 = rag10_rq2["retrieval_metrics"]
+    gen10 = rag10_rq2["generation_conditional_accuracy"]
+    axes10 = rag10_rq2["independent_failure_axes"]
 
     slots.update(
         {
-            "{{S2_RECALL_AT_K}}": _fmt_acc(ret10.get("macro_recall")),
-            "{{S2_HIT_RATE_AT_K}}": _fmt_acc(ret10.get("retrieval_hit_rate")),
-            "{{S2_RETRIEVAL_MISS_RATE_K10}}": _fmt_acc(axes10.get("retrieval_miss_rate")),
-            "{{S2_PROVIDER_FAIL_RATE_K10}}": _fmt_acc(axes10.get("provider_failure_rate")),
-            "{{S2_PARSE_FAIL_RATE_K10}}": _fmt_acc(axes10.get("parse_failure_rate")),
-            "{{S2_INVALID_ATTACK_ID_RATE_K10}}": _fmt_acc(axes10.get("invalid_attack_id_rate")),
+            "{{S2_RECALL_AT_K}}": _fmt_acc(ret10["macro_recall"], "macro_recall"),
+            "{{S2_HIT_RATE_AT_K}}": _fmt_acc(ret10["retrieval_hit_rate"], "retrieval_hit_rate"),
+            "{{S2_RETRIEVAL_MISS_RATE_K10}}": _fmt_acc(
+                axes10["retrieval_miss_rate"], "retrieval_miss_rate"
+            ),
+            "{{S2_PROVIDER_FAIL_RATE_K10}}": _fmt_acc(
+                axes10["provider_failure_rate"], "provider_failure_rate"
+            ),
+            "{{S2_PARSE_FAIL_RATE_K10}}": _fmt_acc(
+                axes10["parse_failure_rate"], "parse_failure_rate"
+            ),
+            "{{S2_INVALID_ATTACK_ID_RATE_K10}}": _fmt_acc(
+                axes10["invalid_attack_id_rate"], "invalid_attack_id_rate"
+            ),
             "{{S2_WRONG_CLASS_RATE_K10}}": _fmt_acc(
-                axes10.get("valid_but_wrong_classification_rate")
+                axes10["valid_but_wrong_classification_rate"],
+                "valid_but_wrong_classification_rate",
             ),
             "{{S2_OVERLAP_MISS_AND_WRONG_K10}}": str(
-                axes10.get("overlap_retrieval_miss_and_wrong_classification", 0)
+                axes10["overlap_retrieval_miss_and_wrong_classification"]
             ),
             "{{S2_OVERLAP_MISS_AND_PROV_K10}}": str(
-                axes10.get("overlap_retrieval_miss_and_provider_failure", 0)
+                axes10["overlap_retrieval_miss_and_provider_failure"]
             ),
             "{{S2_OVERLAP_MISS_AND_PARSE_K10}}": str(
-                axes10.get("overlap_retrieval_miss_and_parse_failure", 0)
+                axes10["overlap_retrieval_miss_and_parse_failure"]
             ),
             "{{S2_OVERLAP_MISS_AND_INVAL_K10}}": str(
-                axes10.get("overlap_retrieval_miss_and_invalid_id", 0)
+                axes10["overlap_retrieval_miss_and_invalid_id"]
             ),
             "{{S2_P_CORRECT_GIVEN_RETRIEVED}}": _fmt_acc(
-                gen10.get("P_correct_given_retrieval_success")
+                gen10["P_correct_given_retrieval_success"],
+                "P_correct_given_retrieval_success",
             ),
             "{{S2_P_CORRECT_GIVEN_ABSENT}}": _fmt_acc(
-                gen10.get("P_correct_given_retrieval_failure")
+                gen10["P_correct_given_retrieval_failure"],
+                "P_correct_given_retrieval_failure",
             ),
         }
     )
 
     # Slide 9: RQ3 Tradeoffs & Costs
-    trade_no_rag = tradeoffs.get("no_rag", {})
-    trade_k10 = tradeoffs.get("rag_k10", {})
+    if "no_rag" not in tradeoffs or "rag_k10" not in tradeoffs:
+        raise KeyError("Missing required conditions in rq3.tradeoffs_by_condition")
+    trade_no_rag = tradeoffs["no_rag"]
+    trade_k10 = tradeoffs["rag_k10"]
 
-    lat_no_rag = trade_no_rag.get("latency_ms", {}).get("median", 0.0) / 1000.0
-    lat_k10 = trade_k10.get("latency_ms", {}).get("median", 0.0) / 1000.0
+    lat_no_rag_raw = trade_no_rag["latency_ms"]["median"]
+    lat_k10_raw = trade_k10["latency_ms"]["median"]
+    _check_finite(lat_no_rag_raw, "latency_no_rag")
+    _check_finite(lat_k10_raw, "latency_k10")
+    lat_no_rag = lat_no_rag_raw / 1000.0
+    lat_k10 = lat_k10_raw / 1000.0
 
-    tok_no_rag = trade_no_rag.get("tokens", {}).get("mean_prompt_tokens", 0.0)
-    tok_k10 = trade_k10.get("tokens", {}).get("mean_prompt_tokens", 0.0)
+    tok_no_rag = trade_no_rag["tokens"]["mean_prompt_tokens"]
+    tok_k10 = trade_k10["tokens"]["mean_prompt_tokens"]
+    _check_finite(tok_no_rag, "tokens_no_rag")
+    _check_finite(tok_k10, "tokens_k10")
 
-    cost_no_rag = trade_no_rag.get("financial_cost_usd", {}).get(
-        "cost_per_logical_request_usd", 0.0
-    )
-    cost_k10 = trade_k10.get("financial_cost_usd", {}).get("cost_per_logical_request_usd", 0.0)
+    cost_no_rag = trade_no_rag["financial_cost_usd"]["cost_per_logical_request_usd"]
+    cost_k10 = trade_k10["financial_cost_usd"]["cost_per_logical_request_usd"]
+    _check_finite(cost_no_rag, "cost_no_rag")
+    _check_finite(cost_k10, "cost_k10")
 
-    total_budget = whole_fin.get("total_study_budget_usd", 19.99)
-    canonical_total = whole_fin.get("canonical_conditions_total_usd", 0.0)
-    remaining_budget = whole_fin.get("net_remaining_uncommitted_budget_usd", 0.0)
-    pilot_hold = whole_fin.get("prior_pilot_provisional_hold_usd", 0.05264010)
+    total_budget = whole_fin["total_study_budget_usd"]
+    canonical_total = whole_fin["canonical_conditions_total_usd"]
+    remaining_budget = whole_fin["net_remaining_uncommitted_budget_usd"]
+    pilot_hold = whole_fin["prior_pilot_provisional_hold_usd"]
+    _check_finite(total_budget, "total_budget")
+    _check_finite(canonical_total, "canonical_total")
+    _check_finite(remaining_budget, "remaining_budget")
+    _check_finite(pilot_hold, "pilot_hold")
 
     slots.update(
         {
@@ -193,24 +258,44 @@ def extract_fixture_slots(
     )
 
     # Slide 10: View Diagnostics & Paired Analysis (k=10 condition)
-    diag10 = views.get("rag_k10", {})
-    conc10 = diag10.get("pair_concordance", {})
-    mcnemar10 = diag10.get("mcnemar_test_views_exploratory", {})
+    if "rag_k10" not in views:
+        raise KeyError("Missing required condition 'rag_k10' in rq3.view_diagnostics")
+    diag10 = views["rag_k10"]
+    conc10 = diag10["pair_concordance"]
+    mcnemar10 = diag10["mcnemar_test_views_exploratory"]
+
+    paired_delta = diag10["paired_delta"]
+    _check_finite(paired_delta, "paired_delta")
+    p_asympt = mcnemar10["p_value_asymptotic"]
+    p_exact = mcnemar10["p_value_exact"]
+    _check_finite(p_asympt, "p_value_asymptotic")
+    _check_finite(p_exact, "p_value_exact")
 
     slots.update(
         {
-            "{{S2_SINGLE_VIEW_ACC_E2E}}": _fmt_acc(diag10.get("single_view_accuracy_e2e")),
-            "{{S2_CONTEXT_VIEW_ACC_E2E}}": _fmt_acc(diag10.get("contextual_view_accuracy_e2e")),
-            "{{S2_VIEW_ACC_DELTA}}": _fmt_delta(diag10.get("view_accuracy_delta")),
-            "{{S2_PAIRED_SINGLE_ACC}}": _fmt_acc(diag10.get("single_paired_accuracy")),
-            "{{S2_PAIRED_CONTEXT_ACC}}": _fmt_acc(diag10.get("contextual_paired_accuracy")),
-            "{{S2_PAIRED_DELTA_PP}}": f"{diag10.get('paired_delta', 0.0) * 100.0:+.2f}",
-            "{{S2_MCNEMAR_P_ASYMPT}}": _fmt_acc(mcnemar10.get("p_value_asymptotic", 1.0)),
-            "{{S2_MCNEMAR_P_EXACT}}": _fmt_acc(mcnemar10.get("p_value_exact", 1.0)),
-            "{{S2_BOTH_CORRECT_COUNT}}": str(conc10.get("both_correct_count", 0)),
-            "{{S2_SINGLE_ONLY_CORRECT}}": str(conc10.get("single_only_correct_count", 0)),
-            "{{S2_CONTEXT_ONLY_CORRECT}}": str(conc10.get("contextual_only_correct_count", 0)),
-            "{{S2_BOTH_INCORRECT_COUNT}}": str(conc10.get("both_incorrect_count", 0)),
+            "{{S2_SINGLE_VIEW_ACC_E2E}}": _fmt_acc(
+                diag10["single_view_accuracy_e2e"], "single_view_accuracy_e2e"
+            ),
+            "{{S2_CONTEXT_VIEW_ACC_E2E}}": _fmt_acc(
+                diag10["contextual_view_accuracy_e2e"],
+                "contextual_view_accuracy_e2e",
+            ),
+            "{{S2_VIEW_ACC_DELTA}}": _fmt_delta(
+                diag10["view_accuracy_delta"], "view_accuracy_delta"
+            ),
+            "{{S2_PAIRED_SINGLE_ACC}}": _fmt_acc(
+                diag10["single_paired_accuracy"], "single_paired_accuracy"
+            ),
+            "{{S2_PAIRED_CONTEXT_ACC}}": _fmt_acc(
+                diag10["contextual_paired_accuracy"], "contextual_paired_accuracy"
+            ),
+            "{{S2_PAIRED_DELTA_PP}}": f"{paired_delta * 100.0:+.2f}",
+            "{{S2_MCNEMAR_P_ASYMPT}}": _fmt_acc(p_asympt, "p_value_asymptotic"),
+            "{{S2_MCNEMAR_P_EXACT}}": _fmt_acc(p_exact, "p_value_exact"),
+            "{{S2_BOTH_CORRECT_COUNT}}": str(conc10["both_correct_count"]),
+            "{{S2_SINGLE_ONLY_CORRECT}}": str(conc10["single_only_correct_count"]),
+            "{{S2_CONTEXT_ONLY_CORRECT}}": str(conc10["contextual_only_correct_count"]),
+            "{{S2_BOTH_INCORRECT_COUNT}}": str(conc10["both_incorrect_count"]),
         }
     )
 

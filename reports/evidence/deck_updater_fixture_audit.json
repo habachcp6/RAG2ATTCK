@@ -1,0 +1,34 @@
+{
+  "fixture_only": true,
+  "provenance_status": "diagnostic_fixture",
+  "disclaimer": "DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS",
+  "timestamp_utc": "2026-10-02T01:58:04.928Z",
+  "source_deck_path": "D:\\RAG2ATTCK-worktrees\\repro-presentation-s1\\docs\\presentation\\slides.pptx",
+  "candidate_deck_path": "D:\\RAG2ATTCK-worktrees\\repro-presentation-s1\\reports\\evidence\\fixture_populated_slides.pptx",
+  "before_sha256": "9e330fe96c506284b6b219c0b4feef458a4cfde9897d4b60c6c73bd4e918152a",
+  "after_sha256": "3e648c9bae2836eae6838ade16150007de985330bf9e61dbc77deb97f68de589",
+  "sha_changed": true,
+  "candidate_file_size_bytes": 384055,
+  "total_slides_count": 12,
+  "total_notes_count": 12,
+  "modified_shape_ids": [
+    "sh/98rehwve",
+    "sh/fi9c369c",
+    "sh/h4bupgn6"
+  ],
+  "substitutions_performed": 4,
+  "rendered_png_slides_count": 12,
+  "qa_slides_directory": "D:\\RAG2ATTCK-worktrees\\repro-presentation-s1\\reports\\evidence\\qa\\fixture_slides",
+  "dry_run": false,
+  "artifact_tool_binding": {
+    "runtime": "bundled_node_module",
+    "package": "@oai/artifact-tool",
+    "verified_apis": [
+      "importPptx",
+      "inspect",
+      "resolve",
+      "exportPptx",
+      "export"
+    ]
+  }
+}

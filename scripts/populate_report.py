@@ -23,6 +23,7 @@ import hashlib
 import json
 import math
 import re
+import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -46,6 +47,7 @@ DEFAULT_FIXTURE_DIR = COMMITTED_FIXTURE_DIR
 FALLBACK_FIXTURE_DIR = LOCAL_REPRODUCTION_FIXTURE_DIR
 
 DEFAULT_TEMPLATE_PATH = REPO_ROOT / "docs" / "report" / "scientific_report.md"
+DEFAULT_FIGURES_DIR = REPO_ROOT / "docs" / "report" / "figures"
 DEFAULT_OUTPUT_MD = REPO_ROOT / "reports" / "evidence" / "fixture_populated_report.md"
 DEFAULT_AUDIT_JSON = REPO_ROOT / "reports" / "evidence" / "populated_report_slots_fixture.json"
 
@@ -2066,7 +2068,7 @@ def populate_report_text(
         if supp_marker not in populated and "### 8.3" in populated:
             actual_seal_path = seal_path or DEFAULT_SEAL_PATH
             canonical_files = [
-                ("Canonical Audit Seal", actual_seal_path),
+                ("Canonical Metric Bundle", actual_seal_path),
                 ("Canonical Overall Metrics", data_dir / "overall_metrics.json"),
                 ("Canonical Condition Metrics", data_dir / "per_condition_metrics.json"),
                 (
@@ -2220,6 +2222,7 @@ def run_pipeline(
     data_dir: Path | None = None,
     seal_path: Path | None = None,
     metric_bundle: Path | None = None,
+    figures_dir: Path | None = None,
 ) -> tuple[Path, dict[str, Any]]:
     """Execute end-to-end report population.
 
@@ -2299,6 +2302,27 @@ def run_pipeline(
         )
         print(f"[OK] Wrote audit slots JSON to: {target_audit_path}")
 
+    # 6.5. Manage self-contained figures directory
+    resolved_figures_src: Path | None = None
+    if figures_dir is not None and Path(figures_dir).is_dir():
+        resolved_figures_src = Path(figures_dir)
+    elif DEFAULT_FIGURES_DIR.is_dir():
+        resolved_figures_src = DEFAULT_FIGURES_DIR
+    elif (REPO_ROOT / "docs" / "report" / "figures").is_dir():
+        resolved_figures_src = REPO_ROOT / "docs" / "report" / "figures"
+
+    dest_figures_dir = target_output_path.parent / "figures"
+    if resolved_figures_src is not None and resolved_figures_src.is_dir():
+        try:
+            if resolved_figures_src.resolve() != dest_figures_dir.resolve():
+                dest_figures_dir.mkdir(parents=True, exist_ok=True)
+                for item in resolved_figures_src.iterdir():
+                    if item.is_file():
+                        shutil.copy2(item, dest_figures_dir / item.name)
+                print(f"[OK] Copied native report figures to: {dest_figures_dir}")
+        except Exception as e:
+            print(f"[WARN] Could not copy figures to {dest_figures_dir}: {e}")
+
     # 7. Optional DOCX compilation
     if export_docx:
         from scripts.export_report_docx import (
@@ -2306,7 +2330,8 @@ def run_pipeline(
         )
 
         docx_path = target_output_path.with_suffix(".docx")
-        build_docx_from_markdown(target_output_path, docx_path)
+        active_figures_dir = dest_figures_dir if dest_figures_dir.is_dir() else resolved_figures_src
+        build_docx_from_markdown(target_output_path, docx_path, figures_dir=active_figures_dir)
         print(f"[OK] Exported Word document to: {docx_path}")
 
     return target_output_path, slots
@@ -2377,6 +2402,12 @@ def parse_args() -> argparse.Namespace:
         help="Also export populated markdown to Word (.docx).",
     )
     parser.add_argument(
+        "--figures-dir",
+        type=Path,
+        default=None,
+        help="Path to directory containing native report figure files (PNG, PDF, provenance).",
+    )
+    parser.add_argument(
         "--force-in-place",
         action="store_true",
         help="Allow overwriting template file in place (USE WITH CAUTION).",
@@ -2411,6 +2442,7 @@ def main() -> None:
             mode=args.mode,
             export_docx=args.export_docx,
             force_in_place=args.force_in_place,
+            figures_dir=args.figures_dir,
         )
     except Exception as exc:
         print(f"[ERROR] Population failed: {exc}", file=sys.stderr)

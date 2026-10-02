@@ -7,6 +7,7 @@ Unicode mathematical typesetting, callout styling, and rigorous QA verification.
 
 from __future__ import annotations
 
+import argparse
 import re
 import zipfile
 from pathlib import Path
@@ -65,6 +66,10 @@ def replace_fractions(text: str) -> str:
 def latex_to_unicode(text: str) -> str:
     """Convert LaTeX mathematical notation to clean, structured Unicode math text."""
     s = text.strip()
+
+    # Preserve conditioning before unwrapping text: otherwise \mid\text{Hit}
+    # becomes \midHit and is erased as an unknown command below.
+    s = re.sub(r"\\mid(?![a-zA-Z])", " | ", s)
 
     # Replace escaped percent and currency amounts
     s = s.replace(r"\%", "%")
@@ -406,7 +411,9 @@ def add_display_math(doc, math_text: str):
     pPr.append(pBdr)
 
 
-def build_docx_from_markdown(md_path: Path, output_docx_path: Path):
+def build_docx_from_markdown(
+    md_path: Path, output_docx_path: Path, figures_dir: Path | None = None
+):
     """Convert scientific_report.md into a high-quality Word document."""
     doc = docx.Document()
 
@@ -737,18 +744,28 @@ def build_docx_from_markdown(md_path: Path, output_docx_path: Path):
             alt_text, img_rel_path = m_img.groups()
 
             # Robust candidate paths for image resolution
-            candidates = [
-                md_path.parent / img_rel_path,
-                md_path.parent / "figures" / Path(img_rel_path).name,
-                Path("C:/Users/hahoa/.codex/artifacts/rag2attck/verified-native-figures-v1")
-                / Path(img_rel_path).name,
-                Path("D:/RAG2ATT&CK/docs/report/figures") / Path(img_rel_path).name,
-                Path(__file__).resolve().parent.parent
-                / "docs"
-                / "report"
-                / "figures"
-                / Path(img_rel_path).name,
-            ]
+            img_filename = Path(img_rel_path).name
+            candidates: list[Path] = []
+            if figures_dir is not None:
+                figures_dir_p = Path(figures_dir)
+                candidates.extend(
+                    [
+                        figures_dir_p / img_rel_path,
+                        figures_dir_p / img_filename,
+                    ]
+                )
+            candidates.extend(
+                [
+                    md_path.parent / img_rel_path,
+                    md_path.parent / "figures" / img_filename,
+                    Path(__file__).resolve().parent.parent
+                    / "docs"
+                    / "report"
+                    / "figures"
+                    / img_filename,
+                    Path.cwd() / "docs" / "report" / "figures" / img_filename,
+                ]
+            )
             resolved_img = None
             for cand in candidates:
                 if cand.is_file():
@@ -928,8 +945,38 @@ def audit_docx_quality(doc_path: Path):
     )
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Convert scientific_report.md into a high-quality Word document (.docx)."
+    )
+    parser.add_argument(
+        "--md-path",
+        type=Path,
+        default=Path("docs/report/scientific_report.md"),
+        help="Path to source markdown report (default: docs/report/scientific_report.md).",
+    )
+    parser.add_argument(
+        "--docx-path",
+        type=Path,
+        default=Path("docs/report/scientific_report.docx"),
+        help="Path to output Word document (default: docs/report/scientific_report.docx).",
+    )
+    parser.add_argument(
+        "--figures-dir",
+        type=Path,
+        default=None,
+        help="Optional path to directory containing report figures.",
+    )
+    parser.add_argument(
+        "--skip-audit",
+        action="store_true",
+        help="Skip post-export quality audit invariants.",
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    src_md = Path("docs/report/scientific_report.md")
-    dest_docx = Path("docs/report/scientific_report.docx")
-    build_docx_from_markdown(src_md, dest_docx)
-    audit_docx_quality(dest_docx)
+    args = parse_args()
+    build_docx_from_markdown(args.md_path, args.docx_path, figures_dir=args.figures_dir)
+    if not args.skip_audit:
+        audit_docx_quality(args.docx_path)

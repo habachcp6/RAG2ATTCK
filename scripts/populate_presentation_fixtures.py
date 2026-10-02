@@ -14,6 +14,7 @@ SAFETY BOUNDARY:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import sys
@@ -33,6 +34,30 @@ DEFAULT_MAP_JSON = DEFAULT_FIXTURE_DIR / "declarative_shape_table_map.json"
 SPLIT_MANIFEST_PATH = REPO_ROOT / "data" / "ground_truth" / "synthetic" / "split_manifest.json"
 
 DISCLAIMER_TEXT = "DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS"
+
+REQUIRED_CANONICAL_SOURCE_FILES = (
+    ".study_anchor.json",
+    "manifest.json",
+    "no_rag_predictions.jsonl",
+    "rag_k10_predictions.jsonl",
+    "rag_k1_predictions.jsonl",
+    "rag_k3_predictions.jsonl",
+    "rag_k5_predictions.jsonl",
+    "request_journal.jsonl",
+    "run_summary.json",
+    "study_ledger.json",
+)
+
+REQUIRED_CANONICAL_OUTPUT_FILES = (
+    "failure_decomposition.json",
+    "overall_metrics.json",
+    "per_condition_metrics.json",
+    "per_technique_metrics.json",
+    "retrieval_conditional_metrics.json",
+    "run_provenance.json",
+    "rq_analysis.json",
+    "rq_analysis_summary.md",
+)
 
 DECLARATIVE_SLOT_DEFINITIONS: list[dict[str, Any]] = [
     # Slide 4: Dataset Topology
@@ -408,6 +433,86 @@ DECLARATIVE_SLOT_DEFINITIONS: list[dict[str, Any]] = [
         "category": "all_5_conditions_rq1",
     },
     {
+        "slot_name": "RQ1_ACC_DELTA_RAG_K1",
+        "input_field": "delta_accuracy_end_to_end",
+        "units": "delta (+/-)",
+        "source_pointer": "/rq1/by_condition/rag_k1/delta_vs_baseline/delta_accuracy_end_to_end",
+        "shape_id": "sh/98rehwve",
+        "slide_number": 8,
+        "slot_key": "{{S2_ACC_DELTA_RAG_K1}}",
+        "category": "all_5_conditions_rq1",
+    },
+    {
+        "slot_name": "RQ1_MACRO_F1_DELTA_RAG_K1",
+        "input_field": "delta_macro_f1",
+        "units": "delta (+/-)",
+        "source_pointer": "/rq1/by_condition/rag_k1/delta_vs_baseline/delta_macro_f1",
+        "shape_id": "sh/98rehwve",
+        "slide_number": 8,
+        "slot_key": "{{S2_MACRO_F1_DELTA_RAG_K1}}",
+        "category": "all_5_conditions_rq1",
+    },
+    {
+        "slot_name": "RQ1_ACC_DELTA_RAG_K3",
+        "input_field": "delta_accuracy_end_to_end",
+        "units": "delta (+/-)",
+        "source_pointer": "/rq1/by_condition/rag_k3/delta_vs_baseline/delta_accuracy_end_to_end",
+        "shape_id": "sh/98rehwve",
+        "slide_number": 8,
+        "slot_key": "{{S2_ACC_DELTA_RAG_K3}}",
+        "category": "all_5_conditions_rq1",
+    },
+    {
+        "slot_name": "RQ1_MACRO_F1_DELTA_RAG_K3",
+        "input_field": "delta_macro_f1",
+        "units": "delta (+/-)",
+        "source_pointer": "/rq1/by_condition/rag_k3/delta_vs_baseline/delta_macro_f1",
+        "shape_id": "sh/98rehwve",
+        "slide_number": 8,
+        "slot_key": "{{S2_MACRO_F1_DELTA_RAG_K3}}",
+        "category": "all_5_conditions_rq1",
+    },
+    {
+        "slot_name": "RQ1_ACC_DELTA_RAG_K5",
+        "input_field": "delta_accuracy_end_to_end",
+        "units": "delta (+/-)",
+        "source_pointer": "/rq1/by_condition/rag_k5/delta_vs_baseline/delta_accuracy_end_to_end",
+        "shape_id": "sh/98rehwve",
+        "slide_number": 8,
+        "slot_key": "{{S2_ACC_DELTA_RAG_K5}}",
+        "category": "all_5_conditions_rq1",
+    },
+    {
+        "slot_name": "RQ1_MACRO_F1_DELTA_RAG_K5",
+        "input_field": "delta_macro_f1",
+        "units": "delta (+/-)",
+        "source_pointer": "/rq1/by_condition/rag_k5/delta_vs_baseline/delta_macro_f1",
+        "shape_id": "sh/98rehwve",
+        "slide_number": 8,
+        "slot_key": "{{S2_MACRO_F1_DELTA_RAG_K5}}",
+        "category": "all_5_conditions_rq1",
+    },
+    {
+        "slot_name": "RQ1_ACC_DELTA_RAG_K10",
+        "input_field": "delta_accuracy_end_to_end",
+        "units": "delta (+/-)",
+        "source_pointer": "/rq1/by_condition/rag_k10/delta_vs_baseline/delta_accuracy_end_to_end",
+        "shape_id": "sh/98rehwve",
+        "slide_number": 8,
+        "slot_key": "{{S2_ACC_DELTA_RAG_K10}}",
+        "category": "all_5_conditions_rq1",
+    },
+    {
+        "slot_name": "RQ1_MACRO_F1_DELTA_RAG_K10",
+        "input_field": "delta_macro_f1",
+        "units": "delta (+/-)",
+        "source_pointer": "/rq1/by_condition/rag_k10/delta_vs_baseline/delta_macro_f1",
+        "shape_id": "sh/98rehwve",
+        "slide_number": 8,
+        "slot_key": "{{S2_MACRO_F1_DELTA_RAG_K10}}",
+        "category": "all_5_conditions_rq1",
+    },
+    {
         "slot_name": "RQ1_BEST_CONDITION",
         "input_field": "best_rag_condition",
         "units": "condition name",
@@ -625,7 +730,7 @@ DECLARATIVE_SLOT_DEFINITIONS: list[dict[str, Any]] = [
         "slot_name": "RQ3_PRIOR_PILOT_HOLD_USD",
         "input_field": "prior_pilot_provisional_hold_usd",
         "units": "USD",
-        "source_pointer": "/rq3/whole_study_accounting/prior_pilot_provisional_hold_usd",
+        "source_pointer": "/rq3/whole_study_financial_accounting/prior_pilot_provisional_hold_usd",
         "shape_id": "sh/ofq5svm5",
         "slide_number": 9,
         "slot_key": "{{S2_PRIOR_PILOT_HOLD_USD}}",
@@ -635,7 +740,7 @@ DECLARATIVE_SLOT_DEFINITIONS: list[dict[str, Any]] = [
         "slot_name": "RQ3_CANONICAL_TOTAL_USD",
         "input_field": "canonical_conditions_total_usd",
         "units": "USD",
-        "source_pointer": "/rq3/whole_study_accounting/canonical_conditions_total_usd",
+        "source_pointer": "/rq3/whole_study_financial_accounting/canonical_conditions_total_usd",
         "shape_id": "sh/ofq5svm5",
         "slide_number": 9,
         "slot_key": "{{S2_CANONICAL_TOTAL_USD}}",
@@ -645,7 +750,9 @@ DECLARATIVE_SLOT_DEFINITIONS: list[dict[str, Any]] = [
         "slot_name": "RQ3_NET_REMAINING_USD",
         "input_field": "net_remaining_uncommitted_budget_usd",
         "units": "USD",
-        "source_pointer": "/rq3/whole_study_accounting/net_remaining_uncommitted_budget_usd",
+        "source_pointer": (
+            "/rq3/whole_study_financial_accounting/net_remaining_uncommitted_budget_usd"
+        ),
         "shape_id": "sh/ofq5svm5",
         "slide_number": 9,
         "slot_key": "{{S2_NET_REMAINING_USD}}",
@@ -655,7 +762,7 @@ DECLARATIVE_SLOT_DEFINITIONS: list[dict[str, Any]] = [
         "slot_name": "RQ3_TOTAL_STUDY_BUDGET_USD",
         "input_field": "total_study_budget_usd",
         "units": "USD",
-        "source_pointer": "/rq3/whole_study_accounting/total_study_budget_usd",
+        "source_pointer": "/rq3/whole_study_financial_accounting/total_study_budget_usd",
         "shape_id": "sh/ofq5svm5",
         "slide_number": 9,
         "slot_key": "{{S2_TOTAL_STUDY_BUDGET_USD}}",
@@ -682,6 +789,423 @@ def assert_fixture_safety(fixture_dir: Path, analysis_data: dict[str, Any]) -> N
             "to diagnostic fixtures with fixture_only=True and "
             "provenance_status='diagnostic_fixture'. "
             f"Refusing to operate on uncertified data at: {fixture_dir}"
+        )
+
+
+def _is_valid_sha256(val: Any) -> bool:
+    if not isinstance(val, str) or len(val) != 64:
+        return False
+    return all(c in "0123456789abcdefABCDEF" for c in val)
+
+
+def assert_canonical_safety(
+    analysis_dir: Path,
+    analysis_data: dict[str, Any],
+    metric_bundle_path: Path | None = None,
+) -> None:
+    """Fail closed if target is not certified as canonical study data with seal and bundle."""
+    # 1. Base validation on analysis bundle
+    if analysis_data.get("fixture_only") is not False:
+        actual_val = analysis_data.get("fixture_only")
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Canonical mode requires fixture_only=False. Target: {actual_val!r}."
+        )
+
+    provenance = analysis_data.get("provenance_status", "")
+    if provenance not in ("canonical_study", "live_test", "canonical_test", "live"):
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Canonical mode requires canonical provenance (got '{provenance}'). "
+            "Refusing to execute on non-canonical data."
+        )
+
+    if analysis_data.get("experiment_id") != "synthetic-paired-test-1":
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Unexpected experiment_id: '{analysis_data.get('experiment_id')}'"
+        )
+
+    # 2. Locate and validate canonical metric bundle
+    bundle_file = metric_bundle_path or (analysis_dir / "canonical_metric_bundle_v1.json")
+    if not bundle_file.is_file():
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Canonical mode requires canonical metric bundle: {bundle_file}"
+        )
+
+    try:
+        bundle = json.loads(bundle_file.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise RuntimeError(f"[FAIL_CLOSED] Corrupted canonical metric bundle: {exc}") from exc
+
+    if bundle.get("fixture_only") is not False:
+        raise RuntimeError("[FAIL_CLOSED] Metric bundle specifies fixture_only != False.")
+    if bundle.get("execution_mode") != "live":
+        mode = bundle.get("execution_mode")
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Metric bundle execution_mode must be 'live' (got '{mode}')."
+        )
+    if bundle.get("bundle_type") != "canonical-metric-bundle-v1":
+        btype = bundle.get("bundle_type")
+        raise RuntimeError(f"[FAIL_CLOSED] Unsupported bundle_type in metric bundle: '{btype}'.")
+    if bundle.get("dataset_split") != "test":
+        split = bundle.get("dataset_split")
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Metric bundle dataset_split must be 'test' (got '{split}')."
+        )
+    if bundle.get("experiment_id") != "synthetic-paired-test-1":
+        exp = bundle.get("experiment_id")
+        raise RuntimeError(f"[FAIL_CLOSED] Metric bundle experiment_id mismatch: '{exp}'.")
+
+    run_id = bundle.get("run_id")
+    if not run_id or not isinstance(run_id, str):
+        raise RuntimeError("[FAIL_CLOSED] Metric bundle missing non-empty 'run_id'.")
+
+    # Raw vs Semantic manifest SHA-256 validation
+    manifest_file_sha = bundle.get("manifest_file_sha256")
+    manifest_semantic_sha = bundle.get("manifest_semantic_sha256")
+    if not _is_valid_sha256(manifest_file_sha):
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Invalid manifest_file_sha256 in bundle: '{manifest_file_sha}'"
+        )
+    if not _is_valid_sha256(manifest_semantic_sha):
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Invalid manifest_semantic_sha256 in bundle: '{manifest_semantic_sha}'"
+        )
+
+    # Git and protocol hashes
+    for sha_key in (
+        "protocol_sha256",
+        "protocol_file_sha256",
+        "execution_git_sha",
+        "evaluation_git_sha",
+        "approved_rq_git_sha",
+        "rq_source_sha256",
+    ):
+        val = bundle.get(sha_key)
+        if not val or not isinstance(val, str) or val.startswith("..."):
+            raise RuntimeError(f"[FAIL_CLOSED] Metric bundle missing valid '{sha_key}'.")
+
+    # 3. Terminal Seal verification
+    term_seal_spec = bundle.get("terminal_seal")
+    if not term_seal_spec or not isinstance(term_seal_spec, dict):
+        raise RuntimeError("[FAIL_CLOSED] Metric bundle missing 'terminal_seal' specification.")
+
+    seal_rel_path = term_seal_spec.get("path")
+    expected_seal_sha = term_seal_spec.get("sha256")
+    if not seal_rel_path or not _is_valid_sha256(expected_seal_sha):
+        raise RuntimeError(
+            "[FAIL_CLOSED] Incomplete or invalid terminal_seal specification in bundle."
+        )
+
+    seal_path = Path(seal_rel_path)
+    if not seal_path.is_absolute():
+        if (REPO_ROOT / seal_path).is_file():
+            seal_path = REPO_ROOT / seal_path
+        elif (analysis_dir / seal_path).is_file():
+            seal_path = analysis_dir / seal_path
+        else:
+            seal_path = REPO_ROOT / seal_path
+
+    if not seal_path.is_file():
+        raise RuntimeError(f"[FAIL_CLOSED] Terminal run seal file missing: {seal_path}")
+
+    seal_bytes = seal_path.read_bytes()
+    computed_seal_sha = hashlib.sha256(seal_bytes).hexdigest()
+    if computed_seal_sha != expected_seal_sha:
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Terminal run seal SHA-256 mismatch. "
+            f"Expected {expected_seal_sha}, computed {computed_seal_sha} for {seal_path}"
+        )
+
+    try:
+        seal_data = json.loads(seal_bytes.decode("utf-8"))
+    except Exception as exc:
+        raise RuntimeError(f"[FAIL_CLOSED] Corrupted terminal run seal: {exc}") from exc
+
+    if seal_data.get("fixture_only") is not False:
+        raise RuntimeError("[FAIL_CLOSED] Terminal seal specifies fixture_only != False.")
+    if seal_data.get("production_ready") is not True:
+        raise RuntimeError("[FAIL_CLOSED] Terminal seal specifies production_ready != True.")
+    if seal_data.get("has_breach") is not False:
+        raise RuntimeError("[FAIL_CLOSED] Terminal seal indicates breach (has_breach=True).")
+    if seal_data.get("total_records") != 6400:
+        tot = seal_data.get("total_records")
+        raise RuntimeError(f"[FAIL_CLOSED] Terminal seal total_records ({tot}) != 6400.")
+    if seal_data.get("experiment_id") != "synthetic-paired-test-1":
+        s_exp = seal_data.get("experiment_id")
+        raise RuntimeError(f"[FAIL_CLOSED] Terminal seal experiment_id mismatch: '{s_exp}'.")
+
+    # Protocol bindings
+    if bundle.get("protocol_sha256") != seal_data.get("protocol_sha256"):
+        raise RuntimeError(
+            "[FAIL_CLOSED] Protocol SHA-256 mismatch between metric bundle and terminal seal."
+        )
+    if bundle.get("protocol_version") != seal_data.get("protocol_version"):
+        raise RuntimeError(
+            "[FAIL_CLOSED] Protocol version mismatch between metric bundle and terminal seal."
+        )
+
+    # Strict 8 fields in terminal_proof
+    term_proof = seal_data.get("terminal_proof")
+    if not term_proof or not isinstance(term_proof, dict):
+        raise RuntimeError("[FAIL_CLOSED] Terminal seal missing 'terminal_proof' object.")
+
+    # 1. start_identity
+    start_ident = term_proof.get("start_identity")
+    if (
+        not start_ident
+        or not isinstance(start_ident, str)
+        or ("native" not in start_ident and "PID" not in start_ident)
+    ):
+        raise RuntimeError("[FAIL_CLOSED] Terminal proof start_identity invalid or missing.")
+
+    # 2. process_status: must be 'exited' (strictly non-running)
+    proc_status = term_proof.get("process_status")
+    if proc_status != "exited":
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Terminal proof process_status must be 'exited' (got '{proc_status}'). "
+            "Refusing to execute on running or unconfirmed process."
+        )
+
+    # 3. exit_code: must be 0
+    if term_proof.get("exit_code") != 0 or isinstance(term_proof.get("exit_code"), bool):
+        code = term_proof.get("exit_code")
+        raise RuntimeError(f"[FAIL_CLOSED] Terminal proof exit_code must be 0 (got {code}).")
+
+    # 4. pid
+    pid = term_proof.get("pid")
+    if not isinstance(pid, int) or pid <= 0 or isinstance(pid, bool):
+        raise RuntimeError(f"[FAIL_CLOSED] Terminal proof pid invalid: {pid}.")
+
+    # 5. task_id
+    task_id = term_proof.get("task_id")
+    if not task_id or not isinstance(task_id, str):
+        raise RuntimeError("[FAIL_CLOSED] Terminal proof task_id missing or invalid.")
+
+    # 6. run_id: must match bundle
+    if term_proof.get("run_id") != run_id:
+        p_run = term_proof.get("run_id")
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Run ID mismatch: terminal proof has '{p_run}', "
+            f"metric bundle has '{run_id}'."
+        )
+
+    # 7. artifact_log_sha256
+    art_sha = term_proof.get("artifact_log_sha256")
+    if not _is_valid_sha256(art_sha):
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Invalid artifact_log_sha256 in terminal proof: '{art_sha}'."
+        )
+
+    # 8. final_summary
+    final_summary = term_proof.get("final_summary")
+    if not final_summary or not isinstance(final_summary, dict):
+        raise RuntimeError("[FAIL_CLOSED] Terminal proof missing 'final_summary' object.")
+    if final_summary.get("complete") is not True:
+        raise RuntimeError(
+            "[FAIL_CLOSED] Terminal proof final_summary indicates incomplete execution."
+        )
+    if final_summary.get("record_count") != 6400:
+        rc = final_summary.get("record_count")
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Terminal proof final_summary record_count ({rc}) != 6400."
+        )
+    if final_summary.get("execution_mode") != "live":
+        smode = final_summary.get("execution_mode")
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Terminal proof final_summary execution_mode must be 'live' "
+            f"(got '{smode}')."
+        )
+
+    # Verify sealed_artifact_digests contains all 10 source files
+    sealed_digests = seal_data.get("sealed_artifact_digests")
+    if not isinstance(sealed_digests, dict):
+        raise RuntimeError("[FAIL_CLOSED] Terminal seal missing 'sealed_artifact_digests'.")
+    for s_name in REQUIRED_CANONICAL_SOURCE_FILES:
+        if s_name not in sealed_digests or not _is_valid_sha256(sealed_digests[s_name]):
+            raise RuntimeError(
+                f"[FAIL_CLOSED] Terminal seal missing valid digest for source file: '{s_name}'."
+            )
+
+    # 4. Source file digests verification (all 10 source files)
+    source_digests = bundle.get("source_file_digests")
+    if not isinstance(source_digests, dict):
+        raise RuntimeError("[FAIL_CLOSED] Metric bundle missing 'source_file_digests' object.")
+
+    source_dir_candidates = [
+        analysis_dir,
+        analysis_dir / "inputs",
+        analysis_dir / "snapshot",
+        analysis_dir.parent / "snapshot",
+        REPO_ROOT / "outputs" / "snapshot",
+    ]
+    if "source_dir" in bundle:
+        source_dir_candidates.insert(0, Path(bundle["source_dir"]))
+
+    for s_name in REQUIRED_CANONICAL_SOURCE_FILES:
+        if s_name not in source_digests:
+            raise RuntimeError(
+                f"[FAIL_CLOSED] Metric bundle source_file_digests missing file: '{s_name}'."
+            )
+        exp_sha = source_digests[s_name]
+        if not _is_valid_sha256(exp_sha):
+            raise RuntimeError(
+                f"[FAIL_CLOSED] Invalid SHA-256 for source file '{s_name}': '{exp_sha}'."
+            )
+        if sealed_digests[s_name] != exp_sha:
+            raise RuntimeError(
+                f"[FAIL_CLOSED] Source digest mismatch between bundle and seal for '{s_name}': "
+                f"bundle={exp_sha}, seal={sealed_digests[s_name]}."
+            )
+
+        # Locate file on disk and recompute SHA256
+        s_file: Path | None = None
+        for candidate_dir in source_dir_candidates:
+            cand = candidate_dir / s_name
+            if cand.is_file():
+                s_file = cand
+                break
+        if not s_file:
+            raise RuntimeError(
+                f"[FAIL_CLOSED] Required canonical source file '{s_name}' missing on disk."
+            )
+
+        s_bytes = s_file.read_bytes()
+        actual_s_sha = hashlib.sha256(s_bytes).hexdigest()
+        if actual_s_sha != exp_sha:
+            raise RuntimeError(
+                f"[FAIL_CLOSED] Source file SHA-256 mismatch for '{s_name}': "
+                f"expected {exp_sha}, computed {actual_s_sha}."
+            )
+
+        # For manifest.json, also verify raw and semantic digests
+        if s_name == "manifest.json":
+            if actual_s_sha != manifest_file_sha:
+                raise RuntimeError(
+                    f"[FAIL_CLOSED] Manifest file SHA-256 mismatch with bundle: "
+                    f"computed {actual_s_sha}, bundle expected {manifest_file_sha}."
+                )
+            manifest_obj = json.loads(s_bytes.decode("utf-8"))
+            semantic_bytes = json.dumps(manifest_obj, sort_keys=True, separators=(",", ":")).encode(
+                "utf-8"
+            )
+            actual_semantic_sha = hashlib.sha256(semantic_bytes).hexdigest()
+            if actual_semantic_sha != manifest_semantic_sha:
+                raise RuntimeError(
+                    f"[FAIL_CLOSED] Manifest semantic SHA-256 mismatch: "
+                    f"computed {actual_semantic_sha}, bundle expected {manifest_semantic_sha}."
+                )
+
+    # 5. Output file digests verification (all 8 output files)
+    output_digests = bundle.get("output_file_digests")
+    if not isinstance(output_digests, dict):
+        raise RuntimeError("[FAIL_CLOSED] Metric bundle missing 'output_file_digests' object.")
+
+    for o_name in REQUIRED_CANONICAL_OUTPUT_FILES:
+        if o_name not in output_digests:
+            raise RuntimeError(
+                f"[FAIL_CLOSED] Metric bundle output_file_digests missing: '{o_name}'."
+            )
+        exp_o_sha = output_digests[o_name]
+        if not _is_valid_sha256(exp_o_sha):
+            raise RuntimeError(
+                f"[FAIL_CLOSED] Invalid SHA-256 for output file '{o_name}': '{exp_o_sha}'."
+            )
+
+        o_file = analysis_dir / o_name
+        if not o_file.is_file():
+            raise RuntimeError(
+                f"[FAIL_CLOSED] Required canonical output file '{o_name}' missing at: {o_file}."
+            )
+
+        o_bytes = o_file.read_bytes()
+        actual_o_sha = hashlib.sha256(o_bytes).hexdigest()
+        if actual_o_sha != exp_o_sha:
+            raise RuntimeError(
+                f"[FAIL_CLOSED] Output file SHA-256 mismatch for '{o_name}': "
+                f"expected {exp_o_sha}, computed {actual_o_sha}."
+            )
+
+        if o_name == "run_provenance.json":
+            prov = json.loads(o_bytes.decode("utf-8"))
+            if prov.get("execution_mode") != "live":
+                pmode = prov.get("execution_mode")
+                raise RuntimeError(
+                    f"[FAIL_CLOSED] run_provenance mode must be 'live' (got '{pmode}')."
+                )
+
+    # 6. Root verification file & accepted scope
+    root_verif = bundle.get("root_verification")
+    if not root_verif or not isinstance(root_verif, dict):
+        raise RuntimeError("[FAIL_CLOSED] Metric bundle missing 'root_verification' object.")
+
+    verif_rel_path = root_verif.get("path")
+    exp_verif_sha = root_verif.get("sha256")
+    accepted_scope = root_verif.get("accepted_scope")
+    if not verif_rel_path or not _is_valid_sha256(exp_verif_sha):
+        raise RuntimeError("[FAIL_CLOSED] Incomplete or invalid root_verification in bundle.")
+    if not accepted_scope or not isinstance(accepted_scope, str):
+        raise RuntimeError(
+            "[FAIL_CLOSED] Metric bundle root_verification missing 'accepted_scope'."
+        )
+
+    verif_file = Path(verif_rel_path)
+    if not verif_file.is_absolute():
+        if (REPO_ROOT / verif_file).is_file():
+            verif_file = REPO_ROOT / verif_file
+        elif (analysis_dir / verif_file).is_file():
+            verif_file = analysis_dir / verif_file
+        else:
+            verif_file = REPO_ROOT / verif_file
+
+    if not verif_file.is_file():
+        raise RuntimeError(f"[FAIL_CLOSED] Root verification file missing: {verif_file}")
+
+    verif_bytes = verif_file.read_bytes()
+    actual_verif_sha = hashlib.sha256(verif_bytes).hexdigest()
+    if actual_verif_sha != exp_verif_sha:
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Root verification SHA-256 mismatch: "
+            f"expected {exp_verif_sha}, computed {actual_verif_sha}."
+        )
+
+    try:
+        verif_data = json.loads(verif_bytes.decode("utf-8"))
+    except Exception as exc:
+        raise RuntimeError(f"[FAIL_CLOSED] Corrupted root verification file: {exc}") from exc
+
+    # Enforce Root strict verification per Root reviewer contract:
+    # 1. accepted_scope must be "canonical_native_and_corrected_rq_all_pass"
+    if accepted_scope != "canonical_native_and_corrected_rq_all_pass":
+        raise RuntimeError(
+            "[FAIL_CLOSED] Metric bundle accepted_scope must be "
+            f"'canonical_native_and_corrected_rq_all_pass' (got '{accepted_scope}'). "
+            "Arbitrary scopes are rejected."
+        )
+
+    # 2. Overall status must be PASS if present
+    if "status" in verif_data and verif_data["status"] != "PASS":
+        st = verif_data.get("status")
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Root verification overall status must be 'PASS' (got '{st}')."
+        )
+
+    # 3. Strict PASS required for all 3 verdicts; missing verdict treated as FAIL
+    for verdict_key in (
+        "native_verdict",
+        "rq1_and_settled_totals_verdict",
+        "rq2_and_attempt_usage_verdict",
+    ):
+        v_val = verif_data.get(verdict_key)
+        if v_val != "PASS":
+            raise RuntimeError(
+                f"[FAIL_CLOSED] Root verification verdict '{verdict_key}' must be 'PASS' "
+                f"(got '{v_val}'). Scope '{accepted_scope}' cannot bypass non-PASS verdict."
+            )
+
+    # 4. defects array must be empty
+    defects = verif_data.get("defects")
+    if defects is None or not isinstance(defects, list) or len(defects) > 0:
+        raise RuntimeError(
+            f"[FAIL_CLOSED] Root verification defects list must be empty list (got '{defects}')."
         )
 
 
@@ -714,6 +1238,8 @@ def extract_fixture_slots(
     fixture_dir: Path,
     analysis_file: Path | None = None,
     split_manifest_path: Path | None = None,
+    canonical_mode: bool = False,
+    metric_bundle_path: Path | None = None,
 ) -> dict[str, Any]:
     """Extract all placeholder numeric slots from canonical fixture artifacts.
 
@@ -725,7 +1251,10 @@ def extract_fixture_slots(
         raise FileNotFoundError(f"Fixture analysis bundle not found: {analysis_path}")
 
     analysis = json.loads(analysis_path.read_text(encoding="utf-8"))
-    assert_fixture_safety(fixture_dir, analysis)
+    if canonical_mode:
+        assert_canonical_safety(fixture_dir, analysis, metric_bundle_path=metric_bundle_path)
+    else:
+        assert_fixture_safety(fixture_dir, analysis)
 
     manifest_p = split_manifest_path or SPLIT_MANIFEST_PATH
     manifest_rel = (
@@ -741,19 +1270,38 @@ def extract_fixture_slots(
     rq2_by_cond = rq2["by_condition"]
     rq3 = analysis["rq3"]
     tradeoffs = rq3["tradeoffs_by_condition"]
-    whole_fin = rq3["whole_study_accounting"]
+    whole_fin = rq3["whole_study_financial_accounting"]
     views = rq3["view_diagnostics"]
 
     best_rag_acc_delta = rq1["best_rag_accuracy_delta"]
     best_rag_f1_delta = rq1["best_rag_macro_f1_delta"]
 
+    canonical_extras = {}
+    if canonical_mode:
+        b_file = metric_bundle_path or (fixture_dir / "canonical_metric_bundle_v1.json")
+        b_bytes = b_file.read_bytes()
+        b_json = json.loads(b_bytes.decode("utf-8"))
+        canonical_extras = {
+            "canonical_proof_sha256": b_json.get("terminal_seal", {}).get("sha256", ""),
+            "metric_bundle_sha256": hashlib.sha256(b_bytes).hexdigest(),
+            "root_verification_sha256": b_json.get("root_verification", {}).get("sha256", ""),
+            "accepted_scope": b_json.get("root_verification", {}).get("accepted_scope", ""),
+        }
+
     slots: dict[str, Any] = {
         "_metadata": {
-            "fixture_only": True,
-            "disclaimer": DISCLAIMER_TEXT,
+            "fixture_only": False if canonical_mode else True,
+            "disclaimer": (
+                "CANONICAL STUDY EXECUTION - CANONICAL RESEARCH RESULTS"
+                if canonical_mode
+                else DISCLAIMER_TEXT
+            ),
+            "provenance_status": "canonical_study" if canonical_mode else "diagnostic_fixture",
             "experiment_id": analysis.get("experiment_id", "mock_fixture"),
             "source_fixture_dir": str(fixture_dir),
             "declarative_shape_table_map_count": len(DECLARATIVE_SLOT_DEFINITIONS),
+            "canonical_mode": canonical_mode,
+            **canonical_extras,
         },
         # Slide 6: Dataset & Views Topology
         "{{S2_MANIFEST_PATH}}": manifest_rel,
@@ -789,6 +1337,30 @@ def extract_fixture_slots(
         else:
             ci_str = "[N/A, N/A]"
         slots[f"{{{{S2_CI_95_{c.upper()}}}}}"] = ci_str
+
+        # Per-condition delta vs baseline for RAG conditions
+        if c != "no_rag":
+            delta_info = c_row.get("delta_vs_baseline")
+            if delta_info is None:
+                raise KeyError(f"Missing required delta_vs_baseline in rq1.by_condition.{c}")
+            acc_delta = (
+                delta_info.get("delta_accuracy_end_to_end")
+                if "delta_accuracy_end_to_end" in delta_info
+                else delta_info.get("accuracy_delta")
+            )
+            f1_delta = (
+                delta_info.get("delta_macro_f1")
+                if "delta_macro_f1" in delta_info
+                else delta_info.get("macro_f1_delta")
+            )
+            if acc_delta is None or f1_delta is None:
+                raise KeyError(f"Incomplete delta_vs_baseline metrics for {c}")
+            slots[f"{{{{S2_ACC_DELTA_{c.upper()}}}}}"] = _fmt_delta(
+                acc_delta, f"{c}.accuracy_delta"
+            )
+            slots[f"{{{{S2_MACRO_F1_DELTA_{c.upper()}}}}}"] = _fmt_delta(
+                f1_delta, f"{c}.macro_f1_delta"
+            )
 
     # Slide 8: RQ2 Error Decomposition (using k=10 representative condition)
     if "rag_k10" not in rq2_by_cond:
@@ -929,6 +1501,17 @@ def extract_fixture_slots(
             "{{S2_BOTH_INCORRECT_COUNT}}": str(conc10["both_incorrect_count"]),
         }
     )
+    if canonical_mode:
+        for k, v in slots.items():
+            if k == "_metadata":
+                continue
+            if "NO_RAG" not in k and any(
+                term in k for term in ("_RAG_", "RECALL", "HIT_RATE", "RETRIEVAL", "BEST_RAG")
+            ):
+                if v is None or v == "N/A":
+                    raise ValueError(
+                        f"[FAIL_CLOSED] Canonical mode requires non-null RAG metric for '{k}'."
+                    )
 
     return slots
 
@@ -957,22 +1540,53 @@ def generate_fixture_markdown_preview(
     slots: dict[str, Any],
     output_path: Path,
 ) -> None:
-    """Write private fixture preview document with populated values and prominent disclaimer."""
+    """Write preview document with populated values and appropriate disclaimer."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    lines = [
-        "# [FIXTURE PREVIEW] Presentation Deck Numeric Slots Preview",
-        "",
-        f"> [!WARNING] {DISCLAIMER_TEXT}",
-        "> This preview is automatically compiled from synthetic diagnostic unit test fixtures.",
-        "> It does NOT represent canonical empirical research outcomes or live study findings.",
-        "> Execution mode: `mock_fixture` | `fixture_only: true`.",
-        "",
-        "## 1. Metadata & Safety Invariants",
-        "- **Provenance Status**: `diagnostic_fixture`",
-        f"- **Disclaimer**: `{DISCLAIMER_TEXT}`",
-        f"- **Total Placeholders Extracted**: {len(slots) - 1}",
-        f"- **Declarative Shape-Table Slots**: {len(DECLARATIVE_SLOT_DEFINITIONS)}",
-        "",
+    is_canonical = slots.get("_metadata", {}).get("canonical_mode") is True
+    provenance = slots.get("_metadata", {}).get("provenance_status", "diagnostic_fixture")
+    disclaimer = (
+        "CANONICAL STUDY EXECUTION - CANONICAL RESEARCH RESULTS"
+        if is_canonical
+        else DISCLAIMER_TEXT
+    )
+
+    if is_canonical:
+        header_block = [
+            "# [CANONICAL PREVIEW] Presentation Deck Numeric Slots Preview",
+            "",
+            "> [!NOTE] Certified Canonical Study Execution",
+            "> This preview is compiled from certified canonical live study outputs.",
+            "> Certified with terminal run seal and root verification proof.",
+            f"> Execution mode: `live` | `fixture_only: false` | `provenance: {provenance}`.",
+            "",
+            "## 1. Metadata & Safety Invariants",
+            f"- **Provenance Status**: `{provenance}`",
+            f"- **Disclaimer**: `{disclaimer}`",
+            f"- **Terminal Seal SHA-256**: `{slots['_metadata'].get('canonical_proof_sha256')}`",
+            f"- **Metric Bundle SHA-256**: `{slots['_metadata'].get('metric_bundle_sha256')}`",
+            f"- **Accepted Scope**: `{slots['_metadata'].get('accepted_scope')}`",
+            f"- **Total Placeholders Extracted**: {len(slots) - 1}",
+            f"- **Declarative Shape-Table Slots**: {len(DECLARATIVE_SLOT_DEFINITIONS)}",
+            "",
+        ]
+    else:
+        header_block = [
+            "# [FIXTURE PREVIEW] Presentation Deck Numeric Slots Preview",
+            "",
+            f"> [!WARNING] {DISCLAIMER_TEXT}",
+            "> This preview is compiled from synthetic diagnostic unit test fixtures.",
+            "> It does NOT represent canonical empirical research outcomes or live study findings.",
+            "> Execution mode: `mock_fixture` | `fixture_only: true`.",
+            "",
+            "## 1. Metadata & Safety Invariants",
+            "- **Provenance Status**: `diagnostic_fixture`",
+            f"- **Disclaimer**: `{DISCLAIMER_TEXT}`",
+            f"- **Total Placeholders Extracted**: {len(slots) - 1}",
+            f"- **Declarative Shape-Table Slots**: {len(DECLARATIVE_SLOT_DEFINITIONS)}",
+            "",
+        ]
+
+    lines = header_block + [
         "## 2. Populated Slot Values (by Presentation Slide)",
         "",
         "### Slide 4: Dataset & Views Topology",
@@ -995,15 +1609,34 @@ def generate_fixture_markdown_preview(
         f"- Paired Single Acc: `{slots.get('{{S2_PAIRED_SINGLE_ACC}}')}`",
         f"- Paired Context Acc: `{slots.get('{{S2_PAIRED_CONTEXT_ACC}}')}`",
         f"- Paired Delta: `{slots.get('{{S2_PAIRED_DELTA_PP}}')}` pp",
-        "",
         "### Slide 8: RQ1 5 Conditions & RQ2 Error Decomposition",
         f"- Accuracy (No-RAG): `{slots.get('{{S2_ACC_E2E_NO_RAG}}')}`",
-        f"- Accuracy (RAG k=10): `{slots.get('{{S2_ACC_E2E_RAG_K10}}')}`",
+        (
+            f"- Accuracy (RAG k=1): `{slots.get('{{S2_ACC_E2E_RAG_K1}}')}` "
+            f"(ΔAcc: `{slots.get('{{S2_ACC_DELTA_RAG_K1}}')}`, "
+            f"ΔF1: `{slots.get('{{S2_MACRO_F1_DELTA_RAG_K1}}')}`)"
+        ),
+        (
+            f"- Accuracy (RAG k=3): `{slots.get('{{S2_ACC_E2E_RAG_K3}}')}` "
+            f"(ΔAcc: `{slots.get('{{S2_ACC_DELTA_RAG_K3}}')}`, "
+            f"ΔF1: `{slots.get('{{S2_MACRO_F1_DELTA_RAG_K3}}')}`)"
+        ),
+        (
+            f"- Accuracy (RAG k=5): `{slots.get('{{S2_ACC_E2E_RAG_K5}}')}` "
+            f"(ΔAcc: `{slots.get('{{S2_ACC_DELTA_RAG_K5}}')}`, "
+            f"ΔF1: `{slots.get('{{S2_MACRO_F1_DELTA_RAG_K5}}')}`)"
+        ),
+        (
+            f"- Accuracy (RAG k=10): `{slots.get('{{S2_ACC_E2E_RAG_K10}}')}` "
+            f"(ΔAcc: `{slots.get('{{S2_ACC_DELTA_RAG_K10}}')}`, "
+            f"ΔF1: `{slots.get('{{S2_MACRO_F1_DELTA_RAG_K10}}')}`)"
+        ),
         f"- Macro-F1 (No-RAG): `{slots.get('{{S2_MACRO_F1_NO_RAG}}')}`",
         f"- Macro-F1 (RAG k=10): `{slots.get('{{S2_MACRO_F1_RAG_K10}}')}`",
         (
             f"- Best Condition: `{slots.get('{{S2_BEST_RAG_CONDITION}}')}` "
-            f"(Delta: `{slots.get('{{S2_BEST_RAG_ACC_DELTA}}')}`)"
+            f"(Delta Acc: `{slots.get('{{S2_BEST_RAG_ACC_DELTA}}')}`, "
+            f"Delta F1: `{slots.get('{{S2_BEST_RAG_F1_DELTA}}')}`)"
         ),
         f"- Provider Failure Rate: `{slots.get('{{S2_PROVIDER_FAIL_RATE_K10}}')}`",
         f"- Parse Failure Rate: `{slots.get('{{S2_PARSE_FAIL_RATE_K10}}')}`",
@@ -1035,7 +1668,11 @@ def generate_fixture_markdown_preview(
         ),
         "",
         "---",
-        f"*End of Private Diagnostic Fixture Preview - `{DISCLAIMER_TEXT}`*",
+        (
+            "*End of Canonical Study Preview - Certified Live Results*"
+            if is_canonical
+            else f"*End of Private Diagnostic Fixture Preview - `{DISCLAIMER_TEXT}`*"
+        ),
     ]
     output_path.write_text("\n".join(lines), encoding="utf-8")
 
@@ -1068,10 +1705,26 @@ def main() -> int:
         default=DEFAULT_MAP_JSON,
         help="Path to write declarative shape table map as JSON.",
     )
+    parser.add_argument(
+        "--canonical",
+        action="store_true",
+        default=False,
+        help="Enforce canonical execution mode requiring verified seal and non-fixture provenance.",
+    )
+    parser.add_argument(
+        "--metric-bundle",
+        type=Path,
+        default=None,
+        help="Path to canonical metric bundle JSON (canonical_metric_bundle_v1.json).",
+    )
     args = parser.parse_args()
 
     try:
-        slots = extract_fixture_slots(args.fixture_dir)
+        slots = extract_fixture_slots(
+            args.fixture_dir,
+            canonical_mode=args.canonical,
+            metric_bundle_path=args.metric_bundle,
+        )
         decl_map = get_declarative_shape_table_map(slots)
         generate_fixture_markdown_preview(slots, args.output_md)
         args.output_json.write_text(json.dumps(slots, indent=2), encoding="utf-8")

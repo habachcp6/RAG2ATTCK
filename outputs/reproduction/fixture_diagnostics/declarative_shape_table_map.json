@@ -272,7 +272,7 @@
     "slide_number": 8,
     "slot_key": "{{S2_ACC_E2E_RAG_K1}}",
     "category": "all_5_conditions_rq1",
-    "injected_value": "0.5000"
+    "injected_value": "0.5200"
   },
   {
     "slot_name": "RQ1_MACRO_F1_RAG_K1",
@@ -283,7 +283,7 @@
     "slide_number": 8,
     "slot_key": "{{S2_MACRO_F1_RAG_K1}}",
     "category": "all_5_conditions_rq1",
-    "injected_value": "0.0929"
+    "injected_value": "0.1000"
   },
   {
     "slot_name": "RQ1_CI_95_RAG_K1",
@@ -294,7 +294,7 @@
     "slide_number": 8,
     "slot_key": "{{S2_CI_95_RAG_K1}}",
     "category": "all_5_conditions_rq1",
-    "injected_value": "[0.3500, 0.6500]"
+    "injected_value": "[0.3600, 0.6600]"
   },
   {
     "slot_name": "RQ1_ACC_RAG_K3",
@@ -305,7 +305,7 @@
     "slide_number": 8,
     "slot_key": "{{S2_ACC_E2E_RAG_K3}}",
     "category": "all_5_conditions_rq1",
-    "injected_value": "0.5000"
+    "injected_value": "0.5500"
   },
   {
     "slot_name": "RQ1_MACRO_F1_RAG_K3",
@@ -316,7 +316,7 @@
     "slide_number": 8,
     "slot_key": "{{S2_MACRO_F1_RAG_K3}}",
     "category": "all_5_conditions_rq1",
-    "injected_value": "0.0929"
+    "injected_value": "0.1200"
   },
   {
     "slot_name": "RQ1_CI_95_RAG_K3",
@@ -327,7 +327,7 @@
     "slide_number": 8,
     "slot_key": "{{S2_CI_95_RAG_K3}}",
     "category": "all_5_conditions_rq1",
-    "injected_value": "[0.3500, 0.6500]"
+    "injected_value": "[0.3800, 0.6800]"
   },
   {
     "slot_name": "RQ1_ACC_RAG_K5",
@@ -338,7 +338,7 @@
     "slide_number": 8,
     "slot_key": "{{S2_ACC_E2E_RAG_K5}}",
     "category": "all_5_conditions_rq1",
-    "injected_value": "0.5000"
+    "injected_value": "0.5800"
   },
   {
     "slot_name": "RQ1_MACRO_F1_RAG_K5",
@@ -349,7 +349,7 @@
     "slide_number": 8,
     "slot_key": "{{S2_MACRO_F1_RAG_K5}}",
     "category": "all_5_conditions_rq1",
-    "injected_value": "0.0929"
+    "injected_value": "0.1400"
   },
   {
     "slot_name": "RQ1_CI_95_RAG_K5",
@@ -360,7 +360,7 @@
     "slide_number": 8,
     "slot_key": "{{S2_CI_95_RAG_K5}}",
     "category": "all_5_conditions_rq1",
-    "injected_value": "[0.3500, 0.6500]"
+    "injected_value": "[0.4100, 0.7100]"
   },
   {
     "slot_name": "RQ1_ACC_RAG_K10",
@@ -371,7 +371,7 @@
     "slide_number": 8,
     "slot_key": "{{S2_ACC_E2E_RAG_K10}}",
     "category": "all_5_conditions_rq1",
-    "injected_value": "0.5000"
+    "injected_value": "0.6000"
   },
   {
     "slot_name": "RQ1_MACRO_F1_RAG_K10",
@@ -382,7 +382,7 @@
     "slide_number": 8,
     "slot_key": "{{S2_MACRO_F1_RAG_K10}}",
     "category": "all_5_conditions_rq1",
-    "injected_value": "0.0929"
+    "injected_value": "0.1600"
   },
   {
     "slot_name": "RQ1_CI_95_RAG_K10",
@@ -393,7 +393,95 @@
     "slide_number": 8,
     "slot_key": "{{S2_CI_95_RAG_K10}}",
     "category": "all_5_conditions_rq1",
-    "injected_value": "[0.3500, 0.6500]"
+    "injected_value": "[0.4300, 0.7300]"
+  },
+  {
+    "slot_name": "RQ1_ACC_DELTA_RAG_K1",
+    "input_field": "delta_accuracy_end_to_end",
+    "units": "delta (+/-)",
+    "source_pointer": "/rq1/by_condition/rag_k1/delta_vs_baseline/delta_accuracy_end_to_end",
+    "shape_id": "sh/98rehwve",
+    "slide_number": 8,
+    "slot_key": "{{S2_ACC_DELTA_RAG_K1}}",
+    "category": "all_5_conditions_rq1",
+    "injected_value": "+0.0200"
+  },
+  {
+    "slot_name": "RQ1_MACRO_F1_DELTA_RAG_K1",
+    "input_field": "delta_macro_f1",
+    "units": "delta (+/-)",
+    "source_pointer": "/rq1/by_condition/rag_k1/delta_vs_baseline/delta_macro_f1",
+    "shape_id": "sh/98rehwve",
+    "slide_number": 8,
+    "slot_key": "{{S2_MACRO_F1_DELTA_RAG_K1}}",
+    "category": "all_5_conditions_rq1",
+    "injected_value": "+0.0071"
+  },
+  {
+    "slot_name": "RQ1_ACC_DELTA_RAG_K3",
+    "input_field": "delta_accuracy_end_to_end",
+    "units": "delta (+/-)",
+    "source_pointer": "/rq1/by_condition/rag_k3/delta_vs_baseline/delta_accuracy_end_to_end",
+    "shape_id": "sh/98rehwve",
+    "slide_number": 8,
+    "slot_key": "{{S2_ACC_DELTA_RAG_K3}}",
+    "category": "all_5_conditions_rq1",
+    "injected_value": "+0.0500"
+  },
+  {
+    "slot_name": "RQ1_MACRO_F1_DELTA_RAG_K3",
+    "input_field": "delta_macro_f1",
+    "units": "delta (+/-)",
+    "source_pointer": "/rq1/by_condition/rag_k3/delta_vs_baseline/delta_macro_f1",
+    "shape_id": "sh/98rehwve",
+    "slide_number": 8,
+    "slot_key": "{{S2_MACRO_F1_DELTA_RAG_K3}}",
+    "category": "all_5_conditions_rq1",
+    "injected_value": "+0.0271"
+  },
+  {
+    "slot_name": "RQ1_ACC_DELTA_RAG_K5",
+    "input_field": "delta_accuracy_end_to_end",
+    "units": "delta (+/-)",
+    "source_pointer": "/rq1/by_condition/rag_k5/delta_vs_baseline/delta_accuracy_end_to_end",
+    "shape_id": "sh/98rehwve",
+    "slide_number": 8,
+    "slot_key": "{{S2_ACC_DELTA_RAG_K5}}",
+    "category": "all_5_conditions_rq1",
+    "injected_value": "+0.0800"
+  },
+  {
+    "slot_name": "RQ1_MACRO_F1_DELTA_RAG_K5",
+    "input_field": "delta_macro_f1",
+    "units": "delta (+/-)",
+    "source_pointer": "/rq1/by_condition/rag_k5/delta_vs_baseline/delta_macro_f1",
+    "shape_id": "sh/98rehwve",
+    "slide_number": 8,
+    "slot_key": "{{S2_MACRO_F1_DELTA_RAG_K5}}",
+    "category": "all_5_conditions_rq1",
+    "injected_value": "+0.0471"
+  },
+  {
+    "slot_name": "RQ1_ACC_DELTA_RAG_K10",
+    "input_field": "delta_accuracy_end_to_end",
+    "units": "delta (+/-)",
+    "source_pointer": "/rq1/by_condition/rag_k10/delta_vs_baseline/delta_accuracy_end_to_end",
+    "shape_id": "sh/98rehwve",
+    "slide_number": 8,
+    "slot_key": "{{S2_ACC_DELTA_RAG_K10}}",
+    "category": "all_5_conditions_rq1",
+    "injected_value": "+0.1000"
+  },
+  {
+    "slot_name": "RQ1_MACRO_F1_DELTA_RAG_K10",
+    "input_field": "delta_macro_f1",
+    "units": "delta (+/-)",
+    "source_pointer": "/rq1/by_condition/rag_k10/delta_vs_baseline/delta_macro_f1",
+    "shape_id": "sh/98rehwve",
+    "slide_number": 8,
+    "slot_key": "{{S2_MACRO_F1_DELTA_RAG_K10}}",
+    "category": "all_5_conditions_rq1",
+    "injected_value": "+0.0671"
   },
   {
     "slot_name": "RQ1_BEST_CONDITION",
@@ -415,7 +503,7 @@
     "slide_number": 8,
     "slot_key": "{{S2_BEST_RAG_ACC_DELTA}}",
     "category": "all_5_conditions_rq1",
-    "injected_value": "+0.0000"
+    "injected_value": "+0.1000"
   },
   {
     "slot_name": "RQ1_BEST_F1_DELTA",
@@ -426,7 +514,7 @@
     "slide_number": 8,
     "slot_key": "{{S2_BEST_RAG_F1_DELTA}}",
     "category": "all_5_conditions_rq1",
-    "injected_value": "+0.0000"
+    "injected_value": "+0.0671"
   },
   {
     "slot_name": "RQ2_PROVIDER_FAIL_RATE_K10",
@@ -608,7 +696,7 @@
     "slot_name": "RQ3_PRIOR_PILOT_HOLD_USD",
     "input_field": "prior_pilot_provisional_hold_usd",
     "units": "USD",
-    "source_pointer": "/rq3/whole_study_accounting/prior_pilot_provisional_hold_usd",
+    "source_pointer": "/rq3/whole_study_financial_accounting/prior_pilot_provisional_hold_usd",
     "shape_id": "sh/ofq5svm5",
     "slide_number": 9,
     "slot_key": "{{S2_PRIOR_PILOT_HOLD_USD}}",
@@ -619,7 +707,7 @@
     "slot_name": "RQ3_CANONICAL_TOTAL_USD",
     "input_field": "canonical_conditions_total_usd",
     "units": "USD",
-    "source_pointer": "/rq3/whole_study_accounting/canonical_conditions_total_usd",
+    "source_pointer": "/rq3/whole_study_financial_accounting/canonical_conditions_total_usd",
     "shape_id": "sh/ofq5svm5",
     "slide_number": 9,
     "slot_key": "{{S2_CANONICAL_TOTAL_USD}}",
@@ -630,7 +718,7 @@
     "slot_name": "RQ3_NET_REMAINING_USD",
     "input_field": "net_remaining_uncommitted_budget_usd",
     "units": "USD",
-    "source_pointer": "/rq3/whole_study_accounting/net_remaining_uncommitted_budget_usd",
+    "source_pointer": "/rq3/whole_study_financial_accounting/net_remaining_uncommitted_budget_usd",
     "shape_id": "sh/ofq5svm5",
     "slide_number": 9,
     "slot_key": "{{S2_NET_REMAINING_USD}}",
@@ -641,7 +729,7 @@
     "slot_name": "RQ3_TOTAL_STUDY_BUDGET_USD",
     "input_field": "total_study_budget_usd",
     "units": "USD",
-    "source_pointer": "/rq3/whole_study_accounting/total_study_budget_usd",
+    "source_pointer": "/rq3/whole_study_financial_accounting/total_study_budget_usd",
     "shape_id": "sh/ofq5svm5",
     "slide_number": 9,
     "slot_key": "{{S2_TOTAL_STUDY_BUDGET_USD}}",

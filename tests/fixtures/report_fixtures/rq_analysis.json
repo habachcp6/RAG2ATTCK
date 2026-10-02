@@ -35,7 +35,19 @@
         ],
         "delta_vs_baseline": {
           "delta_accuracy_end_to_end": 0.0,
-          "delta_macro_f1": 0.0
+          "delta_macro_f1": 0.0,
+          "delta_accuracy_e2e_ci_95": [-0.03892, 0.02812],
+          "mcnemar_test": {
+            "contingency_table": {
+              "total_pairs": 718,
+              "both_correct_a": 530,
+              "treatment_win_b": 26,
+              "baseline_win_c": 30,
+              "both_incorrect_d": 132,
+              "total_discordant": 56
+            },
+            "p_value_exact": 0.887
+          }
         }
       },
       "rag_k3": {
@@ -47,7 +59,19 @@
         ],
         "delta_vs_baseline": {
           "delta_accuracy_end_to_end": 0.0,
-          "delta_macro_f1": 0.0
+          "delta_macro_f1": 0.0,
+          "delta_accuracy_e2e_ci_95": [-0.03520, 0.02786],
+          "mcnemar_test": {
+            "contingency_table": {
+              "total_pairs": 718,
+              "both_correct_a": 532,
+              "treatment_win_b": 25,
+              "baseline_win_c": 28,
+              "both_incorrect_d": 133,
+              "total_discordant": 53
+            },
+            "p_value_exact": 0.896
+          }
         }
       },
       "rag_k5": {
@@ -59,7 +83,19 @@
         ],
         "delta_vs_baseline": {
           "delta_accuracy_end_to_end": 0.0,
-          "delta_macro_f1": 0.0
+          "delta_macro_f1": 0.0,
+          "delta_accuracy_e2e_ci_95": [-0.02417, 0.04088],
+          "mcnemar_test": {
+            "contingency_table": {
+              "total_pairs": 718,
+              "both_correct_a": 535,
+              "treatment_win_b": 31,
+              "baseline_win_c": 25,
+              "both_incorrect_d": 127,
+              "total_discordant": 56
+            },
+            "p_value_exact": 0.690
+          }
         }
       },
       "rag_k10": {
@@ -71,7 +107,19 @@
         ],
         "delta_vs_baseline": {
           "delta_accuracy_end_to_end": 0.0,
-          "delta_macro_f1": 0.0
+          "delta_macro_f1": 0.0,
+          "delta_accuracy_e2e_ci_95": [-0.01758, 0.04846],
+          "mcnemar_test": {
+            "contingency_table": {
+              "total_pairs": 718,
+              "both_correct_a": 536,
+              "treatment_win_b": 35,
+              "baseline_win_c": 24,
+              "both_incorrect_d": 123,
+              "total_discordant": 59
+            },
+            "p_value_exact": 0.422
+          }
         }
       }
     }
@@ -366,6 +414,15 @@
       "total_study_committed_spend_usd": 8.5526401,
       "net_remaining_uncommitted_budget_usd": 11.4373599
     },
+    "whole_study_financial_accounting": {
+      "total_study_budget_usd": 19.99,
+      "canonical_conditions_total_usd": 8.5,
+      "prior_pilot_provisional_hold_usd": 0.0526401,
+      "active_reservations_usd": 0.0,
+      "orphan_reservations_usd": 0.0,
+      "total_study_committed_spend_usd": 8.5526401,
+      "net_remaining_uncommitted_budget_usd": 11.4373599
+    },
     "view_diagnostics": {
       "no_rag": {
         "condition": "no_rag",
@@ -476,6 +533,50 @@
           "p_value_asymptotic": 1.0,
           "p_value_exact": 1.0
         }
+      }
+    }
+  },
+  "new_proposed_producer_stratified_gt_complexity": {
+    "by_condition": {
+      "no_rag": {
+        "condition": "no_rag",
+        "single_gt_sample_count": 678,
+        "multi_gt_sample_count": 40,
+        "single_gt_accuracy_e2e": 0.5,
+        "multi_gt_accuracy_e2e": 0.5,
+        "complexity_accuracy_delta": 0.0
+      },
+      "rag_k1": {
+        "condition": "rag_k1",
+        "single_gt_sample_count": 678,
+        "multi_gt_sample_count": 40,
+        "single_gt_accuracy_e2e": 0.5,
+        "multi_gt_accuracy_e2e": 0.5,
+        "complexity_accuracy_delta": 0.0
+      },
+      "rag_k3": {
+        "condition": "rag_k3",
+        "single_gt_sample_count": 678,
+        "multi_gt_sample_count": 40,
+        "single_gt_accuracy_e2e": 0.5,
+        "multi_gt_accuracy_e2e": 0.5,
+        "complexity_accuracy_delta": 0.0
+      },
+      "rag_k5": {
+        "condition": "rag_k5",
+        "single_gt_sample_count": 678,
+        "multi_gt_sample_count": 40,
+        "single_gt_accuracy_e2e": 0.5,
+        "multi_gt_accuracy_e2e": 0.5,
+        "complexity_accuracy_delta": 0.0
+      },
+      "rag_k10": {
+        "condition": "rag_k10",
+        "single_gt_sample_count": 678,
+        "multi_gt_sample_count": 40,
+        "single_gt_accuracy_e2e": 0.5,
+        "multi_gt_accuracy_e2e": 0.5,
+        "complexity_accuracy_delta": 0.0
       }
     }
   },

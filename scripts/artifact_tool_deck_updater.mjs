@@ -23,12 +23,7 @@ import fs from "node:fs/promises";
 import fsSync from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import { fileURLToPath } from "node:url";
-
-import {
-  FileBlob,
-  PresentationFile,
-} from "file:///C:/Users/hahoa/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/@oai/artifact-tool/dist/artifact_tool.mjs";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -164,6 +159,64 @@ function replaceLineInShape(presentation, snapshot, shapeId, targetSubstring, re
 }
 
 /**
+ * Resolves the artifact-tool module dynamically across supported runtime locations.
+ * Resolution precedence:
+ * 1. Explicitly provided module path (via --artifact-tool-module)
+ * 2. Process environment variable (ARTIFACT_TOOL_MODULE)
+ * 3. Known local cache path if it exists on disk
+ * 4. Standard node_modules lookup (@oai/artifact-tool)
+ *
+ * @param {string} [explicitPath]
+ * @returns {Promise<{ PresentationFile: any, FileBlob: any } | null>}
+ */
+async function resolveArtifactToolModule(explicitPath) {
+  const tryImport = async (candidate) => {
+    try {
+      let target = candidate;
+      if (
+        path.isAbsolute(candidate) ||
+        candidate.startsWith(".") ||
+        candidate.startsWith("file://") ||
+        fsSync.existsSync(candidate)
+      ) {
+        if (!candidate.startsWith("file://") && !fsSync.existsSync(candidate)) {
+          return null;
+        }
+        target = candidate.startsWith("file://")
+          ? candidate
+          : pathToFileURL(path.resolve(candidate)).href;
+      }
+      const mod = await import(target);
+      if (mod && mod.PresentationFile && mod.FileBlob) {
+        return {
+          PresentationFile: mod.PresentationFile,
+          FileBlob: mod.FileBlob,
+        };
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  };
+
+  if (explicitPath) {
+    return await tryImport(explicitPath);
+  }
+  if (process.env.ARTIFACT_TOOL_MODULE) {
+    return await tryImport(process.env.ARTIFACT_TOOL_MODULE);
+  }
+
+  const defaultLocalCache =
+    "C:/Users/hahoa/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/@oai/artifact-tool/dist/artifact_tool.mjs";
+  if (fsSync.existsSync(defaultLocalCache)) {
+    const localMod = await tryImport(defaultLocalCache);
+    if (localMod) return localMod;
+  }
+
+  return await tryImport("@oai/artifact-tool");
+}
+
+/**
  * Executes the verified @oai/artifact-tool presentation workflow.
  */
 async function runArtifactToolDeckUpdater(options = {}) {
@@ -176,17 +229,18 @@ async function runArtifactToolDeckUpdater(options = {}) {
   const auditReportPath =
     options.auditReportPath || DEFAULT_AUDIT_REPORT_PATH;
   const isDryRun = Boolean(options.dryRun);
+  const explicitArtifactToolModule = options.artifactToolModule;
 
   console.log(`[+] Initializing JS Artifact-Tool Deck Updater (bundled runtime)...`);
   console.log(`[+] Safety Policy: STRICTLY FIXTURES ONLY (fail-closed)`);
   console.log(`[+] Disclaimer: ${DISCLAIMER_TEXT}`);
 
-  // 1. Validate slots and declarative shape table map
+  // 1. Validate slots and declarative shape table map (dependency-free)
   const slots = await loadAndValidateFixtureSlots(slotsPath);
   const declMap = await loadAndValidateDeclarativeMap(mapPath);
   console.log(`[+] Loaded ${declMap.length} declarative slot definitions.`);
 
-  // 2. Read source deck and compute before hash
+  // 2. Read source deck and compute before hash (dependency-free)
   if (!fsSync.existsSync(sourceDeckPath)) {
     throw new Error(`[FAIL_CLOSED] Source presentation deck not found: ${sourceDeckPath}`);
   }
@@ -194,7 +248,16 @@ async function runArtifactToolDeckUpdater(options = {}) {
   const beforeSha = crypto.createHash("sha256").update(sourceBytes).digest("hex");
   console.log(`[+] Source deck Before SHA-256: ${beforeSha}`);
 
-  // 3. Import PPTX using real @oai/artifact-tool PresentationFile
+  // 3. Resolve artifact-tool module dynamically
+  const artifactTool = await resolveArtifactToolModule(explicitArtifactToolModule);
+  if (!artifactTool || !artifactTool.PresentationFile || !artifactTool.FileBlob) {
+    throw new Error(
+      `[DEPENDENCY_UNAVAILABLE] Required presentation runtime (@oai/artifact-tool) could not be resolved.`
+    );
+  }
+  const { PresentationFile, FileBlob } = artifactTool;
+
+  // 4. Import PPTX using real @oai/artifact-tool PresentationFile
   const presentation = await PresentationFile.importPptx(
     await FileBlob.load(sourceDeckPath)
   );
@@ -637,6 +700,7 @@ if (isMain) {
   const candidateDeckPath = getArg("--output-deck");
   const qaOutputDir = getArg("--output-qa-dir");
   const auditReportPath = getArg("--audit-report");
+  const artifactToolModule = getArg("--artifact-tool-module");
 
   runArtifactToolDeckUpdater({
     dryRun,
@@ -646,6 +710,7 @@ if (isMain) {
     candidateDeckPath,
     qaOutputDir,
     auditReportPath,
+    artifactToolModule,
   })
     .then(() => {
       console.log(`[+] JS Deck Updater completed successfully.`);
@@ -653,12 +718,16 @@ if (isMain) {
     })
     .catch((err) => {
       console.error(`[-] Fatal Error in JS deck updater:`, err.message);
+      if (err.message && err.message.includes("[DEPENDENCY_UNAVAILABLE]")) {
+        process.exit(2);
+      }
       process.exit(1);
     });
 }
 
 export {
   runArtifactToolDeckUpdater,
+  resolveArtifactToolModule,
   loadAndValidateFixtureSlots,
   loadAndValidateDeclarativeMap,
   DISCLAIMER_TEXT,

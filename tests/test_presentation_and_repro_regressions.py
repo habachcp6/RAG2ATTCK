@@ -17,6 +17,7 @@ Verifies:
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -355,6 +356,44 @@ def test_fixture_population_helper_extracts_slots_with_private_label(tmp_path: P
     assert "DIAGNOSTIC TEST FIXTURE ONLY" in md_content
 
 
+def has_artifact_tool_runtime() -> bool:
+    """Check if the proprietary @oai/artifact-tool runtime is available in environment."""
+    env_module = os.environ.get("ARTIFACT_TOOL_MODULE")
+    if env_module:
+        return env_module != "non_existent" and Path(env_module).exists()
+
+    cached_path = Path(
+        "C:/Users/hahoa/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/@oai/artifact-tool/dist/artifact_tool.mjs"
+    )
+    if cached_path.is_file():
+        return True
+
+    bundled_node = Path(
+        "C:/Users/hahoa/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe"
+    )
+    node_exe = str(bundled_node) if bundled_node.is_file() else shutil.which("node")
+    if node_exe:
+        try:
+            res = subprocess.run(
+                [
+                    node_exe,
+                    "--input-type=module",
+                    "-e",
+                    (
+                        "import('@oai/artifact-tool')"
+                        ".then(() => process.exit(0))"
+                        ".catch(() => process.exit(1))"
+                    ),
+                ],
+                capture_output=True,
+                timeout=5,
+            )
+            return res.returncode == 0
+        except Exception:
+            return False
+    return False
+
+
 def _find_node_exe() -> str:
     """Locate bundled node.exe or PATH node binary."""
     bundled_path = Path(
@@ -441,7 +480,7 @@ def test_js_deck_updater_script_contract() -> None:
 
     content = mjs_script.read_text(encoding="utf-8")
 
-    # Verifies real bundled @oai/artifact-tool import and zero AST fallback
+    # Verifies dynamic @oai/artifact-tool resolution and zero AST fallback
     assert "@oai/artifact-tool" in content
     assert "fallback" not in content.lower(), "Mock AST fallback must be deleted"
     assert "DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS" in content
@@ -452,6 +491,9 @@ def test_js_deck_updater_script_contract() -> None:
     assert "resolve" in content
     assert "exportPptx" in content
     assert "fixture_only" in content
+    assert "resolveArtifactToolModule" in content
+    assert "[DEPENDENCY_UNAVAILABLE]" in content
+    assert 'from "file:///' not in content, "Static local file import must not exist"
 
     # Verify that production slides remain untampered with fixture numbers
     slides_md = REPO_ROOT / "docs" / "presentation" / "slides.md"
@@ -460,6 +502,10 @@ def test_js_deck_updater_script_contract() -> None:
     assert "[PENDING EXECUTION]" in md_text or "PENDING" in md_text
 
 
+@pytest.mark.skipif(
+    not has_artifact_tool_runtime(),
+    reason="Private Codex artifact-tool runtime not present in clean CI environment",
+)
 def test_js_deck_updater_execution_and_artifacts() -> None:
     """Executes JS deck updater via node.exe and verifies all output artifacts."""
     node_exe = _find_node_exe()
@@ -545,7 +591,7 @@ def test_js_deck_updater_negative_cases(tmp_path: Path) -> None:
         text=True,
         cwd=str(REPO_ROOT),
     )
-    assert proc_missing.returncode != 0
+    assert proc_missing.returncode == 1
     assert "[FAIL_CLOSED]" in proc_missing.stderr or "[FAIL_CLOSED]" in proc_missing.stdout
     assert "not found" in (proc_missing.stderr + proc_missing.stdout)
 
@@ -568,7 +614,7 @@ def test_js_deck_updater_negative_cases(tmp_path: Path) -> None:
         text=True,
         cwd=str(REPO_ROOT),
     )
-    assert proc_bad.returncode != 0
+    assert proc_bad.returncode == 1
     assert "[FAIL_CLOSED]" in proc_bad.stderr or "[FAIL_CLOSED]" in proc_bad.stdout
     assert "Refusing to execute on non-fixture data" in (proc_bad.stderr + proc_bad.stdout)
 
@@ -584,7 +630,7 @@ def test_js_deck_updater_negative_cases(tmp_path: Path) -> None:
         text=True,
         cwd=str(REPO_ROOT),
     )
-    assert proc_no_disc.returncode != 0
+    assert proc_no_disc.returncode == 1
     assert "[FAIL_CLOSED]" in proc_no_disc.stderr or "[FAIL_CLOSED]" in proc_no_disc.stdout
     assert "Missing mandatory diagnostic fixture disclaimer" in (
         proc_no_disc.stderr + proc_no_disc.stdout
@@ -598,7 +644,7 @@ def test_js_deck_updater_negative_cases(tmp_path: Path) -> None:
         text=True,
         cwd=str(REPO_ROOT),
     )
-    assert proc_missing_map.returncode != 0
+    assert proc_missing_map.returncode == 1
     assert "[FAIL_CLOSED]" in (proc_missing_map.stderr + proc_missing_map.stdout)
     assert "not found" in (proc_missing_map.stderr + proc_missing_map.stdout)
 
@@ -611,6 +657,31 @@ def test_js_deck_updater_negative_cases(tmp_path: Path) -> None:
         text=True,
         cwd=str(REPO_ROOT),
     )
-    assert proc_trunc.returncode != 0
+    assert proc_trunc.returncode == 1
     assert "[FAIL_CLOSED]" in (proc_trunc.stderr + proc_trunc.stdout)
     assert "59 items" in (proc_trunc.stderr + proc_trunc.stdout)
+
+
+def test_js_deck_updater_dependency_unavailable_on_clean_env(tmp_path: Path) -> None:
+    """When proprietary runtime is absent, updater exits with code 2."""
+    node_exe = _find_node_exe()
+    mjs_script = REPO_ROOT / "scripts" / "artifact_tool_deck_updater.mjs"
+
+    missing_module = tmp_path / "missing_artifact_tool.mjs"
+    proc = subprocess.run(
+        [
+            node_exe,
+            str(mjs_script),
+            "--artifact-tool-module",
+            str(missing_module),
+        ],
+        capture_output=True,
+        text=True,
+        cwd=str(REPO_ROOT),
+    )
+    assert proc.returncode == 2, (
+        f"Expected exit code 2, got {proc.returncode}.\n"
+        f"Stdout:\n{proc.stdout}\nStderr:\n{proc.stderr}"
+    )
+    output = proc.stdout + proc.stderr
+    assert "[DEPENDENCY_UNAVAILABLE]" in output

@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import json
 import os
 import shutil
 import subprocess
@@ -96,43 +95,81 @@ def _configure_verbatim_attributes(target_dir: Path) -> None:
 
 def _verify_full_snapshot_integrity(snapshot_root: Path, commit: str) -> None:
     """
-    Comprehensive verification for existing or newly provisioned snapshot:
+    Fail-closed comprehensive snapshot integrity gate:
     1. Git identity: commit matches and working tree is clean.
     2. ATT&CK reference JSON hash matches.
     3. Dedicated .venv with pyvenv.cfg exists.
     4. Full expanded inventory (53 core, 22 baselines, f85, protocol, lock).
     5. Locked dependencies closure (104 on Linux, 87 on Windows, 85 on macOS).
+    6. Actual child process identity, offline guard, and baselines via execute_snapshot_task.
     """
     from scripts.isolated_snapshot_controller import (
         compute_expanded_snapshot_inventory,
+        execute_snapshot_task,
         resolve_snapshot_python,
         verify_snapshot_git_identity,
-        verify_snapshot_venv_dependencies,
     )
 
     verify_snapshot_git_identity(snapshot_root)
     py_bin = resolve_snapshot_python(snapshot_root)
     compute_expanded_snapshot_inventory(snapshot_root)
 
-    # Cross-check installed dependencies via snapshot python
-    inspect_code = (
-        "import importlib.metadata as m, json; "
-        "print(json.dumps({d.metadata['Name'].lower().replace('_', '-'): d.version "
-        "for d in m.distributions() if d.metadata.get('Name')}))"
-    )
-    p_inspect = subprocess.run(
-        [str(py_bin), "-c", inspect_code],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    installed_map = json.loads(p_inspect.stdout.strip())
-    worker_attestation = {
-        "sys_prefix": str((snapshot_root / ".venv").absolute()),
-        "sys_executable": str(py_bin.absolute()),
-        "installed_dependencies": installed_map,
-    }
-    verify_snapshot_venv_dependencies(snapshot_root, worker_attestation)
+    # Cross-check child process identity, offline guard, and baselines via isolated controller
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        receipt_path = Path(tmp_dir) / "provision_verification_receipt.json"
+        res = execute_snapshot_task(
+            snapshot_root=snapshot_root,
+            task="verify_baselines",
+            output_path=receipt_path,
+        )
+
+        if res.get("status") != "PASS":
+            raise RuntimeError(
+                f"Snapshot integrity verification failed: worker status is '{res.get('status')}'"
+            )
+
+        if res.get("offline_guard_installed") is not True:
+            raise RuntimeError(
+                "Snapshot integrity verification failed: offline guard is not installed in child!"
+            )
+
+        if res.get("attempted_egress_count", -1) != 0:
+            raise RuntimeError(
+                f"Snapshot integrity verification failed: attempted egress count is "
+                f"{res.get('attempted_egress_count')} (expected 0)!"
+            )
+
+        ctrl_att = res.get("controller_attestation", {})
+        if ctrl_att.get("exit_code") != 0:
+            raise RuntimeError(
+                f"Snapshot integrity verification failed: "
+                f"worker exit code is {ctrl_att.get('exit_code')}"
+            )
+
+        runtime_att = res.get("worker_runtime_attestation", {})
+        child_prefix = runtime_att.get("sys_prefix")
+        expected_venv = (snapshot_root / ".venv").absolute()
+        if not child_prefix or Path(child_prefix).absolute() != expected_venv:
+            raise RuntimeError(
+                f"Snapshot integrity verification failed: child sys.prefix '{child_prefix}' "
+                f"does not match expected snapshot venv '{expected_venv}'!"
+            )
+
+        child_exe = runtime_att.get("sys_executable")
+        expected_python = py_bin.absolute()
+        if not child_exe:
+            raise RuntimeError(
+                "Snapshot integrity verification failed: child sys_executable missing!"
+            )
+        child_exe_path = Path(child_exe).absolute()
+        if child_exe_path != expected_python:
+            try:
+                child_exe_path.relative_to(expected_venv)
+            except ValueError:
+                raise RuntimeError(
+                    f"Snapshot integrity verification failed: child sys_executable '{child_exe}' "
+                    f"is outside snapshot venv '{expected_venv}'!"
+                )
 
 
 def provision_snapshot(

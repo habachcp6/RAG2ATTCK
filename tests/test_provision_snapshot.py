@@ -16,7 +16,11 @@ from unittest.mock import patch
 import pytest
 
 from scripts.provision_snapshot import check_containment, provision_snapshot
-from tests.test_snapshot_boundary_isolation import require_genuine_snapshot
+from tests.test_snapshot_boundary_isolation import (
+    extract_required_dependencies_from_uv_lock,
+    require_genuine_snapshot,
+    resolve_snapshot_python,
+)
 
 
 def test_containment_check_rejects_identical_path(tmp_path: Path):
@@ -103,3 +107,71 @@ def test_require_genuine_snapshot_skips_cleanly_when_unconfigured(
         match_msg = "Local test skipped: RAG2ATTCK_SNAPSHOT_ROOT not configured"
         with pytest.raises(pytest.skip.Exception, match=match_msg):
             require_genuine_snapshot()
+
+
+def test_negative_snapshot_integrity_mismatched_child_sys_prefix_rejected(
+    tmp_path: Path,
+):
+    """
+    Fail-closed gate: child process attesting sys.prefix outside snapshot venv
+    (even with all required locked dependencies present) must be rejected.
+    """
+    snap_root = require_genuine_snapshot()
+    required_deps = extract_required_dependencies_from_uv_lock(snap_root / "uv.lock")
+
+    foreign_prefix = str((tmp_path / "foreign_venv").absolute())
+    tampered_output = {
+        "status": "PASS",
+        "task": "verify_baselines",
+        "offline_guard_installed": True,
+        "attempted_egress_count": 0,
+        "code_manifest_sha256": "8b512a84976cf36ff9c3a373fc3e04368cf1889c1df5c3a3885d519b5bfb75b9",
+        "file_count": 53,
+        "protected_baselines_verified_count": 22,
+        "loaded_origins": {"src": str(snap_root / "src")},
+        "loaded_origins_count": 1,
+        "worker_runtime_attestation": {
+            "sys_prefix": foreign_prefix,
+            "sys_executable": str(resolve_snapshot_python(snap_root).absolute()),
+            "installed_dependencies": dict(required_deps),
+        },
+        "controller_attestation": {
+            "exit_code": 0,
+        },
+    }
+
+    from scripts.provision_snapshot import (
+        EXPECTED_SNAPSHOT_GIT_COMMIT,
+        _verify_full_snapshot_integrity,
+    )
+
+    with patch(
+        "scripts.isolated_snapshot_controller.execute_snapshot_task",
+        return_value=tampered_output,
+    ):
+        with pytest.raises(RuntimeError, match="child sys.prefix .* does not match"):
+            _verify_full_snapshot_integrity(snap_root, EXPECTED_SNAPSHOT_GIT_COMMIT)
+
+
+def test_positive_snapshot_integrity_verification_on_genuine_snapshot():
+    """Positive control: genuine snapshot passes full integrity gate with real child execution."""
+    snap_root = require_genuine_snapshot()
+    from scripts.provision_snapshot import (
+        EXPECTED_SNAPSHOT_GIT_COMMIT,
+        _verify_full_snapshot_integrity,
+    )
+
+    _verify_full_snapshot_integrity(snap_root, EXPECTED_SNAPSHOT_GIT_COMMIT)
+
+
+def test_positive_snapshot_reuse_on_genuine_snapshot(monkeypatch: pytest.MonkeyPatch):
+    """Positive control: reusing genuine valid snapshot returns cleanly without modification."""
+    snap_root = require_genuine_snapshot()
+    repo_root = Path(__file__).resolve().parent.parent
+
+    # Prevent writing to GITHUB_ENV in test
+    monkeypatch.delenv("GITHUB_ENV", raising=False)
+
+    reused = provision_snapshot(target_dir=snap_root, source_repo=repo_root)
+    assert reused == snap_root
+

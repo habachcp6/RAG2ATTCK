@@ -48,13 +48,13 @@ from scripts.populate_report import (
 
 @pytest.fixture
 def real_fixture_copy(tmp_path: Path) -> Path:
-    """Create an isolated temporary copy of the authoritative reproduction fixtures."""
+    """Create an isolated temporary copy of the committed report fixtures."""
     dest = tmp_path / "fixture_diagnostics"
     dest.mkdir(parents=True)
     for fname in REQUIRED_FIXTURE_FILES:
         src = DEFAULT_FIXTURE_DIR / fname
         if not src.is_file():
-            pytest.skip(f"Authoritative fixture file missing: {src}")
+            raise FileNotFoundError(f"Committed fixture file missing: {src}")
         shutil.copy2(src, dest / fname)
     return dest
 

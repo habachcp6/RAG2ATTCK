@@ -32,8 +32,16 @@ from src.evaluation.experiment_metrics import CONDITIONS  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DISCLAIMER_TEXT = "DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS"
-DEFAULT_FIXTURE_DIR = REPO_ROOT / ".tmp" / "s1-offline-reproduction" / "fixture_diagnostics"
-FALLBACK_FIXTURE_DIR = REPO_ROOT / "outputs" / "reproduction" / "fixture_diagnostics"
+COMMITTED_FIXTURE_DIR = REPO_ROOT / "tests" / "fixtures" / "report_fixtures"
+LOCAL_REPRODUCTION_FIXTURE_DIR = (
+    REPO_ROOT / ".tmp" / "s1-offline-reproduction" / "fixture_diagnostics"
+)
+OUTPUTS_FIXTURE_DIR = REPO_ROOT / "outputs" / "reproduction" / "fixture_diagnostics"
+
+# Prefer committed fixtures so clean CI checkouts work out of the box
+DEFAULT_FIXTURE_DIR = COMMITTED_FIXTURE_DIR
+FALLBACK_FIXTURE_DIR = LOCAL_REPRODUCTION_FIXTURE_DIR
+
 DEFAULT_TEMPLATE_PATH = REPO_ROOT / "docs" / "report" / "scientific_report.md"
 DEFAULT_OUTPUT_MD = REPO_ROOT / "reports" / "evidence" / "fixture_populated_report.md"
 DEFAULT_AUDIT_JSON = REPO_ROOT / "reports" / "evidence" / "populated_report_slots_fixture.json"
@@ -1015,12 +1023,13 @@ def main() -> None:
 
     # Determine active fixture dir
     target_fixture_dir = args.fixture_dir
-    if not target_fixture_dir.is_dir() and FALLBACK_FIXTURE_DIR.is_dir():
-        print(
-            f"[INFO] Default fixture dir not found at {target_fixture_dir}, "
-            f"falling back to {FALLBACK_FIXTURE_DIR}"
-        )
-        target_fixture_dir = FALLBACK_FIXTURE_DIR
+    if not target_fixture_dir.is_dir():
+        if COMMITTED_FIXTURE_DIR.is_dir():
+            target_fixture_dir = COMMITTED_FIXTURE_DIR
+        elif LOCAL_REPRODUCTION_FIXTURE_DIR.is_dir():
+            target_fixture_dir = LOCAL_REPRODUCTION_FIXTURE_DIR
+        elif OUTPUTS_FIXTURE_DIR.is_dir():
+            target_fixture_dir = OUTPUTS_FIXTURE_DIR
 
     try:
         run_pipeline(

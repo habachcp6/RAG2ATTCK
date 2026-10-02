@@ -2,8 +2,8 @@
   "_metadata": {
     "fixture_only": true,
     "disclaimer": "DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS",
-    "timestamp_utc": "2026-10-02T02:05:51.598934+00:00",
-    "source_fixture_dir": "D:\\RAG2ATTCK-worktrees\\report-s1\\.tmp\\s1-offline-reproduction\\fixture_diagnostics"
+    "timestamp_utc": "2026-10-02T02:35:20.319345+00:00",
+    "source_fixture_dir": "D:\\RAG2ATTCK-worktrees\\report-s1\\tests\\fixtures\\report_fixtures"
   },
   "table_2a": {
     "no_rag": {

@@ -535,12 +535,12 @@ The following diagnostic fixture files were consumed during this offline verific
 
 | Asset Description | File Path | Digest Type | SHA-256 Digest |
 | :--- | :--- | :--- | :--- |
-| **Diagnostic Overall Metrics** | `.tmp/s1-offline-reproduction/fixture_diagnostics/overall_metrics.json` | File SHA-256 | `77b1d115b699f054ee5e58c692b192147a8a37bf4f1232a1a5da65e3a81bfe95` |
-| **Diagnostic Condition Metrics** | `.tmp/s1-offline-reproduction/fixture_diagnostics/per_condition_metrics.json` | File SHA-256 | `1cf53cd5f376960a18a9c6d1662f4b800db9836a73fff1b645e99e70eb60dc5b` |
-| **Diagnostic Failure Decomposition** | `.tmp/s1-offline-reproduction/fixture_diagnostics/failure_decomposition.json` | File SHA-256 | `a0f1b5e95314170fad73068411db953dc87921c4a02ae67210dbec87b1866749` |
-| **Diagnostic Retrieval Conditional** | `.tmp/s1-offline-reproduction/fixture_diagnostics/retrieval_conditional_metrics.json` | File SHA-256 | `a1860631bb29e95370932acfbcd4d72881a91b6b2a7692ebd8326f9483048384` |
-| **Diagnostic RQ Analysis** | `.tmp/s1-offline-reproduction/fixture_diagnostics/rq_analysis.json` | File SHA-256 | `bdebae6d99533c580eddf4ec3e0e07446f2e917001068d4ba635f56569e67a1e` |
-| **Diagnostic Run Provenance** | `.tmp/s1-offline-reproduction/fixture_diagnostics/run_provenance.json` | File SHA-256 | `20603131854454c864d0543e6e3c0e299844f3f1384bb40654016960af2022ab` |
+| **Diagnostic Overall Metrics** | `tests/fixtures/report_fixtures/overall_metrics.json` | File SHA-256 | `77b1d115b699f054ee5e58c692b192147a8a37bf4f1232a1a5da65e3a81bfe95` |
+| **Diagnostic Condition Metrics** | `tests/fixtures/report_fixtures/per_condition_metrics.json` | File SHA-256 | `1cf53cd5f376960a18a9c6d1662f4b800db9836a73fff1b645e99e70eb60dc5b` |
+| **Diagnostic Failure Decomposition** | `tests/fixtures/report_fixtures/failure_decomposition.json` | File SHA-256 | `a0f1b5e95314170fad73068411db953dc87921c4a02ae67210dbec87b1866749` |
+| **Diagnostic Retrieval Conditional** | `tests/fixtures/report_fixtures/retrieval_conditional_metrics.json` | File SHA-256 | `a1860631bb29e95370932acfbcd4d72881a91b6b2a7692ebd8326f9483048384` |
+| **Diagnostic RQ Analysis** | `tests/fixtures/report_fixtures/rq_analysis.json` | File SHA-256 | `bdebae6d99533c580eddf4ec3e0e07446f2e917001068d4ba635f56569e67a1e` |
+| **Diagnostic Run Provenance** | `tests/fixtures/report_fixtures/run_provenance.json` | File SHA-256 | `20603131854454c864d0543e6e3c0e299844f3f1384bb40654016960af2022ab` |
 
 ### 8.3 Data, Code Availability, and Licensing
 The repository is maintained at: `https://github.com/habachcp6/RAG2ATTCK`. Root `README.md` declares an MIT license (note: a physical `LICENSE` file is omitted in the root repository checkout).

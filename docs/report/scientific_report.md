@@ -659,9 +659,13 @@ The repository is maintained at: `https://github.com/habachcp6/RAG2ATTCK`. Root 
 
 Offline saved-data re-evaluation and verification of all headline scientific metrics from saved canonical prediction journals can be executed via:
 ```bash
-python scripts/reproduce_canonical_study.py --input-dir <path_to_accepted_bundle_inputs> --output-dir <reproduced_metrics_dir>
+python scripts/run_offline_tests.py -m scripts.reproduce_canonical_study \
+  --bundle-dir <package-root> \
+  --repository-root <checkout> \
+  --output-dir <new-output-dir> \
+  --all
 ```
-To maintain a lean repository footprint, the 21MB raw prediction journals and full canonical execution artifacts are staged privately in authoring and verification bundles rather than committed directly into git history. The repository provides the portable reproduction plan, dataset generation pipelines, FAISS corpus indexing scripts, evaluation harness, and automated offline test suites (`tests/test_canonical_offline_replay.py`).
+To maintain a lean repository footprint, the 21MB raw prediction journals and full canonical execution artifacts are staged in portable verification bundles rather than committed directly into git history. The repository provides the portable reproduction plan, dataset generation pipelines, FAISS corpus indexing scripts, evaluation harness, and automated offline replay tooling.
 
 ---
 

@@ -1180,3 +1180,57 @@ def test_docx_renderer_preserves_distinct_conditional_probability_labels():
     miss = latex_to_unicode(r"P(\text{Correct}\mid\text{Absent}) = 70.03\%")
     assert hit == "P(Correct | Retrieved) = 91.28%"
     assert miss == "P(Correct | Absent) = 70.03%"
+
+
+def test_export_report_docx_resolves_custom_figures_dir(tmp_path: Path) -> None:
+    pytest.importorskip("docx", reason="Optional Word authoring dependency")
+    from scripts.export_report_docx import build_docx_from_markdown
+
+    custom_fig_dir = tmp_path / "custom_figures"
+    custom_fig_dir.mkdir()
+    png_bytes = (
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+        b"\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\nIDATx\x9cc\x00\x01\x00"
+        b"\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
+    (custom_fig_dir / "figure1_f1_vs_context_length.png").write_bytes(png_bytes)
+
+    md_file = tmp_path / "report.md"
+    md_content = (
+        "# Minimal Test\n\n"
+        "![Figure 1](figure1_f1_vs_context_length.png)\n"
+        "*Figure 1: Test caption*\n"
+    )
+    md_file.write_text(md_content, encoding="utf-8")
+    docx_file = tmp_path / "report.docx"
+
+    build_docx_from_markdown(md_file, docx_file, figures_dir=custom_fig_dir)
+    assert docx_file.is_file()
+    assert docx_file.stat().st_size > 0
+
+
+def test_run_pipeline_copies_figures_to_target_output_dir(
+    tmp_path: Path, canonical_bundle: tuple[Path, Path]
+) -> None:
+    from scripts.populate_report import run_pipeline
+
+    bundle_dir, seal_path = canonical_bundle
+    out_dir = tmp_path / "report_out"
+    out_md = out_dir / "scientific_report.md"
+
+    custom_fig_dir = tmp_path / "src_figures"
+    custom_fig_dir.mkdir()
+    (custom_fig_dir / "figure1_f1_vs_context_length.png").write_bytes(b"dummy_png")
+    (custom_fig_dir / "figure_provenance.json").write_text("{}", encoding="utf-8")
+
+    run_pipeline(
+        data_dir=bundle_dir,
+        seal_path=seal_path,
+        output_path=out_md,
+        audit_json_path=out_dir / "slots.json",
+        mode="canonical",
+        figures_dir=custom_fig_dir,
+    )
+
+    assert (out_dir / "figures" / "figure1_f1_vs_context_length.png").is_file()
+    assert (out_dir / "figures" / "figure_provenance.json").is_file()

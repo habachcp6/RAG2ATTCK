@@ -73,7 +73,7 @@ RETRIEVAL_K_VALUES = {"no_rag": 0, "rag_k1": 1, "rag_k3": 3, "rag_k5": 5, "rag_k
 
 # Declared immutable recorded creation timestamp established during candidate generation.
 # Distinct from dynamic runtime regeneration times.
-RECORDED_BUNDLE_CREATION_TIMESTAMP_UTC = "2026-10-03T03:20:00+00:00"
+RECORDED_BUNDLE_CREATION_TIMESTAMP_UTC = "2026-10-02T21:26:00+00:00"
 
 
 def _reject_nonfinite(constant: str) -> None:
@@ -1276,7 +1276,7 @@ def generate_lineage_markdown(bundle: Dict[str, Any], output_md_path: Path) -> s
     md_content = f"""# BÁO CÁO DÒNG DÕI VÀ CHỨNG TỰ CANONICAL METRIC BUNDLE V2
 
 **Mã Định Danh Phiên:** `cd393b52-6d99-4f23-878e-7afbb7e0ecf9`  
-**Thời gian:** 2026-10-03T03:20:00+07:00  
+**Thời gian:** {bundle.get("bundle_build_timestamp_utc", RECORDED_BUNDLE_CREATION_TIMESTAMP_UTC)}  
 **Tác giả:** Native Bundle Worker (Track B)  
 **Vị trí Tệp:** `artifacts/results/canonical_metric_bundle_v2.json`  
 
@@ -1383,10 +1383,11 @@ Toàn bộ quá trình tạo và xác thực Canonical Metric Bundle v2 được
 def verify_canonical_metric_bundle_file(
     bundle_path: Path,
     expected_sha256: Optional[str] = None,
+    mode: str = "canonical",
 ) -> Dict[str, Any]:
     """
-    Verify existing canonical_metric_bundle_v2.json file against sidecar checksum,
-    strict schema, typed finite invariants, and non-CRLF binary encoding.
+    Verify existing canonical_metric_bundle_v2.json file against external trust anchor,
+    sidecar checksum, strict schema, typed finite invariants, and non-CRLF binary encoding.
     """
     if not bundle_path.is_file():
         raise FileNotFoundError(f"Bundle file not found: {bundle_path}")
@@ -1397,25 +1398,34 @@ def verify_canonical_metric_bundle_file(
 
     actual_sha = hashlib.sha256(actual_bytes).hexdigest()
 
-    sidecar_path = bundle_path.with_name(f"{bundle_path.name}.sha256")
-    if not sidecar_path.is_file():
-        raise FileNotFoundError(f"Missing sidecar checksum file: {sidecar_path}")
+    if mode == "canonical":
+        if expected_sha256 is None:
+            raise ValueError(
+                "Missing required external trust anchor (expected_sha256). "
+                "In canonical integrity mode, trusted external bundle SHA is mandatory. "
+                "Local sidecar cannot certify itself."
+            )
+        if actual_sha != expected_sha256:
+            raise ValueError(
+                f"Bundle integrity breach: actual SHA {actual_sha} does not match trusted external anchor {expected_sha256}"
+            )
 
-    sidecar_text = sidecar_path.read_bytes().decode("utf-8").strip()
-    sidecar_sha = sidecar_text.split()[0]
-    if actual_sha != sidecar_sha:
-        raise ValueError(
-            f"Bundle checksum mismatch with sidecar!\n"
-            f"  Actual bytes: {actual_sha}\n"
-            f"  Sidecar:      {sidecar_sha}"
-        )
+        sidecar_path = bundle_path.with_name(f"{bundle_path.name}.sha256")
+        if not sidecar_path.is_file():
+            raise FileNotFoundError(f"Missing sidecar checksum file: {sidecar_path}")
 
-    if expected_sha256 is not None and actual_sha != expected_sha256:
-        raise ValueError(
-            f"Bundle checksum mismatch with expected SHA!\n"
-            f"  Actual bytes: {actual_sha}\n"
-            f"  Expected:     {expected_sha256}"
-        )
+        sidecar_text = sidecar_path.read_bytes().decode("utf-8").strip()
+        sidecar_sha = sidecar_text.split()[0]
+        if actual_sha != sidecar_sha:
+            raise ValueError(
+                f"Bundle checksum mismatch with sidecar!\n"
+                f"  Actual bytes: {actual_sha}\n"
+                f"  Sidecar:      {sidecar_sha}"
+            )
+    elif mode == "structural_only":
+        pass
+    else:
+        raise ValueError(f"Unknown verification mode: {mode}")
 
     bundle_data = json.loads(actual_bytes.decode("utf-8"), parse_constant=_reject_nonfinite)
     check_finite(bundle_data, "bundle_root")
@@ -1912,6 +1922,10 @@ def verify_canonical_metric_bundle_file(
     if ft.get("transport_network_failures_count") != 1:
         raise ValueError("transport_network_failures_count mismatch")
 
+    if mode == "structural_only":
+        print(f"STRUCTURAL AUDIT PASSED: {bundle_path} (NOT VERIFIED AGAINST TRUST ANCHOR)")
+        return {"status": "STRUCTURAL_AUDIT_NOT_VERIFIED"}
+
     print(f"PASS: Canonical metric bundle verified successfully: {bundle_path}")
     print(f"Verified SHA256: {actual_sha}")
     return bundle_data
@@ -1975,6 +1989,12 @@ def main() -> int:
         help="Optional expected SHA256 to assert during --verify-bundle",
     )
     parser.add_argument(
+        "--mode",
+        choices=["canonical", "structural_only"],
+        default="canonical",
+        help="Verification mode: 'canonical' (requires external expected SHA) or 'structural_only'",
+    )
+    parser.add_argument(
         "--build-timestamp-utc",
         type=str,
         default=None,
@@ -1984,7 +2004,11 @@ def main() -> int:
 
     if args.verify_bundle is not None:
         try:
-            verify_canonical_metric_bundle_file(args.verify_bundle, args.expected_bundle_sha256)
+            verify_canonical_metric_bundle_file(
+                args.verify_bundle,
+                expected_sha256=args.expected_bundle_sha256,
+                mode=args.mode,
+            )
             return 0
         except Exception as exc:
             print(f"VERIFY BUNDLE ERROR: {exc}", file=sys.stderr)

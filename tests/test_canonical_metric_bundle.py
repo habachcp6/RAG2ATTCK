@@ -140,14 +140,37 @@ def test_disk_bundle_byte_deterministic_and_matches_sidecar():
 
 
 def test_verify_bundle_validator_cli():
-    """Verify the --verify-bundle CLI entrypoint validates artifact cleanly."""
+    """Positive test: verifying bundle with genuine trusted external digest passes cleanly."""
     if not COMMITTED_BUNDLE_PATH.is_file():
         pytest.skip("Committed bundle not found on disk")
 
-    bundle = verify_canonical_metric_bundle_file(COMMITTED_BUNDLE_PATH)
+    sidecar_path = COMMITTED_BUNDLE_PATH.with_name(f"{COMMITTED_BUNDLE_PATH.name}.sha256")
+    trusted_sha = sidecar_path.read_bytes().decode("utf-8").strip().split()[0]
+    bundle = verify_canonical_metric_bundle_file(
+        COMMITTED_BUNDLE_PATH, expected_sha256=trusted_sha
+    )
     assert bundle["schema_version"] == "2.0.0"
     assert bundle["bundle_type"] == "canonical-metric-bundle-v2"
     assert bundle["fixture_only"] is False
+
+
+def test_validator_fails_closed_missing_expected_trust_anchor():
+    """Negative test: missing expected_sha256 in canonical mode must fail closed."""
+    if not COMMITTED_BUNDLE_PATH.is_file():
+        pytest.skip("Committed bundle not found on disk")
+    with pytest.raises(
+        ValueError,
+        match=r"Missing required external trust anchor \(expected_sha256\)",
+    ):
+        verify_canonical_metric_bundle_file(COMMITTED_BUNDLE_PATH, expected_sha256=None)
+
+
+def test_validator_structural_only_mode():
+    """Structural-only test: mode='structural_only' without expected digest returns status."""
+    if not COMMITTED_BUNDLE_PATH.is_file():
+        pytest.skip("Committed bundle not found on disk")
+    res = verify_canonical_metric_bundle_file(COMMITTED_BUNDLE_PATH, mode="structural_only")
+    assert res == {"status": "STRUCTURAL_AUDIT_NOT_VERIFIED"}
 
 
 def test_cohort_and_denominator_specifications():
@@ -480,7 +503,8 @@ def test_fail_closed_retry_receipt_response_id_drift():
         pytest.skip("Raw public canonical package not available in CI environment")
 
     journal_path = pkg_dir / "inputs" / "request_journal.jsonl"
-    journal_lines = [json.loads(line) for line in journal_path.read_bytes().decode("utf-8").splitlines() if line.strip()]
+    raw_lines = journal_path.read_bytes().decode("utf-8").splitlines()
+    journal_lines = [json.loads(line) for line in raw_lines if line.strip()]
 
     for row in journal_lines:
         if row.get("event") == "attempt_receipt" and row.get("ordinal") == 5388:
@@ -499,7 +523,8 @@ def test_fail_closed_boolean_cached_tokens():
         pytest.skip("Raw public canonical package not available in CI environment")
 
     journal_path = pkg_dir / "inputs" / "request_journal.jsonl"
-    journal_lines = [json.loads(line) for line in journal_path.read_bytes().decode("utf-8").splitlines() if line.strip()]
+    raw_lines = journal_path.read_bytes().decode("utf-8").splitlines()
+    journal_lines = [json.loads(line) for line in raw_lines if line.strip()]
 
     # Mutate first attempt receipt
     for row in journal_lines:
@@ -541,10 +566,16 @@ def test_fail_closed_nan_in_rq_analysis(tmp_path: Path):
     # Get legitimate manifest and cache
     manifest, cache = verify_public_package(pkg_dir)
     rq_bytes = cache["outputs/rq_analysis.json"]
-    tampered_bytes = rq_bytes.replace(b'"accuracy_end_to_end": 0.7799442896935933', b'"accuracy_end_to_end": NaN')
+    tampered_bytes = rq_bytes.replace(
+        b'"accuracy_end_to_end": 0.7799442896935933',
+        b'"accuracy_end_to_end": NaN',
+    )
     cache["outputs/rq_analysis.json"] = tampered_bytes
 
-    with patch("scripts.build_canonical_metric_bundle.verify_public_package", return_value=(manifest, cache)):
+    with patch(
+        "scripts.build_canonical_metric_bundle.verify_public_package",
+        return_value=(manifest, cache),
+    ):
         with pytest.raises(ValueError, match="Non-finite JSON constant not allowed"):
             build_canonical_metric_bundle(pkg_dir, GENUINE_SEAL_PATH, None)
 
@@ -591,6 +622,33 @@ def test_fail_closed_tampered_analysis_source_sha(tmp_path: Path):
         build_canonical_metric_bundle(copied_pkg, GENUINE_SEAL_PATH, None)
 
 
+def test_validator_fails_closed_on_rehashed_mutant_vs_trusted_anchor(tmp_path: Path):
+    """Sidecar rehashed on mutated payload must fail closed against original expected digest."""
+    if not COMMITTED_BUNDLE_PATH.is_file():
+        pytest.skip("Committed bundle not found on disk")
+    sidecar_path = COMMITTED_BUNDLE_PATH.with_name(f"{COMMITTED_BUNDLE_PATH.name}.sha256")
+    trusted_anchor = sidecar_path.read_bytes().decode("utf-8").strip().split()[0]
+
+    bundle_data = json.loads(COMMITTED_BUNDLE_PATH.read_bytes().decode("utf-8"))
+    bundle_data["conditions"]["no_rag"]["rq1_attribution"]["correct_count"] = 700
+
+    tampered_bundle_file = tmp_path / "canonical_metric_bundle_v2.json"
+    tampered_bytes = json.dumps(bundle_data, indent=2, sort_keys=True).encode("utf-8") + b"\n"
+    tampered_bundle_file.write_bytes(tampered_bytes)
+
+    rehashed_sha = hashlib.sha256(tampered_bytes).hexdigest()
+    sidecar_file = tmp_path / "canonical_metric_bundle_v2.json.sha256"
+    sidecar_file.write_bytes(f"{rehashed_sha}  canonical_metric_bundle_v2.json\n".encode("utf-8"))
+
+    with pytest.raises(
+        ValueError,
+        match=r"Bundle integrity breach: actual SHA .* does not match trusted external anchor",
+    ):
+        verify_canonical_metric_bundle_file(
+            tampered_bundle_file, expected_sha256=trusted_anchor
+        )
+
+
 def test_rehashed_tampered_metric_rejected(tmp_path: Path):
     """Mutating scientific metrics (e.g. correct_count) and rehashing sidecar must fail closed."""
     if not COMMITTED_BUNDLE_PATH.is_file():
@@ -608,7 +666,7 @@ def test_rehashed_tampered_metric_rejected(tmp_path: Path):
     sidecar_file.write_bytes(f"{rehashed_sha}  canonical_metric_bundle_v2.json\n".encode("utf-8"))
 
     with pytest.raises(ValueError, match="correct_count mismatch|accuracy_end_to_end mismatch"):
-        verify_canonical_metric_bundle_file(tampered_bundle_file)
+        verify_canonical_metric_bundle_file(tampered_bundle_file, expected_sha256=rehashed_sha)
 
 
 def test_rehashed_p95_policy_breach_rejected(tmp_path: Path):
@@ -628,7 +686,7 @@ def test_rehashed_p95_policy_breach_rejected(tmp_path: Path):
     sidecar_file.write_bytes(f"{rehashed_sha}  canonical_metric_bundle_v2.json\n".encode("utf-8"))
 
     with pytest.raises(ValueError, match="p95 suppression policy violated"):
-        verify_canonical_metric_bundle_file(tampered_bundle_file)
+        verify_canonical_metric_bundle_file(tampered_bundle_file, expected_sha256=rehashed_sha)
 
 
 def test_rehashed_tampered_source_pins_rejected(tmp_path: Path):
@@ -648,7 +706,7 @@ def test_rehashed_tampered_source_pins_rejected(tmp_path: Path):
     sidecar_file.write_bytes(f"{rehashed_sha}  canonical_metric_bundle_v2.json\n".encode("utf-8"))
 
     with pytest.raises(ValueError, match="execution_git_sha mismatch"):
-        verify_canonical_metric_bundle_file(tampered_bundle_file)
+        verify_canonical_metric_bundle_file(tampered_bundle_file, expected_sha256=rehashed_sha)
 
 
 def test_rehashed_tampered_timestamp_rejected(tmp_path: Path):
@@ -668,7 +726,7 @@ def test_rehashed_tampered_timestamp_rejected(tmp_path: Path):
     sidecar_file.write_bytes(f"{rehashed_sha}  canonical_metric_bundle_v2.json\n".encode("utf-8"))
 
     with pytest.raises(ValueError, match="analysis_timestamp_utc must match.*authoritative"):
-        verify_canonical_metric_bundle_file(tampered_bundle_file)
+        verify_canonical_metric_bundle_file(tampered_bundle_file, expected_sha256=rehashed_sha)
 
 
 def test_receipt_join_response_id_mismatch_rejected():
@@ -705,7 +763,8 @@ def test_receipt_join_model_drift_rejected():
 
     manifest, cache = verify_public_package(pkg_dir)
     journal_path = pkg_dir / "inputs" / "request_journal.jsonl"
-    journal_lines = [json.loads(line) for line in cache["inputs/request_journal.jsonl"].decode("utf-8").splitlines() if line.strip()]
+    raw_lines = cache["inputs/request_journal.jsonl"].decode("utf-8").splitlines()
+    journal_lines = [json.loads(line) for line in raw_lines if line.strip()]
 
     # Mutate model of first receipt
     for row in journal_lines:
@@ -723,7 +782,7 @@ def test_receipt_join_model_drift_rejected():
 
 
 def test_receipt_join_incomplete_status_mismatch_rejected():
-    """Mâu thuẫn trạng thái giữa terminal INCOMPLETE receipt và prediction success phải fail closed."""
+    """Terminal INCOMPLETE receipt status conflicting with pred success must fail closed."""
     pkg_dir = get_public_package_dir()
     if pkg_dir is None:
         pytest.skip("Raw public canonical package not available in CI environment")
@@ -765,15 +824,65 @@ def test_validator_rejects_rehashed_mutants(tmp_path: Path):
     original_bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
 
     mutations = [
-        ("macro_f1", lambda d: d["conditions"]["no_rag"]["rq1_attribution"].__setitem__("macro_f1", 999.0), "macro_f1 mismatch"),
-        ("retrieval_hit", lambda d: d["conditions"]["rag_k10"]["rq2_retrieval_and_error"]["retrieval_metrics"].__setitem__("retrieval_hit_count", 0), "retrieval_hit_count mismatch"),
-        ("exact_p", lambda d: d["conditions"]["rag_k10"]["rq1_attribution"]["delta_vs_baseline"]["mcnemar_test"].__setitem__("p_value_exact", 999.0), "p_value_exact mismatch"),
-        ("ci_bounds", lambda d: d["conditions"]["no_rag"]["rq1_attribution"].__setitem__("accuracy_e2e_ci_95", [0.01, 0.99]), "accuracy_e2e_ci_95 mismatch"),
-        ("prompt_sum", lambda d: d["conditions"]["no_rag"]["rq3_resources_and_cost"]["tokens"]["prompt_tokens"].__setitem__("sum", 999), "prompt_tokens.sum mismatch"),
-        ("latency_median", lambda d: d["conditions"]["no_rag"]["rq3_resources_and_cost"]["latency_ms"].__setitem__("median", 999.0), "latency_ms.median mismatch"),
-        ("cache_mean", lambda d: d["conditions"]["rag_k1"]["rq3_resources_and_cost"]["tokens"]["cached_tokens"].__setitem__("mean", 999.0), "cached_tokens.mean mismatch"),
-        ("source_digest", lambda d: d["source_file_digests"].__setitem__("request_journal.jsonl", "0" * 64), "source_file_digests.request_journal.jsonl mismatch"),
-        ("timestamp_fake", lambda d: d.__setitem__("analysis_timestamp_utc", "2026-10-02T04:32:51_FAKE"), "analysis_timestamp_utc must match exact"),
+        (
+            "macro_f1",
+            lambda d: d["conditions"]["no_rag"]["rq1_attribution"].__setitem__(
+                "macro_f1", 999.0
+            ),
+            "macro_f1 mismatch",
+        ),
+        (
+            "retrieval_hit",
+            lambda d: d["conditions"]["rag_k10"]["rq2_retrieval_and_error"][
+                "retrieval_metrics"
+            ].__setitem__("retrieval_hit_count", 0),
+            "retrieval_hit_count mismatch",
+        ),
+        (
+            "exact_p",
+            lambda d: d["conditions"]["rag_k10"]["rq1_attribution"]["delta_vs_baseline"][
+                "mcnemar_test"
+            ].__setitem__("p_value_exact", 999.0),
+            "p_value_exact mismatch",
+        ),
+        (
+            "ci_bounds",
+            lambda d: d["conditions"]["no_rag"]["rq1_attribution"].__setitem__(
+                "accuracy_e2e_ci_95", [0.01, 0.99]
+            ),
+            "accuracy_e2e_ci_95 mismatch",
+        ),
+        (
+            "prompt_sum",
+            lambda d: d["conditions"]["no_rag"]["rq3_resources_and_cost"]["tokens"][
+                "prompt_tokens"
+            ].__setitem__("sum", 999),
+            "prompt_tokens.sum mismatch",
+        ),
+        (
+            "latency_median",
+            lambda d: d["conditions"]["no_rag"]["rq3_resources_and_cost"][
+                "latency_ms"
+            ].__setitem__("median", 999.0),
+            "latency_ms.median mismatch",
+        ),
+        (
+            "cache_mean",
+            lambda d: d["conditions"]["rag_k1"]["rq3_resources_and_cost"]["tokens"][
+                "cached_tokens"
+            ].__setitem__("mean", 999.0),
+            "cached_tokens.mean mismatch",
+        ),
+        (
+            "source_digest",
+            lambda d: d["source_file_digests"].__setitem__("request_journal.jsonl", "0" * 64),
+            "source_file_digests.request_journal.jsonl mismatch",
+        ),
+        (
+            "timestamp_fake",
+            lambda d: d.__setitem__("analysis_timestamp_utc", "2026-10-02T04:32:51_FAKE"),
+            "analysis_timestamp_utc must match exact",
+        ),
     ]
 
     for label, mutate_fn, err_regex in mutations:
@@ -789,4 +898,4 @@ def test_validator_rejects_rehashed_mutants(tmp_path: Path):
         test_sidecar_file.write_bytes(f"{mutant_sha}  {test_bundle_file.name}\n".encode("utf-8"))
 
         with pytest.raises(ValueError, match=err_regex):
-            verify_canonical_metric_bundle_file(test_bundle_file)
+            verify_canonical_metric_bundle_file(test_bundle_file, expected_sha256=mutant_sha)

@@ -20,12 +20,8 @@ import time
 from pathlib import Path
 from typing import Any, Callable
 
-CANONICAL_LAUNCHER_SHA256 = (
-    "05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa"
-)
-CANONICAL_WRAPPER_BLOCK_SHA256 = (
-    "e4a0115ff2d712bf6a0b896b50d9f4d412b786707d9721f47c74a4ac174e5f68"
-)
+CANONICAL_LAUNCHER_SHA256 = "05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa"
+CANONICAL_WRAPPER_BLOCK_SHA256 = "e4a0115ff2d712bf6a0b896b50d9f4d412b786707d9721f47c74a4ac174e5f68"
 
 # Exact lines 47-75 extracted from canonical launcher (29 lines of wrapper definitions)
 RAW_WRAPPER_BLOCK = (
@@ -113,7 +109,9 @@ def build_robust_methods(
     orig_anchor: Callable[..., Any],
     sleep_fn: Callable[[float], None] = time.sleep,
 ) -> tuple[Callable[..., Any], Callable[..., Any]]:
-    """Build the robust write and anchor methods by dynamically executing the archived RAW_WRAPPER_BLOCK."""
+    """Build the robust write and anchor methods by dynamically executing
+    the archived RAW_WRAPPER_BLOCK.
+    """
 
     class _LedgerProxy:
         _write_atomically_unlocked = orig_write

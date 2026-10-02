@@ -83,15 +83,37 @@ GENUINE_SNAPSHOT_ROOT = get_snapshot_root()
 
 
 def require_genuine_snapshot() -> Path:
-    """Skip cleanly if genuine snapshot or dedicated .venv is not available (e.g. unconfigured local runner)."""
+    """
+    Acquire verified snapshot root.
+    If RAG2ATTCK_SNAPSHOT_ROOT environment variable is configured (e.g. in CI or test runner),
+    any missing directory, missing .venv, or invalid snapshot state MUST fail closed (pytest.fail).
+    If unconfigured (local workstation without env var), skip cleanly with a clear scope label:
+    'Local test skipped: RAG2ATTCK_SNAPSHOT_ROOT not configured'.
+    """
     global GENUINE_SNAPSHOT_ROOT
-    GENUINE_SNAPSHOT_ROOT = get_snapshot_root()
-    if not GENUINE_SNAPSHOT_ROOT.is_dir():
-        pytest.skip(f"Snapshot directory '{GENUINE_SNAPSHOT_ROOT}' not found")
-    venv_dir = GENUINE_SNAPSHOT_ROOT / ".venv"
-    if not venv_dir.is_dir() or not (venv_dir / "pyvenv.cfg").is_file():
-        pytest.skip(f"Snapshot directory '{GENUINE_SNAPSHOT_ROOT}' is missing a valid dedicated .venv with pyvenv.cfg")
-    return GENUINE_SNAPSHOT_ROOT
+    env_root = os.environ.get("RAG2ATTCK_SNAPSHOT_ROOT")
+    if env_root and env_root.strip():
+        snap_path = Path(env_root.strip()).resolve()
+        GENUINE_SNAPSHOT_ROOT = snap_path
+        if not snap_path.is_dir():
+            pytest.fail(
+                f"Configured RAG2ATTCK_SNAPSHOT_ROOT '{snap_path}' does not exist! "
+                "Snapshot provisioning is mandatory when RAG2ATTCK_SNAPSHOT_ROOT is configured."
+            )
+        venv_dir = snap_path / ".venv"
+        if not venv_dir.is_dir() or not (venv_dir / "pyvenv.cfg").is_file():
+            pytest.fail(
+                f"Configured RAG2ATTCK_SNAPSHOT_ROOT '{snap_path}' is missing a valid dedicated .venv with pyvenv.cfg!"
+            )
+        return snap_path
+
+    # Unconfigured local runner fallback
+    default_path = Path("C:/Users/hahoa/.codex/artifacts/rag2attck/finalization_snapshots/b69a690")
+    if default_path.is_dir() and (default_path / ".venv" / "pyvenv.cfg").is_file():
+        GENUINE_SNAPSHOT_ROOT = default_path
+        return default_path
+
+    pytest.skip("Local test skipped: RAG2ATTCK_SNAPSHOT_ROOT not configured")
 
 
 def test_positive_snapshot_preflight(tmp_path: Path):

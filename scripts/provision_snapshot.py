@@ -11,7 +11,8 @@ Ensures:
 5. Strict containment checks preventing mutation/deletion of source_repo or its ancestors.
 6. Fail-closed policy on existing non-empty directories: verified snapshots are reused,
    corrupt/dirty/foreign directories are rejected without deletion or reset.
-7. Verbatim git attributes configuration (* -text) preventing line-ending conversion on Linux/CI.
+7. Verbatim git attributes configuration (* -text -eol, * binary) with independent local clone
+   preventing line-ending conversion on Linux/CI runners.
 
 Pure standard-library runner with uv subprocess calls.
 """
@@ -20,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import os
 import shutil
 import subprocess
@@ -66,30 +68,19 @@ def _export_github_env(target_dir: Path) -> None:
 
 def _configure_verbatim_attributes(target_dir: Path) -> None:
     """
-    Disable line-ending conversion for the historical snapshot.
-    Historical commit b69a690 contains files committed with CRLF.
-    Enforces core.autocrlf=false and * -text in repository attributes.
+    Disable all line-ending conversions for historical snapshot checkout.
+    Uses * -text -eol and * binary in repository attributes to ensure byte-exact preservation.
     """
     subprocess.run(["git", "-C", str(target_dir), "config", "core.autocrlf", "false"], check=True)
+    subprocess.run(["git", "-C", str(target_dir), "config", "core.eol", "lf"], check=True)
 
-    # Get worktree git-dir
-    p_gitdir = subprocess.run(
-        ["git", "-C", str(target_dir), "rev-parse", "--git-dir"],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    git_dir = Path(p_gitdir.stdout.strip())
-    if not git_dir.is_absolute():
-        git_dir = (target_dir / git_dir).resolve()
-
-    info_dir = git_dir / "info"
+    info_dir = target_dir / ".git" / "info"
     info_dir.mkdir(parents=True, exist_ok=True)
-    (info_dir / "attributes").write_text("* -text\n", encoding="utf-8")
+    attr_content = "* -text -eol\n* binary\n"
+    (info_dir / "attributes").write_text(attr_content, encoding="utf-8")
 
-    # Global temp verbatim attributes file
     temp_attr = Path(tempfile.gettempdir()) / "rag2attck_verbatim_attributes"
-    temp_attr.write_text("* -text\n", encoding="utf-8")
+    temp_attr.write_text(attr_content, encoding="utf-8")
     subprocess.run(
         [
             "git",
@@ -101,6 +92,47 @@ def _configure_verbatim_attributes(target_dir: Path) -> None:
         ],
         check=True,
     )
+
+
+def _verify_full_snapshot_integrity(snapshot_root: Path, commit: str) -> None:
+    """
+    Comprehensive verification for existing or newly provisioned snapshot:
+    1. Git identity: commit matches and working tree is clean.
+    2. ATT&CK reference JSON hash matches.
+    3. Dedicated .venv with pyvenv.cfg exists.
+    4. Full expanded inventory (53 core, 22 baselines, f85, protocol, lock).
+    5. Locked dependencies closure (104 on Linux, 87 on Windows, 85 on macOS).
+    """
+    from scripts.isolated_snapshot_controller import (
+        compute_expanded_snapshot_inventory,
+        resolve_snapshot_python,
+        verify_snapshot_git_identity,
+        verify_snapshot_venv_dependencies,
+    )
+
+    verify_snapshot_git_identity(snapshot_root)
+    py_bin = resolve_snapshot_python(snapshot_root)
+    compute_expanded_snapshot_inventory(snapshot_root)
+
+    # Cross-check installed dependencies via snapshot python
+    inspect_code = (
+        "import importlib.metadata as m, json; "
+        "print(json.dumps({d.metadata['Name'].lower().replace('_', '-'): d.version "
+        "for d in m.distributions() if d.metadata.get('Name')}))"
+    )
+    p_inspect = subprocess.run(
+        [str(py_bin), "-c", inspect_code],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    installed_map = json.loads(p_inspect.stdout.strip())
+    worker_attestation = {
+        "sys_prefix": str((snapshot_root / ".venv").absolute()),
+        "sys_executable": str(py_bin.absolute()),
+        "installed_dependencies": installed_map,
+    }
+    verify_snapshot_venv_dependencies(snapshot_root, worker_attestation)
 
 
 def provision_snapshot(
@@ -116,12 +148,12 @@ def provision_snapshot(
     print(f"  Source repo:      {source_repo}")
     print(f"  Commit:           {commit}")
 
-    # Security check: containment
+    # 1. Containment check
     check_containment(target_dir, source_repo)
 
     created_by_this_invocation = False
 
-    # Check existing target directory
+    # 2. Existing directory check
     if target_dir.exists():
         has_entries = False
         try:
@@ -130,7 +162,7 @@ def provision_snapshot(
             pass
 
         if has_entries:
-            # Non-empty existing directory: reuse ONLY if verified clean snapshot, else FAIL CLOSED
+            # Reusing existing non-empty directory ONLY if verified clean snapshot
             is_valid_git = False
             if (target_dir / ".git").exists():
                 p_head = subprocess.run(
@@ -158,66 +190,37 @@ def provision_snapshot(
             venv_ok = (target_dir / ".venv" / "pyvenv.cfg").is_file()
 
             if is_valid_git and attack_ok and venv_ok:
-                from scripts.isolated_snapshot_controller import compute_expanded_snapshot_inventory
-
                 try:
-                    inventory = compute_expanded_snapshot_inventory(target_dir)
-                    print(
-                        f"Reusing existing valid clean snapshot at {target_dir} "
-                        f"({inventory['core_files_count']} core files, "
-                        f"{inventory['protected_baselines_count']} baselines)."
-                    )
+                    _verify_full_snapshot_integrity(target_dir, commit)
+                    print(f"Reusing existing valid clean snapshot at {target_dir}.")
                     _export_github_env(target_dir)
                     return target_dir
                 except Exception as exc:
                     raise RuntimeError(
-                        f"FAIL-CLOSED: Target directory '{target_dir}' exists and is non-empty, "
-                        f"but failed expanded inventory verification: {exc}. "
-                        "Mutating or wiping existing directory is forbidden."
+                        f"Target directory exists and is dirty/mismatched/foreign. "
+                        f"Provisioning will not overwrite or clean existing directories: {exc}"
                     )
             else:
                 raise RuntimeError(
-                    f"FAIL-CLOSED: Target directory '{target_dir}' exists and is non-empty, "
-                    f"but is not a verified clean snapshot at commit {commit} "
-                    f"(valid_git={is_valid_git}, attack_ok={attack_ok}, venv_ok={venv_ok}). "
-                    "Mutating, resetting, or wiping existing directory is strictly forbidden."
+                    "Target directory exists and is dirty/mismatched/foreign. "
+                    "Provisioning will not overwrite or clean existing directories."
                 )
     else:
         target_dir.mkdir(parents=True, exist_ok=True)
         created_by_this_invocation = True
 
     try:
-        # Step 2: Checkout commit into fresh target_dir using --no-checkout
-        print(f"Creating git worktree at {target_dir} for commit {commit}...")
-        res = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(source_repo),
-                "worktree",
-                "add",
-                "--no-checkout",
-                "--detach",
-                str(target_dir),
-                commit,
-            ],
-            capture_output=True,
-            text=True,
+        # Step 3: Independent local clone with verbatim attributes
+        print(f"Cloning local repository into {target_dir}...")
+        subprocess.run(
+            ["git", "clone", "--no-checkout", "--local", str(source_repo), str(target_dir)],
+            check=True,
         )
-        if res.returncode != 0:
-            print(f"Worktree creation failed ({res.stderr.strip()}), falling back to clone...")
-            if created_by_this_invocation and target_dir.exists():
-                shutil.rmtree(target_dir, ignore_errors=True)
-            subprocess.run(
-                ["git", "clone", "--no-checkout", str(source_repo), str(target_dir)],
-                check=True,
-            )
 
-        # Configure verbatim attributes before checking out files to prevent CRLF drift
         _configure_verbatim_attributes(target_dir)
         subprocess.run(["git", "-C", str(target_dir), "checkout", "-f", commit], check=True)
 
-        # Step 3: Populate ATT&CK reference JSON
+        # Step 4: Populate ATT&CK reference JSON
         raw_dst = target_dir / "attack" / "raw" / "enterprise-v19.2" / "enterprise-attack-19.2.json"
         raw_dst.parent.mkdir(parents=True, exist_ok=True)
         raw_src = (
@@ -249,7 +252,7 @@ def provision_snapshot(
         if p_status.stdout.strip():
             raise RuntimeError(f"Snapshot working tree dirty after checkout:\n{p_status.stdout}")
 
-        # Step 4: Provision dedicated virtual environment with uv sync --frozen
+        # Step 5: Provision dedicated virtual environment with uv sync --frozen
         print(f"Creating dedicated virtual environment in {target_dir}/.venv...")
         subprocess.run(["uv", "sync", "--frozen"], cwd=str(target_dir), check=True)
 
@@ -257,20 +260,10 @@ def provision_snapshot(
         if not pyvenv.is_file():
             raise RuntimeError(f"Failed to create virtual environment: missing {pyvenv}")
 
-        # Step 5: Self-verify using controller functions
+        # Step 6: Verify full snapshot integrity
         print("Verifying provisioned snapshot integrity...")
-        from scripts.isolated_snapshot_controller import (
-            compute_expanded_snapshot_inventory,
-            resolve_snapshot_python,
-            verify_snapshot_git_identity,
-        )
-
-        verify_snapshot_git_identity(target_dir)
-        resolve_snapshot_python(target_dir)
-        inventory = compute_expanded_snapshot_inventory(target_dir)
-        core_count = inventory["core_files_count"]
-        baselines_count = inventory["protected_baselines_count"]
-        print(f"Snapshot verified: {core_count} core files, {baselines_count} baselines.")
+        _verify_full_snapshot_integrity(target_dir, commit)
+        print("Snapshot integrity verified successfully.")
 
         _export_github_env(target_dir)
         return target_dir

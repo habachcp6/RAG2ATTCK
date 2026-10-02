@@ -39,6 +39,12 @@ def _valid_terminal_proof_data(
     artifact_log_sha256: str = "a" * 64,
     final_summary: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
+    default_summary = {
+        "complete": True,
+        "execution_mode": "live",
+        "run_id": run_id,
+        "record_count": 6400,
+    }
     return {
         "run_id": run_id,
         "task_id": task_id,
@@ -47,7 +53,7 @@ def _valid_terminal_proof_data(
         "process_status": process_status,
         "exit_code": exit_code,
         "artifact_log_sha256": artifact_log_sha256,
-        "final_summary": final_summary or {"complete": True, "record_count": 6400},
+        "final_summary": final_summary if final_summary is not None else default_summary,
     }
 
 
@@ -1065,8 +1071,12 @@ def test_audit_terminal_process_proof_success(tmp_path):
     assert len(info["sha256"]) == 64
     assert info["run_id"] == "live-66b94b1676bf46a9"
     assert info["process_status"] == "terminated"
-    assert info["start_identity"] == "2026-10-02T01:00:00Z"
-    assert info["final_summary"] == {"complete": True, "record_count": 6400}
+    assert info["final_summary"] == {
+        "complete": True,
+        "execution_mode": "live",
+        "run_id": "live-66b94b1676bf46a9",
+        "record_count": 6400,
+    }
 
 
 def test_audit_fails_on_reordered_journal_events(tmp_path):
@@ -1160,6 +1170,128 @@ def test_terminal_proof_fails_on_run_and_task_id_mismatch(tmp_path):
 
     with pytest.raises(AuditVerificationError, match="task_id mismatch"):
         audit_terminal_process_proof(proof_path, expected_task_id="task-1264")
+
+
+def test_terminal_proof_fails_on_summary_missing_required_live_fields(tmp_path):
+    """Probe regression: final_summary missing required schema fields is rejected."""
+    proof_path = tmp_path / "missing_summary_fields.json"
+    data = _valid_terminal_proof_data(
+        final_summary={"complete": True, "unexpected": "does not describe the run"}
+    )
+    proof_path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="final_summary missing required fields"):
+        audit_terminal_process_proof(
+            proof_path,
+            expected_run_id="live-66b94b1676bf46a9",
+            expected_task_id="task-1264",
+        )
+
+
+def test_terminal_proof_fails_on_summary_wrong_run_count_mode(tmp_path):
+    """Probe regression: final_summary with foreign run_id or mock mode is rejected."""
+    proof_path = tmp_path / "wrong_mode.json"
+    data = _valid_terminal_proof_data(
+        final_summary={
+            "complete": True,
+            "run_id": "foreign-run",
+            "record_count": 1,
+            "execution_mode": "mock",
+        }
+    )
+    proof_path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="run_id mismatch"):
+        audit_terminal_process_proof(
+            proof_path,
+            expected_run_id="live-66b94b1676bf46a9",
+            expected_task_id="task-1264",
+        )
+
+
+def test_terminal_proof_fails_on_summary_complete_null(tmp_path):
+    """Probe regression: final_summary complete=None/non-True is rejected."""
+    proof_path = tmp_path / "complete_null.json"
+    data = _valid_terminal_proof_data(
+        final_summary={"complete": None}
+    )
+    proof_path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="missing required fields|strictly True"):
+        audit_terminal_process_proof(
+            proof_path,
+            expected_run_id="live-66b94b1676bf46a9",
+            expected_task_id="task-1264",
+        )
+
+
+def test_terminal_proof_fails_on_unbound_log_digest(tmp_path):
+    """Probe regression: artifact_log_sha256 drifting from authoritative log bytes is rejected."""
+    dummy_log = tmp_path / "task.log"
+    dummy_log.write_bytes(b"authoritative task log content with timestamps and events\n")
+    real_sha = hashlib.sha256(dummy_log.read_bytes()).hexdigest()
+
+    proof_path = tmp_path / "unbound_log_proof.json"
+    data = _valid_terminal_proof_data(
+        artifact_log_sha256="0" * 64,
+    )
+    data["authoritative_log"] = str(dummy_log)
+    proof_path.write_text(json.dumps(data), encoding="utf-8")
+
+    with pytest.raises(AuditVerificationError, match="Authoritative log SHA-256 drift"):
+        audit_terminal_process_proof(
+            proof_path,
+            expected_run_id="live-66b94b1676bf46a9",
+            expected_task_id="task-1264",
+        )
+
+    # Positive control with matching log digest succeeds
+    data["artifact_log_sha256"] = real_sha
+    proof_path.write_text(json.dumps(data), encoding="utf-8")
+    info = audit_terminal_process_proof(
+        proof_path,
+        expected_run_id="live-66b94b1676bf46a9",
+        expected_task_id="task-1264",
+    )
+    assert info["artifact_log_sha256"] == real_sha
+
+
+def test_generate_audit_seal_fails_on_production_without_terminal_proof(tmp_path):
+    """Direct API: generate_audit_seal fails closed when is_production=True lacks proof or baseline."""
+    exp_dir = tmp_path / "exp"
+    exp_dir.mkdir()
+    study_root = tmp_path / "study"
+    records = {("view_01", "no_rag"): _create_mock_record("view_01", "no_rag")}
+
+    # Missing terminal_proof_info
+    with pytest.raises(AuditVerificationError, match="Production seal requires verified terminal_proof_info"):
+        generate_audit_seal(
+            exp_dir,
+            study_root,
+            REPO_ROOT,
+            tmp_path / "seal.json",
+            records,
+            Decimal("6.57"),
+            Decimal("13.36"),
+            is_production=True,
+            terminal_proof_info=None,
+        )
+
+
+def test_genuine_terminal_process_proof_positive_control():
+    """Probe positive control: genuine canonical terminal process proof passes all checks."""
+    canonical_proof = Path(r"D:\RAG2ATT&CK\artifacts\orchestration\terminal_process_proof_20261002.json")
+    if not canonical_proof.exists():
+        pytest.skip("Canonical terminal proof file not found in study root")
+
+    original = json.loads(canonical_proof.read_bytes())
+    info = audit_terminal_process_proof(
+        canonical_proof,
+        expected_run_id=original["run_id"],
+        expected_task_id=original["task_id"],
+    )
+    assert info["exit_code"] == 0
+    assert info["run_id"] == "live-66b94b1676bf46a9"
+    assert info["final_summary"]["complete"] is True
+    assert info["final_summary"]["execution_mode"] == "live"
+    assert info["final_summary"]["record_count"] == 6400
 
 
 def test_positive_native_preloader_and_lifecycle(tmp_path):

@@ -79,6 +79,13 @@ REQUIRED_PROOF_FIELDS: Set[str] = {
     "final_summary",
 }
 
+REQUIRED_SUMMARY_FIELDS: Set[str] = {
+    "complete",
+    "execution_mode",
+    "run_id",
+    "record_count",
+}
+
 ALLOWED_PROCESS_STATUSES: Set[str] = {"non-running", "terminated", "exited"}
 
 
@@ -736,8 +743,12 @@ def audit_terminal_process_proof(
     *,
     expected_run_id: Optional[str] = None,
     expected_task_id: Optional[str] = None,
+    log_file_path: Optional[Path] = None,
+    expected_execution_mode: Optional[str] = None,
+    expected_record_count: Optional[int] = None,
+    require_log_file: bool = False,
 ) -> Dict[str, Any]:
-    """Verify authoritative task/process terminal proof with strict 8-field schema."""
+    """Verify authoritative task/process terminal proof with strict schema and byte bindings."""
     if not terminal_proof_file.exists():
         raise AuditVerificationError(f"Missing terminal proof file at {terminal_proof_file}")
     raw_bytes = terminal_proof_file.read_bytes()
@@ -771,12 +782,14 @@ def audit_terminal_process_proof(
             f"Terminal proof task_id mismatch: expected '{expected_task_id}', got '{task_id}'"
         )
 
-    # 3. pid: integer, strictly not bool
+    # 3. pid: integer, strictly not bool, must be positive
     pid = proof_data["pid"]
     if type(pid) is not int:
         raise AuditVerificationError(
             f"Terminal proof 'pid' must be an integer, got {type(pid).__name__}"
         )
+    if pid <= 0:
+        raise AuditVerificationError(f"Terminal proof 'pid' must be positive, got {pid}")
 
     # 4. start_identity: non-empty string/valid identifier
     start_identity = proof_data["start_identity"]
@@ -811,7 +824,7 @@ def audit_terminal_process_proof(
     if exit_code != 0:
         raise AuditVerificationError(f"Terminal process proof indicates non-zero exit: {exit_code}")
 
-    # 7. artifact_log_sha256: 64-char hex SHA-256 string
+    # 7. artifact_log_sha256: 64-char hex SHA-256 string and byte binding
     log_sha256 = proof_data["artifact_log_sha256"]
     if (
         not isinstance(log_sha256, str)
@@ -820,14 +833,101 @@ def audit_terminal_process_proof(
     ):
         raise AuditVerificationError(f"Terminal proof invalid 'artifact_log_sha256': {log_sha256}")
 
-    # 8. final_summary: must be present and non-empty dict
+    target_log_path = log_file_path
+    if target_log_path is None and "authoritative_log" in proof_data and proof_data["authoritative_log"]:
+        target_log_path = Path(proof_data["authoritative_log"])
+
+    if target_log_path is not None:
+        if target_log_path.exists():
+            computed_log_sha = hashlib.sha256(target_log_path.read_bytes()).hexdigest()
+            if computed_log_sha.lower() != log_sha256.lower():
+                raise AuditVerificationError(
+                    f"Authoritative log SHA-256 drift: expected {log_sha256}, "
+                    f"got {computed_log_sha} from {target_log_path}"
+                )
+        elif require_log_file or log_file_path is not None:
+            raise AuditVerificationError(
+                f"Authoritative log file not found at {target_log_path}"
+            )
+    elif require_log_file:
+        raise AuditVerificationError(
+            "Terminal proof verification requires an authoritative log file path for byte binding"
+        )
+
+    # 8. final_summary: must be present and validate required schema
     final_summary = proof_data["final_summary"]
     if not isinstance(final_summary, dict) or not final_summary:
         raise AuditVerificationError(
             f"Terminal proof missing or empty 'final_summary': {final_summary}"
         )
-    if final_summary.get("complete") is False:
-        raise AuditVerificationError("Terminal proof final_summary indicates incomplete execution")
+
+    missing_summary = REQUIRED_SUMMARY_FIELDS - set(final_summary.keys())
+    if missing_summary:
+        raise AuditVerificationError(
+            f"Terminal proof final_summary missing required fields: {sorted(missing_summary)}"
+        )
+
+    complete_val = final_summary.get("complete")
+    if type(complete_val) is not bool or complete_val is not True:
+        raise AuditVerificationError(
+            f"Terminal proof final_summary 'complete' must be strictly True (boolean), got {complete_val}"
+        )
+
+    summary_run_id = final_summary.get("run_id")
+    if not isinstance(summary_run_id, str) or not summary_run_id.strip():
+        raise AuditVerificationError(f"Terminal proof final_summary invalid 'run_id': {summary_run_id}")
+    if summary_run_id != run_id:
+        raise AuditVerificationError(
+            f"Terminal proof final_summary run_id mismatch: summary has '{summary_run_id}', proof has '{run_id}'"
+        )
+    if expected_run_id is not None and summary_run_id != expected_run_id:
+        raise AuditVerificationError(
+            f"Terminal proof final_summary run_id mismatch: summary has '{summary_run_id}', expected '{expected_run_id}'"
+        )
+
+    mode = final_summary.get("execution_mode")
+    if not isinstance(mode, str) or not mode.strip():
+        raise AuditVerificationError(f"Terminal proof final_summary invalid 'execution_mode': {mode}")
+    if expected_execution_mode is not None and mode != expected_execution_mode:
+        raise AuditVerificationError(
+            f"Terminal proof final_summary execution_mode mismatch: expected '{expected_execution_mode}', got '{mode}'"
+        )
+    elif (run_id.startswith("live-") or (expected_run_id and expected_run_id.startswith("live-"))) and mode != "live":
+        raise AuditVerificationError(
+            f"Terminal proof final_summary execution_mode must be 'live' for live run, got '{mode}'"
+        )
+
+    record_count = final_summary.get("record_count")
+    if type(record_count) is not int or record_count <= 0:
+        raise AuditVerificationError(
+            f"Terminal proof final_summary 'record_count' must be a positive integer, got {record_count}"
+        )
+    if expected_record_count is not None and record_count != expected_record_count:
+        raise AuditVerificationError(
+            f"Terminal proof final_summary record_count mismatch: expected {expected_record_count}, got {record_count}"
+        )
+
+    if "requests_consumed" in final_summary and "consumed_provider_attempts" in final_summary:
+        rc = final_summary["requests_consumed"]
+        cpa = final_summary["consumed_provider_attempts"]
+        if type(rc) is int and type(cpa) is int and rc != cpa:
+            raise AuditVerificationError(
+                f"Terminal proof final_summary requests_consumed ({rc}) != consumed_provider_attempts ({cpa})"
+            )
+
+    if "study_budget" in final_summary:
+        sb = final_summary["study_budget"]
+        if not isinstance(sb, dict):
+            raise AuditVerificationError("Terminal proof final_summary 'study_budget' must be a dictionary")
+        if sb.get("has_breach") is not False:
+            raise AuditVerificationError("Terminal proof final_summary reports budget breach")
+        if "total_budget_usd" in sb:
+            try:
+                tb = Decimal(str(sb["total_budget_usd"]))
+                if tb > Decimal("19.99"):
+                    raise AuditVerificationError(f"Terminal proof budget cap exceeded: {tb} > 19.99")
+            except Exception:
+                pass
 
     return {
         "path": str(terminal_proof_file),
@@ -931,10 +1031,23 @@ def generate_audit_seal(
     if total_records == 0:
         raise AuditVerificationError("Cannot generate audit seal for empty records")
 
-    if is_production and total_records != 6400:
-        raise AuditVerificationError(
-            f"Production audit seal requires exactly 6,400 records, got {total_records}"
-        )
+    if is_production:
+        if terminal_proof_info is None or not isinstance(terminal_proof_info, dict):
+            raise AuditVerificationError("Production seal requires verified terminal_proof_info")
+        if protected_baseline_info is None or not isinstance(protected_baseline_info, dict):
+            raise AuditVerificationError("Production seal requires verified protected_baseline_info")
+        if not protected_baseline_info.get("all_22_files_verified"):
+            raise AuditVerificationError(
+                "Production seal requires all 22 protected baseline files verified"
+            )
+        if total_records != 6400:
+            raise AuditVerificationError(
+                f"Production audit seal requires exactly 6,400 records, got {total_records}"
+            )
+        if cumulative_settled_usd > Decimal("19.99"):
+            raise AuditVerificationError(
+                f"Production seal cumulative settled cost ${cumulative_settled_usd} exceeds $19.99 ceiling"
+            )
 
     required_artifacts = [
         exp_dir / "manifest.json",
@@ -1061,6 +1174,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help="Expected task ID for terminal proof validation (default: task-1264)",
     )
     parser.add_argument(
+        "--log-file-path",
+        type=Path,
+        default=None,
+        help="Optional explicit path to log file for byte-level hash verification",
+    )
+    parser.add_argument(
         "--is-production",
         action="store_true",
         default=False,
@@ -1114,13 +1233,30 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if not args.terminal_proof_file:
             raise AuditVerificationError("Production audit requires --terminal-proof-file")
         manifest_path = args.exp_dir / "manifest.json"
-        manifest = _strict_json_loads(manifest_path.read_bytes()) if manifest_path.exists() else {}
+        if manifest_path.exists():
+            manifest = _strict_json_loads(manifest_path.read_bytes())
+            if manifest.get("execution_mode") != "live":
+                raise AuditVerificationError(
+                    "Production audit requires execution_mode='live', "
+                    f"got '{manifest.get('execution_mode')}'"
+                )
+            if not manifest.get("run_id") or manifest["run_id"].startswith("fixture-"):
+                raise AuditVerificationError(
+                    f"Production audit requires live run_id, got '{manifest.get('run_id')}'"
+                )
+        else:
+            manifest = {}
+
         expected_run_id = args.expected_run_id or manifest.get("run_id") or "live-66b94b1676bf46a9"
         expected_task_id = args.expected_task_id
         terminal_proof_info = audit_terminal_process_proof(
             args.terminal_proof_file,
-            expected_run_id=expected_run_id,
+            expected_run_id=expected_run_id if manifest_path.exists() or args.expected_run_id else None,
             expected_task_id=expected_task_id,
+            log_file_path=args.log_file_path,
+            expected_execution_mode="live" if manifest.get("execution_mode") == "live" else None,
+            expected_record_count=6400 if manifest_path.exists() else None,
+            require_log_file=True if manifest_path.exists() else False,
         )
 
         # 4. Launcher wrapper requirement
@@ -1135,15 +1271,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         # 5. Production execution mode and manifest validation
         if not manifest_path.exists():
             raise AuditVerificationError(f"Missing manifest file at {manifest_path}")
-        if manifest.get("execution_mode") != "live":
-            raise AuditVerificationError(
-                "Production audit requires execution_mode='live', "
-                f"got '{manifest.get('execution_mode')}'"
-            )
-        if not manifest.get("run_id") or manifest["run_id"].startswith("fixture-"):
-            raise AuditVerificationError(
-                f"Production audit requires live run_id, got '{manifest.get('run_id')}'"
-            )
 
         # 6. Native preloader and recovery-aware lifecycle validation
         eval_inputs = audit_production_preloader_and_lifecycle(

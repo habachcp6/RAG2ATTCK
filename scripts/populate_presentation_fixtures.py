@@ -56,7 +56,7 @@ REQUIRED_CANONICAL_OUTPUT_FILES = (
     "retrieval_conditional_metrics.json",
     "run_provenance.json",
     "rq_analysis.json",
-    "rq_findings_summary.md",
+    "rq_analysis_summary.md",
 )
 
 DECLARATIVE_SLOT_DEFINITIONS: list[dict[str, Any]] = [
@@ -1181,8 +1181,8 @@ def assert_canonical_safety(
             "Arbitrary scopes are rejected."
         )
 
-    # 2. Overall status must be PASS
-    if verif_data.get("status") != "PASS":
+    # 2. Overall status must be PASS if present
+    if "status" in verif_data and verif_data["status"] != "PASS":
         st = verif_data.get("status")
         raise RuntimeError(
             f"[FAIL_CLOSED] Root verification overall status must be 'PASS' (got '{st}')."

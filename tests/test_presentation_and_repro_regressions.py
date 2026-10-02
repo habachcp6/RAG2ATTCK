@@ -904,7 +904,7 @@ def _setup_mock_canonical_environment(tmp_path: Path) -> tuple[Path, Path, dict,
             content = json.dumps(
                 {"execution_mode": "live", "provenance": "canonical_study"}, indent=2
             ).encode("utf-8")
-        elif o_name == "rq_findings_summary.md":
+        elif o_name == "rq_analysis_summary.md":
             content = "# RQ Findings Summary\nCanonical study results.\n".encode("utf-8")
         else:
             content = json.dumps(

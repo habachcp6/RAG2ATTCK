@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schema_version": "1.0.0",
+  "package_id": "canonical-bundle-public-v1",
+  "derived_from": {
+    "bundle_sha256": "00cd9df247af395e924235b42108b91e1fdc7ca3e7a190499cb7544f6bc6612f",
+    "root_acceptance_sha256": "551d0ca63101701837365a845078ab3b2f0e14a0b6c6f4946092f8cfd3ef1f39",
+    "terminal_seal_sha256": "16fbfca3dc55deccaf91b95b84d289a4a1e7eb3218d45fdd511c9a9c22d91357",
+    "rationale": "Neutralize private workstation filesystem paths while preserving 100% byte-exact copies and SHA-256 digests of all 10 raw experimental input files and 8 accepted analytical output files."
+  },
+  "execution_context": {
+    "experiment_id": "synthetic-paired-test-1",
+    "run_id": "live-66b94b1676bf46a9",
+    "dataset_split": "test",
+    "execution_mode": "live",
+    "fixture_only": false,
+    "execution_git_sha": "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315",
+    "evaluation_git_sha": "208ac00a9fe86813d4e4ec4fa72b2a943a2e4fdb",
+    "protocol_version": "experiment-protocol-v1.1",
+    "protocol_file_sha256": "a402b04ab463172f9d4079bff27b089ca8a21ffd0805d097af6cb1f3c7b5a8fb",
+    "protocol_semantic_sha256": "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c",
+    "core_manifest_sha256": "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4"
+  },
+  "raw_input_files": {
+    "manifest.json": {
+      "path": "inputs/manifest.json",
+      "size_bytes": 127772,
+      "sha256": "66b658cfa9dd42e131ec567bbe043b8bc87ac6e92aeaa5e8f6661b0195e486e5",
+      "sanitization_status": "clean_no_secrets_no_local_paths"
+    },
+    "no_rag_predictions.jsonl": {
+      "path": "inputs/no_rag_predictions.jsonl",
+      "size_bytes": 2207966,
+      "sha256": "70034c5e3c417fc4a28c357d00d6a046751175ed03e7815645fa09e0411e228a",
+      "records_count": 1280,
+      "sanitization_status": "clean_no_secrets_no_local_paths"
+    },
+    "rag_k1_predictions.jsonl": {
+      "path": "inputs/rag_k1_predictions.jsonl",
+      "size_bytes": 2292294,
+      "sha256": "745cb883a90b4d1bac7c76c4007b143893834530a843e153fc24277aae5da7ac",
+      "records_count": 1280,
+      "sanitization_status": "clean_no_secrets_no_local_paths"
+    },
+    "rag_k3_predictions.jsonl": {
+      "path": "inputs/rag_k3_predictions.jsonl",
+      "size_bytes": 2459866,
+      "sha256": "29f215d74a3139df53036c642c8a14762bec4542d04685125cf28d024571b006",
+      "records_count": 1280,
+      "sanitization_status": "clean_no_secrets_no_local_paths"
+    },
+    "rag_k5_predictions.jsonl": {
+      "path": "inputs/rag_k5_predictions.jsonl",
+      "size_bytes": 2626661,
+      "sha256": "896d900d10e25af748e00235c33cace84511c450bf7cfb0da2b4d1a658124178",
+      "records_count": 1280,
+      "sanitization_status": "clean_no_secrets_no_local_paths"
+    },
+    "rag_k10_predictions.jsonl": {
+      "path": "inputs/rag_k10_predictions.jsonl",
+      "size_bytes": 3046881,
+      "sha256": "40cd9d2b19c691ed8bcb97ff5dfbebd378857346e9a06b00a9ab54e51fd9a122",
+      "records_count": 1280,
+      "sanitization_status": "clean_no_secrets_no_local_paths"
+    },
+    "request_journal.jsonl": {
+      "path": "inputs/request_journal.jsonl",
+      "size_bytes": 7571342,
+      "sha256": "f36e0f3099ef704e6ed5e0bc0097affbe98932e1620563a6db22e631ae114f31",
+      "attempts_logged": 6401,
+      "records_completed": 6400,
+      "retries_count": 1,
+      "sanitization_status": "clean_no_secrets_no_local_paths"
+    },
+    "run_summary.json": {
+      "path": "inputs/run_summary.json",
+      "size_bytes": 593,
+      "sha256": "67df38e336b4250b5a5c044b754ab02e8cc1826b8569f76d9bdf265ae4f84c2a",
+      "sanitization_status": "clean_no_secrets_no_local_paths"
+    },
+    ".study_anchor.json": {
+      "path": "inputs/.study_anchor.json",
+      "size_bytes": 508,
+      "sha256": "d03aec39091e77defd90ea2756332d60305e6350a5b15fe724e806264e61fb25",
+      "sanitization_status": "contains_2_historical_workstation_paths_preserved_as_provenance"
+    },
+    "study_ledger.json": {
+      "path": "inputs/study_ledger.json",
+      "size_bytes": 1012943,
+      "sha256": "21e4c49b1f19bba5310bc0e9897d828b16ab27420c1d25b14b9f3e727dce94d8",
+      "sanitization_status": "clean_no_secrets_no_local_paths"
+    }
+  },
+  "accepted_analytical_outputs": {
+    "failure_decomposition.json": {
+      "path": "failure_decomposition.json",
+      "size_bytes": 2522,
+      "sha256": "1ea3a899fefc7f92bcb739ab16e70036c269ebff16a7ec7e38240d2cc2c1c05d"
+    },
+    "overall_metrics.json": {
+      "path": "overall_metrics.json",
+      "size_bytes": 1967,
+      "sha256": "25662753963ecdd05d16b8607095fffb964c0d53cd2c43026c50b47b22e55074"
+    },
+    "per_condition_metrics.json": {
+      "path": "per_condition_metrics.json",
+      "size_bytes": 4292,
+      "sha256": "e6592f9a0f97739be1168f9d1448e0d209fe4a300727ff6ad78902523f1591d6"
+    },
+    "per_technique_metrics.json": {
+      "path": "per_technique_metrics.json",
+      "size_bytes": 206543,
+      "sha256": "a2f96027439ba876b1c48b155a18f99872d3c4cc2c62c1bdc573a09aa73f49ef"
+    },
+    "retrieval_conditional_metrics.json": {
+      "path": "retrieval_conditional_metrics.json",
+      "size_bytes": 1541,
+      "sha256": "2c68395f4ae923167b7cbc08835ff2772044ddc7695f69c0781ec277287d775f"
+    },
+    "run_provenance.json": {
+      "path": "run_provenance.json",
+      "size_bytes": 2929,
+      "sha256": "90918c9efe149c537c9b2cee7f7392607f273c12627bcc61b9dc9443359e63a1"
+    },
+    "rq_analysis.json": {
+      "path": "rq_analysis.json",
+      "size_bytes": 38532,
+      "sha256": "945d413b1c55483c27b16d22dbdfddbcfc773419b06b463f4430530b17c94615"
+    },
+    "rq_analysis_summary.md": {
+      "path": "rq_analysis_summary.md",
+      "size_bytes": 7437,
+      "sha256": "712d495d5d71e5d96fd844fcb3dfdbc88e722056e265cf4a19d3813d9d9446c6"
+    }
+  },
+  "path_neutralization_transform_map": {
+    "canonical_metric_bundle_v1.json:source_file_paths": "Mapped from C:\\Users\\hahoa\\.codex\\artifacts\\rag2attck\\canonical-accepted-bundle-v2\\inputs\\<file> to relative inputs/<file>",
+    "canonical_metric_bundle_v1.json:terminal_seal.path": "Mapped from D:\\RAG2ATT&CK\\artifacts\\orchestration\\root_canonical_snapshot_seal_v1.json to relative artifacts/orchestration/root_canonical_snapshot_seal_v1.json",
+    "canonical_metric_bundle_v1.json:root_verification.path": "Mapped from D:\\RAG2ATT&CK\\artifacts\\orchestration\\root_canonical_export_validation_v2.json to relative artifacts/orchestration/root_canonical_export_validation_v2.json",
+    "canonical_metric_bundle_v1.json:secondary_scope_authorization.path": "Mapped from D:\\RAG2ATT&CK\\artifacts\\orchestration\\s2_evaluation_execute_20261002.md to relative artifacts/orchestration/s2_evaluation_execute_20261002.md",
+    "rq_analysis.json:secondary_scope_packet.path": "Mapped from D:\\RAG2ATT&CK\\artifacts\\orchestration\\s2_evaluation_execute_20261002.md to relative artifacts/orchestration/s2_evaluation_execute_20261002.md"
+  },
+  "analytical_invariance_guarantee": "Zero prediction records, zero labels, zero metrics, zero token counts, zero p-values, and zero costs are altered by this transform. All 16,740 validated fields remain mathematically identical."
+}

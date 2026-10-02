@@ -170,3 +170,58 @@ class TestCriticalCodeInvariants:
         assert actual_sha == CANONICAL_WRAPPER_BLOCK_SHA256, (
             f"RAW_WRAPPER_BLOCK SHA mismatch: {actual_sha} != {CANONICAL_WRAPPER_BLOCK_SHA256}"
         )
+
+
+class TestMathematicalComparatorAndFailClosed:
+    """Verifies precision tolerance, exact Decimal currency comparison, and fail-closed gates."""
+
+    def test_float_comparison_tolerance_gate(self):
+        from scripts.reproduce_canonical_study import compare_metrics_trees
+
+        base_metrics = {"accuracy": 0.7838440111420613, "f1": 0.01336671534494176}
+        # Within tolerance (1e-13 difference)
+        matching_metrics = {"accuracy": 0.7838440111420613 + 5e-14, "f1": 0.01336671534494176}
+        ok, disc = compare_metrics_trees(matching_metrics, base_metrics, float_tolerance=1e-12)
+        assert ok is True, f"Expected match within tolerance, got {disc}"
+
+        # Exceeds tolerance (1e-10 difference)
+        divergent_metrics = {"accuracy": 0.7838440111420613 + 1e-10, "f1": 0.01336671534494176}
+        ok, disc = compare_metrics_trees(divergent_metrics, base_metrics, float_tolerance=1e-12)
+        assert ok is False, "Expected failure when exceeding float tolerance"
+        assert len(disc) > 0, "Expected discrepancy record for divergent float"
+
+    def test_decimal_currency_exact_comparison(self):
+        from scripts.reproduce_canonical_study import compare_metrics_trees
+
+        ledger_metrics = {"settled_cost": "6.57575890", "total_budget": "19.99000000"}
+        exact_match = {
+            "settled_cost": Decimal("6.57575890"),
+            "total_budget": Decimal("19.99000000"),
+        }
+        ok, disc = compare_metrics_trees(exact_match, ledger_metrics)
+        assert ok is True, f"Expected exact Decimal match, got {disc}"
+
+        # Off by 1 Satoshi / 10^-8 USD
+        mismatched_cost = {"settled_cost": "6.57575891", "total_budget": "19.99000000"}
+        ok, disc = compare_metrics_trees(mismatched_cost, ledger_metrics)
+        assert ok is False, "Expected failure on 1e-8 USD currency mismatch"
+
+    def test_fail_closed_on_corrupt_or_empty_scoring(self):
+        from scripts.reproduce_canonical_study import compare_metrics_trees
+
+        canonical_payload = {
+            "accuracy_end_to_end": 0.7838440111420613,
+            "completed_record_count": 6387,
+            "provider_failure_count": 13,
+        }
+        # Corrupted scoring (empty dict or no-op)
+        noop_payload = {}
+        ok, disc = compare_metrics_trees(noop_payload, canonical_payload)
+        assert ok is False, "Expected fail-closed on empty no-op scoring"
+        assert len(disc) == 3, f"Expected 3 missing key discrepancies, got {len(disc)}"
+
+    def test_baseline_22_files_verification_on_disk(self):
+        from scripts.reproduce_canonical_study import REPO_ROOT, verify_protected_baseline
+
+        ok, logs = verify_protected_baseline(REPO_ROOT)
+        assert ok is True, f"Baseline verification failed: {logs}"

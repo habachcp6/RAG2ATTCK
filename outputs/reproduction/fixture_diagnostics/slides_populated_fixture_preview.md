@@ -9,10 +9,11 @@
 - **Provenance Status**: `diagnostic_fixture`
 - **Disclaimer**: `DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS`
 - **Total Placeholders Extracted**: 60
+- **Declarative Shape-Table Slots**: 59
 
 ## 2. Populated Slot Values (by Presentation Slide)
 
-### Slide 6: Dataset & Views Topology
+### Slide 4: Dataset & Views Topology
 - Manifest Path: `data/ground_truth/synthetic/split_manifest.json`
 - Total TEST Views: `1,280`
 - Scorable Views: `718`
@@ -21,16 +22,24 @@
 - Neither Mapped Pairs: `200`
 - Distinct Eligible Clusters: `440`
 
-### Slide 7: RQ1 Attribution Performance
+### Slide 6: RQ2 Retrieval Diagnostics
+- Hit@10: `0.8333`
+- Recall@10: `0.8333`
+- Retrieval Miss Rate: `0.1667`
+
+### Slide 7: RQ1 Attribution Performance & Pairwise Cohorts
+- Marginal Single Acc: `0.5000`
+- Marginal Context Acc: `0.5000`
+- Paired Single Acc: `0.5000`
+- Paired Context Acc: `0.5000`
+- Paired Delta: `+0.00` pp
+
+### Slide 8: RQ1 5 Conditions & RQ2 Error Decomposition
 - Accuracy (No-RAG): `0.5000`
 - Accuracy (RAG k=10): `0.5000`
 - Macro-F1 (No-RAG): `0.0929`
 - Macro-F1 (RAG k=10): `0.0929`
 - Best Condition: `rag_k10` (Delta: `+0.0000`)
-
-### Slide 8: RQ2 Error Decomposition
-- Recall@10: `0.8333` | Hit@10: `0.8333`
-- Retrieval Miss Rate: `0.1667`
 - Provider Failure Rate: `0.0000`
 - Parse Failure Rate: `0.0000`
 - Invalid ID Rate: `0.1667`
@@ -44,12 +53,6 @@
 - Mean Prompt Tokens (No-RAG vs k=10): `643.0` vs `4536.5`
 - Cost per Logical Request (No-RAG vs k=10): `$0.000390` vs `$0.001870`
 - Whole Study Accounting: Budget `$19.99` | Spend `$8.50` | Remaining `$11.44`
-
-### Slide 10: View Diagnostics & Paired Analysis
-- Marginal Single Acc: `0.5000` | Marginal Context Acc: `0.5000`
-- Paired Single Acc: `0.5000` | Paired Context Acc: `0.5000` (Delta: `+0.00` pp)
-- Pair Concordance: Both Correct: `139`, Both Incorrect: `139`
-- McNemar Exploratory Test: p_asympt=`1.0000`, p_exact=`1.0000`
 
 ---
 *End of Private Diagnostic Fixture Preview - `DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS`*

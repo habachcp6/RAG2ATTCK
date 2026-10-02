@@ -311,6 +311,7 @@ def test_fixture_population_helper_extracts_slots_with_private_label(tmp_path: P
         DISCLAIMER_TEXT,
         extract_fixture_slots,
         generate_fixture_markdown_preview,
+        get_declarative_shape_table_map,
     )
 
     slots = extract_fixture_slots(DEFAULT_FIXTURE_DIR)
@@ -331,6 +332,19 @@ def test_fixture_population_helper_extracts_slots_with_private_label(tmp_path: P
     assert "{{S2_COST_LOGICAL_REQ_NO_RAG}}" in slots
     assert "{{S2_SINGLE_VIEW_ACC_E2E}}" in slots
     assert "{{S2_PAIRED_DELTA_PP}}" in slots
+
+    # Verify declarative shape-table map has 59 items with complete metadata
+    decl_map = get_declarative_shape_table_map(slots)
+    assert len(decl_map) == 59
+    for item in decl_map:
+        assert "slot_name" in item
+        assert "input_field" in item
+        assert "units" in item
+        assert "source_pointer" in item
+        assert "shape_id" in item
+        assert "slide_number" in item
+        assert "injected_value" in item
+        assert item["injected_value"] != ""
 
     out_md = tmp_path / "preview.md"
     generate_fixture_markdown_preview(slots, out_md)
@@ -480,11 +494,32 @@ def test_js_deck_updater_execution_and_artifacts() -> None:
     assert audit.get("total_slides_count") == 12
     assert audit.get("total_notes_count") == 12
     assert audit.get("rendered_png_slides_count") == 12
-    assert audit.get("substitutions_performed", 0) > 0
+    assert audit.get("expected_numeric_slots_count") == 59
+    assert audit.get("actual_numeric_slots_count") == 59
+    assert audit.get("numeric_slot_edits") == 59
+    assert audit.get("disclaimer_edits", 0) > 0
+    assert audit.get("substitutions_performed", 0) == 59 + audit.get("disclaimer_edits", 0)
+
+    decl_mapping = audit.get("declarative_mapping", [])
+    assert len(decl_mapping) == 59
+    for entry in decl_mapping:
+        assert "slot_name" in entry
+        assert "shape_id" in entry
+        assert "slide_number" in entry
+        assert "injected_value" in entry
+        assert entry["injected_value"] != ""
+
     modified_shapes = audit.get("modified_shape_ids", [])
-    assert "sh/fi9c369c" in modified_shapes
-    assert "sh/98rehwve" in modified_shapes
-    assert "sh/h4bupgn6" in modified_shapes
+    for expected_shape in [
+        "sh/sna103ap",
+        "sh/7m98ru9g",
+        "sh/h4bupgn6",
+        "sh/fi9c369c",
+        "sh/98rehwve",
+        "sh/id0fu50z",
+        "sh/ofq5svm5",
+    ]:
+        assert expected_shape in modified_shapes
 
     # 3. Slide PNG assertions
     qa_dir = REPO_ROOT / "reports" / "evidence" / "qa" / "fixture_slides"
@@ -554,3 +589,28 @@ def test_js_deck_updater_negative_cases(tmp_path: Path) -> None:
     assert "Missing mandatory diagnostic fixture disclaimer" in (
         proc_no_disc.stderr + proc_no_disc.stdout
     )
+
+    # Case D: Missing declarative map file
+    non_existent_map = tmp_path / "non_existent_map.json"
+    proc_missing_map = subprocess.run(
+        [node_exe, str(mjs_script), "--declarative-map", str(non_existent_map)],
+        capture_output=True,
+        text=True,
+        cwd=str(REPO_ROOT),
+    )
+    assert proc_missing_map.returncode != 0
+    assert "[FAIL_CLOSED]" in (proc_missing_map.stderr + proc_missing_map.stdout)
+    assert "not found" in (proc_missing_map.stderr + proc_missing_map.stdout)
+
+    # Case E: Declarative map with wrong count (< 59 items)
+    truncated_map = tmp_path / "truncated_map.json"
+    truncated_map.write_text(json.dumps([{"slot_name": "TEST"}]), encoding="utf-8")
+    proc_trunc = subprocess.run(
+        [node_exe, str(mjs_script), "--declarative-map", str(truncated_map)],
+        capture_output=True,
+        text=True,
+        cwd=str(REPO_ROOT),
+    )
+    assert proc_trunc.returncode != 0
+    assert "[FAIL_CLOSED]" in (proc_trunc.stderr + proc_trunc.stdout)
+    assert "59 items" in (proc_trunc.stderr + proc_trunc.stdout)

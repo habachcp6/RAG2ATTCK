@@ -3,7 +3,8 @@
     "fixture_only": true,
     "disclaimer": "DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS",
     "experiment_id": "known-answer-only",
-    "source_fixture_dir": "D:\\RAG2ATTCK-worktrees\\repro-presentation-s1\\outputs\\reproduction\\fixture_diagnostics"
+    "source_fixture_dir": "D:\\RAG2ATTCK-worktrees\\repro-presentation-s1\\outputs\\reproduction\\fixture_diagnostics",
+    "declarative_shape_table_map_count": 59
   },
   "{{S2_MANIFEST_PATH}}": "data/ground_truth/synthetic/split_manifest.json",
   "{{S2_TOTAL_TEST_VIEWS}}": "1,280",

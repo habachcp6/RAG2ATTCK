@@ -10,6 +10,10 @@
  * - Zero live prediction reads, zero provider calls.
  * - Never overwrites production docs/presentation/slides.pptx directly.
  * - Real @oai/artifact-tool runtime invocation: Fail-closed if module cannot be imported.
+ * - Declarative Shape-Table Map: Injects all 59 numeric slots across Slides 4, 6, 7, 8, 9.
+ * - Enforces separate counts for numeric_slot_edits (== 59) and disclaimer_edits.
+ * - Fail-closed if numeric_slot_edits === 0 or actual_numeric_slots_count !== expected_numeric_slots_count.
+ * - Removes legacy causal/intrinsic phrases from Slide 8 and speaker notes.
  *
  * Usage:
  *   node scripts/artifact_tool_deck_updater.mjs [--fixture-slots path/to/slots.json] [--output-deck path/to/candidate.pptx]
@@ -36,6 +40,13 @@ const DEFAULT_SLOTS_PATH = path.join(
   "reproduction",
   "fixture_diagnostics",
   "populated_slots_fixture.json"
+);
+const DEFAULT_MAP_PATH = path.join(
+  REPO_ROOT,
+  "outputs",
+  "reproduction",
+  "fixture_diagnostics",
+  "declarative_shape_table_map.json"
 );
 const DEFAULT_SOURCE_DECK_PATH = path.join(
   REPO_ROOT,
@@ -65,6 +76,7 @@ const DEFAULT_AUDIT_REPORT_PATH = path.join(
 
 const DISCLAIMER_TEXT =
   "DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS";
+const EXPECTED_NUMERIC_SLOTS_COUNT = 59;
 
 /**
  * Validates fixture slots file and ensures fail-closed boundary enforcement.
@@ -96,21 +108,67 @@ async function loadAndValidateFixtureSlots(slotsPath) {
 }
 
 /**
+ * Loads and validates declarative shape table map.
+ * @param {string} mapPath
+ * @returns {Promise<Array<Record<string, any>>>}
+ */
+async function loadAndValidateDeclarativeMap(mapPath) {
+  if (!fsSync.existsSync(mapPath)) {
+    throw new Error(
+      `[FAIL_CLOSED] Declarative shape table map not found: ${mapPath}`
+    );
+  }
+  const raw = await fs.readFile(mapPath, "utf-8");
+  const mapData = JSON.parse(raw);
+  if (!Array.isArray(mapData) || mapData.length !== EXPECTED_NUMERIC_SLOTS_COUNT) {
+    throw new Error(
+      `[FAIL_CLOSED] Declarative map must contain exactly ${EXPECTED_NUMERIC_SLOTS_COUNT} items, got ${mapData?.length}`
+    );
+  }
+  for (const item of mapData) {
+    if (!item.slot_name || !item.shape_id || !item.slide_number || item.injected_value === undefined) {
+      throw new Error(
+        `[FAIL_CLOSED] Incomplete declarative map entry: ${JSON.stringify(item)}`
+      );
+    }
+  }
+  return mapData;
+}
+
+/**
+ * Replaces a specific line within a shape textbox using substring matching.
+ * @param {any} presentation
+ * @param {any} snapshot
+ * @param {string} shapeId
+ * @param {string} targetSubstring
+ * @param {string} replacementLine
+ */
+function replaceLineInShape(presentation, snapshot, shapeId, targetSubstring, replacementLine) {
+  const rec = snapshot.records.find((r) => r.id === shapeId);
+  if (!rec) {
+    throw new Error(`[FAIL_CLOSED] Shape not found in inspect snapshot: ${shapeId}`);
+  }
+  const lines = rec.text.split("\n");
+  const targetLine = lines.find((l) => l.includes(targetSubstring));
+  if (!targetLine) {
+    throw new Error(
+      `[FAIL_CLOSED] Target substring "${targetSubstring}" not found in shape ${shapeId}`
+    );
+  }
+  const sh = presentation.resolve(shapeId);
+  if (!sh || !sh.text) {
+    throw new Error(`[FAIL_CLOSED] Could not resolve shape with text: ${shapeId}`);
+  }
+  sh.text.replace(targetLine, replacementLine);
+  rec.text = rec.text.replace(targetLine, replacementLine);
+}
+
+/**
  * Executes the verified @oai/artifact-tool presentation workflow.
- *
- * Protocol:
- * 1. Load source PPTX and compute Before SHA-256.
- * 2. Import into PresentationFile.
- * 3. Inspect deck snapshot (12 slides, shape topology, notes).
- * 4. Resolve shapes on Slide 6, Slide 7, Slide 8 and replace numeric/status slots.
- * 5. Verify substitutions > 0; fail-closed if 0.
- * 6. Export modified presentation to candidate PPTX and compute After SHA-256.
- * 7. Verify Before SHA != After SHA and ZIP magic header PK\x03\x04.
- * 8. Render all 12 slides to PNGs for visual inspection.
- * 9. Write comprehensive audit record to deck_updater_fixture_audit.json.
  */
 async function runArtifactToolDeckUpdater(options = {}) {
   const slotsPath = options.slotsPath || DEFAULT_SLOTS_PATH;
+  const mapPath = options.mapPath || DEFAULT_MAP_PATH;
   const sourceDeckPath = options.sourceDeckPath || DEFAULT_SOURCE_DECK_PATH;
   const candidateDeckPath =
     options.candidateDeckPath || DEFAULT_CANDIDATE_DECK_PATH;
@@ -123,12 +181,10 @@ async function runArtifactToolDeckUpdater(options = {}) {
   console.log(`[+] Safety Policy: STRICTLY FIXTURES ONLY (fail-closed)`);
   console.log(`[+] Disclaimer: ${DISCLAIMER_TEXT}`);
 
-  // 1. Validate slots
+  // 1. Validate slots and declarative shape table map
   const slots = await loadAndValidateFixtureSlots(slotsPath);
-  const placeholderEntries = Object.entries(slots).filter(([k]) =>
-    k.startsWith("{{")
-  );
-  console.log(`[+] Loaded ${placeholderEntries.length} verified placeholder substitutions.`);
+  const declMap = await loadAndValidateDeclarativeMap(mapPath);
+  console.log(`[+] Loaded ${declMap.length} declarative slot definitions.`);
 
   // 2. Read source deck and compute before hash
   if (!fsSync.existsSync(sourceDeckPath)) {
@@ -154,83 +210,256 @@ async function runArtifactToolDeckUpdater(options = {}) {
     );
   }
 
-  // 4. Resolve shapes and perform substitutions
   const modifiedShapeIds = new Set();
-  let substitutionsCount = 0;
+  let disclaimerEditsCount = 0;
 
-  // Slide 7: Shape sh/fi9c369c (Observation & Scaffold Comparison)
-  const sh7 = presentation.resolve("sh/fi9c369c");
-  if (sh7 && sh7.text) {
-    const r1 = sh7.text.get("[PENDING]");
-    if (!r1.isEmpty) {
-      sh7.text.replace("[PENDING]", `[${DISCLAIMER_TEXT}]`);
-      substitutionsCount++;
-      modifiedShapeIds.add("sh/fi9c369c");
-    }
-    const r2 = sh7.text.get("[PENDING EXECUTION]");
-    if (!r2.isEmpty) {
-      sh7.text.replace(
-        "[PENDING EXECUTION]",
-        `[FIXTURE CANDIDATE - TEST MATRIX IN PROGRESS]`
-      );
-      substitutionsCount++;
-      modifiedShapeIds.add("sh/fi9c369c");
-    }
-  }
+  // 4. Inject Numeric Slots into Slide Shapes
 
-  // Slide 8: Shape sh/98rehwve (RQ1 & RQ2 Experimental Status)
-  const sh8 = presentation.resolve("sh/98rehwve");
-  if (sh8 && sh8.text) {
-    const r = sh8.text.get("[PENDING EXECUTION]");
-    if (!r.isEmpty) {
-      sh8.text.replace("[PENDING EXECUTION]", `[${DISCLAIMER_TEXT}]`);
-      substitutionsCount++;
-      modifiedShapeIds.add("sh/98rehwve");
-    }
-  }
+  // Slide 4: Shape sh/sna103ap (Dataset Topology - 6 slots)
+  replaceLineInShape(
+    presentation,
+    snapshot,
+    "sh/sna103ap",
+    "Phân chia tập:",
+    `•  Phân chia tập: ${slots["{{S2_TOTAL_TEST_VIEWS}}"]} TEST views (${slots["{{S2_SCORABLE_VIEWS}}"]} scorable views across ${slots["{{S2_DISTINCT_ELIGIBLE_CLUSTERS}}"]} distinct clusters) và 60 DEV views.`
+  );
+  replaceLineInShape(
+    presentation,
+    snapshot,
+    "sh/sna103ap",
+    "Toàn vẹn mật mã:",
+    `•  Toàn vẹn mật mã: Khóa SHA-256 trong lock v1 | Cohort pairs: ${slots["{{S2_COMPLETE_SCORABLE_PAIRS}}"]} complete pairs, ${slots["{{S2_CONTEXTUAL_ONLY_PAIRS}}"]} contextual-only pairs, ${slots["{{S2_NEITHER_MAPPED_PAIRS}}"]} neither-mapped pairs.`
+  );
+  modifiedShapeIds.add("sh/sna103ap");
 
-  // Slide 6: Shape sh/h4bupgn6 (Context Scaling & Dilution Hypothesis)
-  const sh6 = presentation.resolve("sh/h4bupgn6");
-  if (sh6 && sh6.text) {
+  // Slide 6: Shape sh/7m98ru9g (RQ2 Retrieval Quality - 3 slots)
+  replaceLineInShape(
+    presentation,
+    snapshot,
+    "sh/7m98ru9g",
+    "Hit@10:",
+    `  • Hit@10: 45.11% (341 / 756) -> [Diagnostic Fixture: Hit@10 = ${slots["{{S2_HIT_RATE_AT_K}}"]}]`
+  );
+  replaceLineInShape(
+    presentation,
+    snapshot,
+    "sh/7m98ru9g",
+    "Tỷ lệ vắng mặt trong Top-10",
+    `•  Tỷ lệ vắng mặt trong Top-10 (Retrieval Failure): 54.89% (415 / 756) -> [Fixture Miss Rate: ${slots["{{S2_RETRIEVAL_MISS_RATE_K10}}"]}]`
+  );
+  replaceLineInShape(
+    presentation,
+    snapshot,
+    "sh/7m98ru9g",
+    "Macro Recall@10:",
+    `•  Macro Recall@10: 43.14% [Fixture Macro Recall@10: ${slots["{{S2_RECALL_AT_K}}"]}]  |  Mean Rank khi trúng: 5.21.`
+  );
+  modifiedShapeIds.add("sh/7m98ru9g");
+
+  // Slide 6: Disclaimer banner sh/h4bupgn6
+  const sh6Banner = presentation.resolve("sh/h4bupgn6");
+  if (sh6Banner && sh6Banner.text) {
     const targetPhrase = "đang được kiểm chứng đối chứng trên ma trận TEST.";
-    const r = sh6.text.get(targetPhrase);
-    if (!r.isEmpty) {
-      sh6.text.replace(
+    const rBanner = sh6Banner.text.get(targetPhrase);
+    if (!rBanner.isEmpty) {
+      sh6Banner.text.replace(
         targetPhrase,
         `đang được kiểm chứng đối chứng trên ma trận TEST [${DISCLAIMER_TEXT}].`
       );
-      substitutionsCount++;
+      disclaimerEditsCount++;
       modifiedShapeIds.add("sh/h4bupgn6");
     }
   }
 
-  // Scan all shapes for explicit {{PLACEHOLDER}} tokens from slots
-  for (const record of snapshot.records) {
-    if (record.kind === "textbox" && record.id && record.text) {
-      for (const [key, val] of placeholderEntries) {
-        if (record.text.includes(key)) {
-          const sh = presentation.resolve(record.id);
-          if (sh && sh.text) {
-            sh.text.replace(key, String(val));
-            substitutionsCount++;
-            modifiedShapeIds.add(record.id);
-          }
-        }
-      }
+  // Slide 7: Shape sh/fi9c369c (Pairwise Views Comparison - 12 slots + pending disclaimer)
+  const sh7 = presentation.resolve("sh/fi9c369c");
+  if (sh7 && sh7.text) {
+    const rPending = sh7.text.get("[PENDING]");
+    if (!rPending.isEmpty) {
+      sh7.text.replace("[PENDING]", `[${DISCLAIMER_TEXT}]`);
+      disclaimerEditsCount++;
+    }
+  }
+  replaceLineInShape(
+    presentation,
+    snapshot,
+    "sh/fi9c369c",
+    "Schema So Sánh Đối Chứng Scaffold",
+    `•  Schema So Sánh Đối Chứng Scaffold [${DISCLAIMER_TEXT}]:\n` +
+      `  • Diagnostic Cohort Pairwise Comparison (n=718 views across 440 clusters):\n` +
+      `    • Marginal Views: Single-event Acc = ${slots["{{S2_SINGLE_VIEW_ACC_E2E}}"]} vs Contextual-event Acc = ${slots["{{S2_CONTEXT_VIEW_ACC_E2E}}"]} (Delta = ${slots["{{S2_VIEW_ACC_DELTA}}"]})\n` +
+      `    • Paired Cohort (278 complete pairs): Single Acc = ${slots["{{S2_PAIRED_SINGLE_ACC}}"]} vs Context Acc = ${slots["{{S2_PAIRED_CONTEXT_ACC}}"]} (Delta = ${slots["{{S2_PAIRED_DELTA_PP}}"]} pp)\n` +
+      `    • Pair Concordance: Both Correct = ${slots["{{S2_BOTH_CORRECT_COUNT}}"]}, Single-only Correct = ${slots["{{S2_SINGLE_ONLY_CORRECT}}"]}, Context-only Correct = ${slots["{{S2_CONTEXT_ONLY_CORRECT}}"]}, Both Incorrect = ${slots["{{S2_BOTH_INCORRECT_COUNT}}"]}\n` +
+      `    • McNemar Exploratory Test: p_asympt = ${slots["{{S2_MCNEMAR_P_ASYMPT}}"]}, p_exact = ${slots["{{S2_MCNEMAR_P_EXACT}}"]}`
+  );
+  modifiedShapeIds.add("sh/fi9c369c");
+
+  // Slide 7: Speaker note nt/gnmp4jqx (remove pending execution / causal claim)
+  const nt7 = presentation.resolve("nt/gnmp4jqx");
+  if (nt7 && typeof nt7.text === "string") {
+    const oldText7 =
+      "[PENDING EXECUTION] chờ toàn bộ ma trận TEST hoàn tất để đưa ra kết luận khoa học chính thức.";
+    if (nt7.text.includes(oldText7)) {
+      nt7.text = nt7.text.replace(
+        oldText7,
+        `[${DISCLAIMER_TEXT}]; kết quả đối chứng trên diagnostic cohort (n=718 views across 440 clusters) ghi nhận quan sát mô tả độc lập.`
+      );
+      disclaimerEditsCount++;
     }
   }
 
+  // Slide 8: Shape sh/98rehwve (RQ1 5 conditions & RQ2 errors/overlaps - 23 slots)
+  replaceLineInShape(
+    presentation,
+    snapshot,
+    "sh/98rehwve",
+    "[PENDING EXECUTION]",
+    `[${DISCLAIMER_TEXT}] RQ1 & RQ2 Metrics:\n` +
+      `•  RQ1 5 Conditions Performance:\n` +
+      `  • no_rag: Acc = ${slots["{{S2_ACC_E2E_NO_RAG}}"]}, Macro-F1 = ${slots["{{S2_MACRO_F1_NO_RAG}}"]}, CI95 = ${slots["{{S2_CI_95_NO_RAG}}"]}\n` +
+      `  • rag_k1: Acc = ${slots["{{S2_ACC_E2E_RAG_K1}}"]}, Macro-F1 = ${slots["{{S2_MACRO_F1_RAG_K1}}"]}, CI95 = ${slots["{{S2_CI_95_RAG_K1}}"]}\n` +
+      `  • rag_k3: Acc = ${slots["{{S2_ACC_E2E_RAG_K3}}"]}, Macro-F1 = ${slots["{{S2_MACRO_F1_RAG_K3}}"]}, CI95 = ${slots["{{S2_CI_95_RAG_K3}}"]}\n` +
+      `  • rag_k5: Acc = ${slots["{{S2_ACC_E2E_RAG_K5}}"]}, Macro-F1 = ${slots["{{S2_MACRO_F1_RAG_K5}}"]}, CI95 = ${slots["{{S2_CI_95_RAG_K5}}"]}\n` +
+      `  • rag_k10: Acc = ${slots["{{S2_ACC_E2E_RAG_K10}}"]}, Macro-F1 = ${slots["{{S2_MACRO_F1_RAG_K10}}"]}, CI95 = ${slots["{{S2_CI_95_RAG_K10}}"]}\n` +
+      `  • Best Condition: ${slots["{{S2_BEST_RAG_CONDITION}}"]} (Delta Acc = ${slots["{{S2_BEST_RAG_ACC_DELTA}}"]}, Delta F1 = ${slots["{{S2_BEST_RAG_F1_DELTA}}"]})\n` +
+      `•  RQ2 Failure Axes & Overlaps:\n` +
+      `  • Valid but Wrong Class Rate: ${slots["{{S2_WRONG_CLASS_RATE_K10}}"]}\n` +
+      `  • Overlaps: Miss & Wrong = ${slots["{{S2_OVERLAP_MISS_AND_WRONG_K10}}"]}, Miss & Provider Fail = ${slots["{{S2_OVERLAP_MISS_AND_PROV_K10}}"]}, Miss & Parse Fail = ${slots["{{S2_OVERLAP_MISS_AND_PARSE_K10}}"]}, Miss & Invalid ID = ${slots["{{S2_OVERLAP_MISS_AND_INVAL_K10}}"]}`
+  );
+  disclaimerEditsCount++;
+  modifiedShapeIds.add("sh/98rehwve");
+
+  // Slide 8: Shape sh/id0fu50z (Conditional metrics & failure axes - 5 slots + causal phrase removal)
+  replaceLineInShape(
+    presentation,
+    snapshot,
+    "sh/id0fu50z",
+    "P(Correct | GT in Top-k)",
+    `•  P(Correct | GT Retrieved) = ${slots["{{S2_P_CORRECT_GIVEN_RETRIEVED}}"]}: Xác suất gán đúng quan sát được khi kỹ thuật mục tiêu hiện diện trong Top-k.`
+  );
+  replaceLineInShape(
+    presentation,
+    snapshot,
+    "sh/id0fu50z",
+    "P(Correct | GT NOT in Top-k)",
+    `•  P(Correct | GT Absent) = ${slots["{{S2_P_CORRECT_GIVEN_ABSENT}}"]}: Xác suất gán đúng quan sát được khi kỹ thuật mục tiêu vắng mặt trong Top-k (không giả định tự sửa sai nội tại).`
+  );
+  replaceLineInShape(
+    presentation,
+    snapshot,
+    "sh/id0fu50z",
+    "Fail-Closed Invariant",
+    `•  Fail-Closed Invariant: Provider Fail = ${slots["{{S2_PROVIDER_FAIL_RATE_K10}}"]}, Parse Fail = ${slots["{{S2_PARSE_FAIL_RATE_K10}}"]}, Invalid ID = ${slots["{{S2_INVALID_ATTACK_ID_RATE_K10}}"]} (tính vào mẫu số).`
+  );
+  modifiedShapeIds.add("sh/id0fu50z");
+
+  // Slide 8: Speaker note nt/fu1gfa1s (remove causal phrase "tự sửa sai")
+  const nt8 = presentation.resolve("nt/fu1gfa1s");
+  if (nt8 && typeof nt8.text === "string") {
+    const oldCausal8 = "hay có khả năng tự sửa sai.";
+    if (nt8.text.includes(oldCausal8)) {
+      nt8.text = nt8.text.replace(
+        oldCausal8,
+        "hay có thể gán đúng khi thiếu ngữ cảnh truy xuất (không giả định năng lực tự sửa sai nội tại)."
+      );
+      disclaimerEditsCount++;
+    }
+  }
+
+  // Slide 9: Shape sh/ofq5svm5 (Cost & Latency Tradeoffs - 10 slots)
+  replaceLineInShape(
+    presentation,
+    snapshot,
+    "sh/ofq5svm5",
+    "no_rag (k=0): 643 in",
+    `  • no_rag (k=0): ${slots["{{S2_MEAN_PROMPT_TOK_NO_RAG}}"]} mean prompt tokens, med lat ${slots["{{S2_MEDIAN_LAT_NO_RAG_SEC}}"]}s (~${slots["{{S2_COST_LOGICAL_REQ_NO_RAG}}"]} USD / logical req)`
+  );
+  replaceLineInShape(
+    presentation,
+    snapshot,
+    "sh/ofq5svm5",
+    "rag_k10 (k=10): 4,537 in",
+    `  • rag_k10 (k=10): ${slots["{{S2_MEAN_PROMPT_TOK_K10}}"]} mean prompt tokens, med lat ${slots["{{S2_MEDIAN_LAT_K10_SEC}}"]}s (~${slots["{{S2_COST_LOGICAL_REQ_K10}}"]} USD / logical req)`
+  );
+  replaceLineInShape(
+    presentation,
+    snapshot,
+    "sh/ofq5svm5",
+    "Giữ chỗ thận trọng tạm thời:",
+    `  • Giữ chỗ thận trọng tạm thời: ${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD (prior_pilot_provisional_hold_usd).`
+  );
+  replaceLineInShape(
+    presentation,
+    snapshot,
+    "sh/ofq5svm5",
+    "Dự báo chuẩn tắc tập TEST",
+    `  • Hạch toán điều kiện chuẩn (Canonical Total): ${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD | Net Remaining: ${slots["{{S2_NET_REMAINING_USD}}"]} USD.`
+  );
+  replaceLineInShape(
+    presentation,
+    snapshot,
+    "sh/ofq5svm5",
+    "Trần ngân sách đóng băng cứng",
+    `  • Trần ngân sách đóng băng cứng: ${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD (hard_budget_limit_usd).`
+  );
+  modifiedShapeIds.add("sh/ofq5svm5");
+
+  // 5. Verify all 59 declarative slot entries are injected into shapes
+  let actualNumericSlotsCount = 0;
+  const enrichedDeclarativeMapping = [];
+
+  for (const item of declMap) {
+    const sh = presentation.resolve(item.shape_id);
+    if (!sh || !sh.text) {
+      throw new Error(
+        `[FAIL_CLOSED] Declarative slot target shape ${item.shape_id} not found or has no text`
+      );
+    }
+    const shapeContent =
+      typeof sh.text === "string" ? sh.text : sh.text.toString();
+    if (!shapeContent || !shapeContent.includes(item.injected_value)) {
+      throw new Error(
+        `[FAIL_CLOSED] Numeric value injection failed for slot "${item.slot_name}". ` +
+          `Expected value "${item.injected_value}" not found in shape ${item.shape_id}`
+      );
+    }
+    actualNumericSlotsCount++;
+    enrichedDeclarativeMapping.push({
+      slot_name: item.slot_name,
+      input_field: item.input_field,
+      units: item.units,
+      source_pointer: item.source_pointer,
+      shape_id: item.shape_id,
+      slide_number: item.slide_number,
+      injected_value: item.injected_value,
+    });
+  }
+
   console.log(
-    `[+] Total substitutions performed: ${substitutionsCount} across ${modifiedShapeIds.size} shapes.`
+    `[+] Declarative verification: ${actualNumericSlotsCount} / ${EXPECTED_NUMERIC_SLOTS_COUNT} slots verified.`
   );
 
-  if (substitutionsCount === 0) {
+  if (actualNumericSlotsCount !== EXPECTED_NUMERIC_SLOTS_COUNT) {
     throw new Error(
-      `[FAIL_CLOSED] Zero substitutions performed on target presentation. Aborting.`
+      `[FAIL_CLOSED] Actual numeric slots count (${actualNumericSlotsCount}) does not match expected (${EXPECTED_NUMERIC_SLOTS_COUNT})`
     );
   }
 
-  // 5. Export candidate deck
+  const numericSlotEdits = actualNumericSlotsCount;
+  if (numericSlotEdits === 0) {
+    throw new Error(
+      `[FAIL_CLOSED] Zero numeric slot edits performed on target presentation. Aborting.`
+    );
+  }
+
+  const totalSubstitutions = numericSlotEdits + disclaimerEditsCount;
+  console.log(
+    `[+] Total substitutions performed: ${totalSubstitutions} ` +
+      `(${numericSlotEdits} numeric slots, ${disclaimerEditsCount} disclaimer/causal edits) ` +
+      `across ${modifiedShapeIds.size} shapes.`
+  );
+
+  // 6. Export candidate deck
   await fs.mkdir(path.dirname(candidateDeckPath), { recursive: true });
   const exported = await PresentationFile.exportPptx(presentation);
   const afterBytes = Buffer.from(exported.data);
@@ -261,7 +490,7 @@ async function runArtifactToolDeckUpdater(options = {}) {
     );
   }
 
-  // 6. Export all 12 slides as PNGs to QA directory
+  // 7. Export all 12 slides as PNGs to QA directory
   await fs.mkdir(qaOutputDir, { recursive: true });
   console.log(`[+] Exporting 12 slides to QA image directory: ${qaOutputDir}`);
   for (let i = 0; i < slides.length; i++) {
@@ -279,7 +508,7 @@ async function runArtifactToolDeckUpdater(options = {}) {
   }
   console.log(`[+] Successfully exported ${slides.length} slide PNGs.`);
 
-  // 7. Write audit report
+  // 8. Write comprehensive audit report
   await fs.mkdir(path.dirname(auditReportPath), { recursive: true });
   const auditRecord = {
     fixture_only: true,
@@ -295,7 +524,12 @@ async function runArtifactToolDeckUpdater(options = {}) {
     total_slides_count: slides.length,
     total_notes_count: notesCount,
     modified_shape_ids: Array.from(modifiedShapeIds).sort(),
-    substitutions_performed: substitutionsCount,
+    expected_numeric_slots_count: EXPECTED_NUMERIC_SLOTS_COUNT,
+    actual_numeric_slots_count: actualNumericSlotsCount,
+    numeric_slot_edits: numericSlotEdits,
+    disclaimer_edits: disclaimerEditsCount,
+    substitutions_performed: totalSubstitutions,
+    declarative_mapping: enrichedDeclarativeMapping,
     rendered_png_slides_count: slides.length,
     qa_slides_directory: qaOutputDir,
     dry_run: isDryRun,
@@ -334,6 +568,7 @@ if (isMain) {
   };
 
   const slotsPath = getArg("--fixture-slots");
+  const mapPath = getArg("--declarative-map");
   const sourceDeckPath = getArg("--source-deck");
   const candidateDeckPath = getArg("--output-deck");
   const qaOutputDir = getArg("--output-qa-dir");
@@ -342,6 +577,7 @@ if (isMain) {
   runArtifactToolDeckUpdater({
     dryRun,
     slotsPath,
+    mapPath,
     sourceDeckPath,
     candidateDeckPath,
     qaOutputDir,
@@ -360,5 +596,7 @@ if (isMain) {
 export {
   runArtifactToolDeckUpdater,
   loadAndValidateFixtureSlots,
+  loadAndValidateDeclarativeMap,
   DISCLAIMER_TEXT,
+  EXPECTED_NUMERIC_SLOTS_COUNT,
 };

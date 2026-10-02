@@ -152,9 +152,17 @@ FIXTURE_DATA = {
 }
 
 
-def load_data_from_bundle(bundle_path: Path) -> Dict[str, Any]:
+def load_data_from_bundle(bundle_path: Path, expected_bundle_sha256: Optional[str] = None) -> Dict[str, Any]:
     if not bundle_path.is_file():
         raise FileNotFoundError(f"[FAIL_CLOSED] Metric bundle not found at: {bundle_path}")
+
+    actual_sha256 = compute_sha256(bundle_path)
+    if expected_bundle_sha256 is not None:
+        if actual_sha256.lower() != expected_bundle_sha256.lower():
+            raise ValueError(
+                f"[FAIL_CLOSED] Externally trusted bundle SHA-256 mismatch: "
+                f"actual {actual_sha256} != expected {expected_bundle_sha256}"
+            )
 
     with open(bundle_path, "r", encoding="utf-8") as f:
         bundle = json.load(f)
@@ -753,6 +761,7 @@ def generate_all_figures(
     bundle_path: Optional[Path],
     fixture_only: bool,
     output_dir: Path,
+    expected_bundle_sha256: Optional[str] = None,
 ) -> Dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -766,10 +775,16 @@ def generate_all_figures(
         if bundle_path is None:
             raise ValueError("[FAIL_CLOSED] Must specify --metric-bundle <path> in canonical mode or use --fixture-only")
         print(f"[FIGURE-GEN] Operating in CANONICAL mode using: {bundle_path}")
-        data = load_data_from_bundle(bundle_path)
+        data = load_data_from_bundle(bundle_path, expected_bundle_sha256=expected_bundle_sha256)
         bundle_hash = data["bundle_sha256"]
 
     is_fixture = bool(data.get("fixture_only", False))
+
+    # Write plot data JSON
+    plot_data_path = output_dir / "plot_data.json"
+    with open(plot_data_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, sort_keys=True)
+    print(f"[FIGURE-GEN] Plot data written to: {plot_data_path}")
 
     # Generate the 8 figures
     figs = {
@@ -824,6 +839,7 @@ def generate_all_figures(
         "figures_count": 8,
         "figures_formats": ["vector_svg", "raster_png", "print_pdf"],
         "generated_figures": generated_digests,
+        "plot_data_sha256": compute_sha256(plot_data_path),
         "p95_latency_status": "NOT REPORTED — approval evidence not established",
         "workstation_paths_sanitized": True,
     }
@@ -839,6 +855,7 @@ def generate_all_figures(
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate Publication Figures for RAG2ATTCK")
     parser.add_argument("--metric-bundle", type=Path, default=None, help="Path to canonical metric bundle JSON")
+    parser.add_argument("--expected-bundle-sha256", type=str, default=None, help="Expected SHA256 of the metric bundle to verify external trust anchor")
     parser.add_argument("--fixture-only", action="store_true", help="Generate figures using synthetic fixture data")
     parser.add_argument("--output-dir", type=Path, default=Path("docs/report/figures"), help="Output directory")
     args = parser.parse_args()
@@ -852,9 +869,13 @@ def main() -> int:
             bundle_path=args.metric_bundle,
             fixture_only=args.fixture_only,
             output_dir=args.output_dir,
+            expected_bundle_sha256=args.expected_bundle_sha256,
         )
         return 0
     except Exception as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 

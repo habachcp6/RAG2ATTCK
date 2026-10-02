@@ -67,9 +67,17 @@ FIXTURE_TABLE_DATA = {
 }
 
 
-def load_table_data_from_bundle(bundle_path: Path) -> Dict[str, Any]:
+def load_table_data_from_bundle(bundle_path: Path, expected_bundle_sha256: Optional[str] = None) -> Dict[str, Any]:
     if not bundle_path.is_file():
         raise FileNotFoundError(f"[FAIL_CLOSED] Metric bundle not found at: {bundle_path}")
+
+    actual_sha256 = compute_sha256(bundle_path)
+    if expected_bundle_sha256 is not None:
+        if actual_sha256.lower() != expected_bundle_sha256.lower():
+            raise ValueError(
+                f"[FAIL_CLOSED] Externally trusted bundle SHA-256 mismatch: "
+                f"actual {actual_sha256} != expected {expected_bundle_sha256}"
+            )
 
     with open(bundle_path, "r", encoding="utf-8") as f:
         bundle = json.load(f)
@@ -357,6 +365,7 @@ def generate_all_tables(
     bundle_path: Optional[Path],
     fixture_only: bool,
     output_dir: Path,
+    expected_bundle_sha256: Optional[str] = None,
 ) -> Dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -370,7 +379,7 @@ def generate_all_tables(
         if bundle_path is None:
             raise ValueError("[FAIL_CLOSED] Must specify --metric-bundle <path> in canonical mode or use --fixture-only")
         print(f"[TABLE-GEN] Operating in CANONICAL mode using: {bundle_path}")
-        data = load_table_data_from_bundle(bundle_path)
+        data = load_table_data_from_bundle(bundle_path, expected_bundle_sha256=expected_bundle_sha256)
         bundle_hash = data["bundle_sha256"]
 
     is_fixture = bool(data.get("fixture_only", False))
@@ -413,6 +422,7 @@ def generate_all_tables(
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate Publication Tables for RAG2ATTCK")
     parser.add_argument("--metric-bundle", type=Path, default=None, help="Path to canonical metric bundle JSON")
+    parser.add_argument("--expected-bundle-sha256", type=str, default=None, help="Expected SHA256 of the metric bundle to verify external trust anchor")
     parser.add_argument("--fixture-only", action="store_true", help="Generate tables using synthetic fixture data")
     parser.add_argument("--output-dir", type=Path, default=Path("docs/report/tables"), help="Output directory")
     args = parser.parse_args()
@@ -426,6 +436,7 @@ def main() -> int:
             bundle_path=args.metric_bundle,
             fixture_only=args.fixture_only,
             output_dir=args.output_dir,
+            expected_bundle_sha256=args.expected_bundle_sha256,
         )
         return 0
     except Exception as exc:
@@ -435,3 +446,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+

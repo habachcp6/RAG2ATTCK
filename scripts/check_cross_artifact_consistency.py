@@ -474,6 +474,7 @@ def run_consistency_audit(
     strict: bool = False,
     scope: str = "all",
     output_report_path: Optional[Path] = None,
+    expected_bundle_sha256: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Execute complete cross-artifact consistency audit."""
     publication_files: List[Path] = []
@@ -527,6 +528,14 @@ def run_consistency_audit(
             bundle_error = b_err
             numerical_mismatches.append(bundle_error or "Invalid bundle")
             numerical_status = "FAIL"
+        elif expected_bundle_sha256 is not None:
+            actual_sha = compute_sha256(bundle_path)
+            if actual_sha.lower() != expected_bundle_sha256.lower():
+                bundle_error = f"Externally trusted bundle SHA-256 mismatch: actual {actual_sha} != expected {expected_bundle_sha256}"
+                numerical_mismatches.append(bundle_error)
+                numerical_status = "FAIL"
+            else:
+                numerical_status = "PASS"
         else:
             numerical_status = "PASS"
     elif strict and scope == "all":
@@ -629,6 +638,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Cross-Artifact Consistency Checker for RAG2ATTCK")
     parser.add_argument("--repo-root", type=Path, default=Path("."), help="Path to repository root")
     parser.add_argument("--metric-bundle", type=Path, default=None, help="Path to metric bundle JSON")
+    parser.add_argument("--expected-bundle-sha256", type=str, default=None, help="Expected SHA256 of the metric bundle to verify external trust anchor")
     parser.add_argument("--strict", action="store_true", help="Fail closed on any placeholder or warning")
     parser.add_argument("--scope", choices=["all", "generated"], default="all", help="Audit scope: all files or only generated figures/tables")
     parser.add_argument("--output-report", type=Path, default=Path("reports/evidence/cross_artifact_consistency_report.json"))
@@ -640,6 +650,7 @@ def main() -> int:
         strict=args.strict,
         scope=args.scope,
         output_report_path=args.output_report,
+        expected_bundle_sha256=args.expected_bundle_sha256,
     )
 
     print(f"Overall Verdict: {report['verdict']}")

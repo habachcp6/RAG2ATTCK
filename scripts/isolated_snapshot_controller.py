@@ -246,16 +246,28 @@ def compute_expanded_snapshot_inventory(snapshot_root: Path) -> Dict[str, Any]:
     }
 
 
-def _evaluate_marker(marker_str: Optional[str]) -> bool:
+def _evaluate_marker(marker_str: Optional[str], platform_name: Optional[str] = None) -> bool:
     """
     Safely evaluate environment markers using standard library platform/sys attributes.
     """
     if not marker_str:
         return True
+    current_platform = platform_name or sys.platform
+    plat_system = (
+        "Linux"
+        if current_platform == "linux"
+        else ("Windows" if current_platform == "win32" else "Darwin")
+    )
+    current_machine = platform.machine()
+    if current_platform == "linux" and current_machine in ("AMD64", "x86_64"):
+        current_machine = "x86_64"
+    elif current_platform == "win32" and current_machine in ("AMD64", "x86_64"):
+        current_machine = "AMD64"
+
     ctx = {
-        "sys_platform": sys.platform,
-        "platform_system": platform.system(),
-        "platform_machine": platform.machine(),
+        "sys_platform": current_platform,
+        "platform_system": plat_system,
+        "platform_machine": current_machine,
         "platform_python_implementation": platform.python_implementation(),
         "implementation_name": sys.implementation.name,
         "python_version": f"{sys.version_info.major}.{sys.version_info.minor}",
@@ -268,10 +280,13 @@ def _evaluate_marker(marker_str: Optional[str]) -> bool:
         return False
 
 
-def extract_required_dependencies_from_uv_lock(uv_lock_path: Path) -> Dict[str, str]:
+def extract_required_dependencies_from_uv_lock(
+    uv_lock_path: Path, platform_name: Optional[str] = None
+) -> Dict[str, str]:
     """
     Extract all required dependencies and locked versions for the current platform
-    by traversing from the root virtual package (e.g. rag2attck) in uv.lock.
+    by traversing from the root virtual package (e.g. rag2attck) in uv.lock,
+    evaluating platform environment markers and following edge.extra and package.optional-dependencies.
     """
     if not uv_lock_path.is_file():
         raise FileNotFoundError(f"Missing uv.lock file: {uv_lock_path}")
@@ -293,32 +308,55 @@ def extract_required_dependencies_from_uv_lock(uv_lock_path: Path) -> Dict[str, 
     if not root_candidates:
         root_candidates = ["rag2attck"]
 
-    visited: Set[str] = set()
+    visited_pkgs: Set[str] = set()
+    visited_extras: Set[Tuple[str, str]] = set()
 
-    def _walk(pkg_name: str) -> None:
-        if pkg_name in visited or pkg_name not in all_pkgs:
+    def _walk(pkg_name: str, extras: Optional[List[str]] = None) -> None:
+        if pkg_name not in all_pkgs:
             return
-        visited.add(pkg_name)
+        is_first_visit = (pkg_name not in visited_pkgs)
+        visited_pkgs.add(pkg_name)
         pkg_info = all_pkgs[pkg_name]
-        for d in pkg_info.get("dependencies", []):
-            if _evaluate_marker(d.get("marker")):
-                _walk(d["name"].lower().replace("_", "-"))
-        for dev_list in pkg_info.get("dev-dependencies", {}).values():
-            for d in dev_list:
-                if _evaluate_marker(d.get("marker")):
-                    _walk(d["name"].lower().replace("_", "-"))
+
+        if is_first_visit:
+            for d in pkg_info.get("dependencies", []):
+                if _evaluate_marker(d.get("marker"), platform_name=platform_name):
+                    d_name = d["name"].lower().replace("_", "-")
+                    d_extras = d.get("extra")
+                    _walk(d_name, d_extras)
+            for dev_list in pkg_info.get("dev-dependencies", {}).values():
+                for d in dev_list:
+                    if _evaluate_marker(d.get("marker"), platform_name=platform_name):
+                        d_name = d["name"].lower().replace("_", "-")
+                        d_extras = d.get("extra")
+                        _walk(d_name, d_extras)
+
+        if extras:
+            opt_deps = pkg_info.get("optional-dependencies", {})
+            for extra in extras:
+                key = (pkg_name, extra)
+                if key in visited_extras:
+                    continue
+                visited_extras.add(key)
+                for d in opt_deps.get(extra, []):
+                    if _evaluate_marker(d.get("marker"), platform_name=platform_name):
+                        d_name = d["name"].lower().replace("_", "-")
+                        d_extras = d.get("extra")
+                        _walk(d_name, d_extras)
 
     for r in root_candidates:
         _walk(r)
 
     for r in root_candidates:
-        visited.discard(r)
+        visited_pkgs.discard(r)
 
-    return {pkg: all_pkgs[pkg]["version"] for pkg in visited if pkg in all_pkgs}
+    return {pkg: all_pkgs[pkg]["version"] for pkg in visited_pkgs if pkg in all_pkgs}
 
 
 def verify_snapshot_venv_dependencies(
-    snapshot_root: Path, worker_attestation: Dict[str, Any]
+    snapshot_root: Path,
+    worker_attestation: Dict[str, Any],
+    platform_name: Optional[str] = None,
 ) -> None:
     """
     Directly cross-check installed dependency versions attested by child worker
@@ -368,7 +406,9 @@ def verify_snapshot_venv_dependencies(
             )
 
     # 3. Reject missing required packages / small subset / empty map
-    required_deps = extract_required_dependencies_from_uv_lock(uv_lock_path)
+    required_deps = extract_required_dependencies_from_uv_lock(
+        uv_lock_path, platform_name=platform_name
+    )
     missing_required = set(required_deps.keys()) - set(norm_installed.keys())
     if missing_required:
         raise RuntimeError(
@@ -683,10 +723,16 @@ def execute_snapshot_task(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Isolated Snapshot Science Controller")
+    default_snap = Path(
+        os.environ.get(
+            "RAG2ATTCK_SNAPSHOT_ROOT",
+            "C:/Users/hahoa/.codex/artifacts/rag2attck/finalization_snapshots/b69a690",
+        )
+    )
     parser.add_argument(
         "--snapshot-root",
         type=Path,
-        default=Path("C:/Users/hahoa/.codex/artifacts/rag2attck/finalization_snapshots/b69a690"),
+        default=default_snap,
         help="Path to clean detached snapshot root",
     )
     parser.add_argument(

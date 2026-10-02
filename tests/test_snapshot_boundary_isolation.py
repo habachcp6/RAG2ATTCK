@@ -72,16 +72,26 @@ from scripts.isolated_snapshot_worker import (
     verify_protected_baselines,
 )
 
-GENUINE_SNAPSHOT_ROOT = Path("C:/Users/hahoa/.codex/artifacts/rag2attck/finalization_snapshots/b69a690")
+def get_snapshot_root() -> Path:
+    env_root = os.environ.get("RAG2ATTCK_SNAPSHOT_ROOT")
+    if env_root:
+        return Path(env_root).resolve()
+    return Path("C:/Users/hahoa/.codex/artifacts/rag2attck/finalization_snapshots/b69a690")
 
 
-def require_genuine_snapshot() -> None:
-    """Skip cleanly if genuine snapshot or dedicated .venv is not available (e.g. CI runner)."""
+GENUINE_SNAPSHOT_ROOT = get_snapshot_root()
+
+
+def require_genuine_snapshot() -> Path:
+    """Skip cleanly if genuine snapshot or dedicated .venv is not available (e.g. unconfigured local runner)."""
+    global GENUINE_SNAPSHOT_ROOT
+    GENUINE_SNAPSHOT_ROOT = get_snapshot_root()
     if not GENUINE_SNAPSHOT_ROOT.is_dir():
         pytest.skip(f"Snapshot directory '{GENUINE_SNAPSHOT_ROOT}' not found")
     venv_dir = GENUINE_SNAPSHOT_ROOT / ".venv"
     if not venv_dir.is_dir() or not (venv_dir / "pyvenv.cfg").is_file():
         pytest.skip(f"Snapshot directory '{GENUINE_SNAPSHOT_ROOT}' is missing a valid dedicated .venv with pyvenv.cfg")
+    return GENUINE_SNAPSHOT_ROOT
 
 
 def test_positive_snapshot_preflight(tmp_path: Path):
@@ -284,11 +294,18 @@ def test_negative_missing_origins_or_guard_in_pass_rejected(tmp_path: Path):
 # --- Gap 3 Tests ---
 
 def test_positive_worker_runtime_attestation_and_uv_lock_verification(tmp_path: Path):
-    """Verify that controller correctly validates all 87 required locked distributions against uv.lock."""
+    """Verify that controller correctly validates all platform-applicable locked distributions against uv.lock."""
     require_genuine_snapshot()
 
     required_deps = extract_required_dependencies_from_uv_lock(GENUINE_SNAPSHOT_ROOT / "uv.lock")
-    assert len(required_deps) == 87, f"Expected 87 required dependencies, got {len(required_deps)}"
+    if sys.platform == "win32":
+        assert len(required_deps) == 87, f"Expected 87 dependencies on Windows, got {len(required_deps)}"
+    elif sys.platform == "linux":
+        assert len(required_deps) == 104, f"Expected 104 dependencies on Linux, got {len(required_deps)}"
+    elif sys.platform == "darwin":
+        assert len(required_deps) == 85, f"Expected 85 dependencies on macOS, got {len(required_deps)}"
+    else:
+        assert len(required_deps) > 0, "Platform dependency closure must not be empty"
 
     valid_attestation = {
         "sys_prefix": str((GENUINE_SNAPSHOT_ROOT / ".venv").absolute()),
@@ -297,6 +314,42 @@ def test_positive_worker_runtime_attestation_and_uv_lock_verification(tmp_path: 
     }
     # Must succeed without error
     verify_snapshot_venv_dependencies(GENUINE_SNAPSHOT_ROOT, valid_attestation)
+
+
+def test_negative_linux_cuda_extras_omission_rejected_on_linux():
+    """Omitting cuda-toolkit extras on Linux must fail closed on missing required dependencies."""
+    require_genuine_snapshot()
+
+    required_deps = extract_required_dependencies_from_uv_lock(
+        GENUINE_SNAPSHOT_ROOT / "uv.lock",
+        platform_name="linux",
+    )
+    cuda_extras = {
+        "nvidia-cuda-runtime",
+        "nvidia-cuda-cupti",
+        "nvidia-cufft",
+        "nvidia-cufile",
+        "nvidia-curand",
+        "nvidia-cusolver",
+        "nvidia-cusparse",
+        "nvidia-nvjitlink",
+        "nvidia-nvtx",
+    }
+    incomplete_deps = {k: v for k, v in required_deps.items() if k not in cuda_extras}
+    attestation = {
+        "sys_prefix": str((GENUINE_SNAPSHOT_ROOT / ".venv").absolute()),
+        "sys_executable": str(resolve_snapshot_python(GENUINE_SNAPSHOT_ROOT).absolute()),
+        "installed_dependencies": incomplete_deps,
+    }
+    with pytest.raises(
+        RuntimeError,
+        match=r"Venv dependency attestation missing .* required packages from uv\.lock",
+    ):
+        verify_snapshot_venv_dependencies(
+            GENUINE_SNAPSHOT_ROOT,
+            attestation,
+            platform_name="linux",
+        )
 
 
 def test_negative_uv_lock_dependency_small_subset_rejected(tmp_path: Path):

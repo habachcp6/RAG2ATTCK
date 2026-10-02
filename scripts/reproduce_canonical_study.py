@@ -130,6 +130,7 @@ METRICS_COMPARISON_EXCLUDED_FIELDS = {
     "execution_git_sha",
     "machine_info",
     "python_version",
+    "secondary_scope_authorization_packet",
 }
 
 
@@ -403,6 +404,46 @@ def verify_bundle_hashes(bundle_dir: Path) -> tuple[bool, list[str]]:
             all_ok = False
         else:
             logs.append(f"  [OK] {filename:<30} {actual_sha}")
+
+    # Audit provenance assets if declared in portable manifest
+    prov_assets = bundle_data.get("sanitized_provenance_assets", {})
+    if prov_assets:
+        logs.append(f"\nVerifying {len(prov_assets)} Sanitized Provenance Assets:")
+        for rel_p, p_info in sorted(prov_assets.items()):
+            target = bundle_dir / rel_p
+            if not target.exists():
+                logs.append(f"  [MISSING] {target}")
+                all_ok = False
+                continue
+            actual_sha = compute_sha256(target.read_bytes())
+            exp_sha = p_info.get("sanitized_sha256")
+            if actual_sha != exp_sha:
+                logs.append(
+                    f"  [MISMATCH] {rel_p}: expected {exp_sha[:12]}..., got {actual_sha[:12]}..."
+                )
+                all_ok = False
+            else:
+                logs.append(f"  [OK] {rel_p:<45} {actual_sha}")
+
+    # Audit runtime recovery wrapper if declared in portable manifest
+    runtime_assets = bundle_data.get("runtime_assets", {})
+    if runtime_assets:
+        logs.append(f"\nVerifying {len(runtime_assets)} Portable Runtime Assets:")
+        for rel_p, r_info in sorted(runtime_assets.items()):
+            target = bundle_dir / rel_p
+            if not target.exists():
+                logs.append(f"  [MISSING] {target}")
+                all_ok = False
+                continue
+            actual_sha = compute_sha256(target.read_bytes())
+            exp_sha = r_info.get("sha256")
+            if actual_sha != exp_sha:
+                logs.append(
+                    f"  [MISMATCH] {rel_p}: expected {exp_sha[:12]}..., got {actual_sha[:12]}..."
+                )
+                all_ok = False
+            else:
+                logs.append(f"  [OK] {rel_p:<45} {actual_sha}")
 
     return all_ok, logs
 

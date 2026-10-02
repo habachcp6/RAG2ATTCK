@@ -39,8 +39,7 @@ def test_mock_matrix(tmp_path: Path) -> Path:
 
     # Write 1,280 records for each of the 5 conditions
     dummy_row = (
-        json.dumps({"sample_id": "s0", "technique_id": "T1059.001", "rationale": "mock"})
-        + "\n"
+        json.dumps({"sample_id": "s0", "technique_id": "T1059.001", "rationale": "mock"}) + "\n"
     )
     content_1280 = dummy_row * 1280
     for cond in CONDITIONS:
@@ -66,9 +65,9 @@ def test_mock_fixture_1280_matrix_fails_closed(test_mock_matrix: Path, tmp_path:
 
     # Must NOT create canonical_study_results directory
     canonical_dir = output_dir / "canonical_study_results"
-    assert (
-        not canonical_dir.exists()
-    ), "canonical_study_results must not be created for mock_fixture"
+    assert not canonical_dir.exists(), (
+        "canonical_study_results must not be created for mock_fixture"
+    )
 
     # Must emit explicit fail-closed message citing execution_mode
     combined_log = "\n".join(output_lines)
@@ -143,9 +142,7 @@ def test_positive_control_live_mode_and_post_load_validation(
     output_lines.clear()
     fake_live_inputs = MagicMock()
     fake_live_inputs.execution_mode = "live"
-    fake_results = {
-        "overall": {"accuracy_end_to_end": 0.85, "completed_record_count": 6400}
-    }
+    fake_results = {"overall": {"accuracy_end_to_end": 0.85, "completed_record_count": 6400}}
 
     with (
         patch(eval_inputs_target, return_value=fake_live_inputs),

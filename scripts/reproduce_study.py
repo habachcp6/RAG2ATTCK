@@ -437,9 +437,7 @@ def recompute_t20_retrieval_diagnostics(output_lines: list[str]) -> T20Results:
         f"  Single-event representation better:     {canonical_comparison['single_better']} "
         f"({canonical_comparison['single_better'] / canonical_comparison['eligible'] * 100:.1f}%)"
     )
-    cb_pct = (
-        canonical_comparison['contextual_better'] / canonical_comparison['eligible'] * 100
-    )
+    cb_pct = canonical_comparison["contextual_better"] / canonical_comparison["eligible"] * 100
     output_lines.append(
         f"  Contextual-event representation better: {canonical_comparison['contextual_better']} "
         f"({cb_pct:.1f}%)"

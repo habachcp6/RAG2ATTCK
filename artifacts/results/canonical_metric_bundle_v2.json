@@ -1,0 +1,1026 @@
+{
+  "bundle_type": "canonical-metric-bundle-v2",
+  "candidate_repo_git_sha": "4fafdb290dac59070a43de33f7e299bbb25782e3",
+  "cohort_breakdown": {
+    "ambiguous_excluded_views": 311,
+    "eligible_bootstrap_clusters": 440,
+    "macro_universe_classes": 474,
+    "mapped_scorable_views": 718,
+    "multi_gt_mapped_views": 40,
+    "single_gt_mapped_views": 678,
+    "supported_classes": 8,
+    "total_gt_support_instances": 768,
+    "total_pairs": 640,
+    "total_views": 1280,
+    "unmapped_excluded_views": 251,
+    "unsupported_classes": 466
+  },
+  "conditions": {
+    "no_rag": {
+      "cohort": {
+        "ambiguous_excluded_views": 311,
+        "multi_gt_mapped_views": 40,
+        "single_gt_mapped_views": 678,
+        "total_logical_requests": 1280,
+        "total_scorable_mapped_views": 718,
+        "unmapped_excluded_views": 251
+      },
+      "condition": "no_rag",
+      "retrieval_k": 0,
+      "rq1_attribution": {
+        "accuracy_display": "77.99%",
+        "accuracy_e2e_ci_95": [
+          0.7464432837582625,
+          0.8088098670586635
+        ],
+        "accuracy_e2e_ci_95_display": "[74.64%, 80.88%]",
+        "accuracy_end_to_end": 0.7799442896935933,
+        "accuracy_valid_outputs": 0.7799442896935933,
+        "condition": "no_rag",
+        "correct_count": 560,
+        "error_count": 158,
+        "is_baseline": true,
+        "macro_f1": 0.012608366023907785,
+        "macro_f1_display": "0.0126",
+        "macro_f1_universe_classes": 474,
+        "retrieval_k": 0,
+        "scorable_sample_count": 718,
+        "stratified_complexity": {
+          "multi_gt": {
+            "accuracy_display": "87.50%",
+            "accuracy_e2e": 0.875,
+            "correct_count": 35,
+            "macro_f1": 0.007032348804500703,
+            "sample_count": 40
+          },
+          "single_gt": {
+            "accuracy_display": "77.43%",
+            "accuracy_e2e": 0.7743362831858407,
+            "correct_count": 525,
+            "macro_f1": 0.013009824238485089,
+            "sample_count": 678
+          }
+        },
+        "supported_classes": 8,
+        "unsupported_classes": 466
+      },
+      "rq2_retrieval_and_error": {
+        "condition": "no_rag",
+        "generation_conditional_accuracy": {
+          "applicable": false,
+          "note": "Retrieval-conditioned accuracy not applicable to No-RAG baseline (k=0).",
+          "p_correct_given_retrieval_failure": null,
+          "p_correct_given_retrieval_success": null,
+          "retrieval_failure_sample_count": null,
+          "retrieval_success_sample_count": null
+        },
+        "independent_failure_axes": {
+          "invalid_attack_id_count": 0,
+          "overlap_fraction_of_wrong_classification": null,
+          "overlap_retrieval_miss_and_wrong_classification": null,
+          "parse_failure_count": 0,
+          "policy_note": "Per Decision D2i, failure axes are evaluated independently without forced mutual exclusion.",
+          "provider_failure_count_mapped": 0,
+          "raw_evaluator_trace": {
+            "raw_overlap_count": 0,
+            "raw_retrieval_miss_count": 0,
+            "raw_retrieval_miss_rate": 0.0
+          },
+          "retrieval_miss_count": null,
+          "retrieval_miss_rate": null,
+          "total_scorable_samples": 718,
+          "valid_but_wrong_classification_count": 158,
+          "valid_but_wrong_classification_rate": 0.2200557103064067
+        },
+        "retrieval_applicable": false,
+        "retrieval_k": 0,
+        "retrieval_metrics": {
+          "applicable": false,
+          "macro_recall": null,
+          "note": "Retrieval metrics not applicable to No-RAG baseline (k=0).",
+          "raw_evaluator_trace": {
+            "raw_overlap_count": 0,
+            "raw_retrieval_miss_count": 0,
+            "raw_retrieval_miss_rate": 0.0
+          },
+          "retrieval_hit_count": null,
+          "retrieval_hit_rate": null,
+          "retrieval_miss_count": null,
+          "retrieval_miss_rate": null,
+          "total_scorable_samples": 718
+        }
+      },
+      "rq3_resources_and_cost": {
+        "condition": "no_rag",
+        "failures": {
+          "invalid_id_count": 0,
+          "invalid_syntax_count": 0,
+          "mapped_scorable_failures_count": 0,
+          "parse_failure_count": 0,
+          "terminal_incomplete_count": 0,
+          "terminal_incomplete_denominator": 1280,
+          "terminal_incomplete_rate": 0.0
+        },
+        "financial_cost_usd": {
+          "cost_of_all_excluded_views_usd": 0.19006095,
+          "cost_of_excluded_ambiguous_views_usd": 0.0977322,
+          "cost_of_excluded_unmapped_views_usd": 0.09232875,
+          "cost_per_correct_attribution_usd": 0.000834185625,
+          "cost_per_logical_request_usd": 0.0003649562109375,
+          "cost_per_scorable_query_usd": 0.0006506183147632312,
+          "ledger_settled_cost_usd": "0.46714395",
+          "marginal_cost_vs_baseline_usd": 0.0,
+          "missing_usage_attempt_receipts_count": 0,
+          "missing_usage_attempt_worst_charge_usd": "0.0",
+          "token_usage_estimated_cost_usd": "0.46714395"
+        },
+        "latency_ms": {
+          "mean": 2904.4541815625507,
+          "measurement_scope": "Client end-to-end request loop including retry backoff",
+          "median": 2302.815000002738,
+          "p95": null,
+          "p95_status": "NOT REPORTED \u2014 approval evidence not established",
+          "sum_ms": 3717701.352400065,
+          "unit": "milliseconds"
+        },
+        "observations_count": 1280,
+        "retrieval_k": 0,
+        "tokens": {
+          "cached_tokens": {
+            "cached_tokens_accounting_rule": "Cached tokens represent prompt tokens served from model cache. Total tokens is prompt_tokens + completion_tokens. Cached tokens are a subset of prompt tokens and are NOT added into total tokens twice.",
+            "mean": 0.0,
+            "missing_attempts_count": 0,
+            "observed_attempts_count": 1280,
+            "sum": 0
+          },
+          "completion_tokens": {
+            "mean": 163.6453125,
+            "sum": 209466
+          },
+          "prompt_tokens": {
+            "mean": 674.32734375,
+            "sum": 863139
+          },
+          "total_tokens": {
+            "formula": "prompt_tokens + completion_tokens",
+            "mean": 837.97265625,
+            "sum": 1072605
+          }
+        }
+      }
+    },
+    "rag_k1": {
+      "cohort": {
+        "ambiguous_excluded_views": 311,
+        "multi_gt_mapped_views": 40,
+        "single_gt_mapped_views": 678,
+        "total_logical_requests": 1280,
+        "total_scorable_mapped_views": 718,
+        "unmapped_excluded_views": 251
+      },
+      "condition": "rag_k1",
+      "retrieval_k": 1,
+      "rq1_attribution": {
+        "accuracy_display": "77.02%",
+        "accuracy_e2e_ci_95": [
+          0.7350325884543762,
+          0.8016815680358997
+        ],
+        "accuracy_e2e_ci_95_display": "[73.50%, 80.17%]",
+        "accuracy_end_to_end": 0.7701949860724234,
+        "accuracy_valid_outputs": 0.7701949860724234,
+        "condition": "rag_k1",
+        "correct_count": 553,
+        "delta_vs_baseline": {
+          "delta_accuracy_ci_95": [
+            -0.0318592786225868,
+            0.01124077046548959
+          ],
+          "delta_accuracy_ci_95_display_pp": "[-3.186, +1.124] pp",
+          "delta_accuracy_display_pp": "-0.975 pp",
+          "delta_accuracy_end_to_end": -0.00974930362116988,
+          "delta_macro_f1": 5.9569586858199824e-05,
+          "delta_macro_f1_ci_95": [
+            -0.00024163546410092251,
+            0.0003625938524802172
+          ],
+          "mcnemar_test": {
+            "chi2_statistic": 0.6101694915254238,
+            "contingency_table": {
+              "baseline_win_c": 33,
+              "both_correct_a": 527,
+              "both_incorrect_d": 132,
+              "total_discordant": 59,
+              "total_pairs": 718,
+              "treatment_win_b": 26
+            },
+            "display_p_asymptotic": "0.435",
+            "display_p_exact": "0.435",
+            "p_value_asymptotic": 0.43472400072864303,
+            "p_value_exact": 0.4349928051221534,
+            "significant_at_01": false,
+            "significant_at_05": false
+          },
+          "relative_gain_accuracy_pct": -1.2499999999999953,
+          "relative_gain_macro_f1_pct": 0.4724607990063495
+        },
+        "error_count": 165,
+        "is_baseline": false,
+        "macro_f1": 0.012667935610765985,
+        "macro_f1_display": "0.0127",
+        "macro_f1_universe_classes": 474,
+        "retrieval_k": 1,
+        "scorable_sample_count": 718,
+        "stratified_complexity": {
+          "multi_gt": {
+            "accuracy_display": "100.00%",
+            "accuracy_e2e": 1.0,
+            "correct_count": 40,
+            "macro_f1": 0.008280674836304416,
+            "sample_count": 40
+          },
+          "single_gt": {
+            "accuracy_display": "75.66%",
+            "accuracy_e2e": 0.7566371681415929,
+            "correct_count": 513,
+            "macro_f1": 0.012973657455111767,
+            "sample_count": 678
+          }
+        },
+        "supported_classes": 8,
+        "unsupported_classes": 466
+      },
+      "rq2_retrieval_and_error": {
+        "condition": "rag_k1",
+        "generation_conditional_accuracy": {
+          "applicable": true,
+          "correct_given_retrieval_failure_count": 526,
+          "correct_given_retrieval_success_count": 27,
+          "p_correct_given_retrieval_failure": 0.7612156295224313,
+          "p_correct_given_retrieval_failure_display": "76.12%",
+          "p_correct_given_retrieval_success": 1.0,
+          "p_correct_given_retrieval_success_display": "100.00%",
+          "retrieval_failure_sample_count": 691,
+          "retrieval_success_sample_count": 27
+        },
+        "independent_failure_axes": {
+          "invalid_attack_id_count": 0,
+          "overlap_fraction_display": "100.00%",
+          "overlap_fraction_of_wrong_classification": 1.0,
+          "overlap_retrieval_miss_and_wrong_classification": 165,
+          "parse_failure_count": 0,
+          "policy_note": "Per Decision D2i, failure axes are evaluated independently without forced mutual exclusion. Retrieval miss does not establish cause of provider or parse failure.",
+          "provider_failure_count_mapped": 0,
+          "retrieval_miss_count": 691,
+          "retrieval_miss_rate": 0.9623955431754875,
+          "total_scorable_samples": 718,
+          "valid_but_wrong_classification_count": 165,
+          "valid_but_wrong_classification_rate": 0.2298050139275766
+        },
+        "retrieval_applicable": true,
+        "retrieval_k": 1,
+        "retrieval_metrics": {
+          "applicable": true,
+          "macro_recall": 0.02948003714020427,
+          "retrieval_hit_count": 27,
+          "retrieval_hit_rate": 0.037604456824512536,
+          "retrieval_hit_rate_display": "3.76%",
+          "retrieval_miss_count": 691,
+          "retrieval_miss_rate": 0.9623955431754875,
+          "retrieval_miss_rate_display": "96.24%",
+          "total_scorable_samples": 718
+        }
+      },
+      "rq3_resources_and_cost": {
+        "condition": "rag_k1",
+        "failures": {
+          "invalid_id_count": 0,
+          "invalid_syntax_count": 0,
+          "mapped_scorable_failures_count": 0,
+          "parse_failure_count": 0,
+          "terminal_incomplete_count": 0,
+          "terminal_incomplete_denominator": 1280,
+          "terminal_incomplete_rate": 0.0
+        },
+        "financial_cost_usd": {
+          "cost_of_all_excluded_views_usd": 0.340632,
+          "cost_of_excluded_ambiguous_views_usd": 0.17228295,
+          "cost_of_excluded_unmapped_views_usd": 0.16834905,
+          "cost_per_correct_attribution_usd": 0.0023458110307414104,
+          "cost_per_logical_request_usd": 0.001013463671875,
+          "cost_per_scorable_query_usd": 0.0018067318941504178,
+          "ledger_settled_cost_usd": "1.2972335",
+          "marginal_cost_vs_baseline_usd": 0.83008955,
+          "missing_usage_attempt_receipts_count": 1,
+          "missing_usage_attempt_worst_charge_usd": "0.5397456",
+          "token_usage_estimated_cost_usd": "0.7578421"
+        },
+        "latency_ms": {
+          "mean": 3514.2666282031087,
+          "measurement_scope": "Client end-to-end request loop including retry backoff",
+          "median": 2617.13934999716,
+          "p95": null,
+          "p95_status": "NOT REPORTED \u2014 approval evidence not established",
+          "sum_ms": 4498261.284099979,
+          "unit": "milliseconds"
+        },
+        "observations_count": 1280,
+        "retrieval_k": 1,
+        "tokens": {
+          "cached_tokens": {
+            "cached_tokens_accounting_rule": "Cached tokens represent prompt tokens served from model cache. Total tokens is prompt_tokens + completion_tokens. Cached tokens are a subset of prompt tokens and are NOT added into total tokens twice.",
+            "mean": 1.203125,
+            "missing_attempts_count": 1,
+            "observed_attempts_count": 1280,
+            "sum": 1540
+          },
+          "completion_tokens": {
+            "mean": 233.69375,
+            "sum": 299128
+          },
+          "prompt_tokens": {
+            "mean": 1246.5265625,
+            "sum": 1595554
+          },
+          "total_tokens": {
+            "formula": "prompt_tokens + completion_tokens",
+            "mean": 1480.2203125,
+            "sum": 1894682
+          }
+        }
+      }
+    },
+    "rag_k10": {
+      "cohort": {
+        "ambiguous_excluded_views": 311,
+        "multi_gt_mapped_views": 40,
+        "single_gt_mapped_views": 678,
+        "total_logical_requests": 1280,
+        "total_scorable_mapped_views": 718,
+        "unmapped_excluded_views": 251
+      },
+      "condition": "rag_k10",
+      "retrieval_k": 10,
+      "rq1_attribution": {
+        "accuracy_display": "79.53%",
+        "accuracy_e2e_ci_95": [
+          0.7581211364272121,
+          0.8284683107785503
+        ],
+        "accuracy_e2e_ci_95_display": "[75.81%, 82.85%]",
+        "accuracy_end_to_end": 0.7952646239554317,
+        "accuracy_valid_outputs": 0.7952646239554317,
+        "condition": "rag_k10",
+        "correct_count": 571,
+        "delta_vs_baseline": {
+          "delta_accuracy_ci_95": [
+            -0.023547341489689132,
+            0.05300045580982214
+          ],
+          "delta_accuracy_ci_95_display_pp": "[-2.355, +5.300] pp",
+          "delta_accuracy_display_pp": "+1.532 pp",
+          "delta_accuracy_end_to_end": 0.01532033426183843,
+          "delta_macro_f1": 0.0014154338608293234,
+          "delta_macro_f1_ci_95": [
+            0.001011070631618413,
+            0.0017915845085527975
+          ],
+          "mcnemar_test": {
+            "chi2_statistic": 0.6451612903225806,
+            "contingency_table": {
+              "baseline_win_c": 72,
+              "both_correct_a": 488,
+              "both_incorrect_d": 75,
+              "total_discordant": 155,
+              "total_pairs": 718,
+              "treatment_win_b": 83
+            },
+            "display_p_asymptotic": "0.422",
+            "display_p_exact": "0.422",
+            "p_value_asymptotic": 0.42184797545336294,
+            "p_value_exact": 0.4219388330129739,
+            "significant_at_01": false,
+            "significant_at_05": false
+          },
+          "relative_gain_accuracy_pct": 1.9642857142857133,
+          "relative_gain_macro_f1_pct": 11.226148242725504
+        },
+        "error_count": 147,
+        "is_baseline": false,
+        "macro_f1": 0.014023799884737108,
+        "macro_f1_display": "0.0140",
+        "macro_f1_universe_classes": 474,
+        "retrieval_k": 10,
+        "scorable_sample_count": 718,
+        "stratified_complexity": {
+          "multi_gt": {
+            "accuracy_display": "100.00%",
+            "accuracy_e2e": 1.0,
+            "correct_count": 40,
+            "macro_f1": 0.008510439889520504,
+            "sample_count": 40
+          },
+          "single_gt": {
+            "accuracy_display": "78.32%",
+            "accuracy_e2e": 0.7831858407079646,
+            "correct_count": 531,
+            "macro_f1": 0.014399014832751385,
+            "sample_count": 678
+          }
+        },
+        "supported_classes": 8,
+        "unsupported_classes": 466
+      },
+      "rq2_retrieval_and_error": {
+        "condition": "rag_k10",
+        "generation_conditional_accuracy": {
+          "applicable": true,
+          "correct_given_retrieval_failure_count": 278,
+          "correct_given_retrieval_success_count": 293,
+          "p_correct_given_retrieval_failure": 0.7002518891687658,
+          "p_correct_given_retrieval_failure_display": "70.03%",
+          "p_correct_given_retrieval_success": 0.9127725856697819,
+          "p_correct_given_retrieval_success_display": "91.28%",
+          "retrieval_failure_sample_count": 397,
+          "retrieval_success_sample_count": 321
+        },
+        "independent_failure_axes": {
+          "invalid_attack_id_count": 0,
+          "overlap_fraction_display": "80.95%",
+          "overlap_fraction_of_wrong_classification": 0.8095238095238095,
+          "overlap_retrieval_miss_and_wrong_classification": 119,
+          "parse_failure_count": 0,
+          "policy_note": "Per Decision D2i, failure axes are evaluated independently without forced mutual exclusion. Retrieval miss does not establish cause of provider or parse failure.",
+          "provider_failure_count_mapped": 0,
+          "retrieval_miss_count": 397,
+          "retrieval_miss_rate": 0.552924791086351,
+          "total_scorable_samples": 718,
+          "valid_but_wrong_classification_count": 147,
+          "valid_but_wrong_classification_rate": 0.20473537604456823
+        },
+        "retrieval_applicable": true,
+        "retrieval_k": 10,
+        "retrieval_metrics": {
+          "applicable": true,
+          "macro_recall": 0.4280408542246983,
+          "retrieval_hit_count": 321,
+          "retrieval_hit_rate": 0.44707520891364905,
+          "retrieval_hit_rate_display": "44.71%",
+          "retrieval_miss_count": 397,
+          "retrieval_miss_rate": 0.552924791086351,
+          "retrieval_miss_rate_display": "55.29%",
+          "total_scorable_samples": 718
+        }
+      },
+      "rq3_resources_and_cost": {
+        "condition": "rag_k10",
+        "failures": {
+          "invalid_id_count": 0,
+          "invalid_syntax_count": 0,
+          "mapped_scorable_failures_count": 0,
+          "parse_failure_count": 0,
+          "terminal_incomplete_count": 4,
+          "terminal_incomplete_denominator": 1280,
+          "terminal_incomplete_rate": 0.003125
+        },
+        "financial_cost_usd": {
+          "cost_of_all_excluded_views_usd": 0.9646329,
+          "cost_of_excluded_ambiguous_views_usd": 0.46568825,
+          "cost_of_excluded_unmapped_views_usd": 0.49894465,
+          "cost_per_correct_attribution_usd": 0.0037642446584938705,
+          "cost_per_logical_request_usd": 0.001679206015625,
+          "cost_per_scorable_query_usd": 0.0029935706128133704,
+          "ledger_settled_cost_usd": "2.1493837",
+          "marginal_cost_vs_baseline_usd": 1.68223975,
+          "missing_usage_attempt_receipts_count": 0,
+          "missing_usage_attempt_worst_charge_usd": "0.0",
+          "token_usage_estimated_cost_usd": "2.1493837"
+        },
+        "latency_ms": {
+          "mean": 4370.711563358918,
+          "measurement_scope": "Client end-to-end request loop including retry backoff",
+          "median": 2667.00299999502,
+          "p95": null,
+          "p95_status": "NOT REPORTED \u2014 approval evidence not established",
+          "sum_ms": 5594510.801099415,
+          "unit": "milliseconds"
+        },
+        "observations_count": 1280,
+        "retrieval_k": 10,
+        "tokens": {
+          "cached_tokens": {
+            "cached_tokens_accounting_rule": "Cached tokens represent prompt tokens served from model cache. Total tokens is prompt_tokens + completion_tokens. Cached tokens are a subset of prompt tokens and are NOT added into total tokens twice.",
+            "mean": 0.0,
+            "missing_attempts_count": 0,
+            "observed_attempts_count": 1280,
+            "sum": 0
+          },
+          "completion_tokens": {
+            "mean": 333.8640625,
+            "sum": 427346
+          },
+          "prompt_tokens": {
+            "mean": 5114.2765625,
+            "sum": 6546274
+          },
+          "total_tokens": {
+            "formula": "prompt_tokens + completion_tokens",
+            "mean": 5448.140625,
+            "sum": 6973620
+          }
+        }
+      }
+    },
+    "rag_k3": {
+      "cohort": {
+        "ambiguous_excluded_views": 311,
+        "multi_gt_mapped_views": 40,
+        "single_gt_mapped_views": 678,
+        "total_logical_requests": 1280,
+        "total_scorable_mapped_views": 718,
+        "unmapped_excluded_views": 251
+      },
+      "condition": "rag_k3",
+      "retrieval_k": 3,
+      "rq1_attribution": {
+        "accuracy_display": "78.55%",
+        "accuracy_e2e_ci_95": [
+          0.7499912587412587,
+          0.8174190557416043
+        ],
+        "accuracy_e2e_ci_95_display": "[75.00%, 81.74%]",
+        "accuracy_end_to_end": 0.7855153203342619,
+        "accuracy_valid_outputs": 0.7855153203342619,
+        "condition": "rag_k3",
+        "correct_count": 564,
+        "delta_vs_baseline": {
+          "delta_accuracy_ci_95": [
+            -0.02786003664534873,
+            0.039335604430632005
+          ],
+          "delta_accuracy_ci_95_display_pp": "[-2.786, +3.934] pp",
+          "delta_accuracy_display_pp": "+0.557 pp",
+          "delta_accuracy_end_to_end": 0.005571030640668551,
+          "delta_macro_f1": 0.0010343294381588517,
+          "delta_macro_f1_ci_95": [
+            0.0006322908128427815,
+            0.00142420162533903
+          ],
+          "mcnemar_test": {
+            "chi2_statistic": 0.08035714285714286,
+            "contingency_table": {
+              "baseline_win_c": 54,
+              "both_correct_a": 506,
+              "both_incorrect_d": 100,
+              "total_discordant": 112,
+              "total_pairs": 718,
+              "treatment_win_b": 58
+            },
+            "display_p_asymptotic": "0.777",
+            "display_p_exact": "0.777",
+            "p_value_asymptotic": 0.776814004155482,
+            "p_value_exact": 0.7769647513696725,
+            "significant_at_01": false,
+            "significant_at_05": false
+          },
+          "relative_gain_accuracy_pct": 0.7142857142857177,
+          "relative_gain_macro_f1_pct": 8.203516904550302
+        },
+        "error_count": 154,
+        "is_baseline": false,
+        "macro_f1": 0.013642695462066637,
+        "macro_f1_display": "0.0136",
+        "macro_f1_universe_classes": 474,
+        "retrieval_k": 3,
+        "scorable_sample_count": 718,
+        "stratified_complexity": {
+          "multi_gt": {
+            "accuracy_display": "100.00%",
+            "accuracy_e2e": 1.0,
+            "correct_count": 40,
+            "macro_f1": 0.008609538276035122,
+            "sample_count": 40
+          },
+          "single_gt": {
+            "accuracy_display": "77.29%",
+            "accuracy_e2e": 0.7728613569321534,
+            "correct_count": 524,
+            "macro_f1": 0.014039717835211518,
+            "sample_count": 678
+          }
+        },
+        "supported_classes": 8,
+        "unsupported_classes": 466
+      },
+      "rq2_retrieval_and_error": {
+        "condition": "rag_k3",
+        "generation_conditional_accuracy": {
+          "applicable": true,
+          "correct_given_retrieval_failure_count": 449,
+          "correct_given_retrieval_success_count": 115,
+          "p_correct_given_retrieval_failure": 0.7483333333333333,
+          "p_correct_given_retrieval_failure_display": "74.83%",
+          "p_correct_given_retrieval_success": 0.9745762711864406,
+          "p_correct_given_retrieval_success_display": "97.46%",
+          "retrieval_failure_sample_count": 600,
+          "retrieval_success_sample_count": 118
+        },
+        "independent_failure_axes": {
+          "invalid_attack_id_count": 0,
+          "overlap_fraction_display": "98.05%",
+          "overlap_fraction_of_wrong_classification": 0.9805194805194806,
+          "overlap_retrieval_miss_and_wrong_classification": 151,
+          "parse_failure_count": 0,
+          "policy_note": "Per Decision D2i, failure axes are evaluated independently without forced mutual exclusion. Retrieval miss does not establish cause of provider or parse failure.",
+          "provider_failure_count_mapped": 0,
+          "retrieval_miss_count": 600,
+          "retrieval_miss_rate": 0.8356545961002786,
+          "total_scorable_samples": 718,
+          "valid_but_wrong_classification_count": 154,
+          "valid_but_wrong_classification_rate": 0.21448467966573817
+        },
+        "retrieval_applicable": true,
+        "retrieval_k": 3,
+        "retrieval_metrics": {
+          "applicable": true,
+          "macro_recall": 0.15482822655524606,
+          "retrieval_hit_count": 118,
+          "retrieval_hit_rate": 0.16434540389972144,
+          "retrieval_hit_rate_display": "16.43%",
+          "retrieval_miss_count": 600,
+          "retrieval_miss_rate": 0.8356545961002786,
+          "retrieval_miss_rate_display": "83.57%",
+          "total_scorable_samples": 718
+        }
+      },
+      "rq3_resources_and_cost": {
+        "condition": "rag_k3",
+        "failures": {
+          "invalid_id_count": 0,
+          "invalid_syntax_count": 0,
+          "mapped_scorable_failures_count": 0,
+          "parse_failure_count": 0,
+          "terminal_incomplete_count": 6,
+          "terminal_incomplete_denominator": 1280,
+          "terminal_incomplete_rate": 0.0046875
+        },
+        "financial_cost_usd": {
+          "cost_of_all_excluded_views_usd": 0.5756992,
+          "cost_of_excluded_ambiguous_views_usd": 0.25608165,
+          "cost_of_excluded_unmapped_views_usd": 0.31961755,
+          "cost_per_correct_attribution_usd": 0.0020902127659574465,
+          "cost_per_logical_request_usd": 0.0009209999999999999,
+          "cost_per_scorable_query_usd": 0.0016418941504178271,
+          "ledger_settled_cost_usd": "1.17888",
+          "marginal_cost_vs_baseline_usd": 0.71173605,
+          "missing_usage_attempt_receipts_count": 0,
+          "missing_usage_attempt_worst_charge_usd": "0.0",
+          "token_usage_estimated_cost_usd": "1.17888"
+        },
+        "latency_ms": {
+          "mean": 4215.878584452662,
+          "measurement_scope": "Client end-to-end request loop including retry backoff",
+          "median": 2743.170950008789,
+          "p95": null,
+          "p95_status": "NOT REPORTED \u2014 approval evidence not established",
+          "sum_ms": 5396324.588099407,
+          "unit": "milliseconds"
+        },
+        "observations_count": 1280,
+        "retrieval_k": 3,
+        "tokens": {
+          "cached_tokens": {
+            "cached_tokens_accounting_rule": "Cached tokens represent prompt tokens served from model cache. Total tokens is prompt_tokens + completion_tokens. Cached tokens are a subset of prompt tokens and are NOT added into total tokens twice.",
+            "mean": 0.0,
+            "missing_attempts_count": 0,
+            "observed_attempts_count": 1280,
+            "sum": 0
+          },
+          "completion_tokens": {
+            "mean": 314.921875,
+            "sum": 403100
+          },
+          "prompt_tokens": {
+            "mean": 2172.375,
+            "sum": 2780640
+          },
+          "total_tokens": {
+            "formula": "prompt_tokens + completion_tokens",
+            "mean": 2487.296875,
+            "sum": 3183740
+          }
+        }
+      }
+    },
+    "rag_k5": {
+      "cohort": {
+        "ambiguous_excluded_views": 311,
+        "multi_gt_mapped_views": 40,
+        "single_gt_mapped_views": 678,
+        "total_logical_requests": 1280,
+        "total_scorable_mapped_views": 718,
+        "unmapped_excluded_views": 251
+      },
+      "condition": "rag_k5",
+      "retrieval_k": 5,
+      "rq1_attribution": {
+        "accuracy_display": "78.83%",
+        "accuracy_e2e_ci_95": [
+          0.7506840229889549,
+          0.8234503042596348
+        ],
+        "accuracy_e2e_ci_95_display": "[75.07%, 82.35%]",
+        "accuracy_end_to_end": 0.7883008356545961,
+        "accuracy_valid_outputs": 0.7883008356545961,
+        "condition": "rag_k5",
+        "correct_count": 566,
+        "delta_vs_baseline": {
+          "delta_accuracy_ci_95": [
+            -0.029336848263743918,
+            0.046026711624319164
+          ],
+          "delta_accuracy_ci_95_display_pp": "[-2.934, +4.603] pp",
+          "delta_accuracy_display_pp": "+0.836 pp",
+          "delta_accuracy_end_to_end": 0.00835654596100277,
+          "delta_macro_f1": 0.0012824137193235049,
+          "delta_macro_f1_ci_95": [
+            0.0008600910722936464,
+            0.0016789915996377486
+          ],
+          "mcnemar_test": {
+            "chi2_statistic": 0.1736111111111111,
+            "contingency_table": {
+              "baseline_win_c": 69,
+              "both_correct_a": 491,
+              "both_incorrect_d": 83,
+              "total_discordant": 144,
+              "total_pairs": 718,
+              "treatment_win_b": 75
+            },
+            "display_p_asymptotic": "0.677",
+            "display_p_exact": "0.677",
+            "p_value_asymptotic": 0.6769222390213794,
+            "p_value_exact": 0.6770697943668329,
+            "significant_at_01": false,
+            "significant_at_05": false
+          },
+          "relative_gain_accuracy_pct": 1.0714285714285696,
+          "relative_gain_macro_f1_pct": 10.171133332358945
+        },
+        "error_count": 152,
+        "is_baseline": false,
+        "macro_f1": 0.01389077974323129,
+        "macro_f1_display": "0.0139",
+        "macro_f1_universe_classes": 474,
+        "retrieval_k": 5,
+        "scorable_sample_count": 718,
+        "stratified_complexity": {
+          "multi_gt": {
+            "accuracy_display": "100.00%",
+            "accuracy_e2e": 1.0,
+            "correct_count": 40,
+            "macro_f1": 0.008941129194293752,
+            "sample_count": 40
+          },
+          "single_gt": {
+            "accuracy_display": "77.58%",
+            "accuracy_e2e": 0.775811209439528,
+            "correct_count": 526,
+            "macro_f1": 0.014278789452777054,
+            "sample_count": 678
+          }
+        },
+        "supported_classes": 8,
+        "unsupported_classes": 466
+      },
+      "rq2_retrieval_and_error": {
+        "condition": "rag_k5",
+        "generation_conditional_accuracy": {
+          "applicable": true,
+          "correct_given_retrieval_failure_count": 398,
+          "correct_given_retrieval_success_count": 168,
+          "p_correct_given_retrieval_failure": 0.7302752293577982,
+          "p_correct_given_retrieval_failure_display": "73.03%",
+          "p_correct_given_retrieval_success": 0.9710982658959537,
+          "p_correct_given_retrieval_success_display": "97.11%",
+          "retrieval_failure_sample_count": 545,
+          "retrieval_success_sample_count": 173
+        },
+        "independent_failure_axes": {
+          "invalid_attack_id_count": 0,
+          "overlap_fraction_display": "96.71%",
+          "overlap_fraction_of_wrong_classification": 0.9671052631578947,
+          "overlap_retrieval_miss_and_wrong_classification": 147,
+          "parse_failure_count": 0,
+          "policy_note": "Per Decision D2i, failure axes are evaluated independently without forced mutual exclusion. Retrieval miss does not establish cause of provider or parse failure.",
+          "provider_failure_count_mapped": 0,
+          "retrieval_miss_count": 545,
+          "retrieval_miss_rate": 0.7590529247910863,
+          "total_scorable_samples": 718,
+          "valid_but_wrong_classification_count": 152,
+          "valid_but_wrong_classification_rate": 0.2116991643454039
+        },
+        "retrieval_applicable": true,
+        "retrieval_k": 5,
+        "retrieval_metrics": {
+          "applicable": true,
+          "macro_recall": 0.22957288765088205,
+          "retrieval_hit_count": 173,
+          "retrieval_hit_rate": 0.24094707520891365,
+          "retrieval_hit_rate_display": "24.09%",
+          "retrieval_miss_count": 545,
+          "retrieval_miss_rate": 0.7590529247910863,
+          "retrieval_miss_rate_display": "75.91%",
+          "total_scorable_samples": 718
+        }
+      },
+      "rq3_resources_and_cost": {
+        "condition": "rag_k5",
+        "failures": {
+          "invalid_id_count": 0,
+          "invalid_syntax_count": 0,
+          "mapped_scorable_failures_count": 0,
+          "parse_failure_count": 0,
+          "terminal_incomplete_count": 3,
+          "terminal_incomplete_denominator": 1280,
+          "terminal_incomplete_rate": 0.00234375
+        },
+        "financial_cost_usd": {
+          "cost_of_all_excluded_views_usd": 0.67083665,
+          "cost_of_excluded_ambiguous_views_usd": 0.31095465,
+          "cost_of_excluded_unmapped_views_usd": 0.359882,
+          "cost_per_correct_attribution_usd": 0.0026203493816254414,
+          "cost_per_logical_request_usd": 0.0011586857421874998,
+          "cost_per_scorable_query_usd": 0.0020656236072423397,
+          "ledger_settled_cost_usd": "1.48311775",
+          "marginal_cost_vs_baseline_usd": 1.0159737999999998,
+          "missing_usage_attempt_receipts_count": 0,
+          "missing_usage_attempt_worst_charge_usd": "0.0",
+          "token_usage_estimated_cost_usd": "1.48311775"
+        },
+        "latency_ms": {
+          "mean": 4327.256228515944,
+          "measurement_scope": "Client end-to-end request loop including retry backoff",
+          "median": 2873.740850001923,
+          "p95": null,
+          "p95_status": "NOT REPORTED \u2014 approval evidence not established",
+          "sum_ms": 5538887.972500408,
+          "unit": "milliseconds"
+        },
+        "observations_count": 1280,
+        "retrieval_k": 5,
+        "tokens": {
+          "cached_tokens": {
+            "cached_tokens_accounting_rule": "Cached tokens represent prompt tokens served from model cache. Total tokens is prompt_tokens + completion_tokens. Cached tokens are a subset of prompt tokens and are NOT added into total tokens twice.",
+            "mean": 0.0,
+            "missing_attempts_count": 0,
+            "observed_attempts_count": 1280,
+            "sum": 0
+          },
+          "completion_tokens": {
+            "mean": 328.03125,
+            "sum": 419880
+          },
+          "prompt_tokens": {
+            "mean": 3060.19296875,
+            "sum": 3917047
+          },
+          "total_tokens": {
+            "formula": "prompt_tokens + completion_tokens",
+            "mean": 3388.22421875,
+            "sum": 4336927
+          }
+        }
+      }
+    }
+  },
+  "core_code_manifest_sha256": "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4",
+  "dataset_split": "test",
+  "evaluation_git_sha": "208ac00a9fe86813d4e4ec4fa72b2a943a2e4fdb",
+  "evaluator_analysis_source_file": "scripts/analysis/evaluate_rqs.py",
+  "evaluator_analysis_source_sha256": "f85d7f7373e825dcc7171ce4491fd15c6fb755955da245041783fe317bc80351",
+  "execution_git_sha": "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315",
+  "execution_mode": "live",
+  "experiment_id": "synthetic-paired-test-1",
+  "failure_taxonomy": {
+    "campaign_total_logical_requests": 6400,
+    "campaign_total_physical_attempts": 6401,
+    "completed_records_count": 6387,
+    "invalid_attack_id_count": 0,
+    "invalid_syntax_count": 0,
+    "mapped_scorable_terminal_incomplete_count": 0,
+    "retired_attack_id_observation_count": 245,
+    "retired_attack_id_policy": "ALLOWED_HISTORICAL_PER_DECISION_D2G",
+    "retry_success_details": {
+      "attempt_index": 1,
+      "cached_tokens": 1540,
+      "input_tokens": 1543,
+      "key": [
+        "view_d870d574",
+        "rag_k1"
+      ],
+      "ordinal": 5388,
+      "output_tokens": 452,
+      "response_id": "resp_0efb218e56a6ecc1006abf0be6419887d0bca3815a8a0b3f0d",
+      "status": "SUCCESS"
+    },
+    "terminal_incomplete_by_condition": {
+      "no_rag": 0,
+      "rag_k1": 0,
+      "rag_k10": 4,
+      "rag_k3": 6,
+      "rag_k5": 3
+    },
+    "terminal_incomplete_count": 13,
+    "terminal_incomplete_rate": 0.00203125,
+    "transport_network_failure_details": {
+      "attempt_index": 0,
+      "cached_tokens": null,
+      "error_type": "InternalServerError",
+      "input_tokens": null,
+      "key": [
+        "view_d870d574",
+        "rag_k1"
+      ],
+      "model": "gpt-5.6-luna",
+      "ordinal": 5387,
+      "output_tokens": null,
+      "status": "API_FAILURE"
+    },
+    "transport_network_failures_count": 1,
+    "valid_json_outputs_count": 6387
+  },
+  "fixture_only": false,
+  "output_file_digests": {
+    "failure_decomposition.json": "1ea3a899fefc7f92bcb739ab16e70036c269ebff16a7ec7e38240d2cc2c1c05d",
+    "overall_metrics.json": "25662753963ecdd05d16b8607095fffb964c0d53cd2c43026c50b47b22e55074",
+    "per_condition_metrics.json": "e6592f9a0f97739be1168f9d1448e0d209fe4a300727ff6ad78902523f1591d6",
+    "per_technique_metrics.json": "a2f96027439ba876b1c48b155a18f99872d3c4cc2c62c1bdc573a09aa73f49ef",
+    "retrieval_conditional_metrics.json": "2c68395f4ae923167b7cbc08835ff2772044ddc7695f69c0781ec277287d775f",
+    "rq_analysis.json": "1604a5537b57cefbe86fd59d7fa2acfb8658a27215f7df8a98dfd0c400981156",
+    "rq_analysis_summary.md": "712d495d5d71e5d96fd844fcb3dfdbc88e722056e265cf4a19d3813d9d9446c6",
+    "run_provenance.json": "90918c9efe149c537c9b2cee7f7392607f273c12627bcc61b9dc9443359e63a1"
+  },
+  "overall_summary": {
+    "overall_accuracy_end_to_end": 0.7838440111420613,
+    "overall_accuracy_valid_outputs": 0.7838440111420613,
+    "overall_macro_f1": 0.01336671534494176,
+    "total_completed_records": 6387,
+    "total_logical_samples": 6400,
+    "total_provider_failures": 13,
+    "total_retired_id_observations": 245,
+    "total_scorable_mapped_samples_across_conditions": 3590
+  },
+  "p95_policy": {
+    "rule": "P95 latency is withheld from consumer display pending formal authority approval.",
+    "status": "NOT REPORTED \u2014 approval evidence not established"
+  },
+  "pricing_contract_sha256": "4adfe8a0630bc1703a92e233133ea55eeff21ef5312dc3102369c267767c9565",
+  "protocol_sha256": "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c",
+  "protocol_version": "experiment-protocol-v1.1",
+  "public_package_manifest_sha256": "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c",
+  "run_id": "live-66b94b1676bf46a9",
+  "schema_version": "2.0.0",
+  "source_file_digests": {
+    ".study_anchor.json": "6a15639c213782a6ef7863a960b064d604185297b121ab41197a057774d23097",
+    "manifest.json": "66b658cfa9dd42e131ec567bbe043b8bc87ac6e92aeaa5e8f6661b0195e486e5",
+    "no_rag_predictions.jsonl": "70034c5e3c417fc4a28c357d00d6a046751175ed03e7815645fa09e0411e228a",
+    "rag_k10_predictions.jsonl": "40cd9d2b19c691ed8bcb97ff5dfbebd378857346e9a06b00a9ab54e51fd9a122",
+    "rag_k1_predictions.jsonl": "745cb883a90b4d1bac7c76c4007b143893834530a843e153fc24277aae5da7ac",
+    "rag_k3_predictions.jsonl": "29f215d74a3139df53036c642c8a14762bec4542d04685125cf28d024571b006",
+    "rag_k5_predictions.jsonl": "896d900d10e25af748e00235c33cace84511c450bf7cfb0da2b4d1a658124178",
+    "request_journal.jsonl": "f36e0f3099ef704e6ed5e0bc0097affbe98932e1620563a6db22e631ae114f31",
+    "run_summary.json": "67df38e336b4250b5a5c044b754ab02e8cc1826b8569f76d9bdf265ae4f84c2a",
+    "study_ledger.json": "21e4c49b1f19bba5310bc0e9897d828b16ab27420c1d25b14b9f3e727dce94d8"
+  },
+  "study_id": "rag2attack-study-wide",
+  "supplementary_source_lineage": {
+    "authorizing_packet_original_sha256": "b988a599800bbbb01b0418e60bfd00fbbce3ab2c4d631da678f99bfd2141c4b5",
+    "authorizing_packet_public_path": "provenance/s2_evaluation_execute_public.md",
+    "authorizing_packet_public_sha256": "d515f70426435e9edb79cdc415e91c23b16e189fd171d4db4b04074c9b580aa1",
+    "historical_note": "Historical S2 package (c48eeb27...) represents development packet; formally superseded by exact S2_RQ_V2 packet (f85d7f73... / d515f704...).",
+    "historical_s2_package_sha256": "c48eeb276166e511c7ff19904944d18ec0a187d903f0b2f56708ddaf4f9dff55"
+  },
+  "terminal_seal": {
+    "path": "reports/evidence/canonical_run_seal_v1.json",
+    "sha256": "ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701",
+    "terminal_proof_sha256": "cbffe862b60c49b5c872837f81b580d5a59197b681f7b7623fd844b897a0981e"
+  },
+  "whole_study_financial_accounting": {
+    "active_reservations_usd": "0E-8",
+    "commercial_invoice_disclaimer": "All monetary amounts represent internal simulation and API budget guard accounting. No commercial invoice or vendor billing statement is asserted.",
+    "cumulative_settled_cost_usd": "6.57575890",
+    "has_breach": false,
+    "prior_pilot_provisional_hold_usd": "0.05264010",
+    "settled_cost_by_condition_usd": {
+      "no_rag": "0.46714395",
+      "rag_k1": "1.29723350",
+      "rag_k10": "2.14938370",
+      "rag_k3": "1.17888000",
+      "rag_k5": "1.48311775"
+    },
+    "study_budget_cap_usd": "19.99000000",
+    "total_accounted_expenditure_usd": "6.62839900",
+    "uncommitted_available_balance_usd": "13.36160100"
+  }
+}

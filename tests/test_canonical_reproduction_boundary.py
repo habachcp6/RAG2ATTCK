@@ -22,7 +22,8 @@ from src.evaluation.experiment_metrics import CONDITIONS
 
 @pytest.fixture
 def test_mock_matrix(tmp_path: Path) -> Path:
-    """Create a complete 1,280 x 5 mock matrix with split='test' and execution_mode='mock_fixture'."""
+    """Create a complete 1,280 x 5 mock matrix with split='test' and
+    execution_mode='mock_fixture'."""
     run_dir = tmp_path / "mock_matrix_run"
     run_dir.mkdir(parents=True, exist_ok=True)
 
@@ -37,7 +38,9 @@ def test_mock_matrix(tmp_path: Path) -> Path:
     (run_dir / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     # Write 1,280 records for each of the 5 conditions
-    dummy_row = json.dumps({"sample_id": "s0", "technique_id": "T1059.001", "rationale": "mock"}) + "\n"
+    dummy_row = (
+        json.dumps({"sample_id": "s0", "technique_id": "T1059.001", "rationale": "mock"}) + "\n"
+    )
     content_1280 = dummy_row * 1280
     for cond in CONDITIONS:
         (run_dir / f"{cond}_predictions.jsonl").write_text(content_1280, encoding="utf-8")
@@ -62,7 +65,9 @@ def test_mock_fixture_1280_matrix_fails_closed(test_mock_matrix: Path, tmp_path:
 
     # Must NOT create canonical_study_results directory
     canonical_dir = output_dir / "canonical_study_results"
-    assert not canonical_dir.exists(), "canonical_study_results must not be created for mock_fixture"
+    assert not canonical_dir.exists(), (
+        "canonical_study_results must not be created for mock_fixture"
+    )
 
     # Must emit explicit fail-closed message citing execution_mode
     combined_log = "\n".join(output_lines)
@@ -121,7 +126,8 @@ def test_positive_control_live_mode_and_post_load_validation(
     fake_mock_inputs = MagicMock()
     fake_mock_inputs.execution_mode = "mock_fixture"
 
-    with patch("src.evaluation.experiment_metrics.load_evaluation_inputs", return_value=fake_mock_inputs):
+    eval_inputs_target = "src.evaluation.experiment_metrics.load_evaluation_inputs"
+    with patch(eval_inputs_target, return_value=fake_mock_inputs):
         result_subvert = run_authoritative_completed_evaluator(
             manifest_path=manifest_path,
             run_dir=test_mock_matrix,
@@ -136,12 +142,12 @@ def test_positive_control_live_mode_and_post_load_validation(
     output_lines.clear()
     fake_live_inputs = MagicMock()
     fake_live_inputs.execution_mode = "live"
-    fake_results = {
-        "overall": {"accuracy_end_to_end": 0.85, "completed_record_count": 6400}
-    }
+    fake_results = {"overall": {"accuracy_end_to_end": 0.85, "completed_record_count": 6400}}
 
-    with patch("src.evaluation.experiment_metrics.load_evaluation_inputs", return_value=fake_live_inputs), \
-         patch("src.evaluation.experiment_metrics.evaluate_experiment", return_value=fake_results):
+    with (
+        patch(eval_inputs_target, return_value=fake_live_inputs),
+        patch("src.evaluation.experiment_metrics.evaluate_experiment", return_value=fake_results),
+    ):
         result_live = run_authoritative_completed_evaluator(
             manifest_path=manifest_path,
             run_dir=test_mock_matrix,

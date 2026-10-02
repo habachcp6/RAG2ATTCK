@@ -1512,8 +1512,8 @@ def test_generate_audit_seal_fails_on_tampered_terminal_proof(tmp_path):
             val_root,
             tmp_path / "seal.json",
             records,
-            Decimal("6.57"),
-            Decimal("13.36"),
+            Decimal("6.57575890"),
+            Decimal("13.36160100"),
             is_production=True,
             terminal_proof_info=tampered_proof,
             protected_baseline_info=valid_baseline,
@@ -1529,12 +1529,184 @@ def test_generate_audit_seal_fails_on_tampered_terminal_proof(tmp_path):
             val_root,
             tmp_path / "seal.json",
             records,
-            Decimal("6.57"),
-            Decimal("13.36"),
+            Decimal("6.57575890"),
+            Decimal("13.36160100"),
             is_production=True,
             terminal_proof_info=tampered_proof2,
             protected_baseline_info=valid_baseline,
         )
+
+
+def test_generate_audit_seal_fails_on_wrong_cost_parameter(tmp_path):
+    """Direct API: generate_audit_seal fails closed on wrong cumulative_settled_usd."""
+    exp_dir = tmp_path / "exp"
+    exp_dir.mkdir()
+    study_root = tmp_path / "study"
+    study_root.mkdir()
+    dummy_rec = _create_mock_record("v_0", "no_rag")
+    records = {(f"v_{i}", "no_rag"): dummy_rec for i in range(6400)}
+    valid_baseline = {
+        "all_22_files_verified": True,
+        "verified_file_count": 22,
+        "baseline_sha": "b" * 64,
+        "protocol_canonical_digest": "c" * 64,
+        "pricing_contract_sha256": TEST_PRICING_SHA,
+    }
+    proof = _valid_terminal_proof_data()
+
+    with pytest.raises(
+        AuditVerificationError,
+        match="Production seal cumulative settled cost parameter mismatch",
+    ):
+        generate_audit_seal(
+            exp_dir,
+            study_root,
+            REPO_ROOT,
+            tmp_path / "seal.json",
+            records,
+            Decimal("1.00000000"),
+            Decimal("13.36160100"),
+            is_production=True,
+            terminal_proof_info=proof,
+            protected_baseline_info=valid_baseline,
+        )
+
+
+def test_generate_audit_seal_fails_on_wrong_available_parameter(tmp_path):
+    """Direct API: generate_audit_seal fails closed on wrong uncommitted_avail_usd."""
+    exp_dir = tmp_path / "exp"
+    exp_dir.mkdir()
+    study_root = tmp_path / "study"
+    study_root.mkdir()
+    dummy_rec = _create_mock_record("v_0", "no_rag")
+    records = {(f"v_{i}", "no_rag"): dummy_rec for i in range(6400)}
+    valid_baseline = {
+        "all_22_files_verified": True,
+        "verified_file_count": 22,
+        "baseline_sha": "b" * 64,
+        "protocol_canonical_digest": "c" * 64,
+        "pricing_contract_sha256": TEST_PRICING_SHA,
+    }
+    proof = _valid_terminal_proof_data()
+
+    with pytest.raises(
+        AuditVerificationError,
+        match="Production seal uncommitted available balance parameter mismatch",
+    ):
+        generate_audit_seal(
+            exp_dir,
+            study_root,
+            REPO_ROOT,
+            tmp_path / "seal.json",
+            records,
+            Decimal("6.57575890"),
+            Decimal("1.00000000"),
+            is_production=True,
+            terminal_proof_info=proof,
+            protected_baseline_info=valid_baseline,
+        )
+
+
+def test_generate_audit_seal_fails_on_money_conservation_violation(tmp_path):
+    """Direct API: generate_audit_seal fails when money conservation equation is violated."""
+    exp_dir = tmp_path / "exp"
+    exp_dir.mkdir()
+    study_root = tmp_path / "study"
+    study_root.mkdir()
+    dummy_rec = _create_mock_record("v_0", "no_rag")
+    records = {(f"v_{i}", "no_rag"): dummy_rec for i in range(6400)}
+    valid_baseline = {
+        "all_22_files_verified": True,
+        "verified_file_count": 22,
+        "baseline_sha": "b" * 64,
+        "protocol_canonical_digest": "c" * 64,
+        "pricing_contract_sha256": TEST_PRICING_SHA,
+    }
+    proof = _valid_terminal_proof_data()
+    proof["final_summary"]["study_budget"]["prior_pilot_provisional_hold_usd"] = "0.10000000"
+
+    with pytest.raises(
+        AuditVerificationError,
+        match="Production seal money conservation equation violated",
+    ):
+        generate_audit_seal(
+            exp_dir,
+            study_root,
+            REPO_ROOT,
+            tmp_path / "seal.json",
+            records,
+            Decimal("6.57575890"),
+            Decimal("13.36160100"),
+            is_production=True,
+            terminal_proof_info=proof,
+            protected_baseline_info=valid_baseline,
+        )
+
+
+def test_generate_audit_seal_sanitizes_machine_path(tmp_path):
+    """Direct API: generate_audit_seal sanitizes personal machine paths in terminal_proof.path."""
+    exp_dir = tmp_path / "exp"
+    exp_dir.mkdir()
+    for name in [
+        "manifest.json",
+        "run_summary.json",
+        "request_journal.jsonl",
+        "no_rag_predictions.jsonl",
+        "rag_k1_predictions.jsonl",
+        "rag_k3_predictions.jsonl",
+        "rag_k5_predictions.jsonl",
+        "rag_k10_predictions.jsonl",
+    ]:
+        (exp_dir / name).write_text("{}\n", encoding="utf-8")
+    study_root = tmp_path / "study"
+    study_root.mkdir()
+    (study_root / ".study_anchor.json").write_text("{}\n", encoding="utf-8")
+    (study_root / "artifacts" / "study_budget").mkdir(parents=True)
+    (study_root / "artifacts" / "study_budget" / "study_ledger.json").write_text(
+        json.dumps({
+            "cumulative_settled_cost_usd": "6.57575890",
+            "uncommitted_available_balance_usd": "13.36160100",
+        }),
+        encoding="utf-8",
+    )
+    (exp_dir / "run_summary.json").write_text(
+        json.dumps({
+            "study_budget": {
+                "cumulative_settled_cost_usd": "6.57575890",
+                "uncommitted_available_balance_usd": "13.36160100",
+            }
+        }),
+        encoding="utf-8",
+    )
+
+    dummy_rec = _create_mock_record("v_0", "no_rag")
+    records = {(f"v_{i}", "no_rag"): dummy_rec for i in range(6400)}
+    valid_baseline = {
+        "all_22_files_verified": True,
+        "verified_file_count": 22,
+        "baseline_sha": "b" * 64,
+        "protocol_canonical_digest": "c" * 64,
+        "pricing_contract_sha256": TEST_PRICING_SHA,
+    }
+    proof = _valid_terminal_proof_data()
+    proof["path"] = r"D:\RAG2ATT&CK\artifacts\orchestration\terminal_process_proof_20261002.json"
+
+    seal_file = tmp_path / "seal.json"
+    seal = generate_audit_seal(
+        exp_dir,
+        study_root,
+        REPO_ROOT,
+        seal_file,
+        records,
+        Decimal("6.57575890"),
+        Decimal("13.36160100"),
+        is_production=True,
+        terminal_proof_info=proof,
+        protected_baseline_info=valid_baseline,
+    )
+
+    assert seal["terminal_proof"]["path"] == "artifacts/orchestration/terminal_process_proof_20261002.json"
+    assert "D:" not in seal["terminal_proof"]["path"]
 
 
 def test_cli_fails_on_mismatched_run_summary_and_proof(tmp_path):

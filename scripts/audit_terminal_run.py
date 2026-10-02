@@ -153,6 +153,26 @@ def _parse_strict_nonnegative_decimal(
     return d
 
 
+def _sanitize_machine_path(raw_path: Optional[str]) -> Optional[str]:
+    """Sanitize machine-specific absolute path to safe repository-relative POSIX path."""
+    if not raw_path:
+        return raw_path
+    normalized = str(raw_path).replace("\\", "/")
+    for marker in (
+        "artifacts/orchestration/",
+        "artifacts/study_budget/",
+        "artifacts/experiments/",
+        "reports/evidence/",
+    ):
+        idx = normalized.find(marker)
+        if idx != -1:
+            return normalized[idx:]
+    p = Path(normalized)
+    if not p.is_absolute() and not any(":" in part for part in p.parts):
+        return normalized
+    return p.name
+
+
 def audit_completeness_and_cardinality(
     exp_dir: Path,
     expected_sample_ids: Set[str],
@@ -1211,7 +1231,88 @@ def generate_audit_seal(
             raise AuditVerificationError(
                 "Production seal requires non-breached study_budget in terminal proof"
             )
-        _parse_strict_positive_decimal(sb.get("total_budget_usd"), "total_budget_usd", max_cap=Decimal("19.99"))
+        tb = _parse_strict_positive_decimal(
+            sb.get("total_budget_usd"), "total_budget_usd", max_cap=Decimal("19.99")
+        )
+        pf_settled = _parse_strict_positive_decimal(
+            sb.get("cumulative_settled_cost_usd"), "cumulative_settled_cost_usd", max_cap=tb
+        )
+        if cumulative_settled_usd != pf_settled:
+            raise AuditVerificationError(
+                f"Production seal cumulative settled cost parameter mismatch: "
+                f"argument has {cumulative_settled_usd}, terminal proof has {pf_settled}"
+            )
+
+        pf_avail = _parse_strict_positive_decimal(
+            sb.get("uncommitted_available_balance_usd"), "uncommitted_available_balance_usd", max_cap=tb
+        )
+        if uncommitted_avail_usd != pf_avail:
+            raise AuditVerificationError(
+                f"Production seal uncommitted available balance parameter mismatch: "
+                f"argument has {uncommitted_avail_usd}, terminal proof has {pf_avail}"
+            )
+
+        hold = _parse_strict_nonnegative_decimal(
+            sb.get("prior_pilot_provisional_hold_usd", "0"), "prior_pilot_provisional_hold_usd", max_cap=tb
+        )
+        active = _parse_strict_nonnegative_decimal(
+            sb.get("active_reservations_usd", "0"), "active_reservations_usd", max_cap=tb
+        )
+        if cumulative_settled_usd + uncommitted_avail_usd + hold + active != tb:
+            raise AuditVerificationError(
+                f"Production seal money conservation equation violated: "
+                f"settled ({cumulative_settled_usd}) + avail ({uncommitted_avail_usd}) + "
+                f"hold ({hold}) + active ({active}) != total_budget ({tb})"
+            )
+
+        # Cross-validate against study_ledger.json if available
+        ledger_path = study_root / "artifacts" / "study_budget" / "study_ledger.json"
+        if ledger_path.exists():
+            ledger_data = _strict_json_loads(ledger_path.read_bytes())
+            if not isinstance(ledger_data, dict):
+                raise AuditVerificationError(f"Malformed study ledger at {ledger_path}")
+            ledger_settled = _parse_strict_positive_decimal(
+                ledger_data.get("cumulative_settled_cost_usd"), "ledger cumulative_settled_cost_usd", max_cap=tb
+            )
+            if cumulative_settled_usd != ledger_settled:
+                raise AuditVerificationError(
+                    f"Production seal cumulative settled cost mismatch with ledger: "
+                    f"argument has {cumulative_settled_usd}, ledger has {ledger_settled}"
+                )
+            ledger_avail = _parse_strict_positive_decimal(
+                ledger_data.get("uncommitted_available_balance_usd"), "ledger uncommitted_available_balance_usd", max_cap=tb
+            )
+            if uncommitted_avail_usd != ledger_avail:
+                raise AuditVerificationError(
+                    f"Production seal uncommitted available balance mismatch with ledger: "
+                    f"argument has {uncommitted_avail_usd}, ledger has {ledger_avail}"
+                )
+
+        # Cross-validate against run_summary.json if available
+        summary_path = exp_dir / "run_summary.json"
+        if summary_path.exists():
+            summary_data = _strict_json_loads(summary_path.read_bytes())
+            if isinstance(summary_data, dict) and "study_budget" in summary_data:
+                sum_sb = summary_data["study_budget"]
+                if isinstance(sum_sb, dict):
+                    if "cumulative_settled_cost_usd" in sum_sb:
+                        sum_settled = _parse_strict_positive_decimal(
+                            sum_sb["cumulative_settled_cost_usd"], "run_summary cumulative_settled_cost_usd", max_cap=tb
+                        )
+                        if cumulative_settled_usd != sum_settled:
+                            raise AuditVerificationError(
+                                f"Production seal cumulative settled cost mismatch with run_summary: "
+                                f"argument has {cumulative_settled_usd}, run_summary has {sum_settled}"
+                            )
+                    if "uncommitted_available_balance_usd" in sum_sb:
+                        sum_avail = _parse_strict_positive_decimal(
+                            sum_sb["uncommitted_available_balance_usd"], "run_summary uncommitted_available_balance_usd", max_cap=tb
+                        )
+                        if uncommitted_avail_usd != sum_avail:
+                            raise AuditVerificationError(
+                                f"Production seal uncommitted available balance mismatch with run_summary: "
+                                f"argument has {uncommitted_avail_usd}, run_summary has {sum_avail}"
+                            )
 
     required_artifacts = [
         exp_dir / "manifest.json",
@@ -1257,7 +1358,7 @@ def generate_audit_seal(
     }
     if terminal_proof_info is not None:
         seal_payload["terminal_proof"] = {
-            "path": terminal_proof_info.get("path"),
+            "path": _sanitize_machine_path(terminal_proof_info.get("path")),
             "sha256": terminal_proof_info.get("sha256"),
             "run_id": terminal_proof_info.get("run_id"),
             "task_id": terminal_proof_info.get("task_id"),

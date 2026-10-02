@@ -115,7 +115,7 @@
     - `D2e: invalid_id_as_failure` (`INCLUDE_IN_DENOMINATOR`, fail-closed khi mô hình sinh mã sai cú pháp hoặc ngoài danh mục).
     - `D2f: api_failure_as_failure` (`INCLUDE_IN_DENOMINATOR`, không loại trừ mẫu khi gặp lỗi mạng/API refusal/timeout).
     - `D2b-c: EXCLUDE` (loại trừ các mẫu ground-truth rỗng hoặc mơ hồ khỏi mẫu số đo lường).
-    - `D1: RECORD_ONLY` (lưu vết đầy đủ toàn bộ phản hồi thô phục vụ kiểm toán độc lập).
+    - `D1: RECORD_ONLY` (lưu vết đầy đủ toàn bộ phản hồi thô phục vụ kiểm toán độc lập; các trường thông tin đăng nhập, token và bí mật nhạy cảm đều được khử khuẩn / làm mờ trước khi lưu trữ, không lưu raw secrets).
 - **Tiêu chí đánh giá cốt lõi & Kỷ cương thực nghiệm:**
   - **Bốn tiêu chí đo lường trọng tâm:**
     - `D2h: ANY_GT_RETRIEVED` (truy xuất thành công nếu có ít nhất 1 kỹ thuật mục tiêu trong Top-k).
@@ -128,7 +128,7 @@
     - `D5:` Chặn cứng ngân sách đóng băng (`HARD_CAP`, trần $19.99 USD).
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Giao thức thực nghiệm v1.1 đóng băng 7 quyết định phương pháp luận cốt lõi D1-D7. Về mô hình đe dọa, danh mục kỹ thuật được neo tại STIX ATT&CK v19.2 Enterprise Windows (474 techniques theo quyết định D2d FROZEN_BENCHMARK_UNIVERSE). Điểm đặc biệt quan trọng là chính sách D2g ALLOW_HISTORICAL: các mã kỹ thuật lịch sử hoặc đã bị thu hồi có trong benchmark được chấp nhận và báo cáo dạng distinct observation count, không tự ý gán lại mã thay thế. Bốn tiêu chí đánh giá cốt lõi gồm D2h (ANY_GT_RETRIEVED cho multi-label), D2i (INDEPENDENT_AXES ghi nhận đầy đủ overlap giữa các trục đo lường độc lập), D2e (invalid_id_as_failure: invalid ID tính vào mẫu số), và D2f (api_failure_as_failure: lỗi mạng/API tính vào mẫu số) thiết lập nguyên tắc fail-closed nghiêm ngặt.
+> "Giao thức thực nghiệm v1.1 đóng băng 7 quyết định phương pháp luận cốt lõi D1-D7. Về mô hình đe dọa, danh mục kỹ thuật được neo tại STIX ATT&CK v19.2 Enterprise Windows (474 techniques theo quyết định D2d FROZEN_BENCHMARK_UNIVERSE). Chính sách D1 RECORD_ONLY lưu toàn văn phản hồi thô phục vụ kiểm toán độc lập nhưng đảm bảo toàn bộ credentials và bí mật nhạy cảm đã được làm sạch / khử khuẩn (credentials and sensitive secrets sanitized/redacted), tuyệt đối không lưu lộ lọt bí mật. Điểm đặc biệt quan trọng là chính sách D2g ALLOW_HISTORICAL: các mã kỹ thuật lịch sử hoặc đã bị thu hồi có trong benchmark được chấp nhận và báo cáo dạng distinct observation count, không tự ý gán lại mã thay thế. Bốn tiêu chí đánh giá cốt lõi gồm D2h (ANY_GT_RETRIEVED cho multi-label), D2i (INDEPENDENT_AXES ghi nhận đầy đủ overlap giữa các trục đo lường độc lập), D2e (invalid_id_as_failure: invalid ID tính vào mẫu số), và D2f (api_failure_as_failure: lỗi mạng/API tính vào mẫu số) thiết lập nguyên tắc fail-closed nghiêm ngặt.
 > 
 > *Bằng chứng dự án:* `reports/experiment_protocol_v1.md` (SHA-256: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`); `attack/raw/enterprise-v19.2/enterprise-attack-19.2.json` (SHA-256: `dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4`); `tests/test_experiment_evaluation.py`."
 
@@ -183,8 +183,10 @@
 ### Nội dung trình chiếu
 - **Bảng Đối Chứng Hiệu Năng RQ1 & Ranh Giới Khoa Học Bắt Buộc:**
   - *Hiệu năng quan sát được:* RAG $k=10$ đạt 571/718 (**79.53%**) vs No-RAG 560/718 (**77.99%**), Delta = **+1.53 pp** (+1.96% relative).
-  - *Độ bất định thống kê:* 95% Bootstrap CI của Delta là **[-2.35 pp, +5.30 pp]** (khoảng tin cậy chứa 0).
-  - *Kiểm định ý nghĩa:* McNemar test $p = 0.422 > 0.05$ (không đạt ý nghĩa thống kê ở mức $\alpha = 0.05$).
+  - *Độ bất định thống kê:*
+    - **Absolute Accuracy 95% CIs:** no_rag = [74.65%, 81.06%], k=1 = [72.84%, 79.53%], k=3 = [74.51%, 81.06%], k=5 = [75.63%, 82.03%], k=10 = [76.32%, 82.45%].
+    - **Paired difference CIs vs No-RAG:** Toàn bộ khoảng tin cậy chênh lệch cặp đều chứa 0 (k=10 delta CI **[-2.355, +5.300] pp**; kiểm định McNemar thăm dò $p = 0.4223 > 0.05$).
+  - *Kiểm định ý nghĩa:* McNemar test $p = 0.4223 > 0.05$ (không đạt ý nghĩa thống kê ở mức $\alpha = 0.05$).
   - *Quy chuẩn diễn đạt bắt buộc:* Mô tả $k=10$ là **"độ chính xác quan sát được cao nhất trong thử nghiệm kèm độ bất định"** (observed highest tested accuracy and uncertainty). **CẤM** tuyên bố "chiến thắng có ý nghĩa thống kê" hoặc "lợi ích vượt trội trong production".
   - *Macro-F1 (474 Frozen Universe):* $k=10$ đạt **0.0140** vs No-RAG **0.0126** (Delta +0.0014, có CI riêng; không dùng p-value của Accuracy thay cho Macro-F1).
 - **Mô hình phân rã lỗi theo 3 trục đo lường độc lập (Định đề D2i):**
@@ -192,15 +194,15 @@
   - **Trục 2 - Downstream Generation Failure:** Invalid ATT&CK ID (D2e), scorable provider failure = 0.0000 (0 / 718) quan sát thực nghiệm (kết hợp 13 INCOMPLETE trên toàn bộ 6,400 dispatches), hoặc phân loại sai (Wrong Classification).
   - **Trục 3 - Joint Overlap:** Ghi nhận rõ các bản ghi vừa trượt truy xuất vừa lỗi phân loại (không giả định độc lập ngẫu nhiên).
 - **Các thước đo có điều kiện (Conditional Metrics):**
-  - $P(\text{Correct} \mid \text{GT Retrieved in Top-}k) = 83.18\%$ (267 / 321) tại $k=10$: Đánh giá lựa chọn khi có ngữ cảnh trúng.
-  - $P(\text{Correct} \mid \text{GT Absent from Top-}k) = 76.57\%$ (304 / 397) tại $k=10$: Xác suất gán đúng quan sát được khi vắng mặt ngữ cảnh trong Top-k (không suy diễn tự sửa sai nội tại).
+  - $P(\text{Correct} \mid \text{GT Retrieved in Top-}k) = 91.28\%$ (293 / 321) tại $k=10$: Đánh giá lựa chọn khi có ngữ cảnh trúng.
+  - $P(\text{Correct} \mid \text{GT Absent from Top-}k) = 70.03\%$ (278 / 397) tại $k=10$: Xác suất gán đúng quan sát được khi vắng mặt ngữ cảnh trong Top-k (không suy diễn tự sửa sai nội tại).
 - **Trạng thái thực nghiệm RQ1 & RQ2 `[PENDING EXECUTION]`:**
   - Kiểm định toán học Evaluator đã xác thực ngoại tuyến qua các test fixtures chuẩn tắc.
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Tại Slide 8, bảng đối chứng RQ1 ghi nhận RAG k=10 đạt độ chính xác quan sát được cao nhất là 79.53% (571/718) so với No-RAG 77.99% (560/718), tức Delta = +1.53 pp. Tuy nhiên, khoảng tin cậy 95% Bootstrap CI của Delta là [-2.35 pp, +5.30 pp] (chứa giá trị 0) và kiểm định McNemar cho p = 0.422 > 0.05. Do đó, nghiên cứu khẳng định đây là 'độ chính xác quan sát được cao nhất trong thử nghiệm kèm độ bất định', tuyệt đối không tuyên bố chiến thắng có ý nghĩa thống kê hay lợi ích vượt trội trong production.
+> "Tại Slide 8, bảng đối chứng RQ1 ghi nhận RAG k=10 đạt độ chính xác quan sát được cao nhất là 79.53% (571/718) so với No-RAG 77.99% (560/718), tức Delta = +1.53 pp. Cần phân biệt rõ: Các khoảng tin cậy liệt kê trên bảng là Absolute Accuracy 95% CIs (no_rag [74.65%, 81.06%], k10 [76.32%, 82.45%]); trong khi toàn bộ khoảng tin cậy chênh lệch cặp (paired difference CIs vs No-RAG) đều chứa 0 (khoảng tin cậy delta của RAG k=10 là [-2.355, +5.300] pp, kiểm định McNemar cho p = 0.4223 > 0.05). Do đó, nghiên cứu khẳng định đây là 'độ chính xác quan sát được cao nhất trong thử nghiệm kèm độ bất định', tuyệt đối không tuyên bố chiến thắng có ý nghĩa thống kê hay lợi ích vượt trội trong production.
 > 
-> Quan sát thực nghiệm ghi nhận scorable provider failure = 0.0000 (0/718) trên các bản ghi scorable, kết hợp với 13 INCOMPLETE trên toàn bộ 6,400 dispatches. Về các thước đo có điều kiện tại k=10: P(Correct | GT in Top-k) = 83.18% (267/321), trong khi P(Correct | GT absent Top-k) = 76.57% (304/397); tỷ lệ này không cho phép suy diễn mô hình tự sửa sai nội tại.
+> Quan sát thực nghiệm ghi nhận scorable provider failure = 0.0000 (0/718) trên các bản ghi scorable, kết hợp với 13 INCOMPLETE trên toàn bộ 6,400 dispatches. Về các thước đo có điều kiện tại k=10: P(Correct | GT in Top-k) = 91.28% (293/321), trong khi P(Correct | GT absent Top-k) = 70.03% (278/397); tỷ lệ này không cho phép suy diễn mô hình tự sửa sai nội tại.
 > 
 > *Bằng chứng dự án:* `reports/experiment_protocol_v1.md` (D2e, D2f, D2h, D2i; SHA-256: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`); `tests/test_experiment_evaluation.py`."
 
@@ -211,25 +213,25 @@
 ### Nội dung trình chiếu
 - **Phân Tích Tài Nguyên và Chi Phí Chuẩn Tắc (TEST 718) [CANONICAL STUDY]:**
   - Chi phí được tính theo **ước tính thận trọng từ bảng giá đóng băng (conservative accounted tariff estimate)**:
-    - *No-RAG:* **$0.000365 USD** / logical query (TB 674.3 prompt tokens; trễ trung vị 2,303 ms).
-    - *RAG $k=10$:* **$0.001679 USD** / logical query (TB 5114.3 prompt tokens; trễ trung vị 2,667 ms).
+    - *No-RAG:* **$0.000365 USD** / logical query (TB 674.3 prompt tokens; trễ trung vị 2,303 ms; TB 2.90s).
+    - *RAG $k=10$:* **$0.001679 USD** / logical query (TB 5114.3 prompt tokens; trễ trung vị 2,667 ms; TB 4.37s).
   - *Bối cảnh phụ:* DEV pilot 20 requests sơ bộ (~$0.0242 USD) phân tách tuyệt đối khỏi tập TEST.
 - **Đánh Đổi Hiệu Năng - Chi Phí Chuẩn Tắc (No-RAG vs RAG $k=10$):**
-  - *Hit rate:* Tăng từ **3.760%** (No-RAG) lên **44.708%** (RAG $k=10$).
+  - *Hit rate chuẩn tắc (TEST 718):* RAG $k=1$ đạt **3.760%** $\rightarrow$ RAG $k=10$ đạt **44.708%** (No-RAG: **N/A**, không sử dụng retriever).
   - *Prompt tokens:* Tăng **~7.6x** từ baseline đến $k=10$ (674.3 lên 5114.3 tokens).
   - *Chi phí logical query:* Tăng **~4.6x** từ baseline đến $k=10$ ($0.000365 lên $0.001679 USD).
 - **Hạch Toán Tài Chính Toàn Thể 6,400 Requests:**
   - Trần ngân sách tối đa đóng băng cứng: **$19.99 USD** ($19.99000000 USD `hard_budget_limit_usd`).
   - Quyết toán thực tế 5 điều kiện chính thức: **$6.58 settled spend** ($6.57575890 USD), cộng giữ chỗ thận trọng pilot $0.05264010 USD, tổng cam kết là **$6.63 committed spend** ($6.62839900 USD).
   - Số dư chưa cam kết khả dụng còn lại: **$13.36 USD** ($13.36160100 USD net remaining; 0 holds, 0 breach).
-  - Xử lý ngoại lệ: 13 INCOMPLETE dispatches trên 6,400 requests; 1 lượt retry do lỗi API ($0.53974560 USD missing usage hold được hoàn trả/quyết toán đầy đủ).
+  - Xử lý ngoại lệ: 13 INCOMPLETE dispatches trên 6,400 requests; 1 lượt retry do lỗi API ($0.53974560 USD missing usage hold được hoàn trả/quyết toán đầy đủ; chi tiết 8 chữ số thập phân lưu trong Speaker Notes).
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Slide 9 hạch toán tài nguyên và tài chính chuẩn tắc trên 718 views và toàn thể 6,400 requests:
-> 1. Phân biệt rõ trễ trung vị (No-RAG 2.30s vs RAG k10 2.67s) và trễ trung bình (No-RAG 2.90s vs RAG k10 4.37s). Lượng prompt tokens trung bình tăng từ 674.3 lên 5114.3 (~7.6x), chi phí mỗi logical query tăng từ $0.000365 lên $0.001679 USD (~4.6x) theo ước tính thận trọng từ bảng giá đóng băng (conservative accounted tariff estimate).
-> 2. Đánh đổi hiệu năng: Hit rate chuẩn tắc tăng từ Hit@1 = 3.760% (27/718) lên Hit@10 = 44.708% (321/718).
-> 3. Quyết toán tài chính toàn thể 6,400 requests: Chi phí 5 điều kiện chuẩn đã quyết toán là $6.57575890 USD ($6.58 settled spend), cộng khoản giữ chỗ thận trọng pilot $0.05264010 USD, tổng cam kết là $6.62839900 USD ($6.63 committed spend) trên trần đóng băng cứng $19.99000000 USD ($19.99 budget cap). Ngân sách khả dụng còn lại là $13.36160100 USD.
-> 4. Ngoại lệ: Trên 6,400 requests có 13 INCOMPLETE records; 1 attempt API_FAILURE được retry có khoản phí thiếu usage là $0.53974560 USD; 20 pilot DEV requests (~$0.0242 USD) phân tách tuyệt đối.
+> "Trong phân tích RQ3, toàn bộ chỉ số tài nguyên, độ trễ và chi phí được tính trên toàn bộ 1,280 logical views mỗi điều kiện (tổng 6,400 dispatches), không rút gọn về 718 scorable views:
+> 1. Độ trễ & Tài nguyên: Phân biệt rõ trễ trung vị (No-RAG 2.30s vs RAG k10 2.67s) và trễ trung bình (No-RAG 2.90s vs RAG k10 4.37s). Lượng prompt tokens trung bình tăng từ 674.3 lên 5114.3 (~7.6x từ baseline đến k10), chi phí mỗi request tăng từ $0.000365 lên $0.001679 USD (~4.6x từ baseline đến k10).
+> 2. Hiệu quả đánh đổi: Hit rate chuẩn tắc trên tập scorable N=718: No-RAG là N/A (không dùng retriever); RAG k=1 đạt Hit@1 = 3.760% (27/718), tăng lên RAG k=10 đạt Hit@10 = 44.708% (321/718).
+> 3. Hạch toán tài chính 8 chữ số thập phân chính xác: Chi phí 5 điều kiện chuẩn đã quyết toán là $6.57575890 USD ($6.58 settled spend), cộng với khoản giữ chỗ thận trọng pilot $0.05264010 USD, tổng chi phí đã cam kết là $6.62839900 USD ($6.63 USD committed spend). Ngân sách khả dụng còn lại là $13.36160100 USD ($13.36 USD net remaining; 0 holds, 0 breach) trên trần đóng băng cứng $19.99000000 USD ($19.99 budget cap). Chi phí được tính toán theo ước tính thận trọng từ bảng giá đóng băng (conservative accounted tariff estimate).
+> 4. Bối cảnh lịch sử & Ngoại lệ: DEV pilot lịch sử là 20 requests (~$0.0242 USD). Trên toàn bộ 6,400 requests có 13 INCOMPLETE records; 1 attempt API_FAILURE được retry có khoản phí thiếu usage là $0.53974560 USD.
 > 
 > *Bằng chứng dự án:* `C:/Users/hahoa/.codex/artifacts/rag2attck/verified-native-figures-v1/canonical_rq3_cost_and_latency.png`; `config/experiment_config.json`; `tests/test_monetary_guard.py`."
 
@@ -270,17 +272,19 @@
     ```bash
     python scripts/run_offline_tests.py -m pytest ... (hoặc cờ -c)
     ```
-  - Lệnh tái lập tự động toàn diện:
+  - **Lệnh tái lập khoa học chuẩn tắc:**
     ```bash
-    python scripts/reproduce_study.py --all
+    python scripts/reproduce_canonical_study.py --all
     ```
+    *(Phân biệt với kịch bản chẩn đoán lịch sử / fixture helper `scripts/reproduce_study.py`).*
   - **Phạm vi kỹ thuật của `offline_guard`:**
     - Can thiệp tầng socket Python (chặn kết nối mạng ngoài ý muốn) và lọc biến môi trường credentials.
     - Không phải là sandbox cấp OS (không cô lập mã máy binary tùy ý ngoài Python runtime).
     - Dependencies và artifact tiên quyết đã nạp sẵn cục bộ; lệnh `uv run` trần không có guard bảo vệ không tự động đảm bảo cách ly mạng nếu thiếu cờ offline.
-  - **Điều kiện tái lập:**
-    - *Tái lập ngoại tuyến:* Sử dụng 15 canonical artifacts đã khóa mật mã trong repo.
+  - **Điều kiện tái lập & Công khai:**
+    - *Tái lập ngoại tuyến từ 15 canonical artifacts đóng băng:* Xác thực tính toàn vẹn toán học và hạch toán tài chính mà KHÔNG tạo ra bất kỳ lượt gọi mô hình trực tiếp hay chi phí token nào.
     - *Tái lập toàn diện luồng live provider:* Yêu cầu nạp credentials thực và chạy dưới cơ chế budget guard trần $19.99 USD.
+    - *Gói bằng chứng công khai:* Hiện được tổ chức dưới dạng danh mục siêu dữ liệu khả chuyển (portable metadata inventory/plan) chờ thẩm định xuất bản chính thức.
   - Toàn bộ 15 artifact và giao thức thực nghiệm được neo giữ bằng mã băm SHA-256 trong `config/canonical_experiment_lock_v1.json`.
 - **Đóng góp khoa học cốt lõi:**
   1. *Quy trình thực nghiệm chuẩn hóa:* Thiết lập giao thức thực nghiệm đối chứng khép kín, chống rò rỉ nhãn đầu tiên cho bài toán Windows log attribution.
@@ -289,9 +293,9 @@
   4. *Bộ công cụ nghiên cứu mở:* Cung cấp toàn bộ mã nguồn, benchmark, kịch bản tạo slide và dữ liệu chứng cứ nguyên vẹn.
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Khả năng tái lập độc lập là cam kết trọng tâm của dự án. Lệnh reproduce_study.py --all tái tạo toàn bộ chẩn đoán, bảng biểu và đồ thị từ 15 artifact đã đóng băng mà không tốn chi phí. Việc kiểm thử bắt buộc sử dụng runner scripts/run_offline_tests.py để kích hoạt OFFLINE_GUARD. Chúng tôi minh bạch rõ ràng: offline_guard là cơ chế đánh chặn ở tầng socket Python và lọc biến môi trường, không phải là sandbox cấp OS. Tái lập toàn diện luồng live provider yêu cầu credentials thực và chạy dưới budget guard kiểm soát ngân sách trần $19.99 USD. Bốn đóng góp khoa học cốt lõi đã thiết lập nền tảng đối chứng vững chắc cho cộng đồng RAG an ninh mạng.
+> "Khả năng kiểm chứng độc lập là cam kết trọng tâm của dự án. Lệnh tái lập khoa học chuẩn tắc là `python scripts/reproduce_canonical_study.py --all`, phân biệt với kịch bản chẩn đoán lịch sử/fixture helper `scripts/reproduce_study.py`. Cơ chế đánh giá ngoại tuyến từ 15 artifacts đã đóng băng nhằm xác thực tính toàn vẹn toán học và hạch toán tài chính mà KHÔNG tạo ra bất kỳ lượt gọi mô hình trực tiếp hay chi phí token mới nào. Runner `scripts/run_offline_tests.py` can thiệp ở tầng socket Python và biến môi trường, không phải là sandbox cấp hệ điều hành. Gói bằng chứng công khai hiện được tổ chức dưới dạng danh mục siêu dữ liệu khả chuyển (portable metadata inventory/plan) chờ thẩm định xuất bản chính thức. Bốn đóng góp thực nghiệm cốt lõi: thiết lập phương pháp luận đo lường đối chứng, phân rã lỗi D2i độc lập, minh bạch độ không chắc chắn thống kê và cung cấp gói chứng cứ có thể kiểm chứng độc lập.
 > 
-> *Bằng chứng dự án:* `config/canonical_experiment_lock_v1.json` (SHA-256: `961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac`); `scripts/reproduce_study.py`; `scripts/run_offline_tests.py`; `tests/test_smoke_cases.py`."
+> *Bằng chứng dự án:* `config/canonical_experiment_lock_v1.json` (SHA-256: `961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac`); `scripts/reproduce_canonical_study.py`; `scripts/run_offline_tests.py`; `tests/test_smoke_cases.py`."
 
 ---
 
@@ -299,20 +303,24 @@
 
 ### Nội dung trình chiếu
 - **Tóm tắt kết luận:**
-  - RAG cung cấp tri thức nền tảng quan trọng; giả thuyết RQ2 về mức độ ảnh hưởng nhân quả của retrieval đang được kiểm chứng đối chứng trên ma trận TEST.
-  - Phân rã lỗi D2i theo 3 trục đo lường độc lập (retrieval miss, downstream generation failure, joint overlap), ghi nhận phần giao thoa khác 0, không giả định độc lập xác suất ngẫu nhiên.
-  - Quy trình tái lập ngoại tuyến: Sử dụng runner `scripts/run_offline_tests.py` can thiệp tầng socket và lọc biến môi trường nhằm giảm thiểu rủi ro rò rỉ credential và kết nối ngoài ý muốn.
+  - RAG cung cấp tri thức nền tảng quan trọng; kết quả đối chứng ghi nhận No-RAG đạt 560/718 (77.99%) vs RAG k=10 quan sát thấy 571/718 (79.53%, Delta = +1.53 pp, 95% CI [-2.355, +5.300] pp chứa 0, không có ý nghĩa thống kê).
+  - Phân rã lỗi D2i theo 3 trục đo lường độc lập (retrieval miss, downstream generation failure, joint overlap): 80.95% số ca phân loại sai (119/147) nằm ở nhánh truy xuất trượt; các trục lỗi độc lập ghi nhận giao thoa thực tế mà không giả định độc lập ngẫu nhiên.
+  - Quy trình tái lập ngoại tuyến: Thực thi tái lập khoa học chuẩn tắc qua `python scripts/reproduce_canonical_study.py --all` (đánh giá ngoại tuyến từ 15 artifacts đã đóng băng, 0 token spend) dưới runner `scripts/run_offline_tests.py` can thiệp tầng socket và lọc biến môi trường.
   - Hiện tượng pha loãng ngữ cảnh (Context Dilution) khẳng định tầm quan trọng của việc tiền lọc log có chọn lọc thay vì nhúng toàn bộ nhật ký xung quanh.
 - **Định hướng phát triển:**
   - Triển khai Hybrid Retrieval (Dense + BM25) để khắc phục triệt để khoảng cách ngữ nghĩa ở các sự kiện như `T1136.001`.
   - Triển khai thực nghiệm mở rộng trên telemetry thực tế khi hoàn thiện khâu khử khuẩn.
-- **Kho lưu trữ & Báo cáo:** Mã nguồn, dữ liệu và báo cáo tái lập sẵn sàng tại: [GitHub PR #26](https://github.com/habachcp6/RAG2ATTCK/pull/26)
+- **Kho lưu trữ & Danh mục siêu dữ liệu khả chuyển:** PR #26 ([GitHub PR #26](https://github.com/habachcp6/RAG2ATTCK/pull/26)); gói công khai ở dạng portable metadata inventory chờ thẩm định xuất bản.
 - **Trân trọng cảm ơn Quý Thầy Cô và Hội Đồng!**  
   *Kính mời Quý Thầy Cô đặt câu hỏi thảo luận (Q&A).*
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Tóm lại, RAG2ATT&CK đo lường thực nghiệm đối chứng vai trò của RAG trong bài toán ánh xạ log Windows sang ATT&CK techniques. Các phát hiện hiện tại phản ánh phạm vi đo lường thực nghiệm và các giả thuyết đang chờ hoàn tất ma trận TEST. Chúng tôi nhấn mạnh tính trung thực khoa học: phân rã lỗi D2i theo các trục đo lường độc lập không giả định độc lập xác suất ngẫu nhiên, và quy trình tái lập sử dụng runner can thiệp socket tầng ứng dụng.
+> "Tóm lại, RAG2ATT&CK đã hoàn tất thực nghiệm đối chứng đo lường vai trò của RAG trong bài toán ánh xạ log Windows sang ATT&CK techniques:
+> 1. Kết quả cốt lõi: No-RAG đạt 77.99% (560/718), RAG k10 quan sát thấy 79.53% (571/718, Delta = +1.53 pp). Khoảng tin cậy 95% CI [-2.355, +5.300] pp chứa 0, cho thấy RAG chưa tạo khác biệt có ý nghĩa thống kê trên benchmark này.
+> 2. Phân rã lỗi: 80.95% lỗi phân loại sai rơi vào trường hợp truy xuất trượt Top-10 (119/147).
+> 3. Tài chính: Chi phí toàn bộ nghiên cứu được kiểm soát chặt chẽ ở mức $6.628399 USD ($6.63 USD committed spend) trên trần ngân sách $19.99 USD.
+> 4. Tái lập & Công khai: Thực thi tái lập khoa học chuẩn tắc qua `python scripts/reproduce_canonical_study.py --all` (đánh giá ngoại tuyến từ artifact đã đóng băng, không phát sinh chi phí). Gói phát hành công khai được tổ chức dạng danh mục siêu dữ liệu khả chuyển chờ thẩm định xuất bản.
 > 
-> *Khai báo công cụ:* Toàn bộ slide deck này được tác tạo tự động bằng kịch bản Python `scripts/generate_slides.py` (sử dụng thư viện `python-pptx` định dạng 16:9 widescreen), được thẩm định hiển thị qua bundled artifact tools.
+> *Khai báo công cụ:* Toàn bộ slide deck này được tác tạo và cập nhật bằng công cụ bundled artifact tools, đảm bảo định dạng PowerPoint native tiếng Việt có thể chỉnh sửa từng shape.
 > 
 > *Bằng chứng dự án:* PR #26 (`https://github.com/habachcp6/RAG2ATTCK/pull/26`); `docs/sanitized_evidence_manifest.json`; `reports/evidence/reproducibility_package_manifest.md`."

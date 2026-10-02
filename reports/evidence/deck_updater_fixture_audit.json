@@ -3,17 +3,18 @@
   "canonical_mode": false,
   "provenance_status": "diagnostic_fixture",
   "disclaimer": "DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS",
-  "timestamp_utc": "2026-10-02T06:13:32.420Z",
+  "timestamp_utc": "2026-10-02T09:57:36.755Z",
   "roundtrip_reimported_verified": true,
   "source_deck_path": "D:\\RAG2ATTCK-worktrees\\repro-presentation-s1\\docs\\presentation\\slides.pptx",
   "candidate_deck_path": "D:\\RAG2ATTCK-worktrees\\repro-presentation-s1\\reports\\evidence\\fixture_populated_slides.pptx",
   "before_sha256": "9e330fe96c506284b6b219c0b4feef458a4cfde9897d4b60c6c73bd4e918152a",
-  "after_sha256": "f8d0abd47fce01e66886797a0a8a3c99392612a40c5f06069ca12f16fd86f9ec",
+  "after_sha256": "801193324db1b0cc2cabbc47b636c8a7775a5eea97afe6ebca0bf4abba0a0678",
   "sha_changed": true,
-  "candidate_file_size_bytes": 384531,
+  "candidate_file_size_bytes": 384932,
   "total_slides_count": 12,
   "total_notes_count": 12,
   "modified_shape_ids": [
+    "sh/032tgr6d",
     "sh/7m98ru9g",
     "sh/98rehwve",
     "sh/fi9c369c",
@@ -27,8 +28,8 @@
   "expected_numeric_slots_count": 67,
   "actual_numeric_slots_count": 67,
   "numeric_slot_edits": 67,
-  "disclaimer_edits": 9,
-  "substitutions_performed": 76,
+  "disclaimer_edits": 10,
+  "substitutions_performed": 77,
   "declarative_mapping": [
     {
       "slot_name": "TOPOLOGY_TOTAL_TEST_VIEWS",
@@ -920,7 +921,7 @@
       "slide_number": 8,
       "injected_value": "[0.3500, 0.6500]",
       "bound_condition": "no_rag",
-      "bound_line": "• 95% CI: no_rag=[0.3500, 0.6500], k1=[0.3600, 0.6600], k3=[0.3800, 0.6800], k5=[0.4100, 0.7100], k10=[0.4300, 0.7300]",
+      "bound_line": "• Absolute Accuracy 95% CIs: no_rag=[0.3500, 0.6500], k1=[0.3600, 0.6600], k3=[0.3800, 0.6800], k5=[0.4100, 0.7100], k10=[0.4300, 0.7300]",
       "verified": true
     },
     {
@@ -956,7 +957,7 @@
       "slide_number": 8,
       "injected_value": "[0.3600, 0.6600]",
       "bound_condition": "rag_k1",
-      "bound_line": "• 95% CI: no_rag=[0.3500, 0.6500], k1=[0.3600, 0.6600], k3=[0.3800, 0.6800], k5=[0.4100, 0.7100], k10=[0.4300, 0.7300]",
+      "bound_line": "• Absolute Accuracy 95% CIs: no_rag=[0.3500, 0.6500], k1=[0.3600, 0.6600], k3=[0.3800, 0.6800], k5=[0.4100, 0.7100], k10=[0.4300, 0.7300]",
       "verified": true
     },
     {
@@ -992,7 +993,7 @@
       "slide_number": 8,
       "injected_value": "[0.3800, 0.6800]",
       "bound_condition": "rag_k3",
-      "bound_line": "• 95% CI: no_rag=[0.3500, 0.6500], k1=[0.3600, 0.6600], k3=[0.3800, 0.6800], k5=[0.4100, 0.7100], k10=[0.4300, 0.7300]",
+      "bound_line": "• Absolute Accuracy 95% CIs: no_rag=[0.3500, 0.6500], k1=[0.3600, 0.6600], k3=[0.3800, 0.6800], k5=[0.4100, 0.7100], k10=[0.4300, 0.7300]",
       "verified": true
     },
     {
@@ -1028,7 +1029,7 @@
       "slide_number": 8,
       "injected_value": "[0.4100, 0.7100]",
       "bound_condition": "rag_k5",
-      "bound_line": "• 95% CI: no_rag=[0.3500, 0.6500], k1=[0.3600, 0.6600], k3=[0.3800, 0.6800], k5=[0.4100, 0.7100], k10=[0.4300, 0.7300]",
+      "bound_line": "• Absolute Accuracy 95% CIs: no_rag=[0.3500, 0.6500], k1=[0.3600, 0.6600], k3=[0.3800, 0.6800], k5=[0.4100, 0.7100], k10=[0.4300, 0.7300]",
       "verified": true
     },
     {
@@ -1064,7 +1065,7 @@
       "slide_number": 8,
       "injected_value": "[0.4300, 0.7300]",
       "bound_condition": "rag_k10",
-      "bound_line": "• 95% CI: no_rag=[0.3500, 0.6500], k1=[0.3600, 0.6600], k3=[0.3800, 0.6800], k5=[0.4100, 0.7100], k10=[0.4300, 0.7300]",
+      "bound_line": "• Absolute Accuracy 95% CIs: no_rag=[0.3500, 0.6500], k1=[0.3600, 0.6600], k3=[0.3800, 0.6800], k5=[0.4100, 0.7100], k10=[0.4300, 0.7300]",
       "verified": true
     },
     {

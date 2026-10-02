@@ -90,6 +90,24 @@ Located in `artifacts/public_package_staging/public_package_manifest.json`:
 - **Cryptographic Transparency:** The derived manifest explicitly carries `derived_from: "00cd9df247af395e924235b42108b91e1fdc7ca3e7a190499cb7544f6bc6612f"` and bears its own distinct SHA-256 seal. It does not masquerade under the original golden bundle hash.
 - **Analytical Invariance:** Zero prediction records, labels, metrics, token counts, or costs are altered. All 16,740 validated fields remain mathematically identical.
 
+### 3.4 Public Staging Manifest Status: Specification & Inventory (Not a 21MB Data Package)
+
+It is critical to distinguish between the publication plan / staging manifest and the physical data bundle:
+- **Current Staging Contents:** `artifacts/public_package_staging/` currently contains **ONLY** `public_package_manifest.json` (~7 KB), which functions strictly as the authoritative publication specification, transform map, and checksum catalog.
+- **Explicit Classification:** The staging directory is an **Inventory Specification & Action Plan**, NOT a staged usable or downloadable data package. It does **NOT** contain the 21,346,826 bytes of raw experimental data files or analytical JSON outputs.
+- **Git Non-Upload Commitment:** The 21MB raw dataset and regenerated output bundles will **NOT** be uploaded or committed to the git repository prior to Root formal review and release packaging approval, preventing git repository bloat.
+
+### 3.5 Materialization, Verification, and Copy Process
+
+Upon Root formal secondary authorization, physical package materialization proceeds according to the following deterministic copy and verification pipeline:
+1. **Target Directory Creation:** Create staging package distribution directory `artifacts/public_package_staging/canonical-bundle-public-v1/`.
+2. **Raw File Ingestion:** Copy all 10 raw experimental input files (`inputs/`) and 8 analytical output files directly from canonical bundle storage without mutating byte sequences.
+3. **Path Neutralization Application:** Apply path neutralization transforms according to the explicit map in `public_package_manifest.json`, replacing 25 workstation-specific Windows absolute paths with portable, relative POSIX paths in manifest metadata.
+4. **Post-Transform Multi-Layer Audit:**
+   - **Byte and Hash Verification:** Compare actual bytes and SHA-256 hashes of all 18 data files against their accepted canonical digests in `canonical_metric_bundle_v1.json`.
+   - **Semantic Field Equivalence:** Verify all 16,740 scientific metrics and diagnostic fields using the deep comparator (`compare_metrics_trees`) to prove zero analytical drift.
+   - **Physical Disk Scan:** Recursively scan the physical staged distribution directory to guarantee zero missing files, zero unintended temporary files, and zero residual absolute path references.
+
 ---
 
 ## 4. Multi-Layer Verification Architecture

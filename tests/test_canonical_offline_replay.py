@@ -10,8 +10,11 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import sys
+import types
 from decimal import Decimal
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -225,3 +228,150 @@ class TestMathematicalComparatorAndFailClosed:
 
         ok, logs = verify_protected_baseline(REPO_ROOT)
         assert ok is True, f"Baseline verification failed: {logs}"
+
+
+class TestDispatchSpiesAndFailClosedReplay:
+    """Verifies evaluator/RQ dispatch spies, mutants, and fail-closed missing module gates."""
+
+    @pytest.mark.skipif(
+        not DEFAULT_BUNDLE_DIR.exists(),
+        reason="Canonical accepted bundle not found on CI runner (local artifact)",
+    )
+    def test_native_evaluator_invocation_spy(self, monkeypatch, tmp_path):
+        """Verify native evaluate_experiment is invoked with strict protocol and inputs."""
+        import src.evaluation.experiment_metrics as em
+        from scripts.reproduce_canonical_study import REPO_ROOT, replay_saved_evaluation
+
+        spy_called: dict[str, Any] = {}
+
+        def mock_evaluate_experiment(inputs, protocol, output_dir=None):
+            spy_called["called"] = True
+            spy_called["inputs"] = inputs
+            spy_called["protocol"] = protocol
+            spy_called["output_dir"] = output_dir
+            return {
+                "overall": {},
+                "per_condition": {},
+                "per_technique": {},
+                "retrieval_conditional": {},
+                "failure_decomposition": {},
+                "run_provenance": {},
+            }
+
+        monkeypatch.setattr(em, "evaluate_experiment", mock_evaluate_experiment)
+
+        # Call replay helper
+        replay_saved_evaluation(DEFAULT_BUNDLE_DIR, tmp_path, REPO_ROOT)
+
+        assert spy_called.get("called") is True, "evaluate_experiment was not invoked"
+        assert spy_called["output_dir"] == tmp_path / "regenerated_native_6"
+        assert hasattr(spy_called["inputs"], "records")
+        assert hasattr(spy_called["protocol"], "protocol_version")
+
+    @pytest.mark.skipif(
+        not DEFAULT_BUNDLE_DIR.exists(),
+        reason="Canonical accepted bundle not found on CI runner (local artifact)",
+    )
+    def test_rq_analysis_invocation_spy(self, monkeypatch, tmp_path):
+        """Verify run_rq_analysis is genuinely invoked with required analytical parameters."""
+        from scripts.reproduce_canonical_study import REPO_ROOT, replay_saved_evaluation
+
+        spy_called: dict[str, Any] = {}
+
+        def mock_run_rq_analysis(**kwargs):
+            spy_called["called"] = True
+            spy_called["kwargs"] = kwargs
+            return {}
+
+        mock_mod = types.ModuleType("scripts.analysis.evaluate_rqs")
+        mock_mod.run_rq_analysis = mock_run_rq_analysis  # type: ignore[attr-defined]
+        monkeypatch.setitem(sys.modules, "scripts.analysis.evaluate_rqs", mock_mod)
+
+        replay_saved_evaluation(DEFAULT_BUNDLE_DIR, tmp_path, REPO_ROOT)
+
+        assert spy_called.get("called") is True, "run_rq_analysis was not invoked"
+        kw = spy_called["kwargs"]
+        assert kw["bootstrap_samples"] == 1000
+        assert kw["seed"] == 42
+        assert kw["output_dir"] == tmp_path / "regenerated_rq"
+        assert kw["journal_path"] == DEFAULT_BUNDLE_DIR / "inputs/request_journal.jsonl"
+        assert kw["study_ledger_path"] == DEFAULT_BUNDLE_DIR / "inputs/study_ledger.json"
+        assert kw["repo_root"] == REPO_ROOT
+
+    def test_rq_mutant_fails_closed(self):
+        """Verify comparator fails closed on mutant RQ p-value, delta-F1, or empty no-op output."""
+        from scripts.reproduce_canonical_study import compare_metrics_trees
+
+        canonical_rq = {
+            "analysis_tool_version": "2.0.0",
+            "rq1": {
+                "headline_delta_f1": 0.05214567,
+                "mcnemar_p_value": 0.00012543,
+            },
+            "rq2": {
+                "retrieval_recall_k5": 0.81234567,
+                "generation_accuracy_conditioned": 0.94123456,
+            },
+            "rq3": {"whole_study_financial_accounting": {"total_settled_cost_usd": "6.57575890"}},
+        }
+
+        # Mutant 1: Wrong metric (divergent McNemar p-value)
+        mutant_p_val = {
+            "analysis_tool_version": "2.0.0",
+            "rq1": {
+                "headline_delta_f1": 0.05214567,
+                "mcnemar_p_value": 0.05000000,
+            },
+            "rq2": {
+                "retrieval_recall_k5": 0.81234567,
+                "generation_accuracy_conditioned": 0.94123456,
+            },
+            "rq3": {"whole_study_financial_accounting": {"total_settled_cost_usd": "6.57575890"}},
+        }
+        ok1, disc1 = compare_metrics_trees(mutant_p_val, canonical_rq, path="rq_analysis.json")
+        assert ok1 is False, "Mutant p-value must fail comparison"
+        assert any("mcnemar_p_value" in d for d in disc1)
+
+        # Mutant 2: Empty no-op result
+        noop_rq = {}
+        ok2, disc2 = compare_metrics_trees(noop_rq, canonical_rq, path="rq_analysis.json")
+        assert ok2 is False, "No-op empty result must fail closed"
+        assert len(disc2) >= 3
+
+    @pytest.mark.skipif(
+        not DEFAULT_BUNDLE_DIR.exists(),
+        reason="Canonical accepted bundle not found on CI runner (local artifact)",
+    )
+    def test_missing_rq_module_fails_closed_never_passes(self, monkeypatch, tmp_path):
+        """Verify that missing scripts.analysis.evaluate_rqs returns False, NEVER True."""
+        from scripts.reproduce_canonical_study import REPO_ROOT, replay_saved_evaluation
+
+        if "scripts.analysis.evaluate_rqs" in sys.modules:
+            monkeypatch.delitem(sys.modules, "scripts.analysis.evaluate_rqs")
+        if "scripts.analysis" in sys.modules:
+            monkeypatch.delitem(sys.modules, "scripts.analysis")
+
+        # In worktree A, evaluate_rqs is naturally not present in repo_root.
+        # Calling replay_saved_evaluation must fail closed and return False.
+        ok, logs = replay_saved_evaluation(DEFAULT_BUNDLE_DIR, tmp_path, REPO_ROOT)
+        assert ok is False, "replay_saved_evaluation MUST return False when RQ module is missing"
+        assert any("[FAIL] Missing required RQ analysis module" in line for line in logs)
+
+    def test_missing_evaluator_module_fails_closed_never_passes(self, monkeypatch, tmp_path):
+        """Verify that missing src.evaluation.experiment_metrics returns False, NEVER True."""
+        import builtins
+
+        from scripts.reproduce_canonical_study import REPO_ROOT, replay_saved_evaluation
+
+        real_import = builtins.__import__
+
+        def fake_import(name, *args, **kwargs):
+            if "src.evaluation.experiment_metrics" in name:
+                raise ImportError("Mocked missing evaluator module")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", fake_import)
+
+        ok, logs = replay_saved_evaluation(DEFAULT_BUNDLE_DIR, tmp_path, REPO_ROOT)
+        assert ok is False, "replay_saved_evaluation MUST return False when evaluator is missing"
+        assert any("[FAIL] Missing required evaluation module" in line for line in logs)

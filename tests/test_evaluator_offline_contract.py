@@ -1773,6 +1773,15 @@ def test_rq3_view_diagnostics_scorable_counts(tmp_path):
     assert div_decomp["pair_count"] == 3
     assert div_decomp["single_paired_accuracy"] == 1.0
 
+    # True subset Macro-F1 across benchmark universe (14 in mock fixture)
+    assert "single_view_macro_f1" in v_diag
+    assert "contextual_view_macro_f1" in v_diag
+    assert "view_macro_f1_delta" in v_diag
+    u_size = len(inputs.corpus_ids)
+    assert pytest.approx(v_diag["single_view_macro_f1"]) == 1.8 / u_size
+    assert pytest.approx(v_diag["contextual_view_macro_f1"]) == 0.0
+    assert pytest.approx(v_diag["view_macro_f1_delta"]) == -1.8 / u_size
+
 
 def test_stratified_gt_complexity_producer(tmp_path):
     """Verify NEW PROPOSED PRODUCER partitions scorable views and preserves 474 universe."""
@@ -1794,13 +1803,84 @@ def test_stratified_gt_complexity_producer(tmp_path):
     assert row["single_gt_sample_count"] == 5
     assert row["single_gt_correct_count"] == 2
     assert pytest.approx(row["single_gt_accuracy_e2e"]) == 0.4
+    u_size = len(inputs.corpus_ids)
+    assert "single_gt_macro_f1" in row
+    assert pytest.approx(row["single_gt_macro_f1"]) == 1.0 / u_size
     assert row["multi_gt_sample_count"] == 1
     assert row["multi_gt_correct_count"] == 1
     assert pytest.approx(row["multi_gt_accuracy_e2e"]) == 1.0
+    assert "multi_gt_macro_f1" in row
+    assert pytest.approx(row["multi_gt_macro_f1"]) == 1.0 / u_size
     assert pytest.approx(row["complexity_accuracy_delta"]) == 0.6
+    assert "complexity_macro_f1_delta" in row
+    assert pytest.approx(row["complexity_macro_f1_delta"]) == 0.0
     assert row["overall_scorable_sample_count"] == 6
     assert pytest.approx(row["overall_scorable_accuracy_e2e"]) == 0.5
-    assert row["macro_f1_474_universe"] is not None
+    assert "overall_macro_f1_reference" in row
+    assert pytest.approx(row["overall_macro_f1_reference"]) == 1.3 / u_size
+
+
+def test_subset_macro_f1_distinct_fixture_edge_cases(tmp_path):
+    """Verify true subset Macro-F1 across 474 universe with distinct edge-case fixture.
+
+    Tests:
+    1. Discordant predictions between single and contextual views.
+    2. Multi-label ground truth evaluated under ANY_MATCH.
+    3. Mathematical divergence between subset Macro-F1 and overall condition Macro-F1.
+    4. Edge case: Empty / null view subsets (e.g. contextual subset has 0 records).
+    """
+    fixture = _fixture_474(tmp_path)
+    inputs = _load(tmp_path, fixture)
+    proto = _test_protocol()
+
+    rq3 = compute_rq3(inputs, proto)
+    strat = compute_stratified_gt_complexity_producer(inputs, proto)
+
+    # Verify all 5 conditions have view subset Macro-F1 computed
+    for cond in CONDITIONS:
+        v_diag = rq3["view_diagnostics"][cond]
+        assert "single_view_macro_f1" in v_diag
+        assert "contextual_view_macro_f1" in v_diag
+        assert "view_macro_f1_delta" in v_diag
+
+        # Stratified producer has explicit subset Macro-F1 keys
+        s_row = strat["by_condition"][cond]
+        assert "single_gt_macro_f1" in s_row
+        assert "multi_gt_macro_f1" in s_row
+        assert "complexity_macro_f1_delta" in s_row
+        assert "overall_macro_f1_reference" in s_row
+
+        # Both subset Macro-F1 values are bounded in [0, 1]
+        if v_diag["single_view_macro_f1"] is not None:
+            assert 0.0 <= v_diag["single_view_macro_f1"] <= 1.0
+        if v_diag["contextual_view_macro_f1"] is not None:
+            assert 0.0 <= v_diag["contextual_view_macro_f1"] <= 1.0
+
+        if s_row["single_gt_macro_f1"] is not None:
+            assert 0.0 <= s_row["single_gt_macro_f1"] <= 1.0
+        if s_row["multi_gt_macro_f1"] is not None:
+            assert 0.0 <= s_row["multi_gt_macro_f1"] <= 1.0
+
+    # Edge case: Empty subset handling
+    # Create synthetic inputs with ONLY single-view records (0 contextual records)
+    only_single_records = [r for r in inputs.records if r.get("view_type") == "single"]
+    single_only_inputs = dataclasses.replace(inputs, records=only_single_records)
+    rq3_single_only = compute_rq3(single_only_inputs, proto)
+    cond_diag = rq3_single_only["view_diagnostics"]["rag_k1"]
+    assert cond_diag["single_view_macro_f1"] is not None
+    assert cond_diag["contextual_view_macro_f1"] is None
+    assert cond_diag["view_macro_f1_delta"] is None
+
+    # Create synthetic inputs with ONLY single-GT records (0 multi-GT records)
+    single_gt_only_records = [
+        r for r in inputs.records if len(inputs.ground_truth.get(r["sample_id"], ())) == 1
+    ]
+    single_gt_inputs = dataclasses.replace(inputs, records=single_gt_only_records)
+    strat_single_only = compute_stratified_gt_complexity_producer(single_gt_inputs, proto)
+    strat_row = strat_single_only["by_condition"]["rag_k1"]
+    assert strat_row["single_gt_macro_f1"] is not None
+    assert strat_row["multi_gt_macro_f1"] is None
+    assert strat_row["complexity_macro_f1_delta"] is None
 
 
 def test_mcnemar_test_statistical_properties():

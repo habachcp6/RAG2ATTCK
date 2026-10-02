@@ -1627,6 +1627,29 @@ def compute_rq3(
             else None
         )
 
+        single_view_records = [r for r in rows if r.get("view_type") == "single"]
+        contextual_view_records = [r for r in rows if r.get("view_type") == "contextual"]
+
+        if single_view_records:
+            single_metrics = compute_condition_metrics(single_view_records, inputs, protocol, cond)
+            single_view_macro_f1 = single_metrics.get("macro_f1")
+        else:
+            single_view_macro_f1 = None
+
+        if contextual_view_records:
+            contextual_metrics = compute_condition_metrics(
+                contextual_view_records, inputs, protocol, cond
+            )
+            contextual_view_macro_f1 = contextual_metrics.get("macro_f1")
+        else:
+            contextual_view_macro_f1 = None
+
+        view_macro_f1_delta = (
+            contextual_view_macro_f1 - single_view_macro_f1
+            if contextual_view_macro_f1 is not None and single_view_macro_f1 is not None
+            else None
+        )
+
         complete_pairs = [p for p in pair_to_views.values() if "single" in p and "contextual" in p]
         both_corr = sum(
             1 for p in complete_pairs if p["single"]["correct"] and p["contextual"]["correct"]
@@ -1718,6 +1741,9 @@ def compute_rq3(
             "single_view_accuracy_e2e": single_acc,
             "contextual_view_accuracy_e2e": contextual_acc,
             "view_accuracy_delta": view_delta,
+            "single_view_macro_f1": single_view_macro_f1,
+            "contextual_view_macro_f1": contextual_view_macro_f1,
+            "view_macro_f1_delta": view_macro_f1_delta,
             "paired_complete_pairs_count": n_pairs,
             "single_paired_accuracy": single_paired_acc,
             "contextual_paired_accuracy": contextual_paired_acc,
@@ -1839,20 +1865,43 @@ def compute_stratified_gt_complexity_producer(
         tot_n = len(scorable_records)
         tot_acc = tot_corr / tot_n if tot_n > 0 else None
 
-        macro_f1 = condition_metrics[cond]["macro_f1"] if cond in condition_metrics else None
+        if single_gt_records:
+            single_gt_metrics = compute_condition_metrics(single_gt_records, inputs, protocol, cond)
+            single_gt_macro_f1 = single_gt_metrics.get("macro_f1")
+        else:
+            single_gt_macro_f1 = None
+
+        if multi_gt_records:
+            multi_gt_metrics = compute_condition_metrics(multi_gt_records, inputs, protocol, cond)
+            multi_gt_macro_f1 = multi_gt_metrics.get("macro_f1")
+        else:
+            multi_gt_macro_f1 = None
+
+        complexity_f1_delta = (
+            multi_gt_macro_f1 - single_gt_macro_f1
+            if multi_gt_macro_f1 is not None and single_gt_macro_f1 is not None
+            else None
+        )
+
+        overall_macro_f1_ref = (
+            condition_metrics[cond]["macro_f1"] if cond in condition_metrics else None
+        )
 
         by_cond[cond] = {
             "condition": cond,
             "single_gt_sample_count": n_s,
             "single_gt_correct_count": s_corr,
             "single_gt_accuracy_e2e": s_acc,
+            "single_gt_macro_f1": single_gt_macro_f1,
             "multi_gt_sample_count": n_m,
             "multi_gt_correct_count": m_corr,
             "multi_gt_accuracy_e2e": m_acc,
+            "multi_gt_macro_f1": multi_gt_macro_f1,
             "complexity_accuracy_delta": delta,
+            "complexity_macro_f1_delta": complexity_f1_delta,
             "overall_scorable_sample_count": tot_n,
             "overall_scorable_accuracy_e2e": tot_acc,
-            "macro_f1_474_universe": macro_f1,
+            "overall_macro_f1_reference": overall_macro_f1_ref,
         }
 
     return {
@@ -2207,9 +2256,11 @@ def generate_rq_markdown_report(analysis_dict: dict[str, Any]) -> str:
             "> *TEST split scorable cohort contains 278 single views and 440 contextual views.* "
             "*Complete paired analysis evaluates the 278 pairs where both views are scorable.*",
             "",
-            "| Condition | Single Acc (All) | Ctx Acc (All) | Single Paired Acc | Ctx Paired Acc | "
-            "Paired Delta (Ctx - Sgl) | Both Corr | Ctx Win | Sgl Win | Both Incorr |",
-            "| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |",
+            "| Condition | Single Acc | Single F1 (474) | Ctx Acc | Ctx F1 (474) | "
+            "Single Paired Acc | Ctx Paired Acc | Paired Delta (Ctx - Sgl) | "
+            "Both Corr | Ctx Win | Sgl Win | Both Incorr |",
+            "| :--- | :---: | :---: | :---: | :---: | :---: | "
+            ":---: | :---: | :---: | :---: | :---: | :---: |",
         ]
     )
 
@@ -2221,9 +2272,19 @@ def generate_rq_markdown_report(analysis_dict: dict[str, Any]) -> str:
             if row.get("single_view_accuracy_e2e") is not None
             else "-"
         )
+        s_f1 = (
+            f"{row.get('single_view_macro_f1', 0.0):.4f}"
+            if row.get("single_view_macro_f1") is not None
+            else "-"
+        )
         c_acc = (
             f"{row.get('contextual_view_accuracy_e2e', 0.0):.4f}"
             if row.get("contextual_view_accuracy_e2e") is not None
+            else "-"
+        )
+        c_f1 = (
+            f"{row.get('contextual_view_macro_f1', 0.0):.4f}"
+            if row.get("contextual_view_macro_f1") is not None
             else "-"
         )
         s_paired = (
@@ -2246,8 +2307,8 @@ def generate_rq_markdown_report(analysis_dict: dict[str, Any]) -> str:
         both_inc = p_conc.get("both_incorrect_count", "-")
 
         lines.append(
-            f"| `{cond}` | {s_acc} | {c_acc} | {s_paired} | {c_paired} | {p_delta_str} | "
-            f"{both_c} | {ctx_win} | {sgl_win} | {both_inc} |"
+            f"| `{cond}` | {s_acc} | {s_f1} | {c_acc} | {c_f1} | {s_paired} | {c_paired} | "
+            f"{p_delta_str} | {both_c} | {ctx_win} | {sgl_win} | {both_inc} |"
         )
 
     lines.extend(
@@ -2325,10 +2386,10 @@ def generate_rq_markdown_report(analysis_dict: dict[str, Any]) -> str:
                 "frozen 474-class benchmark universe. Explicit supervisor authorization is "
                 "required prior to canonical reporting inclusion.",
                 "",
-                "| Condition | Single-GT (N) | Single-GT Acc | Multi-GT (N) | "
-                "Multi-GT Acc (ANY_MATCH) | Complexity Delta (Multi - Single) | "
-                "Overall Scorable Acc | Macro-F1 (474) |",
-                "| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |",
+                "| Condition | Single-GT (N) | Single-GT Acc | Single-GT F1 (474) | Multi-GT (N) | "
+                "Multi-GT Acc (ANY_MATCH) | Multi-GT F1 (474) | Complexity Delta (Acc) | "
+                "Overall Scorable Acc | Overall F1 (Ref) |",
+                "| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |",
             ]
         )
         by_cond_strat = stratified_producer.get("by_condition", {})
@@ -2340,10 +2401,20 @@ def generate_rq_markdown_report(analysis_dict: dict[str, Any]) -> str:
                 if row.get("single_gt_accuracy_e2e") is not None
                 else "-"
             )
+            s_f1 = (
+                f"{row.get('single_gt_macro_f1', 0.0):.4f}"
+                if row.get("single_gt_macro_f1") is not None
+                else "-"
+            )
             n_m = row.get("multi_gt_sample_count", "-")
             m_acc = (
                 f"{row.get('multi_gt_accuracy_e2e', 0.0):.4f}"
                 if row.get("multi_gt_accuracy_e2e") is not None
+                else "-"
+            )
+            m_f1 = (
+                f"{row.get('multi_gt_macro_f1', 0.0):.4f}"
+                if row.get("multi_gt_macro_f1") is not None
                 else "-"
             )
             c_delta = (
@@ -2356,13 +2427,14 @@ def generate_rq_markdown_report(analysis_dict: dict[str, Any]) -> str:
                 if row.get("overall_scorable_accuracy_e2e") is not None
                 else "-"
             )
-            f1 = (
-                f"{row.get('macro_f1_474_universe', 0.0):.4f}"
-                if row.get("macro_f1_474_universe") is not None
+            tot_f1 = (
+                f"{row.get('overall_macro_f1_reference', 0.0):.4f}"
+                if row.get("overall_macro_f1_reference") is not None
                 else "-"
             )
             lines.append(
-                f"| `{cond}` | {n_s} | {s_acc} | {n_m} | {m_acc} | {c_delta} | {tot_acc} | {f1} |"
+                f"| `{cond}` | {n_s} | {s_acc} | {s_f1} | {n_m} | {m_acc} | {m_f1} | "
+                f"{c_delta} | {tot_acc} | {tot_f1} |"
             )
 
     lines.append("")

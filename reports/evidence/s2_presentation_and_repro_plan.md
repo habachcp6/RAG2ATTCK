@@ -3,10 +3,10 @@
 **Subagent Role:** Lead D (Reproducibility & Presentation Lead for Phase S2)  
 **Dedicated Worktree:** `D:/RAG2ATTCK-worktrees/repro-presentation-s1`  
 **Target Branch:** `codex/s1-reproducibility-presentation` (PR #26)  
-**Execution Timestamp (UTC):** 2026-10-02T00:15:00Z (Local: 2026-10-02T07:15:00+07:00)  
-**PRE_SHA:** `55494a433cc70f15f253e34742d5bda2a4762565`  
-**Document Classification:** STRICTLY PLAN-ONLY (Preparation Repair Bounded - UNIFIED_MAPPING_R2 Remediation)  
-**Status:** PLAN-ONLY PENDING CODEX APPROVAL (Do NOT treat as final approved for S2 execution)  
+**Execution Timestamp (UTC):** 2026-10-02T01:25:00Z (Local: 2026-10-02T08:25:00+07:00)  
+**PRE_SHA:** `ebe83519b67f8e07ee255164ec3b39f29cf5abcc`  
+**Document Classification:** STRICTLY PLAN-ONLY (Preparation Repair Bounded - Aligned to `fixture_export_schema_b172.json`)  
+**Status:** PENDING CODEX REVIEW (Do NOT treat as final approved for S2 execution)  
 
 ---
 
@@ -14,11 +14,19 @@
 
 During Phase S1, Subagent D established the offline reproduction infrastructure, frozen protocol cryptographic bindings (15 canonical artifacts under `canonical-lock-v1`), fail-closed execution-mode boundary enforcement (`execution_mode == 'live'`), and a 12-slide bilingual presentation scaffold. In Phase S1, all end-to-end evaluation slides for the full 1,280-sample test matrix (6,400 records) were strictly marked with the `[PENDING EXECUTION]` provenance badge, reflecting ongoing background execution under live runner PID 50192.
 
-Following Codex Supervisor review **UNIFIED_MAPPING_R2**, this document provides a comprehensive, rigorous remediation of the Phase S2 plan. It resolves all scientific and methodological nuances:
-1. Corrects the retrieval embedding model to the frozen repository standard (`sentence-transformers/all-MiniLM-L6-v2`, 384 dimensions, FAISS `IndexFlatIP`).
-2. Disentangles marginal view accuracies (278 single views vs 440 contextual views) from paired cohort metrics on the exact 278 complete scorable pairs, documenting internal cohort composition (238 identical GT pairs vs 40 divergent GT pairs).
-3. Establishes strictly neutral phrasing for conditional metrics ("Correct attribution despite GT absent from retrieved Top-k") and enumerates the complete 5 failure axes.
-4. Unifies authoritative output directory structures across native evaluation (`outputs/canonical_evaluation/`) and secondary research analysis (`outputs/canonical_analysis/rq_analysis.json`).
+Following feedback from the Codex Reviewer, this document provides a comprehensive, rigorous realignment of the Phase S2 plan to 100% match the canonical JSON export schema established in `fixture_export_schema_b172.json` (produced by `scripts/analysis/evaluate_rqs.py` at commit `b17276f`):
+1. **Explicit Review Status:** Label is strictly designated as `PENDING CODEX REVIEW`. Self-approval is strictly forbidden (the plan remains pending Codex supervisor review and cannot be executed until approved).
+2. **100% JSON Pointer Alignment to `fixture_export_schema_b172.json`:**
+   - **Slide 6 (Dataset & Views):** Manifest path `data/ground_truth/synthetic/split_manifest.json`, 718 scorable views, 278 complete scorable pairs (440 distinct eligible clusters across 718 views).
+   - **Slide 7 (RQ1 Attribution):** Pointers to `/rq1/by_condition/{c}/accuracy_end_to_end`, `/rq1/by_condition/{c}/macro_f1`, `/rq1/by_condition/{c}/accuracy_e2e_ci_95`.
+   - **Slide 8 (RQ2 Error Decomposition):** Pointers from `/rq2/by_condition/{c}/...` (retrieval metrics, generation conditional accuracies, independent failure axes, and overlaps).
+   - **Slide 9 (RQ3 Tradeoffs & Costs):**
+     * Latency: `/rq3/tradeoffs_by_condition/{c}/latency_ms/median` (ms to s: divide by 1000)
+     * Tokens: `/rq3/tradeoffs_by_condition/{c}/tokens/mean_prompt_tokens`
+     * Cost: `/rq3/tradeoffs_by_condition/{c}/financial_cost_usd/cost_per_logical_request_usd`
+     * Whole-study: `/rq3/whole_study_accounting/{total_study_budget_usd, canonical_conditions_total_usd, net_remaining_uncommitted_budget_usd}`
+   - **Slide 10 (View Diagnostics & Paired Analysis):** Pointers from `/rq3/view_diagnostics/{c}/...` covering `single_view_accuracy_e2e`, `contextual_view_accuracy_e2e`, `view_accuracy_delta`, `single_paired_accuracy`, `contextual_paired_accuracy`, `paired_delta`, and `mcnemar_test_views_exploratory/p_value_asymptotic` (and exact).
+   - **Slide 11 (Architecture & Reproducibility):** Frozen embedding model specification `all-MiniLM-L6-v2` (384 dimensions, revision `1110a24`, FAISS `IndexFlatIP`).
 
 ### Core Scientific & Engineering Invariants:
 1. **Strictly Zero Mock Findings as Canonical:** Synthetic fixture diagnostics (`outputs/reproduction/fixture_diagnostics/`) remain strictly labeled with `fixture_only=True` (`sample_count=5`, `completed_records=35`, `overall_accuracy=0.5`). Canonical results require the full 1,280 samples x 5 conditions = 6,400 live-provider records.
@@ -30,7 +38,7 @@ Following Codex Supervisor review **UNIFIED_MAPPING_R2**, this document provides
    - `failure_decomposition.json`
    - `run_provenance.json`  
    *(Notice: The native evaluator exports strictly these 6 files. There are NO `evaluation_summary.json` or `condition_metrics.json` files).*
-3. **Secondary Research Analysis Contract:** Post-hoc paired metrics across scenario representations, Pareto trade-off curves, and diagnostic representations are compiled into a dedicated secondary analysis bundle: `outputs/canonical_analysis/rq_analysis.json`.
+3. **Secondary Research Analysis Contract:** Post-hoc paired metrics across scenario representations, Pareto trade-off curves, and diagnostic representations are compiled into a dedicated secondary analysis bundle: `outputs/canonical_analysis/rq_analysis.json` conforming to `fixture_export_schema_b172.json`.
 4. **Authoritative Pricing Tariffs & Configuration:** All pricing tariffs and budget parameters are bound directly to `config/pricing_v1.json`, NOT `experiment_config.json`:
    - Runtime model: `gpt-5.6-luna` with `reasoning_effort: xhigh`, service tier `default`.
    - Standard short-context tariffs:
@@ -40,8 +48,8 @@ Following Codex Supervisor review **UNIFIED_MAPPING_R2**, this document provides
      * Output & reasoning token tariff: **$1.20 USD / 1M tokens** (`output_per_million`)
    - Budget constraints: Pinned hard cap of **$19.99 USD** (`total_study_budget_usd`), conservative provisional hold of **$0.05264010 USD** (`prior_pilot_provisional_hold_usd`), and net starting available budget of **$19.93735990 USD** (`net_available_starting_budget_usd`).
 5. **Frozen Retrieval Pipeline Specification:** In accordance with `config/retrieval.json`:
-   - Embedding Model ID: `sentence-transformers/all-MiniLM-L6-v2`
-   - Embedding Model Revision: `1110a243fdf4706b3f48f1d95db1a4f5529b4d41`
+   - Embedding Model ID: `sentence-transformers/all-MiniLM-L6-v2` (short form: `all-MiniLM-L6-v2`)
+   - Embedding Model Revision: `1110a243fdf4706b3f48f1d95db1a4f5529b4d41` (short ref: `1110a24`)
    - Embedding Vector Dimension: `384`
    - Local Index: FAISS `IndexFlatIP` (Cosine similarity via L2 unit vector normalization)
    *(Eliminate all references to obsolete or non-frozen external embedding models such as `text-embedding-3-large`).*
@@ -62,209 +70,252 @@ Following Codex Supervisor review **UNIFIED_MAPPING_R2**, this document provides
    - **Evaluator Unit Test Fixtures (`outputs/reproduction/fixture_diagnostics/`):** 5 samples, 35 completed records, overall accuracy 0.5 under `_fixture_metadata.json` for offline mathematical validation only.
 9. **Neutral Tone & Elimination of Speculative/Causal Claims:**
    - All claims of psychological/cognitive LLM disruption ("nhồi nhét gây nhiễu", "gây hại reasoning", "tri thức nội tại") are eliminated.
-   - Unverified novelty claims ("đầu tiên chống leakage") and prescriptive technology mandates (imposing "HybridSearch" as mandatory) are replaced with objective empirical observations and suggestions for future exploration.
    - Metric differences and deltas are reported strictly in percentage points (`pp`), never percent (`%`).
 10. **Documented `@oai/artifact-tool` JavaScript Workflow:**
     - PPTX modifications use the verified JavaScript APIs (`importPptx`, `inspect`, `resolve`, `exportPptx`) documented in `@oai/artifact-tool`.
     - Editing operations run on reference staging copies to verify visual fidelity before updating production files. The resulting `.pptx` remains fully openable, editable, and free of clipping.
-    - `scripts/generate_slides.py` is acknowledged strictly as an exploratory preparation scaffold.
 11. **Journal Integrity & Offline Reproduction Decoupling:**
-    - The native JSONL event stream in `request_journal.jsonl` (`event`, `header`, `transition`, `key`, `state`, `attempt`, `ordinal`, `complete`, `record_sha256`) is preserved with byte-level fidelity, avoiding destructive flat-column allowlists.
-    - Existing `reproduce_study.py --generate-figures` reproduces historical Stage B/DEV figures; a dedicated module will handle canonical TEST study figures upon S2 execution. All verification runs under `scripts/run_offline_tests.py` with fail-closed socket guards (`attempted_egress=0`).
+    - The native JSONL event stream in `request_journal.jsonl` is preserved with byte-level fidelity.
+    - All verification runs under `scripts/run_offline_tests.py` with fail-closed socket guards (`attempted_egress=0`).
 
 ---
 
-## 2. Placeholders-to-Deck Mapping for Phase S2 Canonical Updating
+## 2. Canonical Slide Deck Mappings & JSON Pointers (Aligned to `fixture_export_schema_b172.json`)
 
 Once authoritative evaluation on the completed live run directory produces the canonical metric bundle (strictly the 6 native JSON artifacts in `outputs/canonical_evaluation/` and secondary analysis in `outputs/canonical_analysis/rq_analysis.json`), the Vietnamese presentation deck (`docs/presentation/slides.md` and `docs/presentation/slides.pptx`) will be updated by replacing placeholder tokens with verified empirical values.
 
-### 2.1 Slide 6: Phương Pháp & Chi Phí Thực Nghiệm (Budget, Settled Spend & Tariff)
+---
 
-*Objective:* Replace provisional pilot estimates with settled financial ledger metrics and execution telemetry aggregated across all 6,400 live requests.
+### 2.1 Slide 6: Tập Dữ Liệu & Phân Rã Biểu Diễn (Dataset & Views - Split Manifest & Cluster Topology)
+
+*Objective:* Present the empirical dataset topology, split manifest verification, and exact cluster distribution across the TEST split.
 
 | Placeholder Key | Source Path / Extraction Pointer | Semantic Description & Validation Rule |
 | :--- | :--- | :--- |
-| `{{S2_TOTAL_REQUESTS}}` | `run_dir/manifest.json -> sample_count * len(conditions)` | Total requests executed (Must equal exactly `6,400`). |
-| `{{S2_ACTUAL_SETTLED_SPEND_USD}}` | Aggregated from `request_journal.jsonl` / `StudyBudgetLedger` | Total accounted provider cost (USD) based on lockfile tariffs; must satisfy `< $19.99`. |
-| `{{S2_CONSERVATIVE_HOLD_USD}}` | `config/pricing_v1.json -> prior_pilot_provisional_hold_usd` | Retained reference to provisional hold ($0.05264010 USD). |
-| `{{S2_HARD_BUDGET_CAP_USD}}` | `config/pricing_v1.json -> total_study_budget_usd` | Pinned hard cap ($19.99 USD); actual spend must be `< 19.99`. |
-| `{{S2_NATIVE_TARIFF_INPUT}}` | `config/pricing_v1.json -> tariffs.default.short.input_per_million` | Standard input token tariff ($0.20 / 1M tokens). |
-| `{{S2_NATIVE_TARIFF_CACHE_READ}}`| `config/pricing_v1.json -> tariffs.default.short.cache_read_per_million`| Cached prompt read tariff ($0.02 / 1M tokens). |
-| `{{S2_NATIVE_TARIFF_OUTPUT}}` | `config/pricing_v1.json -> tariffs.default.short.output_per_million` | Standard output & reasoning token tariff ($1.20 / 1M tokens). |
-| `{{S2_TOTAL_INPUT_TOKENS}}` | Aggregated from `request_journal.jsonl` / records | Aggregate prompt tokens consumed across all 5 conditions. |
-| `{{S2_TOTAL_OUTPUT_TOKENS}}` | Aggregated from `request_journal.jsonl` / records | Aggregate completion & reasoning tokens consumed. |
-| `{{S2_MEAN_QUERY_LATENCY_MS}}`| Mean of `latency_ms` across completed records in journal | Mean round-trip latency per request (excluding initialization wall time). |
-| `{{S2_TOTAL_WALL_TIME_HOURS}}`| Runner process wall time (`end_time - start_time`) | Total continuous execution duration in hours. |
-| `{{S2_PROVIDER_RETRY_COUNT}}` | Aggregated retry transitions in `request_journal.jsonl` | Total provider retry attempts encountered across the run. |
-| `{{S2_PARSE_STATUS_VALID_COUNT}}`| Count of records with `parse_status == 'VALID'` | Empirically verified valid attribution predictions. |
+| `{{S2_MANIFEST_PATH}}` | `data/ground_truth/synthetic/split_manifest.json` | Frozen split manifest path defining DEV (30 pairs) and TEST (640 pairs). |
+| `{{S2_TOTAL_TEST_VIEWS}}` | `split_manifest.json -> len(test) * 2` | Total empirical views in TEST split (Must equal exactly `1,280`). |
+| `{{S2_SCORABLE_VIEWS}}` | Count of TEST views where `label_status == 'mapped'` and `technique_ids != []` | Total positive scorable views in TEST split (Must equal exactly `718`). |
+| `{{S2_COMPLETE_SCORABLE_PAIRS}}` | Secondary paired analysis (`rq_analysis.json`) | Exactly `278` complete scorable pairs (both single and contextual have valid mapped GT). |
+| `{{S2_CONTEXTUAL_ONLY_PAIRS}}` | Secondary paired analysis (`rq_analysis.json`) | Exactly `162` pairs where only the contextual view has valid mapped GT. |
+| `{{S2_NEITHER_MAPPED_PAIRS}}` | Secondary paired analysis (`rq_analysis.json`) | Exactly `200` pairs where neither view has mapped GT (`278 + 162 + 200 = 640`). |
+| `{{S2_DISTINCT_ELIGIBLE_CLUSTERS}}` | Secondary paired analysis (`rq_analysis.json`) | Exactly `440` distinct eligible clusters (scenario pairs) across the 718 scorable views (`278 + 162 = 440`). |
 
 #### Target Content Outline (Slide 6):
-- **Card 1 (Hạch Toán Chi Phí & Kỷ Cương Ngân Sách):**
-  - Chi phí hạch toán thực tế: `{{S2_ACTUAL_SETTLED_SPEND_USD}}` USD cho 6,400 queries (dưới trần ngân sách đóng băng $19.99 USD tại `config/pricing_v1.json`).
-  - Khoản giữ chỗ thận trọng ban đầu: $0.05264010 USD (`prior_pilot_provisional_hold_usd`).
-  - Biểu giá niêm yết chuẩn (`gpt-5.6-luna`, tier default, short context): Input: `{{S2_NATIVE_TARIFF_INPUT}}` USD/1M tokens; Cache read: `{{S2_NATIVE_TARIFF_CACHE_READ}}` USD/1M tokens; Output: `{{S2_NATIVE_TARIFF_OUTPUT}}` USD/1M tokens.
-  - Tổng token xử lý: `{{S2_TOTAL_INPUT_TOKENS}}` input tokens, `{{S2_TOTAL_OUTPUT_TOKENS}}` output & reasoning tokens.
-  - Lưu ý phương pháp: Số liệu chi phí là giá trị ước tính hạch toán dựa trên biểu giá đóng băng và lượng token thực tế (`billing_invoice_queried: false`), không phải hóa đơn thanh toán trực tiếp từ nhà cung cấp.
-- **Card 2 (Độ Ổn Định & Vận Hành Nhà Cung Cấp):**
-  - Phân loại trạng thái cú pháp theo `ParseStatus`: Ghi nhận `{{S2_PARSE_STATUS_VALID_COUNT}}` kết quả đạt chuẩn VALID theo schema `TechniquePrediction` (trên tổng số 6,400 yêu cầu).
-  - Tần suất thử lại mạng / nhà cung cấp: `{{S2_PROVIDER_RETRY_COUNT}}` lần thử lại được ghi nhận trong nhật ký giao dịch.
-  - Độ trễ phản hồi logic trung bình: `{{S2_MEAN_QUERY_LATENCY_MS}}` ms/request (tổng thời gian thực thi: `{{S2_TOTAL_WALL_TIME_HOURS}}` giờ).
+- **Phân Bổ Kịch Bản & Cụm Đối Chứng (Split Manifest Topology):**
+  - Tệp kê khai phân chia dữ liệu đóng băng: `data/ground_truth/synthetic/split_manifest.json`.
+  - Quy mô tập TEST: 640 cặp kịch bản đối ứng = 1,280 views độc lập.
+  - Phân bố nhãn kiểm chuẩn (Ground-Truth Status):
+    * Số lượng views có nhãn dương tính tính điểm được (Scorable Views): **718 views**.
+    * Số cặp kịch bản hoàn chỉnh (Complete Scorable Pairs): **278 cặp** (cả Single và Contextual view đều có nhãn xác thực hợp lệ).
+    * Số cặp kịch bản chỉ có góc nhìn ngữ cảnh (Contextual-Only Pairs): **162 cặp**.
+    * Số cặp kịch bản không tính điểm (Neither Mapped Pairs - Ambiguous/Unmapped): **200 cặp**.
+    * Số cụm kịch bản hợp lệ tham gia đánh giá (Distinct Eligible Clusters): **440 cụm** trên toàn bộ 718 views (`278 * 2 + 162 = 718`).
+- **Ý Nghĩa Phương Pháp Luận Về Phân Tách Cụm:**
+  - Ngăn ngừa hiện tượng ngụy biện gộp mẫu: 718 views scorable bắt nguồn từ 440 cụm kịch bản khác nhau, trong đó 278 cụm có tính chất đối ứng kép.
 
 #### Speaker Notes Update (Slide 6):
 > "GHI CHÚ DIỄN GIẢ (Slide 6):  
-> Tại Slide 6, toàn bộ số liệu tài chính và vận hành được hạch toán trực tiếp từ nhật ký giao dịch `request_journal.jsonl` và đối soát với `config/pricing_v1.json`. Tổng chi phí hạch toán cho 6,400 truy vấn trên mô hình gpt-5.6-luna (chế độ suy luận xhigh) đạt {{S2_ACTUAL_SETTLED_SPEND_USD}} USD, nằm an toàn trong giới hạn ngân sách 19.99 USD và khoản giữ chỗ ban đầu 0.05264010 USD. Biểu giá áp dụng được chuẩn hóa ở mức 0.20 USD/1M input tokens, 0.02 USD/1M cache read tokens và 1.20 USD/1M output tokens. Về mặt vận hành, hệ thống ghi nhận {{S2_PARSE_STATUS_VALID_COUNT}} kết quả đạt trạng thái VALID theo schema TechniquePrediction, với độ trễ logic trung bình {{S2_MEAN_QUERY_LATENCY_MS}} ms mỗi truy vấn. Cần lưu ý rằng chi phí trên là giá trị hạch toán nội bộ dựa trên số lượng token và biểu giá đã khóa, không phải số liệu trích xuất từ hóa đơn tài chính của OpenAI."
+> Tại Slide 6, cấu trúc tập dữ liệu kiểm chuẩn TEST được công khai minh bạch dựa trên tệp split manifest tại `data/ground_truth/synthetic/split_manifest.json`. Trong tổng số 640 cặp kịch bản (1,280 views), nghiên cứu ghi nhận 718 views có nhãn dương tính đạt chuẩn tính điểm (scorable). Về mặt cấu trúc cụm, 718 views này phân bố trên 440 cụm kịch bản hợp lệ (distinct eligible clusters): bao gồm 278 cặp kịch bản hoàn chỉnh có đủ nhãn ở cả hai góc nhìn (chiếm 556 views) và 162 cặp kịch bản chỉ có góc nhìn contextual đạt chuẩn (chiếm 162 views). 200 cặp còn lại thuộc diện nhãn mơ hồ hoặc unmapped được loại trừ khỏi mẫu số tính điểm theo đúng quyết định D2b-c của giao thức."
 
 ---
 
-### 2.2 Slide 7: Kết Quả RQ1 - Định Danh Kỹ Thuật (End-to-End Attribution Performance)
+### 2.2 Slide 7: Kết Quả RQ1 - Định Danh Kỹ Thuật (RQ1 Attribution Performance)
 
-*Objective:* Remove `[PENDING EXECUTION]` banner; populate official Macro-F1 and End-to-End Accuracy scores across all 5 conditions from native evaluator outputs in `outputs/canonical_evaluation/`.
+*Objective:* Populate official Macro-F1 across the 474-class universe, End-to-End Accuracy scores, and 95% bootstrap confidence intervals across all 5 conditions from `outputs/canonical_analysis/rq_analysis.json` and `outputs/canonical_evaluation/`.
 
 | Placeholder Key | Source Path / JSON Pointer | Semantic Description & Validation Rule |
 | :--- | :--- | :--- |
-| `{{S2_MACRO_F1_NO_RAG}}` | `outputs/canonical_evaluation/per_condition_metrics.json -> /conditions/no_rag/macro_f1` | Macro-F1 score for baseline zero-shot condition ($k=0$). |
-| `{{S2_MACRO_F1_RAG_K1}}` | `outputs/canonical_evaluation/per_condition_metrics.json -> /conditions/rag_k1/macro_f1` | Macro-F1 score for RAG depth $k=1$. |
-| `{{S2_MACRO_F1_RAG_K3}}` | `outputs/canonical_evaluation/per_condition_metrics.json -> /conditions/rag_k3/macro_f1` | Macro-F1 score for RAG depth $k=3$. |
-| `{{S2_MACRO_F1_RAG_K5}}` | `outputs/canonical_evaluation/per_condition_metrics.json -> /conditions/rag_k5/macro_f1` | Macro-F1 score for RAG depth $k=5$. |
-| `{{S2_MACRO_F1_RAG_K10}}`| `outputs/canonical_evaluation/per_condition_metrics.json -> /conditions/rag_k10/macro_f1`| Macro-F1 score for RAG depth $k=10$. |
-| `{{S2_ACC_E2E_NO_RAG}}` | `outputs/canonical_evaluation/per_condition_metrics.json -> /conditions/no_rag/accuracy_end_to_end` | End-to-end accuracy for baseline. |
-| `{{S2_ACC_E2E_RAG_K1}}` | `outputs/canonical_evaluation/per_condition_metrics.json -> /conditions/rag_k1/accuracy_end_to_end` | End-to-end accuracy for RAG $k=1$. |
-| `{{S2_ACC_E2E_RAG_K3}}` | `outputs/canonical_evaluation/per_condition_metrics.json -> /conditions/rag_k3/accuracy_end_to_end` | End-to-end accuracy for RAG $k=3$. |
-| `{{S2_ACC_E2E_RAG_K5}}` | `outputs/canonical_evaluation/per_condition_metrics.json -> /conditions/rag_k5/accuracy_end_to_end` | End-to-end accuracy for RAG $k=5$. |
-| `{{S2_ACC_E2E_RAG_K10}}`| `outputs/canonical_evaluation/per_condition_metrics.json -> /conditions/rag_k10/accuracy_end_to_end`| End-to-end accuracy for RAG $k=10$. |
-| `{{S2_DELTA_MACRO_F1_PP}}`| Computed: `(F1(k=10) - F1(no_rag)) * 100` | Net delta gain/loss in percentage points (`pp`). |
-| `{{S2_BEST_CONDITION}}` | Computed: `argmax_cond(macro_f1)` | Operating condition achieving highest Macro-F1 score. |
+| `{{S2_ACC_E2E_NO_RAG}}` | `/rq1/by_condition/no_rag/accuracy_end_to_end` | End-to-end attribution accuracy for baseline zero-shot condition ($k=0$). |
+| `{{S2_ACC_E2E_RAG_K1}}` | `/rq1/by_condition/rag_k1/accuracy_end_to_end` | End-to-end attribution accuracy for RAG depth $k=1$. |
+| `{{S2_ACC_E2E_RAG_K3}}` | `/rq1/by_condition/rag_k3/accuracy_end_to_end` | End-to-end attribution accuracy for RAG depth $k=3$. |
+| `{{S2_ACC_E2E_RAG_K5}}` | `/rq1/by_condition/rag_k5/accuracy_end_to_end` | End-to-end attribution accuracy for RAG depth $k=5$. |
+| `{{S2_ACC_E2E_RAG_K10}}`| `/rq1/by_condition/rag_k10/accuracy_end_to_end`| End-to-end attribution accuracy for RAG depth $k=10$. |
+| `{{S2_MACRO_F1_NO_RAG}}` | `/rq1/by_condition/no_rag/macro_f1` | Macro-F1 across 474-class universe for baseline ($k=0$). |
+| `{{S2_MACRO_F1_RAG_K1}}` | `/rq1/by_condition/rag_k1/macro_f1` | Macro-F1 for RAG depth $k=1$. |
+| `{{S2_MACRO_F1_RAG_K3}}` | `/rq1/by_condition/rag_k3/macro_f1` | Macro-F1 for RAG depth $k=3$. |
+| `{{S2_MACRO_F1_RAG_K5}}` | `/rq1/by_condition/rag_k5/macro_f1` | Macro-F1 for RAG depth $k=5$. |
+| `{{S2_MACRO_F1_RAG_K10}}`| `/rq1/by_condition/rag_k10/macro_f1`| Macro-F1 for RAG depth $k=10$. |
+| `{{S2_CI_95_NO_RAG}}` | `/rq1/by_condition/no_rag/accuracy_e2e_ci_95` | 95% bootstrap confidence interval `[lower, upper]` for baseline. |
+| `{{S2_CI_95_RAG_K1}}` | `/rq1/by_condition/rag_k1/accuracy_e2e_ci_95` | 95% bootstrap confidence interval `[lower, upper]` for $k=1$. |
+| `{{S2_CI_95_RAG_K3}}` | `/rq1/by_condition/rag_k3/accuracy_e2e_ci_95` | 95% bootstrap confidence interval `[lower, upper]` for $k=3$. |
+| `{{S2_CI_95_RAG_K5}}` | `/rq1/by_condition/rag_k5/accuracy_e2e_ci_95` | 95% bootstrap confidence interval `[lower, upper]` for $k=5$. |
+| `{{S2_CI_95_RAG_K10}}` | `/rq1/by_condition/rag_k10/accuracy_e2e_ci_95` | 95% bootstrap confidence interval `[lower, upper]` for $k=10$. |
+| `{{S2_BEST_RAG_CONDITION}}` | `/rq1/best_rag_condition` | The best performing RAG condition by accuracy. |
+| `{{S2_BEST_RAG_ACC_DELTA}}` | `/rq1/best_rag_accuracy_delta` | Net accuracy gain of best RAG condition vs baseline No-RAG. |
+| `{{S2_BEST_RAG_F1_DELTA}}` | `/rq1/best_rag_macro_f1_delta` | Net Macro-F1 delta of best RAG condition vs baseline No-RAG. |
 
 #### Target Content Outline (Slide 7):
-- **Bảng So Sánh Hiệu Năng 5 Điều Kiện (1,280 Views TEST Split - 718 Positive Scorable Views):**
-  | Điều kiện | Candidate Depth $k$ | Macro-F1 (D2d Universe) | End-to-End Accuracy (`accuracy_end_to_end`) | Delta F1 vs No-RAG (pp) |
+- **Bảng Hiệu Năng RQ1 Trên 718 Positive Scorable Views (TEST Split):**
+  | Điều kiện | Candidate Depth $k$ | End-to-End Accuracy (`accuracy_end_to_end`) | 95% Bootstrap CI (`accuracy_e2e_ci_95`) | Macro-F1 (474 Classes) (`macro_f1`) |
   | :--- | :---: | :---: | :---: | :---: |
-  | `no_rag` | 0 | `{{S2_MACRO_F1_NO_RAG}}` | `{{S2_ACC_E2E_NO_RAG}}` | Baseline |
-  | `rag_k1` | 1 | `{{S2_MACRO_F1_RAG_K1}}` | `{{S2_ACC_E2E_RAG_K1}}` | ... |
-  | `rag_k3` | 3 | `{{S2_MACRO_F1_RAG_K3}}` | `{{S2_ACC_E2E_RAG_K3}}` | ... |
-  | `rag_k5` | 5 | `{{S2_MACRO_F1_RAG_K5}}` | `{{S2_ACC_E2E_RAG_K5}}` | ... |
-  | `rag_k10`| 10 | `{{S2_MACRO_F1_RAG_K10}}`| `{{S2_ACC_E2E_RAG_K10}}` | `{{S2_DELTA_MACRO_F1_PP}}` pp |
-  *(Lưu ý: Chỉ số độ chính xác đầu ra được lấy từ trường `accuracy_end_to_end` của evaluator; không sử dụng nhãn `exact_match`).*
-- **Phân Tích Xu Hướng Hiệu Năng Thực Nghiệm:**
-  - Điểm số Macro-F1 cao nhất đạt được tại điều kiện `{{S2_BEST_CONDITION}}`.
-  - Phân tích tương quan thực nghiệm khi mở rộng độ sâu ứng viên $k$: Ghi nhận xu hướng thay đổi biên độ cải thiện giữa các mốc $k=1, 3, 5, 10$ trên tập dữ liệu kiểm soát synthetic-paired-v1.
+  | `no_rag` | 0 | `{{S2_ACC_E2E_NO_RAG}}` | `{{S2_CI_95_NO_RAG}}` | `{{S2_MACRO_F1_NO_RAG}}` |
+  | `rag_k1` | 1 | `{{S2_ACC_E2E_RAG_K1}}` | `{{S2_CI_95_RAG_K1}}` | `{{S2_MACRO_F1_RAG_K1}}` |
+  | `rag_k3` | 3 | `{{S2_ACC_E2E_RAG_K3}}` | `{{S2_CI_95_RAG_K3}}` | `{{S2_MACRO_F1_RAG_K3}}` |
+  | `rag_k5` | 5 | `{{S2_ACC_E2E_RAG_K5}}` | `{{S2_CI_95_RAG_K5}}` | `{{S2_MACRO_F1_RAG_K5}}` |
+  | `rag_k10`| 10 | `{{S2_ACC_E2E_RAG_K10}}`| `{{S2_CI_95_RAG_K10}}`| `{{S2_MACRO_F1_RAG_K10}}`|
+- **Tổng Kết RQ1:**
+  - Điều kiện RAG tối ưu nhất: `{{S2_BEST_RAG_CONDITION}}` với mức tăng độ chính xác `{{S2_BEST_RAG_ACC_DELTA}}` và thay đổi Macro-F1 `{{S2_BEST_RAG_F1_DELTA}}`.
+  - Toàn bộ khoảng tin cậy 95% được ước lượng qua phương pháp pair-cluster bootstrap resampling (1,000 resamples), bảo toàn tương quan giữa các góc nhìn trong cùng một kịch bản.
 
 #### Speaker Notes Update (Slide 7):
 > "GHI CHÚ DIỄN GIẢ (Slide 7):  
-> Kết quả đo lường RQ1 trên toàn bộ 1,280 mẫu kiểm chuẩn của tập TEST (bao gồm 718 mẫu có ground-truth định danh dương tính) phản ánh rõ nét tác động của việc bổ sung tài liệu tham chiếu từ cơ sở tri thức ATT&CK Enterprise v19.2. Điểm số Macro-F1 thay đổi {{S2_DELTA_MACRO_F1_PP}} điểm phần trăm (pp) khi chuyển từ điều kiện no_rag sang rag_k10. Trong 5 điều kiện khảo sát, giá trị Macro-F1 đạt đỉnh tại điều kiện {{S2_BEST_CONDITION}}. Các kết quả này phản ánh đặc tính thực nghiệm của mô hình gpt-5.6-luna khi tiếp nhận danh sách ứng viên từ mô hình nhúng sentence-transformers/all-MiniLM-L6-v2 (chiều vector 384, chỉ mục FAISS IndexFlatIP) đã đóng băng trong config/retrieval.json, cho thấy biên độ cải thiện có xu hướng điều chỉnh khi số lượng ứng viên tăng lên."
+> Kết quả đo lường RQ1 trên 718 views scorable của tập TEST phản ánh định lượng hiệu quả định danh kỹ thuật tấn công của gpt-5.6-luna qua các độ sâu truy xuất. Độ chính xác end-to-end tăng từ {{S2_ACC_E2E_NO_RAG}} ở nhánh cơ sở no_rag lên {{S2_ACC_E2E_RAG_K10}} ở nhánh rag_k10, với điểm số cao nhất ghi nhận tại điều kiện {{S2_BEST_RAG_CONDITION}} (chênh lệch {{S2_BEST_RAG_ACC_DELTA}} so với no_rag). Khoảng tin cậy 95% bootstrap được tính toán theo phương pháp pair-cluster nhằm kiểm soát hiện tượng phụ thuộc dữ liệu giữa các views cùng cặp. Chỉ số Macro-F1 được đánh giá nghiêm ngặt trên toàn bộ không gian 474 kỹ thuật ATT&CK v19.2 đóng băng theo định đề D2d."
 
 ---
 
-### 2.3 Slide 8: Kết Quả RQ2 - Phân Rã Lỗi Độc Lập D2i & Đánh Giá Có Điều Kiện
+### 2.3 Slide 8: Kết Quả RQ2 - Phân Rã Lỗi Độc Lập D2i & Đánh Giá Có Điều Kiện (RQ2 Error Decomposition)
 
-*Objective:* Populate the complete 5-axis independent error decomposition and retrieval-conditional accuracy probabilities from native evaluator JSON outputs in `outputs/canonical_evaluation/`.
+*Objective:* Populate the 5 independent failure axes, overlap counts, and retrieval-conditional accuracies from `/rq2/by_condition/{c}/...` in `outputs/canonical_analysis/rq_analysis.json`.
 
 | Placeholder Key | Source Path / JSON Pointer | Semantic Description & Validation Rule |
 | :--- | :--- | :--- |
-| `{{S2_RETRIEVAL_MISS_RATE_K10}}` | `failure_decomposition.json -> /by_condition/rag_k10/retrieval_miss_rate` | Trục 1: Ground-truth absent rate in Top-10 candidates. |
-| `{{S2_PROVIDER_FAIL_RATE_K10}}` | `failure_decomposition.json -> /by_condition/rag_k10/provider_failure_rate` | Trục 2: Provider failure / API timeout rate. |
-| `{{S2_PARSE_FAIL_RATE_K10}}` | `failure_decomposition.json -> /by_condition/rag_k10/parse_failure_rate` | Trục 3: Model JSON schema parsing failure rate. |
-| `{{S2_INVALID_ATTACK_ID_RATE_K10}}`| `failure_decomposition.json -> /by_condition/rag_k10/invalid_attack_id_rate` | Trục 4: Syntax regex or v19.2 registry invalidity rate. |
-| `{{S2_WRONG_CLASS_RATE_K10}}` | `failure_decomposition.json -> /by_condition/rag_k10/valid_but_wrong_classification_rate` | Trục 5: Valid ATT&CK ID but wrong technique attribution rate. |
-| `{{S2_OVERLAP_MISS_AND_WRONG_K10}}`| `failure_decomposition.json -> /by_condition/rag_k10/overlap_retrieval_miss_and_wrong_classification` | Raw count of records where retrieval missed AND downstream classification was wrong. |
-| `{{S2_P_CORRECT_GIVEN_RETRIEVED}}`| `retrieval_conditional_metrics.json -> /by_condition/rag_k10/P_correct_given_retrieval_success` | Downstream accuracy given ground truth is present in Top-k. |
-| `{{S2_P_CORRECT_GIVEN_ABSENT}}` | `retrieval_conditional_metrics.json -> /by_condition/rag_k10/P_correct_given_retrieval_failure` | Correct attribution despite GT absent from retrieved Top-k. |
-| `{{S2_NO_RAG_RETRIEVAL_STATUS}}` | Evaluator invariant | Displayed as `N/A` (retrieval is not applicable at $k=0$; count = 0 reflects absence of applicability, not zero failure). |
+| `{{S2_RECALL_AT_K}}` | `/rq2/by_condition/rag_k10/retrieval_metrics/macro_recall` | Macro-average recall across scorable queries at $k=10$. |
+| `{{S2_HIT_RATE_AT_K}}` | `/rq2/by_condition/rag_k10/retrieval_metrics/retrieval_hit_rate` | Retrieval Hit@10 rate on TEST scorable queries. |
+| `{{S2_RETRIEVAL_MISS_RATE_K10}}` | `/rq2/by_condition/rag_k10/independent_failure_axes/retrieval_miss_rate` | Axis 1: Retrieval miss rate (1 - Hit@10). |
+| `{{S2_PROVIDER_FAIL_RATE_K10}}` | `/rq2/by_condition/rag_k10/independent_failure_axes/provider_failure_rate` | Axis 2: Provider failure / API timeout rate. |
+| `{{S2_PARSE_FAIL_RATE_K10}}` | `/rq2/by_condition/rag_k10/independent_failure_axes/parse_failure_rate` | Axis 3: JSON schema parsing failure rate. |
+| `{{S2_INVALID_ATTACK_ID_RATE_K10}}`| `/rq2/by_condition/rag_k10/independent_failure_axes/invalid_attack_id_rate` | Axis 4: Invalid ATT&CK ID rate (regex or catalog invalid). |
+| `{{S2_WRONG_CLASS_RATE_K10}}` | `/rq2/by_condition/rag_k10/independent_failure_axes/valid_but_wrong_classification_rate` | Axis 5: Valid ATT&CK ID but wrong technique attribution rate. |
+| `{{S2_OVERLAP_MISS_AND_WRONG_K10}}`| `/rq2/by_condition/rag_k10/independent_failure_axes/overlap_retrieval_miss_and_wrong_classification` | Raw count: retrieval missed AND classification wrong. |
+| `{{S2_OVERLAP_MISS_AND_PROV_K10}}` | `/rq2/by_condition/rag_k10/independent_failure_axes/overlap_retrieval_miss_and_provider_failure` | Raw count: retrieval missed AND provider failed. |
+| `{{S2_OVERLAP_MISS_AND_PARSE_K10}}`| `/rq2/by_condition/rag_k10/independent_failure_axes/overlap_retrieval_miss_and_parse_failure` | Raw count: retrieval missed AND parse failed. |
+| `{{S2_OVERLAP_MISS_AND_INVAL_K10}}`| `/rq2/by_condition/rag_k10/independent_failure_axes/overlap_retrieval_miss_and_invalid_id` | Raw count: retrieval missed AND invalid ATT&CK ID generated. |
+| `{{S2_P_CORRECT_GIVEN_RETRIEVED}}`| `/rq2/by_condition/rag_k10/generation_conditional_accuracy/P_correct_given_retrieval_success` | Downstream accuracy given ground truth is present in Top-k. |
+| `{{S2_P_CORRECT_GIVEN_ABSENT}}` | `/rq2/by_condition/rag_k10/generation_conditional_accuracy/P_correct_given_retrieval_failure` | Correct attribution despite GT absent from retrieved Top-k. |
 
 #### Target Content Outline (Slide 8):
 - **Phân Rã 5 Trục Thất Bại Độc Lập D2i ($k=10$):**
   - **Trục 1 (Retrieval Miss):** `{{S2_RETRIEVAL_MISS_RATE_K10}}` (kỹ thuật đúng vắng mặt trong Top-10 ứng viên được truy xuất).
-  - **Trục 2 (Provider Failure):** `{{S2_PROVIDER_FAIL_RATE_K10}}` (lỗi kết nối hoặc timeout dịch vụ nhà cung cấp).
+  - **Trục 2 (Provider Failure):** `{{S2_PROVIDER_FAIL_RATE_K10}}` (lỗi kết nối, refusal hoặc timeout nhà cung cấp).
   - **Trục 3 (Parse Failure):** `{{S2_PARSE_FAIL_RATE_K10}}` (lỗi giải mã cấu trúc JSON từ đầu ra mô hình).
-  - **Trục 4 (Invalid ATT&CK ID):** `{{S2_INVALID_ATTACK_ID_RATE_K10}}` (mã sinh ra sai cú pháp hoặc không tồn tại trong registry v19.2).
+  - **Trục 4 (Invalid ATT&CK ID):** `{{S2_INVALID_ATTACK_ID_RATE_K10}}` (mã sinh ra sai cú pháp hoặc ngoài danh mục v19.2).
   - **Trục 5 (Valid but Wrong Classification):** `{{S2_WRONG_CLASS_RATE_K10}}` (mã sinh ra hợp lệ nhưng sai kỹ thuật mục tiêu).
-  - **Số đếm giao thoa (Overlap Miss & Wrong):** `{{S2_OVERLAP_MISS_AND_WRONG_K10}}` trường hợp đồng thời vừa trượt truy xuất vừa sai phân loại (tương ứng với trường `overlap_retrieval_miss_and_wrong_classification`).
-  - *Ghi chú phương pháp luận về `no_rag`:* Điều kiện `no_rag` không áp dụng khâu truy xuất, do đó các chỉ số điều kiện truy xuất được ghi nhận là `N/A` (giá trị 0 trong `failure_decomposition.json` là do không kích hoạt bộ truy xuất, không phải là tỷ lệ lỗi truy xuất bằng 0).
-- **Xác Suất Phân Loại Có Điều Kiện ($k=10$):**
-  - $P(\text{Correct} \mid \text{GT Retrieved in Top-}10)$: `{{S2_P_CORRECT_GIVEN_RETRIEVED}}` (đo lường độ chính xác khi ứng viên đúng có mặt trong Top-10).
-  - $P(\text{Correct} \mid \text{GT Absent from Top-}10)$: `{{S2_P_CORRECT_GIVEN_ABSENT}}` (đo lường khả năng định danh đúng dù kỹ thuật mục tiêu vắng mặt trong Top-k được truy xuất - *Correct attribution despite GT absent from retrieved Top-k*).
+  - **Ma Trận Giao Thoa Độc Lập (Joint Overlaps):**
+    * Trượt truy xuất & Sai phân loại: `{{S2_OVERLAP_MISS_AND_WRONG_K10}}` bản ghi.
+    * Trượt truy xuất & Lỗi nhà cung cấp: `{{S2_OVERLAP_MISS_AND_PROV_K10}}` bản ghi.
+    * Trượt truy xuất & Lỗi phân tích cú pháp: `{{S2_OVERLAP_MISS_AND_PARSE_K10}}` bản ghi.
+    * Trượt truy xuất & Mã không hợp lệ: `{{S2_OVERLAP_MISS_AND_INVAL_K10}}` bản ghi.
+  - *Ghi chú phương pháp luận:* Nhánh `no_rag` không thực hiện truy xuất nên các trường đo lường truy xuất được gán giá trị strictly `null` (N/A).
+- **Xác Suất Phân Loại Có Điều Kiện Khách Quan ($k=10$):**
+  - $P(\text{Correct} \mid \text{GT Retrieved in Top-}10)$: `{{S2_P_CORRECT_GIVEN_RETRIEVED}}`.
+  - $P(\text{Correct} \mid \text{GT Absent from Top-}10)$: `{{S2_P_CORRECT_GIVEN_ABSENT}}` (*Correct attribution despite GT absent from retrieved Top-k*).
 
 #### Speaker Notes Update (Slide 8):
 > "GHI CHÚ DIỄN GIẢ (Slide 8):  
-> Tại Slide 8, khung đánh giá D2i bóc tách đầy đủ 5 trục lỗi độc lập trong quy trình thực nghiệm: (1) Retrieval miss chiếm {{S2_RETRIEVAL_MISS_RATE_K10}}, (2) Provider failure chiếm {{S2_PROVIDER_FAIL_RATE_K10}}, (3) Parse failure chiếm {{S2_PARSE_FAIL_RATE_K10}}, (4) Invalid ATT&CK ID chiếm {{S2_INVALID_ATTACK_ID_RATE_K10}}, và (5) Phân loại sai dù mã hợp lệ chiếm {{S2_WRONG_CLASS_RATE_K10}}. Số trường hợp đồng thời vừa trượt truy xuất vừa sai phân loại ghi nhận là {{S2_OVERLAP_MISS_AND_WRONG_K10}} mẫu. Khảo sát chỉ số điều kiện khách quan cho thấy: khi kỹ thuật mục tiêu nằm trong danh sách Top-10, xác suất dự đoán đúng P(Correct | Retrieved) đạt {{S2_P_CORRECT_GIVEN_RETRIEVED}}; trong khi đó, xác suất định danh đúng dù kỹ thuật mục tiêu vắng mặt trong Top-10 được truy xuất (Correct attribution despite GT absent from retrieved Top-k) ghi nhận ở mức {{S2_P_CORRECT_GIVEN_ABSENT}}. Sự khác biệt thực nghiệm này phản ánh rõ nét mức độ tương quan giữa danh mục ứng viên được gợi ý và kết quả định danh sau cùng."
+> Tại Slide 8, khung đánh giá D2i bóc tách toàn diện 5 trục thất bại độc lập mà không áp đặt tính loại trừ nhân tạo. Ở độ sâu k=10, tỷ lệ trượt truy xuất chiếm {{S2_RETRIEVAL_MISS_RATE_K10}}, lỗi phân loại chiếm {{S2_WRONG_CLASS_RATE_K10}}, cùng số đếm giao thoa {{S2_OVERLAP_MISS_AND_WRONG_K10}} trường hợp đồng thời vừa trượt truy xuất vừa sai phân loại. Về mặt xác suất có điều kiện, khi kỹ thuật mục tiêu xuất hiện trong Top-10, mô hình đạt độ chính xác P(Correct | Retrieved) là {{S2_P_CORRECT_GIVEN_RETRIEVED}}. Ngược lại, khi kỹ thuật mục tiêu vắng mặt trong Top-10, xác suất gán nhãn đúng ghi nhận khách quan ở mức {{S2_P_CORRECT_GIVEN_ABSENT}} (Correct attribution despite GT absent from retrieved Top-k)."
 
 ---
 
-### 2.4 Slide 9: Kết Quả RQ3 - Đánh Đổi Tài Nguyên & Phân Tích Cặp Biểu Diễn Đối Ứng
+### 2.4 Slide 9: Kết Quả RQ3 - Đánh Đổi Độ Sâu, Độ Trễ & Chi Phí Tài Chính (RQ3 Tradeoffs & Costs)
 
-*Objective:* Present the Pareto evaluation (Cost vs. Latency vs. Accuracy) and strictly disentangle marginal view distributions from paired cohort metrics on the 278 complete scorable pairs in the TEST split (source: `outputs/canonical_analysis/rq_analysis.json`).
+*Objective:* Populate empirical latency distributions, token consumption, reconciled per-query financial costs, and whole-study budget ledger accounting from `/rq3/tradeoffs_by_condition/{c}/...` and `/rq3/whole_study_accounting/...` in `outputs/canonical_analysis/rq_analysis.json`.
 
-| Placeholder Key | Source Path / Method | Semantic Description & Validation Rule |
+| Placeholder Key | Source Path / JSON Pointer | Semantic Description & Validation Rule |
 | :--- | :--- | :--- |
-| `{{S2_PARETO_OBSERVED_TRADE_OFF}}`| Computed from cost, latency, Macro-F1 across 5 conditions | The empirical balance point across $(k \in \{0, 1, 3, 5, 10\})$. |
-| `{{S2_EST_COST_PER_REQ_K10}}` | Aggregated from `request_journal.jsonl` / `pricing_v1.json` | Average accounted cost per query at $k=10$. |
-| `{{S2_EST_COST_PER_REQ_NO_RAG}}`| Aggregated from `request_journal.jsonl` / `pricing_v1.json` | Average accounted cost per query at $k=0$. |
-| `{{S2_LATENCY_RATIO_K10_VS_K0}}`| Computed: `mean_latency(rag_k10) / mean_latency(no_rag)` | Ratio of per-record latency increase from No-RAG to RAG $k=10$. |
-| `{{S2_TOTAL_TEST_PAIRS}}` | `config/experiment_config.json -> dataset.expected_pair_count` | Pinned count: `640` pairs (1,280 views in TEST split). |
-| `{{S2_COMPLETE_SCORABLE_PAIRS}}`| Secondary paired analysis (`rq_analysis.json`) | Exactly `278` complete scorable pairs (both single & contextual have valid mapped GT). |
-| `{{S2_CONTEXTUAL_ONLY_PAIRS}}` | Secondary paired analysis (`rq_analysis.json`) | Exactly `162` pairs with only contextual view mapped. |
-| `{{S2_NEITHER_MAPPED_PAIRS}}` | Secondary paired analysis (`rq_analysis.json`) | Exactly `200` pairs with neither view mapped (278 + 162 + 200 = 640). |
-| `{{S2_MARGINAL_SINGLE_VIEW_ACC}}`| Marginal evaluation across all 278 single views | End-to-end attribution accuracy across ALL 278 single views with valid GT. |
-| `{{S2_MARGINAL_CONTEXT_VIEW_ACC}}`| Marginal evaluation across all 440 contextual views | End-to-end attribution accuracy across ALL 440 contextual views with valid GT. |
-| `{{S2_PAIRED_IDENTICAL_GT_PAIRS}}`| Cohort composition (`rq_analysis.json`) | Exactly `238` pairs where single and contextual views share IDENTICAL ground truth. |
-| `{{S2_PAIRED_DIVERGENT_GT_PAIRS}}`| Cohort composition (`rq_analysis.json`) | Exactly `40` pairs where single and contextual views have DIFFERENT ground truth. |
-| `{{S2_PAIRED_SINGLE_ACC}}` | Computed on 278 complete pairs: `(both_corr + single_only) / 278` | Single-view attribution accuracy within the 278 complete scorable pairs cohort. |
-| `{{S2_PAIRED_CONTEXT_ACC}}`| Computed on 278 complete pairs: `(both_corr + context_only) / 278`| Contextual-view attribution accuracy within the 278 complete scorable pairs cohort. |
-| `{{S2_PAIRED_DELTA_PP}}` | Computed: `(PAIRED_SINGLE_ACC - PAIRED_CONTEXT_ACC) * 100` | Net attribution accuracy delta on the 278 complete scorable pairs in percentage points (`pp`). |
-| `{{S2_PAIRWISE_WIN_RATE_SINGLE}}`| Computed: `single_only_correct / 278` | Win rate where Single is correct and Contextual is incorrect across 278 pairs. |
-| `{{S2_PAIRWISE_WIN_RATE_CONTEXT}}`| Computed: `contextual_only_correct / 278` | Win rate where Contextual is correct and Single is incorrect across 278 pairs. |
-| `{{S2_PAIRWISE_BOTH_CORRECT_RATE}}`| Computed: `both_correct / 278` | Proportion of pairs where both representations are correct across 278 pairs. |
-| `{{S2_PAIRWISE_BOTH_INCORRECT_RATE}}`| Computed: `both_incorrect / 278` | Proportion of pairs where both representations are incorrect across 278 pairs. |
+| `{{S2_MEDIAN_LAT_NO_RAG_SEC}}` | `/rq3/tradeoffs_by_condition/no_rag/latency_ms/median` / 1000 | Median latency in seconds for baseline ($k=0$). |
+| `{{S2_MEDIAN_LAT_K10_SEC}}` | `/rq3/tradeoffs_by_condition/rag_k10/latency_ms/median` / 1000 | Median latency in seconds for RAG $k=10$. |
+| `{{S2_MEAN_PROMPT_TOK_NO_RAG}}` | `/rq3/tradeoffs_by_condition/no_rag/tokens/mean_prompt_tokens` | Mean prompt tokens per request for baseline ($k=0$). |
+| `{{S2_MEAN_PROMPT_TOK_K10}}` | `/rq3/tradeoffs_by_condition/rag_k10/tokens/mean_prompt_tokens` | Mean prompt tokens per request for RAG $k=10$. |
+| `{{S2_COST_LOGICAL_REQ_NO_RAG}}` | `/rq3/tradeoffs_by_condition/no_rag/financial_cost_usd/cost_per_logical_request_usd` | Reconciled cost per logical request ($N=1,280$) for baseline. |
+| `{{S2_COST_LOGICAL_REQ_K10}}` | `/rq3/tradeoffs_by_condition/rag_k10/financial_cost_usd/cost_per_logical_request_usd` | Reconciled cost per logical request ($N=1,280$) for RAG $k=10$. |
+| `{{S2_TOTAL_STUDY_BUDGET_USD}}` | `/rq3/whole_study_accounting/total_study_budget_usd` | Pinned study-wide budget cap ($19.99 USD). |
+| `{{S2_CANONICAL_TOTAL_USD}}` | `/rq3/whole_study_accounting/canonical_conditions_total_usd` | Reconciled total expenditure across all 5 canonical test conditions (USD). |
+| `{{S2_NET_REMAINING_USD}}` | `/rq3/whole_study_accounting/net_remaining_uncommitted_budget_usd` | Net uncommitted study budget remaining after all 6,400 runs (USD). |
+| `{{S2_PRIOR_PILOT_HOLD_USD}}` | `/rq3/whole_study_accounting/prior_pilot_provisional_hold_usd` | Retained reference to provisional pilot reservation ($0.05264010 USD). |
 
 #### Target Content Outline (Slide 9):
-- **Phân Tích Đánh Đổi Kinh Tế Kỹ Thuật (Cost - Latency - Accuracy):**
-  - Chi phí hạch toán trung bình tăng từ `{{S2_EST_COST_PER_REQ_NO_RAG}}` USD (no_rag) lên `{{S2_EST_COST_PER_REQ_K10}}` USD (rag_k10).
-  - Độ trễ logic trung bình tăng `{{S2_LATENCY_RATIO_K10_VS_K0}}`x giữa điều kiện no_rag và rag_k10.
-  - Tương quan hiệu năng trên chi phí: Xu hướng biên độ cải thiện Macro-F1 so với tốc độ tiêu hao token khi $k$ tăng từ 1 đến 10.
-- **Phân Biệt Rạch Ròi Hai Lớp Đo Lường Biểu Diễn:**
-  - **Lớp 1: Phân Phối Biên (Marginal View Accuracy - Kích thước mẫu không bằng nhau, không so sánh nhân quả):**
-    * Độ chính xác trên toàn bộ 278 Single views có nhãn hợp lệ: `{{S2_MARGINAL_SINGLE_VIEW_ACC}}`.
-    * Độ chính xác trên toàn bộ 440 Contextual views có nhãn hợp lệ: `{{S2_MARGINAL_CONTEXT_VIEW_ACC}}` (278 cặp hoàn chỉnh + 162 cặp chỉ có Contextual = 440 views).
-    * *Cảnh báo phương pháp luận:* Tuyệt đối không nhầm lẫn giá trị 440 Contextual views này là độ chính xác của nhóm 278 cặp đối ứng!
-  - **Lớp 2: Đánh Giá Đối Ứng Cặp Chuẩn (Paired Cohort Analysis trên 278 Cặp Hoàn Chỉnh):**
-    * Thành phần cấu tạo 278 cặp hoàn chỉnh: `238` cặp có ground-truth trùng khớp hoàn toàn (`{{S2_PAIRED_IDENTICAL_GT_PAIRS}}`), và `40` cặp có ground-truth khác biệt (`{{S2_PAIRED_DIVERGENT_GT_PAIRS}}`). Nghiên cứu báo cáo đầy đủ toàn bộ 278 cặp, không âm thầm loại bỏ 40 cặp có nhãn khác biệt.
-    * Độ chính xác nội bộ nhóm 278 cặp: Single view = `{{S2_PAIRED_SINGLE_ACC}}` vs Contextual view = `{{S2_PAIRED_CONTEXT_ACC}}` (chênh lệch paired delta: `{{S2_PAIRED_DELTA_PP}}` pp).
-    * Phân loại 4 trạng thái đối đầu trên 278 cặp:
-      - Chỉ Single đúng: `{{S2_PAIRWISE_WIN_RATE_SINGLE}}` (`single_only_correct`).
-      - Chỉ Contextual đúng: `{{S2_PAIRWISE_WIN_RATE_CONTEXT}}` (`contextual_only_correct`).
-      - Cả hai cùng đúng: `{{S2_PAIRWISE_BOTH_CORRECT_RATE}}` (`both_correct`).
-      - Cả hai cùng sai: `{{S2_PAIRWISE_BOTH_INCORRECT_RATE}}` (`both_incorrect`).
+- **Bảng Đánh Đổi Tài Nguyên Theo Độ Sâu $k \in \{0, 1, 3, 5, 10\}$:**
+  | Điều kiện | $k$ | Median Latency (s) | Mean Prompt Tokens | Reconciled Cost / Logical Request ($) | Total Condition Spend ($) |
+  | :--- | :---: | :---: | :---: | :---: | :---: |
+  | `no_rag` | 0 | `{{S2_MEDIAN_LAT_NO_RAG_SEC}}` s | `{{S2_MEAN_PROMPT_TOK_NO_RAG}}` | `{{S2_COST_LOGICAL_REQ_NO_RAG}}` $ | ... |
+  | `rag_k1` | 1 | ... | ... | ... | ... |
+  | `rag_k3` | 3 | ... | ... | ... | ... |
+  | `rag_k5` | 5 | ... | ... | ... | ... |
+  | `rag_k10`| 10 | `{{S2_MEDIAN_LAT_K10_SEC}}` s | `{{S2_MEAN_PROMPT_TOK_K10}}` | `{{S2_COST_LOGICAL_REQ_K10}}` $ | ... |
+- **Hạch Toán Ngân Sách Toàn Nghiên Cứu (`whole_study_accounting`):**
+  - Trần ngân sách tối đa: `{{S2_TOTAL_STUDY_BUDGET_USD}}` USD (khóa cứng $19.99 USD).
+  - Tổng chi phí thực tế cho 5 điều kiện chính thức (6,400 queries): `{{S2_CANONICAL_TOTAL_USD}}` USD.
+  - Khoản giữ chỗ thận trọng ban đầu: `{{S2_PRIOR_PILOT_HOLD_USD}}` USD ($0.05264010 USD).
+  - Số dư ngân sách khả dụng còn lại: `{{S2_NET_REMAINING_USD}}` USD.
+  - *Lưu ý phương pháp:* Chi phí được hạch toán độc lập qua đối soát biên nhận giao dịch (`request_journal.jsonl`) và biểu giá đóng băng tại `config/pricing_v1.json` (`billing_invoice_queried: false`).
 
 #### Speaker Notes Update (Slide 9):
 > "GHI CHÚ DIỄN GIẢ (Slide 9):  
-> Slide 9 trình bày hai bình diện đo lường: đánh đổi tài nguyên và phân tích đối ứng hình thức biểu diễn log. Về tài nguyên, khi tăng k từ 0 lên 10, chi phí hạch toán trung bình tăng từ {{S2_EST_COST_PER_REQ_NO_RAG}} USD lên {{S2_EST_COST_PER_REQ_K10}} USD cùng độ trễ logic tăng {{S2_LATENCY_RATIO_K10_VS_K0}} lần. Về hình thức biểu diễn, nghiên cứu phân biệt rạch ròi giữa hai lớp số liệu: (1) Phân phối biên thuần túy ghi nhận độ chính xác trên toàn bộ 278 single views đạt {{S2_MARGINAL_SINGLE_VIEW_ACC}} và trên toàn bộ 440 contextual views đạt {{S2_MARGINAL_CONTEXT_VIEW_ACC}}; đây là hai mẫu có quy mô khác nhau và không mang ý nghĩa so sánh nhân quả trực tiếp. (2) Đánh giá đối ứng cặp được kiểm soát chặt chẽ trên đúng 278 cặp hoàn chỉnh có đủ nhãn ở cả hai góc nhìn (trong đó 238 cặp có nhãn trùng khớp và 40 cặp có nhãn khác biệt được báo cáo đầy đủ, minh bạch). Trên cohort 278 cặp này, độ chính xác của Single đạt {{S2_PAIRED_SINGLE_ACC}} so với {{S2_PAIRED_CONTEXT_ACC}} của Contextual, tạo mức chênh lệch {{S2_PAIRED_DELTA_PP}} điểm phần trăm (pp). Tỷ lệ đối đầu ghi nhận Single thắng trong {{S2_PAIRWISE_WIN_RATE_SINGLE}} số cặp, Contextual thắng trong {{S2_PAIRWISE_WIN_RATE_CONTEXT}}, cả hai cùng đúng chiếm {{S2_PAIRWISE_BOTH_CORRECT_RATE}}, và cả hai cùng sai chiếm {{S2_PAIRWISE_BOTH_INCORRECT_RATE}}."
+> Slide 9 làm rõ quy luật đánh đổi giữa tài nguyên tính toán và chi phí tài chính trong RQ3. Khi mở rộng độ sâu k từ 0 lên 10, lượng prompt token trung bình tăng từ {{S2_MEAN_PROMPT_TOK_NO_RAG}} lên {{S2_MEAN_PROMPT_TOK_K10}} tokens, kéo theo độ trễ trung vị (median latency) tăng từ {{S2_MEDIAN_LAT_NO_RAG_SEC}} giây lên {{S2_MEDIAN_LAT_K10_SEC}} giây. Chi phí trung bình cho mỗi yêu cầu logic tăng từ {{S2_COST_LOGICAL_REQ_NO_RAG}} USD lên {{S2_COST_LOGICAL_REQ_K10}} USD. Toàn bộ 6,400 yêu cầu tiêu tốn tổng cộng {{S2_CANONICAL_TOTAL_USD}} USD, nằm an toàn dưới trần ngân sách 19.99 USD với số dư khả dụng còn lại là {{S2_NET_REMAINING_USD}} USD."
 
 ---
 
-### 2.5 Slide 10: Đóng Góp Cốt Lõi, Hạn Chế & Ranh Giới Dữ Liệu (Scope & Limitations)
+### 2.5 Slide 10: Chẩn Đoán Góc Nhìn & Phân Tích Cặp Biểu Diễn (View Diagnostics & Paired Analysis)
 
-*Objective:* Frame findings strictly within empirical benchmark boundaries (`synthetic-paired-v1`) and outline technical trade-offs objectively.
+*Objective:* Disentangle marginal view distributions from paired cohort metrics on the 278 complete scorable pairs using pointers from `/rq3/view_diagnostics/{c}/...` in `outputs/canonical_analysis/rq_analysis.json`.
 
-| Placeholder Key | Source Path / Method | Semantic Description & Validation Rule |
+| Placeholder Key | Source Path / JSON Pointer | Semantic Description & Validation Rule |
 | :--- | :--- | :--- |
-| `{{S2_BENCHMARK_TOTAL_VIEWS}}` | `data/ground_truth/synthetic/dataset_manifest.json -> total_views` | Full synthetic benchmark views: `1,340` (1,280 TEST + 60 DEV). |
-| `{{S2_TEST_SPLIT_VIEWS}}` | `config/experiment_config.json -> dataset.expected_sample_count` | Canonical test split views: `1,280` (640 pairs). |
-| `{{S2_T20_DIAGNOSTIC_VIEWS}}` | `artifacts/analysis/t20_retrieval_failure_summary.json` | 756 positive views evaluated across full Stage B benchmark (Hit@10 = 45.11%). |
-| `{{S2_SEMANTIC_GAP_TECHNIQUE}}` | Historical retrieval observation | `T1136.001` (Create Account: Local Account) exhibiting 0% Hit@10 under dense semantic search. |
+| `{{S2_SINGLE_VIEW_ACC_E2E}}` | `/rq3/view_diagnostics/rag_k10/single_view_accuracy_e2e` | Marginal attribution accuracy across ALL 278 single views with valid GT. |
+| `{{S2_CONTEXT_VIEW_ACC_E2E}}` | `/rq3/view_diagnostics/rag_k10/contextual_view_accuracy_e2e` | Marginal attribution accuracy across ALL 440 contextual views with valid GT. |
+| `{{S2_VIEW_ACC_DELTA}}` | `/rq3/view_diagnostics/rag_k10/view_accuracy_delta` | Marginal delta: `single_view_accuracy_e2e - contextual_view_accuracy_e2e`. |
+| `{{S2_PAIRED_SINGLE_ACC}}` | `/rq3/view_diagnostics/rag_k10/single_paired_accuracy` | Single-view accuracy within the 278 complete scorable pairs cohort. |
+| `{{S2_PAIRED_CONTEXT_ACC}}`| `/rq3/view_diagnostics/rag_k10/contextual_paired_accuracy` | Contextual-view accuracy within the 278 complete scorable pairs cohort. |
+| `{{S2_PAIRED_DELTA_PP}}` | `/rq3/view_diagnostics/rag_k10/paired_delta` | Paired delta: `single_paired_accuracy - contextual_paired_accuracy` in pp. |
+| `{{S2_MCNEMAR_P_ASYMPT}}` | `/rq3/view_diagnostics/rag_k10/mcnemar_test_views_exploratory/p_value_asymptotic` | Asymptotic p-value from exploratory paired McNemar test on 278 pairs. |
+| `{{S2_MCNEMAR_P_EXACT}}` | `/rq3/view_diagnostics/rag_k10/mcnemar_test_views_exploratory/p_value_exact` | Exact binomial p-value from exploratory paired McNemar test on 278 pairs. |
+| `{{S2_BOTH_CORRECT_COUNT}}` | `/rq3/view_diagnostics/rag_k10/pair_concordance/both_correct_count` | Number of pairs where both representations yielded correct attribution. |
+| `{{S2_SINGLE_ONLY_CORRECT}}` | `/rq3/view_diagnostics/rag_k10/pair_concordance/single_only_correct_count` | Number of pairs where only Single view was correct. |
+| `{{S2_CONTEXT_ONLY_CORRECT}}`| `/rq3/view_diagnostics/rag_k10/pair_concordance/contextual_only_correct_count` | Number of pairs where only Contextual view was correct. |
+| `{{S2_BOTH_INCORRECT_COUNT}}`| `/rq3/view_diagnostics/rag_k10/pair_concordance/both_incorrect_count` | Number of pairs where both representations were incorrect. |
 
 #### Target Content Outline (Slide 10):
-- **Bốn Đóng Góp Phương Pháp Luận Cốt Lõi:**
-  1. *Quy trình đối chứng kiểm soát rò rỉ dữ liệu:* Thiết lập phương pháp thẩm định chặt chẽ, ngăn chặn rò rỉ thông tin ground-truth trong quy trình đánh giá log Windows.
-  2. *Khung phân rã lỗi 5 trục D2i:* Định lượng độc lập 5 trục thất bại: retrieval miss, provider failure, parse failure, invalid ID, wrong classification cùng số đếm giao thoa.
-  3. *Đo lường đánh đổi tài nguyên:* Cung cấp số liệu định lượng về tương quan giữa số lượng token, độ trễ và biên độ thay đổi Macro-F1 qua các độ sâu $k$.
-  4. *Khảo sát thực nghiệm về khoảng cách biểu diễn:* Cung cấp dữ liệu đối đầu trên 278 cặp kịch bản hoàn chỉnh với phân định rạch ròi giữa phân phối biên (278 vs 440 views) và đánh giá đối ứng cặp nội bộ.
-- **Ranh Giới Dữ Liệu & Hướng Nghiên Cứu Mở Rộng:**
-  - *Ranh giới tập dữ liệu:* Toàn bộ các kết luận thực nghiệm được đóng khung trên tập dữ liệu kiểm soát `synthetic-paired-v1` (1,280 views tập TEST; 1,340 views toàn bộ benchmark), chưa khái quát hóa sang các hệ thống log SOC thực địa với lưu lượng phân tán lớn.
-  - *Đặc tính của mô hình nhúng ngữ nghĩa đơn tầng:* Khảo sát chẩn đoán T20 trên 756 mẫu dương tính toàn benchmark ghi nhận tỷ lệ vắng mặt trong Top-10 đạt 54.89% (Hit@10 = 45.11%), trong đó một số kỹ thuật chứa định danh số như `T1136.001` (Event ID 4720) đạt 0% Hit@10. Dữ liệu thực nghiệm này gợi mở tính khả thi của việc kết hợp phương pháp tìm kiếm lai (Hybrid Search: Dense Semantic + Từ khóa/BM25) trong các nghiên cứu tiếp theo.
+- **Phân Biệt Hai Lớp Đo Lường Biểu Diễn:**
+  - **Lớp 1: Phân Phối Biên (Marginal View Accuracies - Kích thước mẫu không bằng nhau, không mang tính so sánh nhân quả):**
+    * Độ chính xác trên toàn bộ 278 Single views: `{{S2_SINGLE_VIEW_ACC_E2E}}`.
+    * Độ chính xác trên toàn bộ 440 Contextual views: `{{S2_CONTEXT_VIEW_ACC_E2E}}` (278 complete pairs + 162 contextual-only pairs = 440 views).
+    * Chênh lệch phân phối biên: `{{S2_VIEW_ACC_DELTA}}`.
+    * *Cảnh báo khoa học:* Không được nhầm lẫn số liệu 440 contextual views là độ chính xác đối ứng của 278 cặp!
+  - **Lớp 2: Đánh Giá Đối Ứng Cặp Chuẩn (Paired Cohort Analysis trên 278 Cặp Hoàn Chỉnh):**
+    * Cơ cấu nội bộ của 278 cặp hoàn chỉnh: **238 cặp** có ground-truth trùng khớp hoàn toàn, và **40 cặp** có ground-truth phân kỳ giữa hai góc nhìn. Toàn bộ 278 cặp được báo cáo minh bạch.
+    * Độ chính xác đối ứng nội bộ: Single = `{{S2_PAIRED_SINGLE_ACC}}` vs Contextual = `{{S2_PAIRED_CONTEXT_ACC}}` (chênh lệch: `{{S2_PAIRED_DELTA_PP}}` pp).
+    * Ma trận hòa hợp cặp (Pair Concordance Matrix across 278 pairs):
+      - Cả hai cùng đúng: `{{S2_BOTH_CORRECT_COUNT}}` cặp.
+      - Chỉ Single đúng: `{{S2_SINGLE_ONLY_CORRECT}}` cặp.
+      - Chỉ Contextual đúng: `{{S2_CONTEXT_ONLY_CORRECT}}` cặp.
+      - Cả hai cùng sai: `{{S2_BOTH_INCORRECT_COUNT}}` cặp.
+    * Kiểm định McNemar thăm dò: $p_{\text{asymptotic}} =$ `{{S2_MCNEMAR_P_ASYMPT}}`, $p_{\text{exact}} =$ `{{S2_MCNEMAR_P_EXACT}}`.
 
 #### Speaker Notes Update (Slide 10):
 > "GHI CHÚ DIỄN GIẢ (Slide 10):  
-> Slide 10 tổng kết các đóng góp phương pháp luận và nhấn mạnh ranh giới khoa học của đề tài: mọi kết luận đều được rút ra từ tập kiểm chuẩn synthetic-paired-v1 với 1,280 mẫu kiểm tra chính thức và chưa suy diễn vượt ranh giới này sang môi trường thực địa. Nghiên cứu cũng chỉ ra rằng việc chỉ sử dụng một tầng mô hình nhúng ngữ nghĩa dense embedding (sentence-transformers/all-MiniLM-L6-v2) bộc lộ hạn chế đối với các định danh hệ thống đặc thù (như Event ID trong T1136.001 với 0% Hit@10 trong chẩn đoán T20). Đây là cơ sở thực nghiệm rõ ràng để đề xuất việc khảo sát các kiến trúc Hybrid Search kết hợp từ khóa trong các công trình nghiên cứu tiếp theo."
+> Slide 10 làm rõ sự khác biệt giữa phân phối biên và đánh giá đối ứng cặp trên tập TEST. Ở cấp độ phân phối biên với quy mô mẫu không bằng nhau, 278 single views đạt độ chính xác {{S2_SINGLE_VIEW_ACC_E2E}} trong khi 440 contextual views đạt {{S2_CONTEXT_VIEW_ACC_E2E}}. Khi đi sâu vào phân tích đối ứng cặp trên đúng 278 cặp hoàn chỉnh (bao gồm 238 cặp trùng nhãn và 40 cặp phân kỳ nhãn), độ chính xác của Single đạt {{S2_PAIRED_SINGLE_ACC}} so với {{S2_PAIRED_CONTEXT_ACC}} của Contextual, tạo mức chênh lệch paired delta là {{S2_PAIRED_DELTA_PP}} điểm phần trăm (pp). Kiểm định McNemar thăm dò cho thấy mức ý nghĩa thống kê với p_value_asymptotic = {{S2_MCNEMAR_P_ASYMPT}} và p_value_exact = {{S2_MCNEMAR_P_EXACT}}."
+
+---
+
+### 2.6 Slide 11: Đặc Tả Kiến Trúc Mô Hình & Năng Lực Tái Lập (Architecture Specification & Reproducibility)
+
+*Objective:* Detail the frozen retrieval embedding pipeline specification and certified zero-cost offline reproduction protocol.
+
+| Specification Element | Frozen Repository Value / Pointer | Validation Contract |
+| :--- | :--- | :--- |
+| **Embedding Model ID** | `sentence-transformers/all-MiniLM-L6-v2` (short: `all-MiniLM-L6-v2`) | Pinned in `config/retrieval.json -> embedding.model_name`. |
+| **Embedding Dimension** | `384` | Pinned in `config/retrieval.json -> embedding.dimension`. |
+| **Model Git Revision** | `1110a243fdf4706b3f48f1d95db1a4f5529b4d41` (short: `1110a24`) | Pinned in `config/retrieval.json -> embedding.revision`. |
+| **FAISS Index Type** | `IndexFlatIP` (Cosine similarity qua chuẩn hóa $L_2$) | Pinned in `config/retrieval.json -> index.metric`. |
+| **Knowledge Corpus** | `attack/corpus/enterprise-windows-v19.2.jsonl` (474 techniques) | Cryptographic hash in `config/canonical_experiment_lock_v1.json`. |
+| **Runtime LLM** | `gpt-5.6-luna` (reasoning: xhigh, interface: responses) | Pinned in `config/experiment_config.json`. |
+| **Offline Verification Guard** | `scripts/run_offline_tests.py` (`attempted_egress=0`) | Python socket layer interception preventing accidental external network egress. |
+| **Automated Reproduction** | `python scripts/reproduce_study.py --all` | Recompiles diagnostics, tables, figures from 15 canonical lockfile artifacts. |
+
+#### Target Content Outline (Slide 11):
+- **Đặc Tả Kỹ Thuật Pipeline Nhúng & Truy Xuất Đóng Băng:**
+  - Mô hình nhúng chuẩn: `sentence-transformers/all-MiniLM-L6-v2` (`all-MiniLM-L6-v2`).
+  - Chiều không gian vector: 384 dimensions.
+  - Mã băm phiên bản mô hình (Git Revision): `1110a243fdf4706b3f48f1d95db1a4f5529b4d41` (`1110a24`).
+  - Chỉ mục tìm kiếm nội bộ: FAISS `IndexFlatIP` (tính toán Inner Product tương đương Cosine Similarity nhờ chuẩn hóa vector đơn vị $L_2$).
+  - Kho ngữ cảnh tri thức: 474 tài liệu kỹ thuật MITRE ATT&CK v19.2 Enterprise Windows (`attack/corpus/enterprise-windows-v19.2.jsonl`).
+- **Quy Trình Tái Lập Ngoại Tuyến Chi Phí 0 Đồng:**
+  - Thực thi kiểm thử ngoại tuyến hoàn toàn qua runner `scripts/run_offline_tests.py` với cơ chế socket guard chặn đứng rò rỉ mạng (`attempted_egress=0`).
+  - Khóa mật mã 15 canonical artifacts trong `config/canonical_experiment_lock_v1.json` bảo đảm tính bất biến tuyệt đối của dữ liệu.
+
+#### Speaker Notes Update (Slide 11):
+> "GHI CHÚ DIỄN GIẢ (Slide 11):  
+> Toàn bộ kiến trúc thực nghiệm được đóng băng chặt chẽ theo đặc tả kỹ thuật: mô hình nhúng all-MiniLM-L6-v2 (384 chiều, revision 1110a24) kết hợp chỉ mục FAISS IndexFlatIP trên 474 tài liệu ATT&CK v19.2 Enterprise Windows. Khả năng tái lập độc lập với chi phí 0 đồng được bảo chứng bởi bộ kiểm thử offline scripts/run_offline_tests.py với cơ chế can thiệp tầng socket bảo đảm attempted_egress=0 và khóa mật mã 15 artifact trong canonical-lock-v1."
 
 ---
 
@@ -275,7 +326,6 @@ To satisfy strict quality control gates and prevent slide deck corruption during
 ### 3.1 Documented JS Artifact-Tool API Pipeline
 - **Core Directive:** The production presentation slide deck (`docs/presentation/slides.pptx`) **MUST** be finalized and updated using the documented JavaScript APIs of `@oai/artifact-tool`.
 - **Verified API Workflow:**
-  In accordance with `API_QUICK_START.md` and `references/implementation.md` in the primary presentation skill:
   ```javascript
   import { FileBlob, PresentationFile } from "@oai/artifact-tool";
 
@@ -376,7 +426,7 @@ Phase S2 delivery requires a complete, sealed, and audited reproducibility packa
 ## 5. Phase S2 Execution Checklist & Validation Criteria
 
 | Sequence | Task / Milestone | Validation Command / Verification Criteria | Owner |
-| :---: | :--- | :--- | :--- :
+| :---: | :--- | :--- | :---: |
 | **Step 1** | Verify Live Run Completion | `Get-Process -Id 50192` completes; exactly 6,400 completed records in run directory. | Lead B / D |
 | **Step 2** | Sanitize & Audit Request Journal | Comprehensive regex secret scan passes; event structure preserved; commit sanitized journal. | Lead D |
 | **Step 3** | Execute Authoritative Evaluator | `python scripts/reproduce_study.py --run-evaluator --run-dir <DIR>`. Enforces `execution_mode == 'live'`. Produces strictly 6 native JSON artifacts in `outputs/canonical_evaluation/`. | Lead D |
@@ -393,8 +443,8 @@ Phase S2 delivery requires a complete, sealed, and audited reproducibility packa
 
 ## 6. Document Sign-Off & Status
 
-- **Status:** PLAN-ONLY PENDING CODEX APPROVAL (UNIFIED_MAPPING_R2 Remediation)  
+- **Status:** PENDING CODEX REVIEW (Preparation Repair Bounded - Aligned to `fixture_export_schema_b172.json`)  
 - **Worktree:** `D:/RAG2ATTCK-worktrees/repro-presentation-s1`  
-- **PRE_SHA:** `55494a433cc70f15f253e34742d5bda2a4762565`  
+- **PRE_SHA:** `ebe83519b67f8e07ee255164ec3b39f29cf5abcc`  
 - **Output Document Path:** `reports/evidence/s2_presentation_and_repro_plan.md`  
 - **Safety Guarantee:** Live runner PID 50192 running undisturbed; zero mock findings promoted to canonical status; zero live provider calls; no destructive modifications to repo source or config files.

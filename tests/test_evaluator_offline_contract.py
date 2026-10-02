@@ -1820,46 +1820,356 @@ def test_stratified_gt_complexity_producer(tmp_path):
     assert pytest.approx(row["overall_macro_f1_reference"]) == 1.3 / u_size
 
 
+def _fixture_474_discordant_known_answer(tmp_path: Path):
+    """Distinct known-answer fixture over 474-class universe with known subset Macro-F1s.
+
+    Universe size: exactly 474 classes (A, B, C, D=T1059, and 470 fillers T2000-T2469).
+    TEST split contains 4 pairs (p0, p1, p2, p3) = 8 views (s0-s7):
+    - s0 (single, mapped, single-GT): GT=[A], pred=[A] -> TP for A
+    - s1 (contextual, mapped, single-GT): GT=[B], pred=[B] -> TP for B
+    - s2 (single, mapped, single-GT): GT=[A], pred=[B] -> FN for A, FP for B (discordant!)
+    - s3 (contextual, mapped, multi-GT): GT=[B, C], pred=[C] -> TP for C under ANY_MATCH, FN for B
+    - s4 (single, mapped, single-GT): GT=[C], pred=[C] -> TP for C
+    - s5 (contextual, mapped, single-GT): GT=[D], pred=[D] -> TP for D
+    - s6 (single, unmapped): excluded from scorable per D2b
+    - s7 (contextual, ambiguous): excluded from scorable per D2c
+
+    Exact Rational Fractions (denominator 474):
+    - Single-view scorable (s0, s2, s4):
+        F1_A = 2/3, F1_B = 0, F1_C = 1, others = 0 -> sum = 5/3
+        single_view_macro_f1 = (5/3) / 474 = 5 / 1422 ≈ 0.00351617
+    - Contextual-view scorable (s1, s3, s5):
+        F1_A = 0, F1_B = 2/3, F1_C = 1, F1_D = 1, others = 0 -> sum = 8/3
+        contextual_view_macro_f1 = (8/3) / 474 = 8 / 1422 = 4 / 711 ≈ 0.00562588
+    - view_macro_f1_delta = (8/3 - 5/3) / 474 = 1 / 474 ≈ 0.00210970
+    - Overall condition scorable (s0-s5):
+        F1_A = 2/3, F1_B = 1/2, F1_C = 1, F1_D = 1, others = 0 -> sum = 19/6
+        overall_macro_f1_reference = (19/6) / 474 = 19 / 2844 ≈ 0.00668073
+    - Single-GT scorable (s0, s1, s2, s4, s5):
+        F1_A = 2/3, F1_B = 2/3, F1_C = 1, F1_D = 1, others = 0 -> sum = 10/3
+        single_gt_macro_f1 = (10/3) / 474 = 10 / 1422 = 5 / 711 ≈ 0.00703235
+    - Multi-GT scorable (s3):
+        F1_C = 1, others = 0 -> sum = 1
+        multi_gt_macro_f1 = 1 / 474 = 6 / 2844 ≈ 0.00210970
+    - complexity_macro_f1_delta = 1/474 - 10/1422 = -7 / 1422 ≈ -0.00492264
+    """
+    d_tid = "T1059"
+    fillers = [f"T{2000 + i}" for i in range(470)]
+    registry_ids = [A, B, C, d_tid, *fillers]
+    assert len(registry_ids) == 474
+
+    truth = [
+        [A],  # s0: single, mapped, single-GT
+        [B],  # s1: contextual, mapped, single-GT
+        [A],  # s2: single, mapped, single-GT (discordant pred B)
+        [B, C],  # s3: contextual, mapped, multi-GT (pred C)
+        [C],  # s4: single, mapped, single-GT
+        [d_tid],  # s5: contextual, mapped, single-GT
+        [],  # s6: single, unmapped
+        [],  # s7: contextual, ambiguous
+        [A],
+        [B],  # s8, s9: dev
+    ]
+    preds = {
+        "s0": A,
+        "s1": B,
+        "s2": B,
+        "s3": C,
+        "s4": C,
+        "s5": d_tid,
+        "s6": None,
+        "s7": None,
+        "s8": A,
+        "s9": B,
+    }
+
+    samples = [
+        {
+            "sample_id": f"s{i}",
+            "pair_id": f"p{i // 2}",
+            "view_type": "single" if i % 2 == 0 else "contextual",
+        }
+        for i in range(10)
+    ]
+    artifact_values = {
+        "inference": [
+            {"sample_id": s["sample_id"], "endpoint_evidence": f"ev {i}"}
+            for i, s in enumerate(samples)
+        ],
+        "ground_truth": [
+            {
+                "view_id": s["sample_id"],
+                "technique_ids": truth[i],
+                "label_status": "mapped" if truth[i] else ("unmapped" if i == 6 else "ambiguous"),
+            }
+            for i, s in enumerate(samples)
+        ],
+        "views": [
+            {
+                "view_id": s["sample_id"],
+                "pair_id": s["pair_id"],
+                "view_type": s["view_type"],
+                "event_ids": [f"e{i}"],
+            }
+            for i, s in enumerate(samples)
+        ],
+        "corpus": [{"technique_id": tid} for tid in registry_ids],
+    }
+    artifact_values["pairs"] = [
+        {
+            "pair_id": f"p{i}",
+            "split": "test" if i < 4 else "dev",
+            "single_view": artifact_values["views"][2 * i],
+            "contextual_view": artifact_values["views"][2 * i + 1],
+            "single_ground_truth": artifact_values["ground_truth"][2 * i],
+            "contextual_ground_truth": artifact_values["ground_truth"][2 * i + 1],
+        }
+        for i in range(5)
+    ]
+    specs = {}
+    for name, rows in artifact_values.items():
+        p = tmp_path / f"{name}.jsonl"
+        _dump_rows(p, rows)
+        specs[name] = {"path": p.name, "sha256": _digest(p.read_bytes())}
+
+    def artifact(name, value, *, data=None):
+        p = tmp_path / f"{name}.json"
+        p.write_bytes(canonical_json_bytes(value) if data is None else data)
+        specs[name] = {"path": p.name, "sha256": _digest(p.read_bytes())}
+
+    artifact("split_manifest", {"test": [f"p{i}" for i in range(4)], "dev": ["p4"]})
+    artifact(
+        "attack_registry",
+        {
+            "objects": [
+                {
+                    "type": "attack-pattern",
+                    "external_references": [{"source_name": "mitre-attack", "external_id": tid}],
+                    "x_mitre_deprecated": tid == d_tid,
+                }
+                for tid in registry_ids
+            ]
+        },
+    )
+    artifact("prompt", None, data=b"prompt")
+    model = {
+        "provider": "fixture",
+        "model": "fixture-model",
+        "logging_policy": {"log_raw_response": False},
+    }
+    artifact("model_config", model)
+    artifact("index", None, data=b"index")
+    artifact("document_mapping", [{"technique_id": tid} for tid in registry_ids])
+    artifact(
+        "retrieval_config",
+        {
+            "supported_k": [1, 3, 5, 10],
+            "corpus_sha256": specs["corpus"]["sha256"],
+            "embedding_model": "mock",
+            "distance_metric": "cosine",
+        },
+    )
+    artifact(
+        "retrieval_manifest",
+        {
+            "corpus_sha256": specs["corpus"]["sha256"],
+            "index_sha256": specs["index"]["sha256"],
+            "document_mapping_sha256": specs["document_mapping"]["sha256"],
+        },
+    )
+    artifact(
+        "dataset_manifest",
+        {
+            "benchmark_version": "fixture-only",
+            "attack_version": "19.2",
+            "state": "frozen",
+            "view_count": 10,
+            "pair_count": 5,
+            "split_counts": {"test": 4, "dev": 1},
+            "attack_source_sha256": specs["attack_registry"]["sha256"],
+            "files": {
+                Path(specs[name]["path"]).name: specs[name]["sha256"]
+                for name in ("inference", "ground_truth", "views", "pairs", "split_manifest")
+            },
+        },
+    )
+    execution = {"retries": 1}
+    artifact(
+        "experiment_config",
+        {
+            "schema_version": "1.0.0",
+            "purpose": "known_answer_fixture_only",
+            "execution": execution,
+        },
+    )
+
+    from src.llm.schemas import TechniquePrediction
+
+    schema_sha = hashlib.sha256(
+        canonical_json_bytes(TechniquePrediction.model_json_schema())
+    ).hexdigest()
+
+    manifest = {
+        "schema_version": "1.0.0",
+        "status": "frozen",
+        "execution_mode": "mock_fixture",
+        "experiment_id": "known-answer-only",
+        "git_commit_sha": "0" * 40,
+        "config_sha256": specs["experiment_config"]["sha256"],
+        "artifacts": specs,
+        "split": "test",
+        "sample_ids": [f"s{i}" for i in range(8)],
+        "samples": samples[:8],
+        "expected_request_count": 40,
+        "maximum_attempts": 80,
+        "conditions": list(CONDITIONS),
+        "execution": execution,
+        "model": model,
+        "model_version": None,
+        "retrieval": {
+            "supported_k": [1, 3, 5, 10],
+            "corpus_sha256": specs["corpus"]["sha256"],
+            "embedding_model": "mock",
+            "distance_metric": "cosine",
+        },
+        "output_schema_sha256": schema_sha,
+        "benchmark_version": "fixture-only",
+        "attack_release": "19.2",
+    }
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_bytes(canonical_json_bytes(manifest))
+    manifest_digest = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+
+    pred_paths = {}
+    for cond in CONDITIONS:
+        rows = []
+        k = 0 if cond == "no_rag" else int(cond[5:])
+        for s in samples[:8]:
+            sid = s["sample_id"]
+            pid = preds[sid]
+            rows.append(
+                {
+                    "schema_version": "1.0.0",
+                    "execution_mode": "mock_fixture",
+                    "experiment_id": "known-answer-only",
+                    "manifest_sha256": manifest_digest,
+                    "condition": cond,
+                    "retrieval_k": k,
+                    "provider": "fixture",
+                    "model": "fixture-model",
+                    "model_version": None,
+                    "output_schema_sha256": schema_sha,
+                    "ground_truth_version": "fixture-only",
+                    "attack_release": "19.2",
+                    "prompt_sha256": specs["prompt"]["sha256"],
+                    "model_config_sha256": specs["model_config"]["sha256"],
+                    "dataset_sha256": specs["inference"]["sha256"],
+                    "ground_truth_sha256": specs["ground_truth"]["sha256"],
+                    "corpus_sha256": specs["corpus"]["sha256"],
+                    "index_sha256": specs["index"]["sha256"],
+                    "sample_id": sid,
+                    "pair_id": s["pair_id"],
+                    "view_type": s["view_type"],
+                    "run_id": "run-001",
+                    "raw_response": None,
+                    "raw_response_logged": False,
+                    "parse_status": "VALID" if pid else "API_FAILURE",
+                    "success": bool(pid),
+                    "parsed_technique_ids": [pid] if pid else [],
+                    "retrieved_candidates": [
+                        {"technique_id": fillers[idx], "rank": idx + 1, "score": 1.0 / (idx + 1)}
+                        for idx in range(k)
+                    ],
+                    "prompt_tokens": 100,
+                    "completion_tokens": 20,
+                    "total_tokens": 120,
+                    "latency_ms": 15.0,
+                    "retry_count": 0,
+                    "request_attempt_count": 1,
+                    "error_type": None,
+                    "error_message": None,
+                    "returned_model_id": "fixture-model",
+                    "response_id": f"resp-{sid}",
+                    "system_fingerprint": None,
+                    "request_timestamp_utc": "2026-10-01T00:00:00+00:00",
+                    "response_timestamp_utc": "2026-10-01T00:00:01+00:00",
+                    "timestamp": "2026-10-01T00:00:01+00:00",
+                    "terminal": True,
+                }
+            )
+        p = tmp_path / f"{cond}_predictions.jsonl"
+        _dump_rows(p, rows)
+        pred_paths[cond] = p
+
+    return manifest_path, pred_paths, manifest
+
+
 def test_subset_macro_f1_distinct_fixture_edge_cases(tmp_path):
-    """Verify true subset Macro-F1 across 474 universe with distinct edge-case fixture.
+    """Verify true subset Macro-F1 across 474 universe with distinct known-answer fixture.
 
     Tests:
-    1. Discordant predictions between single and contextual views.
-    2. Multi-label ground truth evaluated under ANY_MATCH.
-    3. Mathematical divergence between subset Macro-F1 and overall condition Macro-F1.
-    4. Edge case: Empty / null view subsets (e.g. contextual subset has 0 records).
+    1. Known-answer exact mathematical values for view and GT complexity subset Macro-F1
+       across the 474-class universe:
+       - single_view_macro_f1 = (5/3) / 474 = 5 / 1422 ≈ 0.00351617
+       - contextual_view_macro_f1 = (8/3) / 474 = 8 / 1422 ≈ 0.00562588
+       - view_macro_f1_delta = (8/3 - 5/3) / 474 = 1 / 474 ≈ 0.00210970
+       - overall_macro_f1_reference = (19/6) / 474 = 19 / 2844 ≈ 0.00668073
+       - single_gt_macro_f1 = (10/3) / 474 = 10 / 1422 ≈ 0.00703235
+       - multi_gt_macro_f1 = 1 / 474 = 6 / 2844 ≈ 0.00210970
+       - complexity_macro_f1_delta = 1/474 - 10/1422 = -7 / 1422 ≈ -0.00492264
+    2. Provable mathematical divergence between subset Macro-F1 and overall condition Macro-F1.
+    3. Discordant predictions between single and contextual views (s2 pred B vs GT A).
+    4. Multi-label ground truth evaluated under ANY_MATCH (s3 GT [B, C], pred C).
+    5. Edge case: Empty / null view subsets (e.g. contextual subset has 0 records).
     """
-    fixture = _fixture_474(tmp_path)
+    fixture = _fixture_474_discordant_known_answer(tmp_path)
     inputs = _load(tmp_path, fixture)
     proto = _test_protocol()
+
+    assert len(inputs.corpus_ids) == 474
 
     rq3 = compute_rq3(inputs, proto)
     strat = compute_stratified_gt_complexity_producer(inputs, proto)
 
-    # Verify all 5 conditions have view subset Macro-F1 computed
+    # Exact rational expectations across 474 universe
+    expected_single_view_f1 = (5.0 / 3.0) / 474.0  # 5 / 1422
+    expected_contextual_view_f1 = (8.0 / 3.0) / 474.0  # 8 / 1422
+    expected_view_delta = 1.0 / 474.0  # 1 / 474
+    expected_overall_f1 = (19.0 / 6.0) / 474.0  # 19 / 2844
+    expected_single_gt_f1 = (10.0 / 3.0) / 474.0  # 10 / 1422
+    expected_multi_gt_f1 = 1.0 / 474.0  # 1 / 474
+    expected_complexity_delta = -7.0 / 1422.0  # -7 / 1422
+
+    # Verify exact values and divergence for all 5 conditions
     for cond in CONDITIONS:
         v_diag = rq3["view_diagnostics"][cond]
-        assert "single_view_macro_f1" in v_diag
-        assert "contextual_view_macro_f1" in v_diag
-        assert "view_macro_f1_delta" in v_diag
-
-        # Stratified producer has explicit subset Macro-F1 keys
         s_row = strat["by_condition"][cond]
-        assert "single_gt_macro_f1" in s_row
-        assert "multi_gt_macro_f1" in s_row
-        assert "complexity_macro_f1_delta" in s_row
-        assert "overall_macro_f1_reference" in s_row
 
-        # Both subset Macro-F1 values are bounded in [0, 1]
-        if v_diag["single_view_macro_f1"] is not None:
-            assert 0.0 <= v_diag["single_view_macro_f1"] <= 1.0
-        if v_diag["contextual_view_macro_f1"] is not None:
-            assert 0.0 <= v_diag["contextual_view_macro_f1"] <= 1.0
+        # Exact numerical value assertions
+        assert v_diag["single_view_macro_f1"] == pytest.approx(expected_single_view_f1, abs=1e-7)
+        assert v_diag["contextual_view_macro_f1"] == pytest.approx(
+            expected_contextual_view_f1, abs=1e-7
+        )
+        assert v_diag["view_macro_f1_delta"] == pytest.approx(expected_view_delta, abs=1e-7)
 
-        if s_row["single_gt_macro_f1"] is not None:
-            assert 0.0 <= s_row["single_gt_macro_f1"] <= 1.0
-        if s_row["multi_gt_macro_f1"] is not None:
-            assert 0.0 <= s_row["multi_gt_macro_f1"] <= 1.0
+        assert s_row["single_gt_macro_f1"] == pytest.approx(expected_single_gt_f1, abs=1e-7)
+        assert s_row["multi_gt_macro_f1"] == pytest.approx(expected_multi_gt_f1, abs=1e-7)
+        assert s_row["complexity_macro_f1_delta"] == pytest.approx(
+            expected_complexity_delta, abs=1e-7
+        )
+        assert s_row["overall_macro_f1_reference"] == pytest.approx(expected_overall_f1, abs=1e-7)
+
+        # Mathematical divergence assertions (strictly != overall reference Macro-F1)
+        assert v_diag["single_view_macro_f1"] != pytest.approx(s_row["overall_macro_f1_reference"])
+        assert abs(v_diag["single_view_macro_f1"] - s_row["overall_macro_f1_reference"]) > 0.003
+        assert v_diag["contextual_view_macro_f1"] != pytest.approx(
+            s_row["overall_macro_f1_reference"]
+        )
+        assert abs(v_diag["contextual_view_macro_f1"] - s_row["overall_macro_f1_reference"]) > 0.001
+        assert s_row["single_gt_macro_f1"] != pytest.approx(s_row["overall_macro_f1_reference"])
+        assert abs(s_row["single_gt_macro_f1"] - s_row["overall_macro_f1_reference"]) > 0.0003
+        assert s_row["multi_gt_macro_f1"] != pytest.approx(s_row["overall_macro_f1_reference"])
+        assert abs(s_row["multi_gt_macro_f1"] - s_row["overall_macro_f1_reference"]) > 0.004
 
     # Edge case: Empty subset handling
     # Create synthetic inputs with ONLY single-view records (0 contextual records)
@@ -1867,7 +2177,7 @@ def test_subset_macro_f1_distinct_fixture_edge_cases(tmp_path):
     single_only_inputs = dataclasses.replace(inputs, records=only_single_records)
     rq3_single_only = compute_rq3(single_only_inputs, proto)
     cond_diag = rq3_single_only["view_diagnostics"]["rag_k1"]
-    assert cond_diag["single_view_macro_f1"] is not None
+    assert cond_diag["single_view_macro_f1"] == pytest.approx(expected_single_view_f1, abs=1e-7)
     assert cond_diag["contextual_view_macro_f1"] is None
     assert cond_diag["view_macro_f1_delta"] is None
 
@@ -1878,7 +2188,7 @@ def test_subset_macro_f1_distinct_fixture_edge_cases(tmp_path):
     single_gt_inputs = dataclasses.replace(inputs, records=single_gt_only_records)
     strat_single_only = compute_stratified_gt_complexity_producer(single_gt_inputs, proto)
     strat_row = strat_single_only["by_condition"]["rag_k1"]
-    assert strat_row["single_gt_macro_f1"] is not None
+    assert strat_row["single_gt_macro_f1"] == pytest.approx(expected_single_gt_f1, abs=1e-7)
     assert strat_row["multi_gt_macro_f1"] is None
     assert strat_row["complexity_macro_f1_delta"] is None
 

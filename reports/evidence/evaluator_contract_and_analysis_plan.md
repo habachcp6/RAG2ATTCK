@@ -30,11 +30,18 @@ In strict adherence to the project's frozen protocol principles:
    - **Item 6 (Comprehensive Regressions)**: Test coverage for unknown pricing tiers, negative tokens, cached > prompt tokens, cached token tariffs, missing usage worst-case attempt charge ($0.53974560), duplicate receipt ordinals, duplicate monetary settles, and hash mismatches.
    - **Item 7 (Pair-Cluster Bootstrap & View Cohort Counts)**: Implements pair-cluster bootstrap resampling by `pair_id` (clustering single and contextual views together to preserve intra-pair correlation; designated as an exploratory diagnostic) and explicitly discloses exact TEST scorable view counts (278 single views, 440 contextual views; 718 total).
    - **Item 8 (RQ2 D2i Semantics & No-RAG N/A Handling)**: Evaluates independent failure axes without forced mutual exclusion or causal partitioning claims; tracks overlaps (`overlap_retrieval_miss_and_wrong_classification`, `overlap_retrieval_miss_and_provider_failure`); sets No-RAG retrieval and conditional metrics strictly to `None`/`null` (not 0.0); sets zero-denominator percentages to `None`/`null` per D2j.
-   - **Item 9 (UNIFIED_MAPPING_R2 - True Subset Macro-F1 & Schema Harmonization)**:
+   - **Item 9 (UNIFIED_MAPPING_R2 - True Subset Macro-F1 & Fresh Schema Synchronization)**:
      - **True View Subset Macro-F1**: Evaluates true Macro-F1 across the frozen 474-class universe for single-view ($N=278$ scorable) and contextual-view ($N=440$ scorable) subsets by passing view subsets directly to frozen `compute_condition_metrics`. Exports `single_view_macro_f1`, `contextual_view_macro_f1`, and `view_macro_f1_delta` under `/rq3/view_diagnostics/{c}/`.
      - **True GT Complexity Subset Macro-F1**: In `compute_stratified_gt_complexity_producer`, evaluates true Macro-F1 across the frozen 474-class universe for single-GT ($N=678$ scorable) and multi-GT ($N=40$ scorable) subsets via direct delegation to `compute_condition_metrics`. Replaces duplicate overall condition Macro-F1 with `single_gt_macro_f1`, `multi_gt_macro_f1`, and `complexity_macro_f1_delta`, retaining overall condition Macro-F1 strictly as an explicitly labeled reference (`overall_macro_f1_reference`).
-     - **Mathematical Distinctness**: Validated that subset Macro-F1 values correctly diverge from overall condition Macro-F1 on `_fixture_474` (e.g., Overall Macro-F1 $\approx 0.00274$, Single-View $\approx 0.00380$, Contextual-View $= 0.00000$, Single-GT $\approx 0.00211$, Multi-GT $\approx 0.00211$).
-     - **Schema Synchronization**: Synchronized `artifacts/orchestration/fixture_export_schema_b172.json` with all new leaf pointers (1,679 leaf pointers). Updated Markdown report generation to render subset Macro-F1 and overall reference columns.
+     - **Mathematical Distinctness with Known-Answer Rational Fractions**: Validated against dedicated known-answer fixture `_fixture_474_discordant_known_answer` over the 474-class universe with exact rational numerical assertions:
+       * Single-View Macro-F1 = $5 / 1422 \approx 0.003516$ (differs from overall by $1/316 \approx 0.003165$)
+       * Contextual-View Macro-F1 = $8 / 1422 \approx 0.005626$ (differs from overall by $1/948 \approx 0.001055$)
+       * View Macro-F1 Delta = $1 / 474 \approx 0.002110$
+       * Overall Condition Macro-F1 (Reference) = $19 / 2844 \approx 0.006681$
+       * Single-GT Macro-F1 = $10 / 1422 \approx 0.007032$ (differs from overall by $1/2844 \approx 0.000352$)
+       * Multi-GT Macro-F1 = $1 / 474 \approx 0.002110$ (differs from overall by $13/2844 \approx 0.004571$)
+       * Complexity Macro-F1 Delta = $-7 / 1422 \approx -0.004923$
+     - **Fresh Schema Generation**: Regenerated fresh schema `artifacts/orchestration/fixture_export_schema_3625.json` (and synchronized `fixture_export_schema_b172.json`) via `scripts/analysis/build_fixture_export_schema.py`, binding exact source hash `c48eeb27b19626344e5f10b2cac674437b4053bb01f014060905702c52235f95` and 1,679 leaf pointers across 7 export files.
 
 ---
 
@@ -297,7 +304,8 @@ uv run ruff format --check scripts/analysis/evaluate_rqs.py tests/test_evaluator
 | :--- | :--- | :--- |
 | `scripts/analysis/evaluate_rqs.py` | `c48eeb27b19626344e5f10b2cac674437b4053bb01f014060905702c52235f95` | Offline RQ1/RQ2/RQ3 analysis script with B_NATIVE_TARIFF_REPAIR, BD_MODE_BOUNDARY, & UNIFIED_MAPPING_R2 |
 | `scripts/analysis/__init__.py` | `28b40746d09b574e95393ac9e2a95879116cd9d4c7a86afb1be7be573f9ad54a` | Analysis package initializer |
-| `tests/test_evaluator_offline_contract.py` | `d26024b6c7bfe776eb731e35f8f5f62df6a078dda8f038f0f9bd2b33f32c99d8` | Evaluator offline contract test suite (46 tests) |
+| `tests/test_evaluator_offline_contract.py` | `3171b7fecbe351741b03e8ae2bf49397d9b3a5f8eda4abe9e62195a6f820252f` | Evaluator offline contract test suite (46 tests) with distinct 474 known-answer rational assertions |
+| `artifacts/orchestration/fixture_export_schema_3625.json` | `b478cc9fcd71ce1cf88d00f079dd7b2f399091bb976ae2993a635963ab69762b` | Fresh fixture export schema with 1,679 leaf pointers bound to `evaluate_rqs.py` SHA-256 |
 | `reports/evidence/evaluator_contract_and_analysis_plan.md` | *This document* | Comprehensive Phase S1 evidence document |
 
 ---
@@ -326,6 +334,7 @@ uv run ruff format --check scripts/analysis/evaluate_rqs.py tests/test_evaluator
 - [x] Completed Codex Review Repair 6: Comprehensive regression suite for tariffs, retries, and malformed inputs.
 - [x] Completed Codex Review Repair 7: Pair-cluster bootstrap resampling by `pair_id` and exact view counts (278 single, 440 contextual).
 - [x] Completed Codex Review Repair 8: RQ2 D2i independent failure axes, overlap accounting, and No-RAG N/A semantics.
-- [x] Completed Codex Review Round 3 (UNIFIED_MAPPING_R2): True subset Macro-F1 calculated across 474-class universe for view diagnostics (single-view N=278, contextual-view N=440) and GT complexity (single-GT N=678, multi-GT N=40), overall reference Macro-F1 clearly labeled, schema leaf pointers synchronized (1,679 pointers).
+- [x] Completed Codex Review Round 3 (UNIFIED_MAPPING_R2): True subset Macro-F1 calculated across 474-class universe for view diagnostics (single-view N=278, contextual-view N=440) and GT complexity (single-GT N=678, multi-GT N=40), overall reference Macro-F1 clearly labeled.
+- [x] Completed Codex Review B362: Distinct known-answer 474 fixture (`_fixture_474_discordant_known_answer`) with exact closed-form rational fraction assertions (single-view 5/1422, contextual-view 8/1422, overall 19/2844, single-GT 10/1422, multi-GT 1/474), mathematical divergence assertions from overall Macro-F1, and fresh schema generation (`fixture_export_schema_3625.json`) with matching source hash.
 - [x] Full test suite passed (46/46 offline contract tests, 94/94 evaluation suite tests; 140 total).
 - [x] Ruff lint and format checks passed with zero errors (`line-length = 100`).

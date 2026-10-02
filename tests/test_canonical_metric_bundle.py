@@ -526,7 +526,7 @@ def test_fail_closed_ledger_item_tampering_top_totals_unchanged():
     ledger_data["settled_records"][first_key]["cost_usd"] = "99.00000000"
 
     mutant_bytes = json.dumps(ledger_data).encode("utf-8")
-    with pytest.raises(ValueError, match="Sum of settled record item costs"):
+    with pytest.raises(ValueError, match="reservation balance broken"):
         verify_financial_invariants(ledger_path, raw_ledger_bytes=mutant_bytes)
 
 
@@ -667,7 +667,7 @@ def test_rehashed_tampered_timestamp_rejected(tmp_path: Path):
     sidecar_file = tmp_path / "canonical_metric_bundle_v2.json.sha256"
     sidecar_file.write_bytes(f"{rehashed_sha}  canonical_metric_bundle_v2.json\n".encode("utf-8"))
 
-    with pytest.raises(ValueError, match="analysis_timestamp_utc must match authoritative"):
+    with pytest.raises(ValueError, match="analysis_timestamp_utc must match.*authoritative"):
         verify_canonical_metric_bundle_file(tampered_bundle_file)
 
 
@@ -750,3 +750,43 @@ def test_receipt_join_incomplete_status_mismatch_rejected():
             raw_journal_bytes=cache["inputs/request_journal.jsonl"],
             predictions_bytes_cache=cache,
         )
+
+
+def test_validator_rejects_rehashed_mutants(tmp_path: Path):
+    """
+    Verify that verify_canonical_metric_bundle_file rejects all typed leaf mutations
+    even when sidecar checksum is updated to match the mutated bytes.
+    """
+    import copy
+    bundle_path = Path("artifacts/results/canonical_metric_bundle_v2.json")
+    if not bundle_path.is_file():
+        pytest.skip("canonical_metric_bundle_v2.json not found on disk")
+
+    original_bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
+
+    mutations = [
+        ("macro_f1", lambda d: d["conditions"]["no_rag"]["rq1_attribution"].__setitem__("macro_f1", 999.0), "macro_f1 mismatch"),
+        ("retrieval_hit", lambda d: d["conditions"]["rag_k10"]["rq2_retrieval_and_error"]["retrieval_metrics"].__setitem__("retrieval_hit_count", 0), "retrieval_hit_count mismatch"),
+        ("exact_p", lambda d: d["conditions"]["rag_k10"]["rq1_attribution"]["delta_vs_baseline"]["mcnemar_test"].__setitem__("p_value_exact", 999.0), "p_value_exact mismatch"),
+        ("ci_bounds", lambda d: d["conditions"]["no_rag"]["rq1_attribution"].__setitem__("accuracy_e2e_ci_95", [0.01, 0.99]), "accuracy_e2e_ci_95 mismatch"),
+        ("prompt_sum", lambda d: d["conditions"]["no_rag"]["rq3_resources_and_cost"]["tokens"]["prompt_tokens"].__setitem__("sum", 999), "prompt_tokens.sum mismatch"),
+        ("latency_median", lambda d: d["conditions"]["no_rag"]["rq3_resources_and_cost"]["latency_ms"].__setitem__("median", 999.0), "latency_ms.median mismatch"),
+        ("cache_mean", lambda d: d["conditions"]["rag_k1"]["rq3_resources_and_cost"]["tokens"]["cached_tokens"].__setitem__("mean", 999.0), "cached_tokens.mean mismatch"),
+        ("source_digest", lambda d: d["source_file_digests"].__setitem__("request_journal.jsonl", "0" * 64), "source_file_digests.request_journal.jsonl mismatch"),
+        ("timestamp_fake", lambda d: d.__setitem__("analysis_timestamp_utc", "2026-10-02T04:32:51_FAKE"), "analysis_timestamp_utc must match exact"),
+    ]
+
+    for label, mutate_fn, err_regex in mutations:
+        d = copy.deepcopy(original_bundle)
+        mutate_fn(d)
+        mutant_bytes = json.dumps(d, indent=2, sort_keys=True).encode("utf-8") + b"\n"
+        mutant_sha = hashlib.sha256(mutant_bytes).hexdigest()
+
+        test_bundle_file = tmp_path / f"bundle_{label}.json"
+        test_sidecar_file = tmp_path / f"bundle_{label}.json.sha256"
+
+        test_bundle_file.write_bytes(mutant_bytes)
+        test_sidecar_file.write_bytes(f"{mutant_sha}  {test_bundle_file.name}\n".encode("utf-8"))
+
+        with pytest.raises(ValueError, match=err_regex):
+            verify_canonical_metric_bundle_file(test_bundle_file)

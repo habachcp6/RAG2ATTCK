@@ -71,6 +71,10 @@ P95_STATUS_POLICY = "NOT REPORTED — approval evidence not established"
 CONDITIONS = ["no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10"]
 RETRIEVAL_K_VALUES = {"no_rag": 0, "rag_k1": 1, "rag_k3": 3, "rag_k5": 5, "rag_k10": 10}
 
+# Declared immutable recorded creation timestamp established during candidate generation.
+# Distinct from dynamic runtime regeneration times.
+RECORDED_BUNDLE_CREATION_TIMESTAMP_UTC = "2026-10-03T03:20:00+00:00"
+
 
 def _reject_nonfinite(constant: str) -> None:
     """Fail-closed on NaN, Infinity, -Infinity in JSON input."""
@@ -627,6 +631,7 @@ def build_canonical_metric_bundle(
     public_package_dir: Path,
     seal_path: Path,
     output_path: Optional[Path] = None,
+    build_timestamp_utc: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Construct canonical_metric_bundle_v2.json from verified inputs and outputs.
@@ -1126,7 +1131,7 @@ def build_canonical_metric_bundle(
         "evaluator_analysis_source_file": "scripts/analysis/evaluate_rqs.py",
         "evaluator_analysis_source_sha256": EXPECTED_ANALYSIS_SOURCE_SHA256,
         "analysis_timestamp_utc": source_analysis_timestamp,
-        "bundle_build_timestamp_utc": "2026-10-03T03:20:00+00:00",
+        "bundle_build_timestamp_utc": build_timestamp_utc or RECORDED_BUNDLE_CREATION_TIMESTAMP_UTC,
         "terminal_seal": {
             "path": "reports/evidence/canonical_run_seal_v1.json",
             "sha256": EXPECTED_TERMINAL_SEAL_SHA256,
@@ -1463,10 +1468,33 @@ def verify_canonical_metric_bundle_file(
     if supp.get("root_private_replay_acceptance_sha256") != ROOT_PRIVATE_REPLAY_ACCEPTANCE_SHA256:
         raise ValueError("root_private_replay_acceptance_sha256 mismatch")
 
-    # 2. Authoritative Source Timestamp Check
+    # 1b. Verify all source file digests
+    exp_source_digests = {
+        ".study_anchor.json": "6a15639c213782a6ef7863a960b064d604185297b121ab41197a057774d23097",
+        "manifest.json": "66b658cfa9dd42e131ec567bbe043b8bc87ac6e92aeaa5e8f6661b0195e486e5",
+        "no_rag_predictions.jsonl": "70034c5e3c417fc4a28c357d00d6a046751175ed03e7815645fa09e0411e228a",
+        "rag_k10_predictions.jsonl": "40cd9d2b19c691ed8bcb97ff5dfbebd378857346e9a06b00a9ab54e51fd9a122",
+        "rag_k1_predictions.jsonl": "745cb883a90b4d1bac7c76c4007b143893834530a843e153fc24277aae5da7ac",
+        "rag_k3_predictions.jsonl": "29f215d74a3139df53036c642c8a14762bec4542d04685125cf28d024571b006",
+        "rag_k5_predictions.jsonl": "896d900d10e25af748e00235c33cace84511c450bf7cfb0da2b4d1a658124178",
+        "request_journal.jsonl": "f36e0f3099ef704e6ed5e0bc0097affbe98932e1620563a6db22e631ae114f31",
+        "run_summary.json": "67df38e336b4250b5a5c044b754ab02e8cc1826b8569f76d9bdf265ae4f84c2a",
+        "study_ledger.json": "21e4c49b1f19bba5310bc0e9897d828b16ab27420c1d25b14b9f3e727dce94d8",
+    }
+    actual_source_digests = bundle_data.get("source_file_digests", {})
+    for sf_name, exp_sf_sha in exp_source_digests.items():
+        act_sf_sha = actual_source_digests.get(sf_name)
+        if act_sf_sha != exp_sf_sha:
+            raise ValueError(
+                f"source_file_digests.{sf_name} mismatch: actual={act_sf_sha!r} != expected={exp_sf_sha!r}"
+            )
+
+    # 2. Authoritative Source Timestamp Check (exact match, no startswith)
     source_ts = bundle_data.get("analysis_timestamp_utc")
-    if not source_ts or not source_ts.startswith("2026-10-02T04:32:51"):
-        raise ValueError(f"analysis_timestamp_utc must match authoritative source timestamp, got: {source_ts}")
+    if source_ts != "2026-10-02T04:32:51.956332+00:00":
+        raise ValueError(
+            f"analysis_timestamp_utc must match exact authoritative timestamp '2026-10-02T04:32:51.956332+00:00', got: {source_ts!r}"
+        )
 
     # 3. 11 Cohort Breakdown & Denominators Invariants
     cohort = bundle_data.get("cohort_breakdown", {})
@@ -1528,46 +1556,162 @@ def verify_canonical_metric_bundle_file(
             "retrieval_k": 0,
             "correct_count": 560,
             "error_count": 158,
+            "accuracy_end_to_end": 0.7799442896935933,
+            "accuracy_e2e_ci_95": [0.7464432837582625, 0.8088098670586635],
+            "macro_f1": 0.012608366023907785,
             "cost_usd": "0.46714395",
             "cached_tokens": 0,
             "is_baseline": True,
             "p_exact_display": "—",
+            "retrieval": {
+                "retrieval_hit_count": None,
+                "retrieval_miss_count": None,
+                "retrieval_hit_rate": None,
+                "macro_recall": None,
+            },
+            "tokens": {
+                "prompt_tokens": {"sum": 863139, "mean": 674.32734375},
+                "completion_tokens": {"sum": 209466, "mean": 163.6453125},
+                "total_tokens": {"sum": 1072605, "mean": 837.97265625},
+                "cached_tokens": {"sum": 0, "mean": 0.0},
+            },
+            "latency_ms": {
+                "mean": 2904.4541815625507,
+                "median": 2302.815000002738,
+            },
+            "delta": None,
         },
         "rag_k1": {
             "retrieval_k": 1,
             "correct_count": 553,
             "error_count": 165,
+            "accuracy_end_to_end": 0.7701949860724234,
+            "accuracy_e2e_ci_95": [0.7350325884543762, 0.8016815680358997],
+            "macro_f1": 0.012667935610765985,
             "cost_usd": "1.29723350",
             "cached_tokens": 1540,
             "is_baseline": False,
             "p_exact_display": "0.435",
+            "retrieval": {
+                "retrieval_hit_count": 27,
+                "retrieval_miss_count": 691,
+                "retrieval_hit_rate": 0.037604456824512536,
+                "macro_recall": 0.02948003714020427,
+            },
+            "tokens": {
+                "prompt_tokens": {"sum": 1595554, "mean": 1246.5265625},
+                "completion_tokens": {"sum": 299128, "mean": 233.69375},
+                "total_tokens": {"sum": 1894682, "mean": 1480.2203125},
+                "cached_tokens": {"sum": 1540, "mean": 1.203125},
+            },
+            "latency_ms": {
+                "mean": 3514.2666282031087,
+                "median": 2617.13934999716,
+            },
+            "delta": {
+                "delta_ci": [-0.0318592786225868, 0.01124077046548959],
+                "p_value_exact": 0.4349928051221534,
+                "p_value_asymptotic": 0.43472400072864303,
+            },
         },
         "rag_k3": {
             "retrieval_k": 3,
             "correct_count": 564,
             "error_count": 154,
+            "accuracy_end_to_end": 0.7855153203342619,
+            "accuracy_e2e_ci_95": [0.7499912587412587, 0.8174190557416043],
+            "macro_f1": 0.013642695462066637,
             "cost_usd": "1.17888000",
             "cached_tokens": 0,
             "is_baseline": False,
             "p_exact_display": "0.777",
+            "retrieval": {
+                "retrieval_hit_count": 118,
+                "retrieval_miss_count": 600,
+                "retrieval_hit_rate": 0.16434540389972144,
+                "macro_recall": 0.15482822655524606,
+            },
+            "tokens": {
+                "prompt_tokens": {"sum": 2780640, "mean": 2172.375},
+                "completion_tokens": {"sum": 403100, "mean": 314.921875},
+                "total_tokens": {"sum": 3183740, "mean": 2487.296875},
+                "cached_tokens": {"sum": 0, "mean": 0.0},
+            },
+            "latency_ms": {
+                "mean": 4215.878584452662,
+                "median": 2743.170950008789,
+            },
+            "delta": {
+                "delta_ci": [-0.02786003664534873, 0.039335604430632005],
+                "p_value_exact": 0.7769647513696725,
+                "p_value_asymptotic": 0.776814004155482,
+            },
         },
         "rag_k5": {
             "retrieval_k": 5,
             "correct_count": 566,
             "error_count": 152,
+            "accuracy_end_to_end": 0.7883008356545961,
+            "accuracy_e2e_ci_95": [0.7506840229889549, 0.8234503042596348],
+            "macro_f1": 0.01389077974323129,
             "cost_usd": "1.48311775",
             "cached_tokens": 0,
             "is_baseline": False,
             "p_exact_display": "0.677",
+            "retrieval": {
+                "retrieval_hit_count": 173,
+                "retrieval_miss_count": 545,
+                "retrieval_hit_rate": 0.24094707520891365,
+                "macro_recall": 0.22957288765088205,
+            },
+            "tokens": {
+                "prompt_tokens": {"sum": 3917047, "mean": 3060.19296875},
+                "completion_tokens": {"sum": 419880, "mean": 328.03125},
+                "total_tokens": {"sum": 4336927, "mean": 3388.22421875},
+                "cached_tokens": {"sum": 0, "mean": 0.0},
+            },
+            "latency_ms": {
+                "mean": 4327.256228515944,
+                "median": 2873.740850001923,
+            },
+            "delta": {
+                "delta_ci": [-0.029336848263743918, 0.046026711624319164],
+                "p_value_exact": 0.6770697943668329,
+                "p_value_asymptotic": 0.6769222390213794,
+            },
         },
         "rag_k10": {
             "retrieval_k": 10,
             "correct_count": 571,
             "error_count": 147,
+            "accuracy_end_to_end": 0.7952646239554317,
+            "accuracy_e2e_ci_95": [0.7581211364272121, 0.8284683107785503],
+            "macro_f1": 0.014023799884737108,
             "cost_usd": "2.14938370",
             "cached_tokens": 0,
             "is_baseline": False,
             "p_exact_display": "0.422",
+            "retrieval": {
+                "retrieval_hit_count": 321,
+                "retrieval_miss_count": 397,
+                "retrieval_hit_rate": 0.44707520891364905,
+                "macro_recall": 0.4280408542246983,
+            },
+            "tokens": {
+                "prompt_tokens": {"sum": 6546274, "mean": 5114.2765625},
+                "completion_tokens": {"sum": 427346, "mean": 333.8640625},
+                "total_tokens": {"sum": 6973620, "mean": 5448.140625},
+                "cached_tokens": {"sum": 0, "mean": 0.0},
+            },
+            "latency_ms": {
+                "mean": 4370.711563358918,
+                "median": 2667.00299999502,
+            },
+            "delta": {
+                "delta_ci": [-0.023547341489689132, 0.05300045580982214],
+                "p_value_exact": 0.4219388330129739,
+                "p_value_asymptotic": 0.42184797545336294,
+            },
         },
     }
 
@@ -1616,6 +1760,46 @@ def verify_canonical_metric_bundle_file(
         if abs(float(rq1.get("accuracy_end_to_end", 0.0)) - exp_acc) > 1e-6:
             raise ValueError(f"accuracy_end_to_end mismatch for {c}")
 
+        # Validate macro_f1 and accuracy CI bounds
+        act_macro = rq1.get("macro_f1")
+        if not isinstance(act_macro, float) or abs(act_macro - oracle["macro_f1"]) > 1e-7:
+            raise ValueError(
+                f"conditions.{c}.rq1_attribution.macro_f1 mismatch: actual={act_macro!r} != expected={oracle['macro_f1']}"
+            )
+        act_ci = rq1.get("accuracy_e2e_ci_95")
+        if (
+            not isinstance(act_ci, list)
+            or len(act_ci) != 2
+            or abs(act_ci[0] - oracle["accuracy_e2e_ci_95"][0]) > 1e-7
+            or abs(act_ci[1] - oracle["accuracy_e2e_ci_95"][1]) > 1e-7
+        ):
+            raise ValueError(
+                f"conditions.{c}.rq1_attribution.accuracy_e2e_ci_95 mismatch: actual={act_ci!r} != expected={oracle['accuracy_e2e_ci_95']}"
+            )
+
+        # Validate RQ2 retrieval metrics
+        ret_metrics = c_data.get("rq2_retrieval_and_error", {}).get("retrieval_metrics", {})
+        exp_ret = oracle["retrieval"]
+        for r_key in ("retrieval_hit_count", "retrieval_miss_count"):
+            act_v = ret_metrics.get(r_key)
+            exp_v = exp_ret[r_key]
+            if act_v != exp_v:
+                raise ValueError(
+                    f"conditions.{c}.rq2_retrieval_and_error.retrieval_metrics.{r_key} mismatch: actual={act_v!r} != expected={exp_v!r}"
+                )
+        for r_key in ("retrieval_hit_rate", "macro_recall"):
+            act_v = ret_metrics.get(r_key)
+            exp_v = exp_ret[r_key]
+            if exp_v is None:
+                if act_v is not None:
+                    raise ValueError(f"conditions.{c}.rq2_retrieval_and_error.retrieval_metrics.{r_key} must be None, got {act_v!r}")
+            else:
+                if not isinstance(act_v, float) or abs(act_v - exp_v) > 1e-7:
+                    raise ValueError(
+                        f"conditions.{c}.rq2_retrieval_and_error.retrieval_metrics.{r_key} mismatch: actual={act_v!r} != expected={exp_v!r}"
+                    )
+
+        # Validate baseline / delta
         if oracle["is_baseline"]:
             if rq1.get("is_baseline") is not True:
                 raise ValueError("no_rag is_baseline must be True")
@@ -1635,6 +1819,49 @@ def verify_canonical_metric_bundle_file(
                 raise ValueError(
                     f"mcnemar display_p_exact mismatch for {c}: {mcnemar.get('display_p_exact')} != {oracle['p_exact_display']}"
                 )
+            # Validate exact numeric p-values and delta CI
+            if oracle["delta"] is not None:
+                act_p_exact = mcnemar.get("p_value_exact")
+                exp_p_exact = oracle["delta"]["p_value_exact"]
+                if not isinstance(act_p_exact, float) or abs(act_p_exact - exp_p_exact) > 1e-7:
+                    raise ValueError(
+                        f"conditions.{c}.rq1_attribution.delta_vs_baseline.mcnemar_test.p_value_exact mismatch: actual={act_p_exact!r} != expected={exp_p_exact}"
+                    )
+                act_d_ci = delta.get("delta_accuracy_ci_95")
+                exp_d_ci = oracle["delta"]["delta_ci"]
+                if (
+                    not isinstance(act_d_ci, list)
+                    or len(act_d_ci) != 2
+                    or abs(act_d_ci[0] - exp_d_ci[0]) > 1e-7
+                    or abs(act_d_ci[1] - exp_d_ci[1]) > 1e-7
+                ):
+                    raise ValueError(
+                        f"conditions.{c}.rq1_attribution.delta_vs_baseline.delta_accuracy_ci_95 mismatch: actual={act_d_ci!r} != expected={exp_d_ci}"
+                    )
+
+        # Validate token stats (sums and means)
+        tok_dict = rq3.get("tokens", {})
+        for t_group in ("prompt_tokens", "completion_tokens", "total_tokens", "cached_tokens"):
+            grp = tok_dict.get(t_group, {})
+            exp_grp = oracle["tokens"][t_group]
+            act_sum = grp.get("sum")
+            if isinstance(act_sum, bool) or not isinstance(act_sum, int) or act_sum != exp_grp["sum"]:
+                raise ValueError(
+                    f"conditions.{c}.rq3_resources_and_cost.tokens.{t_group}.sum mismatch: actual={act_sum!r} != expected={exp_grp['sum']}"
+                )
+            act_mean = grp.get("mean")
+            if not isinstance(act_mean, (int, float)) or abs(float(act_mean) - exp_grp["mean"]) > 1e-7:
+                raise ValueError(
+                    f"conditions.{c}.rq3_resources_and_cost.tokens.{t_group}.mean mismatch: actual={act_mean!r} != expected={exp_grp['mean']}"
+                )
+
+        # Validate latency stats (mean and median)
+        act_lat_median = lat.get("median")
+        exp_lat_median = oracle["latency_ms"]["median"]
+        if not isinstance(act_lat_median, float) or abs(act_lat_median - exp_lat_median) > 1e-7:
+            raise ValueError(
+                f"conditions.{c}.rq3_resources_and_cost.latency_ms.median mismatch: actual={act_lat_median!r} != expected={exp_lat_median}"
+            )
 
     # 5b. Metric Definitions Consistency
     boot = bundle_data.get("metric_definitions", {}).get("bootstrap_parameters", {})
@@ -1747,6 +1974,12 @@ def main() -> int:
         default=None,
         help="Optional expected SHA256 to assert during --verify-bundle",
     )
+    parser.add_argument(
+        "--build-timestamp-utc",
+        type=str,
+        default=None,
+        help="Explicit build timestamp in ISO 8601 UTC format (defaults to recorded creation timestamp)",
+    )
     args = parser.parse_args()
 
     if args.verify_bundle is not None:
@@ -1763,6 +1996,7 @@ def main() -> int:
             public_package_dir=args.public_package_dir,
             seal_path=args.seal_path,
             output_path=out_p,
+            build_timestamp_utc=args.build_timestamp_utc,
         )
         if not args.verify_only and args.lineage_output_path:
             generate_lineage_markdown(bundle, args.lineage_output_path)

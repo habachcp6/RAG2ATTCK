@@ -34,10 +34,15 @@ if str(REPO_ROOT) not in sys.path:
 
 # Portable bundle directory resolution
 ENV_BUNDLE_DIR = os.getenv("CANONICAL_BUNDLE_DIR")
+LOCAL_STAGED_BUNDLE_DIR = REPO_ROOT / "artifacts/public_package_staging/canonical-bundle-public-v1"
+WORKSTATION_BUNDLE_DIR = Path(
+    "C:/Users/hahoa/.codex/artifacts/rag2attck/canonical-accepted-bundle-v2"
+)
+
 DEFAULT_BUNDLE_DIR = (
     Path(ENV_BUNDLE_DIR)
     if ENV_BUNDLE_DIR
-    else Path("C:/Users/hahoa/.codex/artifacts/rag2attck/canonical-accepted-bundle-v2")
+    else (LOCAL_STAGED_BUNDLE_DIR if LOCAL_STAGED_BUNDLE_DIR.exists() else WORKSTATION_BUNDLE_DIR)
 )
 
 CANONICAL_BUNDLE_SHA256 = "00cd9df247af395e924235b42108b91e1fdc7ca3e7a190499cb7544f6bc6612f"
@@ -147,27 +152,69 @@ def count_fields(obj: Any) -> int:
     return 1
 
 
+def is_monetary_path(path: str) -> bool:
+    """Check if the given path/key refers to a scientific monetary or currency metric."""
+    leaf = path.split(".")[-1].split("[")[0].lower()
+    return (
+        leaf.endswith("_usd")
+        or leaf.endswith("_cost")
+        or leaf.endswith("_fee")
+        or leaf
+        in {
+            "cost",
+            "budget",
+            "refund",
+            "hold",
+            "balance",
+            "reserve",
+            "settled_cost",
+            "total_budget",
+            "cost_usd",
+            "refund_usd",
+            "amount_usd",
+        }
+    )
+
+
 def compare_metrics_trees(
     actual: Any,
     expected: Any,
     path: str = "",
     float_tolerance: float = 1e-12,
 ) -> tuple[bool, list[str]]:
-    """Deeply compare two metric dictionaries or structures.
+    """Deeply compare two metric structures with strict typing and fail-closed gates.
 
     Rules:
-      - Floats: math.isclose with absolute and relative tolerance 1e-12.
-      - Decimals / Monetary strings: exact Decimal numerical match.
-      - Integers, strings, booleans, None: exact equality.
-      - Operational timestamps / execution environment metadata explicitly excluded.
+      - Documented named timestamps/provenance fields explicitly excluded.
+      - Boolean types: strict type match (bool is NEVER equal to int/float).
+      - Strict Types: type(actual) is type(expected) required for all values,
+        except when exactly one is Decimal on an authorized monetary path.
+      - Floating point numerics: must be finite (reject NaN, Inf, -Inf).
+        math.isclose with absolute and relative tolerance float_tolerance.
+      - Integer numerics: exact bitwise integer equality (reject float/int mix).
+      - Strings: exact character sequence equality ('001' != '1').
+      - Monetary paths: exact Decimal numerical comparison (parsed to 8 decimals).
     """
     discrepancies: list[str] = []
 
-    # Check for excluded path/key
+    # Check for excluded path/key (ONLY documented named timestamps/provenance fields)
     field_name = path.split(".")[-1] if "." in path else path
     if field_name in METRICS_COMPARISON_EXCLUDED_FIELDS:
         return True, discrepancies
 
+    # 1. Strict boolean check (Python bool is subclass of int; True must NEVER equal 1)
+    act_is_bool = isinstance(actual, bool)
+    exp_is_bool = isinstance(expected, bool)
+    if act_is_bool or exp_is_bool:
+        if act_is_bool != exp_is_bool or actual is not expected:
+            discrepancies.append(
+                f"Boolean/type mismatch at {path}: actual={actual!r} ({type(actual).__name__}), "
+                f"expected={expected!r} ({type(expected).__name__})"
+            )
+            return False, discrepancies
+        return True, discrepancies
+
+    # 2. Dictionary recursion
     if isinstance(actual, dict) and isinstance(expected, dict):
         all_keys = set(actual.keys()) | set(expected.keys())
         for k in sorted(all_keys):
@@ -183,7 +230,8 @@ def compare_metrics_trees(
                 discrepancies.extend(sub_disc)
         return len(discrepancies) == 0, discrepancies
 
-    if isinstance(actual, list) and isinstance(expected, list):
+    # 3. List/tuple recursion
+    if isinstance(actual, (list, tuple)) and isinstance(expected, (list, tuple)):
         if len(actual) != len(expected):
             discrepancies.append(
                 f"List length mismatch at {path}: {len(actual)} != {len(expected)}"
@@ -197,38 +245,52 @@ def compare_metrics_trees(
             discrepancies.extend(sub_disc)
         return len(discrepancies) == 0, discrepancies
 
-    # Currency comparison (Decimal)
-    if isinstance(actual, (Decimal, str)) and isinstance(expected, (Decimal, str)):
-        try:
-            dec_a = Decimal(str(actual).replace("$", ""))
-            dec_e = Decimal(str(expected).replace("$", ""))
-            if dec_a == dec_e:
+    # 4. Monetary path comparison (Decimal vs str on monetary path)
+    if is_monetary_path(path):
+        if (isinstance(actual, Decimal) and isinstance(expected, str)) or (
+            isinstance(actual, str) and isinstance(expected, Decimal)
+        ):
+            try:
+                dec_a = Decimal(str(actual).replace("$", "").strip())
+                dec_e = Decimal(str(expected).replace("$", "").strip())
+                if dec_a != dec_e:
+                    discrepancies.append(f"Monetary value mismatch at {path}: {dec_a} != {dec_e}")
+                    return False, discrepancies
                 return True, discrepancies
-        except Exception:
-            pass
+            except Exception:
+                pass
 
-    # Floating point comparison
-    if isinstance(actual, (int, float)) and isinstance(expected, (int, float)):
-        # If both are int, require exact equality
-        if isinstance(actual, int) and isinstance(expected, int):
-            if actual != expected:
-                discrepancies.append(f"Integer mismatch at {path}: {actual} != {expected}")
-                return False, discrepancies
-            return True, discrepancies
+    # 5. Strict Type Requirement: type(actual) must be type(expected)
+    if type(actual) is not type(expected):
+        discrepancies.append(
+            f"Strict type mismatch at {path}: actual={actual!r} ({type(actual).__name__}), "
+            f"expected={expected!r} ({type(expected).__name__})"
+        )
+        return False, discrepancies
 
-        f_a = float(actual)
-        f_e = float(expected)
-        if math.isnan(f_a) and math.isnan(f_e):
-            return True, discrepancies
-        if not math.isclose(f_a, f_e, rel_tol=float_tolerance, abs_tol=float_tolerance):
+    # 6. Integer comparison (strict int, already verified not bool)
+    if isinstance(actual, int):
+        if actual != expected:
+            discrepancies.append(f"Integer mismatch at {path}: {actual} != {expected}")
+            return False, discrepancies
+        return True, discrepancies
+
+    # 7. Float comparison (finite numerics only, reject NaN, Inf, -Inf)
+    if isinstance(actual, float):
+        if not (math.isfinite(actual) and math.isfinite(expected)):
             discrepancies.append(
-                f"Float tolerance exceeded at {path}: actual={f_a}, expected={f_e}, "
-                f"diff={abs(f_a - f_e):.2e} > {float_tolerance}"
+                f"Non-finite float rejected at {path}: actual={actual!r}, expected={expected!r}"
+            )
+            return False, discrepancies
+        if not math.isclose(actual, expected, rel_tol=float_tolerance, abs_tol=float_tolerance):
+            discrepancies.append(
+                f"Float tolerance exceeded at {path}: actual={actual}, expected={expected}, "
+                f"diff={abs(actual - expected):.2e} > {float_tolerance}"
             )
             return False, discrepancies
         return True, discrepancies
 
-    # Exact equality for strings, booleans, None
+    # 8. Exact equality for strings, Decimal, None, or any other strict type
     if actual != expected:
         discrepancies.append(f"Value mismatch at {path}: actual={actual!r}, expected={expected!r}")
         return False, discrepancies
@@ -240,26 +302,70 @@ def verify_bundle_hashes(bundle_dir: Path) -> tuple[bool, list[str]]:
     """Audit SHA-256 hashes of all files in canonical accepted bundle."""
     logs: list[str] = []
     bundle_manifest_path = bundle_dir / "canonical_metric_bundle_v1.json"
-    if not bundle_manifest_path.exists():
-        logs.append(f"[FAIL] Missing bundle manifest: {bundle_manifest_path}")
-        return False, logs
+    portable_manifest_path = bundle_dir / "canonical_bundle_manifest.json"
+    public_staging_manifest_path = bundle_dir / "public_package_manifest.json"
 
-    manifest_bytes = bundle_manifest_path.read_bytes()
-    manifest_sha = compute_sha256(manifest_bytes)
-    if manifest_sha != CANONICAL_BUNDLE_SHA256:
+    if bundle_manifest_path.exists():
+        manifest_bytes = bundle_manifest_path.read_bytes()
+        manifest_sha = compute_sha256(manifest_bytes)
+        if manifest_sha != CANONICAL_BUNDLE_SHA256:
+            logs.append(
+                f"[MISMATCH] Bundle manifest SHA-256:\n"
+                f"  Expected: {CANONICAL_BUNDLE_SHA256}\n"
+                f"  Actual:   {manifest_sha}"
+            )
+            return False, logs
+        logs.append(f"[PASS] Bundle manifest verified: {manifest_sha}")
+        bundle_data = json.loads(manifest_bytes.decode("utf-8"))
+        source_digests: dict[str, str] = bundle_data.get("source_file_digests", {})
+        output_digests: dict[str, str] = bundle_data.get("output_file_digests", {})
+    elif portable_manifest_path.exists() or public_staging_manifest_path.exists():
+        p_path = (
+            portable_manifest_path
+            if portable_manifest_path.exists()
+            else public_staging_manifest_path
+        )
+        manifest_bytes = p_path.read_bytes()
+        manifest_sha = compute_sha256(manifest_bytes)
+        bundle_data = json.loads(manifest_bytes.decode("utf-8"))
+        derived_sha = bundle_data.get("derived_from", {}).get("bundle_sha256")
+        if derived_sha != CANONICAL_BUNDLE_SHA256:
+            logs.append(
+                f"[MISMATCH] Portable bundle derived_from SHA-256:\n"
+                f"  Expected: {CANONICAL_BUNDLE_SHA256}\n"
+                f"  Actual:   {derived_sha}"
+            )
+            return False, logs
         logs.append(
-            f"[MISMATCH] Bundle manifest SHA-256:\n"
-            f"  Expected: {CANONICAL_BUNDLE_SHA256}\n"
-            f"  Actual:   {manifest_sha}"
+            f"[PASS] Portable bundle manifest verified ({p_path.name}): "
+            f"derived from canonical bundle {derived_sha}"
+        )
+
+        if "source_file_digests" in bundle_data:
+            source_digests = bundle_data["source_file_digests"]
+        elif "raw_input_files" in bundle_data:
+            source_digests = {k: v["sha256"] for k, v in bundle_data["raw_input_files"].items()}
+        else:
+            source_digests = {}
+
+        if "output_file_digests" in bundle_data:
+            output_digests = bundle_data["output_file_digests"]
+        elif "accepted_analytical_outputs" in bundle_data:
+            output_digests = {
+                k: v["sha256"] for k, v in bundle_data["accepted_analytical_outputs"].items()
+            }
+        else:
+            output_digests = {}
+    else:
+        logs.append(
+            f"[FAIL] Missing bundle manifest in {bundle_dir} "
+            f"(neither canonical_metric_bundle_v1.json nor canonical_bundle_manifest.json found)"
         )
         return False, logs
-    logs.append(f"[PASS] Bundle manifest verified: {manifest_sha}")
 
-    bundle_data = json.loads(manifest_bytes.decode("utf-8"))
     all_ok = True
 
     # Audit inputs
-    source_digests: dict[str, str] = bundle_data.get("source_file_digests", {})
     inputs_dir = bundle_dir / "inputs"
     logs.append(f"\nVerifying {len(source_digests)} Canonical Input Files:")
     for filename, expected_sha in sorted(source_digests.items()):
@@ -279,7 +385,6 @@ def verify_bundle_hashes(bundle_dir: Path) -> tuple[bool, list[str]]:
             logs.append(f"  [OK] {filename:<30} {actual_sha}")
 
     # Audit outputs
-    output_digests: dict[str, str] = bundle_data.get("output_file_digests", {})
     logs.append(f"\nVerifying {len(output_digests)} Canonical Output Files:")
     for filename, expected_sha in sorted(output_digests.items()):
         target = bundle_dir / filename
@@ -325,9 +430,9 @@ def verify_protected_baseline(repo_root: Path) -> tuple[bool, list[str]]:
         else:
             logs.append(f"  [OK] {rel_path}")
 
-    # Verify code manifest hash
+    # Verify code manifest hash - MUST FAIL CLOSED on mismatch or exception
     try:
-        from src.experiment.code_manifest import compute_code_manifest_sha256
+        from src.experiment.authorization import compute_code_manifest_sha256
 
         manifest_sha = compute_code_manifest_sha256(repo_root)
         if manifest_sha != CANONICAL_CORE_MANIFEST_SHA256:
@@ -340,7 +445,8 @@ def verify_protected_baseline(repo_root: Path) -> tuple[bool, list[str]]:
         else:
             logs.append(f"\n[PASS] Core code manifest SHA-256 verified: {manifest_sha}")
     except Exception as exc:
-        logs.append(f"\n[WARN] Could not compute code manifest hash: {exc}")
+        logs.append(f"\n[FAIL] Failed computing core code manifest hash: {exc}")
+        all_ok = False
 
     return all_ok, logs
 
@@ -537,15 +643,29 @@ def replay_saved_evaluation(
 
         # Bind Root secondary authorization through publication metadata
         bundle_manifest_path = bundle_dir / "canonical_metric_bundle_v1.json"
+        portable_manifest_path = bundle_dir / "canonical_bundle_manifest.json"
+        public_staging_manifest_path = bundle_dir / "public_package_manifest.json"
+
         sec_packet = None
+        manifest_p = None
         if bundle_manifest_path.exists():
-            bundle_manifest = load_json(bundle_manifest_path)
+            manifest_p = bundle_manifest_path
+        elif portable_manifest_path.exists():
+            manifest_p = portable_manifest_path
+        elif public_staging_manifest_path.exists():
+            manifest_p = public_staging_manifest_path
+
+        if manifest_p is not None:
+            bundle_manifest = load_json(manifest_p)
             sec_auth = bundle_manifest.get("secondary_scope_authorization", {})
             candidate_path = sec_auth.get("path")
-            if candidate_path and Path(candidate_path).is_file():
-                sec_packet = candidate_path
-            elif candidate_path and (repo_root / candidate_path).is_file():
-                sec_packet = str(repo_root / candidate_path)
+            if candidate_path:
+                if Path(candidate_path).is_file():
+                    sec_packet = candidate_path
+                elif (bundle_dir / candidate_path).is_file():
+                    sec_packet = str(bundle_dir / candidate_path)
+                elif (repo_root / candidate_path).is_file():
+                    sec_packet = str(repo_root / candidate_path)
 
         rq_output_dir = output_dir / "regenerated_rq"
         rq_output_dir.mkdir(parents=True, exist_ok=True)

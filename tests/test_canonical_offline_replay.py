@@ -229,6 +229,74 @@ class TestMathematicalComparatorAndFailClosed:
         ok, logs = verify_protected_baseline(REPO_ROOT)
         assert ok is True, f"Baseline verification failed: {logs}"
 
+    def test_strict_type_boolean_not_equal_int(self):
+        """Verify strict boolean gate: True must NEVER equal 1, False must NEVER equal 0."""
+        from scripts.reproduce_canonical_study import compare_metrics_trees
+
+        ok1, disc1 = compare_metrics_trees(True, 1)
+        assert ok1 is False, "True must never equal integer 1"
+        assert len(disc1) > 0
+
+        ok2, disc2 = compare_metrics_trees(1, True)
+        assert ok2 is False, "Integer 1 must never equal True"
+        assert len(disc2) > 0
+
+        ok3, disc3 = compare_metrics_trees(False, 0)
+        assert ok3 is False, "False must never equal integer 0"
+        assert len(disc3) > 0
+
+        ok4, disc4 = compare_metrics_trees(0, False)
+        assert ok4 is False, "Integer 0 must never equal False"
+        assert len(disc4) > 0
+
+    def test_non_finite_float_nan_and_inf_rejected(self):
+        """Verify non-finite floats (NaN, +Inf, -Inf) fail closed and are rejected."""
+        from scripts.reproduce_canonical_study import compare_metrics_trees
+
+        ok_nan, disc_nan = compare_metrics_trees(float("nan"), float("nan"))
+        assert ok_nan is False, "NaN floating point must be rejected"
+        assert any("Non-finite float rejected" in d for d in disc_nan)
+
+        ok_inf, disc_inf = compare_metrics_trees(float("inf"), float("inf"))
+        assert ok_inf is False, "+Inf floating point must be rejected"
+        assert any("Non-finite float rejected" in d for d in disc_inf)
+
+        ok_ninf, disc_ninf = compare_metrics_trees(float("-inf"), float("-inf"))
+        assert ok_ninf is False, "-Inf floating point must be rejected"
+        assert any("Non-finite float rejected" in d for d in disc_ninf)
+
+    def test_loose_numeric_string_rejected(self):
+        """Verify loose numeric strings rejected: exact equality required ('001' != '1')."""
+        from scripts.reproduce_canonical_study import compare_metrics_trees
+
+        ok1, disc1 = compare_metrics_trees("001", "1")
+        assert ok1 is False, "Loose numeric string '001' must not equal '1'"
+        assert len(disc1) > 0
+
+        ok2, disc2 = compare_metrics_trees({"id": "001"}, {"id": "1"})
+        assert ok2 is False, "Non-monetary dictionary strings must compare exact characters"
+        assert len(disc2) > 0
+
+    def test_core_manifest_exception_or_mismatch_fails_closed(self, monkeypatch):
+        """Verify verify_protected_baseline fails closed if manifest mismatches or errors."""
+        import src.experiment.authorization as auth
+        from scripts.reproduce_canonical_study import REPO_ROOT, verify_protected_baseline
+
+        # Subtest A: Hash mismatch fails closed
+        monkeypatch.setattr(auth, "compute_code_manifest_sha256", lambda root: "0" * 64)
+        ok_mismatch, logs_mismatch = verify_protected_baseline(REPO_ROOT)
+        assert ok_mismatch is False, "verify_protected_baseline MUST return False on mismatch"
+        assert any("[MISMATCH] Code manifest SHA-256" in line for line in logs_mismatch)
+
+        # Subtest B: Manifest computation raises exception fails closed
+        def raise_manifest_err(root):
+            raise RuntimeError("Corrupted code repository manifest computation")
+
+        monkeypatch.setattr(auth, "compute_code_manifest_sha256", raise_manifest_err)
+        ok_exc, logs_exc = verify_protected_baseline(REPO_ROOT)
+        assert ok_exc is False, "verify_protected_baseline MUST return False on exception"
+        assert any("[FAIL] Failed computing core code manifest hash" in line for line in logs_exc)
+
 
 class TestDispatchSpiesAndFailClosedReplay:
     """Verifies evaluator/RQ dispatch spies, mutants, and fail-closed missing module gates."""

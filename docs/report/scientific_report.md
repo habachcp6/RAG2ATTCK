@@ -671,7 +671,7 @@ To maintain a lean repository footprint, the 21MB raw prediction journals and fu
 
 ## References
 
-1. The MITRE Corporation. "MITRE ATT&CK® Enterprise Matrix, Version 19.2." Published March 2026. Available: <https://attack.mitre.org/>. `[PRIMARY SOURCE VERIFIED]`
+1. The MITRE Corporation. "MITRE ATT&CK® Enterprise Matrix, Version 19.2." Published 05/08/2026. Available: <https://attack.mitre.org/>. `[PRIMARY SOURCE VERIFIED]`
 2. OpenAI. "GPT-5.6 Luna Model." OpenAI Documentation, accessed 2 October 2026. Available: <https://developers.openai.com/api/docs/models/gpt-5.6-luna>. Specifications: 1,050,000 context window, 128,000 max output capacity. `[PRIMARY SOURCE VERIFIED]`
 3. OpenAI. "Reasoning models." OpenAI Documentation Guides, accessed 2 October 2026. Available: <https://developers.openai.com/api/docs/guides/reasoning>. Note: Details upper budget bounds and incomplete responses (status="incomplete", incomplete_details.reason="max_output_tokens") when max_output_tokens is exhausted. `[PRIMARY SOURCE VERIFIED]`
 4. Lewis, P.; Perez, E.; Piktus, A.; Petroni, F.; Karpukhin, V.; Goyal, N.; Küttler, H.; Lewis, M.; Yih, W.-t.; Rocktäschel, T.; Riedel, S.; Kiela, D. "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks." In: *Advances in Neural Information Processing Systems (NeurIPS 2020)*, vol. 33, pp. 9459–9474, 2020. `[PRIMARY SOURCE VERIFIED]`

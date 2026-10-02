@@ -732,17 +732,28 @@ def verify_bundle_hashes(
                 )
                 all_ok = False
             else:
-                # Also verify raw wrapper block digest invariant
+                # Also verify raw wrapper block digest invariant without module execution
                 try:
-                    import importlib.util
+                    import ast
 
-                    fixture_spec = importlib.util.spec_from_file_location(
-                        "public_runtime_wrapper_check", target
-                    )
-                    if fixture_spec and fixture_spec.loader:
-                        fixture_mod = importlib.util.module_from_spec(fixture_spec)
-                        fixture_spec.loader.exec_module(fixture_mod)
-                        raw_block = getattr(fixture_mod, "RAW_WRAPPER_BLOCK", "")
+                    tree = ast.parse(target.read_text(encoding="utf-8"))
+                    raw_block = ""
+                    for node in tree.body:
+                        if (
+                            isinstance(node, ast.Assign)
+                            and any(
+                                isinstance(t, ast.Name) and t.id == "RAW_WRAPPER_BLOCK"
+                                for t in node.targets
+                            )
+                            and isinstance(node.value, ast.Constant)
+                            and isinstance(node.value.value, str)
+                        ):
+                            raw_block = node.value.value
+                            break
+                    if not raw_block:
+                        logs.append(f"  [FAIL] RAW_WRAPPER_BLOCK constant not found in {rel_p}")
+                        all_ok = False
+                    else:
                         block_sha = compute_sha256(raw_block.encode("utf-8"))
                         if block_sha != CANONICAL_WRAPPER_BLOCK_SHA256:
                             logs.append(
@@ -1254,9 +1265,10 @@ def run_demo_inspection(bundle_dir: Path, repo_root: Path) -> tuple[bool, list[s
                 r = json.loads(line)
                 if r.get("sample_id") == ex1_sid:
                     cands = [c["technique_id"] for c in r.get("retrieved_candidates", [])]
-                    cand_desc = (
-                        f"first 3 of 10: {cands[:3]}" if len(cands) == 10 else f"{cands[:3]}"
-                    )
+                    if len(cands) > 3:
+                        cand_desc = f"first 3 of {len(cands)}: {cands[:3]}"
+                    else:
+                        cand_desc = f"{cands}"
                     logs.append(
                         f"    {cond:<8} | Pred: {r.get('parsed_technique_ids')} | "
                         f"Prompt/Comp: {r.get('prompt_tokens')}/{r.get('completion_tokens')} | "
@@ -1264,12 +1276,16 @@ def run_demo_inspection(bundle_dir: Path, repo_root: Path) -> tuple[bool, list[s
                     )
                     break
 
-    # Exemplar 2: Outdated parametric prior repaired by RAG (view_0265275a)
+    # Exemplar 2: Observed divergent prediction matching ground truth
+    # under retrieval at k>=3 (view_0265275a)
     ex2_sid = "view_0265275a"
     if ex2_sid not in gt_map:
         raise ValueError(f"Exemplar 2 sample {ex2_sid} missing in GT")
     ex2_gt = gt_map[ex2_sid]["technique_ids"]
-    logs.append(f"\n  [Exemplar 2] Outdated Parametric Prior Repaired by RAG at k>=3 ({ex2_sid}):")
+    logs.append(
+        "\n  [Exemplar 2] Observed Divergent Prediction Matching "
+        f"Ground Truth Under Retrieval at k>=3 ({ex2_sid}):"
+    )
     logs.append(f"    Ground Truth: {ex2_gt} (Clear Windows Event Logs, STIX v19.2 sub-technique)")
     for cond in ["no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10"]:
         pf = inputs_dir / f"{cond}_predictions.jsonl"
@@ -1282,7 +1298,7 @@ def run_demo_inspection(bundle_dir: Path, repo_root: Path) -> tuple[bool, list[s
                     cands = [c["technique_id"] for c in r.get("retrieved_candidates", [])]
                     note = ""
                     if cond == "no_rag":
-                        note = " (Outdated parent technique, INCORRECT)"
+                        note = " (Divergent sub-technique ID, INCORRECT)"
                     elif cond == "rag_k1":
                         cand_ret = cands[0] if cands else "none"
                         note = f" (Retrieved {cand_ret}, missed GT, INCORRECT)"

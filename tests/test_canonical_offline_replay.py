@@ -702,6 +702,39 @@ class TestPublicStagingManifestAuthenticationAndRQBinding:
         ok, logs = verify_bundle_hashes(bundle_copy)
         assert ok is True, f"Clean copy in other dir must be accepted by default. Logs: {logs}"
 
+    def test_verify_bundle_hashes_does_not_mutate_package_inventory(self, tmp_path):
+        """Test invariant: verify_bundle_hashes MUST NOT create bytecode caches or mutate."""
+        import shutil
+
+        from scripts.reproduce_canonical_study import verify_bundle_hashes
+
+        if not LOCAL_STAGED_BUNDLE_DIR.exists():
+            pytest.skip("Local staged bundle not found")
+
+        bundle_copy = tmp_path / "inventory_check_bundle"
+        shutil.copytree(LOCAL_STAGED_BUNDLE_DIR, bundle_copy)
+
+        initial_files = sorted(
+            [str(p.relative_to(bundle_copy)) for p in bundle_copy.rglob("*") if p.is_file()]
+        )
+
+        ok, logs = verify_bundle_hashes(bundle_copy)
+        assert ok is True, f"Verification failed: {logs}"
+
+        post_files = sorted(
+            [str(p.relative_to(bundle_copy)) for p in bundle_copy.rglob("*") if p.is_file()]
+        )
+        assert initial_files == post_files, (
+            f"Package inventory mutated by verify_bundle_hashes! Discrepancy: "
+            f"{set(post_files) ^ set(initial_files)}"
+        )
+
+        # Explicit verification: zero __pycache__ and zero .pyc created
+        pycache_dirs = list(bundle_copy.rglob("__pycache__"))
+        assert len(pycache_dirs) == 0, f"Unexpected __pycache__ created: {pycache_dirs}"
+        pyc_files = list(bundle_copy.rglob("*.pyc"))
+        assert len(pyc_files) == 0, f"Unexpected .pyc created: {pyc_files}"
+
     def test_main_fails_closed_before_computation(self, monkeypatch):
         """Negative test: main() MUST exit with code 1 immediately without running replay."""
         import scripts.reproduce_canonical_study as rep

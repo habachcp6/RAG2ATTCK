@@ -309,11 +309,11 @@ RAG2ATTCK/
 The canonical study evaluation and analysis can be independently re-evaluated and verified offline with **zero cost and zero network egress** (`OFFLINE_GUARD` socket-level protection).
 
 ### Prerequisites & Preparation
-1. **Dependencies:** Install frozen dependencies using `uv sync`.
-2. **STIX v19.2 Knowledge Corpus:** Ensure the enterprise ATT&CK STIX bundle is present.
+1. **Dependencies:** Install frozen dependencies using `uv sync --frozen`.
+2. **STIX v19.2 Knowledge Corpus:** Ensure the enterprise ATT&CK STIX bundle is present at `attack/raw/enterprise-v19.2/enterprise-attack-19.2.json` with mandatory SHA-256: `dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4`.
 3. **Canonical Accepted Bundle / Portable Package:** The reproduction helper verifies an immutable bundle directory containing:
    - **10 Canonical Input Files:** `manifest.json`, 5 prediction JSONLs (`no_rag`, `rag_k1`, `rag_k3`, `rag_k5`, `rag_k10`), `request_journal.jsonl`, `run_summary.json`, `study_ledger.json`, and `.study_anchor.json`.
-   - **8 Accepted Analytical Output Files:** 6 native evaluation outputs (`overall_metrics.json`, `per_condition_metrics.json`, `per_technique_metrics.json`, `retrieval_conditional_metrics.json`, `failure_decomposition.json`, `summary.md`) plus `rq_analysis.json` and `rq_analysis.md`.
+   - **8 Accepted Analytical Output Files:** `overall_metrics.json`, `per_condition_metrics.json`, `per_technique_metrics.json`, `retrieval_conditional_metrics.json`, `failure_decomposition.json`, `run_provenance.json`, `rq_analysis.json`, and `rq_analysis_summary.md`.
    - **22 Protected Baseline Files & 15 Artifact Bindings:** Cryptographically verified against frozen digests.
 
 ```bash

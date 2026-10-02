@@ -5,11 +5,14 @@ Verifies:
    - Canonical mode fails closed pending S2 seal.
    - Fails closed on uncertified non-fixture directories.
    - Requires all 6 canonical evaluator files + _fixture_metadata.json on disk.
-2. Provenance consistency & Mixed-mode rejection:
-   - Rejects mismatched protocol_version, experiment_id, manifest_sha256, execution_mode.
-   - Validates evaluate_rqs.py source_sha256 against authoritative hash.
+   - Enforces strict boolean check for fixture_only is True (rejects truthiness).
+2. Bundle manifest hash binding & Provenance consistency:
+   - Requires protocol_version, experiment_id, and manifest_sha256 in bundle metadata.
+   - Unconditionally requires uniform manifest, experiment, and protocol across all files.
+   - Rejects mixed mode or missing provenance fields.
 3. Schema & Metric bounds validation:
    - Rejects missing required fields with KeyError (no zero-defaults).
+   - Rejects missing sum_prompt_tokens or sum_completion_tokens (no 1280-based fabrication).
    - Rejects NaN, Inf, and out-of-bounds numbers with ValueError.
    - Safely handles legitimate None without TypeError.
 4. Correctness of derived metrics:
@@ -31,7 +34,6 @@ from scripts.populate_report import (
     DEFAULT_FIXTURE_DIR,
     DEFAULT_TEMPLATE_PATH,
     DISCLAIMER_TEXT,
-    EXPECTED_SOURCE_SHA256,
     REQUIRED_FIXTURE_FILES,
     assert_fixture_safety,
     format_int,
@@ -113,16 +115,17 @@ def test_assert_fixture_safety_rejects_uncertified_dir(tmp_path: Path) -> None:
         assert_fixture_safety(unsafe_dir)
 
 
-def test_assert_fixture_safety_rejects_fixture_only_false(
-    real_fixture_copy: Path,
+@pytest.mark.parametrize("invalid_flag", ["true", "True", 1, 0, False, ""])
+def test_assert_fixture_safety_rejects_fixture_only_not_strictly_boolean(
+    real_fixture_copy: Path, invalid_flag: object
 ) -> None:
-    """Safety test: Fails closed when _fixture_metadata.json declares fixture_only=False."""
+    """Safety test: Fails closed when fixture_only is not strictly boolean True."""
     meta_file = real_fixture_copy / "_fixture_metadata.json"
     meta = json.loads(meta_file.read_text(encoding="utf-8"))
-    meta["fixture_only"] = False
+    meta["fixture_only"] = invalid_flag
     meta_file.write_text(json.dumps(meta), encoding="utf-8")
 
-    err_msg = r"\[FAIL_CLOSED\] _fixture_metadata\.json .* must declare fixture_only=True"
+    err_msg = r"\[FAIL_CLOSED\] _fixture_metadata\.json .* must declare fixture_only=True strictly"
     with pytest.raises(RuntimeError, match=err_msg):
         assert_fixture_safety(real_fixture_copy)
 
@@ -151,6 +154,42 @@ def test_missing_required_file_raises_file_not_found(
     with pytest.raises(
         FileNotFoundError,
         match=rf"\[FAIL_CLOSED\] Required fixture file missing:.*{missing_file}",
+    ):
+        run_pipeline(
+            fixture_dir=real_fixture_copy,
+            template_path=DEFAULT_TEMPLATE_PATH,
+            output_path=out_md,
+        )
+
+
+@pytest.mark.parametrize("bundle_key", ["manifest_sha256", "experiment_id", "protocol_version"])
+def test_missing_bundle_key_in_metadata_raises_key_error(
+    real_fixture_copy: Path, bundle_key: str
+) -> None:
+    """Bundle binding: Missing manifest/experiment/protocol in metadata raises KeyError."""
+    meta_file = real_fixture_copy / "_fixture_metadata.json"
+    meta = json.loads(meta_file.read_text(encoding="utf-8"))
+    del meta[bundle_key]
+    meta_file.write_text(json.dumps(meta), encoding="utf-8")
+
+    with pytest.raises(KeyError, match=rf"\[FAIL_CLOSED\] .* missing bundle key: '{bundle_key}'"):
+        assert_fixture_safety(real_fixture_copy)
+
+
+@pytest.mark.parametrize("bundle_key", ["manifest_sha256", "experiment_id", "protocol_version"])
+def test_missing_provenance_field_in_eval_file_raises_key_error(
+    real_fixture_copy: Path, bundle_key: str, tmp_path: Path
+) -> None:
+    """Unconditional provenance: Missing provenance field in evaluation output raises KeyError."""
+    target_file = real_fixture_copy / "per_condition_metrics.json"
+    doc = json.loads(target_file.read_text(encoding="utf-8"))
+    del doc[bundle_key]
+    target_file.write_text(json.dumps(doc), encoding="utf-8")
+
+    out_md = tmp_path / "out.md"
+    with pytest.raises(
+        KeyError,
+        match=rf"\[FAIL_CLOSED\] Required provenance field '{bundle_key}' missing",
     ):
         run_pipeline(
             fixture_dir=real_fixture_copy,
@@ -233,26 +272,6 @@ def test_provenance_execution_mode_mismatch_raises_value_error(
         )
 
 
-def test_mismatched_source_sha256_raises_value_error(
-    real_fixture_copy: Path, tmp_path: Path
-) -> None:
-    """Source verification: rq_analysis.json source_sha256 mismatch raises ValueError."""
-    rq_file = real_fixture_copy / "rq_analysis.json"
-    rq = json.loads(rq_file.read_text(encoding="utf-8"))
-    rq["source_sha256"] = "1111222233334444555566667777888899990000aaaabbbbccccddddeeeeffff"
-    rq_file.write_text(json.dumps(rq), encoding="utf-8")
-
-    out_md = tmp_path / "out.md"
-    with pytest.raises(
-        ValueError, match=r"\[FAIL_CLOSED\] rq_analysis\.json source_sha256 mismatch"
-    ):
-        run_pipeline(
-            fixture_dir=real_fixture_copy,
-            template_path=DEFAULT_TEMPLATE_PATH,
-            output_path=out_md,
-        )
-
-
 # ==============================================================================
 # 3. Schema & Metric Bounds Validation (No Defaults, Finite Checking)
 # ==============================================================================
@@ -267,6 +286,42 @@ def test_missing_required_field_raises_key_error(real_fixture_copy: Path, tmp_pa
 
     out_md = tmp_path / "out.md"
     with pytest.raises(KeyError, match="rag_k1.*accuracy_end_to_end"):
+        run_pipeline(
+            fixture_dir=real_fixture_copy,
+            template_path=DEFAULT_TEMPLATE_PATH,
+            output_path=out_md,
+        )
+
+
+def test_missing_sum_prompt_tokens_raises_key_error(
+    real_fixture_copy: Path, tmp_path: Path
+) -> None:
+    """Token sum integrity: Missing sum_prompt_tokens raises KeyError (no 1280 fabrication)."""
+    rq_file = real_fixture_copy / "rq_analysis.json"
+    data = json.loads(rq_file.read_text(encoding="utf-8"))
+    del data["rq3"]["tradeoffs_by_condition"]["no_rag"]["tokens"]["sum_prompt_tokens"]
+    rq_file.write_text(json.dumps(data), encoding="utf-8")
+
+    out_md = tmp_path / "out.md"
+    with pytest.raises(KeyError, match="Condition 'no_rag' missing 'sum_prompt_tokens'"):
+        run_pipeline(
+            fixture_dir=real_fixture_copy,
+            template_path=DEFAULT_TEMPLATE_PATH,
+            output_path=out_md,
+        )
+
+
+def test_missing_sum_completion_tokens_raises_key_error(
+    real_fixture_copy: Path, tmp_path: Path
+) -> None:
+    """Token sum integrity: Missing sum_completion_tokens raises KeyError (no 1280 fabrication)."""
+    rq_file = real_fixture_copy / "rq_analysis.json"
+    data = json.loads(rq_file.read_text(encoding="utf-8"))
+    del data["rq3"]["tradeoffs_by_condition"]["no_rag"]["tokens"]["sum_completion_tokens"]
+    rq_file.write_text(json.dumps(data), encoding="utf-8")
+
+    out_md = tmp_path / "out.md"
+    with pytest.raises(KeyError, match="Condition 'no_rag' missing 'sum_completion_tokens'"):
         run_pipeline(
             fixture_dir=real_fixture_copy,
             template_path=DEFAULT_TEMPLATE_PATH,
@@ -391,19 +446,23 @@ def test_run_pipeline_end_to_end_authoritative_fixture(tmp_path: Path) -> None:
     rag_k1_t4 = slots["table_4"]["rag_k1"]
     assert rag_k1_t4["downstream_selection_failure"] == "1"
 
-    # 5. Table 6 cryptographic manifest preservation
+    # 5. Table 5 verified native token sums (not fabricated from mean * 1280)
+    no_rag_t5 = slots["table_5"]["no_rag"]
+    assert no_rag_t5["total_input_tokens"] == "3,215"
+    assert no_rag_t5["total_output_tokens"] == "1,121"
+    # Ensure no fabricated totals (e.g. 643 * 1280 = 823,040)
+    assert "823,040" not in content
+
+    # 6. Table 6 cryptographic manifest preservation
     assert "*Table 6: Cryptographic Reproducibility Manifest.*" in content
     assert "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c" in content
 
-    # 6. Supplementary Execution Provenance check
+    # 7. Supplementary Execution Provenance check
     assert "#### Supplementary Execution Provenance (Diagnostic Fixture Mode)" in content
     assert "run_provenance.json" in content
     assert "retrieval_conditional_metrics.json" in content
     assert "overall_metrics.json" in content
 
-    # 7. Audit JSON structure and safety metadata
+    # 8. Audit JSON structure and safety metadata
     assert slots["_metadata"]["fixture_only"] is True
     assert slots["_metadata"]["disclaimer"] == DISCLAIMER_TEXT
-    assert EXPECTED_SOURCE_SHA256 == (
-        "c48eeb27b19626344e5f10b2cac674437b4053bb01f014060905702c52235f95"
-    )

@@ -2,7 +2,7 @@
   "_metadata": {
     "fixture_only": true,
     "disclaimer": "DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS",
-    "timestamp_utc": "2026-10-02T01:53:39.236414+00:00",
+    "timestamp_utc": "2026-10-02T02:05:51.598934+00:00",
     "source_fixture_dir": "D:\\RAG2ATTCK-worktrees\\report-s1\\.tmp\\s1-offline-reproduction\\fixture_diagnostics"
   },
   "table_2a": {
@@ -201,8 +201,8 @@
   "table_5": {
     "no_rag": {
       "condition": "no_rag",
-      "total_input_tokens": "823,040",
-      "total_output_tokens": "286,976",
+      "total_input_tokens": "3,215",
+      "total_output_tokens": "1,121",
       "mean_output_tokens_req": "224.2",
       "mean_latency_s": "8.13s",
       "median_latency_s": "7.89s",
@@ -212,8 +212,8 @@
     },
     "rag_k1": {
       "condition": "rag_k1",
-      "total_input_tokens": "1,427,200",
-      "total_output_tokens": "425,216",
+      "total_input_tokens": "5,575",
+      "total_output_tokens": "1,661",
       "mean_output_tokens_req": "332.2",
       "mean_latency_s": "8.50s",
       "median_latency_s": "8.20s",
@@ -223,8 +223,8 @@
     },
     "rag_k3": {
       "condition": "rag_k3",
-      "total_input_tokens": "2,227,840",
-      "total_output_tokens": "1,391,616",
+      "total_input_tokens": "8,702",
+      "total_output_tokens": "5,436",
       "mean_output_tokens_req": "1087.2",
       "mean_latency_s": "9.20s",
       "median_latency_s": "8.90s",
@@ -234,8 +234,8 @@
     },
     "rag_k5": {
       "condition": "rag_k5",
-      "total_input_tokens": "3,223,296",
-      "total_output_tokens": "1,075,456",
+      "total_input_tokens": "12,591",
+      "total_output_tokens": "4,201",
       "mean_output_tokens_req": "840.2",
       "mean_latency_s": "9.60s",
       "median_latency_s": "9.30s",
@@ -245,8 +245,8 @@
     },
     "rag_k10": {
       "condition": "rag_k10",
-      "total_input_tokens": "5,806,720",
-      "total_output_tokens": "1,025,024",
+      "total_input_tokens": "22,682",
+      "total_output_tokens": "4,004",
       "mean_output_tokens_req": "800.8",
       "mean_latency_s": "10.20s",
       "median_latency_s": "9.90s",

@@ -460,11 +460,11 @@ Table 5 defines the schema for evaluating the operational costs, latencies, and 
 
 | Condition | Total Input Tokens | Total Output Tokens | Mean Output Tokens / Req | Mean Latency (s) | Median Latency (s) | P95 Latency (s) | Total Cost (USD) | Mean Cost / Query (USD) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| `no_rag` | 823,040 | 286,976 | 224.2 | 8.13s | 7.89s | 9.50s | USD 0.00 | USD 0.000390 |
-| `rag_k1` | 1,427,200 | 425,216 | 332.2 | 8.50s | 8.20s | 9.80s | USD 0.00 | USD 0.000620 |
-| `rag_k3` | 2,227,840 | 1,391,616 | 1087.2 | 9.20s | 8.90s | 10.50s | USD 0.01 | USD 0.001650 |
-| `rag_k5` | 3,223,296 | 1,075,456 | 840.2 | 9.60s | 9.30s | 11.00s | USD 0.01 | USD 0.001510 |
-| `rag_k10` | 5,806,720 | 1,025,024 | 800.8 | 10.20s | 9.90s | 11.80s | USD 0.01 | USD 0.001870 |
+| `no_rag` | 3,215 | 1,121 | 224.2 | 8.13s | 7.89s | 9.50s | USD 0.00 | USD 0.000390 |
+| `rag_k1` | 5,575 | 1,661 | 332.2 | 8.50s | 8.20s | 9.80s | USD 0.00 | USD 0.000620 |
+| `rag_k3` | 8,702 | 5,436 | 1087.2 | 9.20s | 8.90s | 10.50s | USD 0.01 | USD 0.001650 |
+| `rag_k5` | 12,591 | 4,201 | 840.2 | 9.60s | 9.30s | 11.00s | USD 0.01 | USD 0.001510 |
+| `rag_k10` | 22,682 | 4,004 | 800.8 | 10.20s | 9.90s | 11.80s | USD 0.01 | USD 0.001870 |
 
 ---
 
@@ -539,7 +539,7 @@ The following diagnostic fixture files were consumed during this offline verific
 | **Diagnostic Condition Metrics** | `.tmp/s1-offline-reproduction/fixture_diagnostics/per_condition_metrics.json` | File SHA-256 | `1cf53cd5f376960a18a9c6d1662f4b800db9836a73fff1b645e99e70eb60dc5b` |
 | **Diagnostic Failure Decomposition** | `.tmp/s1-offline-reproduction/fixture_diagnostics/failure_decomposition.json` | File SHA-256 | `a0f1b5e95314170fad73068411db953dc87921c4a02ae67210dbec87b1866749` |
 | **Diagnostic Retrieval Conditional** | `.tmp/s1-offline-reproduction/fixture_diagnostics/retrieval_conditional_metrics.json` | File SHA-256 | `a1860631bb29e95370932acfbcd4d72881a91b6b2a7692ebd8326f9483048384` |
-| **Diagnostic RQ Analysis** | `.tmp/s1-offline-reproduction/fixture_diagnostics/rq_analysis.json` | File SHA-256 | `601de6748f2d4368e910ceca5e651fd7ea460c0bb21e32a4b250c4c3b0667216` |
+| **Diagnostic RQ Analysis** | `.tmp/s1-offline-reproduction/fixture_diagnostics/rq_analysis.json` | File SHA-256 | `bdebae6d99533c580eddf4ec3e0e07446f2e917001068d4ba635f56569e67a1e` |
 | **Diagnostic Run Provenance** | `.tmp/s1-offline-reproduction/fixture_diagnostics/run_provenance.json` | File SHA-256 | `20603131854454c864d0543e6e3c0e299844f3f1384bb40654016960af2022ab` |
 
 ### 8.3 Data, Code Availability, and Licensing

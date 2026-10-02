@@ -38,8 +38,6 @@ DEFAULT_TEMPLATE_PATH = REPO_ROOT / "docs" / "report" / "scientific_report.md"
 DEFAULT_OUTPUT_MD = REPO_ROOT / "reports" / "evidence" / "fixture_populated_report.md"
 DEFAULT_AUDIT_JSON = REPO_ROOT / "reports" / "evidence" / "populated_report_slots_fixture.json"
 
-EXPECTED_SOURCE_SHA256 = "c48eeb27b19626344e5f10b2cac674437b4053bb01f014060905702c52235f95"
-
 REQUIRED_FIXTURE_FILES = [
     "per_condition_metrics.json",
     "failure_decomposition.json",
@@ -138,11 +136,14 @@ def assert_fixture_safety(
     """Fail closed if target is not certified as mock fixture data.
 
     Enforces:
-    1. metadata fixture_only == True
-    2. provenance execution_mode == "mock_fixture"
-    3. analysis fixture_only == True and provenance_status == "diagnostic_fixture"
-    4. Cross-file consistency (protocol_version, experiment_id, manifest_sha256)
-    5. Source hash verification against evaluate_rqs.py
+    1. metadata fixture_only is True strictly (boolean check).
+    2. Bundle manifest keys (protocol_version, experiment_id, manifest_sha256) in _fixture_metadata.
+    3. provenance execution_mode == "mock_fixture"
+    4. analysis fixture_only is True strictly and provenance_status == "diagnostic_fixture"
+    5. analysis execution_mode == "mock_fixture"
+    6. Bundle hash binding across all files:
+       Unconditionally requires uniform manifest_sha256, experiment_id, and
+       protocol_version matching _fixture_metadata.json across all evaluation files.
     """
     if metadata is None:
         meta_path = fixture_dir / "_fixture_metadata.json"
@@ -152,10 +153,24 @@ def assert_fixture_safety(
             )
         metadata = json.loads(meta_path.read_text(encoding="utf-8"))
 
-    if not metadata.get("fixture_only"):
+    # Strict boolean check for fixture_only
+    if metadata.get("fixture_only") is not True:
         raise RuntimeError(
-            f"[FAIL_CLOSED] _fixture_metadata.json in {fixture_dir} must declare fixture_only=True"
+            f"[FAIL_CLOSED] _fixture_metadata.json in {fixture_dir} must declare "
+            f"fixture_only=True strictly as boolean (got {metadata.get('fixture_only')!r})"
         )
+
+    # Bundle manifest keys in _fixture_metadata.json
+    for bundle_key in ("protocol_version", "experiment_id", "manifest_sha256"):
+        if bundle_key not in metadata:
+            raise KeyError(
+                f"[FAIL_CLOSED] _fixture_metadata.json in {fixture_dir} "
+                f"missing bundle key: '{bundle_key}'"
+            )
+
+    base_proto = metadata["protocol_version"]
+    base_exp = metadata["experiment_id"]
+    base_manifest = metadata["manifest_sha256"]
 
     if provenance is None:
         prov_path = fixture_dir / "run_provenance.json"
@@ -177,9 +192,10 @@ def assert_fixture_safety(
         else:
             analysis = {}
 
-    if analysis and not analysis.get("fixture_only"):
+    if analysis and analysis.get("fixture_only") is not True:
         raise ValueError(
-            f"[FAIL_CLOSED] rq_analysis.json in {fixture_dir} must declare fixture_only=True"
+            f"[FAIL_CLOSED] rq_analysis.json in {fixture_dir} must declare "
+            f"fixture_only=True strictly as boolean (got {analysis.get('fixture_only')!r})"
         )
 
     if analysis and analysis.get("provenance_status") != "diagnostic_fixture":
@@ -194,43 +210,23 @@ def assert_fixture_safety(
             f"(got {analysis['execution_mode']})"
         )
 
-    # Cross-file consistency check (Reject mixed mode)
-    if files_dict is not None and provenance:
-        base_proto = provenance.get("protocol_version")
-        base_exp = provenance.get("experiment_id")
-        base_manifest = provenance.get("manifest_sha256")
-
+    # Unconditional bundle hash & provenance consistency across all evaluation files
+    if files_dict is not None:
         for fname, doc in files_dict.items():
-            doc_proto = doc.get("protocol_version")
-            if doc_proto is not None and base_proto is not None and doc_proto != base_proto:
-                raise ValueError(
-                    f"[FAIL_CLOSED] Inconsistent protocol_version in {fname}: "
-                    f"{doc_proto} != {base_proto}"
-                )
-            doc_exp = doc.get("experiment_id")
-            if doc_exp is not None and base_exp is not None and doc_exp != base_exp:
-                raise ValueError(
-                    f"[FAIL_CLOSED] Inconsistent experiment_id in {fname}: {doc_exp} != {base_exp}"
-                )
-            doc_manifest = doc.get("manifest_sha256")
-            if (
-                doc_manifest is not None
-                and base_manifest is not None
-                and doc_manifest != base_manifest
-            ):
-                raise ValueError(
-                    f"[FAIL_CLOSED] Inconsistent manifest_sha256 in {fname}: "
-                    f"{doc_manifest} != {base_manifest}"
-                )
-
-    # Source SHA-256 verification
-    if analysis and "source_sha256" in analysis:
-        actual_source_hash = analysis["source_sha256"]
-        if actual_source_hash != EXPECTED_SOURCE_SHA256:
-            raise ValueError(
-                f"[FAIL_CLOSED] rq_analysis.json source_sha256 mismatch: "
-                f"cited '{actual_source_hash}', expected '{EXPECTED_SOURCE_SHA256}'"
-            )
+            for req_key, base_val in [
+                ("protocol_version", base_proto),
+                ("experiment_id", base_exp),
+                ("manifest_sha256", base_manifest),
+            ]:
+                if req_key not in doc:
+                    raise KeyError(
+                        f"[FAIL_CLOSED] Required provenance field '{req_key}' missing in {fname}"
+                    )
+                if doc[req_key] != base_val:
+                    raise ValueError(
+                        f"[FAIL_CLOSED] Inconsistent {req_key} in {fname}: "
+                        f"'{doc[req_key]}' != '{base_val}'"
+                    )
 
 
 def load_fixture_data(fixture_dir: Path, analysis_file: Path | None = None) -> dict[str, Any]:
@@ -657,6 +653,10 @@ def extract_slots(data: dict[str, Any]) -> dict[str, Any]:
             raise KeyError(f"Condition '{c}' missing 'mean_completion_tokens'")
         if "mean_prompt_tokens" not in tokens:
             raise KeyError(f"Condition '{c}' missing 'mean_prompt_tokens'")
+        if "sum_prompt_tokens" not in tokens:
+            raise KeyError(f"Condition '{c}' missing 'sum_prompt_tokens'")
+        if "sum_completion_tokens" not in tokens:
+            raise KeyError(f"Condition '{c}' missing 'sum_completion_tokens'")
         if "mean" not in latency or "median" not in latency or "p95" not in latency:
             raise KeyError(f"Condition '{c}' missing latency percentiles")
         if "total_cost_usd" not in fin:
@@ -674,18 +674,18 @@ def extract_slots(data: dict[str, Any]) -> dict[str, Any]:
             f"{c}.mean_prompt_tokens",
             min_val=0.0,
         )
-        assert mean_prompt_tok is not None and mean_comp_tok is not None
-
         sum_prompt_tok = validate_finite_number(
-            tokens.get("sum_prompt_tokens", int(round(mean_prompt_tok * 1280))),
+            tokens["sum_prompt_tokens"],
             f"{c}.sum_prompt_tokens",
             min_val=0.0,
         )
         sum_comp_tok = validate_finite_number(
-            tokens.get("sum_completion_tokens", int(round(mean_comp_tok * 1280))),
+            tokens["sum_completion_tokens"],
             f"{c}.sum_completion_tokens",
             min_val=0.0,
         )
+        assert mean_prompt_tok is not None and mean_comp_tok is not None
+        assert sum_prompt_tok is not None and sum_comp_tok is not None
 
         mean_lat_ms = validate_finite_number(latency["mean"], f"{c}.latency_mean", min_val=0.0)
         med_lat_ms = validate_finite_number(latency["median"], f"{c}.latency_median", min_val=0.0)

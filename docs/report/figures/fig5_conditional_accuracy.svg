@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 750 450" width="750" height="450">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 750 470" width="750" height="470">
   <defs>
     <style>
-      .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #111827; }
-      .subtitle { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; fill: #6b7280; }
+      @page { size: 750px 470px; margin: 0; }
+      .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #111827; text-anchor: middle; }
+      .subtitle { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; fill: #6b7280; text-anchor: middle; }
       .axis-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; fill: #374151; }
       .tick-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 10px; fill: #4b5563; text-anchor: middle; }
       .data-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: bold; fill: #1f2937; text-anchor: middle; }
@@ -13,45 +14,47 @@
     </style>
   </defs>
   <rect width="100%" height="100%" fill="#ffffff"/>
-  <text x="375" y="32" class="title">Figure 5: Downstream Attribution Accuracy Conditioned on Retrieval Success</text>
-  <text x="375" y="52" class="subtitle">Comparison of P(Correct | Hit) vs. P(Correct | Miss) across RAG depths</text>
-  <line x1="120" y1="350" x2="660" y2="350" class="grid-line"/>
-  <text x="110" y="354" class="tick-label" style="text-anchor: end;">50%</text>
-  <line x1="120" y1="290" x2="660" y2="290" class="grid-line"/>
-  <text x="110" y="294" class="tick-label" style="text-anchor: end;">60%</text>
-  <line x1="120" y1="230" x2="660" y2="230" class="grid-line"/>
-  <text x="110" y="234" class="tick-label" style="text-anchor: end;">70%</text>
-  <line x1="120" y1="170" x2="660" y2="170" class="grid-line"/>
-  <text x="110" y="174" class="tick-label" style="text-anchor: end;">80%</text>
-  <line x1="120" y1="110" x2="660" y2="110" class="grid-line"/>
-  <text x="110" y="114" class="tick-label" style="text-anchor: end;">90%</text>
-  <line x1="120" y1="50" x2="660" y2="50" class="grid-line"/>
-  <text x="110" y="54" class="tick-label" style="text-anchor: end;">100%</text>
-  <line x1="120" y1="50" x2="120" y2="350" stroke="#374151" stroke-width="1.5"/>
-  <line x1="120" y1="350" x2="660" y2="350" stroke="#374151" stroke-width="1.5"/>
-  <text x="45" y="200" class="axis-label" transform="rotate(-90 45 200)" text-anchor="middle">Conditional Accuracy (%)</text>
-  <rect x="166" y="50.0" width="32" height="300.0" fill="#10b981" rx="3" ry="3"/>
-  <text x="182" y="44.0" font-size="10" font-weight="bold" fill="#065f46" text-anchor="middle">100.0%</text>
-  <rect x="202" y="193.27062228654125" width="32" height="156.72937771345875" fill="#f59e0b" rx="3" ry="3"/>
-  <text x="218" y="187.27062228654125" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">76.1%</text>
-  <text x="200" y="370" class="tick-label">k=1</text>
-  <rect x="306" y="65.25423728813558" width="32" height="284.7457627118644" fill="#10b981" rx="3" ry="3"/>
-  <text x="322" y="59.254237288135585" font-size="10" font-weight="bold" fill="#065f46" text-anchor="middle">97.5%</text>
-  <rect x="342" y="201.00000000000003" width="32" height="148.99999999999997" fill="#f59e0b" rx="3" ry="3"/>
-  <text x="358" y="195.00000000000003" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">74.8%</text>
-  <text x="340" y="370" class="tick-label">k=3</text>
-  <rect x="446" y="67.34104046242777" width="32" height="282.65895953757223" fill="#10b981" rx="3" ry="3"/>
-  <text x="462" y="61.34104046242777" font-size="10" font-weight="bold" fill="#065f46" text-anchor="middle">97.1%</text>
-  <rect x="482" y="211.83486238532112" width="32" height="138.16513761467888" fill="#f59e0b" rx="3" ry="3"/>
-  <text x="498" y="205.83486238532112" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">73.0%</text>
-  <text x="480" y="370" class="tick-label">k=5</text>
-  <rect x="586" y="102.33644859813086" width="32" height="247.66355140186914" fill="#10b981" rx="3" ry="3"/>
-  <text x="602" y="96.33644859813086" font-size="10" font-weight="bold" fill="#065f46" text-anchor="middle">91.3%</text>
-  <rect x="622" y="229.84886649874056" width="32" height="120.15113350125944" fill="#f59e0b" rx="3" ry="3"/>
-  <text x="638" y="223.84886649874056" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">70.0%</text>
-  <text x="620" y="370" class="tick-label">k=10</text>
-  <rect x="250" y="400" width="16" height="16" fill="#10b981" rx="2" ry="2"/>
-  <text x="272" y="413" class="legend-text">P(Correct | Retrieval Hit)</text>
-  <rect x="430" y="400" width="16" height="16" fill="#f59e0b" rx="2" ry="2"/>
-  <text x="452" y="413" class="legend-text">P(Correct | Retrieval Miss)</text>
+  <text x="375" y="30" class="title" text-anchor="middle">Figure 5: Downstream Attribution Accuracy Conditioned on Retrieval Success</text>
+  <text x="375" y="48" class="subtitle" text-anchor="middle">Comparison of P(Correct | Hit) vs. P(Correct | Miss) across RAG depths</text>
+  <line x1="120" y1="340" x2="660" y2="340" class="grid-line"/>
+  <text x="110" y="344" class="tick-label" style="text-anchor: end;">50%</text>
+  <line x1="120" y1="280" x2="660" y2="280" class="grid-line"/>
+  <text x="110" y="284" class="tick-label" style="text-anchor: end;">60%</text>
+  <line x1="120" y1="220" x2="660" y2="220" class="grid-line"/>
+  <text x="110" y="224" class="tick-label" style="text-anchor: end;">70%</text>
+  <line x1="120" y1="160" x2="660" y2="160" class="grid-line"/>
+  <text x="110" y="164" class="tick-label" style="text-anchor: end;">80%</text>
+  <line x1="120" y1="100" x2="660" y2="100" class="grid-line"/>
+  <text x="110" y="104" class="tick-label" style="text-anchor: end;">90%</text>
+  <line x1="120" y1="40" x2="660" y2="40" class="grid-line"/>
+  <text x="110" y="44" class="tick-label" style="text-anchor: end;">100%</text>
+  <line x1="120" y1="40" x2="120" y2="340" stroke="#374151" stroke-width="1.5"/>
+  <line x1="120" y1="340" x2="660" y2="340" stroke="#374151" stroke-width="1.5"/>
+  <text x="45" y="190" class="axis-label" transform="rotate(-90 45 190)" text-anchor="middle">Conditional Accuracy (%)</text>
+  <rect x="166" y="40.0" width="32" height="300.0" fill="#10b981" rx="3" ry="3"/>
+  <text x="182" y="34.0" font-size="10" font-weight="bold" fill="#065f46" text-anchor="middle">100.0%</text>
+  <rect x="202" y="183.27062228654125" width="32" height="156.72937771345875" fill="#f59e0b" rx="3" ry="3"/>
+  <text x="218" y="177.27062228654125" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">76.1%</text>
+  <text x="200" y="358" class="tick-label">k=1</text>
+  <rect x="306" y="55.254237288135585" width="32" height="284.7457627118644" fill="#10b981" rx="3" ry="3"/>
+  <text x="322" y="49.254237288135585" font-size="10" font-weight="bold" fill="#065f46" text-anchor="middle">97.5%</text>
+  <rect x="342" y="191.00000000000003" width="32" height="148.99999999999997" fill="#f59e0b" rx="3" ry="3"/>
+  <text x="358" y="185.00000000000003" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">74.8%</text>
+  <text x="340" y="358" class="tick-label">k=3</text>
+  <rect x="446" y="57.34104046242777" width="32" height="282.65895953757223" fill="#10b981" rx="3" ry="3"/>
+  <text x="462" y="51.34104046242777" font-size="10" font-weight="bold" fill="#065f46" text-anchor="middle">97.1%</text>
+  <rect x="482" y="201.83486238532112" width="32" height="138.16513761467888" fill="#f59e0b" rx="3" ry="3"/>
+  <text x="498" y="195.83486238532112" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">73.0%</text>
+  <text x="480" y="358" class="tick-label">k=5</text>
+  <rect x="586" y="92.33644859813086" width="32" height="247.66355140186914" fill="#10b981" rx="3" ry="3"/>
+  <text x="602" y="86.33644859813086" font-size="10" font-weight="bold" fill="#065f46" text-anchor="middle">91.3%</text>
+  <rect x="622" y="219.84886649874056" width="32" height="120.15113350125944" fill="#f59e0b" rx="3" ry="3"/>
+  <text x="638" y="213.84886649874056" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">70.0%</text>
+  <text x="620" y="358" class="tick-label">k=10</text>
+  <rect x="250" y="380" width="16" height="16" fill="#10b981" rx="2" ry="2"/>
+  <text x="272" y="393" class="legend-text">P(Correct | Retrieval Hit)</text>
+  <rect x="430" y="380" width="16" height="16" fill="#f59e0b" rx="2" ry="2"/>
+  <text x="452" y="393" class="legend-text">P(Correct | Retrieval Miss)</text>
+  <text x="375" y="420" font-size="11" font-weight="bold" fill="#334155" text-anchor="middle">k=10 Subgroups: Retrieved N=321 (91.28%, 293/321) | Missed N=397 (70.03%, 278/397)</text>
+  <text x="375" y="442" font-size="10" fill="#64748b" text-anchor="middle">* Disclaimer: Subgroup differences are observational (association-only); retrieval hit/miss is not randomly assigned.</text>
 </svg>

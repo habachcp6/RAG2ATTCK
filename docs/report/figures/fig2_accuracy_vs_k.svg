@@ -2,8 +2,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 750 450" width="750" height="450">
   <defs>
     <style>
-      .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #111827; }
-      .subtitle { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; fill: #6b7280; }
+      @page { size: 750px 450px; margin: 0; }
+      .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #111827; text-anchor: middle; }
+      .subtitle { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; fill: #6b7280; text-anchor: middle; }
       .axis-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; fill: #374151; }
       .tick-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 10px; fill: #4b5563; text-anchor: middle; }
       .data-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: bold; fill: #1f2937; text-anchor: middle; }
@@ -13,8 +14,8 @@
     </style>
   </defs>
   <rect width="100%" height="100%" fill="#ffffff"/>
-  <text x="375" y="32" class="title">Figure 2: Technique Attribution Accuracy vs. Retrieval Depth (k)</text>
-  <text x="375" y="52" class="subtitle">Evaluated on N=718 mapped TEST views; error bars represent 95% pair-clustered bootstrap CIs</text>
+  <text x="375" y="32" class="title" text-anchor="middle">Figure 2: Technique Attribution Accuracy vs. Retrieval Depth (k)</text>
+  <text x="375" y="52" class="subtitle" text-anchor="middle">Evaluated on N=718 mapped TEST views; error bars represent 95% pair-clustered bootstrap CIs</text>
   <line x1="120" y1="360" x2="660" y2="360" class="grid-line"/>
   <text x="110" y="364" class="tick-label" style="text-anchor: end;">70%</text>
   <line x1="120" y1="290" x2="660" y2="290" class="grid-line"/>

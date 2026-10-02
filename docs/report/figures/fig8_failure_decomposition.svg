@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 750 460" width="750" height="460">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 750 470" width="750" height="470">
   <defs>
     <style>
-      .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #111827; }
-      .subtitle { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; fill: #6b7280; }
+      @page { size: 750px 470px; margin: 0; }
+      .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #111827; text-anchor: middle; }
+      .subtitle { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; fill: #6b7280; text-anchor: middle; }
       .axis-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; fill: #374151; }
       .tick-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 10px; fill: #4b5563; text-anchor: middle; }
       .data-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: bold; fill: #1f2937; text-anchor: middle; }
@@ -13,10 +14,10 @@
     </style>
   </defs>
   <rect width="100%" height="100%" fill="#ffffff"/>
-  <text x="375" y="32" class="title">Figure 8: Independent Failure Decomposition (k=10)</text>
-  <text x="375" y="52" class="subtitle">Evaluation under Protocol Decision D2i: Non-mutually exclusive independent diagnostic axes</text>
+  <text x="375" y="32" class="title" text-anchor="middle">Figure 8: Independent Failure Decomposition (k=10)</text>
+  <text x="375" y="52" class="subtitle" text-anchor="middle">Evaluation under Protocol Decision D2i: Non-mutually exclusive independent diagnostic axes</text>
   <rect x="80" y="80" width="590" height="280" rx="10" ry="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
-  <text x="100" y="110" font-size="13" font-weight="bold" fill="#334155">Total Scorable Mapped Cohort: N = 718</text>
+  <text x="100" y="110" font-size="13" font-weight="bold" fill="#334155">Diagnostic on Mapped Scorable Cohort: N = 718 (Pair-resolved)</text>
   <rect x="120" y="130" width="340" height="200" rx="8" ry="8" fill="#fee2e2" stroke="#ef4444" stroke-width="2" opacity="0.75"/>
   <text x="140" y="160" font-size="12" font-weight="bold" fill="#b91c1c">Retrieval Misses: 397</text>
   <text x="140" y="180" font-size="11" fill="#7f1d1d">Correct Attribution Despite Miss: 278 (70.0%)</text>
@@ -27,6 +28,7 @@
   <text x="410" y="255" font-size="11" font-weight="bold" fill="#78350f" text-anchor="middle">Overlap: 119</text>
   <text x="410" y="275" font-size="10" fill="#78350f" text-anchor="middle">Miss ∩ Wrong</text>
   <text x="410" y="290" font-size="9" fill="#78350f" text-anchor="middle">(80.95% of Errors)</text>
-  <text x="375" y="390" font-size="11" fill="#475569" text-anchor="middle">Decision D2i Note: Axes are evaluated independently. Retrieval miss does not prove causation of error.</text>
-  <text x="375" y="410" font-size="11" fill="#475569" text-anchor="middle">Invalid ATT&amp;CK IDs: 0 | Parse Failures: 0 | Transport Errors: 0 on mapped scorable cohort.</text>
+  <text x="375" y="388" font-size="11" fill="#475569" text-anchor="middle">Decision D2i Note: Axes are evaluated independently. Retrieval miss does not establish error causation.</text>
+  <text x="375" y="408" font-size="11" fill="#475569" text-anchor="middle">Zero invalid ATT&amp;CK IDs, parse failures, or transport errors on mapped scorable cohort (N=718).</text>
+  <text x="375" y="430" font-size="10" fill="#b45309" font-weight="600" text-anchor="middle">* Campaign Scope Note: 13 terminal INCOMPLETE requests occurred in the full live campaign outside the mapped cohort (excluded per Decision D2).</text>
 </svg>

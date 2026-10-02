@@ -34,6 +34,21 @@ def compute_sha256(path: Path) -> str:
     return hasher.hexdigest()
 
 
+def write_text_lf(path: Path, text: str) -> str:
+    """Write text file with explicit UTF-8 LF newlines and return its SHA-256."""
+    content_bytes = text.replace("\r\n", "\n").encode("utf-8")
+    path.write_bytes(content_bytes)
+    return hashlib.sha256(content_bytes).hexdigest()
+
+
+def write_json_lf(path: Path, data: Any) -> str:
+    """Write JSON with explicit UTF-8 LF newlines and return its SHA-256."""
+    raw_str = json.dumps(data, indent=2, sort_keys=True) + "\n"
+    content_bytes = raw_str.replace("\r\n", "\n").encode("utf-8")
+    path.write_bytes(content_bytes)
+    return hashlib.sha256(content_bytes).hexdigest()
+
+
 FIXTURE_TABLE_DATA = {
     "fixture_only": True,
     "run_id": "fixture-66b94b1676bf46a9",
@@ -244,7 +259,7 @@ def generate_table1_dataset(data: Dict[str, Any], out_dir: Path) -> None:
 
 *Note: Ambiguous and unmapped views incurred real LLM inference costs and are fully tracked in the financial ledger.*
 """
-    (out_dir / "table1_dataset_and_cohort.md").write_text(md, encoding="utf-8")
+    write_text_lf(out_dir / "table1_dataset_and_cohort.md", md)
 
 
 def generate_table2_conditions(data: Dict[str, Any], out_dir: Path) -> None:
@@ -262,7 +277,7 @@ def generate_table2_conditions(data: Dict[str, Any], out_dir: Path) -> None:
 
 *Protocol Invariants: Concurrency = Sequential-only (D4); Temperature = Provider default for reasoning; Maximum Output Tokens = 8,192; Budget Cap = $19.99 (D5).*
 """
-    (out_dir / "table2_experimental_conditions.md").write_text(md, encoding="utf-8")
+    write_text_lf(out_dir / "table2_experimental_conditions.md", md)
 
 
 def generate_table3_rq1(data: Dict[str, Any], out_dir: Path) -> None:
@@ -283,7 +298,7 @@ def generate_table3_rq1(data: Dict[str, Any], out_dir: Path) -> None:
 
 *McNemar Test Contingency Table (k=10 vs No-RAG): Both Correct $a=488$, RAG-Win $b=83$, No-RAG-Win $c=72$, Both Incorrect $d=75$. Discordant $= 155$, $\\chi^2 = 0.645161$, $p = 0.422$.*
 """
-    (out_dir / "table3_rq1_attribution_performance.md").write_text(md, encoding="utf-8")
+    write_text_lf(out_dir / "table3_rq1_attribution_performance.md", md)
 
 
 def generate_table4_rq2(data: Dict[str, Any], out_dir: Path) -> None:
@@ -304,7 +319,7 @@ def generate_table4_rq2(data: Dict[str, Any], out_dir: Path) -> None:
 
 *Error Decomposition (k=10, N=718): Misattributions $= 147$, Retrieval Misses $= 397$, Overlap (Miss $\\cap$ Wrong) $= 119$ ($80.95\\%$ of errors). Under Protocol Decision D2i, failure axes are evaluated independently without forced mutual exclusivity.*
 """
-    (out_dir / "table4_rq2_retrieval_and_error.md").write_text(md, encoding="utf-8")
+    write_text_lf(out_dir / "table4_rq2_retrieval_and_error.md", md)
 
 
 def generate_table5_rq3(data: Dict[str, Any], out_dir: Path) -> None:
@@ -334,7 +349,7 @@ def generate_table5_rq3(data: Dict[str, Any], out_dir: Path) -> None:
 
 *Notes: All resource metrics are measured across the full execution cohort (N=1,280 requests per condition). P95 Latency is NOT REPORTED pending authority approval. RAG k=1 settled cost includes $0.5397 missing-usage penalty from an initial network failure attempt (ordinal 5387) successfully retried on ordinal 5388.*
 """
-    (out_dir / "table5_rq3_resources_and_cost.md").write_text(md, encoding="utf-8")
+    write_text_lf(out_dir / "table5_rq3_resources_and_cost.md", md)
 
 
 def generate_table6_provenance(data: Dict[str, Any], out_dir: Path) -> None:
@@ -358,7 +373,7 @@ def generate_table6_provenance(data: Dict[str, Any], out_dir: Path) -> None:
 | **Analysis Source SHA** | `{p.get('analysis_source_sha', 'f85d7f7373e825dcc7171ce4491fd15c6fb755955da245041783fe317bc80351')}` | Formal S2_RQ_V2 analysis code |
 | **Metric Bundle v2 SHA** | `{bundle_display}` | Canonical Metric Bundle v2 Candidate |
 """
-    (out_dir / "table6_provenance_and_hashes.md").write_text(md, encoding="utf-8")
+    write_text_lf(out_dir / "table6_provenance_and_hashes.md", md)
 
 
 def generate_all_tables(
@@ -412,8 +427,7 @@ def generate_all_tables(
     }
 
     prov_path = output_dir / "table_provenance.json"
-    with open(prov_path, "w", encoding="utf-8") as f:
-        json.dump(provenance, f, indent=2, sort_keys=True)
+    write_json_lf(prov_path, provenance)
     print(f"[TABLE-GEN] Provenance written to: {prov_path}")
 
     return provenance

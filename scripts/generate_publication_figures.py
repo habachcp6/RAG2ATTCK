@@ -101,6 +101,21 @@ def compute_sha256(path: Path) -> str:
     return hasher.hexdigest()
 
 
+def write_text_lf(path: Path, text: str) -> str:
+    """Write text file with explicit UTF-8 LF newlines and return its SHA-256."""
+    content_bytes = text.replace("\r\n", "\n").encode("utf-8")
+    path.write_bytes(content_bytes)
+    return hashlib.sha256(content_bytes).hexdigest()
+
+
+def write_json_lf(path: Path, data: Any) -> str:
+    """Write JSON with explicit UTF-8 LF newlines and return its SHA-256."""
+    raw_str = json.dumps(data, indent=2, sort_keys=True) + "\n"
+    content_bytes = raw_str.replace("\r\n", "\n").encode("utf-8")
+    path.write_bytes(content_bytes)
+    return hashlib.sha256(content_bytes).hexdigest()
+
+
 # Default fixture dataset (used when --fixture-only is specified)
 FIXTURE_DATA = {
     "fixture_only": True,
@@ -406,7 +421,7 @@ def generate_fig1_architecture(out_path: Path, fixture_only: bool = False) -> No
 
     svg += svg_footer()
     ET.fromstring(svg)
-    out_path.write_text(svg, encoding="utf-8")
+    write_text_lf(out_path, svg)
 
 
 def generate_fig2_accuracy(data: Dict[str, Any], out_path: Path) -> None:
@@ -472,7 +487,7 @@ def generate_fig2_accuracy(data: Dict[str, Any], out_path: Path) -> None:
 
     svg += svg_footer()
     ET.fromstring(svg)
-    out_path.write_text(svg, encoding="utf-8")
+    write_text_lf(out_path, svg)
 
 
 def generate_fig3_macro_f1(data: Dict[str, Any], out_path: Path) -> None:
@@ -511,7 +526,7 @@ def generate_fig3_macro_f1(data: Dict[str, Any], out_path: Path) -> None:
 
     svg += svg_footer()
     ET.fromstring(svg)
-    out_path.write_text(svg, encoding="utf-8")
+    write_text_lf(out_path, svg)
 
 
 def generate_fig4_retrieval_hit_rate(data: Dict[str, Any], out_path: Path) -> None:
@@ -547,7 +562,7 @@ def generate_fig4_retrieval_hit_rate(data: Dict[str, Any], out_path: Path) -> No
 
     svg += svg_footer()
     ET.fromstring(svg)
-    out_path.write_text(svg, encoding="utf-8")
+    write_text_lf(out_path, svg)
 
 
 def generate_fig5_conditional_accuracy(data: Dict[str, Any], out_path: Path) -> None:
@@ -601,7 +616,7 @@ def generate_fig5_conditional_accuracy(data: Dict[str, Any], out_path: Path) -> 
 
     svg += svg_footer()
     ET.fromstring(svg)
-    out_path.write_text(svg, encoding="utf-8")
+    write_text_lf(out_path, svg)
 
 
 def generate_fig6_latency(data: Dict[str, Any], out_path: Path) -> None:
@@ -650,7 +665,7 @@ def generate_fig6_latency(data: Dict[str, Any], out_path: Path) -> None:
 
     svg += svg_footer()
     ET.fromstring(svg)
-    out_path.write_text(svg, encoding="utf-8")
+    write_text_lf(out_path, svg)
 
 
 def generate_fig7_cost_and_tokens(data: Dict[str, Any], out_path: Path) -> None:
@@ -713,7 +728,7 @@ def generate_fig7_cost_and_tokens(data: Dict[str, Any], out_path: Path) -> None:
 
     svg += svg_footer()
     ET.fromstring(svg)
-    out_path.write_text(svg, encoding="utf-8")
+    write_text_lf(out_path, svg)
 
 
 def generate_fig8_failure_decomposition(data: Dict[str, Any], out_path: Path) -> None:
@@ -761,7 +776,7 @@ def generate_fig8_failure_decomposition(data: Dict[str, Any], out_path: Path) ->
 
     svg += svg_footer()
     ET.fromstring(svg)
-    out_path.write_text(svg, encoding="utf-8")
+    write_text_lf(out_path, svg)
 
 
 def generate_all_figures(
@@ -789,8 +804,7 @@ def generate_all_figures(
 
     # Write plot data JSON
     plot_data_path = output_dir / "plot_data.json"
-    with open(plot_data_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, sort_keys=True)
+    plot_data_sha = write_json_lf(plot_data_path, data)
     print(f"[FIGURE-GEN] Plot data written to: {plot_data_path}")
 
     # Generate the 8 figures
@@ -846,14 +860,13 @@ def generate_all_figures(
         "figures_count": 8,
         "figures_formats": ["vector_svg", "raster_png", "print_pdf"],
         "generated_figures": generated_digests,
-        "plot_data_sha256": compute_sha256(plot_data_path),
+        "plot_data_sha256": plot_data_sha,
         "p95_latency_status": "NOT REPORTED — approval evidence not established",
         "workstation_paths_sanitized": True,
     }
 
     prov_path = output_dir / "figure_provenance.json"
-    with open(prov_path, "w", encoding="utf-8") as f:
-        json.dump(provenance, f, indent=2, sort_keys=True)
+    write_json_lf(prov_path, provenance)
     print(f"[FIGURE-GEN] Provenance written to: {prov_path}")
 
     return provenance

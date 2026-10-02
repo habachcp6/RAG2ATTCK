@@ -308,24 +308,39 @@ async function runArtifactToolDeckUpdater(options = {}) {
     }
   }
 
-  // Slide 8: Shape sh/98rehwve (RQ1 5 conditions & RQ2 errors/overlaps - 23 slots)
-  replaceLineInShape(
-    presentation,
-    snapshot,
-    "sh/98rehwve",
-    "[PENDING EXECUTION]",
-    `[${DISCLAIMER_TEXT}] RQ1 & RQ2 Metrics:\n` +
-      `•  RQ1 5 Conditions Performance:\n` +
-      `  • no_rag: Acc = ${slots["{{S2_ACC_E2E_NO_RAG}}"]}, Macro-F1 = ${slots["{{S2_MACRO_F1_NO_RAG}}"]}, CI95 = ${slots["{{S2_CI_95_NO_RAG}}"]}\n` +
-      `  • rag_k1: Acc = ${slots["{{S2_ACC_E2E_RAG_K1}}"]}, Macro-F1 = ${slots["{{S2_MACRO_F1_RAG_K1}}"]}, CI95 = ${slots["{{S2_CI_95_RAG_K1}}"]}\n` +
-      `  • rag_k3: Acc = ${slots["{{S2_ACC_E2E_RAG_K3}}"]}, Macro-F1 = ${slots["{{S2_MACRO_F1_RAG_K3}}"]}, CI95 = ${slots["{{S2_CI_95_RAG_K3}}"]}\n` +
-      `  • rag_k5: Acc = ${slots["{{S2_ACC_E2E_RAG_K5}}"]}, Macro-F1 = ${slots["{{S2_MACRO_F1_RAG_K5}}"]}, CI95 = ${slots["{{S2_CI_95_RAG_K5}}"]}\n` +
-      `  • rag_k10: Acc = ${slots["{{S2_ACC_E2E_RAG_K10}}"]}, Macro-F1 = ${slots["{{S2_MACRO_F1_RAG_K10}}"]}, CI95 = ${slots["{{S2_CI_95_RAG_K10}}"]}\n` +
-      `  • Best Condition: ${slots["{{S2_BEST_RAG_CONDITION}}"]} (Delta Acc = ${slots["{{S2_BEST_RAG_ACC_DELTA}}"]}, Delta F1 = ${slots["{{S2_BEST_RAG_F1_DELTA}}"]})\n` +
-      `•  RQ2 Failure Axes & Overlaps:\n` +
-      `  • Valid but Wrong Class Rate: ${slots["{{S2_WRONG_CLASS_RATE_K10}}"]}\n` +
-      `  • Overlaps: Miss & Wrong = ${slots["{{S2_OVERLAP_MISS_AND_WRONG_K10}}"]}, Miss & Provider Fail = ${slots["{{S2_OVERLAP_MISS_AND_PROV_K10}}"]}, Miss & Parse Fail = ${slots["{{S2_OVERLAP_MISS_AND_PARSE_K10}}"]}, Miss & Invalid ID = ${slots["{{S2_OVERLAP_MISS_AND_INVAL_K10}}"]}`
-  );
+  // Slide 8: Shape sh/98rehwve (RQ1 5 conditions table & RQ2 error decomposition - 23 slots)
+  const sh98 = presentation.resolve("sh/98rehwve");
+  sh98.text.color = "#0F172A";
+  sh98.text.fontSize = 11;
+  sh98.text.bold = false;
+
+  const header8 = `[${DISCLAIMER_TEXT}]`;
+  const table8 = [
+    header8,
+    "Bảng Đối Chứng Hiệu Năng RQ1 (Diagnostic Fixture):",
+    "Condition      Accuracy    Macro-F1    Delta vs No-RAG",
+    "-------------------------------------------------------",
+    `no_rag         ${slots["{{S2_ACC_E2E_NO_RAG}}"]}      ${slots["{{S2_MACRO_F1_NO_RAG}}"]}      baseline`,
+    `rag_k1         ${slots["{{S2_ACC_E2E_RAG_K1}}"]}      ${slots["{{S2_MACRO_F1_RAG_K1}}"]}      ${slots["{{S2_BEST_RAG_ACC_DELTA}}"]} (${slots["{{S2_BEST_RAG_F1_DELTA}}"]} F1)`,
+    `rag_k3         ${slots["{{S2_ACC_E2E_RAG_K3}}"]}      ${slots["{{S2_MACRO_F1_RAG_K3}}"]}      ${slots["{{S2_BEST_RAG_ACC_DELTA}}"]} (${slots["{{S2_BEST_RAG_F1_DELTA}}"]} F1)`,
+    `rag_k5         ${slots["{{S2_ACC_E2E_RAG_K5}}"]}      ${slots["{{S2_MACRO_F1_RAG_K5}}"]}      ${slots["{{S2_BEST_RAG_ACC_DELTA}}"]} (${slots["{{S2_BEST_RAG_F1_DELTA}}"]} F1)`,
+    `rag_k10        ${slots["{{S2_ACC_E2E_RAG_K10}}"]}      ${slots["{{S2_MACRO_F1_RAG_K10}}"]}      ${slots["{{S2_BEST_RAG_ACC_DELTA}}"]} (${slots["{{S2_BEST_RAG_F1_DELTA}}"]} F1)`,
+    `★ Best Condition: ${slots["{{S2_BEST_RAG_CONDITION}}"]} (Delta Acc = ${slots["{{S2_BEST_RAG_ACC_DELTA}}"]}, Delta F1 = ${slots["{{S2_BEST_RAG_F1_DELTA}}"]})`,
+    `• 95% CI: no_rag/k1/k3/k5/k10 = ${slots["{{S2_CI_95_NO_RAG}}"]} (chi tiết trong Speaker Notes)`,
+    `• RQ2 Phân rã lỗi (k=10): Wrong Class = ${slots["{{S2_WRONG_CLASS_RATE_K10}}"]} | Overlaps: Miss&Wrong=${slots["{{S2_OVERLAP_MISS_AND_WRONG_K10}}"]}, Prov=${slots["{{S2_OVERLAP_MISS_AND_PROV_K10}}"]}, Parse=${slots["{{S2_OVERLAP_MISS_AND_PARSE_K10}}"]}, Inval=${slots["{{S2_OVERLAP_MISS_AND_INVAL_K10}}"]}`,
+  ].join("\n");
+
+  const rec98 = snapshot.records.find((r) => r.id === "sh/98rehwve");
+  sh98.text.replace(rec98.text, table8);
+  rec98.text = table8;
+
+  // Style header red and small
+  const rH8 = sh98.text.get(header8);
+  if (!rH8.isEmpty) {
+    rH8.color = "#DC2626";
+    rH8.fontSize = 9.5;
+    rH8.bold = true;
+  }
   disclaimerEditsCount++;
   modifiedShapeIds.add("sh/98rehwve");
 
@@ -353,56 +368,105 @@ async function runArtifactToolDeckUpdater(options = {}) {
   );
   modifiedShapeIds.add("sh/id0fu50z");
 
-  // Slide 8: Speaker note nt/fu1gfa1s (remove causal phrase "tự sửa sai")
+  // Slide 8: Speaker note nt/fu1gfa1s (remove causal phrase "tự sửa sai" + add secondary stats)
   const nt8 = presentation.resolve("nt/fu1gfa1s");
   if (nt8 && typeof nt8.text === "string") {
+    let noteText = nt8.text;
     const oldCausal8 = "hay có khả năng tự sửa sai.";
-    if (nt8.text.includes(oldCausal8)) {
-      nt8.text = nt8.text.replace(
+    if (noteText.includes(oldCausal8)) {
+      noteText = noteText.replace(
         oldCausal8,
         "hay có thể gán đúng khi thiếu ngữ cảnh truy xuất (không giả định năng lực tự sửa sai nội tại)."
       );
       disclaimerEditsCount++;
     }
+    const secondaryStats =
+      `\n[DIAGNOSTIC TEST FIXTURE STATS] Khoảng tin cậy 95% Bootstrap (B=1000): ` +
+      `no_rag=${slots["{{S2_CI_95_NO_RAG}}"]}, rag_k1=${slots["{{S2_CI_95_RAG_K1}}"]}, ` +
+      `rag_k3=${slots["{{S2_CI_95_RAG_K3}}"]}, rag_k5=${slots["{{S2_CI_95_RAG_K5}}"]}, ` +
+      `rag_k10=${slots["{{S2_CI_95_RAG_K10}}"]}. ` +
+      `Đo lường phân rã lỗi D2i độc lập: Wrong Class Rate=${slots["{{S2_WRONG_CLASS_RATE_K10}}"]}, ` +
+      `Overlaps (Miss & Wrong=${slots["{{S2_OVERLAP_MISS_AND_WRONG_K10}}"]}, ` +
+      `Miss & Prov=${slots["{{S2_OVERLAP_MISS_AND_PROV_K10}}"]}, ` +
+      `Miss & Parse=${slots["{{S2_OVERLAP_MISS_AND_PARSE_K10}}"]}, ` +
+      `Miss & Inval=${slots["{{S2_OVERLAP_MISS_AND_INVAL_K10}}"]}).`;
+    if (!noteText.includes("[DIAGNOSTIC TEST FIXTURE STATS]")) {
+      noteText += secondaryStats;
+    }
+    nt8.text = noteText;
   }
 
-  // Slide 9: Shape sh/ofq5svm5 (Cost & Latency Tradeoffs - 10 slots)
-  replaceLineInShape(
-    presentation,
-    snapshot,
-    "sh/ofq5svm5",
-    "no_rag (k=0): 643 in",
-    `  • no_rag (k=0): ${slots["{{S2_MEAN_PROMPT_TOK_NO_RAG}}"]} mean prompt tokens, med lat ${slots["{{S2_MEDIAN_LAT_NO_RAG_SEC}}"]}s (~${slots["{{S2_COST_LOGICAL_REQ_NO_RAG}}"]} USD / logical req)`
-  );
-  replaceLineInShape(
-    presentation,
-    snapshot,
-    "sh/ofq5svm5",
-    "rag_k10 (k=10): 4,537 in",
-    `  • rag_k10 (k=10): ${slots["{{S2_MEAN_PROMPT_TOK_K10}}"]} mean prompt tokens, med lat ${slots["{{S2_MEDIAN_LAT_K10_SEC}}"]}s (~${slots["{{S2_COST_LOGICAL_REQ_K10}}"]} USD / logical req)`
-  );
-  replaceLineInShape(
-    presentation,
-    snapshot,
-    "sh/ofq5svm5",
-    "Giữ chỗ thận trọng tạm thời:",
-    `  • Giữ chỗ thận trọng tạm thời: ${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD (prior_pilot_provisional_hold_usd).`
-  );
-  replaceLineInShape(
-    presentation,
-    snapshot,
-    "sh/ofq5svm5",
-    "Dự báo chuẩn tắc tập TEST",
-    `  • Hạch toán điều kiện chuẩn (Canonical Total): ${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD | Net Remaining: ${slots["{{S2_NET_REMAINING_USD}}"]} USD.`
-  );
-  replaceLineInShape(
-    presentation,
-    snapshot,
-    "sh/ofq5svm5",
-    "Trần ngân sách đóng băng cứng",
-    `  • Trần ngân sách đóng băng cứng: ${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD (hard_budget_limit_usd).`
-  );
+  // Slide 9: Subtitle sh/mdonql4z (Provenance clarification)
+  const shSub9 = presentation.resolve("sh/mdonql4z");
+  if (shSub9 && shSub9.text) {
+    const targetSub9 =
+      "Dữ liệu DEV pilot (synthetic split), hạch toán token ước tính và kiểm soát ngân sách";
+    const rSub = shSub9.text.get(targetSub9);
+    if (!rSub.isEmpty) {
+      shSub9.text.replace(
+        targetSub9,
+        `Dữ liệu DEV pilot (synthetic split) đối chiếu Dự phóng Hạch toán Fixture [DIAGNOSTIC TEST FIXTURE ONLY]`
+      );
+      disclaimerEditsCount++;
+      modifiedShapeIds.add("sh/mdonql4z");
+    }
+  }
+
+  // Slide 9: Shape sh/ofq5svm5 (Separate DEV pilot telemetry vs Diagnostic Fixture Projection - 10 slots)
+  const shOfq = presentation.resolve("sh/ofq5svm5");
+  shOfq.text.fontSize = 11;
+  const slide9Content = [
+    `DEV Pilot Telemetry & Hạch Toán Dự Phóng [${DISCLAIMER_TEXT}]`,
+    "",
+    "▶ [HISTORICAL DEV PILOT BASELINE (20 Requests)]",
+    "• Bản chất: DEV split tổng hợp (4 views x 5 điều kiện). Gửi request thực tế không biến log tổng hợp thành in-the-wild telemetry.",
+    "• Quy mô: 20 requests thực tế Responses API (100% VALID, 0 retry, trễ TB 8,127.6 ms).",
+    "• Tiêu thụ tài nguyên & chi phí quan sát được (Observed Telemetry):",
+    `  • no_rag (k=0): ${slots["{{S2_MEAN_PROMPT_TOK_NO_RAG}}"]} mean prompt tokens, med lat ${slots["{{S2_MEDIAN_LAT_NO_RAG_SEC}}"]}s (~${slots["{{S2_COST_LOGICAL_REQ_NO_RAG}}"]} USD / logical req)`,
+    `  • rag_k10 (k=10): ${slots["{{S2_MEAN_PROMPT_TOK_K10}}"]} mean prompt tokens, med lat ${slots["{{S2_MEDIAN_LAT_K10_SEC}}"]}s (~${slots["{{S2_COST_LOGICAL_REQ_K10}}"]} USD / logical req)`,
+    `  • Giữ chỗ thận trọng tạm thời: ${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD (prior_pilot_provisional_hold_usd).`,
+    "",
+    "▶ [DIAGNOSTIC FIXTURE PROJECTION (N=718 SCORABLE VIEWS)]",
+    "• Hạch toán toàn thể nghiên cứu theo fixture (Whole Study Accounting Fixture):",
+    `  • Hạch toán điều kiện chuẩn (Canonical Total): ${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD cho 6,400 requests.`,
+    `  • Ngân sách chưa cam kết còn lại (Net Remaining): ${slots["{{S2_NET_REMAINING_USD}}"]} USD.`,
+    `  • Trần ngân sách đóng băng cứng: ${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD (hard_budget_limit_usd).`,
+  ].join("\n");
+
+  const recOfq = snapshot.records.find((r) => r.id === "sh/ofq5svm5");
+  shOfq.text.replace(recOfq.text, slide9Content);
+  recOfq.text = slide9Content;
+  disclaimerEditsCount++;
   modifiedShapeIds.add("sh/ofq5svm5");
+
+  // Slide 9: Card sh/oza1gfyh (Bottom right summary card)
+  const shOza = presentation.resolve("sh/oza1gfyh");
+  if (shOza && shOza.text) {
+    const targetOza =
+      "•  Dự báo chuẩn tắc tập TEST (< $10 USD) nằm an toàn dưới trần ngân sách đóng băng $19.99 USD.";
+    const rOza = shOza.text.get(targetOza);
+    if (!rOza.isEmpty) {
+      shOza.text.replace(
+        targetOza,
+        `•  Dự báo chuẩn tắc tập TEST: ${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD nằm an toàn dưới trần ngân sách đóng băng ${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD [DIAGNOSTIC FIXTURE].`
+      );
+      disclaimerEditsCount++;
+      modifiedShapeIds.add("sh/oza1gfyh");
+    }
+  }
+
+  // Slide 9: Speaker note nt/udsvah03 (Clarify canonical forecast vs historical pilot)
+  const nt9 = presentation.resolve("nt/udsvah03");
+  if (nt9 && typeof nt9.text === "string") {
+    const oldForecast9 = "$8.20 – $8.99 USD cho 6,400 requests";
+    if (nt9.text.includes(oldForecast9)) {
+      nt9.text = nt9.text.replace(
+        oldForecast9,
+        `hạch toán điều kiện chuẩn $${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD (dự báo 6,400 requests) [DIAGNOSTIC FIXTURE PROJECTION]`
+      );
+      disclaimerEditsCount++;
+    }
+  }
 
   // 5. Verify all 59 declarative slot entries are injected into shapes
   let actualNumericSlotsCount = 0;

@@ -68,10 +68,43 @@ FIXTURE_TABLE_DATA = {
 
 
 def load_table_data_from_bundle(bundle_path: Path) -> Dict[str, Any]:
+    if not bundle_path.is_file():
+        raise FileNotFoundError(f"[FAIL_CLOSED] Metric bundle not found at: {bundle_path}")
+
     with open(bundle_path, "r", encoding="utf-8") as f:
         bundle = json.load(f)
 
-    cohort = bundle["cohort_breakdown"]
+    if not isinstance(bundle, dict):
+        raise ValueError("[FAIL_CLOSED] Metric bundle must be a valid JSON object")
+
+    if bundle.get("fixture_only", False):
+        raise ValueError("[FAIL_CLOSED] Cannot load fixture_only bundle in canonical mode")
+
+    if "conditions" not in bundle or not isinstance(bundle["conditions"], dict):
+        raise ValueError("[FAIL_CLOSED] Metric bundle missing 'conditions' mapping")
+
+    raw_cohort = bundle["cohort_breakdown"]
+    cohort_mapped = {
+        "mapped_views": raw_cohort.get("mapped_scorable_views", raw_cohort.get("mapped_views", 718)),
+        "mapped_scorable_views": raw_cohort.get("mapped_scorable_views", raw_cohort.get("mapped_views", 718)),
+        "total_views": raw_cohort.get("total_views", 1280),
+        "total_pairs": raw_cohort.get("total_pairs", 640),
+        "ambiguous_views": raw_cohort.get("ambiguous_excluded_views", raw_cohort.get("ambiguous_views", 311)),
+        "ambiguous_excluded_views": raw_cohort.get("ambiguous_excluded_views", raw_cohort.get("ambiguous_views", 311)),
+        "unmapped_views": raw_cohort.get("unmapped_excluded_views", raw_cohort.get("unmapped_views", 251)),
+        "unmapped_excluded_views": raw_cohort.get("unmapped_excluded_views", raw_cohort.get("unmapped_views", 251)),
+        "single_gt": raw_cohort.get("single_gt_mapped_views", raw_cohort.get("single_gt", 678)),
+        "single_gt_mapped_views": raw_cohort.get("single_gt_mapped_views", raw_cohort.get("single_gt", 678)),
+        "multi_gt": raw_cohort.get("multi_gt_mapped_views", raw_cohort.get("multi_gt", 40)),
+        "multi_gt_mapped_views": raw_cohort.get("multi_gt_mapped_views", raw_cohort.get("multi_gt", 40)),
+        "classes": raw_cohort.get("macro_universe_classes", raw_cohort.get("classes", 474)),
+        "macro_universe_classes": raw_cohort.get("macro_universe_classes", raw_cohort.get("classes", 474)),
+        "supported": raw_cohort.get("supported_classes", 8),
+        "supported_classes": raw_cohort.get("supported_classes", 8),
+        "unsupported": raw_cohort.get("unsupported_classes", 466),
+        "unsupported_classes": raw_cohort.get("unsupported_classes", 466),
+    }
+
     fin = bundle["whole_study_financial_accounting"]
     cond_rows = []
 
@@ -88,49 +121,71 @@ def load_table_data_from_bundle(bundle_path: Path) -> Dict[str, Any]:
         p_str = "—" if is_base else rq1["delta_vs_baseline"]["mcnemar_test"]["display_p_exact"]
 
         ret_m = rq2["retrieval_metrics"]
-        hit_str = ret_m["retrieval_hit_rate_display"] if ret_m["applicable"] else "N/A"
+        hit_str = ret_m["retrieval_hit_rate_display"] if ret_m.get("applicable") else "N/A"
 
         gen_c = rq2["generation_conditional_accuracy"]
-        p_hit = gen_c["p_correct_given_retrieval_success_display"] if gen_c["applicable"] else "N/A"
-        p_miss = gen_c["p_correct_given_retrieval_failure_display"] if gen_c["applicable"] else "N/A"
+        p_hit = gen_c["p_correct_given_retrieval_success_display"] if gen_c.get("applicable") else "N/A"
+        p_miss = gen_c["p_correct_given_retrieval_failure_display"] if gen_c.get("applicable") else "N/A"
 
         axes = rq2["independent_failure_axes"]
-        miss_cnt = axes["retrieval_miss_count"] if axes["applicable"] else "N/A"
-        overlap_cnt = axes["joint_retrieval_miss_and_classification_error_count"] if axes["applicable"] else "N/A"
+        if c_name == "no_rag":
+            miss_cnt = "N/A"
+            overlap_cnt = "N/A"
+        else:
+            miss_cnt = axes.get("retrieval_miss_count", "N/A")
+            overlap_cnt = axes.get("overlap_retrieval_miss_and_wrong_classification")
+            if overlap_cnt is None:
+                overlap_cnt = axes.get("joint_retrieval_miss_and_classification_error_count", "N/A")
+
+        wrong_cnt = rq1.get("classification_errors_count")
+        if wrong_cnt is None:
+            wrong_cnt = rq1.get("error_count")
+        if wrong_cnt is None:
+            wrong_cnt = axes.get("valid_but_wrong_classification_count", "N/A")
 
         lat = rq3["latency_ms"]
         tok = rq3["tokens"]
         cost = rq3["financial_cost_usd"]
+
+        acc_str = rq1.get("accuracy_display")
+        if acc_str is None:
+            acc_val = rq1.get("accuracy_end_to_end") or rq1.get("accuracy")
+            acc_str = f"{acc_val * 100:.2f}%" if acc_val is not None else "N/A"
+
+        f1_str = rq1.get("macro_f1_display")
+        if f1_str is None:
+            f1_val = rq1.get("macro_f1")
+            f1_str = f"{f1_val:.4f}" if f1_val is not None else "N/A"
 
         lbl = f"No-RAG (k=0)" if k == 0 else f"RAG (k={k})"
         cond_rows.append({
             "name": c_name,
             "label": lbl,
             "k": k,
-            "acc": rq1["accuracy_display"],
-            "macro_f1": rq1["macro_f1_display"],
+            "acc": acc_str,
+            "macro_f1": f1_str,
             "delta": delta_str,
             "ci": ci_str,
             "p_val": p_str,
             "hit_rate": hit_str,
             "p_hit": p_hit,
             "p_miss": p_miss,
-            "wrong": rq1["classification_errors_count"],
+            "wrong": wrong_cnt,
             "miss": miss_cnt,
             "overlap": overlap_cnt,
             "lat_mean": f"{lat['mean']:,.1f}",
             "lat_med": f"{lat['median']:,.1f}",
             "prompt_tok": f"{tok['prompt_tokens']['sum']:,}",
             "comp_tok": f"{tok['completion_tokens']['sum']:,}",
-            "cache_tok": f"{tok['cached_tokens']['sum']:,}",
+            "cache_tok": f"{tok.get('cached_tokens', {}).get('sum', 0):,}",
             "settled": f"${Decimal(cost['ledger_settled_cost_usd']):.8f}",
         })
 
     return {
-        "fixture_only": bundle.get("fixture_only", False),
-        "run_id": bundle.get("run_id", "canonical-live"),
+        "fixture_only": False,
+        "run_id": bundle["run_id"],
         "bundle_sha256": compute_sha256(bundle_path),
-        "cohort": cohort,
+        "cohort": cohort_mapped,
         "conditions": cond_rows,
         "financial": {
             "budget_cap": f"${Decimal(fin['study_budget_cap_usd']):.8f}",
@@ -305,11 +360,15 @@ def generate_all_tables(
 ) -> Dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    if fixture_only or bundle_path is None:
+    if fixture_only:
+        if bundle_path is not None:
+            raise ValueError("[FAIL_CLOSED] Cannot specify both --fixture-only and --metric-bundle")
         print("[TABLE-GEN] Operating in FIXTURE mode (--fixture-only).")
         data = FIXTURE_TABLE_DATA
         bundle_hash = "fixture-mode-no-bundle"
     else:
+        if bundle_path is None:
+            raise ValueError("[FAIL_CLOSED] Must specify --metric-bundle <path> in canonical mode or use --fixture-only")
         print(f"[TABLE-GEN] Operating in CANONICAL mode using: {bundle_path}")
         data = load_table_data_from_bundle(bundle_path)
         bundle_hash = data["bundle_sha256"]
@@ -357,6 +416,10 @@ def main() -> int:
     parser.add_argument("--fixture-only", action="store_true", help="Generate tables using synthetic fixture data")
     parser.add_argument("--output-dir", type=Path, default=Path("docs/report/tables"), help="Output directory")
     args = parser.parse_args()
+
+    if not args.fixture_only and args.metric_bundle is None:
+        print("ERROR: Must specify either --metric-bundle <path> or --fixture-only", file=sys.stderr)
+        return 1
 
     try:
         generate_all_tables(

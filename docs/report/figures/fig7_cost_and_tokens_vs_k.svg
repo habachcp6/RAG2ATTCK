@@ -13,8 +13,6 @@
     </style>
   </defs>
   <rect width="100%" height="100%" fill="#ffffff"/>
-  <rect x="510" y="8" width="232" height="18" rx="3" ry="3" fill="#fee2e2" stroke="#ef4444" stroke-width="1"/>
-  <text x="738" y="21" class="fixture-banner">[FIXTURE PREVIEW — NOT CANONICAL DATA]</text>
   <text x="375" y="32" class="title">Figure 7: Financial Cost ($) and Token Usage Scaling Across Conditions</text>
   <text x="375" y="52" class="subtitle">Condition Settled Ledger Total ($) vs. Total Tokens Consumed (Prompt + Completion)</text>
   <line x1="120" y1="350" x2="640" y2="350" class="grid-line"/>
@@ -39,28 +37,28 @@
   <line x1="120" y1="350" x2="640" y2="350" stroke="#374151" stroke-width="1.5"/>
   <text x="45" y="200" class="axis-label" transform="rotate(-90 45 200)" text-anchor="middle">Settled Cost ($ USD)</text>
   <text x="710" y="200" class="axis-label" transform="rotate(90 710 200)" text-anchor="middle">Total Tokens Consumed</text>
-  <rect x="148" y="293.948" width="20" height="56.05200000000002" fill="#f59e0b" rx="3" ry="3" opacity="0.85"/>
-  <text x="158" y="287.948" font-size="9" font-weight="bold" fill="#b45309" text-anchor="middle">$0.47</text>
+  <rect x="148" y="293.942726" width="20" height="56.05727400000001" fill="#f59e0b" rx="3" ry="3" opacity="0.85"/>
+  <text x="158" y="287.942726" font-size="9" font-weight="bold" fill="#b45309" text-anchor="middle">$0.47</text>
   <rect x="172" y="309.7773125" width="20" height="40.222687500000006" fill="#6366f1" rx="3" ry="3" opacity="0.85"/>
   <text x="182" y="303.7773125" font-size="9" font-weight="bold" fill="#4338ca" text-anchor="middle">1,073k</text>
   <text x="170" y="370" class="tick-label">No-RAG</text>
-  <rect x="258" y="194.336" width="20" height="155.664" fill="#f59e0b" rx="3" ry="3" opacity="0.85"/>
-  <text x="268" y="188.336" font-size="9" font-weight="bold" fill="#b45309" text-anchor="middle">$1.30</text>
+  <rect x="258" y="194.33198000000002" width="20" height="155.66801999999998" fill="#f59e0b" rx="3" ry="3" opacity="0.85"/>
+  <text x="268" y="188.33198000000002" font-size="9" font-weight="bold" fill="#b45309" text-anchor="middle">$1.30</text>
   <rect x="282" y="278.949425" width="20" height="71.05057499999998" fill="#6366f1" rx="3" ry="3" opacity="0.85"/>
   <text x="292" y="272.949425" font-size="9" font-weight="bold" fill="#4338ca" text-anchor="middle">1,895k</text>
   <text x="280" y="370" class="tick-label">k=1</text>
-  <rect x="368" y="208.54399999999998" width="20" height="141.45600000000002" fill="#f59e0b" rx="3" ry="3" opacity="0.85"/>
-  <text x="378" y="202.54399999999998" font-size="9" font-weight="bold" fill="#b45309" text-anchor="middle">$1.18</text>
+  <rect x="368" y="208.5344" width="20" height="141.4656" fill="#f59e0b" rx="3" ry="3" opacity="0.85"/>
+  <text x="378" y="202.5344" font-size="9" font-weight="bold" fill="#b45309" text-anchor="middle">$1.18</text>
   <rect x="392" y="230.60975000000002" width="20" height="119.39024999999998" fill="#6366f1" rx="3" ry="3" opacity="0.85"/>
   <text x="402" y="224.60975000000002" font-size="9" font-weight="bold" fill="#4338ca" text-anchor="middle">3,184k</text>
   <text x="390" y="370" class="tick-label">k=3</text>
-  <rect x="478" y="172.028" width="20" height="177.972" fill="#f59e0b" rx="3" ry="3" opacity="0.85"/>
-  <text x="488" y="166.028" font-size="9" font-weight="bold" fill="#b45309" text-anchor="middle">$1.48</text>
+  <rect x="478" y="172.02587" width="20" height="177.97413" fill="#f59e0b" rx="3" ry="3" opacity="0.85"/>
+  <text x="488" y="166.02587" font-size="9" font-weight="bold" fill="#b45309" text-anchor="middle">$1.48</text>
   <rect x="502" y="187.3652375" width="20" height="162.6347625" fill="#6366f1" rx="3" ry="3" opacity="0.85"/>
   <text x="512" y="181.3652375" font-size="9" font-weight="bold" fill="#4338ca" text-anchor="middle">4,337k</text>
   <text x="500" y="370" class="tick-label">k=5</text>
-  <rect x="578" y="92.072" width="20" height="257.928" fill="#f59e0b" rx="3" ry="3" opacity="0.85"/>
-  <text x="588" y="86.072" font-size="9" font-weight="bold" fill="#b45309" text-anchor="middle">$2.15</text>
+  <rect x="578" y="92.07395600000001" width="20" height="257.926044" fill="#f59e0b" rx="3" ry="3" opacity="0.85"/>
+  <text x="588" y="86.07395600000001" font-size="9" font-weight="bold" fill="#b45309" text-anchor="middle">$2.15</text>
   <rect x="602" y="88.48924999999997" width="20" height="261.51075000000003" fill="#6366f1" rx="3" ry="3" opacity="0.85"/>
   <text x="612" y="82.48924999999997" font-size="9" font-weight="bold" fill="#4338ca" text-anchor="middle">6,974k</text>
   <text x="600" y="370" class="tick-label">k=10</text>
@@ -68,5 +66,5 @@
   <text x="240" y="407" class="legend-text">Settled Cost ($ USD)</text>
   <rect x="390" y="395" width="14" height="14" fill="#6366f1" rx="2" ry="2"/>
   <text x="410" y="407" class="legend-text">Total Consumed Tokens</text>
-  <text x="375" y="435" font-size="11" fill="#64748b" text-anchor="middle">Includes rag_k1 $0.5397 missing-usage penalty. Cached tokens: 1,540 tokens total in rag_k1 (mean 1.20 tokens/req).</text>
+  <text x="375" y="435" font-size="11" fill="#64748b" text-anchor="middle">Settled ledger cost accounting. Cached tokens: 1,540 tokens total in rag_k1.</text>
 </svg>

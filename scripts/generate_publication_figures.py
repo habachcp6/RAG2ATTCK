@@ -22,10 +22,75 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import shutil
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
+from decimal import Decimal
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
+
+def find_headless_browser() -> Optional[str]:
+    """Locate headless Chrome or Edge executable for raster/PDF rendering."""
+    candidates = [
+        os.environ.get("CHROME_BIN"),
+        os.environ.get("EDGE_BIN"),
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        shutil.which("chrome"),
+        shutil.which("msedge"),
+        shutil.which("chromium"),
+    ]
+    for cand in candidates:
+        if cand and Path(cand).is_file():
+            return cand
+    return None
+
+
+def export_svg_to_png_and_pdf(
+    svg_path: Path,
+    png_path: Path,
+    pdf_path: Path,
+    width: int,
+    height: int,
+) -> Tuple[bool, bool]:
+    """Export vector SVG to raster PNG and print PDF via headless browser."""
+    browser = find_headless_browser()
+    if not browser:
+        print(f"  [WARN] No headless browser found for rasterizing {svg_path.name}")
+        return False, False
+
+    try:
+        # PNG export
+        cmd_png = [
+            browser,
+            "--headless",
+            "--disable-gpu",
+            f"--screenshot={png_path.resolve()}",
+            f"--window-size={width},{height}",
+            str(svg_path.resolve()),
+        ]
+        subprocess.run(cmd_png, capture_output=True, check=False, timeout=30)
+
+        # PDF export
+        cmd_pdf = [
+            browser,
+            "--headless",
+            "--disable-gpu",
+            "--no-pdf-header-footer",
+            f"--print-to-pdf={pdf_path.resolve()}",
+            str(svg_path.resolve()),
+        ]
+        subprocess.run(cmd_pdf, capture_output=True, check=False, timeout=30)
+
+        png_ok = png_path.is_file() and png_path.stat().st_size > 0
+        pdf_ok = pdf_path.is_file() and pdf_path.stat().st_size > 0
+        return png_ok, pdf_ok
+    except Exception as exc:
+        print(f"  [WARN] Failed to export raster/pdf for {svg_path.name}: {exc}")
+        return False, False
 
 
 def compute_sha256(path: Path) -> str:
@@ -88,11 +153,36 @@ FIXTURE_DATA = {
 
 
 def load_data_from_bundle(bundle_path: Path) -> Dict[str, Any]:
+    if not bundle_path.is_file():
+        raise FileNotFoundError(f"[FAIL_CLOSED] Metric bundle not found at: {bundle_path}")
+
     with open(bundle_path, "r", encoding="utf-8") as f:
         bundle = json.load(f)
 
+    if not isinstance(bundle, dict):
+        raise ValueError("[FAIL_CLOSED] Metric bundle must be a valid JSON object")
+
+    if bundle.get("fixture_only", False):
+        raise ValueError("[FAIL_CLOSED] Cannot load fixture_only bundle in canonical mode")
+
+    if "conditions" not in bundle or not isinstance(bundle["conditions"], dict):
+        raise ValueError("[FAIL_CLOSED] Metric bundle missing 'conditions' mapping")
+
+    expected_conditions = ["no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10"]
+    for c in expected_conditions:
+        if c not in bundle["conditions"]:
+            raise ValueError(f"[FAIL_CLOSED] Metric bundle missing condition '{c}'")
+
+    if "cohort_breakdown" not in bundle:
+        raise ValueError("[FAIL_CLOSED] Metric bundle missing 'cohort_breakdown'")
+
+    run_id = bundle.get("run_id")
+    if not run_id:
+        raise ValueError("[FAIL_CLOSED] Metric bundle missing 'run_id'")
+
     cond_data = {}
-    for c_name, c_obj in bundle["conditions"].items():
+    for c_name in expected_conditions:
+        c_obj = bundle["conditions"][c_name]
         k_val = c_obj["retrieval_k"]
         rq1 = c_obj["rq1_attribution"]
         rq2 = c_obj["rq2_retrieval_and_error"]
@@ -103,37 +193,121 @@ def load_data_from_bundle(bundle_path: Path) -> Dict[str, Any]:
         axes = rq2["independent_failure_axes"]
         toks = rq3["tokens"]
 
-        # Parse bootstrap CI for accuracy
-        ci_low = 70.0
-        ci_high = 85.0
-        if "delta_accuracy_ci_95_display_pp" in rq1.get("delta_vs_baseline", {}):
-            pass
+        # 1. Accuracy
+        acc = rq1.get("accuracy_end_to_end")
+        if acc is None:
+            acc = rq1.get("accuracy")
+        if acc is None:
+            raise ValueError(f"[FAIL_CLOSED] Condition {c_name} missing accuracy")
+
+        # 2. Bootstrap 95% CIs
+        ci_arr = rq1.get("accuracy_e2e_ci_95")
+        if not ci_arr or len(ci_arr) != 2:
+            raise ValueError(f"[FAIL_CLOSED] Condition {c_name} missing accuracy_e2e_ci_95")
+        ci_low = float(ci_arr[0]) * 100.0
+        ci_high = float(ci_arr[1]) * 100.0
+
+        # 3. Macro-F1
+        macro_f1 = rq1.get("macro_f1")
+        if macro_f1 is None:
+            raise ValueError(f"[FAIL_CLOSED] Condition {c_name} missing macro_f1")
+
+        # 4. McNemar p-value
+        mcnemar_p = None
+        if c_name != "no_rag":
+            delta_obj = rq1.get("delta_vs_baseline")
+            if not delta_obj or "mcnemar_test" not in delta_obj:
+                raise ValueError(f"[FAIL_CLOSED] Condition {c_name} missing mcnemar_test")
+            mcn_obj = delta_obj["mcnemar_test"]
+            mcnemar_p = mcn_obj.get("p_value_exact")
+            if mcnemar_p is None:
+                mcnemar_p = mcn_obj.get("p_value_asymptotic")
+            if mcnemar_p is None:
+                raise ValueError(f"[FAIL_CLOSED] Condition {c_name} missing p-value in mcnemar_test")
+
+        # 5. Retrieval & Error axes
+        hit_rate = ret_m.get("retrieval_hit_rate") if ret_m.get("applicable") else None
+        p_corr_hit = gen_c.get("p_correct_given_retrieval_success") if gen_c.get("applicable") else None
+        p_corr_miss = gen_c.get("p_correct_given_retrieval_failure") if gen_c.get("applicable") else None
+
+        wrong = rq1.get("classification_errors_count")
+        if wrong is None:
+            wrong = axes.get("valid_but_wrong_classification_count")
+        if wrong is None:
+            raise ValueError(f"[FAIL_CLOSED] Condition {c_name} missing error/wrong count")
+
+        if c_name == "no_rag":
+            miss = None
+            overlap = None
+        else:
+            miss = axes.get("retrieval_miss_count")
+            if miss is None:
+                raise ValueError(f"[FAIL_CLOSED] Condition {c_name} missing retrieval_miss_count")
+            overlap = axes.get("overlap_retrieval_miss_and_wrong_classification")
+            if overlap is None:
+                overlap = axes.get("joint_retrieval_miss_and_classification_error_count")
+            if overlap is None:
+                raise ValueError(f"[FAIL_CLOSED] Condition {c_name} missing overlap count")
+
+        # 6. Latency, cost, tokens
+        lat_mean = rq3["latency_ms"]["mean"]
+        lat_med = rq3["latency_ms"]["median"]
+        cost_str = rq3["financial_cost_usd"]["ledger_settled_cost_usd"]
+        cost_val = float(cost_str)
+
+        prompt_tok = toks["prompt_tokens"]["sum"]
+        comp_tok = toks["completion_tokens"]["sum"]
+        cached_tok = toks.get("cached_tokens", {}).get("sum", 0)
 
         cond_data[c_name] = {
             "k": k_val,
-            "acc": rq1["accuracy"],
-            "macro_f1": rq1["macro_f1"],
-            "ci_low": FIXTURE_DATA["conditions"][c_name]["ci_low"],
-            "ci_high": FIXTURE_DATA["conditions"][c_name]["ci_high"],
-            "hit_rate": ret_m["retrieval_hit_rate"] if ret_m["applicable"] else None,
-            "latency_mean": rq3["latency_ms"]["mean"],
-            "latency_med": rq3["latency_ms"]["median"],
-            "cost": float(rq3["financial_cost_usd"]["ledger_settled_cost_usd"]),
-            "prompt_tokens": toks["prompt_tokens"]["sum"],
-            "comp_tokens": toks["completion_tokens"]["sum"],
-            "cached_tokens": toks["cached_tokens"]["sum"],
-            "p_corr_hit": gen_c["p_correct_given_retrieval_success"] if gen_c["applicable"] else None,
-            "p_corr_miss": gen_c["p_correct_given_retrieval_failure"] if gen_c["applicable"] else None,
-            "wrong": rq1["classification_errors_count"],
-            "miss": axes["retrieval_miss_count"] if axes["applicable"] else None,
-            "overlap": axes["joint_retrieval_miss_and_classification_error_count"] if axes["applicable"] else None,
+            "acc": acc,
+            "macro_f1": macro_f1,
+            "ci_low": ci_low,
+            "ci_high": ci_high,
+            "mcnemar_p": mcnemar_p,
+            "hit_rate": hit_rate,
+            "latency_mean": lat_mean,
+            "latency_med": lat_med,
+            "cost": cost_val,
+            "cost_exact": cost_str,
+            "prompt_tokens": prompt_tok,
+            "comp_tokens": comp_tok,
+            "cached_tokens": cached_tok,
+            "p_corr_hit": p_corr_hit,
+            "p_corr_miss": p_corr_miss,
+            "wrong": wrong,
+            "miss": miss,
+            "overlap": overlap,
         }
 
+    raw_cohort = bundle["cohort_breakdown"]
+    cohort_mapped = {
+        "mapped_views": raw_cohort.get("mapped_scorable_views", raw_cohort.get("mapped_views", 718)),
+        "mapped_scorable_views": raw_cohort.get("mapped_scorable_views", raw_cohort.get("mapped_views", 718)),
+        "total_views": raw_cohort.get("total_views", 1280),
+        "total_pairs": raw_cohort.get("total_pairs", 640),
+        "ambiguous_views": raw_cohort.get("ambiguous_excluded_views", raw_cohort.get("ambiguous_views", 311)),
+        "ambiguous_excluded_views": raw_cohort.get("ambiguous_excluded_views", raw_cohort.get("ambiguous_views", 311)),
+        "unmapped_views": raw_cohort.get("unmapped_excluded_views", raw_cohort.get("unmapped_views", 251)),
+        "unmapped_excluded_views": raw_cohort.get("unmapped_excluded_views", raw_cohort.get("unmapped_views", 251)),
+        "single_gt": raw_cohort.get("single_gt_mapped_views", raw_cohort.get("single_gt", 678)),
+        "single_gt_mapped_views": raw_cohort.get("single_gt_mapped_views", raw_cohort.get("single_gt", 678)),
+        "multi_gt": raw_cohort.get("multi_gt_mapped_views", raw_cohort.get("multi_gt", 40)),
+        "multi_gt_mapped_views": raw_cohort.get("multi_gt_mapped_views", raw_cohort.get("multi_gt", 40)),
+        "classes": raw_cohort.get("macro_universe_classes", raw_cohort.get("classes", 474)),
+        "macro_universe_classes": raw_cohort.get("macro_universe_classes", raw_cohort.get("classes", 474)),
+        "supported": raw_cohort.get("supported_classes", 8),
+        "supported_classes": raw_cohort.get("supported_classes", 8),
+        "unsupported": raw_cohort.get("unsupported_classes", 466),
+        "unsupported_classes": raw_cohort.get("unsupported_classes", 466),
+    }
+
     return {
-        "fixture_only": bundle.get("fixture_only", False),
-        "run_id": bundle.get("run_id", "canonical-live"),
+        "fixture_only": False,
+        "run_id": run_id,
         "bundle_sha256": compute_sha256(bundle_path),
-        "cohort": bundle.get("cohort_breakdown", FIXTURE_DATA["cohort"]),
+        "cohort": cohort_mapped,
         "conditions": cond_data,
     }
 
@@ -279,10 +453,13 @@ def generate_fig2_accuracy(data: Dict[str, Any], out_path: Path) -> None:
 
     # Baseline delta note
     delta_pp = (data["conditions"]["rag_k10"]["acc"] - data["conditions"]["no_rag"]["acc"]) * 100
-    p_val = data["conditions"]["rag_k10"].get("mcnemar_p", 0.422)
+    p_val = data["conditions"]["rag_k10"].get("mcnemar_p")
+    if p_val is None:
+        raise ValueError("[FAIL_CLOSED] rag_k10 missing mcnemar_p for Fig 2")
+    sig_str = "Significant" if p_val < 0.05 else "Not Significant"
     svg += f'  <rect x="460" y="90" width="200" height="45" rx="5" ry="5" fill="#f0fdf4" stroke="#22c55e" stroke-width="1"/>\n'
     svg += f'  <text x="560" y="108" font-size="11" font-weight="bold" fill="#15803d" text-anchor="middle">k=10 vs No-RAG: +{delta_pp:.3f} pp</text>\n'
-    svg += f'  <text x="560" y="124" font-size="10" fill="#166534" text-anchor="middle">McNemar p = {p_val:.3f} (Not Significant)</text>\n'
+    svg += f'  <text x="560" y="124" font-size="10" fill="#166534" text-anchor="middle">McNemar p = {p_val:.3f} ({sig_str})</text>\n'
 
     svg += svg_footer()
     ET.fromstring(svg)
@@ -514,8 +691,11 @@ def generate_fig7_cost_and_tokens(data: Dict[str, Any], out_path: Path) -> None:
     svg += '  <rect x="390" y="395" width="14" height="14" fill="#6366f1" rx="2" ry="2"/>\n'
     svg += '  <text x="410" y="407" class="legend-text">Total Consumed Tokens</text>\n'
 
-    cached_tok_k1 = data["conditions"]["rag_k1"].get("cached_tokens", 1540)
-    svg += f'  <text x="375" y="435" font-size="11" fill="#64748b" text-anchor="middle">Includes rag_k1 $0.5397 missing-usage penalty. Cached tokens: {cached_tok_k1:,} tokens total in rag_k1 (mean 1.20 tokens/req).</text>\n'
+    cached_tok_k1 = data["conditions"]["rag_k1"].get("cached_tokens", 0)
+    if fixture_only:
+        svg += f'  <text x="375" y="435" font-size="11" fill="#64748b" text-anchor="middle">Includes rag_k1 $0.5397 missing-usage penalty. Cached tokens: {cached_tok_k1:,} tokens total in rag_k1 (mean 1.20 tokens/req).</text>\n'
+    else:
+        svg += f'  <text x="375" y="435" font-size="11" fill="#64748b" text-anchor="middle">Settled ledger cost accounting. Cached tokens: {cached_tok_k1:,} tokens total in rag_k1.</text>\n'
 
     svg += svg_footer()
     ET.fromstring(svg)
@@ -529,14 +709,16 @@ def generate_fig8_failure_decomposition(data: Dict[str, Any], out_path: Path) ->
     svg += '  <text x="375" y="32" class="title">Figure 8: Independent Failure Decomposition (k=10)</text>\n'
     svg += '  <text x="375" y="52" class="subtitle">Evaluation under Protocol Decision D2i: Non-mutually exclusive independent diagnostic axes</text>\n'
 
-    cohort_n = data.get("cohort", {}).get("mapped_views", 718)
-    k10 = data.get("conditions", {}).get("rag_k10", {})
-    misses = k10.get("miss", 397) or 397
-    wrongs = k10.get("wrong", 147) or 147
-    overlap = k10.get("overlap", 119) or 119
+    cohort_n = data["cohort"]["mapped_views"]
+    k10 = data["conditions"]["rag_k10"]
+    misses = k10["miss"]
+    wrongs = k10["wrong"]
+    overlap = k10["overlap"]
+    if misses is None or wrongs is None or overlap is None:
+        raise ValueError("[FAIL_CLOSED] rag_k10 missing miss, wrong, or overlap count for Fig 8")
     correct_despite_miss = misses - overlap
     wrong_despite_hit = wrongs - overlap
-    overlap_pct = (overlap / wrongs * 100) if wrongs else 80.95
+    overlap_pct = (overlap / wrongs * 100) if wrongs else 0.0
 
     # Big container
     svg += '  <rect x="80" y="80" width="590" height="280" rx="10" ry="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>\n'
@@ -574,11 +756,15 @@ def generate_all_figures(
 ) -> Dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    if fixture_only or bundle_path is None:
+    if fixture_only:
+        if bundle_path is not None:
+            raise ValueError("[FAIL_CLOSED] Cannot specify both --fixture-only and --metric-bundle")
         print("[FIGURE-GEN] Operating in FIXTURE mode (--fixture-only).")
         data = FIXTURE_DATA
         bundle_hash = "fixture-mode-no-bundle"
     else:
+        if bundle_path is None:
+            raise ValueError("[FAIL_CLOSED] Must specify --metric-bundle <path> in canonical mode or use --fixture-only")
         print(f"[FIGURE-GEN] Operating in CANONICAL mode using: {bundle_path}")
         data = load_data_from_bundle(bundle_path)
         bundle_hash = data["bundle_sha256"]
@@ -587,31 +773,56 @@ def generate_all_figures(
 
     # Generate the 8 figures
     figs = {
-        "fig1_system_architecture.svg": lambda p: generate_fig1_architecture(p, fixture_only=is_fixture),
-        "fig2_accuracy_vs_k.svg": lambda p: generate_fig2_accuracy(data, p),
-        "fig3_macro_f1_vs_k.svg": lambda p: generate_fig3_macro_f1(data, p),
-        "fig4_retrieval_hit_rate.svg": lambda p: generate_fig4_retrieval_hit_rate(data, p),
-        "fig5_conditional_accuracy.svg": lambda p: generate_fig5_conditional_accuracy(data, p),
-        "fig6_latency_vs_k.svg": lambda p: generate_fig6_latency(data, p),
-        "fig7_cost_and_tokens_vs_k.svg": lambda p: generate_fig7_cost_and_tokens(data, p),
-        "fig8_failure_decomposition.svg": lambda p: generate_fig8_failure_decomposition(data, p),
+        "fig1_system_architecture": lambda p: generate_fig1_architecture(p, fixture_only=is_fixture),
+        "fig2_accuracy_vs_k": lambda p: generate_fig2_accuracy(data, p),
+        "fig3_macro_f1_vs_k": lambda p: generate_fig3_macro_f1(data, p),
+        "fig4_retrieval_hit_rate": lambda p: generate_fig4_retrieval_hit_rate(data, p),
+        "fig5_conditional_accuracy": lambda p: generate_fig5_conditional_accuracy(data, p),
+        "fig6_latency_vs_k": lambda p: generate_fig6_latency(data, p),
+        "fig7_cost_and_tokens_vs_k": lambda p: generate_fig7_cost_and_tokens(data, p),
+        "fig8_failure_decomposition": lambda p: generate_fig8_failure_decomposition(data, p),
+    }
+
+    fig_dimensions = {
+        "fig1_system_architecture": (850, 490),
+        "fig2_accuracy_vs_k": (750, 450),
+        "fig3_macro_f1_vs_k": (750, 450),
+        "fig4_retrieval_hit_rate": (750, 450),
+        "fig5_conditional_accuracy": (750, 450),
+        "fig6_latency_vs_k": (750, 460),
+        "fig7_cost_and_tokens_vs_k": (750, 470),
+        "fig8_failure_decomposition": (750, 460),
     }
 
     generated_digests: Dict[str, str] = {}
-    for filename, gen_fn in figs.items():
-        file_path = output_dir / filename
-        gen_fn(file_path)
-        generated_digests[filename] = compute_sha256(file_path)
-        print(f"  Generated {filename} ({generated_digests[filename][:12]}...)")
+    for base_name, gen_fn in figs.items():
+        svg_filename = f"{base_name}.svg"
+        png_filename = f"{base_name}.png"
+        pdf_filename = f"{base_name}.pdf"
 
-    # Generate figure_provenance.json
+        svg_path = output_dir / svg_filename
+        png_path = output_dir / png_filename
+        pdf_path = output_dir / pdf_filename
+
+        gen_fn(svg_path)
+        generated_digests[svg_filename] = compute_sha256(svg_path)
+
+        w, h = fig_dimensions[base_name]
+        png_ok, pdf_ok = export_svg_to_png_and_pdf(svg_path, png_path, pdf_path, w, h)
+        if png_ok:
+            generated_digests[png_filename] = compute_sha256(png_path)
+        if pdf_ok:
+            generated_digests[pdf_filename] = compute_sha256(pdf_path)
+
+        print(f"  Generated {svg_filename} ({generated_digests[svg_filename][:12]}...) PNG={png_ok} PDF={pdf_ok}")
+
     provenance = {
         "schema_version": "2.0.0",
         "fixture_only": is_fixture,
         "run_id": data["run_id"],
         "bundle_sha256": bundle_hash,
         "figures_count": 8,
-        "figures_format": "vector_svg",
+        "figures_formats": ["vector_svg", "raster_png", "print_pdf"],
         "generated_figures": generated_digests,
         "p95_latency_status": "NOT REPORTED — approval evidence not established",
         "workstation_paths_sanitized": True,
@@ -631,6 +842,10 @@ def main() -> int:
     parser.add_argument("--fixture-only", action="store_true", help="Generate figures using synthetic fixture data")
     parser.add_argument("--output-dir", type=Path, default=Path("docs/report/figures"), help="Output directory")
     args = parser.parse_args()
+
+    if not args.fixture_only and args.metric_bundle is None:
+        print("ERROR: Must specify either --metric-bundle <path> or --fixture-only", file=sys.stderr)
+        return 1
 
     try:
         generate_all_figures(

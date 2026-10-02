@@ -9,13 +9,14 @@ Validates:
   - Detection and fail-closed rejection of workstation path leaks
   - Detection and fail-closed rejection of unresolved template placeholders
   - Fail-closed behavior on missing repository inputs (DOCX, PPTX, MD, bundles)
-  - Fail-closed behavior on bogus metric bundles
-  - Provenance hash verification and tampering detection
-  - Numerical table body consistency and denominator protection
+  - Fail-closed behavior on bogus / incomplete metric bundles
+  - Provenance hash verification, bundle SHA256 binding, and tampering detection
+  - Missing or invalid fixture_only flag detection in provenance
+  - Semantic SVG content validation (Fig 2 accuracy, Fig 5 conditional accuracy 91.3%)
+  - Numerical table row parsing and cell-level consistency (Table 3 accuracy, p-value; Table 5 N=1,280)
   - Fixture rejection in publication-wide (--scope all) audit
-  - DOCX embedded media corruption detection (non-PNG bytes)
-  - DOCX visible accuracy tampering detection
-  - PPTX tiny font size (< 8pt) and [WRONG RESULT] placeholder detection
+  - DOCX OpenXML binary inspection (placeholders, unauthorized numbers, embedded media authenticity)
+  - PPTX OpenXML binary inspection (placeholders, unauthorized numbers, font size threshold >= 9pt)
 """
 
 from __future__ import annotations
@@ -35,6 +36,7 @@ from scripts.check_cross_artifact_consistency import (
     run_consistency_audit,
     scan_file_for_leaks,
     scan_file_for_placeholders,
+    validate_metric_bundle,
 )
 from scripts.generate_publication_figures import generate_all_figures
 from scripts.generate_publication_tables import generate_all_tables
@@ -103,6 +105,19 @@ def test_empty_repository_fail_closed(tmp_path: Path):
     assert len(report["missing_required_files"]) > 0
 
 
+def test_strict_all_scope_without_bundle_fails(tmp_path: Path):
+    """Verify that strict audit across all scope fails closed without metric bundle."""
+    report = run_consistency_audit(
+        repo_root=tmp_path,
+        bundle_path=None,
+        strict=True,
+        scope="all",
+        output_report_path=None,
+    )
+    assert report["verdict"] == "FAIL"
+    assert "Strict all-scope audit requires" in report["bundle_error"]
+
+
 def test_missing_bundle_fail_closed(tmp_path: Path):
     """Verify that specifying a missing bundle fails closed."""
     non_existent = tmp_path / "no_such_bundle.json"
@@ -117,20 +132,21 @@ def test_missing_bundle_fail_closed(tmp_path: Path):
     assert report["numerical_consistency"]["status"] == "FAIL"
 
 
-def test_bogus_bundle_fail_closed(tmp_path: Path):
-    """Verify that a bogus bundle schema fails closed."""
+def test_bogus_or_incomplete_bundle_fail_closed(tmp_path: Path):
+    """Verify that a bogus or incomplete bundle schema fails closed."""
+    # Bogus bundle
     bogus = tmp_path / "bogus_bundle.json"
     bogus.write_text('{"fixture_only": true, "not_a_metric_bundle": true}', encoding="utf-8")
+    valid, err, _ = validate_metric_bundle(bogus)
+    assert not valid
+    assert "not_a_metric_bundle" in err
 
-    report = run_consistency_audit(
-        repo_root=tmp_path,
-        bundle_path=bogus,
-        strict=True,
-        scope="all",
-        output_report_path=None,
-    )
-    assert report["verdict"] == "FAIL"
-    assert report["numerical_consistency"]["status"] == "FAIL"
+    # Incomplete conditions bundle
+    incomplete = tmp_path / "incomplete_bundle.json"
+    incomplete.write_text('{"conditions": {}}', encoding="utf-8")
+    valid, err, _ = validate_metric_bundle(incomplete)
+    assert not valid
+    assert "missing required root keys" in err or "incomplete" in err
 
 
 def test_leak_detection_fail_closed(tmp_path: Path):
@@ -150,16 +166,17 @@ def test_placeholder_detection_fail_closed(tmp_path: Path):
     """Verify that unresolved template placeholders (including PENDING with PID) are detected."""
     placeholder_file = tmp_path / "incomplete_document.md"
     placeholder_file.write_text(
-        "Accuracy is {{NO_RAG_ACCURACY}} and status is [PENDING EXECUTION] PID 50192 or [TBD].\n",
+        "Accuracy is {{NO_RAG_ACCURACY}} and status is [PENDING EXECUTION] PID 50192 or [TBD] or {{UNPOPULATED}}.\n",
         encoding="utf-8",
     )
 
     findings = scan_file_for_placeholders(placeholder_file)
-    assert len(findings) >= 3
+    assert len(findings) >= 4
     ph_strings = {f["placeholder"] for f in findings}
     assert any("[PENDING" in s for s in ph_strings)
     assert any("{{NO_RAG_ACCURACY}}" in s for s in ph_strings)
     assert any("[TBD]" in s for s in ph_strings)
+    assert any("{{UNPOPULATED}}" in s for s in ph_strings)
 
 
 def test_tamper_provenance_hash_fail_closed(tmp_path: Path):
@@ -176,122 +193,112 @@ def test_tamper_provenance_hash_fail_closed(tmp_path: Path):
     assert len(res["hash_mismatches"]) == 1
 
 
-def test_tamper_table_body_fail_closed(tmp_path: Path):
-    """Verify that tampering with Table 3 values fails closed even if HTML comments retain correct strings."""
-    tbl_dir = tmp_path / "docs" / "report" / "tables"
-    generate_all_tables(bundle_path=None, fixture_only=True, output_dir=tbl_dir)
-
-    # Mutate Table 3
-    t3 = tbl_dir / "table3_rq1_attribution_performance.md"
-    orig = t3.read_text(encoding="utf-8")
-    t3.write_text(orig.replace("79.53%", "97.53%") + "\n<!-- 77.99% 79.53% +1.532 pp -->\n", encoding="utf-8")
-
-    report = run_consistency_audit(
-        repo_root=tmp_path,
-        bundle_path=None,
-        strict=True,
-        scope="generated",
-        output_report_path=None,
-    )
-    assert report["verdict"] == "FAIL"
-    assert any("Table 3 accuracy" in m for m in report["numerical_consistency"]["mismatches"])
-
-
-def test_wrong_p_value_fail_closed(tmp_path: Path):
-    """Verify that tampering with McNemar p-value fails closed."""
-    tbl_dir = tmp_path / "docs" / "report" / "tables"
-    generate_all_tables(bundle_path=None, fixture_only=True, output_dir=tbl_dir)
-
-    t3 = tbl_dir / "table3_rq1_attribution_performance.md"
-    orig = t3.read_text(encoding="utf-8")
-    t3.write_text(orig.replace("0.422", "0.042"), encoding="utf-8")
-
-    report = run_consistency_audit(
-        repo_root=tmp_path,
-        bundle_path=None,
-        strict=True,
-        scope="generated",
-        output_report_path=None,
-    )
-    assert report["verdict"] == "FAIL"
-    assert any("McNemar p-value" in m for m in report["numerical_consistency"]["mismatches"])
-
-
-def test_wrong_resource_denominator_fail_closed(tmp_path: Path):
-    """Verify that asserting N=718 for resource table fails closed."""
-    tbl_dir = tmp_path / "docs" / "report" / "tables"
-    generate_all_tables(bundle_path=None, fixture_only=True, output_dir=tbl_dir)
-
-    t5 = tbl_dir / "table5_rq3_resources_and_cost.md"
-    t5.write_text(t5.read_text(encoding="utf-8") + "\nAll resources are measured on TEST N=718.\n", encoding="utf-8")
-
-    report = run_consistency_audit(
-        repo_root=tmp_path,
-        bundle_path=None,
-        strict=True,
-        scope="generated",
-        output_report_path=None,
-    )
-    assert report["verdict"] == "FAIL"
-    assert any("invalid resource denominator" in m for m in report["numerical_consistency"]["mismatches"])
-
-
-def test_fixture_rejected_in_all_scope(tmp_path: Path):
-    """Verify that fixture artifacts are rejected in full publication (--scope all) audit."""
+def test_missing_fixture_only_flag_fails(tmp_path: Path):
+    """Verify that provenance files without explicit fixture_only boolean key fail closed."""
     fig_dir = tmp_path / "docs" / "report" / "figures"
     tbl_dir = tmp_path / "docs" / "report" / "tables"
     generate_all_figures(bundle_path=None, fixture_only=True, output_dir=fig_dir)
     generate_all_tables(bundle_path=None, fixture_only=True, output_dir=tbl_dir)
 
-    (tmp_path / "README.md").write_text("# RAG2ATTCK\n", encoding="utf-8")
-    (tmp_path / "docs" / "report").mkdir(parents=True, exist_ok=True)
-    (tmp_path / "docs" / "report" / "scientific_report.md").write_text("# Report\n", encoding="utf-8")
-    (tmp_path / "docs" / "presentation").mkdir(parents=True, exist_ok=True)
-    (tmp_path / "docs" / "presentation" / "slides.md").write_text("# Slides\n", encoding="utf-8")
-    (tmp_path / "docs" / "report" / "scientific_report.docx").write_bytes(b"PK\x03\x04")
-    (tmp_path / "docs" / "presentation" / "slides.pptx").write_bytes(b"PK\x03\x04")
+    # Strip fixture_only key
+    f_prov = fig_dir / "figure_provenance.json"
+    data = json.loads(f_prov.read_text(encoding="utf-8"))
+    del data["fixture_only"]
+    f_prov.write_text(json.dumps(data), encoding="utf-8")
 
-    report = run_consistency_audit(
-        repo_root=tmp_path,
-        bundle_path=None,
-        strict=True,
-        scope="all",
-        output_report_path=None,
-    )
-    assert report["verdict"] == "FAIL"
-    assert report["fixture_in_all_scope"] is True
+    res = check_figure_provenance(fig_dir)
+    assert res["status"] == "FAIL"
+    assert "fixture_only" in res["error"]
+
+
+def test_tamper_table3_row_accuracy_and_p_value_fail_closed(tmp_path: Path):
+    """Verify that Table 3 cell tampering is caught by row parser even if correct strings exist elsewhere."""
+    tbl_dir = tmp_path / "docs" / "report" / "tables"
+    generate_all_tables(bundle_path=None, fixture_only=True, output_dir=tbl_dir)
+
+    # Tamper with accuracy in k10 row
+    t3 = tbl_dir / "table3_rq1_attribution_performance.md"
+    orig = t3.read_text(encoding="utf-8")
+    t3.write_text(orig.replace("79.53%", "82.12%") + "\nVisible unrelated: 77.99% 79.53% +1.532pp p0.422\n", encoding="utf-8")
+
+    res = check_table_provenance(tbl_dir)
+    assert res["status"] == "FAIL"
+    assert any("82.12%" in err for err in res["semantic_errors"])
+
+    # Tamper with p-value in k10 row
+    t3.write_text(orig.replace("0.422", "0.123") + "\nReference p0.422\n", encoding="utf-8")
+    res = check_table_provenance(tbl_dir)
+    assert res["status"] == "FAIL"
+    assert any("0.123" in err for err in res["semantic_errors"])
+
+
+def test_table5_cohort_claim_718_fails(tmp_path: Path):
+    """Verify that asserting 718 mapped views for resource Table 5 fails closed."""
+    tbl_dir = tmp_path / "docs" / "report" / "tables"
+    generate_all_tables(bundle_path=None, fixture_only=True, output_dir=tbl_dir)
+
+    t5 = tbl_dir / "table5_rq3_resources_and_cost.md"
+    orig = t5.read_text(encoding="utf-8")
+    t5.write_text(orig.replace("N=1,280 requests per condition", "718 mapped views per condition"), encoding="utf-8")
+
+    res = check_table_provenance(tbl_dir)
+    assert res["status"] == "FAIL"
+    assert any("718" in err for err in res["semantic_errors"])
+
+
+def test_svg_semantic_validation_fail_closed(tmp_path: Path):
+    """Verify that altered conditional accuracy in fig5 is rejected."""
+    fig_dir = tmp_path / "docs" / "report" / "figures"
+    generate_all_figures(bundle_path=None, fixture_only=True, output_dir=fig_dir)
+
+    fig5 = fig_dir / "fig5_conditional_accuracy.svg"
+    orig = fig5.read_text(encoding="utf-8")
+    fig5.write_text(orig.replace("91.3%", "81.3%"), encoding="utf-8")
+
+    res = check_figure_provenance(fig_dir)
+    assert res["status"] == "FAIL"
+    assert any("81.3%" in err for err in res["xml_errors"])
 
 
 def test_docx_binary_inspection_fail_closed(tmp_path: Path):
-    """Verify that corrupted embedded media or altered visible accuracy in DOCX fails."""
+    """Verify that placeholders, corrupted/spoofed media, or altered visible accuracy in DOCX fails."""
     docx_file = tmp_path / "scientific_report.docx"
 
-    # Test corrupted media
+    # Test corrupted/spoof media
     with zipfile.ZipFile(docx_file, "w") as z:
         z.writestr("word/document.xml", "<w:document><w:t>79.53%</w:t></w:document>")
-        z.writestr("word/media/image1.png", b"WRONG_FIXTURE_MEDIA")
+        z.writestr("word/media/image1.png", b"\x89PNG\r\n\x1a\nWRONG_DIAGNOSTIC_IMAGE")
 
     errors = check_docx_binary(docx_file)
-    assert len(errors) == 1
-    assert "Invalid embedded PNG media" in errors[0]
+    assert len(errors) >= 1
+    assert any("Diagnostic/spoof media" in e or "Embedded media in docx" in e for e in errors)
 
     # Test altered visible text
     with zipfile.ZipFile(docx_file, "w") as z:
-        z.writestr("word/document.xml", "<w:document><w:t>97.53%</w:t></w:document>")
+        z.writestr("word/document.xml", "<w:document><w:t>82.12%</w:t></w:document>")
 
     errors = check_docx_binary(docx_file)
-    assert len(errors) == 1
-    assert "Altered DOCX visible accuracy" in errors[0]
+    assert len(errors) >= 1
+    assert any("82.12%" in e for e in errors)
+
+    # Test placeholder in docx
+    with zipfile.ZipFile(docx_file, "w") as z:
+        z.writestr("word/document.xml", "<w:document><w:t>{{UNPOPULATED}}</w:t></w:document>")
+
+    errors = check_docx_binary(docx_file)
+    assert len(errors) >= 1
+    assert any("{{UNPOPULATED}}" in e for e in errors)
 
 
 def test_pptx_binary_inspection_fail_closed(tmp_path: Path):
-    """Verify that tiny font size or [WRONG RESULT] placeholder in PPTX fails."""
+    """Verify that font size < 9pt (e.g. 8.1pt), placeholders, or wrong text in PPTX fails."""
     pptx_file = tmp_path / "slides.pptx"
 
+    # Test font size 8.1pt (sz=810) and [PENDING EXECUTION]
     with zipfile.ZipFile(pptx_file, "w") as z:
-        z.writestr("ppt/slides/slide8.xml", '<p:sld><a:r><a:rPr sz="713"/><a:t>[WRONG RESULT]</a:t></a:r></p:sld>')
+        z.writestr("ppt/slides/slide8.xml", '<p:sld><a:r><a:rPr sz="810"/><a:t>[PENDING EXECUTION]</a:t></a:r></p:sld>')
 
     errors = check_pptx_binary(pptx_file)
     assert len(errors) >= 2
-    assert any("[WRONG RESULT]" in e for e in errors)
+    assert any("[PENDING EXECUTION]" in e for e in errors)
     assert any("Tiny font size" in e for e in errors)

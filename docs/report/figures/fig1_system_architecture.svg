@@ -13,8 +13,6 @@
     </style>
   </defs>
   <rect width="100%" height="100%" fill="#ffffff"/>
-  <rect x="610" y="8" width="232" height="18" rx="3" ry="3" fill="#fee2e2" stroke="#ef4444" stroke-width="1"/>
-  <text x="838" y="21" class="fixture-banner">[FIXTURE PREVIEW — NOT CANONICAL DATA]</text>
   <text x="425" y="32" class="title">Figure 1: RAG2ATTCK Dual-View Attribution Architecture</text>
   <text x="425" y="52" class="subtitle">Controlled evaluation pipeline across 5 conditions with strict monetary and ledger governance</text>
   <rect x="40" y="90" width="160" height="120" rx="8" ry="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>

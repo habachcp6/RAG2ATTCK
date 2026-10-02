@@ -13,8 +13,6 @@
     </style>
   </defs>
   <rect width="100%" height="100%" fill="#ffffff"/>
-  <rect x="510" y="8" width="232" height="18" rx="3" ry="3" fill="#fee2e2" stroke="#ef4444" stroke-width="1"/>
-  <text x="738" y="21" class="fixture-banner">[FIXTURE PREVIEW — NOT CANONICAL DATA]</text>
   <text x="375" y="32" class="title">Figure 4: Dense Retrieval Hit Rate (Recall@k) Across RAG Conditions</text>
   <text x="375" y="52" class="subtitle">Proportion of N=718 queries where ground-truth technique was present in top-k context</text>
   <line x1="120" y1="350" x2="660" y2="350" class="grid-line"/>
@@ -30,17 +28,17 @@
   <line x1="120" y1="90" x2="120" y2="350" stroke="#374151" stroke-width="1.5"/>
   <line x1="120" y1="350" x2="660" y2="350" stroke="#374151" stroke-width="1.5"/>
   <text x="45" y="230" class="axis-label" transform="rotate(-90 45 230)" text-anchor="middle">Retrieval Hit Rate (%)</text>
-  <rect x="170" y="258.08" width="60" height="91.92000000000002" fill="#0ea5e9" rx="4" ry="4" opacity="0.85"/>
-  <text x="200" y="248.07999999999998" class="data-label">22.98%</text>
+  <rect x="170" y="334.958217270195" width="60" height="15.041782729804993" fill="#0ea5e9" rx="4" ry="4" opacity="0.85"/>
+  <text x="200" y="324.958217270195" class="data-label">3.76%</text>
   <text x="200" y="370" class="tick-label">RAG k=1</text>
-  <rect x="310" y="284.28" width="60" height="65.72000000000003" fill="#0ea5e9" rx="4" ry="4" opacity="0.85"/>
-  <text x="340" y="274.28" class="data-label">16.43%</text>
+  <rect x="310" y="284.26183844011143" width="60" height="65.73816155988857" fill="#0ea5e9" rx="4" ry="4" opacity="0.85"/>
+  <text x="340" y="274.26183844011143" class="data-label">16.43%</text>
   <text x="340" y="370" class="tick-label">RAG k=3</text>
-  <rect x="450" y="253.64" width="60" height="96.36000000000001" fill="#0ea5e9" rx="4" ry="4" opacity="0.85"/>
-  <text x="480" y="243.64" class="data-label">24.09%</text>
+  <rect x="450" y="253.62116991643455" width="60" height="96.37883008356545" fill="#0ea5e9" rx="4" ry="4" opacity="0.85"/>
+  <text x="480" y="243.62116991643455" class="data-label">24.09%</text>
   <text x="480" y="370" class="tick-label">RAG k=5</text>
-  <rect x="590" y="171.16" width="60" height="178.84" fill="#0ea5e9" rx="4" ry="4" opacity="0.85"/>
-  <text x="620" y="161.16" class="data-label">44.71%</text>
+  <rect x="590" y="171.16991643454037" width="60" height="178.83008356545963" fill="#0ea5e9" rx="4" ry="4" opacity="0.85"/>
+  <text x="620" y="161.16991643454037" class="data-label">44.71%</text>
   <text x="620" y="370" class="tick-label">RAG k=10</text>
   <text x="375" y="415" font-size="11" fill="#64748b" text-anchor="middle">* No-RAG has k=0 and is omitted from retrieval evaluation (retrieval not applicable).</text>
 </svg>

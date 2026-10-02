@@ -13,8 +13,6 @@
     </style>
   </defs>
   <rect width="100%" height="100%" fill="#ffffff"/>
-  <rect x="510" y="8" width="232" height="18" rx="3" ry="3" fill="#fee2e2" stroke="#ef4444" stroke-width="1"/>
-  <text x="738" y="21" class="fixture-banner">[FIXTURE PREVIEW — NOT CANONICAL DATA]</text>
   <text x="375" y="32" class="title">Figure 5: Downstream Attribution Accuracy Conditioned on Retrieval Success</text>
   <text x="375" y="52" class="subtitle">Comparison of P(Correct | Hit) vs. P(Correct | Miss) across RAG depths</text>
   <line x1="120" y1="350" x2="660" y2="350" class="grid-line"/>
@@ -32,25 +30,25 @@
   <line x1="120" y1="50" x2="120" y2="350" stroke="#374151" stroke-width="1.5"/>
   <line x1="120" y1="350" x2="660" y2="350" stroke="#374151" stroke-width="1.5"/>
   <text x="45" y="200" class="axis-label" transform="rotate(-90 45 200)" text-anchor="middle">Conditional Accuracy (%)</text>
-  <rect x="166" y="108.20000000000002" width="32" height="241.79999999999998" fill="#10b981" rx="3" ry="3"/>
-  <text x="182" y="102.20000000000002" font-size="10" font-weight="bold" fill="#065f46" text-anchor="middle">90.3%</text>
-  <rect x="202" y="211.64" width="32" height="138.36" fill="#f59e0b" rx="3" ry="3"/>
-  <text x="218" y="205.64" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">73.1%</text>
+  <rect x="166" y="50.0" width="32" height="300.0" fill="#10b981" rx="3" ry="3"/>
+  <text x="182" y="44.0" font-size="10" font-weight="bold" fill="#065f46" text-anchor="middle">100.0%</text>
+  <rect x="202" y="193.27062228654125" width="32" height="156.72937771345875" fill="#f59e0b" rx="3" ry="3"/>
+  <text x="218" y="187.27062228654125" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">76.1%</text>
   <text x="200" y="370" class="tick-label">k=1</text>
-  <rect x="306" y="116.11999999999998" width="32" height="233.88000000000002" fill="#10b981" rx="3" ry="3"/>
-  <text x="322" y="110.11999999999998" font-size="10" font-weight="bold" fill="#065f46" text-anchor="middle">89.0%</text>
-  <rect x="342" y="191.0" width="32" height="159.0" fill="#f59e0b" rx="3" ry="3"/>
-  <text x="358" y="185.0" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">76.5%</text>
+  <rect x="306" y="65.25423728813558" width="32" height="284.7457627118644" fill="#10b981" rx="3" ry="3"/>
+  <text x="322" y="59.254237288135585" font-size="10" font-weight="bold" fill="#065f46" text-anchor="middle">97.5%</text>
+  <rect x="342" y="201.00000000000003" width="32" height="148.99999999999997" fill="#f59e0b" rx="3" ry="3"/>
+  <text x="358" y="195.00000000000003" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">74.8%</text>
   <text x="340" y="370" class="tick-label">k=3</text>
-  <rect x="446" y="115.88000000000002" width="32" height="234.11999999999998" fill="#10b981" rx="3" ry="3"/>
-  <text x="462" y="109.88000000000002" font-size="10" font-weight="bold" fill="#065f46" text-anchor="middle">89.0%</text>
-  <rect x="482" y="196.40000000000003" width="32" height="153.59999999999997" fill="#f59e0b" rx="3" ry="3"/>
-  <text x="498" y="190.40000000000003" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">75.6%</text>
+  <rect x="446" y="67.34104046242777" width="32" height="282.65895953757223" fill="#10b981" rx="3" ry="3"/>
+  <text x="462" y="61.34104046242777" font-size="10" font-weight="bold" fill="#065f46" text-anchor="middle">97.1%</text>
+  <rect x="482" y="211.83486238532112" width="32" height="138.16513761467888" fill="#f59e0b" rx="3" ry="3"/>
+  <text x="498" y="205.83486238532112" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">73.0%</text>
   <text x="480" y="370" class="tick-label">k=5</text>
-  <rect x="586" y="102.32" width="32" height="247.68" fill="#10b981" rx="3" ry="3"/>
-  <text x="602" y="96.32" font-size="10" font-weight="bold" fill="#065f46" text-anchor="middle">91.3%</text>
-  <rect x="622" y="229.82" width="32" height="120.18" fill="#f59e0b" rx="3" ry="3"/>
-  <text x="638" y="223.82" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">70.0%</text>
+  <rect x="586" y="102.33644859813086" width="32" height="247.66355140186914" fill="#10b981" rx="3" ry="3"/>
+  <text x="602" y="96.33644859813086" font-size="10" font-weight="bold" fill="#065f46" text-anchor="middle">91.3%</text>
+  <rect x="622" y="229.84886649874056" width="32" height="120.15113350125944" fill="#f59e0b" rx="3" ry="3"/>
+  <text x="638" y="223.84886649874056" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">70.0%</text>
   <text x="620" y="370" class="tick-label">k=10</text>
   <rect x="250" y="400" width="16" height="16" fill="#10b981" rx="2" ry="2"/>
   <text x="272" y="413" class="legend-text">P(Correct | Retrieval Hit)</text>

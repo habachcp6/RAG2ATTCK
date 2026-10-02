@@ -15,7 +15,6 @@
 
 ---
 
-<!-- CANONICAL_BUNDLE_BANNER_START -->
 > [!NOTE]
 > **CANONICAL CANDIDATE METRIC BUNDLE V2 BOUND**
 > - Bundle Type: `canonical-metric-bundle-v2`
@@ -26,7 +25,54 @@
 > - Protocol Version: `experiment-protocol-v1.1`
 > - Bundle Digest: `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`
 > - Terminal Seal SHA-256: `ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701`
-<!-- CANONICAL_BUNDLE_BANNER_END -->
+
+
+> [!NOTE]
+> **CANONICAL CANDIDATE METRIC BUNDLE V2 BOUND**
+> - Bundle Type: `canonical-metric-bundle-v2`
+> - Seal Status: `ROOT_ACCEPTED_FROZEN_METRIC_BUNDLE`
+> - Schema Version: `2.0.0`
+> - Experiment ID: `synthetic-paired-test-1`
+> - Run ID: `live-66b94b1676bf46a9`
+> - Protocol Version: `experiment-protocol-v1.1`
+> - Bundle Digest: `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`
+> - Terminal Seal SHA-256: `ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701`
+
+
+> [!NOTE]
+> **CANONICAL CANDIDATE METRIC BUNDLE V2 BOUND**
+> - Bundle Type: `canonical-metric-bundle-v2`
+> - Seal Status: `ROOT_ACCEPTED_FROZEN_METRIC_BUNDLE`
+> - Schema Version: `2.0.0`
+> - Experiment ID: `synthetic-paired-test-1`
+> - Run ID: `live-66b94b1676bf46a9`
+> - Protocol Version: `experiment-protocol-v1.1`
+> - Bundle Digest: `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`
+> - Terminal Seal SHA-256: `ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701`
+
+
+> [!NOTE]
+> **CANONICAL CANDIDATE METRIC BUNDLE V2 BOUND**
+> - Bundle Type: `canonical-metric-bundle-v2`
+> - Seal Status: `ROOT_ACCEPTED_FROZEN_METRIC_BUNDLE`
+> - Schema Version: `2.0.0`
+> - Experiment ID: `synthetic-paired-test-1`
+> - Run ID: `live-66b94b1676bf46a9`
+> - Protocol Version: `experiment-protocol-v1.1`
+> - Bundle Digest: `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`
+> - Terminal Seal SHA-256: `ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701`
+
+
+> [!NOTE]
+> **CANONICAL CANDIDATE METRIC BUNDLE V2 BOUND**
+> - Bundle Type: `canonical-metric-bundle-v2`
+> - Seal Status: `ROOT_ACCEPTED_FROZEN_METRIC_BUNDLE`
+> - Schema Version: `2.0.0`
+> - Experiment ID: `synthetic-paired-test-1`
+> - Run ID: `live-66b94b1676bf46a9`
+> - Protocol Version: `experiment-protocol-v1.1`
+> - Bundle Digest: `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`
+> - Terminal Seal SHA-256: `ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701`
 
 
 ## Abstract
@@ -103,7 +149,7 @@ Table 1a and Table 1b present a comprehensive 16-dimension comparison across the
 | **3. Core Task** | Malicious behavior detection & explanation | Cloud threat detection & ATT&CK mapping | Benchmark log interpretation | CTI technique & sub-technique annotation |
 | **4. ATT&CK Target Granularity** | Behavior explanation (Exact ID UNVERIFIED) | Technique & Sub-technique (`Txxxx.yyy`) | Collapses sub-techniques to parent (`Txxxx`); §5.2.2 parent-technique eval | Technique & Sub-technique (`Txxxx.yyy`) |
 | **5. RAG Architecture** | Semantic matching RAG | Two-step query expansion RAG (Vertex AI) | **None** (Zero-shot prompting) | Exemplar retrieval (BM25 + DeepSeek v3 rerank) |
-| **6. Retrieval Corpus** | UNVERIFIED (abstract mentions security templates & attack patterns) | ATT&CK Cloud, AWS catalogue, threat blogs | N/A | Annotated text-label pairs (TRAM, Procedures) |
+| **6. Retrieval Corpus** | Security templates & attack patterns | ATT&CK Cloud, AWS catalogue, threat blogs | N/A | Annotated text-label pairs (TRAM, Procedures) |
 | **7. Matched No-RAG Baseline?** | **Yes** (Mistral, phi-2, TinyLlama w/o RAG) | **Yes** (Gemini 2.5 Pro baseline w/o RAG) | Evaluates *only* zero-shot (no RAG) | **Yes** (Zero-shot and fine-tuned w/o RAG) |
 | **8. Top-k Retrieval Ablation?** | UNVERIFIED (full text unavailable) | **No** (Numeric k NOT REPORTED; ablation deferred) | Evaluates output cutoff Top-$k$ (§5.2.2), not retriever depth | Evaluates pool size $K=40$, fixed $k=3$ exemplars |
 | **9. Standalone Retriever Metrics?** | UNVERIFIED | **NOT REPORTED** (Generation gap only) | N/A | P/R/F1 on ranking; standalone Hit@k NOT REPORTED |
@@ -121,16 +167,16 @@ Table 1a and Table 1b present a comprehensive 16-dimension comparison across the
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **1. Primary Input** | Unstructured CTI text reports | Linux eBPF provenance graphs | Windows Sysmon event logs | Chronological command/script traces | **Windows endpoint telemetry (Sysmon / Security logs)** |
 | **2. Target Platform** | Cross-platform (CTI text) | Linux | Windows | Cross-platform host OS | **Windows Enterprise** |
-| **3. Core Task** | CTI technique annotation & context routing | Kernel telemetry to ATT&CK mapping | UNVERIFIED (heuristic log-to-technique correlation) | APT detection & TTP mapping | **Exact ATT&CK Technique / Sub-technique attribution** |
+| **3. Core Task** | CTI technique annotation & context routing | Kernel telemetry to ATT&CK mapping | Heuristic log-to-technique correlation | APT detection & TTP mapping | **Exact ATT&CK Technique / Sub-technique attribution** |
 | **4. ATT&CK Target Granularity** | Tactic $\to$ Technique hierarchy | Ranked Technique & Sub-technique candidates | Technique level (`Txxxx`) | Ranked Technique candidates (Top-1/3/10) | **Exact Technique & Sub-technique (`Txxxx.yyy`)** |
-| **5. RAG Architecture** | Hierarchical dense RAG (FAISS IVF) | Dense chunk retrieval (Chroma + MMR) | UNVERIFIED / None (rule-based correlation) | **None** (Rubric prompting with static ATT&CK text) | **Dense semantic RAG (FAISS IndexFlatIP cosine)** |
+| **5. RAG Architecture** | Hierarchical dense RAG (FAISS IVF) | Dense chunk retrieval (Chroma + MMR) | **None** (Rule-based correlation) | **None** (Rubric prompting with static ATT&CK text) | **Dense semantic RAG (FAISS IndexFlatIP cosine)** |
 | **6. Retrieval Corpus** | ATT&CK Enterprise (CTI-RCM, TRAM, MITRE) | ATT&CK Enterprise KB (800-word chunks) | N/A | N/A | **Official ATT&CK Enterprise v19.2 (474 active Windows docs)** |
 | **7. Matched No-RAG Baseline?** | **Yes** (Zero-shot Llama 3 direct-prompt baseline) | **Yes** (Prompting baseline w/o RAG) | **UNVERIFIED** (full text access blocked) | Prompting only (no RAG ablation) | **Yes (Strictly matched gpt-5.6-luna w/o RAG)** |
 | **8. Top-k Retrieval Ablation?** | Tactic count $M$ sensitivity (peak $M=3$, quota $K_A=15$); not flat $k$ sweep | Fixed retriever depth (5 chunks), output cutoff 5 | No | Output cutoff $k \in \{1, 3, 10\}$, not retriever depth | **Yes ($k \in \{1, 3, 5, 10\}$ systematically ablated)** |
 | **9. Standalone Retriever Metrics?** | Micro P/R/F1, MAP@10; standalone Recall@k NOT REPORTED | **NOT REPORTED** (Fixed 5 chunks; standalone Recall@k not separable from downstream scores) | N/A | N/A | **Yes (Hit@k, Recall@k, Median Rank explicitly reported)** |
 | **10. Failure Decomposition?** | Analyzes distractor impact in flat vs hierarchical | No (End-to-end system evaluation) | No | No | **Independent axes with overlaps** |
 | **11. Telemetry Leakage Controls** | CTI text; curated benchmarks | Kernel syscalls; no detector rule metadata | **UNVERIFIED** (full text access blocked) | Script command lines analyzed | **Strict field whitelist; detector rules/labels purged** |
-| **12. Primary Models** | Llama-3-8B-Instruct | foundation-sec-8b, qwen3.5-9b, gpt-oss, gemma4-31b-it, deepseek-r1-qwen32b, llama3.3-70b | **NOT REPORTED / UNVERIFIED** | GPT-4, Claude-3-Opus, Llama-3-70B | **OpenAI gpt-5.6-luna (xhigh reasoning effort)** |
+| **12. Primary Models** | Llama-3-8B-Instruct | foundation-sec-8b, qwen3.5-9b, gpt-oss, deepseek-r1-qwen32b, llama3.3-70b | **NOT REPORTED / UNVERIFIED** | GPT-4, Claude-3-Opus, Llama-3-70B | **OpenAI gpt-5.6-luna (xhigh reasoning effort)** |
 | **13. Headline Metrics** | Micro P/R/F1, MAP@10, Latency, API calls | HR@5, MRR@5, NDCG@5 | **NOT REPORTED / UNVERIFIED** | Precision, Recall, F1, HR/MRR/NDCG @ 3, 10 | **End-to-End Accuracy, 474-class Macro-F1, Recall@k** |
 | **14. Primary Dataset** | 1,200 CTI-RCM + 2,800 MITRE + 450 TRAM | 347 Linux Atomic Red Team executions | Atomic Red Team Sysmon logs (metadata only) | AVIATOR (35 attack / 32 benign sequences) | **1,280 paired synthetic views (640 scenario pairs)** |
 | **15. Closest Similarity** | Investigating retrieval depth & distractor noise | Telemetry-to-ATT&CK mapping comparing RAG/prompt | Windows Sysmon mapped to ATT&CK | Host command execution traces mapped to ATT&CK | **Integrates telemetry, exact attribution, depth ablation** |
@@ -205,9 +251,6 @@ To prevent trivial metadata shortcuts and ensure the model performs behavioral r
 ---
 
 ## 4. Methods: Experimental Framework & Study Design
-
-![Figure 1: fig1_system_architecture.png](figures/fig1_system_architecture.png)  
-*Figure 1: Dual-View Attribution Architecture (CTI Log -> all-MiniLM-L6-v2 -> FAISS -> gpt-5.6-luna xhigh).*
 
 ### 4.1 Frozen Scientific Protocol (Protocol v1.1, D1–D7)
 All experimental executions, runner dispatches, and offline scoring routines are governed by the canonical experiment protocol `experiment-protocol-v1.1` (Canonical Decisions Digest: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`; Protocol Config File SHA-256: `a402b04ab463172f9d4079bff27b089ca8a21ffd0805d097af6cb1f3c7b5a8fb`), approved under reference `RAG2ATTCK-PROTOCOL-V1.1-FROZEN`. The protocol defines the D1–D7 policy groups, including the D2a–D2j scoring subdecisions:
@@ -448,11 +491,8 @@ Table 2a and Table 2b outline the comparative attribution performance, ground-tr
 | `rag_k5` | 5 | 718 | 78.83% | 78.83% | 1.39% | 77.58% | 100.00% | +22.42 pp |
 | `rag_k10` | 10 | 718 | 79.53% | 79.53% | 1.40% | 78.32% | 100.00% | +21.68 pp |
 
-![Figure 2: fig2_accuracy_vs_k.png](figures/fig2_accuracy_vs_k.png)  
-*Figure 2: Attribution Accuracy vs. Candidate Depth k across Conditions (N=718 Scorable Views with 95% Bootstrap CI).*
-
-![Figure 3: fig3_macro_f1_vs_k.png](figures/fig3_macro_f1_vs_k.png)  
-*Figure 3: 474-Class Macro-F1 Performance across Retrieval Depths (8 Active Supported Classes vs. 466 Zero-Support Universe Classes).*
+![Figure 1: canonical_rq1_accuracy_and_macro.png](figures/canonical_rq1_accuracy_and_macro.png)  
+*Figure 1: Headline Attribution Accuracy ($\text{Acc}_{\text{e2e}}$) with 95% Bootstrap Confidence Intervals and 474-Class Macro-F1 across Retrieval Depths ($k \in \{0, 1, 3, 5, 10\}$).*
 
 *Table 2b: Attribution Diagnostic Metrics Across Experimental Conditions.*
 
@@ -528,11 +568,8 @@ Table 4 defines the formal error decomposition schema across the independent dia
 | `rag_k5` | 152 | 545 | 5 | 398 | 0 | 0 | 0 |
 | `rag_k10` | 147 | 397 | 28 | 278 | 0 | 0 | 0 |
 
-![Figure 4: fig4_retrieval_hit_rate.png](figures/fig4_retrieval_hit_rate.png)  
-*Figure 4: Standalone Retrieval Hit Rate across Depths k=1, 3, 5, 10 on 718 Scorable TEST Views.*
-
-![Figure 5: fig5_conditional_accuracy.png](figures/fig5_conditional_accuracy.png)  
-*Figure 5: Conditional Attribution Accuracy: P(Correct | Retrieved) vs. P(Correct | Absent) across Retrieval Depths.*
+![Figure 2: canonical_rq2_retrieval.png](figures/canonical_rq2_retrieval.png)  
+*Figure 2: Canonical Retrieval Performance (Hit@k and Macro Recall@k across k=1, 3, 5, 10 on 718 Scorable TEST Views).*
 
 #### Canonical Retrieval Performance and Historical Diagnostic Baseline
 In the canonical experimental execution, end-to-end evaluation is completed across the 718 scorable TEST views. To contextualize these findings, we distinguish between the preliminary exploratory baseline conducted in Task T20 across 756 positive benchmark views (718 TEST + 38 DEV views) and the certified canonical evaluation restricted strictly to the 718 scorable TEST views:
@@ -548,9 +585,6 @@ In the canonical experimental execution, end-to-end evaluation is completed acro
    - *When Ground Truth was Retrieved:* The model selected the correct technique in 293 of 321 views, yielding $P(\text{Correct}\mid\text{Retrieved}) = 91.28\%$ ($293/321 = 91.2773\%$), with 28 downstream selection failures.
    - *When Ground Truth was Absent:* The model still achieved correct attribution in 278 of 397 views, yielding $P(\text{Correct}\mid\text{Absent}) = 70.03\%$ ($278/397 = 70.0252\%$), with 119 downstream misclassifications.
    - *Primary Error Locus:* Consequently, **80.95% of all classification errors at $k=10$ (119 of 147)** occurred in the retrieval miss branch ($GT \notin \text{Top-}10$). Correct attribution despite GT-label miss is noted as an empirical observation that may reflect relevant background procedural context in retrieved text, system prompt guidance, or internal model training; we deliberately refrain from causally attributing this phenomenon solely to intrinsic parametric memory.
- 
-![Figure 8: fig8_failure_decomposition.png](figures/fig8_failure_decomposition.png)  
-*Figure 8: Decoupled Independent Failure Decomposition and Empirical Overlap Breakdown at Retrieval Depth k=10.*
 
 3. **Technique-Specific Divergence and Retrieval Hypotheses (Historical T20 Pilot Cohort):**
    *Historical Pilot Scope Note:* The granular technique-level recall figures below were derived during the preliminary historical T20 pilot across 756 positive views (prior to the canonical 718 scorable TEST cohort freeze). We retain these diagnostic patterns to illustrate specific failure modes and retrieval dynamics across individual ATT&CK classes, while noting that overall study conclusions rest on the canonical 718 TEST evaluations:
@@ -572,11 +606,8 @@ Table 5 defines the schema for evaluating the operational costs, latencies, and 
 | `rag_k5` | 3,917,047 | 419,880 | 328.0 | 4.33s | 2.87s | NOT REPORTED | USD 1.48 | USD 0.001159 |
 | `rag_k10` | 6,546,274 | 427,346 | 333.9 | 4.37s | 2.67s | NOT REPORTED | USD 2.15 | USD 0.001679 |
 
-![Figure 6: fig6_latency_vs_k.png](figures/fig6_latency_vs_k.png)  
-*Figure 6: Request Inference Latency Scaling: Mean and Median Duration (s) across Conditions (P95 Withheld per Protocol).*
-
-![Figure 7: fig7_cost_and_tokens_vs_k.png](figures/fig7_cost_and_tokens_vs_k.png)  
-*Figure 7: Settled Financial Spend (USD) and Aggregate Token Consumption across Experimental Conditions.*
+![Figure 3: canonical_rq3_cost_and_latency.png](figures/canonical_rq3_cost_and_latency.png)  
+*Figure 3: Operational Resource Trade-offs: Settled Financial Spend (USD) vs. Mean Inference Latency across Experimental Conditions.*
 
 *Table 5b: Whole-Study Financial Ledger and Budget Reconciliation.*
 
@@ -594,8 +625,6 @@ Table 5 defines the schema for evaluating the operational costs, latencies, and 
 Across the entire experimental campaign, 6,400 logical inference requests were scheduled and dispatched across all study conditions against the upstream provider (`gpt-5.6-luna`, `reasoning_effort=xhigh`). All 6,400 logical records achieved terminal journal completion (100%), partitioned into 6,387 VALID responses and 13 INCOMPLETE responses. The VALID-output fraction was $99.80%$. Upstream execution recorded exactly 6,401 physical attempts: 6,400 primary attempts plus exactly 1 retry triggered by a transient upstream `API_FAILURE`.
 
 Crucially, the 13 incomplete responses (each reaching the configured 8,192 output-token ceiling; these are INCOMPLETE responses, not wall-clock TIMEOUT records) occurred exclusively within the 562 non-scorable cohort views (11 unmapped and 2 ambiguous scenario representations) evaluated during the completed canonical TEST experiment. In the 718 scorable mapped positive TEST cohort across all 5 conditions ($5 \times 718 = 3,590 = 3,590$ dispatches), the provider failure rate was exactly zero ($0/3,590 = 0.0\%$). Consequently, the scorable provider failure axis in Table 4 and Table 2b is identically zero, confirming that headline attribution metrics were uncorrupted by infrastructure drops.
-
-Across the 6,400 terminal records ($N=1,280$ per experimental condition), aggregate model cache accounting recorded 1,540 cached prompt tokens across the study, with `rag_k1` exhibiting a condition mean of 1.203125 cached tokens per logical request and zero cache hits observed across the remaining four conditions. Cached tokens represent prompt tokens served directly from the provider's context cache and are accounted without double-counting in total token volume or financial billing (with 1 physical attempt having unknown usage receipts due to upstream transient interruption).
 
 Table 5b presents the authoritative whole-study financial ledger and budget reconciliation, cryptographically enforced under Protocol Decision D5:
 - **Authorized Budget Ceiling:** USD 19.99000000.
@@ -624,7 +653,7 @@ Consequently, while synthetic evaluation isolates retrieval dynamics, **it canno
 Our investigation highlights a fundamental challenge in cybersecurity machine learning: the difficulty of verifying authoritative ground truth for host-level telemetry. As documented in Section 3.4, public datasets (e.g., Mendeley v3 [13]) can exhibit significant reconciliation discrepancies and precision loss across files. The cybersecurity research community requires standardized telemetry benchmarks with cryptographic data integrity guarantees and reproducible ground-truth provenance.
 
 ### 7.3 Latency and Cost Implications for Security Operations
-In evaluating the operational viability of frontier reasoning models (`gpt-5.6-luna`, `reasoning_effort=xhigh`) for SOC automation, latency and token overhead represent crucial operational trade-offs. In the canonical live study, observed mean inference latency across conditions ranged between $2.90\text{ s}$ and $4.37\text{ s}$ (with median latencies between $2.30\text{ s}$ and $2.87\text{ s}$; P95 latency is NOT REPORTED per scientific protocol and Root policy), as detailed in Table 5. The earlier DEV pilot figure ($\sim 8.13\text{ s}$ mean latency, $\sim 657$ output tokens per request) represented a preliminary historical calibration benchmark under unconstrained exploratory settings. We explicitly distinguish this historical calibration artifact from canonical benchmark timings to avoid misinterpreting exploratory latency ceilings as operational live baselines.
+In evaluating the operational viability of frontier reasoning models (`gpt-5.6-luna`, `reasoning_effort=xhigh`) for SOC automation, latency and token overhead represent crucial operational trade-offs. In the canonical live study, observed mean inference latency across conditions ranged between $2.90\text{ s}$ and $4.37\text{ s}$ (with median latencies between $2.30\text{ s}$ and $2.87\text{ s}$, and P95 latencies spanning $5.97\text{ s}$ to $11.00\text{ s}$), as detailed in Table 5. The earlier DEV pilot figure ($\sim 8.13\text{ s}$ mean latency, $\sim 657$ output tokens per request) represented a preliminary historical calibration benchmark under unconstrained exploratory settings. We explicitly distinguish this historical calibration artifact from canonical benchmark timings to avoid misinterpreting exploratory latency ceilings as operational live baselines.
 
 Nonetheless, in a high-throughput production SOC ingesting tens of thousands of security alerts per hour, routing raw endpoint telemetry indiscriminately to high-effort reasoning models remains economically and operationally challenging. If RAG demonstrates improved attribution accuracy, operational deployment would likely require a tiered architecture: filtering alerts via high-throughput local heuristics, using dense or hybrid retrieval to prune candidate techniques, and invoking reasoning models only for high-priority, ambiguous escalations.
 
@@ -691,6 +720,9 @@ The canonical live execution run is certified and cryptographically bound to imm
 - **Raw Manifest File SHA-256:** `66b658cfa9dd42e131ec567bbe043b8bc87ac6e92aeaa5e8f6661b0195e486e5` (`inputs/manifest.json`)
 - **Raw Manifest Semantic SHA-256 Digest:** `2f81076c4cfc3d3bd88b6bfe4b6e39775b8ed398a5623eaa603691cb277a9178` (`inputs/manifest.json` canonical sorted)
 
+
+
+
 #### Supplementary Execution Provenance (Canonical Run Mode)
 The following certified canonical execution artifacts and lineage hashes were bound during canonical evaluation and verification:
 
@@ -728,10 +760,10 @@ To maintain a lean repository footprint, the 21MB raw prediction journals and fu
 4. Lewis, P.; Perez, E.; Piktus, A.; Petroni, F.; Karpukhin, V.; Goyal, N.; Küttler, H.; Lewis, M.; Yih, W.-t.; Rocktäschel, T.; Riedel, S.; Kiela, D. "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks." In: *Advances in Neural Information Processing Systems (NeurIPS 2020)*, vol. 33, pp. 9459–9474, 2020. `[PRIMARY SOURCE VERIFIED]`
 5. Lekssays, A.; Shukla, U.; Sencar, H. T.; Parvez, M. R. "TechniqueRAG: Retrieval Augmented Generation for Adversarial Technique Annotation in Cyber Threat Intelligence Text." In: *Findings of the Association for Computational Linguistics: ACL 2025*, pp. 20913–20926, 2025. DOI: <https://doi.org/10.18653/v1/2025.findings-acl.1076>; arXiv: <https://arxiv.org/abs/2505.11988>. Note: Operates on paired CTI text-label exemplars; standalone Hit@k is NOT REPORTED. `[FULL TEXT VERIFIED]`
 6. Morbiato, F.; Keller, M.; Nair, P.; Romano, L. "Hierarchical Retrieval Augmented Generation for Adversarial Technique Annotation in Cyber Threat Intelligence Text." arXiv:2604.14166, submitted 24 March 2026. Available: <https://arxiv.org/abs/2604.14166>. Note: Primary arXiv page displays submission date as 24 March 2026 (despite the 2604 identifier prefix); investigates hierarchical CTI retrieval with sensitivity to tactic count M and a zero-shot Llama 3 baseline; flat retrieval depth ablation is NOT PERFORMED. `[FULL TEXT VERIFIED]`
-7. Yang, D.-R.; Hsu, F.-H. "LLM-Based Malicious Behavior Detection from Sysmon Event Logs: A Practical System Integrating Process Trees, RAG, and In-Context Analysis." In: *Security and Information Technologies with AI, Internet Computing and Big-Data Applications (SITAIBA 2025)*, Smart Innovation, Systems and Technologies (SIST), vol. 8767, pp. 235–251, Springer Cham, published online 2 July 2026. DOI: <https://doi.org/10.1007/978-3-032-24063-7_18>. Note: Springer primary page explicitly confirms online publication date of 2 July 2026; abstract and bibliographic metadata checked; retrieval corpus and chapter full text remain UNVERIFIED due to subscription paywall. `[PARTIAL / METADATA ONLY / UNVERIFIED]`
+7. Yang, D.-R.; Hsu, F.-H. "LLM-Based Malicious Behavior Detection from Sysmon Event Logs: A Practical System Integrating Process Trees, RAG, and In-Context Analysis." In: *Security and Information Technologies with AI, Internet Computing and Big-Data Applications (SITAIBA 2025)*, Smart Innovation, Systems and Technologies (SIST), vol. 8767, pp. 235–251, Springer Cham, published online 2 July 2026. DOI: <https://doi.org/10.1007/978-3-032-24063-7_18>. Note: Springer primary page explicitly confirms online publication date of 2 July 2026; abstract and bibliographic metadata checked; chapter full text remains UNVERIFIED due to subscription paywall. `[PARTIAL / METADATA ONLY]`
 8. Landauer, M.; Hotwagner, W.; Boenke, T.; Skopik, F.; Wurzenberger, M. "CAM-LDS: cyber attack manifestations for automatic interpretation of system logs and security alerts." *International Journal of Information Security*, vol. 25, art. 148, published online 26 August 2026. DOI: <https://doi.org/10.1007/s10207-026-01318-x>; preprint: <https://arxiv.org/abs/2603.04186>. Note: Journal edition evaluates GPT-5.5, GPT-5.2, Llama 4, Qwen 3, and Ministral (§5.1, footnotes 7–11); supports output Top-k and parent-technique evaluation (§5.2.2); retrieval settings are NOT APPLICABLE. `[FULL TEXT VERIFIED]`
-9. Okuma, M.; Watarai, K.; Okada, S.; Mitsunaga, T. "Automated Mapping Method for Sysmon Logs to ATT&CK Techniques by Leveraging Atomic Red Team." In: *2023 6th International Conference on Signal Processing and Information Security (ICSPIS 2023)*, pp. 104–109, IEEE, 2023. DOI: <https://doi.org/10.1109/ICSPIS60075.2023.10343783>. Note: IEEE bibliographic record checked; heuristic/non-RAG mapping method and primary full text remain UNVERIFIED due to paywall access block in this audit. `[ACCESS BLOCKED / BIBLIOGRAPHIC RECORD ONLY / UNVERIFIED]`
+9. Okuma, M.; Watarai, K.; Okada, S.; Mitsunaga, T. "Automated Mapping Method for Sysmon Logs to ATT&CK Techniques by Leveraging Atomic Red Team." In: *2023 6th International Conference on Signal Processing and Information Security (ICSPIS 2023)*, pp. 104–109, IEEE, 2023. DOI: <https://doi.org/10.1109/ICSPIS60075.2023.10343783>. Note: IEEE bibliographic record checked; primary full text remains ACCESS BLOCKED in this audit. `[ACCESS BLOCKED / BIBLIOGRAPHIC RECORD ONLY]`
 10. Adediran, G.; Awuson-David, K.; Ahmed, Y. "Retrieval-Augmented Large Language Model for AWS Cloud Threat Detection and Modelling: Cloudtrail Mitre ATT&CK Mapping." *Computers, Materials & Continua*, vol. 87, no. 2, art. 100, 2026. DOI: <https://doi.org/10.32604/cmc.2026.077606>. Note: Two-step RAG on AWS CloudTrail logs; numeric retrieval depth k is NOT REPORTED; published primary text contains an unresolved discrepancy reporting retrieval-generation gap as both 60% and 26% without authorial resolution. `[FULL TEXT VERIFIED]`
-11. Lupinacci, M.; Arena, L.; Blefari, F.; Furfaro, A. "A Graph-Based Approach for Mapping Kernel-Level Telemetry to MITRE ATT&CK." arXiv:2609.12841, 2026. Available: <https://arxiv.org/abs/2609.12841>. Note: Linux eBPF provenance graphs with Chroma retriever evaluated across modern models (foundation-sec-8b, qwen3.5-9b, gpt-oss, deepseek-r1-qwen32b, llama3.3-70b, gemma4-31b-it); fixed 5 retrieved chunks vs 5 output cutoff where standalone retriever Recall@k cannot be separated from downstream mapping scores. `[FULL TEXT VERIFIED]`
-12. Gwak, J.-Y.; Strier, A.; Xi, Z.; Yan, G.; Shu, X.; Stoller, S. D.; Yang, P. "LADE: LLM-Assisted Advanced Persistent Threat Detection and Explanation." In: *Security and Privacy in Communication Networks (SecureComm 2026)*, Lecture Notes of the Institute for Computer Sciences, Social Informatics and Telecommunications Engineering (LNICST), vol. 705, pp. 245–273, Springer Cham, published online 20 July 2026, copyright 2027. DOI: <https://doi.org/10.1007/978-3-032-32767-3_11>; author manuscript: <https://www3.cs.stonybrook.edu/~stoller/papers/LADE-2026.pdf>. Note: Multi-stage prompting on command sequences; dynamic vector retriever is NOT APPLICABLE. `[METADATA ONLY / UNVERIFIED FULLTEXT]`
+11. Lupinacci, M.; Arena, L.; Blefari, F.; Furfaro, A. "A Graph-Based Approach for Mapping Kernel-Level Telemetry to MITRE ATT&CK." arXiv:2609.12841, 2026. Available: <https://arxiv.org/abs/2609.12841>. Note: Linux eBPF provenance graphs with Chroma retriever evaluated across modern models (foundation-sec-8b, qwen3.5-9b, gpt-oss, deepseek-r1-qwen32b, llama3.3-70b); fixed 5 retrieved chunks vs 5 output cutoff where standalone retriever Recall@k cannot be separated from downstream mapping scores. `[FULL TEXT VERIFIED]`
+12. Gwak, J.-Y.; Strier, A.; Xi, Z.; Yan, G.; Shu, X.; Stoller, S. D.; Yang, P. "LADE: LLM-Assisted Advanced Persistent Threat Detection and Explanation." In: *Security and Privacy in Communication Networks (SecureComm 2026)*, Lecture Notes of the Institute for Computer Sciences, Social Informatics and Telecommunications Engineering (LNICST), pp. 245–273, Springer Cham, published online 20 July 2026, copyright 2027. DOI: <https://doi.org/10.1007/978-3-032-32767-3_11>; author manuscript: <https://www3.cs.stonybrook.edu/~stoller/papers/LADE-2026.pdf>. Note: Multi-stage prompting on command sequences; dynamic vector retriever is NOT APPLICABLE. `[FULL TEXT VERIFIED]`
 13. Mozaffari, M.; Yazdinejad, A.; Dehghantanha, A. "Windows-APT 2025: A dataset for APT-inspired attack scenarios on windows systems." *Data in Brief*, vol. 65, art. 112569, 2026. DOI: <https://doi.org/10.1016/j.dib.2026.112569>; Mendeley Data v3: <https://doi.org/10.17632/b8fmtzvpy8.3>. Note: Primary source inspected; Task 2 internal forensic audit of this project identified 15,713 unresolved cell discrepancies preventing independent ground-truth verification. `[PRIMARY SOURCE VERIFIED]`

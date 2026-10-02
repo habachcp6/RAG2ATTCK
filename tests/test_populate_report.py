@@ -1517,3 +1517,158 @@ def test_canonical_bundle_v2_p95_withheld_policy() -> None:
     for cond in ("no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10"):
         assert cond in t5
         assert t5[cond]["p95_latency_s"] == "NOT REPORTED"
+
+
+# ==============================================================================
+# 8. Track C Regression Tests (Bundle v2, Tamper Detection, Banner Idempotency)
+# ==============================================================================
+
+
+def test_canonical_slots_derived_directly_from_bundle_v2() -> None:
+    """Track C: Verify canonical slots are derived directly from authenticated Bundle v2."""
+    from scripts.populate_report import (
+        DEFAULT_CANONICAL_DATA_DIR,
+        DEFAULT_METRIC_BUNDLE_V2_PATH,
+        TRUSTED_CANONICAL_BUNDLE_V2_SHA256,
+        extract_slots,
+        load_report_data,
+    )
+    data = load_report_data(
+        DEFAULT_CANONICAL_DATA_DIR,
+        mode="canonical",
+        seal_path=DEFAULT_METRIC_BUNDLE_V2_PATH,
+        expected_bundle_sha256=TRUSTED_CANONICAL_BUNDLE_V2_SHA256,
+    )
+    slots = extract_slots(data, mode="canonical", seal_path=DEFAULT_METRIC_BUNDLE_V2_PATH)
+    prose = slots["prose"]
+
+    assert prose["CACHE_TOKENS_AGGREGATE"] == "1,540"
+    assert prose["RAG_K1_CACHE_TOKENS_MEAN"] == "1.203125"
+    assert slots["table_2a"]["no_rag"]["accuracy_end_to_end"] == "77.99%"
+    assert slots["table_2a"]["rag_k1"]["accuracy_end_to_end"] == "77.02%"
+    assert slots["table_2a"]["no_rag"]["macro_f1"] == "1.26%"
+    assert slots["table_2a"]["rag_k1"]["macro_f1"] == "1.27%"
+
+
+def test_canonical_slots_immune_to_per_condition_metrics_mutation() -> None:
+    """Track C: Mutation of in-memory per_condition_metrics does not poison canonical slots."""
+    from scripts.populate_report import (
+        DEFAULT_CANONICAL_DATA_DIR,
+        DEFAULT_METRIC_BUNDLE_V2_PATH,
+        TRUSTED_CANONICAL_BUNDLE_V2_SHA256,
+        extract_slots,
+        load_report_data,
+    )
+    data = load_report_data(
+        DEFAULT_CANONICAL_DATA_DIR,
+        mode="canonical",
+        seal_path=DEFAULT_METRIC_BUNDLE_V2_PATH,
+        expected_bundle_sha256=TRUSTED_CANONICAL_BUNDLE_V2_SHA256,
+    )
+    # Poison per_condition_metrics
+    data["per_condition_metrics"]["conditions"]["rag_k1"]["macro_f1"] = 0.9999
+    slots = extract_slots(data, mode="canonical", seal_path=DEFAULT_METRIC_BUNDLE_V2_PATH)
+
+    # Canonical slot must retain authentic value from seal["conditions"]
+    assert slots["table_2a"]["rag_k1"]["macro_f1"] != "0.9999"
+    assert slots["table_2a"]["rag_k1"]["macro_f1"] == "1.27%"
+
+
+def test_canonical_tamper_detection_seal_mutation_fails_closed() -> None:
+    """Track C: In-memory mutation of bundle seal fails closed with RuntimeError."""
+    from scripts.populate_report import (
+        DEFAULT_CANONICAL_DATA_DIR,
+        DEFAULT_METRIC_BUNDLE_V2_PATH,
+        TRUSTED_CANONICAL_BUNDLE_V2_SHA256,
+        extract_slots,
+        load_report_data,
+    )
+    data = load_report_data(
+        DEFAULT_CANONICAL_DATA_DIR,
+        mode="canonical",
+        seal_path=DEFAULT_METRIC_BUNDLE_V2_PATH,
+        expected_bundle_sha256=TRUSTED_CANONICAL_BUNDLE_V2_SHA256,
+    )
+    # Tamper with seal
+    data["seal"]["conditions"]["rag_k1"]["accuracy"] = 0.99
+    with pytest.raises(
+        RuntimeError, match=r"\[FAIL_CLOSED\] In-memory seal tampering detected"
+    ):
+        extract_slots(data, mode="canonical", seal_path=DEFAULT_METRIC_BUNDLE_V2_PATH)
+
+
+def test_canonical_tamper_detection_rq_analysis_mutation_fails_closed() -> None:
+    """Track C: In-memory mutation of bundle rq_analysis fails closed with RuntimeError."""
+    from scripts.populate_report import (
+        DEFAULT_CANONICAL_DATA_DIR,
+        DEFAULT_METRIC_BUNDLE_V2_PATH,
+        TRUSTED_CANONICAL_BUNDLE_V2_SHA256,
+        extract_slots,
+        load_report_data,
+    )
+    data = load_report_data(
+        DEFAULT_CANONICAL_DATA_DIR,
+        mode="canonical",
+        seal_path=DEFAULT_METRIC_BUNDLE_V2_PATH,
+        expected_bundle_sha256=TRUSTED_CANONICAL_BUNDLE_V2_SHA256,
+    )
+    # Tamper with rq_analysis
+    data["rq_analysis"]["rq3"]["tradeoffs_by_condition"]["rag_k1"]["latency_ms"]["mean"] = 99999
+    with pytest.raises(
+        RuntimeError, match=r"\[FAIL_CLOSED\] In-memory rq_analysis tampering detected"
+    ):
+        extract_slots(data, mode="canonical", seal_path=DEFAULT_METRIC_BUNDLE_V2_PATH)
+
+
+def test_canonical_candidate_banner_idempotency(tmp_path: Path) -> None:
+    """Track C: Multiple canonical population passes yield identical idempotent banner."""
+    from scripts.populate_report import (
+        DEFAULT_CANONICAL_DATA_DIR,
+        DEFAULT_METRIC_BUNDLE_V2_PATH,
+        DEFAULT_TEMPLATE_PATH,
+        TRUSTED_CANONICAL_BUNDLE_V2_SHA256,
+        run_pipeline,
+    )
+    out1 = tmp_path / "out1.md"
+    out2 = tmp_path / "out2.md"
+
+    run_pipeline(
+        data_dir=DEFAULT_CANONICAL_DATA_DIR,
+        metric_bundle=DEFAULT_METRIC_BUNDLE_V2_PATH,
+        template_path=DEFAULT_TEMPLATE_PATH,
+        output_path=out1,
+        mode="canonical",
+        expected_bundle_sha256=TRUSTED_CANONICAL_BUNDLE_V2_SHA256,
+    )
+    text1 = out1.read_text(encoding="utf-8")
+    assert text1.count("CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW") == 2
+    assert text1.count("<!-- CANONICAL_BUNDLE_BANNER_START -->") == 1
+
+    # Second pass using out1 as template
+    run_pipeline(
+        data_dir=DEFAULT_CANONICAL_DATA_DIR,
+        metric_bundle=DEFAULT_METRIC_BUNDLE_V2_PATH,
+        template_path=out1,
+        output_path=out2,
+        mode="canonical",
+        expected_bundle_sha256=TRUSTED_CANONICAL_BUNDLE_V2_SHA256,
+    )
+    text2 = out2.read_text(encoding="utf-8")
+    assert text2.count("CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW") == 2
+    assert text2.count("<!-- CANONICAL_BUNDLE_BANNER_START -->") == 1
+    assert text1 == text2
+
+
+def test_zero_p95_numeric_leakage() -> None:
+    """Track C: Zero occurrences of withheld P95 numerics across report and README."""
+    report_path = Path("docs/report/scientific_report.md")
+    readme_path = Path("README.md")
+
+    for fpath in (report_path, readme_path):
+        assert fpath.is_file(), f"File missing: {fpath}"
+        text = fpath.read_text(encoding="utf-8")
+        assert "5.97–11.00" not in text, f"P95 leak '5.97–11.00' in {fpath}"
+        assert "5.97-11.00" not in text, f"P95 leak '5.97-11.00' in {fpath}"
+        assert "5.97 s to 11.00 s" not in text, f"P95 leak '5.97 s to 11.00 s' in {fpath}"
+
+

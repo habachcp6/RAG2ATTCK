@@ -73,7 +73,7 @@ D2i Independent Measurement Axes (Non-Mutually-Exclusive, Overlaps Quantified)
 The following hypotheses served as working assumptions for experimental validation, evaluated against the canonical benchmark:
 
 * **H1:** MITRE ATT&CK-grounded RAG improves technique attribution performance compared with the same LLM without retrieval.
-  - *Empirical Finding:* While RAG $k=10$ achieves the highest tested accuracy (79.53% vs No-RAG 77.99%, $\Delta = +1.53$ pp), all paired difference 95% bootstrap confidence intervals contain 0 ($k=10$ delta CI $[-2.355, +5.300]$ pp; McNemar exploratory $p = 0.4219 > 0.05$). RAG $k=1$ (77.02%) and No-RAG (77.99%) have overlapping 95% CIs. **No statistically significant superiority or equivalence is claimed** on this benchmark.
+  - *Empirical Finding:* While RAG $k=10$ achieves the highest tested accuracy (79.53% vs No-RAG 77.99%, $\Delta = +1.532$ pp), all paired difference 95% bootstrap confidence intervals contain 0 ($k=10$ delta CI $[-2.355, +5.300]$ pp; McNemar exploratory $p = 0.4219 > 0.05$). RAG $k=1$ (77.02%) and No-RAG (77.99%) have overlapping 95% CIs. **No statistically significant superiority or equivalence is claimed** on this benchmark.
 * **H2:** Higher retrieval $\text{Recall}@k$ is positively associated with higher end-to-end mapping accuracy.
   - *Empirical Finding:* Increasing candidate depth from $k=1$ to $k=10$ improves Hit@k from 3.76% to 44.71%. Conditional accuracy shows $P(\text{Correct} \mid \text{GT Retrieved in Top-}10) = 91.28\%$ (293/321) versus $P(\text{Correct} \mid \text{GT Absent from Top-}10) = 70.03\%$ (278/397). Missing retrieval context does not preclude correct classification from parametric memory; no causal self-correction is assumed.
 * **H3:** Increasing $k$ initially improves mapping performance, but excessive retrieved context introduces distractors (noise) and increases token/latency cost.
@@ -351,7 +351,7 @@ python scripts/reproduce_study.py
 
 **Current Research & Empirical Status:**
 - **Synthetic Benchmark (`synthetic-paired-v1`):** Complete (670 total benchmark scenario pairs / 1,340 total paired views across benchmark; partitioned to 440 distinct eligible clusters in the canonical TEST evaluation cohort yielding 718 scorable views across 8 ground-truth techniques).
-- **RQ1 Comparative Attribution:** Verified and packaged in candidate (ready for formal publication; not yet published). RAG $k=10$ observed accuracy 79.53% vs No-RAG 77.99% ($\Delta = +1.53$ pp; paired difference 95% CI $[-2.355, +5.300]$ pp contains 0, McNemar $p = 0.4219 > 0.05$).
+- **RQ1 Comparative Attribution:** Verified and packaged in candidate (ready for formal publication; not yet published). RAG $k=10$ observed accuracy 79.53% vs No-RAG 77.99% ($\Delta = +1.532$ pp; paired difference 95% CI $[-2.355, +5.300]$ pp contains 0, McNemar $p = 0.4219 > 0.05$).
 - **RQ2 Retrieval Diagnostics:** Verified and packaged in candidate. Hit@10 = 44.71%, Recall@10 = 42.80% on 718 scorable views; $T1136.001$ semantic gap 0% hit rate.
 - **RQ3 Resource & Financial Accounting:** Verified and packaged in candidate. $6.58 settled spend / $6.63 committed spend on $19.99 hard cap ($13.36 net remaining).
 - **Real Telemetry Availability (T15):** Status remains `DATA_UNAVAILABLE` (preserved strictly).

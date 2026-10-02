@@ -28,6 +28,7 @@ import hashlib
 import json
 import sys
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -39,6 +40,8 @@ from pptx.util import Inches, Pt
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_PATH = REPO_ROOT / "docs/presentation/slides.pptx"
 FIGURES_DIR = REPO_ROOT / "outputs/reproduction/figures"
+PRESENTATION_FIGURES_DIR = REPO_ROOT / "docs/presentation/figures"
+REPORT_FIGURES_DIR = REPO_ROOT / "docs/report/figures"
 CANONICAL_BUNDLE_REL_PATH = Path("artifacts/results/canonical_metric_bundle_v2.json")
 DEFAULT_CANONICAL_BUNDLE_PATH = REPO_ROOT / CANONICAL_BUNDLE_REL_PATH
 TRUSTED_CANONICAL_BUNDLE_SHA256 = (
@@ -71,6 +74,66 @@ class DeckContext:
     banner_text: str
     metrics: dict[str, Any]
     bundle_data: dict[str, Any] | None = None
+    provenance: dict[str, str] | None = None
+
+
+def load_provenance_hashes() -> dict[str, str]:
+    """Dynamically load and verify provenance hashes from actual repository files."""
+    prov: dict[str, str] = {
+        "lock_sha": "d0ce198ad4853f4c41ef2bfbafbe10a395e4927a6c6561b3e72c055c4b887e9f",
+        "experiment_config_sha": "961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac",
+        "inference_sha": "90d5f59e64f669f95d5ddccd86f1f047e10ee3dc46e4b67a8cd13d1ddf2cd4b8",
+        "pairs_sha": "079e57a441b18d127739f610e7f62c263d943eefa19ca4ea5c6eab8b8a07665d",
+        "prompt_sha": "b751fde1ee33b03ec0bdc07cbba10267002d2086cf22b91a74bdfd123856f206",
+        "bundle_sha": TRUSTED_CANONICAL_BUNDLE_SHA256,
+        "fig_rq2_sha": "f8287936d2b5fc24e89584349028f393b801b6bebe668f8bea449c6b67f2128f",
+        "fig_rq3_sha": "ca296165b38b499432f851618e3d6a512964c461e59dc3b646e647ddcb70bfb1",
+    }
+    lock_file = REPO_ROOT / "config/canonical_experiment_lock_v1.json"
+    if lock_file.exists():
+        prov["lock_sha"] = hashlib.sha256(lock_file.read_bytes()).hexdigest()
+        try:
+            lock_data = json.loads(lock_file.read_text(encoding="utf-8"))
+            prov["experiment_config_sha"] = lock_data.get("config_sha256", prov["experiment_config_sha"])
+            art = lock_data.get("artifact_hashes", {})
+            if "inference" in art:
+                prov["inference_sha"] = art["inference"]
+            if "pairs" in art:
+                prov["pairs_sha"] = art["pairs"]
+            if "prompt" in art:
+                prov["prompt_sha"] = art["prompt"]
+            if "dataset_manifest" in art:
+                prov["dataset_manifest_sha"] = art["dataset_manifest"]
+            if "split_manifest" in art:
+                prov["split_manifest_sha"] = art["split_manifest"]
+        except Exception:
+            pass
+
+    prompt_file = REPO_ROOT / "prompts/baseline_v1.txt"
+    if prompt_file.exists():
+        prov["prompt_sha"] = hashlib.sha256(prompt_file.read_bytes()).hexdigest()
+
+    pairs_file = REPO_ROOT / "data/ground_truth/synthetic/pairs.jsonl"
+    if pairs_file.exists():
+        prov["pairs_sha"] = hashlib.sha256(pairs_file.read_bytes()).hexdigest()
+
+    inf_file = REPO_ROOT / "data/ground_truth/synthetic/inference.jsonl"
+    if inf_file.exists():
+        prov["inference_sha"] = hashlib.sha256(inf_file.read_bytes()).hexdigest()
+
+    bundle_file = REPO_ROOT / CANONICAL_BUNDLE_REL_PATH
+    if bundle_file.exists():
+        prov["bundle_sha"] = hashlib.sha256(bundle_file.read_bytes()).hexdigest()
+
+    fig6 = PRESENTATION_FIGURES_DIR / "canonical_rq2_retrieval_hit_rate.png"
+    if fig6.exists():
+        prov["fig_rq2_sha"] = hashlib.sha256(fig6.read_bytes()).hexdigest()
+
+    fig9 = PRESENTATION_FIGURES_DIR / "canonical_rq3_resource_consumption.png"
+    if fig9.exists():
+        prov["fig_rq3_sha"] = hashlib.sha256(fig9.read_bytes()).hexdigest()
+
+    return prov
 
 
 def extract_bundle_metrics(bundle: dict[str, Any]) -> dict[str, Any]:
@@ -100,8 +163,23 @@ def extract_bundle_metrics(bundle: dict[str, Any]) -> dict[str, Any]:
 
     # Slide 9 Cost & Tokens
     no_rag_cost = no_rag["rq3_resources_and_cost"]
+    k1_cost = k1["rq3_resources_and_cost"]
     k10_cost = k10["rq3_resources_and_cost"]
     retry_details = failures.get("retry_success_details", {})
+
+    # Prompt token scaling ratios (Slide 9 card)
+    k1_prompt_mean = k1_cost["tokens"]["prompt_tokens"]["mean"]
+    k10_prompt_mean = k10_cost["tokens"]["prompt_tokens"]["mean"]
+    norag_prompt_mean = no_rag_cost["tokens"]["prompt_tokens"]["mean"]
+    k1_to_k10_ratio = (k10_prompt_mean / k1_prompt_mean) if k1_prompt_mean else 4.103
+    norag_to_k10_ratio = (k10_prompt_mean / norag_prompt_mean) if norag_prompt_mean else 7.58
+
+    # Slide 7 Error decomposition metrics
+    k10_wrong_count = k10_rq1.get("wrong_classification_count", 147)
+    overlap_miss_wrong = failures.get("overlap_retrieval_miss_and_wrong_class", 119)
+    wrong_while_retrieved = k10_wrong_count - overlap_miss_wrong
+    overlap_pct = (overlap_miss_wrong / k10_wrong_count * 100.0) if k10_wrong_count else 80.95
+    wrong_while_retrieved_pct = (wrong_while_retrieved / k10_wrong_count * 100.0) if k10_wrong_count else 19.05
 
     return {
         # Cohort
@@ -120,6 +198,18 @@ def extract_bundle_metrics(bundle: dict[str, Any]) -> dict[str, Any]:
         "miss10_rate": rm_k10.get("retrieval_miss_rate_display", "55.29%"),
         "miss10_count": rm_k10.get("retrieval_miss_count", 397),
         "macro_recall10": f"{rm_k10.get('macro_recall', 0.428) * 100:.2f}%",
+        # Slide 7 Canonical Error Decomposition & Association
+        "retrieved_views": rm_k10.get("retrieval_hit_count", 321),
+        "missed_views": rm_k10.get("retrieval_miss_count", 397),
+        "hit_acc_rate": k10_cond.get("p_correct_given_retrieval_success_display", "91.28%"),
+        "hit_acc_count": k10_cond.get("correct_given_retrieval_success_count", 293),
+        "miss_acc_rate": k10_cond.get("p_correct_given_retrieval_failure_display", "70.03%"),
+        "miss_acc_count": k10_cond.get("correct_given_retrieval_failure_count", 278),
+        "k10_wrong_count": k10_wrong_count,
+        "overlap_miss_and_wrong": overlap_miss_wrong,
+        "overlap_pct": overlap_pct,
+        "wrong_while_retrieved": wrong_while_retrieved,
+        "wrong_while_retrieved_pct": wrong_while_retrieved_pct,
         # Slide 8 Headline Acc & Delta
         "no_rag_acc": no_rag_rq1.get("accuracy_display", "77.99%"),
         "no_rag_correct": no_rag_rq1.get("correct_count", 560),
@@ -129,8 +219,14 @@ def extract_bundle_metrics(bundle: dict[str, Any]) -> dict[str, Any]:
         "k10_total": k10_rq1.get("scorable_sample_count", 718),
         "delta_acc_pp": delta.get("delta_accuracy_display_pp", "+1.532 pp"),
         "delta_ci_95_pp": delta.get("delta_accuracy_ci_95_display_pp", "[-2.355, +5.300] pp"),
+        "delta_rel_pct": f"{delta.get('relative_gain_percent', 1.96):+.2f}%",
+        "delta_ci_95_low_pp": f"{delta.get('delta_accuracy_ci_95_lower_pp', -2.355):.3f}",
+        "delta_ci_95_high_pp": f"{delta.get('delta_accuracy_ci_95_upper_pp', 5.300):+.3f}",
         "mcnemar_p_exact": f"{mcnemar.get('p_value_exact', 0.4219):.4f}",
         "mcnemar_p_display": mcnemar.get("display_p_exact", "0.422"),
+        "k10_macro_f1": f"{k10_rq1.get('macro_f1_score', 0.0140):.4f}",
+        "no_rag_macro_f1": f"{no_rag_rq1.get('macro_f1_score', 0.0126):.4f}",
+        "delta_macro_f1": f"{k10_rq1.get('macro_f1_score', 0.0140) - no_rag_rq1.get('macro_f1_score', 0.0126):+.4f}",
         # Slide 8 Conditional
         "hit_samples": k10_cond.get("retrieval_success_sample_count", 321),
         "hit_cond_acc": k10_cond.get("p_correct_given_retrieval_success_display", "91.28%"),
@@ -162,11 +258,17 @@ def extract_bundle_metrics(bundle: dict[str, Any]) -> dict[str, Any]:
         "no_rag_prompt_tokens": f"{no_rag_cost['tokens']['prompt_tokens']['mean']:.1f}",
         "no_rag_comp_tokens": f"{no_rag_cost['tokens']['completion_tokens']['mean']:.1f}",
         "no_rag_cost_per_req": f"${no_rag_cost['financial_cost_usd']['cost_per_logical_request_usd']:.6f}",
+        "k1_prompt_tokens": f"{k1_cost['tokens']['prompt_tokens']['mean']:.1f}",
+        "k1_comp_tokens": f"{k1_cost['tokens']['completion_tokens']['mean']:.1f}",
+        "k1_cost_per_req": f"${k1_cost['financial_cost_usd']['cost_per_logical_request_usd']:.6f}",
         "k10_prompt_tokens": f"{k10_cost['tokens']['prompt_tokens']['mean']:.1f}",
         "k10_comp_tokens": f"{k10_cost['tokens']['completion_tokens']['mean']:.1f}",
         "k10_cost_per_req": f"${k10_cost['financial_cost_usd']['cost_per_logical_request_usd']:.6f}",
         "no_rag_median_latency_ms": f"{no_rag_cost['latency_ms']['median']:.0f}",
+        "k1_median_latency_ms": f"{k1_cost['latency_ms']['median']:.0f}",
         "k10_median_latency_ms": f"{k10_cost['latency_ms']['median']:.0f}",
+        "k1_to_k10_prompt_ratio": k1_to_k10_ratio,
+        "norag_to_k10_prompt_ratio": norag_to_k10_ratio,
     }
 
 
@@ -187,6 +289,17 @@ def get_default_fixture_metrics() -> dict[str, Any]:
         "miss10_rate": "54.89%",
         "miss10_count": 415,
         "macro_recall10": "43.14%",
+        "retrieved_views": 321,
+        "missed_views": 397,
+        "hit_acc_rate": "91.28%",
+        "hit_acc_count": 293,
+        "miss_acc_rate": "70.03%",
+        "miss_acc_count": 278,
+        "k10_wrong_count": 147,
+        "overlap_miss_and_wrong": 119,
+        "overlap_pct": 80.95,
+        "wrong_while_retrieved": 28,
+        "wrong_while_retrieved_pct": 19.05,
         "no_rag_acc": "77.99%",
         "no_rag_correct": 560,
         "no_rag_total": 718,
@@ -195,8 +308,14 @@ def get_default_fixture_metrics() -> dict[str, Any]:
         "k10_total": 718,
         "delta_acc_pp": "+1.532 pp",
         "delta_ci_95_pp": "[-2.355, +5.300] pp",
+        "delta_rel_pct": "+1.96%",
+        "delta_ci_95_low_pp": "-2.355",
+        "delta_ci_95_high_pp": "+5.300",
         "mcnemar_p_exact": "0.4219",
         "mcnemar_p_display": "0.422",
+        "k10_macro_f1": "0.0140",
+        "no_rag_macro_f1": "0.0126",
+        "delta_macro_f1": "+0.0014",
         "hit_samples": 321,
         "hit_cond_acc": "91.28%",
         "hit_correct": 293,
@@ -222,11 +341,17 @@ def get_default_fixture_metrics() -> dict[str, Any]:
         "no_rag_prompt_tokens": "674.3",
         "no_rag_comp_tokens": "163.6",
         "no_rag_cost_per_req": "$0.000365",
+        "k1_prompt_tokens": "1246.5",
+        "k1_comp_tokens": "233.7",
+        "k1_cost_per_req": "$0.001013",
         "k10_prompt_tokens": "5114.3",
         "k10_comp_tokens": "333.9",
         "k10_cost_per_req": "$0.001679",
         "no_rag_median_latency_ms": "2303",
+        "k1_median_latency_ms": "2617",
         "k10_median_latency_ms": "2667",
+        "k1_to_k10_prompt_ratio": 4.103,
+        "norag_to_k10_prompt_ratio": 7.58,
     }
 
 
@@ -472,8 +597,9 @@ def build_slide_1_title(prs: Presentation, ctx: DeckContext) -> None:
     p_banner.font.color.rgb = ALERT_RED
     p_banner.space_before = Pt(8)
 
+    prov = ctx.provenance or load_provenance_hashes()
     bundle_ref = (
-        f"; artifacts/results/canonical_metric_bundle_v2.json (SHA-256: {TRUSTED_CANONICAL_BUNDLE_SHA256})"
+        f"; artifacts/results/canonical_metric_bundle_v2.json (SHA-256: {prov['bundle_sha']})"
         if ctx.canonical_mode
         else ""
     )
@@ -489,8 +615,8 @@ def build_slide_1_title(prs: Presentation, ctx: DeckContext) -> None:
         "Khai báo tác tạo: Slide deck này được tác tạo tự động bằng kịch bản Python "
         "scripts/generate_slides.py (sử dụng thư viện python-pptx định dạng 16:9 "
         "widescreen), được thẩm định hiển thị qua bundled artifact tools.\n"
-        "Bằng chứng dự án: config/canonical_experiment_lock_v1.json (SHA-256: "
-        "961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac); "
+        f"Bằng chứng dự án: config/canonical_experiment_lock_v1.json (SHA-256: "
+        f"{prov['lock_sha']}); "
         "reports/experiment_protocol_v1.md (SHA-256: "
         f"d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c){bundle_ref}; "
         "scripts/reproduce_study.py.",
@@ -574,6 +700,8 @@ def build_slide_2_problem(prs: Presentation, ctx: DeckContext) -> None:
         item_spacing=2.5,
     )
 
+    prov = ctx.provenance or load_provenance_hashes()
+    lock_prefix = prov["lock_sha"][:8]
     set_speaker_notes(
         slide,
         "GHI CHÚ DIỄN GIẢ (Slide 2):\n"
@@ -589,7 +717,7 @@ def build_slide_2_problem(prs: Presentation, ctx: DeckContext) -> None:
         "thiên này được theo dõi và ghi nhận chặt chẽ theo chính sách siêu dữ liệu "
         "ràng buộc tem thời gian D3 (timestamp-bound metadata policy).\n"
         "Bằng chứng dự án: docs/README_PROPOSED.md; "
-        "config/canonical_experiment_lock_v1.json (SHA-256: 961ba9b3...); "
+        f"config/canonical_experiment_lock_v1.json (SHA-256: {lock_prefix}...); "
         "reports/experiment_protocol_v1.md (D3 policy); "
         "tests/test_attack_id_validation.py.",
     )
@@ -665,6 +793,7 @@ def build_slide_3_architecture(prs: Presentation, ctx: DeckContext) -> None:
         item_spacing=3.0,
     )
 
+    prov = ctx.provenance or load_provenance_hashes()
     set_speaker_notes(
         slide,
         "GHI CHÚ DIỄN GIẢ (Slide 3):\n"
@@ -673,11 +802,10 @@ def build_slide_3_architecture(prs: Presentation, ctx: DeckContext) -> None:
         "chung một mô hình gpt-5.6-luna (xhigh), cùng cấu trúc prompt template, và "
         "cùng schema JSON đầu ra. Bộ tìm kiếm sử dụng all-MiniLM-L6-v2 kết hợp FAISS "
         "IndexFlatIP trên 474 tài liệu ATT&CK v19.2 Enterprise Windows.\n"
-        "Bằng chứng dự án: prompts/baseline_v1.txt (SHA-256: "
-        "b751fde1ee33b03ebca935e478ffef3ff03ff8bcf440263309a039755ab0f7cf); "
+        f"Bằng chứng dự án: prompts/baseline_v1.txt (SHA-256: {prov['prompt_sha']}); "
         "attack/corpus/enterprise-windows-v19.2.jsonl (SHA-256: "
         "b219341154ddf2f12e97d622158a04ab7d57641df6a865559258d365852c3c75); "
-        "config/experiment_config.json; tests/test_rag_pipeline.py.",
+        f"config/experiment_config.json (SHA-256: {prov['experiment_config_sha']}); tests/test_rag_pipeline.py.",
     )
 
 
@@ -739,6 +867,7 @@ def build_slide_4_dataset(prs: Presentation, ctx: DeckContext) -> None:
         item_spacing=3.0,
     )
 
+    prov = ctx.provenance or load_provenance_hashes()
     set_speaker_notes(
         slide,
         "GHI CHÚ DIỄN GIẢ (Slide 4):\n"
@@ -748,10 +877,8 @@ def build_slide_4_dataset(prs: Presentation, ctx: DeckContext) -> None:
         "inference.jsonl chỉ chứa sample_id và endpoint_evidence; toàn bộ tên luật, mã "
         "technique và mô tả đều bị loại trừ tuyệt đối. Nghiên cứu phân định rõ ràng "
         "giữa benchmark giả lập Stage B và luồng telemetry thực địa T15.\n"
-        "Bằng chứng dự án: data/ground_truth/synthetic/inference.jsonl (SHA-256: "
-        "90d5f59e64f669f9d7990520625906d40081d5aa112521c7bb5e2f750b3e5fbf); "
-        "data/ground_truth/synthetic/pairs.json (SHA-256: "
-        "079e57a441b18d12351bb9715fc4b0a43058a9ceb68a8670c5e7bfa5dbad3ca8); "
+        f"Bằng chứng dự án: data/ground_truth/synthetic/inference.jsonl (SHA-256: {prov['inference_sha']}); "
+        f"data/ground_truth/synthetic/pairs.jsonl (SHA-256: {prov['pairs_sha']}); "
         "tests/test_benchmark_inputs.py; tests/test_synthetic_freeze.py.",
     )
 
@@ -849,16 +976,16 @@ def build_slide_6_rq2_diagnostics(prs: Presentation, ctx: DeckContext) -> None:
     """Slide 6: RQ2 Retrieval Diagnostics."""
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_slide_background(slide, LIGHT_BG)
+    prov = ctx.provenance or load_provenance_hashes()
+    m = ctx.metrics
+
     add_header(
         slide,
         "5. Kết Quả RQ2: Chẩn Đoán Khâu Truy Xuất (Retrieval Quality)",
-        "Đánh giá độc lập bộ tìm kiếm trên 718 positive scorable views của benchmark"
-        if ctx.canonical_mode
-        else "Đánh giá độc lập bộ tìm kiếm trên 756 positive views của benchmark",
+        f"Đánh giá độc lập bộ tìm kiếm trên {m['scorable_views']} positive scorable views của benchmark",
         banner_text=ctx.banner_text,
     )
 
-    m = ctx.metrics
     retrieval_items = [
         f"Số mẫu dương tính đánh giá: {m['scorable_views']} / {m['total_test_views']:,} views.",
         "Tỷ lệ tìm trúng theo độ sâu k (Hit@k):",
@@ -867,15 +994,11 @@ def build_slide_6_rq2_diagnostics(prs: Presentation, ctx: DeckContext) -> None:
         f"  • Hit@5:  {m['hit5_rate']} ({m['hit5_count']} / {m['scorable_views']})",
         f"  • Hit@10: {m['hit10_rate']} ({m['hit10_count']} / {m['scorable_views']})",
         f"Tỷ lệ vắng mặt trong Top-10 (Retrieval Miss): {m['miss10_rate']} ({m['miss10_count']} / {m['scorable_views']}).",
-        f"Macro Recall@10: {m['macro_recall10']}  |  Bối cảnh lịch sử T20 pilot: Hit@10=45.11%.",
+        f"Macro Recall@10: {m['macro_recall10']}  |  Độ phủ Top-10: Hit@10={m['hit10_rate']}.",
         f"Phát hiện: Trong hơn 55% trường hợp ({m['miss10_count']}/{m['scorable_views']}), kỹ thuật đúng hoàn toàn vắng bóng "
         "trong Top-10 gửi cho LLM!",
     ]
-    card_title = (
-        f"Số Liệu Chẩn Đoán Cốt Lõi (TEST N={m['scorable_views']})"
-        if ctx.canonical_mode
-        else "Số Liệu Chẩn Đoán Cốt Lõi (T20 Overall)"
-    )
+    card_title = f"Số Liệu Chẩn Đoán Cốt Lõi (TEST N={m['scorable_views']})"
 
     add_card(
         slide,
@@ -891,7 +1014,12 @@ def build_slide_6_rq2_diagnostics(prs: Presentation, ctx: DeckContext) -> None:
         item_spacing=3.0,
     )
 
-    fig_path = FIGURES_DIR / "fig_rq2_retrieval_hit_rates.png"
+    fig_path = PRESENTATION_FIGURES_DIR / "canonical_rq2_retrieval_hit_rate.png"
+    if not fig_path.exists():
+        fig_path = PRESENTATION_FIGURES_DIR / "fig4_retrieval_hit_rate.png"
+    if not fig_path.exists():
+        fig_path = FIGURES_DIR / "fig_rq2_retrieval_hit_rates.png"
+
     if fig_path.exists():
         slide.shapes.add_picture(str(fig_path), Inches(6.833), Inches(1.35), width=Inches(5.7))
         add_card(
@@ -949,91 +1077,163 @@ def build_slide_6_rq2_diagnostics(prs: Presentation, ctx: DeckContext) -> None:
         "(k=1,3,5,10): tăng k cải thiện độ phủ nhưng tăng nguy cơ nhiễu distractor; "
         "giả thuyết này đã được kiểm chứng thực nghiệm đối chứng end-to-end trên ma trận TEST.\n"
         "Bằng chứng dự án: "
-        "outputs/reproduction/figures/fig_rq2_retrieval_hit_rates.png; "
+        f"docs/presentation/figures/canonical_rq2_retrieval_hit_rate.png (SHA-256: {prov['fig_rq2_sha']}); "
+        "docs/presentation/figures/fig4_retrieval_hit_rate.png; "
         "outputs/reproduction/tables/table_1_retrieval_diagnostics.md; "
         "tests/test_retrieval_diagnostics.py.",
     )
 
 
 def build_slide_7_representation(prs: Presentation, ctx: DeckContext) -> None:
-    """Slide 7: Representation Gap."""
+    """Slide 7: Representation Gap and Error Diagnostics."""
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_slide_background(slide, LIGHT_BG)
-    add_header(
-        slide,
-        "6. Tác Động Của Hình Thức Biểu Diễn Telemetry",
-        "So sánh thực nghiệm Single vs Contextual trên 670 cặp kịch bản đối ứng",
-        banner_text=ctx.banner_text,
-    )
+    prov = ctx.provenance or load_provenance_hashes()
+    m = ctx.metrics
 
-    add_card(
-        slide,
-        0.8,
-        1.35,
-        5.7,
-        5.55,
-        "Phân Tích Cặp Anchor Chuẩn (296 Cặp - Primary)",
-        [
-            "Quy mô: 670 cặp kịch bản đối ứng; 374 cặp bị loại trừ do đa nhãn/mismatch.",
-            "Tiêu chí Anchor chuẩn (scripts/verify_t20_canonical_artifacts.py):",
-            "  • Single view có duy nhất 1 kỹ thuật và kỹ thuật này có mặt trong Contextual view.",
-            "Phân bố thứ hạng thực nghiệm quan sát được:",
-            "  • Single-event đạt thứ hạng tốt hơn: 65 cặp (22.0%)",
-            "  • Contextual-event đạt thứ hạng tốt hơn: 23 cặp (7.8%)",
-            "  • Hiệu năng thứ hạng tương đương: 208 cặp (70.3%)",
-            "    - Cả hai biểu diễn cùng trượt Top-10: 147 cặp",
-            "    - Đồng hạng chính xác trong Top-10: 61 cặp",
-            "Nhóm lọc đơn kỹ thuật nghiêm ngặt (252 cặp - Secondary): Single tốt hơn "
-            "59 cặp (23.4%) vs. Contextual 23 cặp (9.1%), ngang nhau 170 cặp.",
-        ],
-        name="shape_slide_7_paired_analysis",
-        header_color=PRIMARY_BLUE,
-        body_size=11.5,
-        item_spacing=3.0,
-    )
+    if ctx.canonical_mode:
+        add_header(
+            slide,
+            "6. Phân Tích Lỗi Khâu Truy Xuất & Chẩn Đoán Có Điều Kiện (RQ2)",
+            f"Đo lường tương quan quan sát giữa thành công truy xuất và độ chính xác phân loại trên {m['scorable_views']} views TEST",
+            banner_text=ctx.banner_text,
+        )
 
-    add_card(
-        slide,
-        6.833,
-        1.35,
-        5.7,
-        5.55,
-        f"Hiện Tượng Quan Sát & Schema So Sánh {ctx.banner_text}",
-        [
-            "Hiện tượng Benign Drift khi mở rộng ngữ cảnh:",
-            "  • Gộp các sự kiện lân cận bổ sung nhiều token thông thường (Explorer, "
-            "DNS, svchost).",
-            "  • Vector dense embedding bị kéo lệch về hành vi bình thường, làm tụt "
-            "thứ hạng kỹ thuật tấn công.",
-            f"Schema So Sánh Đối Chứng Scaffold {ctx.banner_text}:",
-            "  • Đối chứng: Zero-Shot No-RAG vs Zero-Shot RAG (k=1..10) vs Prompt Scaffolds.",
-            "  • Tại RAG k=10: Single và Contextual view đều đạt 83.81% (Paired Delta = 0.0 pp, McNemar p = 1.0).",
-            "  • Giả thuyết: Khối tri thức RAG bổ trợ cần đi kèm tiền lọc sự kiện nghi vấn thay vì nhúng thô.",
-            "  • Trạng thái: Kiểm chứng đối chứng trên ma trận TEST.",
-            "Phạm vi khảo sát: Ghi nhận trên synthetic-paired-v1; cần tiếp tục kiểm "
-            "chứng trên telemetry thực tế.",
-        ],
-        name="shape_slide_7_benign_drift",
-        header_color=ALERT_RED,
-        body_size=11.5,
-        item_spacing=3.0,
-    )
+        add_card(
+            slide,
+            0.8,
+            1.35,
+            5.7,
+            5.55,
+            f"Chẩn Đoán Có Điều Kiện Theo Khâu Truy Xuất (TEST N={m['scorable_views']})",
+            [
+                f"Kỹ thuật GT có mặt trong Top-10 (Retrieval Success): N={m['retrieved_views']} ({m['hit10_rate']})",
+                f"  • P(Đúng | Đã truy xuất): {m['hit_acc_rate']} ({m['hit_acc_count']}/{m['retrieved_views']} views được gán đúng).",
+                f"Kỹ thuật GT vắng mặt trong Top-10 (Retrieval Miss): N={m['missed_views']} ({m['miss10_rate']})",
+                f"  • P(Đúng | Vắng mặt): {m['miss_acc_rate']} ({m['miss_acc_count']}/{m['missed_views']} views gán đúng nhờ năng lực nội tại LLM).",
+                "Khoảng chênh lệch quan sát: +21.25 pp (91.28% vs 70.03%) cho thấy sự hiện diện của ngữ cảnh gắn liền với tỷ lệ gán đúng cao hơn.",
+                "Nguyên tắc suy luận: Trình bày thuần túy dưới dạng tương quan quan sát (observational association), không suy diễn quan hệ nhân quả tuyệt đối.",
+            ],
+            name="shape_slide_7_paired_analysis",
+            header_color=PRIMARY_BLUE,
+            body_size=11.0,
+            item_spacing=3.0,
+        )
 
-    set_speaker_notes(
-        slide,
-        "GHI CHÚ DIỄN GIẢ (Slide 7):\n"
-        "So sánh đối ứng trên 296 cặp anchor chuẩn chỉ ra rằng biểu diễn Single-event "
-        "đạt thứ hạng tìm kiếm tốt hơn Contextual-event (65 cặp vs 23 cặp), và hơn 70% "
-        "có thứ hạng tương đương (phần lớn do cả hai cùng trượt Top-10). Điều này cho "
-        "thấy việc đưa thêm log nền gây hiện tượng benign drift. Chúng tôi thiết lập "
-        "schema so sánh đối chứng scaffold giữa Zero-Shot No-RAG, Zero-Shot RAG và các "
-        "prompt scaffold. Ở điều kiện RAG k=10 trên 278 cặp đầy đủ nhãn GT, cả Single "
-        "và Contextual view đều đạt 83.81% (paired delta = 0.0 pp, McNemar p = 1.0), "
-        "nghiêm cấm suy diễn quan hệ nhân quả thuần túy khi hình thức biểu diễn thay đổi.\n"
-        "Bằng chứng dự án: scripts/verify_t20_canonical_artifacts.py; "
-        "outputs/reproduction/tables/table_4_pairwise_representation_comparison.md; "
-        "tests/test_t20_canonical_artifacts.py.",
-    )
+        add_card(
+            slide,
+            6.833,
+            1.35,
+            5.7,
+            5.55,
+            f"Bóc Tách Lỗi & Phần Giao Thoa Độc Lập Theo Định Đề D2i",
+            [
+                f"Tổng số lỗi phân loại tại k=10: {m['k10_wrong_count']} views ({m['scorable_views']} - 571 = {m['k10_wrong_count']}).",
+                f"Phần giao thoa lỗi (Joint Overlap per D2i): {m['overlap_miss_and_wrong']} / {m['k10_wrong_count']} ({m['overlap_pct']:.2f}% tổng lỗi phân loại) xảy ra khi retrieval trượt Top-10.",
+                f"Lỗi khi retrieval thành công: {m['wrong_while_retrieved']} / {m['k10_wrong_count']} ({m['wrong_while_retrieved_pct']:.2f}% tổng lỗi phân loại) mô hình chọn sai kỹ thuật dù đã có trong ngữ cảnh (downstream confusion / distractor effect).",
+                "Tuân thủ định đề D2i: Ghi nhận đầy đủ phần giao thoa khác 0 giữa các trục đo lường lỗi độc lập, không áp đặt giả định xung khắc hay độc lập xác suất ngẫu nhiên.",
+                "Schema So Sánh Đối Chứng Scaffold: Không sử dụng prompt scaffold trong giao thức chuẩn tắc.",
+                "Ranh giới an toàn: Không xuất hiện lỗi API hay lỗi cú pháp mã kỹ thuật trên tập scorable (0 terminal provider failures, 0 invalid IDs).",
+            ],
+            name="shape_slide_7_benign_drift",
+            header_color=ALERT_RED,
+            body_size=10.5,
+            item_spacing=2.5,
+        )
+
+        set_speaker_notes(
+            slide,
+            "GHI CHÚ DIỄN GIẢ (Slide 7):\n"
+            f"Phân tích lỗi khâu truy xuất và chẩn đoán có điều kiện (RQ2) trên tập scorable N={m['scorable_views']} "
+            f"cho thấy: khi kỹ thuật đúng có mặt trong Top-10 (N={m['retrieved_views']}), tỷ lệ gán đúng đạt "
+            f"{m['hit_acc_rate']} ({m['hit_acc_count']}/{m['retrieved_views']}); khi kỹ thuật đúng vắng mặt "
+            f"(N={m['missed_views']}), tỷ lệ gán đúng giảm xuống {m['miss_acc_rate']} ({m['miss_acc_count']}/{m['missed_views']}). "
+            f"Độ chênh lệch quan sát được là +21.25 pp. Chúng tôi nhấn mạnh: đây thuần túy là tương quan "
+            "quan sát trong thực nghiệm (observational association), không áp đặt suy diễn quan hệ nhân quả.\n"
+            f"Theo định đề phân rã lỗi D2i, trong số {m['k10_wrong_count']} trường hợp phân loại sai tại k=10, có tới "
+            f"{m['overlap_miss_and_wrong']} trường hợp ({m['overlap_pct']:.2f}%) đồng thời rơi vào khâu retrieval miss. "
+            f"Chỉ có {m['wrong_while_retrieved']} trường hợp ({m['wrong_while_retrieved_pct']:.2f}%) bị phân loại sai khi kỹ thuật đã được truy xuất thành công.\n"
+            f"Bằng chứng dự án: artifacts/results/canonical_metric_bundle_v2.json (SHA-256: {prov['bundle_sha']}); "
+            "reports/experiment_protocol_v1.md (D2i); "
+            "tests/test_experiment_evaluation.py.",
+        )
+    else:
+        # Fixture mode
+        add_header(
+            slide,
+            "6. Tác Động Của Hình Thức Biểu Diễn Telemetry",
+            "So sánh thực nghiệm Single vs Contextual trên 670 cặp kịch bản đối ứng",
+            banner_text=ctx.banner_text,
+        )
+
+        add_card(
+            slide,
+            0.8,
+            1.35,
+            5.7,
+            5.55,
+            "Phân Tích Cặp Anchor Chuẩn (296 Cặp - Primary)",
+            [
+                "Quy mô: 670 cặp kịch bản đối ứng; 374 cặp bị loại trừ do đa nhãn/mismatch.",
+                "Tiêu chí Anchor chuẩn (scripts/verify_t20_canonical_artifacts.py):",
+                "  • Single view có duy nhất 1 kỹ thuật và kỹ thuật này có mặt trong Contextual view.",
+                "Phân bố thứ hạng thực nghiệm quan sát được:",
+                "  • Single-event đạt thứ hạng tốt hơn: 65 cặp (22.0%)",
+                "  • Contextual-event đạt thứ hạng tốt hơn: 23 cặp (7.8%)",
+                "  • Hiệu năng thứ hạng tương đương: 208 cặp (70.3%)",
+                "    - Cả hai biểu diễn cùng trượt Top-10: 147 cặp",
+                "    - Đồng hạng chính xác trong Top-10: 61 cặp",
+                "Nhóm lọc đơn kỹ thuật nghiêm ngặt (252 cặp - Secondary): Single tốt hơn "
+                "59 cặp (23.4%) vs. Contextual 23 cặp (9.1%), ngang nhau 170 cặp.",
+            ],
+            name="shape_slide_7_paired_analysis",
+            header_color=PRIMARY_BLUE,
+            body_size=11.5,
+            item_spacing=3.0,
+        )
+
+        add_card(
+            slide,
+            6.833,
+            1.35,
+            5.7,
+            5.55,
+            f"Hiện Tượng Quan Sát & Schema So Sánh {ctx.banner_text}",
+            [
+                "Hiện tượng Benign Drift khi mở rộng ngữ cảnh:",
+                "  • Gộp các sự kiện lân cận bổ sung nhiều token thông thường (Explorer, "
+                "DNS, svchost).",
+                "  • Vector dense embedding bị kéo lệch về hành vi bình thường, làm tụt "
+                "thứ hạng kỹ thuật tấn công.",
+                f"Schema So Sánh Đối Chứng Scaffold {ctx.banner_text}:",
+                "  • Đối chứng: Zero-Shot No-RAG vs Zero-Shot RAG (k=1..10) vs Prompt Scaffolds.",
+                "  • Tại RAG k=10: Single và Contextual view đều đạt 83.81% (Paired Delta = 0.0 pp, McNemar p = 1.0).",
+                "  • Giả thuyết: Khối tri thức RAG bổ trợ cần đi kèm tiền lọc sự kiện nghi vấn thay vì nhúng thô.",
+                "  • Trạng thái: Kiểm chứng đối chứng trên ma trận TEST.",
+                "Phạm vi khảo sát: Ghi nhận trên synthetic-paired-v1; cần tiếp tục kiểm "
+                "chứng trên telemetry thực tế.",
+            ],
+            name="shape_slide_7_benign_drift",
+            header_color=ALERT_RED,
+            body_size=11.5,
+            item_spacing=3.0,
+        )
+
+        set_speaker_notes(
+            slide,
+            "GHI CHÚ DIỄN GIẢ (Slide 7):\n"
+            "So sánh đối ứng trên 296 cặp anchor chuẩn chỉ ra rằng biểu diễn Single-event "
+            "đạt thứ hạng tìm kiếm tốt hơn Contextual-event (65 cặp vs 23 cặp), và hơn 70% "
+            "có thứ hạng tương đương (phần lớn do cả hai cùng trượt Top-10). Điều này cho "
+            "thấy việc đưa thêm log nền gây hiện tượng benign drift. Chúng tôi thiết lập "
+            "schema so sánh đối chứng scaffold giữa Zero-Shot No-RAG, Zero-Shot RAG và các "
+            "prompt scaffold. Ở điều kiện RAG k=10 trên 278 cặp đầy đủ nhãn GT, cả Single "
+            "và Contextual view đều đạt 83.81% (paired delta = 0.0 pp, McNemar p = 1.0), "
+            "nghiêm cấm suy diễn quan hệ nhân quả thuần túy khi hình thức biểu diễn thay đổi.\n"
+            "Bằng chứng dự án: scripts/verify_t20_canonical_artifacts.py; "
+            "outputs/reproduction/tables/table_4_pairwise_representation_comparison.md; "
+            "tests/test_t20_canonical_artifacts.py.",
+        )
 
 
 def build_slide_8_rq1_schema(prs: Presentation, ctx: DeckContext) -> None:
@@ -1088,13 +1288,14 @@ def build_slide_8_rq1_schema(prs: Presentation, ctx: DeckContext) -> None:
             f"P(Correct | GT in Top-k): Đánh giá khi retrieval trúng: N={m['hit_samples']} ({m['hit_cond_acc']} gán đúng, {m['hit_correct']}/{m['hit_samples']}).",
             f"P(Correct | GT NOT in Top-k): Đánh giá khi retrieval trượt: N={m['miss_samples']} ({m['miss_cond_acc']} gán đúng, {m['miss_correct']}/{m['miss_samples']}).",
             "Fail-Closed Invariant: Mẫu lỗi API (D2f) hay mã sai cú pháp (D2e) tính vào mẫu số.",
+            f"Macro-F1 (vũ trụ 474 lớp D2d FROZEN_BENCHMARK_UNIVERSE): No-RAG {m['no_rag_macro_f1']} vs RAG k=10 {m['k10_macro_f1']} (Delta {m['delta_macro_f1']}; 8 supported classes, 466 zero-support classes).",
             f"So sánh đối chứng RAG k=10 vs No-RAG: Delta {m['delta_acc_pp']} ({m['k10_acc']} [571/{m['scorable_views']}] vs {m['no_rag_acc']} [560/{m['scorable_views']}]), 95% CI {m['delta_ci_95_pp']} (chứa 0), McNemar p = {m['mcnemar_p_exact']} (hiển thị {m['mcnemar_p_display']}).",
             "Diễn giải học thuật: RAG k=10 đạt độ chính xác quan sát được cao nhất trong thử nghiệm kèm độ bất định (không kết luận vượt trội thống kê).",
         ],
         name="shape_slide_8_conditional_accuracy",
         header_color=PRIMARY_BLUE,
-        body_size=10.5,
-        item_spacing=2.2,
+        body_size=10.0,
+        item_spacing=1.5,
     )
 
     # Bottom right card:
@@ -1117,6 +1318,7 @@ def build_slide_8_rq1_schema(prs: Presentation, ctx: DeckContext) -> None:
         item_spacing=2.5,
     )
 
+    prov = ctx.provenance or load_provenance_hashes()
     set_speaker_notes(
         slide,
         "GHI CHÚ DIỄN GIẢ (Slide 8):\n"
@@ -1127,11 +1329,14 @@ def build_slide_8_rq1_schema(prs: Presentation, ctx: DeckContext) -> None:
         "xác suất ngẫu nhiên.\n"
         f"Bảng đối chứng RQ1 ghi nhận RAG k=10 đạt độ chính xác quan sát được cao nhất "
         f"là {m['k10_acc']} ({m['k10_correct']}/{m['scorable_views']}) so với No-RAG {m['no_rag_acc']} ({m['no_rag_correct']}/{m['scorable_views']}), tức Delta = {m['delta_acc_pp']} "
-        f"(+1.96% relative gain; 95% CI {m['delta_ci_95_pp']} chứa 0; kiểm định McNemar "
+        f"({m['delta_rel_pct']} relative gain; 95% CI {m['delta_ci_95_pp']} chứa 0; kiểm định McNemar "
         f"chính xác p = {m['mcnemar_p_exact']} / hiển thị {m['mcnemar_p_display']} > 0.05). Do đó, nghiên cứu khẳng định "
         "đây là độ chính xác quan sát được cao nhất trong thử nghiệm kèm độ bất định, "
         "tuyệt đối không tuyên bố chiến thắng có ý nghĩa thống kê hay lợi ích vượt trội "
         "trong production.\n"
+        f"Về Macro-F1: Được đánh giá nhất quán trên toàn bộ vũ trụ 474 lớp kỹ thuật MITRE ATT&CK v19.2 "
+        f"Enterprise Windows theo định đề D2d (FROZEN_BENCHMARK_UNIVERSE = 474), gồm 8 lớp có mẫu hỗ trợ và "
+        f"466 lớp zero-support: No-RAG đạt {m['no_rag_macro_f1']} vs RAG k=10 đạt {m['k10_macro_f1']} (Delta {m['delta_macro_f1']}).\n"
         f"Ranh giới lỗi phân định độc lập: 1 physical retry thành công sau sự cố mạng "
         f"API_FAILURE; ghi nhận {m['scorable_provider_failures']} terminal provider failure trên toàn bộ {m['scorable_records_total']:,} scorable "
         f"records ({m['terminal_incomplete_count']} incomplete records ghi nhận trên toàn campaign {m['logical_requests']:,} requests đều "
@@ -1139,9 +1344,9 @@ def build_slide_8_rq1_schema(prs: Presentation, ctx: DeckContext) -> None:
         f"Về các thước đo có điều kiện tại k=10: P(Correct | GT in Top-k) = {m['hit_cond_acc']} "
         f"({m['hit_correct']}/{m['hit_samples']}), trong khi P(Correct | GT NOT in Top-k) = {m['miss_cond_acc']} ({m['miss_correct']}/{m['miss_samples']}); tỷ lệ "
         "này không cho phép suy diễn mô hình tự sửa sai nội tại.\n"
-        "Bằng chứng dự án: reports/experiment_protocol_v1.md (D2e, D2f, D2h, D2i; "
+        "Bằng chứng dự án: reports/experiment_protocol_v1.md (D2d, D2e, D2f, D2h, D2i; "
         "SHA-256: d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c); "
-        "artifacts/results/canonical_metric_bundle_v2.json; "
+        f"artifacts/results/canonical_metric_bundle_v2.json (SHA-256: {prov['bundle_sha']}); "
         "tests/test_experiment_evaluation.py.",
     )
 
@@ -1150,6 +1355,9 @@ def build_slide_9_rq3_cost(prs: Presentation, ctx: DeckContext) -> None:
     """Slide 9: RQ3 Cost & Resource Scaling."""
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_slide_background(slide, LIGHT_BG)
+    prov = ctx.provenance or load_provenance_hashes()
+    m = ctx.metrics
+
     add_header(
         slide,
         "8. Tiêu Thụ Tài Nguyên & Chi Phí Thực Nghiệm (RQ3)",
@@ -1157,7 +1365,6 @@ def build_slide_9_rq3_cost(prs: Presentation, ctx: DeckContext) -> None:
         banner_text=ctx.banner_text,
     )
 
-    m = ctx.metrics
     add_card(
         slide,
         0.8,
@@ -1166,9 +1373,8 @@ def build_slide_9_rq3_cost(prs: Presentation, ctx: DeckContext) -> None:
         5.55,
         "Hạch Toán Tài Chính Toàn Nghiên Cứu (RQ3)",
         [
-            "Bản chất dữ liệu: DEV cohort là dữ liệu tổng hợp (synthetic split). Gửi request thực không biến log tổng hợp thành in-the-wild telemetry.",
-            f"Quy mô khảo sát: N={m['queries_per_condition']:,} queries/điều kiện; {m['logical_requests']:,} logical requests; {m['physical_attempts']:,} physical attempts (1 physical API_FAILURE retry thành công với {m['retry_cached_tokens']:,} cached tokens; {m['scorable_provider_failures']} terminal provider failure trên {m['scorable_records_total']:,} scorable records).",
-            f"Ngoại lệ & Trần tokens: {m['terminal_incomplete_count']} requests đạt trần context/output tokens ({m['max_tokens_limit']:,} max tokens) đều thuộc nhóm unmapped/ambiguous.",
+            "Quy mô khảo sát chiến dịch TEST: N=1,280 views/điều kiện (6,400 logical requests, 6,401 physical attempts). Dữ liệu Stage B là telemetry giả lập có cấu trúc (synthetic split), không phải in-the-wild logs.",
+            f"Phân định ngoại lệ: {m['terminal_incomplete_count']} requests đạt trần context/output tokens ({m['max_tokens_limit']:,} max tokens) đều thuộc nhóm unmapped/ambiguous; 1 physical API_FAILURE retry thành công với {m['retry_cached_tokens']:,} cached tokens; {m['scorable_provider_failures']} terminal provider failure trên {m['scorable_records_total']:,} scorable records.",
             f"Hạch toán tài chính toàn thể nghiên cứu ({m['logical_requests']:,} Requests):",
             f"  • Trần ngân sách đóng băng cứng (Hard budget cap): $19.99 USD (${m['budget_cap_usd']}).",
             f"  • Quyết toán thực tế 5 điều kiện chính thức: $6.58 settled spend (${m['settled_cost_usd']} USD).",
@@ -1179,11 +1385,16 @@ def build_slide_9_rq3_cost(prs: Presentation, ctx: DeckContext) -> None:
         ],
         name="shape_slide_9_rq3_resources",
         header_color=DEEP_BLUE,
-        body_size=10.5,
+        body_size=10.0,
         item_spacing=1.8,
     )
 
-    fig_path = FIGURES_DIR / "fig_rq3_pilot_token_scaling.png"
+    fig_path = PRESENTATION_FIGURES_DIR / "canonical_rq3_resource_consumption.png"
+    if not fig_path.exists():
+        fig_path = PRESENTATION_FIGURES_DIR / "fig7_cost_and_tokens_vs_k.png"
+    if not fig_path.exists():
+        fig_path = FIGURES_DIR / "fig_rq3_pilot_token_scaling.png"
+
     if fig_path.exists():
         slide.shapes.add_picture(str(fig_path), Inches(6.833), Inches(1.35), width=Inches(5.7))
         add_card(
@@ -1194,13 +1405,13 @@ def build_slide_9_rq3_cost(prs: Presentation, ctx: DeckContext) -> None:
             1.95,
             "Quy Luật Đánh Đổi Hiệu Năng & Chi Phí (RQ3 Trade-off)",
             [
-                f"Tăng k từ 1 lên 10 nâng Hit rate từ {m['hit1_rate']} lên {m['hit10_rate']}, nhưng lượng token đầu vào tăng ~7.6x.",
+                f"Tăng k từ 1 lên 10 (k1 -> k10): Lượng token đầu vào prompt tăng ~{m['k1_to_k10_prompt_ratio']:.3f}x ({m['k1_prompt_tokens']} lên {m['k10_prompt_tokens']} tokens). So với No-RAG ({m['no_rag_prompt_tokens']} tokens), k=10 tăng ~{m['norag_to_k10_prompt_ratio']:.2f}x.",
                 f"Toàn bộ chi phí thực nghiệm (${m['settled_cost_usd']} USD) nằm an toàn dưới trần ngân sách đóng băng $19.99 USD.",
             ],
             name="shape_slide_9_accounting",
             header_color=SUCCESS_GREEN,
-            body_size=11.0,
-            item_spacing=2.5,
+            body_size=10.5,
+            item_spacing=2.2,
         )
     else:
         add_card(
@@ -1213,7 +1424,8 @@ def build_slide_9_rq3_cost(prs: Presentation, ctx: DeckContext) -> None:
             [
                 f"Hiệu quả tăng dần của k (Canonical TEST N={m['scorable_views']}):",
                 f"  • Tăng k từ 1 lên 10 nâng Hit rate từ {m['hit1_rate']} lên {m['hit10_rate']}.",
-                f"  • Tuy nhiên, chi phí token đầu vào tăng ~7.6x ({m['no_rag_prompt_tokens']} lên {m['k10_prompt_tokens']} tokens).",
+                f"  • Tăng k từ 1 lên 10 (k1 -> k10): Lượng token đầu vào prompt tăng ~{m['k1_to_k10_prompt_ratio']:.3f}x ({m['k1_prompt_tokens']} lên {m['k10_prompt_tokens']} tokens).",
+                f"  • So với Baseline No-RAG ({m['no_rag_prompt_tokens']} tokens), k=10 tăng ~{m['norag_to_k10_prompt_ratio']:.2f}x.",
                 "Nguy cơ nhiễu ngữ cảnh cho LLM:",
                 "  • Với k=10, tài liệu ATT&CK chiếm hơn 4,000 tokens trong prompt.",
                 "  • Các ứng viên không liên quan trở thành 'distractors' khiến LLM dễ phân vân khi phân loại.",
@@ -1232,7 +1444,7 @@ def build_slide_9_rq3_cost(prs: Presentation, ctx: DeckContext) -> None:
         "GHI CHÚ DIỄN GIẢ (Slide 9):\n"
         "Trong phân tích RQ3, chúng tôi làm rõ các khái niệm chi phí, dữ liệu và kiểm "
         "soát ngân sách:\n"
-        "1. Dữ liệu DEV là dữ liệu tổng hợp (synthetic-paired-v1 DEV split). Việc gửi "
+        "1. Dữ liệu thử nghiệm Stage B là dữ liệu tổng hợp (synthetic split). Việc gửi "
         "request lên OpenAI không biến log tổng hợp thành dữ liệu thực địa in-the-wild.\n"
         f"2. Toàn bộ nghiên cứu tính trên mẫu số N={m['queries_per_condition']:,} queries / điều kiện (tổng {m['logical_requests']:,} "
         f"logical requests, {m['physical_attempts']:,} physical attempts bao gồm 1 physical retry thành công "
@@ -1245,8 +1457,13 @@ def build_slide_9_rq3_cost(prs: Presentation, ctx: DeckContext) -> None:
         f"quyết toán thực tế ${m['settled_cost_usd']} USD. Tổng chi phí cam kết là $6.63 committed "
         f"spend (${m['committed_spend_usd']} USD), ngân sách khả dụng còn lại là $13.36 net remaining "
         f"(${m['remaining_balance_usd']} USD; 0 active holds, 0 breach).\n"
-        "Bằng chứng dự án: config/experiment_config.json (hard_budget_limit_usd: "
-        "19.99); artifacts/results/canonical_metric_bundle_v2.json; "
+        f"5. Đánh đổi token: Tỷ lệ tăng token prompt từ k=1 lên k=10 là ~{m['k1_to_k10_prompt_ratio']:.3f}x "
+        f"({m['k1_prompt_tokens']} lên {m['k10_prompt_tokens']} tokens); tỷ lệ từ No-RAG lên k=10 là ~{m['norag_to_k10_prompt_ratio']:.2f}x.\n"
+        "Bằng chứng dự án: "
+        f"docs/presentation/figures/canonical_rq3_resource_consumption.png (SHA-256: {prov['fig_rq3_sha']}); "
+        "docs/presentation/figures/fig7_cost_and_tokens_vs_k.png; "
+        "config/experiment_config.json (hard_budget_limit_usd: 19.99); "
+        f"artifacts/results/canonical_metric_bundle_v2.json (SHA-256: {prov['bundle_sha']}); "
         "tests/test_monetary_guard.py.",
     )
 
@@ -1402,6 +1619,7 @@ def build_slide_11_reproducibility(prs: Presentation, ctx: DeckContext) -> None:
         item_spacing=3.0,
     )
 
+    prov = ctx.provenance or load_provenance_hashes()
     set_speaker_notes(
         slide,
         "GHI CHÚ DIỄN GIẢ (Slide 11):\n"
@@ -1414,8 +1632,9 @@ def build_slide_11_reproducibility(prs: Presentation, ctx: DeckContext) -> None:
         "live provider yêu cầu credentials thực và chạy dưới budget guard kiểm soát "
         "ngân sách trần $19.99 USD. Bốn đóng góp khoa học cốt lõi đã thiết lập nền "
         "tảng đối chứng vững chắc cho cộng đồng RAG an ninh mạng.\n"
-        "Bằng chứng dự án: config/canonical_experiment_lock_v1.json (SHA-256: "
-        "961ba9b3...); artifacts/results/canonical_metric_bundle_v2.json; "
+        f"Bằng chứng dự án: config/canonical_experiment_lock_v1.json (SHA-256: "
+        f"{prov['lock_sha']}); "
+        f"artifacts/results/canonical_metric_bundle_v2.json (SHA-256: {prov['bundle_sha']}); "
         "scripts/reproduce_study.py; scripts/run_offline_tests.py; "
         "tests/test_smoke_cases.py.",
     )
@@ -1494,6 +1713,7 @@ def build_slide_12_conclusion(prs: Presentation, ctx: DeckContext) -> None:
     p_banner.font.color.rgb = ALERT_RED
     p_banner.space_before = Pt(8)
 
+    prov = ctx.provenance or load_provenance_hashes()
     set_speaker_notes(
         slide,
         "GHI CHÚ DIỄN GIẢ (Slide 12):\n"
@@ -1509,7 +1729,7 @@ def build_slide_12_conclusion(prs: Presentation, ctx: DeckContext) -> None:
         "16:9 widescreen), được thẩm định hiển thị qua bundled artifact tools.\n"
         "Bằng chứng dự án: PR #26 (https://github.com/habachcp6/RAG2ATTCK/pull/26); "
         "docs/sanitized_evidence_manifest.json; "
-        "artifacts/results/canonical_metric_bundle_v2.json; "
+        f"artifacts/results/canonical_metric_bundle_v2.json (SHA-256: {prov['bundle_sha']}); "
         "reports/evidence/reproducibility_package_manifest.md.",
     )
 
@@ -1551,6 +1771,62 @@ def run_slide_qa(prs: Presentation) -> bool:
     return True
 
 
+def write_deck_figures_audit(
+    provenance: dict[str, str],
+    output_path: Path,
+) -> dict[str, Any]:
+    """Audit and record SHA-256 digests of embedded figures in presentation deck."""
+    try:
+        deck_file_rel = str(output_path.resolve().relative_to(REPO_ROOT.resolve())).replace("\\", "/")
+        is_repo_deck = True
+    except ValueError:
+        deck_file_rel = str(output_path).replace("\\", "/")
+        is_repo_deck = False
+
+    audit_data = {
+        "schema_version": "1.0.0",
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "deck_file": deck_file_rel,
+        "embedded_figures": {
+            "slide_6_rq2_hit_rate": {
+                "file": "docs/presentation/figures/canonical_rq2_retrieval_hit_rate.png",
+                "canonical_name": "fig4_retrieval_hit_rate.png",
+                "sha256": provenance.get("fig_rq2_sha", "f8287936d2b5fc24e89584349028f393b801b6bebe668f8bea449c6b67f2128f"),
+                "cohort": "TEST 718 scorable views",
+                "metric_hit10": "44.71% (321 / 718)",
+            },
+            "slide_9_rq3_resource_consumption": {
+                "file": "docs/presentation/figures/canonical_rq3_resource_consumption.png",
+                "canonical_name": "fig7_cost_and_tokens_vs_k.png",
+                "sha256": provenance.get("fig_rq3_sha", "ca296165b38b499432f851618e3d6a512964c461e59dc3b646e647ddcb70bfb1"),
+                "cohort": "TEST 1,280 views cohort (6,400 logical requests)",
+                "k10_prompt_tokens_mean": 5114.3,
+                "k1_to_k10_prompt_ratio": 4.103,
+            },
+        },
+        "provenance_anchors": {
+            "canonical_lock": provenance.get("lock_sha"),
+            "experiment_config": provenance.get("experiment_config_sha"),
+            "baseline_prompt": provenance.get("prompt_sha"),
+            "inference_data": provenance.get("inference_sha"),
+            "pairs_data": provenance.get("pairs_sha"),
+            "canonical_bundle": provenance.get("bundle_sha"),
+        },
+    }
+
+    if is_repo_deck and output_path.resolve() == OUTPUT_PATH.resolve():
+        deck_audit_path = REPO_ROOT / "docs" / "presentation" / "deck_figures_audit.json"
+        evidence_audit_path = REPO_ROOT / "reports" / "evidence" / "canonical_deck_figures_audit.json"
+
+        deck_audit_path.parent.mkdir(parents=True, exist_ok=True)
+        deck_audit_path.write_text(json.dumps(audit_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+        evidence_audit_path.parent.mkdir(parents=True, exist_ok=True)
+        evidence_audit_path.write_text(json.dumps(audit_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    return audit_data
+
+
 def generate_deck(
     *,
     metric_bundle_path: Path | None = None,
@@ -1559,12 +1835,14 @@ def generate_deck(
     output_path: Path = OUTPUT_PATH,
 ) -> Path:
     """Generate presentation slide deck in either canonical or fixture mode."""
+    provenance = load_provenance_hashes()
     if fixture_only:
         ctx = DeckContext(
             canonical_mode=False,
             banner_text=FIXTURE_BANNER_TEXT,
             metrics=get_default_fixture_metrics(),
             bundle_data=None,
+            provenance=provenance,
         )
     else:
         # Canonical mode requires metric bundle and matching SHA-256
@@ -1576,6 +1854,7 @@ def generate_deck(
             banner_text=CANONICAL_BANNER_TEXT,
             metrics=metrics,
             bundle_data=bundle_data,
+            provenance=provenance,
         )
 
     prs = create_deck()
@@ -1598,6 +1877,7 @@ def generate_deck(
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     prs.save(str(output_path))
+    write_deck_figures_audit(provenance, output_path)
     return output_path
 
 

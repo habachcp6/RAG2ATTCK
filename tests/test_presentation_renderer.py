@@ -21,9 +21,10 @@ Verifies:
    mutated bytes rejection, and fixture-only fallback mode.
 """
 
-from __future__ import annotations
-
+import hashlib
+import json
 import re
+import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -360,3 +361,167 @@ def test_fixture_only_mode_roundtrip(tmp_path: Path) -> None:
     combined = " ".join(texts)
     assert FIXTURE_BANNER_TEXT in combined
     assert CANONICAL_BANNER_TEXT not in combined
+
+
+def test_embedded_figure_media_digests() -> None:
+    """Verifies that docs/presentation/slides.pptx contains embedded images with exact SHA-256 digests."""
+    assert PPTX_PATH.is_file(), f"Deck file missing at {PPTX_PATH}"
+
+    expected_rq2_sha = "f8287936d2b5fc24e89584349028f393b801b6bebe668f8bea449c6b67f2128f"
+    expected_rq3_sha = "ca296165b38b499432f851618e3d6a512964c461e59dc3b646e647ddcb70bfb1"
+
+    found_shas: set[str] = set()
+    with zipfile.ZipFile(str(PPTX_PATH), "r") as zf:
+        for name in zf.namelist():
+            if name.startswith("ppt/media/"):
+                media_bytes = zf.read(name)
+                digest = hashlib.sha256(media_bytes).hexdigest()
+                found_shas.add(digest)
+
+    assert (
+        expected_rq2_sha in found_shas
+    ), f"Expected RQ2 hit rate figure {expected_rq2_sha} not found in ppt/media/. Found: {found_shas}"
+    assert (
+        expected_rq3_sha in found_shas
+    ), f"Expected RQ3 resource figure {expected_rq3_sha} not found in ppt/media/. Found: {found_shas}"
+
+
+def test_deck_figures_audit_records_exist_and_match() -> None:
+    """Verifies docs/presentation/deck_figures_audit.json and reports/evidence/canonical_deck_figures_audit.json."""
+    deck_audit_path = REPO_ROOT / "docs" / "presentation" / "deck_figures_audit.json"
+    evidence_audit_path = REPO_ROOT / "reports" / "evidence" / "canonical_deck_figures_audit.json"
+
+    assert deck_audit_path.is_file(), f"Deck audit missing: {deck_audit_path}"
+    assert evidence_audit_path.is_file(), f"Evidence audit missing: {evidence_audit_path}"
+
+    deck_audit = json.loads(deck_audit_path.read_text(encoding="utf-8"))
+    evidence_audit = json.loads(evidence_audit_path.read_text(encoding="utf-8"))
+
+    for audit, label in [(deck_audit, "deck_figures_audit"), (evidence_audit, "canonical_deck_figures_audit")]:
+        assert audit.get("schema_version") == "1.0.0", f"{label} bad schema version"
+        assert audit.get("deck_file") == "docs/presentation/slides.pptx", f"{label} bad deck_file"
+
+        figures = audit.get("embedded_figures", {})
+        s6 = figures.get("slide_6_rq2_hit_rate", {})
+        assert s6.get("sha256") == "f8287936d2b5fc24e89584349028f393b801b6bebe668f8bea449c6b67f2128f"
+        assert s6.get("cohort") == "TEST 718 scorable views"
+
+        s9 = figures.get("slide_9_rq3_resource_consumption", {})
+        assert s9.get("sha256") == "ca296165b38b499432f851618e3d6a512964c461e59dc3b646e647ddcb70bfb1"
+        assert "1,280" in s9.get("cohort", "")
+        assert s9.get("k1_to_k10_prompt_ratio") == 4.103
+
+        anchors = audit.get("provenance_anchors", {})
+        assert anchors.get("canonical_lock") == "d0ce198ad4853f4c41ef2bfbafbe10a395e4927a6c6561b3e72c055c4b887e9f"
+        assert anchors.get("baseline_prompt") == "b751fde1ee33b03ec0bdc07cbba10267002d2086cf22b91a74bdfd123856f206"
+        assert anchors.get("inference_data") == "90d5f59e64f669f95d5ddccd86f1f047e10ee3dc46e4b67a8cd13d1ddf2cd4b8"
+        assert anchors.get("pairs_data") == "079e57a441b18d127739f610e7f62c263d943eefa19ca4ea5c6eab8b8a07665d"
+        assert anchors.get("canonical_bundle") == TRUSTED_CANONICAL_BUNDLE_SHA256
+
+
+def test_strict_absence_of_historical_error_strings() -> None:
+    """Verifies strict absence of DEV pilot token series, 756 views, 7.6x for k1->k10, and 0.4223."""
+    prs = _get_presentation()
+    all_slide_data = _extract_all_slide_texts(prs)
+
+    full_texts: list[str] = []
+    for s in all_slide_data:
+        full_texts.extend(s["texts"])
+        if s["notes"]:
+            full_texts.append(s["notes"])
+
+    deck_corpus = " \n ".join(full_texts)
+    md_corpus = SLIDES_MD_PATH.read_text(encoding="utf-8")
+
+    forbidden_exact = [
+        "643",
+        "1115",
+        "1740",
+        "2618",
+        "4636",
+        "real-provider DEV pilot",
+        "756 positive views",
+        "756 views",
+        "0.4223",
+    ]
+
+    for fb in forbidden_exact:
+        assert fb not in deck_corpus, f"Forbidden string '{fb}' found in PPTX deck"
+        assert fb not in md_corpus, f"Forbidden string '{fb}' found in slides.md"
+
+    # Strict check: 7.6x or 7.6× attributed to k1->k10
+    k1_k10_76x_pattern = re.compile(r"(?:k1\s*->\s*k10|k=1\s*lên\s*k=10|k1\s*đến\s*k10).*?7\.6[x×]", re.IGNORECASE)
+    assert not k1_k10_76x_pattern.search(deck_corpus), "Found 7.6x attributed to k1->k10 in PPTX deck"
+    assert not k1_k10_76x_pattern.search(md_corpus), "Found 7.6x attributed to k1->k10 in slides.md"
+
+
+def test_slide_notes_provenance_hashes() -> None:
+    """Verifies that all speaker notes contain the exact canonical hashes and correct pairs path."""
+    prs = _get_presentation()
+    slides_data = _extract_all_slide_texts(prs)
+    all_notes = " \n ".join(s["notes"] for s in slides_data)
+
+    expected_lock_sha = "d0ce198ad4853f4c41ef2bfbafbe10a395e4927a6c6561b3e72c055c4b887e9f"
+    expected_prompt_sha = "b751fde1ee33b03ec0bdc07cbba10267002d2086cf22b91a74bdfd123856f206"
+    expected_inference_sha = "90d5f59e64f669f95d5ddccd86f1f047e10ee3dc46e4b67a8cd13d1ddf2cd4b8"
+    expected_pairs_sha = "079e57a441b18d127739f610e7f62c263d943eefa19ca4ea5c6eab8b8a07665d"
+
+    assert expected_lock_sha in all_notes, "Lock SHA missing from speaker notes"
+    assert expected_prompt_sha in all_notes, "Prompt SHA missing from speaker notes"
+    assert expected_inference_sha in all_notes, "Inference SHA missing from speaker notes"
+    assert expected_pairs_sha in all_notes, "Pairs SHA missing from speaker notes"
+    assert TRUSTED_CANONICAL_BUNDLE_SHA256 in all_notes, "Bundle SHA missing from speaker notes"
+
+    # Path check: must be pairs.jsonl (NOT pairs.json)
+    assert "data/ground_truth/synthetic/pairs.jsonl" in all_notes
+    assert "data/ground_truth/synthetic/pairs.json " not in all_notes
+    assert "data/ground_truth/synthetic/pairs.json)" not in all_notes
+
+    # Lock hash must NOT be the wrong config hash 961ba9b3...
+    assert f"config/canonical_experiment_lock_v1.json (SHA-256: 961ba9b3" not in all_notes
+
+
+def test_slide_7_canonical_error_diagnostics_and_association_only() -> None:
+    """Verifies Slide 7 canonical numbers (retrieved=321, missed=397, 91.28% vs 70.03%, overlap=119/147)."""
+    prs = _get_presentation()
+    slide_7_data = _extract_all_slide_texts(prs)[6]
+    s7_text = " ".join(slide_7_data["texts"])
+    s7_notes = slide_7_data["notes"]
+
+    assert "321" in s7_text
+    assert "397" in s7_text
+    assert "91.28%" in s7_text
+    assert "70.03%" in s7_text
+    assert "119" in s7_text
+    assert "147" in s7_text
+    assert "80.95%" in s7_text
+
+    # Must be phrased as observational association, no causal claims
+    assert "tương quan quan sát" in s7_text.lower() or "tương quan quan sát" in s7_notes.lower()
+    assert "không áp đặt suy diễn quan hệ nhân quả" in s7_notes.lower()
+
+    # Absence of 296 anchor pairs, 65 vs 23, and benign drift claims from canonical mode
+    assert "296 anchor" not in s7_text.lower()
+    assert "65 cặp" not in s7_text.lower()
+    assert "23 cặp" not in s7_text.lower()
+
+
+def test_slide_8_macro_f1_universe_and_slide_9_token_ratios() -> None:
+    """Verifies Slide 8 Macro-F1 across 474 universe and Slide 9 token scaling ratios."""
+    prs = _get_presentation()
+    slides_data = _extract_all_slide_texts(prs)
+    s8_text = " ".join(slides_data[7]["texts"])
+    s8_notes = slides_data[7]["notes"]
+    s9_text = " ".join(slides_data[8]["texts"])
+    s9_notes = slides_data[8]["notes"]
+
+    # Slide 8: Macro-F1 across 474-class universe
+    assert "474" in s8_text or "474" in s8_notes
+    assert "FROZEN_BENCHMARK_UNIVERSE" in s8_text or "FROZEN_BENCHMARK_UNIVERSE" in s8_notes
+    assert "0.0126" in s8_text
+    assert "0.0140" in s8_text
+
+    # Slide 9: Prompt token ratios: ~4.103x (k1 -> k10) and ~7.58x vs No-RAG baseline
+    assert "4.103x" in s9_text or "4.103x" in s9_notes
+    assert "7.58x" in s9_text or "7.58x" in s9_notes
+

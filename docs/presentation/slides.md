@@ -3,7 +3,7 @@
 **Slide Deck & Presentation Scaffold for Scientific Defense & Technical Demonstration**  
 *Trạng thái bản dựng:* `[CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW]` (Canonical candidate deck; PENDING ROOT FINAL REVIEW)  
 *Mã giao thức thực nghiệm:* `experiment-protocol-v1.1` (SHA-256: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`)  
-*Khóa thực nghiệm chuẩn:* `canonical-lock-v1` (SHA-256: `961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac`)  
+*Khóa thực nghiệm chuẩn:* `canonical-lock-v1` (SHA-256: `d0ce198ad4853f4c41ef2bfbafbe10a395e4927a6c6561b3e72c055c4b887e9f`)  
 *Tài liệu hướng dẫn tái lập:* [`docs/reproducibility.md`](../reproducibility.md)  
 *Bộ slide trình chiếu PowerPoint (16:9):* [`docs/presentation/slides.pptx`](slides.pptx)
 
@@ -27,7 +27,7 @@
 > 
 > *Khai báo công cụ:* Toàn bộ slide deck này được tạo tự động bằng kịch bản Python `scripts/generate_slides.py` thông qua thư viện `python-pptx` định dạng 16:9 widescreen, được thẩm định hiển thị bằng các bundled artifact tools nội bộ.
 > 
-> *Bằng chứng dự án:* `config/canonical_experiment_lock_v1.json` (SHA-256: `961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac`); `reports/experiment_protocol_v1.md` (SHA-256: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`); `artifacts/results/canonical_metric_bundle_v2.json` (SHA-256: `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`); `scripts/reproduce_study.py`."
+> *Bằng chứng dự án:* `config/canonical_experiment_lock_v1.json` (SHA-256: `d0ce198ad4853f4c41ef2bfbafbe10a395e4927a6c6561b3e72c055c4b887e9f`); `reports/experiment_protocol_v1.md` (SHA-256: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`); `artifacts/results/canonical_metric_bundle_v2.json` (SHA-256: `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`); `scripts/reproduce_study.py`."
 
 ---
 
@@ -53,7 +53,7 @@
 ### Ghi chú diễn giả (Speaker Notes)
 > "Trong thực tế giám sát SOC, các kỹ sư thường kỳ vọng LLM có thể đọc log và gán ngay mã ATT&CK. Tuy nhiên, nếu không có cơ chế neo tri thức, LLM thường gặp ảo giác hoặc nhầm lẫn giữa các kỹ thuật lân cận. Nghiên cứu này định lượng khách quan mức độ hỗ trợ của RAG dưới các điều kiện đối chứng chặt chẽ, không phóng đại hiệu năng. Chúng tôi làm rõ phạm vi tính xác định (determinism): tính xác định áp dụng tuyệt đối cho khâu tái tạo bộ dữ liệu, quy trình thẩm định đánh giá ngoại tuyến và quy tắc xử lý thứ tự tie-breaking. Đối với mô hình LLM, phản hồi và backend mô hình thực tế có thể biến thiên do tham số seed không được truyền qua giao thức mạng; sự biến thiên này được theo dõi và ghi nhận chặt chẽ theo chính sách siêu dữ liệu ràng buộc tem thời gian D3 (timestamp-bound metadata policy).
 > 
-> *Bằng chứng dự án:* `docs/README_PROPOSED.md`; `config/canonical_experiment_lock_v1.json` (SHA-256: `961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac`); `reports/experiment_protocol_v1.md` (D3 policy); `tests/test_attack_id_validation.py`."
+> *Bằng chứng dự án:* `docs/README_PROPOSED.md`; `config/canonical_experiment_lock_v1.json` (SHA-256: `d0ce198ad4853f4c41ef2bfbafbe10a395e4927a6c6561b3e72c055c4b887e9f`); `reports/experiment_protocol_v1.md` (D3 policy); `tests/test_attack_id_validation.py`."
 
 ---
 
@@ -78,7 +78,7 @@
 ### Ghi chú diễn giả (Speaker Notes)
 > "Kiến trúc thực nghiệm đối chứng kiểm soát nghiêm ngặt biến số điều trị duy nhất: Retrieval ON vs OFF. Nhánh Baseline No-RAG và Experimental RAG dùng chung một mô hình gpt-5.6-luna (xhigh), cùng cấu trúc prompt template, và cùng schema JSON đầu ra. Bộ tìm kiếm sử dụng all-MiniLM-L6-v2 kết hợp FAISS IndexFlatIP trên 474 tài liệu ATT&CK v19.2 Enterprise Windows.
 > 
-> *Bằng chứng dự án:* `prompts/baseline_v1.txt` (SHA-256: `b751fde1ee33b03ebca935e478ffef3ff03ff8bcf440263309a039755ab0f7cf`); `attack/corpus/enterprise-windows-v19.2.jsonl` (SHA-256: `b219341154ddf2f12e97d622158a04ab7d57641df6a865559258d365852c3c75`); `config/experiment_config.json`; `tests/test_rag_pipeline.py`."
+> *Bằng chứng dự án:* `prompts/baseline_v1.txt` (SHA-256: `b751fde1ee33b03ec0bdc07cbba10267002d2086cf22b91a74bdfd123856f206`); `attack/corpus/enterprise-windows-v19.2.jsonl` (SHA-256: `b219341154ddf2f12e97d622158a04ab7d57641df6a865559258d365852c3c75`); `config/experiment_config.json` (SHA-256: `961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac`); `tests/test_rag_pipeline.py`."
 
 ---
 
@@ -103,7 +103,7 @@
 ### Ghi chú diễn giả (Speaker Notes)
 > "Tập dữ liệu chuẩn đóng băng Stage B gồm 670 cặp kịch bản đối ứng (1,340 views), chia thành 1,280 TEST views và 60 DEV views. Giao thức chống rò rỉ nhãn áp dụng INFERENCE_ALLOWLIST nghiêm ngặt: đầu vào suy luận inference.jsonl chỉ chứa sample_id và endpoint_evidence; toàn bộ tên luật, mã technique và mô tả đều bị loại trừ tuyệt đối. Nghiên cứu phân định rõ ràng giữa benchmark giả lập Stage B và luồng telemetry thực địa T15.
 > 
-> *Bằng chứng dự án:* `data/ground_truth/synthetic/inference.jsonl` (SHA-256: `90d5f59e64f669f9d7990520625906d40081d5aa112521c7bb5e2f750b3e5fbf`); `data/ground_truth/synthetic/pairs.json` (SHA-256: `079e57a441b18d12351bb9715fc4b0a43058a9ceb68a8670c5e7bfa5dbad3ca8`); `tests/test_benchmark_inputs.py`; `tests/test_synthetic_freeze.py`."
+> *Bằng chứng dự án:* `data/ground_truth/synthetic/inference.jsonl` (SHA-256: `90d5f59e64f669f95d5ddccd86f1f047e10ee3dc46e4b67a8cd13d1ddf2cd4b8`); `data/ground_truth/synthetic/pairs.jsonl` (SHA-256: `079e57a441b18d127739f610e7f62c263d943eefa19ca4ea5c6eab8b8a07665d`); `tests/test_benchmark_inputs.py`; `tests/test_synthetic_freeze.py`."
 
 ---
 
@@ -146,7 +146,7 @@
   - *Hit@5:* $24.09\%$ (173 / 718)
   - *Hit@10:* $44.71\%$ (321 / 718)
   - *Retrieval Miss Rate:* $55.29\%$ (397 / 718)
-  - *Macro Recall@10:* $42.80\%$
+  - *Macro Recall@10:* $42.80\%$  |  *Độ phủ Top-10:* Hit@10 = $44.71\%$
 - **Khoảng cách ngữ nghĩa (Semantic Gap) ở `T1136.001`:**
   - Kỹ thuật `T1136.001` (Create Account: Local Account) đạt **0% Top-10 Hit Rate (0 / 95 canonical TEST views)**.
   - *Ngữ cảnh hệ thống:* Nhật ký Windows Event ID 4720 nhấn mạnh từ ngữ hệ thống ("SamAccountName"), trong khi mô tả STIX ATT&CK nhấn mạnh mục tiêu chiến thuật ("persistence").
@@ -155,32 +155,36 @@
   - Cơ chế ảnh hưởng tới downstream generation đã được đo lường đối chứng, không suy diễn quan hệ nhân quả tuyệt đối.
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Chẩn đoán độc lập khâu tìm kiếm (RQ2) đánh giá độc lập trên 718 canonical TEST views: Hit@1=3.76% (27/718), Hit@3=16.43% (118/718), Hit@5=24.09% (173/718), Hit@10=44.71% (321/718), Retrieval Miss=55.29% (397/718), Macro Recall@10=42.80%. Điển hình là kỹ thuật T1136.001 đạt 0% Top-10 Hit Rate (0/95 canonical TEST views) do khoảng cách ngữ nghĩa giữa Event ID 4720 ('SamAccountName') và mô tả STIX ('persistence').
+> "Chẩn đoán độc lập khâu tìm kiếm (RQ2) đánh giá độc lập trên 718 canonical TEST views: Hit@1=3.76% (27/718), Hit@3=16.43% (118/718), Hit@5=24.09% (173/718), Hit@10=44.71% (321/718), Retrieval Miss=55.29% (397/718), Macro Recall@10=42.80%. Điển hình là kỹ thuật T1136.001 đạt 0% Top-10 Hit Rate (0/95 canonical TEST views) do khoảng cách ngữ nghĩa giữa Event ID 4720 ('SamAccountName') và mô tả STIX ('persistence'). Chúng tôi ghi nhận giả thuyết Context Scaling & Dilution (k=1,3,5,10): tăng k cải thiện độ phủ nhưng tăng nguy cơ nhiễu distractor; giả thuyết này đã được kiểm chứng thực nghiệm đối chứng end-to-end trên ma trận TEST.
 > 
-> Bối cảnh lịch sử T20 pilot (N=756 views) trước đây ghi nhận: Hit@1=4.23%, Hit@3=16.80%, Hit@5=24.21%, Hit@10=45.11%, Miss=54.89%, Macro Recall@10=43.14%, Mean GT Rank khi trúng=5.21, và T1136.001 trúng 0/99. Chúng tôi nêu rõ Ground Truth vắng mặt trong retrieval là chẩn đoán nhãn yếu: Retrieval miss không đồng nghĩa với vắng mặt ngữ cảnh hữu ích, và cơ chế ảnh hưởng tới downstream generation đã được đo lường đối chứng, không suy diễn quan hệ nhân quả tuyệt đối.
-> 
-> *Bằng chứng dự án:* `outputs/reproduction/figures/fig_rq2_retrieval_hit_rates.png`; `outputs/reproduction/tables/table_1_retrieval_diagnostics.md`; `artifacts/results/canonical_metric_bundle_v2.json`; `tests/test_retrieval_diagnostics.py`."
+> *Bằng chứng dự án:* `docs/presentation/figures/canonical_rq2_retrieval_hit_rate.png` (SHA-256: `f8287936d2b5fc24e89584349028f393b801b6bebe668f8bea449c6b67f2128f`); `docs/presentation/figures/fig4_retrieval_hit_rate.png`; `outputs/reproduction/tables/table_1_retrieval_diagnostics.md`; `tests/test_retrieval_diagnostics.py`."
 
 ---
 
-## Slide 7: Tác Động Của Hình Thức Biểu Diễn Telemetry (Representation Gap)
+## Slide 7: Phân Tích Lỗi Khâu Truy Xuất & Chẩn Đoán Có Điều Kiện (RQ2)
 
 ### Nội dung trình chiếu
-- **Phân Tích 278 Cặp Hoàn Chỉnh Đầy Đủ Nhãn GT (Complete GT-Scorable Paired Views):**
-  - Toàn bộ 474 frozen macro classes chỉ có **8 kỹ thuật** xuất hiện trong tập TEST GT (tổng 768 support instances trên 718 scorable views do 40 views đa nhãn multi-GT).
-  - Phân tích cặp: **278 cặp đối sánh hoàn chỉnh** (238 cùng GT + 40 khác GT) phân bố trên **440 cụm** kịch bản.
-  - Ở điều kiện **RAG $k=10$**, cả Single và Contextual view đều đạt độ chính xác quan sát được là **83.81%** (Paired Delta = 0.0 pp, McNemar $p = 1.0$).
-  - Không suy diễn quan hệ nhân quả thuần túy khi nhãn thay đổi giữa các hình thức biểu diễn; kết luận ghi nhận quan sát mô tả độc lập trên ma trận TEST.
-- **Hiện tượng Benign Drift khi mở rộng ngữ cảnh:**
-  - Gom các sự kiện lân cận bổ sung nhiều token thông thường (Explorer, DNS, svchost).
-  - Vector dense embedding bị kéo lệch về hành vi bình thường, làm tụt thứ hạng kỹ thuật tấn công.
-- **Schema So Sánh Đối Chứng Scaffold `[CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW]`:**
-  - Đối chứng: Zero-Shot No-RAG vs Zero-Shot RAG ($k=1..10$) vs Prompt Scaffolds.
+- **Chẩn Đoán Có Điều Kiện Theo Khâu Truy Xuất (TEST N=718):**
+  - Kỹ thuật GT có mặt trong Top-10 (Retrieval Success): $N=321$ ($44.71\%$)
+    - $P(\text{Đúng} \mid \text{Đã truy xuất}) = 91.28\%$ (293 / 321 views được gán đúng).
+  - Kỹ thuật GT vắng mặt trong Top-10 (Retrieval Miss): $N=397$ ($55.29\%$)
+    - $P(\text{Đúng} \mid \text{Vắng mặt}) = 70.03\%$ (278 / 397 views gán đúng nhờ năng lực nội tại LLM).
+  - Khoảng chênh lệch quan sát: **+21.25 pp** (91.28% vs 70.03%) cho thấy sự hiện diện của ngữ cảnh gắn liền với tỷ lệ gán đúng cao hơn.
+  - **Nguyên tắc suy luận:** Trình bày thuần túy dưới dạng tương quan quan sát (observational association), không suy diễn quan hệ nhân quả tuyệt đối.
+- **Bóc Tách Lỗi & Phần Giao Thoa Độc Lập Theo Định Đề D2i:**
+  - Tổng số lỗi phân loại tại $k=10$: **147 views** (718 - 571 = 147).
+  - **Phần giao thoa lỗi (Joint Overlap per D2i):** **119 / 147** ($80.95\%$ tổng lỗi phân loại) xảy ra khi retrieval trượt Top-10.
+  - Lỗi khi retrieval thành công: **28 / 147** ($19.05\%$ tổng lỗi phân loại) mô hình chọn sai kỹ thuật dù đã có trong ngữ cảnh (downstream confusion / distractor effect).
+  - **Tuân thủ định đề D2i:** Ghi nhận đầy đủ phần giao thoa khác 0 giữa các trục đo lường lỗi độc lập, không áp đặt giả định xung khắc hay độc lập xác suất ngẫu nhiên.
+  - **Schema So Sánh Đối Chứng Scaffold:** Không sử dụng prompt scaffold trong giao thức chuẩn tắc.
+  - **Ranh giới an toàn:** Không xuất hiện lỗi API hay lỗi cú pháp mã kỹ thuật trên tập scorable (0 terminal provider failures, 0 invalid IDs).
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Tại Slide 7, phân tích 278 cặp hoàn chỉnh đầy đủ nhãn GT (238 cùng GT + 40 khác GT) phân bố trên 440 cụm kịch bản làm rõ cấu trúc ground truth support: toàn bộ 474 classes chỉ có 8 kỹ thuật xuất hiện trong tập TEST GT (768 support instances trên 718 scorable views do có 40 multi-GT views). Ở điều kiện RAG k=10, cả Single và Contextual view đều đạt 83.81% (paired delta = 0.0 pp, McNemar p = 1.0). Chúng tôi duy trì nhãn [CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW] cho candidate slide deck, nghiêm cấm suy diễn quan hệ nhân quả thuần túy khi hình thức biểu diễn log thay đổi.
+> "Phân tích lỗi khâu truy xuất và chẩn đoán có điều kiện (RQ2) trên tập scorable N=718 cho thấy: khi kỹ thuật đúng có mặt trong Top-10 (N=321), tỷ lệ gán đúng đạt 91.28% (293/321); khi kỹ thuật đúng vắng mặt (N=397), tỷ lệ gán đúng giảm xuống 70.03% (278/397). Độ chênh lệch quan sát được là +21.25 pp. Chúng tôi nhấn mạnh: đây thuần túy là tương quan quan sát trong thực nghiệm (observational association), không áp đặt suy diễn quan hệ nhân quả.
 > 
-> *Bằng chứng dự án:* `scripts/verify_t20_canonical_artifacts.py`; `outputs/reproduction/tables/table_4_pairwise_representation_comparison.md`; `tests/test_t20_canonical_artifacts.py`."
+> Theo định đề phân rã lỗi D2i, trong số 147 trường hợp phân loại sai tại k=10, có tới 119 trường hợp (80.95%) đồng thời rơi vào khâu retrieval miss. Chỉ có 28 trường hợp (19.05%) bị phân loại sai khi kỹ thuật đã được truy xuất thành công.
+> 
+> *Bằng chứng dự án:* `artifacts/results/canonical_metric_bundle_v2.json` (SHA-256: `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`); `reports/experiment_protocol_v1.md` (D2i); `tests/test_experiment_evaluation.py`."
 
 ---
 
@@ -194,7 +198,7 @@
     - **Paired difference CIs vs No-RAG:** Toàn bộ khoảng tin cậy chênh lệch cặp đều chứa 0 (k=10 delta CI **[-2.355, +5.300] pp**; kiểm định McNemar chính xác $p = 0.4219$ / hiển thị $0.422 > 0.05$).
   - *Kiểm định ý nghĩa:* McNemar test $p = 0.4219$ / $0.422 > 0.05$ (không đạt ý nghĩa thống kê ở mức $\alpha = 0.05$).
   - *Quy chuẩn diễn đạt bắt buộc:* Mô tả $k=10$ là **"độ chính xác quan sát được cao nhất trong thử nghiệm kèm độ bất định"** (observed highest tested accuracy and uncertainty). **CẤM** tuyên bố "chiến thắng có ý nghĩa thống kê" hoặc "lợi ích vượt trội trong production".
-  - *Macro-F1 (474 Frozen Universe):* $k=10$ đạt **0.0140** vs No-RAG **0.0126** (Delta +0.0014, có CI riêng [0.0010, 0.0018]; không dùng p-value của Accuracy thay cho Macro-F1).
+  - *Macro-F1 (Vũ trụ 474 lớp D2d FROZEN_BENCHMARK_UNIVERSE):* $k=10$ đạt **0.0140** vs No-RAG **0.0126** (Delta +0.0014; 8 supported classes, 466 zero-support classes).
 - **Mô hình phân rã lỗi theo 3 trục đo lường độc lập (Định đề D2i):**
   - **Trục 1 - Retrieval Miss Rate:** Kỹ thuật ground-truth vắng mặt trong Top-k theo D2h `ANY_MATCH` (k=10: 397 / 718 = 55.29%).
   - **Trục 2 - Downstream Generation Failure:** Invalid ATT&CK ID = 0 (D2e), scorable provider failure = 0 (0 / 3,590 scorable records trên 5 điều kiện; 1 physical retry API_FAILURE thành công với 1,540 cached tokens; 13 INCOMPLETE trên toàn bộ 6,400 dispatches), phân loại sai (Wrong Classification: 147 / 718 = 20.47%).
@@ -208,11 +212,13 @@
   - Toàn vẹn mật mã: Khóa bằng SHA-256 trong `artifacts/results/canonical_metric_bundle_v2.json`.
 
 ### Ghi chú diễn giả (Speaker Notes)
-> "Tại Slide 8, bảng đối chứng RQ1 ghi nhận RAG k=10 đạt độ chính xác quan sát được cao nhất là 79.53% (571/718) so với No-RAG 77.99% (560/718), tức Delta = +1.532 pp. Cần phân biệt rõ: Các khoảng tin cậy liệt kê trên bảng là Absolute Accuracy 95% CIs (no_rag [74.64%, 80.88%], k10 [75.81%, 82.85%]); trong khi toàn bộ khoảng tin cậy chênh lệch cặp (paired difference CIs vs No-RAG) đều chứa 0 (khoảng tin cậy delta của RAG k=10 là [-2.355, +5.300] pp, kiểm định McNemar chính xác p = 0.4219 / hiển thị 0.422 > 0.05). Do đó, nghiên cứu khẳng định đây là 'độ chính xác quan sát được cao nhất trong thử nghiệm kèm độ bất định', tuyệt đối không tuyên bố chiến thắng có ý nghĩa thống kê hay lợi ích vượt trội trong production.
+> "Tại Slide 8, bảng đối chứng RQ1 ghi nhận RAG k=10 đạt độ chính xác quan sát được cao nhất là 79.53% (571/718) so với No-RAG 77.99% (560/718), tức Delta = +1.532 pp (+1.96% relative gain; 95% CI [-2.355, +5.300] pp chứa 0; kiểm định McNemar chính xác p = 0.4219 / hiển thị 0.422 > 0.05). Do đó, nghiên cứu khẳng định đây là 'độ chính xác quan sát được cao nhất trong thử nghiệm kèm độ bất định', tuyệt đối không tuyên bố chiến thắng có ý nghĩa thống kê hay lợi ích vượt trội trong production.
+> 
+> Về Macro-F1: Được đánh giá nhất quán trên toàn bộ vũ trụ 474 lớp kỹ thuật MITRE ATT&CK v19.2 Enterprise Windows theo định đề D2d (FROZEN_BENCHMARK_UNIVERSE = 474), gồm 8 lớp có mẫu hỗ trợ và 466 lớp zero-support: No-RAG đạt 0.0126 vs RAG k=10 đạt 0.0140 (Delta +0.0014).
 > 
 > Quan sát thực nghiệm ghi nhận scorable provider failure = 0 (0 / 3,590 scorable records trên 5 điều kiện; 1 physical retry API_FAILURE thành công với 1,540 cached tokens; 13 INCOMPLETE trên toàn bộ 6,400 dispatches). Về các thước đo có điều kiện tại k=10: P(Correct | GT in Top-k) = 91.28% (293/321), trong khi P(Correct | GT absent Top-k) = 70.03% (278/397); tỷ lệ này không cho phép suy diễn mô hình tự sửa sai nội tại.
 > 
-> *Bằng chứng dự án:* `reports/experiment_protocol_v1.md` (D2e, D2f, D2h, D2i; SHA-256: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`); `artifacts/results/canonical_metric_bundle_v2.json`; `tests/test_experiment_evaluation.py`."
+> *Bằng chứng dự án:* `reports/experiment_protocol_v1.md` (D2d, D2e, D2f, D2h, D2i; SHA-256: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`); `artifacts/results/canonical_metric_bundle_v2.json` (SHA-256: `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`); `tests/test_experiment_evaluation.py`."
 
 ---
 
@@ -223,12 +229,12 @@
   - Chi phí được tính theo **ước tính thận trọng từ bảng giá đóng băng (conservative accounted tariff estimate)**:
     - *No-RAG:* **$0.000365 USD** / logical query (TB 674.3 prompt tokens; trễ trung vị 2,303 ms; TB 2.90s).
     - *RAG $k=10$:* **$0.001679 USD** / logical query (TB 5114.3 prompt tokens; trễ trung vị 2,667 ms; TB 4.37s).
-  - *Bối cảnh phụ:* DEV pilot 20 requests sơ bộ (~$0.0242 USD) phân tách tuyệt đối khỏi tập TEST.
 - **Đánh Đổi Hiệu Năng - Chi Phí Chuẩn Tắc (No-RAG vs RAG $k=10$):**
   - *Hit rate chuẩn tắc (TEST 718):* RAG $k=1$ đạt **3.76%** $\rightarrow$ RAG $k=10$ đạt **44.71%** (No-RAG: **N/A**, không sử dụng retriever).
-  - *Prompt tokens:* Tăng **~7.6x** từ baseline đến $k=10$ (674.3 lên 5114.3 tokens).
-  - *Chi phí logical query:* Tăng **~4.6x** từ baseline đến $k=10$ ($0.000365 lên $0.001679 USD).
+  - *Tăng k từ 1 lên 10 (k1 -> k10):* Lượng prompt tokens tăng **~4.103x** (1,246.5 lên 5,114.3 tokens; chi phí request tăng $0.001013 lên $0.001679 USD).
+  - *So với Baseline No-RAG (674.3 tokens):* $k=10$ tăng **~7.58x** prompt tokens và ~4.6x chi phí logical query ($0.000365 lên $0.001679 USD).
 - **Hạch Toán Tài Chính Toàn Thể 6,400 Requests (6,401 physical attempts vs 6,400 logical requests trên N=1,280 queries / điều kiện):**
+  - Quy mô khảo sát chiến dịch TEST: N=1,280 views/điều kiện (6,400 logical requests, 6,401 physical attempts). Dữ liệu Stage B là telemetry giả lập có cấu trúc (synthetic split), không phải in-the-wild logs.
   - Trần ngân sách tối đa đóng băng cứng: **$19.99 USD** ($19.99000000 USD `hard_budget_limit_usd`).
   - Quyết toán thực tế 5 điều kiện chính thức: **$6.58 settled spend** ($6.57575890 USD), cộng giữ chỗ thận trọng pilot $0.05264010 USD, tổng cam kết là **$6.63 committed spend** ($6.62839900 USD).
   - Số dư chưa cam kết khả dụng còn lại: **$13.36 USD** ($13.36160100 USD net remaining; 0 holds, 0 breach).
@@ -236,12 +242,13 @@
 
 ### Ghi chú diễn giả (Speaker Notes)
 > "Trong phân tích RQ3, toàn bộ chỉ số tài nguyên, độ trễ và chi phí được tính trên toàn bộ 1,280 queries / điều kiện (tổng 6,400 logical requests, 6,401 physical attempts), không rút gọn về 718 scorable views:
-> 1. Độ trễ & Tài nguyên: Phân biệt rõ trễ trung vị (No-RAG 2.30s vs RAG k10 2.67s) và trễ trung bình (No-RAG 2.90s vs RAG k10 4.37s). Lượng prompt tokens trung bình tăng từ 674.3 lên 5114.3 (~7.6x từ baseline đến k10), chi phí mỗi request tăng từ $0.000365 lên $0.001679 USD (~4.6x từ baseline đến k10).
-> 2. Hiệu quả đánh đổi: Hit rate chuẩn tắc trên tập scorable N=718: No-RAG là N/A (không dùng retriever); RAG k=1 đạt Hit@1 = 3.76% (27/718), tăng lên RAG k=10 đạt Hit@10 = 44.71% (321/718).
-> 3. Hạch toán tài chính 8 chữ số thập phân chính xác: Chi phí 5 điều kiện chuẩn đã quyết toán là $6.57575890 USD ($6.58 settled spend), cộng với khoản giữ chỗ thận trọng pilot $0.05264010 USD, tổng chi phí đã cam kết là $6.62839900 USD ($6.63 USD committed spend). Ngân sách khả dụng còn lại là $13.36160100 USD ($13.36 USD net remaining; 0 active holds, 0 breach) trên trần đóng băng cứng $19.99000000 USD ($19.99 budget cap). Chi phí được tính toán theo ước tính thận trọng từ bảng giá đóng băng (conservative accounted tariff estimate).
-> 4. Ngoại lệ & Token Cache: 13 requests chạm trần context/output tokens (8,192 max tokens); 1 attempt API_FAILURE được retry vật lý thành công ghi nhận 1,540 cached tokens (tổng 6,401 physical attempts) với 0 terminal provider failures trên 3,590 scorable records.
+> 1. Dữ liệu thử nghiệm Stage B là dữ liệu tổng hợp (synthetic split). Việc gửi request lên OpenAI không biến log tổng hợp thành dữ liệu thực địa in-the-wild.
+> 2. Độ trễ & Tài nguyên: Phân biệt rõ trễ trung vị (No-RAG 2.30s vs RAG k10 2.67s) và trễ trung bình (No-RAG 2.90s vs RAG k10 4.37s). Lượng prompt tokens trung bình tăng từ 1,246.5 lên 5,114.3 (~4.103x từ k1 đến k10; so với Baseline 674.3 là ~7.58x), chi phí mỗi request tăng từ $0.000365 lên $0.001679 USD (~4.6x từ baseline đến k10).
+> 3. Hiệu quả đánh đổi: Hit rate chuẩn tắc trên tập scorable N=718: No-RAG là N/A (không dùng retriever); RAG k=1 đạt Hit@1 = 3.76% (27/718), tăng lên RAG k=10 đạt Hit@10 = 44.71% (321/718).
+> 4. Hạch toán tài chính 8 chữ số thập phân chính xác: Chi phí 5 điều kiện chuẩn đã quyết toán là $6.57575890 USD ($6.58 settled spend), cộng với khoản giữ chỗ thận trọng pilot $0.05264010 USD, tổng chi phí đã cam kết là $6.62839900 USD ($6.63 USD committed spend). Ngân sách khả dụng còn lại là $13.36160100 USD ($13.36 USD net remaining; 0 active holds, 0 breach) trên trần đóng băng cứng $19.99000000 USD ($19.99 budget cap). Chi phí được tính toán theo ước tính thận trọng từ bảng giá đóng băng (conservative accounted tariff estimate).
+> 5. Ngoại lệ & Token Cache: 13 requests chạm trần context/output tokens (8,192 max tokens); 1 attempt API_FAILURE được retry vật lý thành công ghi nhận 1,540 cached tokens (tổng 6,401 physical attempts) với 0 terminal provider failures trên 3,590 scorable records.
 > 
-> *Bằng chứng dự án:* `docs/report/figures/canonical_rq3_cost_and_latency.png`; `config/experiment_config.json`; `artifacts/results/canonical_metric_bundle_v2.json`; `tests/test_monetary_guard.py`."
+> *Bằng chứng dự án:* `docs/presentation/figures/canonical_rq3_resource_consumption.png` (SHA-256: `ca296165b38b499432f851618e3d6a512964c461e59dc3b646e647ddcb70bfb1`); `docs/presentation/figures/fig7_cost_and_tokens_vs_k.png`; `config/experiment_config.json`; `artifacts/results/canonical_metric_bundle_v2.json` (SHA-256: `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`); `tests/test_monetary_guard.py`."
 
 ---
 

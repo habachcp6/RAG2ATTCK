@@ -1,0 +1,49 @@
+"""Tests for Track E Native Slide Deck Generator and Presentation Renderer.
+
+Re-exports and executes the comprehensive test suite from test_presentation_renderer.py
+to guarantee both test module entrypoints pass across all automated runners.
+"""
+
+from tests.test_presentation_renderer import (
+    test_canonical_metric_bundle_accepted_trust_anchor,
+    test_canonical_metric_bundle_missing_file_rejected,
+    test_canonical_metric_bundle_missing_trust_anchor_rejected,
+    test_canonical_metric_bundle_mutated_bytes_rejected,
+    test_deck_figures_audit_records_exist_and_match,
+    test_embedded_figure_media_digests,
+    test_every_slide_has_speaker_notes_with_source_pointers,
+    test_fixture_only_mode_roundtrip,
+    test_markdown_source_synchronization,
+    test_no_unauthorized_placeholders_or_private_paths_in_slides,
+    test_slide_8_macro_f1_universe_and_slide_9_token_ratios,
+    test_semantic_shapes_and_readable_typography,
+    test_slide_7_canonical_error_diagnostics_and_association_only,
+    test_slide_8_canonical_performance_and_conditional_accuracy_metrics,
+    test_slide_9_resource_metrics_and_whole_study_accounting,
+    test_slide_count_and_widescreen_geometry,
+    test_slide_notes_provenance_hashes,
+    test_strict_absence_of_historical_error_strings,
+    test_visible_canonical_candidate_banner_without_false_final_approval,
+)
+
+__all__ = [
+    "test_slide_count_and_widescreen_geometry",
+    "test_every_slide_has_speaker_notes_with_source_pointers",
+    "test_no_unauthorized_placeholders_or_private_paths_in_slides",
+    "test_visible_canonical_candidate_banner_without_false_final_approval",
+    "test_semantic_shapes_and_readable_typography",
+    "test_slide_8_canonical_performance_and_conditional_accuracy_metrics",
+    "test_slide_9_resource_metrics_and_whole_study_accounting",
+    "test_markdown_source_synchronization",
+    "test_canonical_metric_bundle_accepted_trust_anchor",
+    "test_canonical_metric_bundle_missing_trust_anchor_rejected",
+    "test_canonical_metric_bundle_mutated_bytes_rejected",
+    "test_canonical_metric_bundle_missing_file_rejected",
+    "test_fixture_only_mode_roundtrip",
+    "test_embedded_figure_media_digests",
+    "test_deck_figures_audit_records_exist_and_match",
+    "test_strict_absence_of_historical_error_strings",
+    "test_slide_notes_provenance_hashes",
+    "test_slide_7_canonical_error_diagnostics_and_association_only",
+    "test_rq1_macro_f1_universe_and_slide_9_token_ratios",
+]

@@ -1,0 +1,813 @@
+"""Independent Canonical Validator: Terminal Audit Script for Phase S2.
+
+Executes strictly READ-ONLY verification of complete 6,400 record matrix,
+journal event lifecycle, financial ledger invariants, hash bindings, and
+secret sanitization, generating an independent audit seal.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import re
+from decimal import Decimal
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
+
+from src.experiment.authorization import compute_code_manifest_sha256
+from src.experiment.config import canonical_bytes, digest, load_plan
+from src.experiment.monetary_ledger import (
+    _strict_json_loads,
+    calculate_request_cost_from_receipts,
+    compute_pricing_contract_sha256,
+    round_cost_up,
+    round_credit_down,
+    validate_finite_nonnegative_money,
+)
+from src.experiment.schemas import CONDITIONS, ExperimentRecord
+from src.llm.schemas import ParseStatus
+
+ALLOWED_PARSE_STATUSES: Set[str] = {s.value for s in ParseStatus}
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
+EXPECTED_CANARY_RAW_FIRSTLINE_SHA256 = (
+    "83351ad996f7d4d70910051f47f7a3d4c45a46259431dcf92e764dbf5d554770"
+)
+EXPECTED_CANARY_CANONICAL_DIGEST = (
+    "dabf60970aa5a18d93f95976aafdaeef2d747e24d9bcb7b13176e63e2edde034"
+)
+EXPECTED_PRICING_CONTRACT_SHA256 = (
+    "4adfe8a0630bc1703a92e233133ea55eeff21ef5312dc3102369c267767c9565"
+)
+EXPECTED_LAUNCHER_WRAPPER_SHA256 = (
+    "05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa"
+)
+
+ALLOWED_JOURNAL_EVENTS: Set[str] = {
+    "header",
+    "monetary_reserve",
+    "transition",
+    "attempt",
+    "attempt_receipt",
+    "complete",
+    "monetary_settle",
+    "reservation_abandoned",
+    "monetary_cancel_orphan",
+    "monetary_cancel_hold",
+}
+
+
+class AuditVerificationError(RuntimeError):
+    """Raised whenever a terminal audit gate or invariant is violated."""
+
+
+def audit_completeness_and_cardinality(
+    exp_dir: Path,
+    expected_sample_ids: Set[str],
+    require_all_conditions: bool = True,
+) -> Dict[Tuple[str, str], ExperimentRecord]:
+    """Verify that prediction files exist, are newline-complete,
+
+    and contain exactly the expected unique sample IDs across conditions.
+    """
+    records_by_key: Dict[Tuple[str, str], ExperimentRecord] = {}
+
+    for condition in CONDITIONS:
+        pred_path = exp_dir / f"{condition}_predictions.jsonl"
+        if not pred_path.exists():
+            if require_all_conditions:
+                raise AuditVerificationError(f"Missing prediction file: {pred_path}")
+            continue
+
+        raw_bytes = pred_path.read_bytes()
+        if not raw_bytes.endswith(b"\n"):
+            raise AuditVerificationError(
+                f"Prediction file {pred_path.name} is not newline-terminated (incomplete write)"
+            )
+
+        seen_in_cond: Set[str] = set()
+        lines = [line.strip() for line in raw_bytes.splitlines() if line.strip()]
+
+        if len(lines) != len(expected_sample_ids):
+            raise AuditVerificationError(
+                f"Cardinality error in {condition}: found {len(lines)} records, "
+                f"expected {len(expected_sample_ids)}"
+            )
+
+        for line_idx, line in enumerate(lines):
+            try:
+                row = _strict_json_loads(line)
+            except Exception as exc:
+                raise AuditVerificationError(
+                    f"Malformed JSON at {pred_path.name}:{line_idx + 1}: {exc}"
+                ) from exc
+
+            rec = ExperimentRecord.model_validate(row)
+            if rec.condition != condition:
+                raise AuditVerificationError(
+                    f"Condition mismatch in {pred_path.name}:{line_idx + 1}: "
+                    f"record has '{rec.condition}', file is '{condition}'"
+                )
+
+            if rec.sample_id not in expected_sample_ids:
+                raise AuditVerificationError(
+                    f"Unexpected sample_id '{rec.sample_id}' in {pred_path.name}:{line_idx + 1} "
+                    f"outside test split universe"
+                )
+
+            if rec.sample_id in seen_in_cond:
+                raise AuditVerificationError(
+                    f"Duplicate sample_id '{rec.sample_id}' in {pred_path.name}"
+                )
+            seen_in_cond.add(rec.sample_id)
+
+            if rec.parse_status not in ALLOWED_PARSE_STATUSES:
+                raise AuditVerificationError(
+                    f"Invalid parse_status '{rec.parse_status}' in {pred_path.name}:{line_idx + 1}"
+                )
+
+            key = (rec.sample_id, condition)
+            records_by_key[key] = rec
+
+        if seen_in_cond != expected_sample_ids:
+            missing = expected_sample_ids - seen_in_cond
+            raise AuditVerificationError(
+                f"Missing {len(missing)} sample IDs in {condition}: {list(missing)[:5]}"
+            )
+
+    return records_by_key
+
+
+def audit_journal_join_and_lifecycle(
+    exp_dir: Path,
+    records_by_key: Dict[Tuple[str, str], ExperimentRecord],
+) -> Tuple[Dict[Tuple[str, str], List[Dict[str, Any]]], Dict[Tuple[str, str], Dict[str, Any]]]:
+    """Verify request_journal.jsonl integrity without in-place dictionary overwriting."""
+    journal_path = exp_dir / "request_journal.jsonl"
+    if not journal_path.exists():
+        raise AuditVerificationError(f"Missing journal file at {journal_path}")
+
+    raw_bytes = journal_path.read_bytes()
+    if not raw_bytes.endswith(b"\n"):
+        raise AuditVerificationError("Journal file is not newline-terminated")
+
+    lines = [line.strip() for line in raw_bytes.splitlines() if line.strip()]
+    if not lines:
+        raise AuditVerificationError("Journal file is empty")
+
+    header = _strict_json_loads(lines[0])
+    if header.get("event") != "header":
+        raise AuditVerificationError(f"First journal line must be header event, got {header}")
+
+    manifest_sha = header.get("manifest_sha256")
+    if not manifest_sha:
+        raise AuditVerificationError("Journal header missing manifest_sha256")
+
+    receipts_by_key: Dict[Tuple[str, str], List[Dict[str, Any]]] = {}
+    completed_shas_by_key: Dict[Tuple[str, str], str] = {}
+    settled_events_by_key: Dict[Tuple[str, str], Dict[str, Any]] = {}
+    attempt_ordinals: List[int] = []
+
+    for line_idx, line in enumerate(lines[1:], start=2):
+        ev = _strict_json_loads(line)
+        kind = ev.get("event")
+        if kind not in ALLOWED_JOURNAL_EVENTS:
+            raise AuditVerificationError(f"Unknown journal event '{kind}' at line {line_idx}")
+
+        k_list = ev.get("key")
+        k = tuple(k_list) if isinstance(k_list, list) and len(k_list) == 2 else None
+
+        if kind == "attempt":
+            ord_val = ev.get("ordinal")
+            if not isinstance(ord_val, int) or isinstance(ord_val, bool):
+                raise AuditVerificationError(f"Invalid ordinal {ord_val} at line {line_idx}")
+            attempt_ordinals.append(ord_val)
+
+        elif kind == "attempt_receipt":
+            if not k:
+                raise AuditVerificationError(f"Receipt missing key at line {line_idx}")
+            rec_ord = ev.get("ordinal")
+            rec_idx = ev.get("attempt_index")
+            if not isinstance(rec_ord, int) or not isinstance(rec_idx, int):
+                raise AuditVerificationError(
+                    f"Receipt has non-int ordinal/index at line {line_idx}"
+                )
+            key_receipts = receipts_by_key.setdefault(k, [])
+            if any(r.get("attempt_index") == rec_idx for r in key_receipts):
+                raise AuditVerificationError(
+                    f"Duplicate attempt_index {rec_idx} for key {k} at line {line_idx}"
+                )
+            key_receipts.append(ev)
+
+        elif kind == "complete":
+            if not k:
+                raise AuditVerificationError(f"Complete missing key at line {line_idx}")
+            if k in completed_shas_by_key:
+                raise AuditVerificationError(
+                    f"Duplicate complete event for key {k} at line {line_idx}"
+                )
+            rec_sha = ev.get("record_sha256")
+            if not rec_sha or len(rec_sha) != 64:
+                raise AuditVerificationError(f"Invalid record_sha256 at line {line_idx}")
+            completed_shas_by_key[k] = rec_sha
+
+        elif kind == "monetary_settle":
+            if not k:
+                raise AuditVerificationError(f"Settle missing key at line {line_idx}")
+            if k in settled_events_by_key:
+                raise AuditVerificationError(
+                    f"Duplicate monetary_settle event for key {k} at line {line_idx}"
+                )
+            settled_events_by_key[k] = ev
+
+    # Check monotonic attempt ordinals
+    if attempt_ordinals:
+        expected_seq = list(range(1, len(attempt_ordinals) + 1))
+        if attempt_ordinals != expected_seq:
+            raise AuditVerificationError(
+                f"Non-monotonic or gapped attempt ordinals: seen {len(attempt_ordinals)}, "
+                f"first 5={attempt_ordinals[:5]}, expected contiguous 1..N"
+            )
+
+    # 1:1 join between records, completes, and settlements
+    if set(completed_shas_by_key.keys()) != set(records_by_key.keys()):
+        missing = set(records_by_key.keys()) - set(completed_shas_by_key.keys())
+        raise AuditVerificationError(f"Uncompleted records in journal: {len(missing)}")
+
+    if set(settled_events_by_key.keys()) != set(records_by_key.keys()):
+        missing = set(records_by_key.keys()) - set(settled_events_by_key.keys())
+        raise AuditVerificationError(f"Unsettled records in journal: {len(missing)}")
+
+    for key, rec in records_by_key.items():
+        computed_sha = digest(canonical_bytes(rec.model_dump()))
+        if completed_shas_by_key[key] != computed_sha:
+            raise AuditVerificationError(
+                f"Record digest mismatch for {key}: "
+                f"journal complete has {completed_shas_by_key[key]}, record computed {computed_sha}"
+            )
+
+        settle_ev = settled_events_by_key[key]
+        if settle_ev.get("record_sha256") != computed_sha:
+            raise AuditVerificationError(
+                f"Settlement digest mismatch for {key}: "
+                f"settle has {settle_ev.get('record_sha256')}, record computed {computed_sha}"
+            )
+
+    return receipts_by_key, settled_events_by_key
+
+
+def audit_financial_ledger_and_tariffs(
+    study_root: Path,
+    validator_root: Path,
+    records_by_key: Dict[Tuple[str, str], ExperimentRecord],
+    receipts_by_key: Dict[Tuple[str, str], List[Dict[str, Any]]],
+    settled_events_by_key: Dict[Tuple[str, str], Dict[str, Any]],
+    expected_model: str = "gpt-5.6-luna",
+) -> Tuple[Decimal, Decimal]:
+    """Independently audit study_ledger.json and .study_anchor.json without modifying disk."""
+    pricing_path = validator_root / "config" / "pricing_v1.json"
+    pricing_data = _strict_json_loads(pricing_path.read_bytes())
+    pricing_sha = compute_pricing_contract_sha256(pricing_data)
+
+    anchor_path = study_root / ".study_anchor.json"
+    if not anchor_path.exists():
+        raise AuditVerificationError(f"Missing study anchor at {anchor_path}")
+    anchor = _strict_json_loads(anchor_path.read_bytes())
+
+    if anchor.get("pricing_contract_sha256") != pricing_sha:
+        raise AuditVerificationError("Anchor pricing contract SHA-256 drift")
+    if anchor.get("total_budget_usd") != "19.99000000":
+        raise AuditVerificationError(f"Anchor total budget drift: {anchor.get('total_budget_usd')}")
+    if anchor.get("prior_pilot_provisional_hold_usd") != "0.05264010":
+        raise AuditVerificationError("Anchor pilot hold drift")
+    if anchor.get("initial_available_usd") != "19.93735990":
+        raise AuditVerificationError("Anchor initial available drift")
+
+    ledger_path = study_root / "artifacts" / "study_budget" / "study_ledger.json"
+    if not ledger_path.exists():
+        raise AuditVerificationError(f"Missing study ledger at {ledger_path}")
+    ledger = _strict_json_loads(ledger_path.read_bytes())
+
+    if ledger.get("pricing_contract_sha256") != pricing_sha:
+        raise AuditVerificationError("Ledger pricing contract SHA-256 drift")
+    if ledger.get("total_budget_usd") != "19.99000000":
+        raise AuditVerificationError("Ledger total budget drift")
+    if ledger.get("prior_pilot_provisional_hold_usd") != "0.05264010":
+        raise AuditVerificationError("Ledger pilot hold drift")
+
+    # Native absence semantics: has_breach defaults to False when absent.
+    # If present, it must be boolean False.
+    has_breach_val = ledger.get("has_breach", False)
+    if not isinstance(has_breach_val, bool) or has_breach_val is True:
+        raise AuditVerificationError(f"Study ledger reports breach: has_breach={has_breach_val}")
+
+    breached_records = ledger.get("breached_records", {})
+    if not isinstance(breached_records, dict) or len(breached_records) > 0:
+        raise AuditVerificationError(f"Study ledger reports breached records: {breached_records}")
+
+    active_res = ledger.get("active_reservations", {})
+    if not isinstance(active_res, dict) or len(active_res) > 0:
+        raise AuditVerificationError(
+            f"Active reservations remaining open in ledger at terminal state: {active_res}"
+        )
+
+    res_usd_str = ledger.get("active_reservations_usd", "0.00000000")
+    res_usd = validate_finite_nonnegative_money(res_usd_str, "active_reservations_usd")
+    if res_usd != Decimal("0.0"):
+        raise AuditVerificationError(f"Non-zero active_reservations_usd: {res_usd_str}")
+
+    settled_records = ledger.get("settled_records", {})
+    if not isinstance(settled_records, dict):
+        raise AuditVerificationError("Ledger settled_records must be a dict")
+    if len(settled_records) != len(records_by_key):
+        raise AuditVerificationError(
+            f"Ledger settled records count mismatch: ledger has {len(settled_records)}, "
+            f"expected {len(records_by_key)}"
+        )
+
+    # Validate settlement_records_count field
+    settlement_count = ledger.get("settlement_records_count")
+    if settlement_count is not None:
+        if not isinstance(settlement_count, int) or isinstance(settlement_count, bool):
+            raise AuditVerificationError(
+                "Ledger settlement_records_count must be integer, "
+                f"got {type(settlement_count).__name__}"
+            )
+        if settlement_count != len(records_by_key):
+            raise AuditVerificationError(
+                f"Ledger settlement_records_count mismatch: ledger specifies {settlement_count}, "
+                f"expected {len(records_by_key)}"
+            )
+
+    # Independent tariff recomputation using frozen calculate_request_cost_from_receipts
+    total_recomputed_settled = Decimal("0.0")
+
+    for key, rec in records_by_key.items():
+        key_str = f"{key[0]}:{key[1]}"
+        if key_str not in settled_records:
+            raise AuditVerificationError(f"Key {key_str} missing from ledger settled_records")
+
+        ledger_rec = settled_records[key_str]
+        if not isinstance(ledger_rec, dict):
+            raise AuditVerificationError(f"Ledger record for {key_str} must be a dict")
+
+        settle_ev = settled_events_by_key.get(key)
+        if not settle_ev:
+            raise AuditVerificationError(f"Missing settle event in journal for key {key}")
+
+        if settle_ev.get("breach") is not False:
+            raise AuditVerificationError(
+                f"Journal settle event indicates breach on {key}: {settle_ev.get('breach')}"
+            )
+        if ledger_rec.get("breach") is True:
+            raise AuditVerificationError(f"Ledger record reports breach for {key_str}")
+
+        # Record SHA-256 match
+        computed_sha = digest(canonical_bytes(rec.model_dump()))
+        ledger_sha = ledger_rec.get("record_sha256")
+        if ledger_sha != computed_sha:
+            raise AuditVerificationError(
+                f"Ledger record_sha256 mismatch for {key_str}: "
+                f"ledger={ledger_sha} != computed={computed_sha}"
+            )
+        journal_sha = settle_ev.get("record_sha256")
+        if journal_sha != computed_sha:
+            raise AuditVerificationError(
+                f"Journal settle record_sha256 mismatch for {key}: "
+                f"journal={journal_sha} != computed={computed_sha}"
+            )
+
+        key_receipts = receipts_by_key.get(key, [])
+        if not key_receipts:
+            raise AuditVerificationError(f"No receipts recorded in journal for key {key}")
+
+        last_ord = key_receipts[-1].get("ordinal")
+        calc_cost, breach, breach_reason = calculate_request_cost_from_receipts(
+            attempts_consumed=len(key_receipts),
+            receipts=key_receipts,
+            record=rec,
+            pricing_config=pricing_data,
+            tier="default",
+            expected_model=expected_model,
+            most_recent_attempt_ordinal=last_ord,
+        )
+
+        if breach:
+            raise AuditVerificationError(
+                f"Tariff calculation flagged breach on {key}: {breach_reason}"
+            )
+
+        journal_cost = validate_finite_nonnegative_money(
+            settle_ev.get("cost_usd"), f"journal cost_usd for {key}"
+        )
+        ledger_cost = validate_finite_nonnegative_money(
+            ledger_rec.get("cost_usd"), f"ledger cost_usd for {key_str}"
+        )
+
+        if journal_cost != calc_cost:
+            raise AuditVerificationError(
+                f"Journal cost mismatch for {key}: journal={journal_cost} != calc={calc_cost}"
+            )
+        if ledger_cost != calc_cost:
+            raise AuditVerificationError(
+                f"Ledger cost mismatch for {key_str}: ledger={ledger_cost} != calc={calc_cost}"
+            )
+
+        # Check refund_usd
+        journal_refund = validate_finite_nonnegative_money(
+            settle_ev.get("refund_usd"), f"journal refund_usd for {key}"
+        )
+        ledger_refund = validate_finite_nonnegative_money(
+            ledger_rec.get("refund_usd"), f"ledger refund_usd for {key_str}"
+        )
+        if ledger_refund != journal_refund:
+            raise AuditVerificationError(
+                f"Refund drift for {key_str}: ledger={ledger_refund} != journal={journal_refund}"
+            )
+
+        expected_refund = round_credit_down(Decimal("2.15898240") - calc_cost)
+        if journal_refund != expected_refund:
+            raise AuditVerificationError(
+                f"Refund conservation mismatch for {key}: "
+                f"journal={journal_refund} != expected={expected_refund}"
+            )
+
+        total_recomputed_settled += calc_cost
+
+    total_settled_rounded = round_cost_up(total_recomputed_settled)
+    cumulative_ledger = validate_finite_nonnegative_money(
+        ledger.get("cumulative_settled_cost_usd", "0.0"), "cumulative_settled_cost_usd"
+    )
+    if cumulative_ledger != total_settled_rounded:
+        raise AuditVerificationError(
+            f"Cumulative settled cost mismatch: recorded {cumulative_ledger} "
+            f"!= recomputed sum {total_settled_rounded}"
+        )
+
+    max_available = Decimal("19.93735990")
+    if cumulative_ledger > max_available:
+        raise AuditVerificationError(
+            f"Budget cap breach: cumulative cost {cumulative_ledger} exceeds "
+            f"available {max_available}"
+        )
+
+    expected_avail = round_credit_down(
+        Decimal("19.99000000") - Decimal("0.05264010") - cumulative_ledger
+    )
+    ledger_avail = validate_finite_nonnegative_money(
+        ledger.get("uncommitted_available_balance_usd", "0.0"), "uncommitted_available_balance_usd"
+    )
+    if ledger_avail != expected_avail:
+        raise AuditVerificationError(
+            f"Available balance conservation mismatch: ledger has {ledger_avail}, "
+            f"expected {expected_avail}"
+        )
+
+    return cumulative_ledger, expected_avail
+
+
+def audit_provenance_and_hash_invariants(
+    validator_root: Path,
+    exp_dir: Path,
+    records_by_key: Dict[Tuple[str, str], ExperimentRecord],
+    canary_raw_firstline_hash: Optional[str] = EXPECTED_CANARY_RAW_FIRSTLINE_SHA256,
+    canary_canonical_digest: Optional[str] = EXPECTED_CANARY_CANONICAL_DIGEST,
+    launcher_wrapper_path: Optional[Path] = None,
+    expected_launcher_hash: Optional[str] = EXPECTED_LAUNCHER_WRAPPER_SHA256,
+    fixture_only: bool = False,
+    is_production: bool = False,
+) -> None:
+    """Byte-level verification of canary raw firstline, canonical digest, lock, and launcher."""
+    # 1. Launcher Wrapper Script verification (Fail-closed)
+    if launcher_wrapper_path is not None:
+        if not launcher_wrapper_path.exists():
+            raise AuditVerificationError(
+                f"Missing launcher wrapper script at {launcher_wrapper_path}"
+            )
+        if expected_launcher_hash:
+            actual_launcher_sha = hashlib.sha256(launcher_wrapper_path.read_bytes()).hexdigest()
+            if actual_launcher_sha != expected_launcher_hash:
+                raise AuditVerificationError(
+                    f"Launcher wrapper SHA-256 drift: expected {expected_launcher_hash}, "
+                    f"got {actual_launcher_sha}"
+                )
+    elif is_production:
+        raise AuditVerificationError(
+            "Launcher wrapper script path must be provided in production audit"
+        )
+
+    # 2. Byte-level verification of Canary First Line Raw SHA-256
+    if canary_raw_firstline_hash:
+        canary_pred_file = exp_dir / "no_rag_predictions.jsonl"
+        if not canary_pred_file.exists():
+            raise AuditVerificationError(f"Missing canary prediction file at {canary_pred_file}")
+        raw_lines = canary_pred_file.read_bytes().splitlines(keepends=True)
+        if not raw_lines:
+            raise AuditVerificationError(f"Canary prediction file {canary_pred_file.name} is empty")
+        actual_firstline_sha = hashlib.sha256(raw_lines[0]).hexdigest()
+        if actual_firstline_sha != canary_raw_firstline_hash:
+            raise AuditVerificationError(
+                f"Canary first line raw SHA-256 drift: expected {canary_raw_firstline_hash}, "
+                f"got {actual_firstline_sha}"
+            )
+
+    # 3. Canary Canonical Record Digest
+    if canary_canonical_digest:
+        canary_rec = records_by_key.get(("view_00477e30", "no_rag"))
+        if canary_rec is None:
+            raise AuditVerificationError(
+                "Missing canary record ('view_00477e30', 'no_rag') in records"
+            )
+        actual_canary_digest = digest(canonical_bytes(canary_rec.model_dump()))
+        if actual_canary_digest != canary_canonical_digest:
+            raise AuditVerificationError(
+                f"Canary canonical digest drift: expected {canary_canonical_digest}, "
+                f"got {actual_canary_digest}"
+            )
+
+    # 4. Canonical Lockfile & Core Code Manifest
+    if not fixture_only:
+        lock_path = validator_root / "config" / "canonical_experiment_lock_v1.json"
+        if not lock_path.exists():
+            raise AuditVerificationError(f"Missing canonical lockfile at {lock_path}")
+        lock_data = _strict_json_loads(lock_path.read_bytes())
+        plan_path = validator_root / "config" / "experiment_config.json"
+        if not plan_path.exists():
+            raise AuditVerificationError(f"Missing experiment config at {plan_path}")
+        plan = load_plan(plan_path)
+        for art_name, expected_hash in lock_data.get("artifact_hashes", {}).items():
+            if art_name not in plan.manifest.get("artifacts", {}):
+                raise AuditVerificationError(
+                    f"Locked artifact '{art_name}' missing from plan manifest"
+                )
+            rel_path = plan.manifest["artifacts"][art_name]["path"]
+            art_path = validator_root / rel_path
+            if not art_path.exists():
+                raise AuditVerificationError(f"Missing locked artifact '{art_name}' at {art_path}")
+            actual_hash = digest(art_path.read_bytes())
+            if actual_hash != expected_hash:
+                raise AuditVerificationError(
+                    f"Artifact hash mismatch for '{art_name}': "
+                    f"expected {expected_hash}, got {actual_hash}"
+                )
+
+        # 5. Core Code Manifest SHA-256
+        actual_code_manifest = compute_code_manifest_sha256(validator_root)
+        expected_code_manifest = lock_data.get("code_manifest_sha256")
+        if expected_code_manifest and actual_code_manifest != expected_code_manifest:
+            raise AuditVerificationError(
+                "Core code manifest SHA-256 drift: "
+                f"expected {expected_code_manifest}, got {actual_code_manifest}"
+            )
+
+
+def audit_secret_sanitization(
+    files_to_scan: Sequence[Path],
+    extra_secret_tokens: Optional[Sequence[str]] = None,
+) -> Dict[str, int]:
+    """Scan output files for credential patterns, logging match counts ONLY (never contents)."""
+    secret_patterns = [
+        re.compile(r"sk-[a-zA-Z0-9_-]{20,}"),
+        re.compile(r"Bearer\s+[a-zA-Z0-9_\-\.]{20,}"),
+    ]
+    scan_summary: Dict[str, int] = {}
+
+    for path in files_to_scan:
+        if not path.exists():
+            continue
+        content = path.read_text(encoding="utf-8", errors="ignore")
+        matches = 0
+        for pat in secret_patterns:
+            matches += len(pat.findall(content))
+
+        if extra_secret_tokens:
+            for sec in extra_secret_tokens:
+                if sec and len(sec) > 8 and sec in content:
+                    matches += 1
+
+        scan_summary[path.name] = matches
+        if matches > 0:
+            raise AuditVerificationError(
+                f"Secret leak detected: {matches} secret pattern occurrences found in {path.name}"
+            )
+
+    return scan_summary
+
+
+def generate_audit_seal(
+    exp_dir: Path,
+    study_root: Path,
+    validator_root: Path,
+    output_seal_path: Path,
+    records_by_key: Dict[Tuple[str, str], ExperimentRecord],
+    cumulative_settled_usd: Decimal,
+    uncommitted_avail_usd: Decimal,
+    is_production: bool = False,
+) -> Dict[str, Any]:
+    """Generate separate, private audit seal manifest locking all artifact digests.
+
+    Fails closed if any required file is missing or if records are empty.
+    """
+    total_records = len(records_by_key)
+    if total_records == 0:
+        raise AuditVerificationError("Cannot generate audit seal for empty records")
+
+    if is_production and total_records != 6400:
+        raise AuditVerificationError(
+            f"Production audit seal requires exactly 6,400 records, got {total_records}"
+        )
+
+    required_artifacts = [
+        exp_dir / "manifest.json",
+        exp_dir / "run_summary.json",
+        exp_dir / "request_journal.jsonl",
+        exp_dir / "no_rag_predictions.jsonl",
+        exp_dir / "rag_k1_predictions.jsonl",
+        exp_dir / "rag_k3_predictions.jsonl",
+        exp_dir / "rag_k5_predictions.jsonl",
+        exp_dir / "rag_k10_predictions.jsonl",
+        study_root / "artifacts" / "study_budget" / "study_ledger.json",
+        study_root / ".study_anchor.json",
+    ]
+
+    sealed_digests: Dict[str, str] = {}
+    for p in required_artifacts:
+        if not p.exists():
+            raise AuditVerificationError(f"Missing required artifact for seal: {p.name}")
+        sealed_digests[p.name] = digest(p.read_bytes())
+
+    lock_path = validator_root / "config" / "canonical_experiment_lock_v1.json"
+    lock_data = _strict_json_loads(lock_path.read_bytes()) if lock_path.exists() else {}
+
+    seal_type = (
+        "canonical-independent-validation-seal-v1" if is_production else "fixture_evaluation"
+    )
+    seal_payload: Dict[str, Any] = {
+        "schema_version": "1.0.0",
+        "seal_type": seal_type,
+        "fixture_only": not is_production,
+        "production_ready": is_production,
+        "study_id": "rag2attack-study-wide",
+        "experiment_id": lock_data.get("experiment_id", "synthetic-paired-test-1"),
+        "protocol_version": lock_data.get("protocol_version", "experiment-protocol-v1.1"),
+        "protocol_sha256": lock_data.get("protocol_sha256"),
+        "code_manifest_sha256": lock_data.get("code_manifest_sha256"),
+        "pricing_contract_sha256": EXPECTED_PRICING_CONTRACT_SHA256,
+        "total_records": total_records,
+        "cumulative_settled_cost_usd": str(cumulative_settled_usd),
+        "uncommitted_available_balance_usd": str(uncommitted_avail_usd),
+        "has_breach": False,
+        "sealed_artifact_digests": sealed_digests,
+    }
+
+    output_seal_path.parent.mkdir(parents=True, exist_ok=True)
+    output_seal_path.write_bytes(canonical_bytes(seal_payload))
+    return seal_payload
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    """CLI entrypoint for Phase S2 Terminal Run Independent Audit."""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Phase S2 Terminal Run Independent Canonical Audit"
+    )
+    parser.add_argument(
+        "--exp-dir",
+        type=Path,
+        required=True,
+        help="Path to experiment artifacts directory",
+    )
+    parser.add_argument(
+        "--study-root",
+        type=Path,
+        required=True,
+        help="Path to study root containing anchor and ledger",
+    )
+    parser.add_argument(
+        "--validator-root",
+        type=Path,
+        default=REPO_ROOT,
+        help="Path to validator root directory",
+    )
+    parser.add_argument(
+        "--launcher-path",
+        type=Path,
+        default=None,
+        help="Path to launcher wrapper script for hash verification",
+    )
+    parser.add_argument(
+        "--seal-path",
+        type=Path,
+        default=REPO_ROOT / "reports/evidence/canonical_run_seal_v1.json",
+        help="Path to output seal file",
+    )
+    parser.add_argument(
+        "--is-production",
+        action="store_true",
+        default=False,
+        help="Require strict 6,400 record production completeness and terminal proof gates",
+    )
+    args = parser.parse_args(argv)
+
+    if args.is_production:
+        print("Enforcing production terminal proof gates...")
+        # 1. Lock release gate
+        lock_paths = [
+            args.exp_dir / ".run.lock",
+            args.study_root / "artifacts" / "study_budget" / "study_ledger.json.lock",
+            args.study_root / ".study_anchor.json.lock",
+        ]
+        for lp in lock_paths:
+            if lp.exists():
+                raise AuditVerificationError(
+                    f"Terminal proof failed: active lockfile found at {lp}"
+                )
+
+        # 2. Run summary clean exit gate
+        summary_path = args.exp_dir / "run_summary.json"
+        if not summary_path.exists():
+            raise AuditVerificationError(
+                f"Terminal proof failed: missing run summary at {summary_path}"
+            )
+        summary = _strict_json_loads(summary_path.read_bytes())
+        if summary.get("complete") is not True:
+            raise AuditVerificationError(
+                f"Terminal proof failed: run_summary complete={summary.get('complete')}"
+            )
+        if summary.get("record_count") != 6400:
+            raise AuditVerificationError(
+                "Terminal proof failed: "
+                f"run_summary record_count={summary.get('record_count')} != 6400"
+            )
+
+        # 3. Launcher wrapper requirement
+        launcher_wrapper = args.launcher_path or (
+            args.study_root / "scripts" / "run_experiments.py"
+        )
+        if not launcher_wrapper.exists():
+            raise AuditVerificationError(
+                f"Terminal proof failed: launcher wrapper script missing at {launcher_wrapper}"
+            )
+    else:
+        launcher_wrapper = args.launcher_path
+
+    plan = load_plan(args.validator_root / "config" / "experiment_config.json")
+    expected_ids = {s.sample_id for s in plan.samples}
+
+    print(f"Auditing completeness and cardinality in {args.exp_dir}...")
+    records = audit_completeness_and_cardinality(
+        args.exp_dir, expected_ids, require_all_conditions=args.is_production
+    )
+    print(f"Verified {len(records)} total records.")
+
+    print("Auditing request journal lifecycle and receipt joins...")
+    receipts, settles = audit_journal_join_and_lifecycle(args.exp_dir, records)
+
+    print("Auditing study budget ledger and tariff recomputations...")
+    settled_usd, avail_usd = audit_financial_ledger_and_tariffs(
+        args.study_root, args.validator_root, records, receipts, settles
+    )
+    print(f"Financial verification clean: settled=${settled_usd}, available=${avail_usd}")
+
+    print("Auditing provenance, lockfiles, and canary hash invariants...")
+    audit_provenance_and_hash_invariants(
+        args.validator_root,
+        args.exp_dir,
+        records,
+        launcher_wrapper_path=launcher_wrapper,
+        is_production=args.is_production,
+    )
+
+    print("Auditing secret sanitization...")
+    files_to_scan = (
+        list(args.exp_dir.glob("*.json"))
+        + list(args.exp_dir.glob("*.jsonl"))
+        + [
+            args.study_root / ".study_anchor.json",
+            args.study_root / "artifacts" / "study_budget" / "study_ledger.json",
+        ]
+    )
+    audit_secret_sanitization([p for p in files_to_scan if p.exists()])
+
+    print(f"Generating audit seal at {args.seal_path}...")
+    seal = generate_audit_seal(
+        args.exp_dir,
+        args.study_root,
+        args.validator_root,
+        args.seal_path,
+        records,
+        settled_usd,
+        avail_usd,
+        is_production=args.is_production,
+    )
+    seal_type = seal["seal_type"]
+    digests_count = len(seal["sealed_artifact_digests"])
+    print(f"AUDIT SUCCESS: Seal generated ({seal_type}) with {digests_count} locked digests.")
+    return 0
+
+
+if __name__ == "__main__":
+    import sys
+
+    sys.exit(main())

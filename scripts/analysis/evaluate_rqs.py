@@ -1607,7 +1607,11 @@ def compute_rq3(
                 contextual_records.append((sid, is_correct))
 
             if p_id and v_type:
-                pair_to_views[p_id][v_type] = {"sample_id": sid, "correct": is_correct}
+                pair_to_views[p_id][v_type] = {
+                    "sample_id": sid,
+                    "correct": is_correct,
+                    "gt": tuple(sorted(gt)),
+                }
 
         single_acc = (
             sum(1 for _, c in single_records if c) / len(single_records) if single_records else None
@@ -1620,6 +1624,29 @@ def compute_rq3(
         view_delta = (
             contextual_acc - single_acc
             if contextual_acc is not None and single_acc is not None
+            else None
+        )
+
+        single_view_records = [r for r in rows if r.get("view_type") == "single"]
+        contextual_view_records = [r for r in rows if r.get("view_type") == "contextual"]
+
+        if single_view_records:
+            single_metrics = compute_condition_metrics(single_view_records, inputs, protocol, cond)
+            single_view_macro_f1 = single_metrics.get("macro_f1")
+        else:
+            single_view_macro_f1 = None
+
+        if contextual_view_records:
+            contextual_metrics = compute_condition_metrics(
+                contextual_view_records, inputs, protocol, cond
+            )
+            contextual_view_macro_f1 = contextual_metrics.get("macro_f1")
+        else:
+            contextual_view_macro_f1 = None
+
+        view_macro_f1_delta = (
+            contextual_view_macro_f1 - single_view_macro_f1
+            if contextual_view_macro_f1 is not None and single_view_macro_f1 is not None
             else None
         )
 
@@ -1640,6 +1667,63 @@ def compute_rq3(
         )
 
         n_pairs = len(complete_pairs)
+        single_paired_acc = (both_corr + single_only) / n_pairs if n_pairs > 0 else None
+        contextual_paired_acc = (both_corr + contextual_only) / n_pairs if n_pairs > 0 else None
+        paired_delta = (contextual_only - single_only) / n_pairs if n_pairs > 0 else None
+
+        identical_gt_pairs = [
+            p for p in complete_pairs if set(p["single"]["gt"]) == set(p["contextual"]["gt"])
+        ]
+        divergent_gt_pairs = [
+            p for p in complete_pairs if set(p["single"]["gt"]) != set(p["contextual"]["gt"])
+        ]
+
+        n_ident = len(identical_gt_pairs)
+        ident_both = sum(
+            1 for p in identical_gt_pairs if p["single"]["correct"] and p["contextual"]["correct"]
+        )
+        ident_single = sum(
+            1
+            for p in identical_gt_pairs
+            if p["single"]["correct"] and not p["contextual"]["correct"]
+        )
+        ident_ctx = sum(
+            1
+            for p in identical_gt_pairs
+            if not p["single"]["correct"] and p["contextual"]["correct"]
+        )
+        ident_neither = sum(
+            1
+            for p in identical_gt_pairs
+            if not p["single"]["correct"] and not p["contextual"]["correct"]
+        )
+        ident_s_acc = (ident_both + ident_single) / n_ident if n_ident > 0 else None
+        ident_c_acc = (ident_both + ident_ctx) / n_ident if n_ident > 0 else None
+        ident_delta = (ident_ctx - ident_single) / n_ident if n_ident > 0 else None
+
+        n_div = len(divergent_gt_pairs)
+        div_both = sum(
+            1 for p in divergent_gt_pairs if p["single"]["correct"] and p["contextual"]["correct"]
+        )
+        div_single = sum(
+            1
+            for p in divergent_gt_pairs
+            if p["single"]["correct"] and not p["contextual"]["correct"]
+        )
+        div_ctx = sum(
+            1
+            for p in divergent_gt_pairs
+            if not p["single"]["correct"] and p["contextual"]["correct"]
+        )
+        div_neither = sum(
+            1
+            for p in divergent_gt_pairs
+            if not p["single"]["correct"] and not p["contextual"]["correct"]
+        )
+        div_s_acc = (div_both + div_single) / n_div if n_div > 0 else None
+        div_c_acc = (div_both + div_ctx) / n_div if n_div > 0 else None
+        div_delta = (div_ctx - div_single) / n_div if n_div > 0 else None
+
         single_bools = [p["single"]["correct"] for p in complete_pairs]
         contextual_bools = [p["contextual"]["correct"] for p in complete_pairs]
         mcnemar_views = (
@@ -1657,7 +1741,13 @@ def compute_rq3(
             "single_view_accuracy_e2e": single_acc,
             "contextual_view_accuracy_e2e": contextual_acc,
             "view_accuracy_delta": view_delta,
+            "single_view_macro_f1": single_view_macro_f1,
+            "contextual_view_macro_f1": contextual_view_macro_f1,
+            "view_macro_f1_delta": view_macro_f1_delta,
             "paired_complete_pairs_count": n_pairs,
+            "single_paired_accuracy": single_paired_acc,
+            "contextual_paired_accuracy": contextual_paired_acc,
+            "paired_delta": paired_delta,
             "pair_concordance": {
                 "both_correct_count": both_corr,
                 "both_correct_pct": (both_corr / n_pairs * 100.0) if n_pairs > 0 else 0.0,
@@ -1670,6 +1760,28 @@ def compute_rq3(
                 "both_incorrect_count": both_incorr,
                 "both_incorrect_pct": (both_incorr / n_pairs * 100.0) if n_pairs > 0 else 0.0,
             },
+            "gt_concordance_decomposition": {
+                "identical_gt_pairs": {
+                    "pair_count": n_ident,
+                    "both_correct_count": ident_both,
+                    "single_only_correct_count": ident_single,
+                    "contextual_only_correct_count": ident_ctx,
+                    "both_incorrect_count": ident_neither,
+                    "single_paired_accuracy": ident_s_acc,
+                    "contextual_paired_accuracy": ident_c_acc,
+                    "paired_delta": ident_delta,
+                },
+                "divergent_gt_pairs": {
+                    "pair_count": n_div,
+                    "both_correct_count": div_both,
+                    "single_only_correct_count": div_single,
+                    "contextual_only_correct_count": div_ctx,
+                    "both_incorrect_count": div_neither,
+                    "single_paired_accuracy": div_s_acc,
+                    "contextual_paired_accuracy": div_c_acc,
+                    "paired_delta": div_delta,
+                },
+            },
             "mcnemar_test_views_exploratory": mcnemar_views,
         }
 
@@ -1679,6 +1791,127 @@ def compute_rq3(
         "tradeoffs_by_condition": tradeoff_by_condition,
         "whole_study_financial_accounting": whole_study_accounting,
         "view_diagnostics": view_diagnostics_by_condition,
+    }
+
+
+# ===========================================================================
+# NEW PROPOSED PRODUCER: Stratified Ground Truth Complexity & Subset Analysis
+# ===========================================================================
+
+
+def compute_stratified_gt_complexity_producer(
+    inputs: EvaluationInputs,
+    protocol: ScientificProtocolApproval,
+    condition_metrics: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
+    """NEW PROPOSED PRODUCER: Stratified analysis by ground-truth complexity.
+
+    Evaluates scorable views partitioned into:
+      - Single-GT subset: views with exactly 1 annotated technique ID (N=678 on TEST).
+      - Multi-GT subset: views with >=2 annotated technique IDs
+        (N=40 on TEST, evaluated via ANY_MATCH).
+
+    Preserves the frozen 474-class benchmark universe and Decision D2a ANY_MATCH semantics.
+    Requires explicit Codex authorization prior to canonical reporting inclusion.
+    """
+    if condition_metrics is None:
+        condition_metrics = {
+            c: compute_condition_metrics(inputs.records, inputs, protocol, c) for c in CONDITIONS
+        }
+
+    by_cond = {}
+    for cond in CONDITIONS:
+        cond_records = [r for r in inputs.records if r["condition"] == cond]
+        scorable_records = []
+        for r in cond_records:
+            sid = r["sample_id"]
+            gt = inputs.ground_truth.get(sid, ())
+            status = inputs.ground_truth_status.get(sid, "mapped" if gt else "unmapped")
+            if status == "mapped" and gt:
+                scorable_records.append(r)
+
+        single_gt_records = []
+        multi_gt_records = []
+        for r in scorable_records:
+            sid = r["sample_id"]
+            gt = inputs.ground_truth.get(sid, ())
+            if len(gt) == 1:
+                single_gt_records.append(r)
+            elif len(gt) >= 2:
+                multi_gt_records.append(r)
+
+        s_corr = sum(
+            1
+            for r in single_gt_records
+            if r["parse_status"] == "VALID"
+            and bool(r.get("parsed_technique_ids"))
+            and r["parsed_technique_ids"][0] in set(inputs.ground_truth.get(r["sample_id"], ()))
+        )
+        m_corr = sum(
+            1
+            for r in multi_gt_records
+            if r["parse_status"] == "VALID"
+            and bool(r.get("parsed_technique_ids"))
+            and r["parsed_technique_ids"][0] in set(inputs.ground_truth.get(r["sample_id"], ()))
+        )
+
+        n_s = len(single_gt_records)
+        n_m = len(multi_gt_records)
+        s_acc = s_corr / n_s if n_s > 0 else None
+        m_acc = m_corr / n_m if n_m > 0 else None
+        delta = (m_acc - s_acc) if (m_acc is not None and s_acc is not None) else None
+
+        tot_corr = s_corr + m_corr
+        tot_n = len(scorable_records)
+        tot_acc = tot_corr / tot_n if tot_n > 0 else None
+
+        if single_gt_records:
+            single_gt_metrics = compute_condition_metrics(single_gt_records, inputs, protocol, cond)
+            single_gt_macro_f1 = single_gt_metrics.get("macro_f1")
+        else:
+            single_gt_macro_f1 = None
+
+        if multi_gt_records:
+            multi_gt_metrics = compute_condition_metrics(multi_gt_records, inputs, protocol, cond)
+            multi_gt_macro_f1 = multi_gt_metrics.get("macro_f1")
+        else:
+            multi_gt_macro_f1 = None
+
+        complexity_f1_delta = (
+            multi_gt_macro_f1 - single_gt_macro_f1
+            if multi_gt_macro_f1 is not None and single_gt_macro_f1 is not None
+            else None
+        )
+
+        overall_macro_f1_ref = (
+            condition_metrics[cond]["macro_f1"] if cond in condition_metrics else None
+        )
+
+        by_cond[cond] = {
+            "condition": cond,
+            "single_gt_sample_count": n_s,
+            "single_gt_correct_count": s_corr,
+            "single_gt_accuracy_e2e": s_acc,
+            "single_gt_macro_f1": single_gt_macro_f1,
+            "multi_gt_sample_count": n_m,
+            "multi_gt_correct_count": m_corr,
+            "multi_gt_accuracy_e2e": m_acc,
+            "multi_gt_macro_f1": multi_gt_macro_f1,
+            "complexity_accuracy_delta": delta,
+            "complexity_macro_f1_delta": complexity_f1_delta,
+            "overall_scorable_sample_count": tot_n,
+            "overall_scorable_accuracy_e2e": tot_acc,
+            "overall_macro_f1_reference": overall_macro_f1_ref,
+        }
+
+    return {
+        "producer_label": (
+            "NEW PROPOSED PRODUCER: Stratified Ground Truth Complexity & Subset Analysis"
+        ),
+        "protocol_approval_required": True,
+        "frozen_benchmark_universe_size": 474,
+        "multi_gt_semantics": protocol.d2a_ground_truth_semantics,
+        "by_condition": by_cond,
     }
 
 
@@ -1756,6 +1989,9 @@ def run_rq_analysis(
         "rq1": rq1,
         "rq2": rq2,
         "rq3": rq3,
+        "new_proposed_producer_stratified_gt_complexity": compute_stratified_gt_complexity_producer(
+            inputs, protocol, cond_metrics
+        ),
     }
 
     if output_dir is not None:
@@ -2018,11 +2254,13 @@ def generate_rq_markdown_report(analysis_dict: dict[str, Any]) -> str:
             "### Paired View Diagnostics (Single-View vs Contextual-View)",
             "",
             "> *TEST split scorable cohort contains 278 single views and 440 contextual views.* "
-            "*Concordance evaluated on complete scorable pairs.*",
+            "*Complete paired analysis evaluates the 278 pairs where both views are scorable.*",
             "",
-            "| Condition | Single Acc | Contextual Acc | Delta (Ctx - Sgl) | "
-            "Concordant Both Corr | Ctx Win | Sgl Win |",
-            "| :--- | :---: | :---: | :---: | :---: | :---: | :---: |",
+            "| Condition | Single Acc | Single F1 (474) | Ctx Acc | Ctx F1 (474) | "
+            "Single Paired Acc | Ctx Paired Acc | Paired Delta (Ctx - Sgl) | "
+            "Both Corr | Ctx Win | Sgl Win | Both Incorr |",
+            "| :--- | :---: | :---: | :---: | :---: | :---: | "
+            ":---: | :---: | :---: | :---: | :---: | :---: |",
         ]
     )
 
@@ -2034,22 +2272,170 @@ def generate_rq_markdown_report(analysis_dict: dict[str, Any]) -> str:
             if row.get("single_view_accuracy_e2e") is not None
             else "-"
         )
+        s_f1 = (
+            f"{row.get('single_view_macro_f1', 0.0):.4f}"
+            if row.get("single_view_macro_f1") is not None
+            else "-"
+        )
         c_acc = (
             f"{row.get('contextual_view_accuracy_e2e', 0.0):.4f}"
             if row.get("contextual_view_accuracy_e2e") is not None
             else "-"
         )
-        d_val = row.get("view_accuracy_delta")
-        d_str = f"{d_val:+.4f}" if d_val is not None else "-"
+        c_f1 = (
+            f"{row.get('contextual_view_macro_f1', 0.0):.4f}"
+            if row.get("contextual_view_macro_f1") is not None
+            else "-"
+        )
+        s_paired = (
+            f"{row.get('single_paired_accuracy', 0.0):.4f}"
+            if row.get("single_paired_accuracy") is not None
+            else "-"
+        )
+        c_paired = (
+            f"{row.get('contextual_paired_accuracy', 0.0):.4f}"
+            if row.get("contextual_paired_accuracy") is not None
+            else "-"
+        )
+        p_delta = row.get("paired_delta")
+        p_delta_str = f"{p_delta:+.4f}" if p_delta is not None else "-"
 
         p_conc = row.get("pair_concordance", {})
         both_c = p_conc.get("both_correct_count", "-")
         ctx_win = p_conc.get("contextual_only_correct_count", "-")
         sgl_win = p_conc.get("single_only_correct_count", "-")
+        both_inc = p_conc.get("both_incorrect_count", "-")
 
         lines.append(
-            f"| `{cond}` | {s_acc} | {c_acc} | {d_str} | {both_c} | {ctx_win} | {sgl_win} |"
+            f"| `{cond}` | {s_acc} | {s_f1} | {c_acc} | {c_f1} | {s_paired} | {c_paired} | "
+            f"{p_delta_str} | {both_c} | {ctx_win} | {sgl_win} | {both_inc} |"
         )
+
+    lines.extend(
+        [
+            "",
+            "#### Complete Pair Ground Truth Concordance Decomposition",
+            "",
+            "> *Stratification of complete scorable pairs (N=278) by ground truth technique "
+            "label concordance:*",
+            "> *Identical GT: pairs where single and contextual view share identical "
+            "ground truth technique labels (N=238).* ",
+            "> *Divergent GT: pairs where single and contextual view annotate distinct "
+            "ground truth technique labels (N=40).* ",
+            "",
+            "| Condition | Identical Pairs | Ident Sgl Acc | Ident Ctx Acc | Ident Delta | "
+            "Divergent Pairs | Div Sgl Acc | Div Ctx Acc | Div Delta |",
+            "| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |",
+        ]
+    )
+    for cond in CONDITIONS:
+        row = views.get(cond, {})
+        decomp = row.get("gt_concordance_decomposition", {})
+        ident = decomp.get("identical_gt_pairs", {})
+        div = decomp.get("divergent_gt_pairs", {})
+        n_ident = ident.get("pair_count", "-")
+        i_s_acc = (
+            f"{ident.get('single_paired_accuracy', 0.0):.4f}"
+            if ident.get("single_paired_accuracy") is not None
+            else "-"
+        )
+        i_c_acc = (
+            f"{ident.get('contextual_paired_accuracy', 0.0):.4f}"
+            if ident.get("contextual_paired_accuracy") is not None
+            else "-"
+        )
+        i_delta = (
+            f"{ident.get('paired_delta', 0.0):+.4f}"
+            if ident.get("paired_delta") is not None
+            else "-"
+        )
+
+        n_div = div.get("pair_count", "-")
+        d_s_acc = (
+            f"{div.get('single_paired_accuracy', 0.0):.4f}"
+            if div.get("single_paired_accuracy") is not None
+            else "-"
+        )
+        d_c_acc = (
+            f"{div.get('contextual_paired_accuracy', 0.0):.4f}"
+            if div.get("contextual_paired_accuracy") is not None
+            else "-"
+        )
+        d_delta = (
+            f"{div.get('paired_delta', 0.0):+.4f}" if div.get("paired_delta") is not None else "-"
+        )
+
+        lines.append(
+            f"| `{cond}` | {n_ident} | {i_s_acc} | {i_c_acc} | {i_delta} | "
+            f"{n_div} | {d_s_acc} | {d_c_acc} | {d_delta} |"
+        )
+
+    stratified_producer = analysis_dict.get("new_proposed_producer_stratified_gt_complexity")
+    if stratified_producer:
+        lines.extend(
+            [
+                "",
+                "---",
+                "",
+                "## NEW PROPOSED PRODUCER: Stratified Ground Truth Complexity & Subset Analysis",
+                "",
+                "> [!IMPORTANT]",
+                "> **Protocol Approval Required**: This is an exploratory proposed producer that "
+                "evaluates scorable views partitioned into Single-GT (N=678 on TEST) vs Multi-GT "
+                "(N=40 on TEST under Decision D2a ANY_MATCH). Macro-F1 is evaluated across the "
+                "frozen 474-class benchmark universe. Explicit supervisor authorization is "
+                "required prior to canonical reporting inclusion.",
+                "",
+                "| Condition | Single-GT (N) | Single-GT Acc | Single-GT F1 (474) | Multi-GT (N) | "
+                "Multi-GT Acc (ANY_MATCH) | Multi-GT F1 (474) | Complexity Delta (Acc) | "
+                "Overall Scorable Acc | Overall F1 (Ref) |",
+                "| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |",
+            ]
+        )
+        by_cond_strat = stratified_producer.get("by_condition", {})
+        for cond in CONDITIONS:
+            row = by_cond_strat.get(cond, {})
+            n_s = row.get("single_gt_sample_count", "-")
+            s_acc = (
+                f"{row.get('single_gt_accuracy_e2e', 0.0):.4f}"
+                if row.get("single_gt_accuracy_e2e") is not None
+                else "-"
+            )
+            s_f1 = (
+                f"{row.get('single_gt_macro_f1', 0.0):.4f}"
+                if row.get("single_gt_macro_f1") is not None
+                else "-"
+            )
+            n_m = row.get("multi_gt_sample_count", "-")
+            m_acc = (
+                f"{row.get('multi_gt_accuracy_e2e', 0.0):.4f}"
+                if row.get("multi_gt_accuracy_e2e") is not None
+                else "-"
+            )
+            m_f1 = (
+                f"{row.get('multi_gt_macro_f1', 0.0):.4f}"
+                if row.get("multi_gt_macro_f1") is not None
+                else "-"
+            )
+            c_delta = (
+                f"{row.get('complexity_accuracy_delta', 0.0):+.4f}"
+                if row.get("complexity_accuracy_delta") is not None
+                else "-"
+            )
+            tot_acc = (
+                f"{row.get('overall_scorable_accuracy_e2e', 0.0):.4f}"
+                if row.get("overall_scorable_accuracy_e2e") is not None
+                else "-"
+            )
+            tot_f1 = (
+                f"{row.get('overall_macro_f1_reference', 0.0):.4f}"
+                if row.get("overall_macro_f1_reference") is not None
+                else "-"
+            )
+            lines.append(
+                f"| `{cond}` | {n_s} | {s_acc} | {s_f1} | {n_m} | {m_acc} | {m_f1} | "
+                f"{c_delta} | {tot_acc} | {tot_f1} |"
+            )
 
     lines.append("")
     return "\n".join(lines)
@@ -2083,7 +2469,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("reports/analysis"),
+        default=Path("outputs/canonical_analysis"),
         help="Directory to write rq_analysis.json and rq_analysis_summary.md",
     )
     parser.add_argument(

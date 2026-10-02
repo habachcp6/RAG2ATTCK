@@ -14,32 +14,35 @@
     </style>
   </defs>
   <rect width="100%" height="100%" fill="#ffffff"/>
-  <text x="375" y="32" class="title" text-anchor="middle">Figure 4: Dense Retrieval Hit Rate across RAG Conditions</text>
-  <text x="375" y="52" class="subtitle" text-anchor="middle">Hit@k / any-match retrieval hit rate across N=718 queries (ground-truth technique in top-k context)</text>
+  <text x="375" y="32" class="title" text-anchor="middle">Figure 3: Macro-F1 vs. Retrieval Depth (k) Across 474 ATT&amp;CK Classes</text>
+  <text x="375" y="52" class="subtitle" text-anchor="middle">Frozen Benchmark Universe (8 supported classes, 466 zero-support classes contributing 0)</text>
   <line x1="120" y1="350" x2="660" y2="350" class="grid-line"/>
-  <text x="110" y="354" class="tick-label" style="text-anchor: end;">0%</text>
+  <text x="110" y="354" class="tick-label" style="text-anchor: end;">0.0110</text>
   <line x1="120" y1="290" x2="660" y2="290" class="grid-line"/>
-  <text x="110" y="294" class="tick-label" style="text-anchor: end;">15%</text>
+  <text x="110" y="294" class="tick-label" style="text-anchor: end;">0.0120</text>
   <line x1="120" y1="230" x2="660" y2="230" class="grid-line"/>
-  <text x="110" y="234" class="tick-label" style="text-anchor: end;">30%</text>
+  <text x="110" y="234" class="tick-label" style="text-anchor: end;">0.0130</text>
   <line x1="120" y1="170" x2="660" y2="170" class="grid-line"/>
-  <text x="110" y="174" class="tick-label" style="text-anchor: end;">45%</text>
+  <text x="110" y="174" class="tick-label" style="text-anchor: end;">0.0140</text>
   <line x1="120" y1="110" x2="660" y2="110" class="grid-line"/>
-  <text x="110" y="114" class="tick-label" style="text-anchor: end;">60%</text>
+  <text x="110" y="114" class="tick-label" style="text-anchor: end;">0.0150</text>
   <line x1="120" y1="90" x2="120" y2="350" stroke="#374151" stroke-width="1.5"/>
   <line x1="120" y1="350" x2="660" y2="350" stroke="#374151" stroke-width="1.5"/>
-  <text x="45" y="230" class="axis-label" transform="rotate(-90 45 230)" text-anchor="middle">Hit@k / Any-Match Hit Rate (%)</text>
-  <rect x="170" y="334.958217270195" width="60" height="15.041782729804993" fill="#0ea5e9" rx="4" ry="4" opacity="0.85"/>
-  <text x="200" y="324.958217270195" class="data-label">3.76%</text>
-  <text x="200" y="370" class="tick-label">RAG k=1</text>
-  <rect x="310" y="284.26183844011143" width="60" height="65.73816155988857" fill="#0ea5e9" rx="4" ry="4" opacity="0.85"/>
-  <text x="340" y="274.26183844011143" class="data-label">16.43%</text>
-  <text x="340" y="370" class="tick-label">RAG k=3</text>
-  <rect x="450" y="253.62116991643455" width="60" height="96.37883008356545" fill="#0ea5e9" rx="4" ry="4" opacity="0.85"/>
-  <text x="480" y="243.62116991643455" class="data-label">24.09%</text>
-  <text x="480" y="370" class="tick-label">RAG k=5</text>
-  <rect x="590" y="171.16991643454037" width="60" height="178.83008356545963" fill="#0ea5e9" rx="4" ry="4" opacity="0.85"/>
-  <text x="620" y="161.16991643454037" class="data-label">44.71%</text>
-  <text x="620" y="370" class="tick-label">RAG k=10</text>
-  <text x="375" y="415" font-size="11" fill="#64748b" text-anchor="middle">* No-RAG has k=0 and is omitted from retrieval evaluation (retrieval not applicable).</text>
+  <text x="35" y="230" class="axis-label" transform="rotate(-90 35 230)" text-anchor="middle">Macro-F1 (474 Classes)</text>
+  <circle cx="170" cy="253.49803856553288" r="6" fill="#8b5cf6"/>
+  <text x="170" y="241.49803856553288" class="data-label">0.0126</text>
+  <text x="170" y="370" class="tick-label">No-RAG</text>
+  <circle cx="280" cy="249.9238633540409" r="6" fill="#8b5cf6"/>
+  <text x="280" y="237.9238633540409" class="data-label">0.0127</text>
+  <text x="280" y="370" class="tick-label">k=1</text>
+  <circle cx="390" cy="191.43827227600178" r="6" fill="#8b5cf6"/>
+  <text x="390" y="179.43827227600178" class="data-label">0.0136</text>
+  <text x="390" y="370" class="tick-label">k=3</text>
+  <circle cx="500" cy="176.55321540612258" r="6" fill="#8b5cf6"/>
+  <text x="500" y="164.55321540612258" class="data-label">0.0139</text>
+  <text x="500" y="370" class="tick-label">k=5</text>
+  <circle cx="610" cy="168.57200691577347" r="6" fill="#8b5cf6"/>
+  <text x="610" y="156.57200691577347" class="data-label">0.0140</text>
+  <text x="610" y="370" class="tick-label">k=10</text>
+  <polyline points="170,253.49803856553288 280,249.9238633540409 390,191.43827227600178 500,176.55321540612258 610,168.57200691577347" fill="none" stroke="#7c3aed" stroke-width="2.5"/>
 </svg>

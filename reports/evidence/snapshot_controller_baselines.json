@@ -1,0 +1,22 @@
+{
+  "attempted_egress_count": 0,
+  "code_manifest_sha256": "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4",
+  "controller_attestation": {
+    "exit_code": 0,
+    "immutability_verified": true,
+    "post_fingerprint": "ae9b992b30275075f20cebc25d64195a54d42db9fdd1c12acc735e664d6d68fd",
+    "pre_fingerprint": "ae9b992b30275075f20cebc25d64195a54d42db9fdd1c12acc735e664d6d68fd",
+    "python_executable": "C:/Users/hahoa/.codex/artifacts/rag2attck/finalization_snapshots/b69a690/.venv/Scripts/python.exe",
+    "snapshot_root": "C:/Users/hahoa/.codex/artifacts/rag2attck/finalization_snapshots/b69a690",
+    "stderr": "",
+    "stdout": "",
+    "task": "verify_baselines"
+  },
+  "evaluate_rqs_sha256": "f85d7f7373e825dcc7171ce4491fd15c6fb755955da245041783fe317bc80351",
+  "loaded_origins": {},
+  "loaded_origins_count": 0,
+  "src_rag_init_has_bom": true,
+  "src_rag_init_sha256": "1d16d258b4c3f89aac043fad68a19031bf16d21daad4251846ba2f4297fa16c1",
+  "status": "PASS",
+  "task": "verify_baselines"
+}

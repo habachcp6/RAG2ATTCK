@@ -325,8 +325,9 @@ def svg_header(width: int, height: int, title: str, fixture_only: bool = False) 
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" height="{height}">
   <defs>
     <style>
-      .title {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #111827; }}
-      .subtitle {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; fill: #6b7280; }}
+      @page {{ size: {width}px {height}px; margin: 0; }}
+      .title {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #111827; text-anchor: middle; }}
+      .subtitle {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; fill: #6b7280; text-anchor: middle; }}
       .axis-label {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; fill: #374151; }}
       .tick-label {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 10px; fill: #4b5563; text-anchor: middle; }}
       .data-label {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: bold; fill: #1f2937; text-anchor: middle; }}
@@ -354,8 +355,8 @@ def svg_footer() -> str:
 def generate_fig1_architecture(out_path: Path, fixture_only: bool = False) -> None:
     """Fig 1: System Architecture Diagram."""
     svg = svg_header(850, 490, "RAG2ATTCK Architecture", fixture_only=fixture_only)
-    svg += '  <text x="425" y="32" class="title">Figure 1: RAG2ATTCK Dual-View Attribution Architecture</text>\n'
-    svg += '  <text x="425" y="52" class="subtitle">Controlled evaluation pipeline across 5 conditions with strict monetary and ledger governance</text>\n'
+    svg += '  <text x="425" y="32" class="title" text-anchor="middle">Figure 1: RAG2ATTCK Dual-View Attribution Architecture</text>\n'
+    svg += '  <text x="425" y="52" class="subtitle" text-anchor="middle">Controlled evaluation pipeline across 5 conditions with strict monetary and ledger governance</text>\n'
 
     # Boxes
     boxes = [
@@ -412,8 +413,8 @@ def generate_fig2_accuracy(data: Dict[str, Any], out_path: Path) -> None:
     """Fig 2: Attribution Accuracy vs k with error bars."""
     fixture_only = data.get("fixture_only", False)
     svg = svg_header(750, 450, "Attribution Accuracy vs k", fixture_only=fixture_only)
-    svg += '  <text x="375" y="32" class="title">Figure 2: Technique Attribution Accuracy vs. Retrieval Depth (k)</text>\n'
-    svg += '  <text x="375" y="52" class="subtitle">Evaluated on N=718 mapped TEST views; error bars represent 95% pair-clustered bootstrap CIs</text>\n'
+    svg += '  <text x="375" y="32" class="title" text-anchor="middle">Figure 2: Technique Attribution Accuracy vs. Retrieval Depth (k)</text>\n'
+    svg += '  <text x="375" y="52" class="subtitle" text-anchor="middle">Evaluated on N=718 mapped TEST views; error bars represent 95% pair-clustered bootstrap CIs</text>\n'
 
     conditions = ["no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10"]
     labels = ["No-RAG (k=0)", "RAG (k=1)", "RAG (k=3)", "RAG (k=5)", "RAG (k=10)"]
@@ -441,7 +442,7 @@ def generate_fig2_accuracy(data: Dict[str, Any], out_path: Path) -> None:
         color = "#3b82f6" if c_name != "no_rag" else "#94a3b8"
         svg += f'  <rect x="{x_p - bar_width//2}" y="{y_pixel}" width="{bar_width}" height="{360 - y_pixel}" fill="{color}" rx="4" ry="4" opacity="0.85"/>\n'
         svg += f'  <text x="{x_p}" y="{y_pixel - 14}" class="data-label">{acc:.2f}%</text>\n'
-        svg += f'  <text x="{x_p}" y="380" class="tick-label">{labels[idx]}</text>\n'
+        svg += f'  <text x="{x_p}" y="{380}" class="tick-label">{labels[idx]}</text>\n'
 
         # Draw 95% bootstrap error bars
         ci_low = data["conditions"][c_name].get("ci_low", acc - 3.1)
@@ -478,8 +479,8 @@ def generate_fig3_macro_f1(data: Dict[str, Any], out_path: Path) -> None:
     """Fig 3: Macro-F1 vs k."""
     fixture_only = data.get("fixture_only", False)
     svg = svg_header(750, 450, "Macro-F1 vs k", fixture_only=fixture_only)
-    svg += '  <text x="375" y="32" class="title">Figure 3: Macro-F1 vs. Retrieval Depth (k) Across 474 ATT&amp;CK Classes</text>\n'
-    svg += '  <text x="375" y="52" class="subtitle">Frozen Benchmark Universe (8 supported classes, 466 zero-support classes contributing 0)</text>\n'
+    svg += '  <text x="375" y="32" class="title" text-anchor="middle">Figure 3: Macro-F1 vs. Retrieval Depth (k) Across 474 ATT&amp;CK Classes</text>\n'
+    svg += '  <text x="375" y="52" class="subtitle" text-anchor="middle">Frozen Benchmark Universe (8 supported classes, 466 zero-support classes contributing 0)</text>\n'
 
     # y-axis: 0.011 to 0.015
     for f1_val, y_val in [(0.011, 350), (0.012, 290), (0.013, 230), (0.014, 170), (0.015, 110)]:
@@ -517,8 +518,8 @@ def generate_fig4_retrieval_hit_rate(data: Dict[str, Any], out_path: Path) -> No
     """Fig 4: Hit@k Retrieval Performance."""
     fixture_only = data.get("fixture_only", False)
     svg = svg_header(750, 450, "Retrieval Hit Rate vs k", fixture_only=fixture_only)
-    svg += '  <text x="375" y="32" class="title">Figure 4: Dense Retrieval Hit Rate (Recall@k) Across RAG Conditions</text>\n'
-    svg += '  <text x="375" y="52" class="subtitle">Proportion of N=718 queries where ground-truth technique was present in top-k context</text>\n'
+    svg += '  <text x="375" y="32" class="title" text-anchor="middle">Figure 4: Dense Retrieval Hit Rate (Recall@k) Across RAG Conditions</text>\n'
+    svg += '  <text x="375" y="52" class="subtitle" text-anchor="middle">Proportion of N=718 queries where ground-truth technique was present in top-k context</text>\n'
 
     for pct, y_val in [(0, 350), (15, 290), (30, 230), (45, 170), (60, 110)]:
         svg += f'  <line x1="120" y1="{y_val}" x2="660" y2="{y_val}" class="grid-line"/>\n'
@@ -550,19 +551,19 @@ def generate_fig4_retrieval_hit_rate(data: Dict[str, Any], out_path: Path) -> No
 
 
 def generate_fig5_conditional_accuracy(data: Dict[str, Any], out_path: Path) -> None:
-    """Fig 5: Conditional Accuracy (Hit vs Miss)."""
+    """Fig 5: Conditional Accuracy (Hit vs Miss) with Subgroup Sample Counts and Disclaimer."""
     fixture_only = data.get("fixture_only", False)
-    svg = svg_header(750, 450, "Conditional Accuracy", fixture_only=fixture_only)
-    svg += '  <text x="375" y="32" class="title">Figure 5: Downstream Attribution Accuracy Conditioned on Retrieval Success</text>\n'
-    svg += '  <text x="375" y="52" class="subtitle">Comparison of P(Correct | Hit) vs. P(Correct | Miss) across RAG depths</text>\n'
+    svg = svg_header(750, 470, "Conditional Accuracy", fixture_only=fixture_only)
+    svg += '  <text x="375" y="30" class="title" text-anchor="middle">Figure 5: Downstream Attribution Accuracy Conditioned on Retrieval Success</text>\n'
+    svg += '  <text x="375" y="48" class="subtitle" text-anchor="middle">Comparison of P(Correct | Hit) vs. P(Correct | Miss) across RAG depths</text>\n'
 
-    for pct, y_val in [(50, 350), (60, 290), (70, 230), (80, 170), (90, 110), (100, 50)]:
+    for pct, y_val in [(50, 340), (60, 280), (70, 220), (80, 160), (90, 100), (100, 40)]:
         svg += f'  <line x1="120" y1="{y_val}" x2="660" y2="{y_val}" class="grid-line"/>\n'
         svg += f'  <text x="110" y="{y_val + 4}" class="tick-label" style="text-anchor: end;">{pct}%</text>\n'
 
-    svg += '  <line x1="120" y1="50" x2="120" y2="350" stroke="#374151" stroke-width="1.5"/>\n'
-    svg += '  <line x1="120" y1="350" x2="660" y2="350" stroke="#374151" stroke-width="1.5"/>\n'
-    svg += '  <text x="45" y="200" class="axis-label" transform="rotate(-90 45 200)" text-anchor="middle">Conditional Accuracy (%)</text>\n'
+    svg += '  <line x1="120" y1="40" x2="120" y2="340" stroke="#374151" stroke-width="1.5"/>\n'
+    svg += '  <line x1="120" y1="340" x2="660" y2="340" stroke="#374151" stroke-width="1.5"/>\n'
+    svg += '  <text x="45" y="190" class="axis-label" transform="rotate(-90 45 190)" text-anchor="middle">Conditional Accuracy (%)</text>\n'
 
     conditions = ["rag_k1", "rag_k3", "rag_k5", "rag_k10"]
     labels = ["k=1", "k=3", "k=5", "k=10"]
@@ -572,25 +573,30 @@ def generate_fig5_conditional_accuracy(data: Dict[str, Any], out_path: Path) -> 
     for idx, c_name in enumerate(conditions):
         p_hit = (data["conditions"][c_name]["p_corr_hit"] or 0.0) * 100
         p_miss = (data["conditions"][c_name]["p_corr_miss"] or 0.0) * 100
-        y_hit = 350 - (p_hit - 50.0) * 6.0
-        y_miss = 350 - (p_miss - 50.0) * 6.0
+        y_hit = 340 - (p_hit - 50.0) * 6.0
+        y_miss = 340 - (p_miss - 50.0) * 6.0
         x_p = x_positions[idx]
 
         # Hit bar (green)
-        svg += f'  <rect x="{x_p - bar_w - 2}" y="{y_hit}" width="{bar_w}" height="{350 - y_hit}" fill="#10b981" rx="3" ry="3"/>\n'
+        svg += f'  <rect x="{x_p - bar_w - 2}" y="{y_hit}" width="{bar_w}" height="{340 - y_hit}" fill="#10b981" rx="3" ry="3"/>\n'
         svg += f'  <text x="{x_p - bar_w//2 - 2}" y="{y_hit - 6}" font-size="10" font-weight="bold" fill="#065f46" text-anchor="middle">{p_hit:.1f}%</text>\n'
 
         # Miss bar (orange)
-        svg += f'  <rect x="{x_p + 2}" y="{y_miss}" width="{bar_w}" height="{350 - y_miss}" fill="#f59e0b" rx="3" ry="3"/>\n'
+        svg += f'  <rect x="{x_p + 2}" y="{y_miss}" width="{bar_w}" height="{340 - y_miss}" fill="#f59e0b" rx="3" ry="3"/>\n'
         svg += f'  <text x="{x_p + bar_w//2 + 2}" y="{y_miss - 6}" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">{p_miss:.1f}%</text>\n'
 
-        svg += f'  <text x="{x_p}" y="370" class="tick-label">{labels[idx]}</text>\n'
+        svg += f'  <text x="{x_p}" y="358" class="tick-label">{labels[idx]}</text>\n'
 
     # Legend
-    svg += '  <rect x="250" y="400" width="16" height="16" fill="#10b981" rx="2" ry="2"/>\n'
-    svg += '  <text x="272" y="413" class="legend-text">P(Correct | Retrieval Hit)</text>\n'
-    svg += '  <rect x="430" y="400" width="16" height="16" fill="#f59e0b" rx="2" ry="2"/>\n'
-    svg += '  <text x="452" y="413" class="legend-text">P(Correct | Retrieval Miss)</text>\n'
+    svg += '  <rect x="250" y="380" width="16" height="16" fill="#10b981" rx="2" ry="2"/>\n'
+    svg += '  <text x="272" y="393" class="legend-text">P(Correct | Retrieval Hit)</text>\n'
+    svg += '  <rect x="430" y="380" width="16" height="16" fill="#f59e0b" rx="2" ry="2"/>\n'
+    svg += '  <text x="452" y="393" class="legend-text">P(Correct | Retrieval Miss)</text>\n'
+
+    # Subgroup Sample Counts for k=10
+    svg += '  <text x="375" y="420" font-size="11" font-weight="bold" fill="#334155" text-anchor="middle">k=10 Subgroups: Retrieved N=321 (91.28%, 293/321) | Missed N=397 (70.03%, 278/397)</text>\n'
+    # Association-only disclaimer
+    svg += '  <text x="375" y="442" font-size="10" fill="#64748b" text-anchor="middle">* Disclaimer: Subgroup differences are observational (association-only); retrieval hit/miss is not randomly assigned.</text>\n'
 
     svg += svg_footer()
     ET.fromstring(svg)
@@ -601,8 +607,8 @@ def generate_fig6_latency(data: Dict[str, Any], out_path: Path) -> None:
     """Fig 6: Latency vs k."""
     fixture_only = data.get("fixture_only", False)
     svg = svg_header(750, 460, "Latency vs k", fixture_only=fixture_only)
-    svg += '  <text x="375" y="32" class="title">Figure 6: Request Latency Scaling Across Conditions</text>\n'
-    svg += '  <text x="375" y="52" class="subtitle">Client end-to-end loop latency (ms) including backoff retries (N=1280 observations/condition)</text>\n'
+    svg += '  <text x="375" y="32" class="title" text-anchor="middle">Figure 6: Request Latency Scaling Across Conditions</text>\n'
+    svg += '  <text x="375" y="52" class="subtitle" text-anchor="middle">Client end-to-end loop latency (ms) including backoff retries (N=1280 observations/condition)</text>\n'
 
     for lat, y_val in [(1000, 350), (2000, 290), (3000, 230), (4000, 170), (5000, 110)]:
         svg += f'  <line x1="120" y1="{y_val}" x2="660" y2="{y_val}" class="grid-line"/>\n'
@@ -647,63 +653,62 @@ def generate_fig6_latency(data: Dict[str, Any], out_path: Path) -> None:
 
 
 def generate_fig7_cost_and_tokens(data: Dict[str, Any], out_path: Path) -> None:
-    """Fig 7: Cost and Token Usage with Dual-Bar Series."""
+    """Fig 7: Cost and Token Usage with Dual-Bar Series and Increased Top Margin."""
     fixture_only = data.get("fixture_only", False)
-    svg = svg_header(750, 470, "Cost and Tokens vs k", fixture_only=fixture_only)
-    svg += '  <text x="375" y="32" class="title">Figure 7: Financial Cost ($) and Token Usage Scaling Across Conditions</text>\n'
-    svg += '  <text x="375" y="52" class="subtitle">Condition Settled Ledger Total ($) vs. Total Tokens Consumed (Prompt + Completion)</text>\n'
+    svg = svg_header(750, 500, "Cost and Tokens vs k", fixture_only=fixture_only)
+    svg += '  <text x="375" y="28" class="title" text-anchor="middle">Figure 7: Financial Cost ($ USD) and Token Usage Scaling Across Conditions</text>\n'
+    svg += '  <text x="375" y="48" class="subtitle" text-anchor="middle">Condition Settled Ledger Total ($ USD) vs. Total Tokens Consumed (Prompt + Completion)</text>\n'
 
-    # Left y-axis: $0 to $2.50
-    for cost, y_val in [(0.0, 350), (0.5, 290), (1.0, 230), (1.5, 170), (2.0, 110), (2.5, 50)]:
+    # Left y-axis: $0 to $2.50 (y: 370 down to 80, height 290)
+    for cost, y_val in [(0.0, 370), (0.5, 312), (1.0, 254), (1.5, 196), (2.0, 138), (2.5, 80)]:
         svg += f'  <line x1="120" y1="{y_val}" x2="640" y2="{y_val}" class="grid-line"/>\n'
         svg += f'  <text x="110" y="{y_val + 4}" class="tick-label" style="text-anchor: end;">${cost:.2f}</text>\n'
 
-    # Right y-axis: 0k to 8,000k Tokens
-    for k_tok, y_val in [(0, 350), (2000, 275), (4000, 200), (6000, 125), (8000, 50)]:
+    # Right y-axis: 0k to 8,000k Tokens (y: 370 down to 80)
+    for k_tok, y_val in [(0, 370), (2000, 298), (4000, 225), (6000, 153), (8000, 80)]:
         svg += f'  <text x="650" y="{y_val + 4}" class="tick-label" style="text-anchor: start;">{k_tok}k</text>\n'
 
-    svg += '  <line x1="120" y1="50" x2="120" y2="350" stroke="#374151" stroke-width="1.5"/>\n'
-    svg += '  <line x1="640" y1="50" x2="640" y2="350" stroke="#374151" stroke-width="1.5"/>\n'
-    svg += '  <line x1="120" y1="350" x2="640" y2="350" stroke="#374151" stroke-width="1.5"/>\n'
-    svg += '  <text x="45" y="200" class="axis-label" transform="rotate(-90 45 200)" text-anchor="middle">Settled Cost ($ USD)</text>\n'
-    svg += '  <text x="710" y="200" class="axis-label" transform="rotate(90 710 200)" text-anchor="middle">Total Tokens Consumed</text>\n'
+    svg += '  <line x1="120" y1="80" x2="120" y2="370" stroke="#374151" stroke-width="1.5"/>\n'
+    svg += '  <line x1="640" y1="80" x2="640" y2="370" stroke="#374151" stroke-width="1.5"/>\n'
+    svg += '  <line x1="120" y1="370" x2="640" y2="370" stroke="#374151" stroke-width="1.5"/>\n'
+    svg += '  <text x="45" y="225" class="axis-label" transform="rotate(-90 45 225)" text-anchor="middle">Settled Cost ($ USD)</text>\n'
+    svg += '  <text x="705" y="225" class="axis-label" transform="rotate(90 705 225)" text-anchor="middle">Total Tokens Consumed</text>\n'
 
     conditions = ["no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10"]
     labels = ["No-RAG", "k=1", "k=3", "k=5", "k=10"]
-    x_positions = [170, 280, 390, 500, 600]
+    x_positions = [165, 272, 380, 487, 595]
     bar_w = 20
 
     for idx, c_name in enumerate(conditions):
         cost = data["conditions"][c_name]["cost"]
-        y_cost = 350 - cost * 120.0
+        y_cost = 370 - (cost / 2.5) * 290.0
         x_p = x_positions[idx]
 
         total_toks = data["conditions"][c_name]["prompt_tokens"] + data["conditions"][c_name]["comp_tokens"]
-        # 0 -> 350, 8,000,000 -> 50 (300 px for 8M -> 300 / 8,000,000 px per token)
-        y_tok = 350 - (total_toks / 8000000.0) * 300.0
+        y_tok = 370 - (total_toks / 8000000.0) * 290.0
 
         # Cost bar (amber)
-        svg += f'  <rect x="{x_p - bar_w - 2}" y="{y_cost}" width="{bar_w}" height="{350 - y_cost}" fill="#f59e0b" rx="3" ry="3" opacity="0.85"/>\n'
+        svg += f'  <rect x="{x_p - bar_w - 2}" y="{y_cost}" width="{bar_w}" height="{370 - y_cost}" fill="#f59e0b" rx="3" ry="3" opacity="0.85"/>\n'
         svg += f'  <text x="{x_p - bar_w//2 - 2}" y="{y_cost - 6}" font-size="9" font-weight="bold" fill="#b45309" text-anchor="middle">${cost:.2f}</text>\n'
 
         # Tokens bar (indigo)
-        svg += f'  <rect x="{x_p + 2}" y="{y_tok}" width="{bar_w}" height="{350 - y_tok}" fill="#6366f1" rx="3" ry="3" opacity="0.85"/>\n'
+        svg += f'  <rect x="{x_p + 2}" y="{y_tok}" width="{bar_w}" height="{370 - y_tok}" fill="#6366f1" rx="3" ry="3" opacity="0.85"/>\n'
         tok_k_label = f"{total_toks / 1000:,.0f}k"
         svg += f'  <text x="{x_p + bar_w//2 + 2}" y="{y_tok - 6}" font-size="9" font-weight="bold" fill="#4338ca" text-anchor="middle">{tok_k_label}</text>\n'
 
-        svg += f'  <text x="{x_p}" y="370" class="tick-label">{labels[idx]}</text>\n'
+        svg += f'  <text x="{x_p}" y="392" class="tick-label">{labels[idx]}</text>\n'
 
     # Legend
-    svg += '  <rect x="220" y="395" width="14" height="14" fill="#f59e0b" rx="2" ry="2"/>\n'
-    svg += '  <text x="240" y="407" class="legend-text">Settled Cost ($ USD)</text>\n'
-    svg += '  <rect x="390" y="395" width="14" height="14" fill="#6366f1" rx="2" ry="2"/>\n'
-    svg += '  <text x="410" y="407" class="legend-text">Total Consumed Tokens</text>\n'
+    svg += '  <rect x="220" y="415" width="14" height="14" fill="#f59e0b" rx="2" ry="2"/>\n'
+    svg += '  <text x="240" y="427" class="legend-text">Settled Cost ($ USD)</text>\n'
+    svg += '  <rect x="390" y="415" width="14" height="14" fill="#6366f1" rx="2" ry="2"/>\n'
+    svg += '  <text x="410" y="427" class="legend-text">Total Consumed Tokens</text>\n'
 
     cached_tok_k1 = data["conditions"]["rag_k1"].get("cached_tokens", 0)
     if fixture_only:
-        svg += f'  <text x="375" y="435" font-size="11" fill="#64748b" text-anchor="middle">Includes rag_k1 $0.5397 missing-usage penalty. Cached tokens: {cached_tok_k1:,} tokens total in rag_k1 (mean 1.20 tokens/req).</text>\n'
+        svg += f'  <text x="375" y="458" font-size="11" fill="#64748b" text-anchor="middle">Includes rag_k1 $0.5397 missing-usage penalty. Cached tokens: {cached_tok_k1:,} tokens total in rag_k1 (mean 1.20 tokens/req).</text>\n'
     else:
-        svg += f'  <text x="375" y="435" font-size="11" fill="#64748b" text-anchor="middle">Settled ledger cost accounting. Cached tokens: {cached_tok_k1:,} tokens total in rag_k1.</text>\n'
+        svg += f'  <text x="375" y="458" font-size="11" fill="#64748b" text-anchor="middle">Settled ledger cost accounting. Cached tokens: {cached_tok_k1:,} tokens total in rag_k1.</text>\n'
 
     svg += svg_footer()
     ET.fromstring(svg)
@@ -713,9 +718,9 @@ def generate_fig7_cost_and_tokens(data: Dict[str, Any], out_path: Path) -> None:
 def generate_fig8_failure_decomposition(data: Dict[str, Any], out_path: Path) -> None:
     """Fig 8: Failure Decomposition (Overlapping Axes) dynamic data."""
     fixture_only = data.get("fixture_only", False)
-    svg = svg_header(750, 460, "Failure Decomposition", fixture_only=fixture_only)
-    svg += '  <text x="375" y="32" class="title">Figure 8: Independent Failure Decomposition (k=10)</text>\n'
-    svg += '  <text x="375" y="52" class="subtitle">Evaluation under Protocol Decision D2i: Non-mutually exclusive independent diagnostic axes</text>\n'
+    svg = svg_header(750, 470, "Failure Decomposition", fixture_only=fixture_only)
+    svg += '  <text x="375" y="32" class="title" text-anchor="middle">Figure 8: Independent Failure Decomposition (k=10)</text>\n'
+    svg += '  <text x="375" y="52" class="subtitle" text-anchor="middle">Evaluation under Protocol Decision D2i: Non-mutually exclusive independent diagnostic axes</text>\n'
 
     cohort_n = data["cohort"]["mapped_views"]
     k10 = data["conditions"]["rag_k10"]
@@ -730,7 +735,7 @@ def generate_fig8_failure_decomposition(data: Dict[str, Any], out_path: Path) ->
 
     # Big container
     svg += '  <rect x="80" y="80" width="590" height="280" rx="10" ry="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>\n'
-    svg += f'  <text x="100" y="110" font-size="13" font-weight="bold" fill="#334155">Total Scorable Mapped Cohort: N = {cohort_n}</text>\n'
+    svg += f'  <text x="100" y="110" font-size="13" font-weight="bold" fill="#334155">Diagnostic on Mapped Scorable Cohort: N = {cohort_n} (Pair-resolved)</text>\n'
 
     # Retrieval Miss box
     svg += '  <rect x="120" y="130" width="340" height="200" rx="8" ry="8" fill="#fee2e2" stroke="#ef4444" stroke-width="2" opacity="0.75"/>\n'
@@ -748,9 +753,10 @@ def generate_fig8_failure_decomposition(data: Dict[str, Any], out_path: Path) ->
     svg += '  <text x="410" y="275" font-size="10" fill="#78350f" text-anchor="middle">Miss ∩ Wrong</text>\n'
     svg += f'  <text x="410" y="290" font-size="9" fill="#78350f" text-anchor="middle">({overlap_pct:.2f}% of Errors)</text>\n'
 
-    # Footnote about independent axes
-    svg += '  <text x="375" y="390" font-size="11" fill="#475569" text-anchor="middle">Decision D2i Note: Axes are evaluated independently. Retrieval miss does not prove causation of error.</text>\n'
-    svg += '  <text x="375" y="410" font-size="11" fill="#475569" text-anchor="middle">Invalid ATT&amp;CK IDs: 0 | Parse Failures: 0 | Transport Errors: 0 on mapped scorable cohort.</text>\n'
+    # Footnotes about independent axes and campaign scope
+    svg += '  <text x="375" y="388" font-size="11" fill="#475569" text-anchor="middle">Decision D2i Note: Axes are evaluated independently. Retrieval miss does not establish error causation.</text>\n'
+    svg += '  <text x="375" y="408" font-size="11" fill="#475569" text-anchor="middle">Zero invalid ATT&amp;CK IDs, parse failures, or transport errors on mapped scorable cohort (N=718).</text>\n'
+    svg += '  <text x="375" y="430" font-size="10" fill="#b45309" font-weight="600" text-anchor="middle">* Campaign Scope Note: 13 terminal INCOMPLETE requests occurred in the full live campaign outside the mapped cohort (excluded per Decision D2).</text>\n'
 
     svg += svg_footer()
     ET.fromstring(svg)
@@ -803,10 +809,10 @@ def generate_all_figures(
         "fig2_accuracy_vs_k": (750, 450),
         "fig3_macro_f1_vs_k": (750, 450),
         "fig4_retrieval_hit_rate": (750, 450),
-        "fig5_conditional_accuracy": (750, 450),
+        "fig5_conditional_accuracy": (750, 470),
         "fig6_latency_vs_k": (750, 460),
-        "fig7_cost_and_tokens_vs_k": (750, 470),
-        "fig8_failure_decomposition": (750, 460),
+        "fig7_cost_and_tokens_vs_k": (750, 500),
+        "fig8_failure_decomposition": (750, 470),
     }
 
     generated_digests: Dict[str, str] = {}

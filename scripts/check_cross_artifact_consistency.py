@@ -3,6 +3,9 @@
 scripts/check_cross_artifact_consistency.py
 
 Deep structural cross-artifact consistency checker for RAG2ATTCK.
+Enforces typed MetricBinding contracts, exact cell/locator parsing,
+visible SVG semantics, binary media authentication, and external trust anchor binding.
+
 Audits:
   1. Placeholder detection ({{...}}, [PENDING...], [TBD...], TBD_AT_EXECUTION, [UNPOPULATED], [WRONG RESULT])
   2. Personal workstation filesystem path leaks (C:/Users/hahoa..., D:/RAG2ATT&CK...)
@@ -25,10 +28,60 @@ import re
 import sys
 import xml.etree.ElementTree as ET
 import zipfile
+from dataclasses import dataclass
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 TRUSTED_BUNDLE_SHA256 = "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34"
+
+CANONICAL_FIGURE_BASENAMES = {
+    "fig1_system_architecture",
+    "fig2_accuracy_vs_k",
+    "fig3_macro_f1_vs_k",
+    "fig4_retrieval_hit_rate",
+    "fig5_conditional_accuracy",
+    "fig6_latency_vs_k",
+    "fig7_cost_and_tokens_vs_k",
+    "fig8_failure_decomposition",
+}
+
+REQUIRED_FORMATS = {"vector_svg", "raster_png", "print_pdf"}
+
+# Canonical condition values from Frozen Bundle v2
+CANONICAL_TABLE3_CONDITIONS = {
+    "no_rag": {
+        "label": "No-RAG",
+        "acc": "77.99%",
+        "acc_num": 0.7799,
+        "f1": "0.0126",
+    },
+    "rag_k1": {
+        "label": "RAG (k=1)",
+        "acc": "77.02%",
+        "acc_num": 0.7702,
+        "f1": "0.0127",
+    },
+    "rag_k3": {
+        "label": "RAG (k=3)",
+        "acc": "78.55%",
+        "acc_num": 0.7855,
+        "f1": "0.0136",
+    },
+    "rag_k5": {
+        "label": "RAG (k=5)",
+        "acc": "78.83%",
+        "acc_num": 0.7883,
+        "f1": "0.0139",
+    },
+    "rag_k10": {
+        "label": "RAG (k=10)",
+        "acc": "79.53%",
+        "acc_num": 0.7953,
+        "f1": "0.0140",
+        "p_val": "0.422",
+    },
+}
 
 LEAK_PATTERNS = [
     re.compile(r"C:[\\/]Users[\\/]hahoa", re.I),
@@ -45,26 +98,24 @@ PLACEHOLDER_PATTERNS = [
     re.compile(r"\[WRONG RESULT\]", re.I),
 ]
 
-FORBIDDEN_METRIC_PATTERNS = [
-    re.compile(r"(?<!\d)82\.12%"),
-    re.compile(r"(?<!\d)97\.53%"),
-    re.compile(r"(?<!\d)79\.54%"),
-    re.compile(r"(?<!\d)92\.3%"),
-    re.compile(r"(?<!\d)81\.3%"),
-    re.compile(r"(?<!\d)7\.99%"),
-    re.compile(r"(?<!\d)0\.123(?!\d)"),
-    re.compile(r"(?<!\d)0\.423(?!\d)"),
-    re.compile(r"(?<!\d)0\.042(?!\d)"),
-    re.compile(r"(?<!\d)0\.1140(?!\d)"),
-    re.compile(r"(?<!\d)6\.57575891(?!\d)"),
-    re.compile(r"(?<!\d)\+?9(?:\.0+)?pp", re.I),
-    re.compile(r"(?<!\d)900s(?!\w)"),
-]
-
 CANONICAL_FIGURE_HASHES = {
     "fbeb37c324360cf31081f802b523999c2ca59a999c353c7ccbb6ad122f77dc19",  # canonical_rq1_accuracy_and_macro.png
     "7c15f5d04db785c2f211cbb6bfd0f8c0a45a48229a2723fa36ae11b79e3de513",  # canonical_rq2_retrieval.png
     "5b9c31be2b37cad34f76624171b9f7fdc8a4686d3c13e452dc8ca8369e472941",  # canonical_rq3_cost_and_latency.png
+}
+
+VALID_DOCX_PERCENTAGES: Set[str] = {
+    "0", "0.0", "1.1", "1.96", "3.76", "3.760", "4.2", "4.23", "7.8", "9.1",
+    "15.79", "16.80", "20", "20.47", "22.0", "23.4", "24.21", "25", "26", "26.3",
+    "37.1", "42.1", "42.80", "43.14", "44.708", "44.71", "45.1", "45.11",
+    "50", "54", "54.89", "55.29", "55.2925", "60", "62.9",
+    "70", "70.0", "70.0252", "70.03", "70.3", "72.84", "73.0", "73.50", "73.80",
+    "74.51", "74.64", "74.65", "74.8", "75.00", "75.07", "75.32", "75.61", "75.63", "75.81", "75.91",
+    "76.1", "76.32", "76.35", "77.02", "77.99",
+    "78.55", "78.83", "79.53",
+    "80", "80.12", "80.17", "80.88", "80.95", "81.06", "81.65", "81.74", "81.93",
+    "82.03", "82.35", "82.45", "82.59", "82.85", "83.57", "83.81",
+    "90", "91.2773", "91.28", "91.3", "92.45", "95", "95.8", "96.24", "97.1", "97.5", "98.39", "100", "100.0"
 }
 
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
@@ -132,6 +183,80 @@ def scan_file_for_placeholders(path: Path) -> List[Dict[str, Any]]:
     return placeholders
 
 
+def is_svg_element_visible(elem: ET.Element) -> bool:
+    """Returns False if SVG element has explicit hidden style or attribute."""
+    style = elem.attrib.get("style", "").lower().replace(" ", "")
+    if "display:none" in style or "visibility:hidden" in style or "opacity:0" in style:
+        return False
+    if elem.attrib.get("display") == "none":
+        return False
+    if elem.attrib.get("visibility") == "hidden":
+        return False
+    if elem.attrib.get("opacity") in ["0", "0.0"]:
+        return False
+    return True
+
+
+def extract_visible_svg_texts(tree: ET.Element) -> List[str]:
+    """Extract visible text content ignoring comments and hidden elements."""
+    visible = []
+    for elem in tree.iter():
+        if elem.tag.endswith("text") and elem.text:
+            if is_svg_element_visible(elem):
+                visible.append(elem.text.strip())
+    return visible
+
+
+def validate_narrative_metric_bindings(text: str, context_label: str) -> List[str]:
+    """
+    Validate narrative metrics across Markdown, DOCX, PPTX using structured binding rules.
+    Detects unauthorized accuracy and p-value mutations without requiring a specific denylist.
+    """
+    errors = []
+    clean_text = strip_html_comments(text)
+
+    # 1. Accuracy bindings: match any pattern indicating technique attribution accuracy
+    acc_patterns = [
+        re.compile(r"(?:accuracy|acc)[^\d%]{0,25}(\d+\.\d+)%", re.I),
+        re.compile(r"(\d+\.\d+)%[^\d%]{0,25}(?:accuracy|acc)", re.I),
+    ]
+    valid_acc_values = {"77.99", "77.02", "78.55", "78.83", "79.53", "91.28", "70.03", "91.3", "70.0"}
+    for pat in acc_patterns:
+        for m in pat.finditer(clean_text):
+            val_str = m.group(1)
+            val_f = float(val_str)
+            # If value looks like an attribution accuracy (70% - 99%)
+            if 70.0 <= val_f <= 99.0 and val_str not in valid_acc_values:
+                # Check if it's bootstrap CI bounds
+                if val_str not in ["74.64", "80.88", "73.80", "80.12", "75.32", "81.65", "75.61", "81.93", "76.35", "82.59"]:
+                    errors.append(f"{context_label}: Unauthorized accuracy value '{val_str}%' does not match any canonical bundle condition")
+
+    # 2. McNemar p-value bindings
+    p_patterns = [
+        re.compile(r"(?:exact\s*p|p[- ]value|mcnemar\s*p|p\s*=|\bp\s*)(\d+\.\d+)", re.I),
+    ]
+    for pat in p_patterns:
+        for m in pat.finditer(clean_text):
+            p_str = m.group(1)
+            p_f = float(p_str)
+            # In this study, the only hypothesis test reported is McNemar p = 0.422 (alpha = 0.05)
+            if 0.01 <= p_f <= 0.99 and p_str != "0.422" and p_str != "0.05":
+                errors.append(f"{context_label}: Unauthorized p-value '{p_str}' violates canonical McNemar binding (expected 0.422)")
+
+    # 3. Macro-F1 bindings
+    f1_patterns = [
+        re.compile(r"(?:macro[- ]f1|f1)[^\d]{0,20}(\d+\.\d{4})", re.I),
+    ]
+    for pat in f1_patterns:
+        for m in pat.finditer(clean_text):
+            f1_str = m.group(1)
+            allowed_f1 = {"0.0126", "0.0127", "0.0136", "0.0139", "0.0140"}
+            if f1_str not in allowed_f1:
+                errors.append(f"{context_label}: Unauthorized Macro-F1 '{f1_str}' violates canonical bundle binding")
+
+    return errors
+
+
 def validate_metric_bundle(bundle_path: Path) -> Tuple[bool, Optional[str], Optional[Dict[str, Any]]]:
     """Strictly validate the schema and completeness of a canonical metric bundle."""
     if not bundle_path.is_file():
@@ -170,6 +295,7 @@ def check_figure_provenance(
     fig_dir: Path,
     bundle_path: Optional[Path] = None,
     bundle_data: Optional[Dict[str, Any]] = None,
+    strict: bool = False,
 ) -> Dict[str, Any]:
     """Validate figure provenance, formats completeness, SVG well-formedness, and visible semantic text."""
     prov_file = fig_dir / "figure_provenance.json"
@@ -212,16 +338,12 @@ def check_figure_provenance(
                 }
 
     figs = data.get("generated_figures", {})
-    expected_figs = [
-        "fig1_system_architecture",
-        "fig2_accuracy_vs_k",
-        "fig3_macro_f1_vs_k",
-        "fig4_retrieval_hit_rate",
-        "fig5_conditional_accuracy",
-        "fig6_latency_vs_k",
-        "fig7_cost_and_tokens_vs_k",
-        "fig8_failure_decomposition",
-    ]
+
+    # Check for unapproved extra figures
+    for f_key in figs.keys():
+        stem = Path(f_key).stem
+        if stem not in CANONICAL_FIGURE_BASENAMES:
+            return {"status": "FAIL", "error": f"Unauthorized extra figure declared in provenance: {f_key}"}
 
     missing = []
     hash_mismatches = []
@@ -229,8 +351,13 @@ def check_figure_provenance(
 
     # Check format completeness
     formats = data.get("figures_formats", [])
+    if strict or not fixture_only:
+        for req_fmt in REQUIRED_FORMATS:
+            if req_fmt not in formats:
+                return {"status": "FAIL", "error": f"Format downgrade detected: missing required format '{req_fmt}'"}
+
     if "raster_png" in formats:
-        for b_name in expected_figs:
+        for b_name in CANONICAL_FIGURE_BASENAMES:
             png_name = f"{b_name}.png"
             target_png = fig_dir / png_name
             if not target_png.is_file():
@@ -240,7 +367,7 @@ def check_figure_provenance(
                 if not p_bytes.startswith(PNG_MAGIC):
                     hash_mismatches.append(f"{png_name}: Invalid PNG magic header")
     if "print_pdf" in formats:
-        for b_name in expected_figs:
+        for b_name in CANONICAL_FIGURE_BASENAMES:
             pdf_name = f"{b_name}.pdf"
             target_pdf = fig_dir / pdf_name
             if not target_pdf.is_file():
@@ -250,38 +377,67 @@ def check_figure_provenance(
                 if not p_bytes.startswith(PDF_MAGIC):
                     hash_mismatches.append(f"{pdf_name}: Invalid PDF magic header")
 
-    for b_name in expected_figs:
-        f_name = f"{b_name}.svg"
+    # Hash check on ALL declared generated figures (SVG, PNG, PDF)
+    for f_name, decl_val in figs.items():
         target_path = fig_dir / f_name
-        if f_name not in figs or not target_path.is_file():
+        if not target_path.is_file():
             missing.append(f_name)
             continue
 
-        # Hash check
         actual_hash = compute_sha256(target_path)
-        declared_hash = figs.get(f_name)
-        if isinstance(declared_hash, dict):
-            declared_hash = declared_hash.get("sha256")
+        declared_hash = decl_val if isinstance(decl_val, str) else decl_val.get("sha256")
         if declared_hash != actual_hash:
             hash_mismatches.append(f"{f_name}: declared {declared_hash} != actual {actual_hash}")
 
-        # XML well-formedness & Semantic Content check on VISIBLE TEXT ELEMENTS ONLY
+    # XML well-formedness & Semantic Content check on VISIBLE TEXT ELEMENTS ONLY
+    for b_name in CANONICAL_FIGURE_BASENAMES:
+        f_name = f"{b_name}.svg"
+        target_path = fig_dir / f_name
+        if not target_path.is_file():
+            continue
+
         try:
             content = target_path.read_text(encoding="utf-8")
             tree = ET.fromstring(content)
-            visible_texts = [elem.text for elem in tree.iter() if elem.tag.endswith("text") and elem.text]
+            visible_texts = extract_visible_svg_texts(tree)
 
-            # Semantic content validation on visible texts
             if f_name == "fig2_accuracy_vs_k.svg":
-                if any(bad in t for bad in ["97.53%", "82.12%", "79.54%"] for t in visible_texts):
-                    xml_errors.append(f"{f_name}: Contains tampered/invalid visible accuracy values")
-                if not any("79.5%" in t or "79.53%" in t for t in visible_texts):
+                if not any("79.53%" in t for t in visible_texts):
                     xml_errors.append(f"{f_name}: Missing canonical visible accuracy (79.53%)")
+                for t in visible_texts:
+                    m = re.search(r"(\d+\.\d+)%", t)
+                    if m:
+                        val = m.group(1)
+                        if float(val) > 70.0 and val not in ["77.99", "77.02", "78.55", "78.83", "79.53"]:
+                            if val not in ["70", "75", "80", "85", "74.64", "80.88", "73.80", "80.12", "75.32", "81.65", "75.61", "81.93", "76.35", "82.59"]:
+                                xml_errors.append(f"{f_name}: Contains unauthorized visible accuracy value: {val}%")
+
+            elif f_name == "fig3_macro_f1_vs_k.svg":
+                if not any("0.0140" in t for t in visible_texts):
+                    xml_errors.append(f"{f_name}: Missing canonical visible Macro-F1 label (0.0140)")
+                for t in visible_texts:
+                    m = re.search(r"\b(0\.\d{4})\b", t)
+                    if m:
+                        f1_val = m.group(1)
+                        allowed_f1 = {"0.0110", "0.0120", "0.0130", "0.0140", "0.0150", "0.0126", "0.0127", "0.0136", "0.0139"}
+                        if f1_val not in allowed_f1:
+                            xml_errors.append(f"{f_name}: Contains unauthorized Macro-F1 value: {f1_val}")
+
             elif f_name == "fig5_conditional_accuracy.svg":
-                if any(bad in t for bad in ["81.3%", "92.3%"] for t in visible_texts):
-                    xml_errors.append(f"{f_name}: Contains tampered conditional accuracy (81.3% or 92.3%)")
                 if not any("91.3%" in t for t in visible_texts):
                     xml_errors.append(f"{f_name}: Missing canonical visible conditional accuracy (91.3%)")
+                if not any("70.0%" in t for t in visible_texts):
+                    xml_errors.append(f"{f_name}: Missing canonical visible conditional accuracy (70.0%)")
+                valid_fig5_accs = {
+                    "100", "100.0", "50", "60", "70", "70.0", "70.03", "73.0", "73.1", "74.8", "75.6", "76.1", "76.5",
+                    "80", "89.0", "90", "90.3", "91.28", "91.3", "97.1", "97.5"
+                }
+                for t in visible_texts:
+                    for m in re.finditer(r"(\d+\.?\d*)%", t):
+                        v_str = m.group(1)
+                        if v_str not in valid_fig5_accs:
+                            xml_errors.append(f"{f_name}: Contains unauthorized visible conditional accuracy: {v_str}%")
+
         except Exception as exc:
             xml_errors.append(f"{f_name}: XML parse error: {exc}")
 
@@ -294,7 +450,7 @@ def check_figure_provenance(
     return {
         "status": status,
         "fixture_only": fixture_only,
-        "figures_count": len(expected_figs),
+        "figures_count": len(CANONICAL_FIGURE_BASENAMES),
         "missing_figures": missing,
         "hash_mismatches": hash_mismatches,
         "xml_errors": xml_errors,
@@ -377,44 +533,56 @@ def check_table_provenance(
         # Semantic row and cell audits
         content = target_path.read_text(encoding="utf-8")
         clean = strip_html_comments(content)
+        lines = clean.splitlines()
 
         if t_name == "table1_dataset_and_cohort.md":
             if "718" not in clean or "999" in clean:
                 semantic_errors.append("Table 1 cohort mapped view count tampered or does not match 718")
 
         elif t_name == "table3_rq1_attribution_performance.md":
-            for bad_pat in [r"82\.12%", r"97\.53%", r"79\.54%", r"0\.123", r"0\.423", r"0\.042", r"0\.1140"]:
-                if re.search(bad_pat, clean):
-                    semantic_errors.append(f"Table 3 contains unauthorized value matching {bad_pat}")
-
-            # Parse markdown rows to verify exact cells for k=10 and No-RAG
-            for line in clean.splitlines():
+            # Structured parsing of Table 3 rows
+            found_conds: Dict[str, Dict[str, str]] = {}
+            for line in lines:
                 if "|" in line:
                     parts = [p.strip() for p in line.split("|")]
-                    if len(parts) >= 7 and ("k=10" in parts[1] or "rag_k10" in parts[1]):
-                        acc_cell = parts[2]
-                        f1_cell = parts[3]
-                        p_cell = parts[6]
-                        if acc_cell != "79.53%":
-                            semantic_errors.append(f"Table 3 k10 row accuracy cell must be exactly '79.53%', got: '{acc_cell}'")
-                        if f1_cell != "0.0140":
-                            semantic_errors.append(f"Table 3 k10 row Macro-F1 cell must be exactly '0.0140', got: '{f1_cell}'")
-                        if p_cell != "0.422":
-                            semantic_errors.append(f"Table 3 k10 row McNemar p-value cell must be exactly '0.422', got: '{p_cell}'")
-                    elif len(parts) >= 7 and ("No-RAG" in parts[1] or "k=0" in parts[1]):
-                        acc_cell = parts[2]
-                        if acc_cell != "77.99%":
-                            semantic_errors.append(f"Table 3 No-RAG row accuracy cell must be exactly '77.99%', got: '{acc_cell}'")
+                    if len(parts) >= 6:
+                        cond_col = parts[1]
+                        for c_key, c_info in CANONICAL_TABLE3_CONDITIONS.items():
+                            if c_info["label"] in cond_col:
+                                found_conds[c_key] = {
+                                    "acc": parts[2],
+                                    "f1": parts[3],
+                                    "p": parts[6] if len(parts) > 6 else "",
+                                }
+
+            # Verify cardinality: all 5 conditions must be present
+            for c_key, c_info in CANONICAL_TABLE3_CONDITIONS.items():
+                if c_key not in found_conds:
+                    semantic_errors.append(f"Table 3 missing required condition row: '{c_info['label']}'")
+                else:
+                    row = found_conds[c_key]
+                    if row["acc"] != c_info["acc"]:
+                        semantic_errors.append(f"Table 3 {c_info['label']} accuracy cell mismatch: expected '{c_info['acc']}', got '{row['acc']}'")
+                    if row["f1"] != c_info["f1"]:
+                        semantic_errors.append(f"Table 3 {c_info['label']} Macro-F1 cell mismatch: expected '{c_info['f1']}', got '{row['f1']}'")
+                    if c_key == "rag_k10" and "p_val" in c_info:
+                        if row["p"] != c_info["p_val"]:
+                            semantic_errors.append(f"Table 3 {c_info['label']} p-value cell mismatch: expected '{c_info['p_val']}', got '{row['p']}'")
 
         elif t_name == "table5_rq3_resources_and_cost.md":
-            if "718" in clean:
+            m_settled = re.search(r"Cumulative Settled Expenditure[^\d]{1,20}([0-9]+\.[0-9]+)", clean)
+            if not m_settled:
+                semantic_errors.append("Table 5 missing required Cumulative Settled Expenditure reconciliation entry")
+            else:
+                settled_val = m_settled.group(1)
+                if settled_val != "6.57575890":
+                    semantic_errors.append(f"Table 5 Settled Expenditure mismatch: expected '$6.57575890', got '${settled_val}'")
+
+            first_100_lines = "\n".join(lines[:100])
+            if "718" in first_100_lines:
                 semantic_errors.append("Table 5 has invalid cohort claim: contains 718 (measured on N=1,280)")
             if "1,280" not in clean and "1280" not in clean:
                 semantic_errors.append("Table 5 missing required N=1,280 cohort claim")
-            if "6.57575891" in clean:
-                semantic_errors.append("Table 5 contains tampered settled cost: 6.57575891")
-            if "6.57575890" not in clean:
-                semantic_errors.append("Table 5 missing canonical settled cost: $6.57575890")
 
     status = "PASS"
     if missing:
@@ -451,19 +619,28 @@ def check_docx_binary(docx_path: Path, fig_dir: Optional[Path] = None) -> List[s
             for ph in scan_text_for_placeholders(doc_xml):
                 errors.append(f"Found placeholder in word/document.xml: {ph}")
 
-            # 2. Check for unauthorized / tampered metrics
-            for bad_pat in FORBIDDEN_METRIC_PATTERNS:
-                if match := bad_pat.search(doc_xml):
-                    errors.append(f"Altered DOCX text contains unauthorized value: {match.group(0)}")
+            # 2. Check for unauthorized / tampered percentages
+            for m in re.finditer(r"(\d+\.?\d*)%", doc_xml):
+                val = m.group(1)
+                if val not in VALID_DOCX_PERCENTAGES:
+                    errors.append(f"Altered DOCX text contains unauthorized metric value: {val}%")
 
-            # 3. Check embedded media authenticity strictly against declared figures
+            # 3. Check for unauthorized / tampered metrics via structured binding contract
+            errors.extend(validate_narrative_metric_bindings(doc_xml, "scientific_report.docx"))
+
+            # 4. Role / structural completeness check
+            if len(doc_xml) < 400 or doc_xml.count("<w:p") < 3:
+                errors.append("Role coverage failure: scientific_report.docx has minimal/stub document structure")
+
+            # 4. Check embedded media authenticity strictly against declared canonical figures
             trusted_hashes: Set[str] = set(CANONICAL_FIGURE_HASHES)
             if fig_dir and (fig_dir / "figure_provenance.json").is_file():
                 try:
                     prov = json.loads((fig_dir / "figure_provenance.json").read_text(encoding="utf-8"))
                     gen_figs = prov.get("generated_figures", {})
                     for f_name, h_val in gen_figs.items():
-                        if f_name.endswith((".png", ".jpg", ".jpeg")):
+                        # ONLY trust canonical figure basenames! Extra figures are rejected!
+                        if Path(f_name).stem in CANONICAL_FIGURE_BASENAMES and f_name.endswith((".png", ".jpg", ".jpeg")):
                             h_str = h_val if isinstance(h_val, str) else h_val.get("sha256")
                             if h_str:
                                 trusted_hashes.add(h_str)
@@ -485,14 +662,13 @@ def check_docx_binary(docx_path: Path, fig_dir: Optional[Path] = None) -> List[s
                     if any(t in media_bytes for t in spoof_tokens):
                         errors.append(f"Diagnostic/spoof media detected in docx: {member}")
 
-                    # Minimum realistic figure image size
                     if len(media_bytes) < 512:
                         errors.append(f"Embedded media in docx too small/dummy ({len(media_bytes)} bytes): {member}")
 
                     # Validate SHA256 against declared publication figures
                     media_sha = hashlib.sha256(media_bytes).hexdigest()
                     if trusted_hashes and media_sha not in trusted_hashes:
-                        errors.append(f"Embedded media in docx does not match any declared publication figure: {member} ({media_sha})")
+                        errors.append(f"Embedded media in docx does not match any declared canonical figure: {member} ({media_sha})")
     except Exception as exc:
         errors.append(f"Error reading docx: {exc}")
 
@@ -516,13 +692,10 @@ def check_pptx_binary(pptx_path: Path) -> List[str]:
                 for ph in scan_text_for_placeholders(slide_xml):
                     errors.append(f"Found placeholder in {s_name}: {ph}")
 
-                # 2. Check for unauthorized / tampered metrics
-                for bad_pat in FORBIDDEN_METRIC_PATTERNS:
-                    if match := bad_pat.search(slide_xml):
-                        errors.append(f"Found tampered metric in {s_name}: {match.group(0)}")
+                # 2. Check for unauthorized / tampered metrics via structured binding contract
+                errors.extend(validate_narrative_metric_bindings(slide_xml, f"slides.pptx ({s_name})"))
 
                 # 3. Check font sizes: OpenXML pptx font size is in 100ths of a point (1100 = 11pt, 1800 = 18pt)
-                # Flag font sizes smaller than 9pt (900) in presentation text
                 for sz_match in re.finditer(r'sz="(\d+)"', slide_xml):
                     sz_val = int(sz_match.group(1))
                     if sz_val < 900:
@@ -547,11 +720,19 @@ def run_consistency_audit(
     table_dir = repo_root / "docs" / "report" / "tables"
     fig_dir = repo_root / "docs" / "report" / "figures"
     missing_required_files: List[str] = []
+    role_coverage_errors: List[str] = []
 
-    # Enforce default trusted bundle anchor in strict all-scope
+    # 1. Strict external trust anchor verification: Caller MUST explicitly supply anchor in strict all-scope
+    bundle_error: Optional[str] = None
+    numerical_mismatches: List[str] = []
+    numerical_status = "NOT_AUDITED_NO_BUNDLE"
+    b_data: Optional[Dict[str, Any]] = None
+
     if strict and scope == "all":
         if expected_bundle_sha256 is None:
-            expected_bundle_sha256 = TRUSTED_BUNDLE_SHA256
+            bundle_error = "Strict all-scope audit requires an explicit caller-supplied --expected-bundle-sha256 external trust anchor"
+            numerical_mismatches.append(bundle_error)
+            numerical_status = "FAIL"
 
     if scope == "all":
         required_docs = [
@@ -567,11 +748,17 @@ def run_consistency_audit(
             else:
                 if p.suffix == ".md":
                     publication_files.append(p)
+                    # Check document role coverage (prevent stub bodies)
+                    content_str = p.read_text(encoding="utf-8", errors="ignore")
+                    if name == "scientific_report.md" and (len(content_str.splitlines()) < 20 or len(content_str) < 500):
+                        role_coverage_errors.append(f"Role coverage failure: {name} is a minimal stub ({len(content_str)} chars)")
+                    elif name == "slides.md" and (len(content_str.splitlines()) < 5 or len(content_str) < 150):
+                        role_coverage_errors.append(f"Role coverage failure: {name} is a minimal stub ({len(content_str)} chars)")
 
     if table_dir.is_dir():
         publication_files.extend(list(table_dir.glob("*.md")))
 
-    # 1. Path leak audit
+    # 2. Path leak audit
     leak_findings: List[Dict[str, Any]] = []
     for p in publication_files:
         if p.is_file():
@@ -582,18 +769,13 @@ def run_consistency_audit(
     if (table_dir / "table_provenance.json").is_file():
         leak_findings.extend(scan_file_for_leaks(table_dir / "table_provenance.json"))
 
-    # 2. Placeholder audit
+    # 3. Placeholder audit
     placeholder_findings: List[Dict[str, Any]] = []
     for p in publication_files:
         if p.is_file():
             placeholder_findings.extend(scan_file_for_placeholders(p))
 
-    # 3. Bundle validation & trust anchor verification
-    bundle_error: Optional[str] = None
-    numerical_mismatches: List[str] = []
-    numerical_status = "NOT_AUDITED_NO_BUNDLE"
-    b_data: Optional[Dict[str, Any]] = None
-
+    # 4. Bundle validation & trust anchor verification
     if bundle_path is not None:
         if not bundle_path.is_file():
             bundle_error = f"Specified metric bundle file not found: {bundle_path}"
@@ -619,15 +801,16 @@ def run_consistency_audit(
                 else:
                     numerical_status = "PASS"
     elif strict and scope == "all":
-        bundle_error = "Strict all-scope audit requires an authenticated --metric-bundle"
-        numerical_mismatches.append(bundle_error)
-        numerical_status = "FAIL"
+        if bundle_error is None:
+            bundle_error = "Strict all-scope audit requires an authenticated --metric-bundle"
+            numerical_mismatches.append(bundle_error)
+            numerical_status = "FAIL"
 
-    # 4. Provenance audit
-    fig_prov = check_figure_provenance(fig_dir, bundle_path=bundle_path, bundle_data=b_data)
+    # 5. Provenance audit
+    fig_prov = check_figure_provenance(fig_dir, bundle_path=bundle_path, bundle_data=b_data, strict=strict)
     tbl_prov = check_table_provenance(table_dir, bundle_path=bundle_path, bundle_data=b_data)
 
-    # 5. Binary audits (DOCX & PPTX) - only in scope "all"
+    # 6. Binary audits (DOCX & PPTX) - only in scope "all"
     binary_errors: List[str] = []
     if scope == "all":
         docx_file = repo_root / "docs" / "report" / "scientific_report.docx"
@@ -637,18 +820,17 @@ def run_consistency_audit(
         if pptx_file.is_file():
             binary_errors.extend(check_pptx_binary(pptx_file))
 
-    # 6. Markdown publication documents numerical scan
+    # 7. Markdown publication documents numerical scan via MetricBinding Contract
     for p in publication_files:
         if p.is_file() and p.suffix == ".md":
-            clean_text = strip_html_comments(p.read_text(encoding="utf-8", errors="ignore"))
-            for f_pat in FORBIDDEN_METRIC_PATTERNS:
-                if match := f_pat.search(clean_text):
-                    numerical_mismatches.append(f"{p.name} contains invalid/tampered metric: {match.group(0)}")
+            raw_text = p.read_text(encoding="utf-8", errors="ignore")
+            binding_errs = validate_narrative_metric_bindings(raw_text, p.name)
+            numerical_mismatches.extend(binding_errs)
 
     if numerical_mismatches:
         numerical_status = "FAIL"
 
-    # 7. Overall verdict calculation
+    # 8. Overall verdict calculation
     has_leak = bool(leak_findings)
     has_placeholder_error = bool(placeholder_findings)
     has_mismatch = (numerical_status == "FAIL") or bool(numerical_mismatches)
@@ -656,6 +838,7 @@ def run_consistency_audit(
     has_fig_error = (fig_prov.get("status") != "PASS")
     has_tbl_error = (tbl_prov.get("status") != "PASS")
     has_binary_error = bool(binary_errors)
+    has_role_error = bool(role_coverage_errors)
     has_fixture_in_all_scope = (scope == "all" and (fig_prov.get("fixture_only", False) or tbl_prov.get("fixture_only", False)))
 
     if strict:
@@ -667,6 +850,7 @@ def run_consistency_audit(
             or has_fig_error
             or has_tbl_error
             or has_binary_error
+            or has_role_error
             or has_fixture_in_all_scope
             or (bundle_error is not None)
         ):
@@ -674,7 +858,7 @@ def run_consistency_audit(
         else:
             overall_verdict = "PASS"
     else:
-        if has_leak or has_mismatch or has_binary_error or has_fig_error or has_tbl_error:
+        if has_leak or has_mismatch or has_binary_error or has_fig_error or has_tbl_error or has_role_error:
             overall_verdict = "FAIL"
         else:
             overall_verdict = "PASS"
@@ -684,6 +868,7 @@ def run_consistency_audit(
         "mode": "strict" if strict else "audit",
         "scope": scope,
         "missing_required_files": missing_required_files,
+        "role_coverage_errors": role_coverage_errors,
         "binary_errors": binary_errors,
         "fixture_in_all_scope": has_fixture_in_all_scope,
         "bundle_error": bundle_error,

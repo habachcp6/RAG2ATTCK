@@ -8,10 +8,12 @@ Unicode mathematical typesetting, callout styling, and rigorous QA verification.
 from __future__ import annotations
 
 import re
+import zipfile
 from pathlib import Path
 
 import docx
 from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import nsdecls, qn
 from docx.shared import Inches, Pt, RGBColor
@@ -726,6 +728,56 @@ def build_docx_from_markdown(md_path: Path, output_docx_path: Path):
                 num_run.font.name = "Calibri"
                 num_run.font.color.rgb = RGBColor(0x24, 0x29, 0x2F)
                 format_inline_runs(p, content)
+        elif re.match(r"^!\[(.*?)\]\((.*?)\)", line.strip()):
+            if in_table:
+                flush_table()
+            if in_code_block:
+                flush_code()
+            m_img = re.match(r"^!\[(.*?)\]\((.*?)\)", line.strip())
+            alt_text, img_rel_path = m_img.groups()
+
+            # Robust candidate paths for image resolution
+            candidates = [
+                md_path.parent / img_rel_path,
+                md_path.parent / "figures" / Path(img_rel_path).name,
+                Path("C:/Users/hahoa/.codex/artifacts/rag2attck/verified-native-figures-v1")
+                / Path(img_rel_path).name,
+                Path("D:/RAG2ATT&CK/docs/report/figures") / Path(img_rel_path).name,
+                Path(__file__).resolve().parent.parent
+                / "docs"
+                / "report"
+                / "figures"
+                / Path(img_rel_path).name,
+            ]
+            resolved_img = None
+            for cand in candidates:
+                if cand.is_file():
+                    resolved_img = cand
+                    break
+
+            if resolved_img:
+                p_img = doc.add_paragraph()
+                p_img.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                p_img.paragraph_format.space_before = Pt(10)
+                p_img.paragraph_format.space_after = Pt(4)
+                run_img = p_img.add_run()
+                run_img.add_picture(str(resolved_img), width=Inches(6.25))
+            else:
+                raise FileNotFoundError(
+                    f"[FAIL_CLOSED] Figure image file not found for: {img_rel_path}"
+                )
+        elif line.strip().startswith("*Figure "):
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p.paragraph_format.space_before = Pt(2)
+            p.paragraph_format.space_after = Pt(10)
+            format_inline_runs(
+                p,
+                line.strip(),
+                font_size=Pt(9.5),
+                default_italic=True,
+                default_color=RGBColor(0x57, 0x60, 0x6A),
+            )
         elif line.strip():
             p = doc.add_paragraph()
             format_inline_runs(p, line.strip())
@@ -854,6 +906,14 @@ def audit_docx_quality(doc_path: Path):
         errors.append("Table 1b (Comparators 5-8 + RAG2ATTCK) not found in DOCX tables")
     if not t2b_found:
         errors.append("Table 2b (Attribution Diagnostics) not found in DOCX tables")
+    # 5. Audit embedded images in word/media package
+    with zipfile.ZipFile(doc_path) as z:
+        media_files = [f for f in z.namelist() if f.startswith("word/media/")]
+        if len(media_files) < 3:
+            errors.append(
+                "DOCX QA: Expected at least 3 embedded figures in word/media/, "
+                f"found {len(media_files)}: {media_files}"
+            )
 
     if errors:
         error_msg = f"DOCX QA Audit FAILED with {len(errors)} error(s):\n" + "\n".join(errors)

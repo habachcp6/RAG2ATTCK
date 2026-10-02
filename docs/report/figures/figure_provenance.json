@@ -1,0 +1,19 @@
+{
+  "fixture_only": false,
+  "scope": "Verified native metrics, RQ1 intervals and settled costs only; known RQ2 consumer v1 defects not used",
+  "source_digests": {
+    "C:\\Users\\hahoa\\.codex\\artifacts\\rag2attck\\canonical-metrics-208ac00-v1\\native\\per_condition_metrics.json": "e6592f9a0f97739be1168f9d1448e0d209fe4a300727ff6ad78902523f1591d6",
+    "C:\\Users\\hahoa\\.codex\\artifacts\\rag2attck\\canonical-metrics-208ac00-v1\\rq\\rq_analysis.json": "20747fab4150e05e5c816ed072c35d6c99482d83206508632378ab2e256adbc1",
+    "D:\\RAG2ATT&CK\\artifacts\\orchestration\\root_independent_canonical_numbers.json": "6ca7338b534f70d9c6cddd160ed46ad2652beb340cca82888aaaf06f5f22870e"
+  },
+  "outputs": {
+    "canonical_rq1_accuracy_and_macro.pdf": "798b7e3c7ead2a701bc2045e548e0554ee8d495bc2157ea33b6025da722010a3",
+    "canonical_rq1_accuracy_and_macro.png": "fbeb37c324360cf31081f802b523999c2ca59a999c353c7ccbb6ad122f77dc19",
+    "canonical_rq2_retrieval.pdf": "43d496abcaabe3fb4966438845f10596b7cc771455ca1e2bf8a8e985e2ad0a51",
+    "canonical_rq2_retrieval.png": "7c15f5d04db785c2f211cbb6bfd0f8c0a45a48229a2723fa36ae11b79e3de513",
+    "canonical_rq3_cost_and_latency.pdf": "51cf74ed24bfea090f53aede762cf6a3529aa8be8b286d6770fb05eb4083d9eb",
+    "canonical_rq3_cost_and_latency.png": "5b9c31be2b37cad34f76624171b9f7fdc8a4686d3c13e452dc8ca8369e472941"
+  },
+  "analysis_source": "208ac00/c48",
+  "run_id": "live-66b94b1676bf46a9"
+}

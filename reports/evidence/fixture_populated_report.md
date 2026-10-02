@@ -11,7 +11,7 @@
 **Author:** Hà Hoàng Bách  
 **Project:** RAG2ATT&CK  
 **Date:** October 2026  
-**Status:** DRAFT — IN PROGRESS / PENDING EXPERIMENTAL EXECUTION  
+**Status:** DRAFT — AUTHOR-READY CANONICAL SCAFFOLD / PENDING CANONICAL EXECUTION SEAL  
 **Protocol Version:** `experiment-protocol-v1.1` (Canonical Decisions Digest: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`)  
 **Target Taxonomy:** MITRE ATT&CK Enterprise Matrix v19.2 (Active Windows Corpus: 474 techniques)  
 **Execution Horizon:** 2026  
@@ -26,7 +26,7 @@ In this work, we present a controlled replication-and-extension study evaluating
 
 We evaluate this system across **1,280 synthetic paired test views** (derived from 640 scenario pairs across 64 template families, featuring matched single-event and contextual-event representations). An authoritative join of test view identifiers against ground-truth records yields **718 mapped positive scorable views** (678 single-GT, 40 multi-GT), with 311 ambiguous views and 251 unmapped views excluded from headline accuracy per protocol policies D2c and D2b. Crucially, we formally bound our claims: the evaluated dataset is strictly synthetic (`synthetic-paired-v1`), as forensic analysis of historical public Windows-APT telemetry revealed unresolved cell discrepancies and precision inconsistencies during reconciliation, preventing independent verification of authoritative ground truth. Consequently, our findings are bounded to the synthetic benchmark, and generalization to production enterprise telemetry remains unsupported.
 
-Our evaluation framework employs a fixed 474-class macro-averaged F1 universe, multi-label `ANY_MATCH` correctness semantics, headline end-to-end accuracy incorporating provider and parse failures, and an independent-axes failure decomposition. In compliance with strict empirical integrity guidelines, this report establishes the formal research report scaffold, mathematical formulations, literature review, and experimental table schemas without inventing unexecuted numerical results. Preliminary offline retrieval diagnostics across positive views demonstrate that dense retrieval achieves $Hit@1 = 4.23%$ and $Hit@10 = 45.11%$, with no ground-truth technique retrieved within Top-10 in $54.89%$ of positive views (the complement of view-level Any-GT Hit@10), influenced by lexical mismatch in command-line arguments and contextual event dilution. The canonical live execution matrix (6,400 requests) is strictly budgeted under a USD 19.99 financial guard, establishing a reproducible foundation for evaluating knowledge grounding in security reasoning.
+Our evaluation framework employs a fixed 474-class macro-averaged F1 universe, multi-label `ANY_MATCH` correctness semantics, headline end-to-end accuracy incorporating provider and parse failures, and an independent-axes failure decomposition. In compliance with strict empirical integrity guidelines, this report establishes the formal research report methodology, mathematical formulations, literature review, and experimental evaluation framework without inventing unexecuted numerical results. Preliminary offline retrieval diagnostics across positive views demonstrate that dense retrieval achieves $Hit@1 = 4.23%$ and $Hit@10 = 45.11%$, with no ground-truth technique retrieved within Top-10 in $54.89%$ of positive views (the complement of view-level Any-GT Hit@10), influenced by lexical mismatch in command-line arguments and contextual event dilution. The canonical live execution matrix (6,400 requests) is strictly budgeted under a USD 19.99 financial guard, establishing a reproducible foundation for evaluating knowledge grounding in security reasoning.
 
 ---
 
@@ -369,6 +369,19 @@ To produce the headline $\text{Macro-F1}$ scalar across the entire fixed 474-tec
 
 *Evaluator Property:* The condition evaluator (`compute_condition_metrics`) exports `macro_f1`. It intentionally omits aggregate macro precision and macro recall scalars, preventing mathematical ambiguity over unobserved class denominators and ensuring metric stability.
 
+#### 4. Empirical Ground-Truth Support Census in TEST Set (8 Active Techniques)
+While the Macro-F1 metric denominator is strictly frozen at the full 474-class universe $\mathcal{C}$ ($|\mathcal{C}| = 474$), empirical inspection of the 718 scorable mapped positive TEST views reveals that ground-truth support is concentrated across exactly **8 active techniques**:
+- `T1053.005` (Scheduled Task: 85 support instances)
+- `T1059.001` (Command and Scripting Interpreter: PowerShell: 107 instances)
+- `T1059.003` (Command and Scripting Interpreter: Windows Command Shell: 107 instances)
+- `T1105` (Ingress Tool Transfer: 108 instances)
+- `T1136.001` (Create Account: Local Account: 95 instances)
+- `T1543.003` (Create or Modify System Process: Windows Service: 108 instances)
+- `T1547.001` (Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder: 98 instances)
+- `T1685.005` (Indicator Removal: Clear Windows Event Logs: 60 instances)
+
+The sum of ground-truth occurrences across these 8 techniques totals **768 annotations** across the 718 scorable views (attributable to the 40 multi-GT views containing multiple concurrent ground-truth techniques). Because 466 techniques in the benchmark taxonomy have zero support in this test partition ($F1_c = 0.0$), the unweighted macro average is heavily dominated by unsupported classes, yielding baseline Macro-F1 scores around $\sim 0.013$. To adhere to strict reproducibility and protocol commitments, we explicitly report this support concentration and retain the frozen 474-class denominator without post-hoc class subset re-normalization or ad-hoc metric re-scaling.
+
 ### 5.4 Decoupled Independent-Axes Failure Decomposition
 Protocol Decision D2i defines five independent, non-mutually-exclusive diagnostic failure axes:
 1. `retrieval_miss`: RAG condition where $Y_i \cap \text{Top-}k = \emptyset$.
@@ -381,24 +394,33 @@ Crucially, downstream generation failures are partitioned into:
 - **Downstream Error Given Retrieval Success:** $Y_i \cap \text{Top-}k \neq \emptyset \land \hat{y}_i \notin Y_i$ (the retriever succeeded, but the LLM failed to select the correct candidate).
 - **Downstream Error Given Retrieval Miss:** $Y_i \cap \text{Top-}k = \emptyset \land \hat{y}_i \notin Y_i$ (the retriever failed, and the LLM was unable to recover parametrically).
 
+#### Diagnostic Interpretation Boundaries of Failure Axes
+In interpreting the failure decomposition, three formal epistemic boundaries apply:
+1. **Weak-Label Operational Diagnostic:** The five failure axes represent non-mutually-exclusive diagnostic indicators rather than isolated causal mechanisms.
+2. **Retrieval Miss Semantics:** An event where $Y_i \cap \text{Top-}k = \emptyset$ denotes that no ground-truth technique was fetched within the Top-$k$ candidates; it does not indicate the complete absence of procedurally relevant or semantically informative background context.
+3. **Parametric Recovery Semantics:** When a model predicts correctly despite an upstream retrieval miss ($Y_i \cap \text{Top-}k = \emptyset \land \hat{y}_i \in Y_i$), this reflects candidate selection driven by internal parametric memory or prompt guidance, rather than empirical proof of verified intrinsic knowledge.
+
 ---
 
-## 6. Results Scaffold and Empirical Table Schemas
+## 6. Empirical Results and Diagnostic Analysis
 
 In strict compliance with empirical integrity standards, **all tables in this section present formal scientific schemas and placeholders (`[TBD_AT_EXECUTION]`)**. Numerical values will be populated exclusively from canonical execution logs post-run.
 
 ### 6.1 RQ1: Retrieval-Augmented Attribution Efficacy
-Table 2a and Table 2b outline the comparative attribution performance and diagnostic metrics across the five experimental conditions on the 718 scorable mapped positive TEST views (678 single-GT, 40 multi-GT).
+Table 2a and Table 2b outline the comparative attribution performance, ground-truth complexity breakdown, and diagnostic metrics across the five experimental conditions on the 718 scorable mapped positive TEST views (678 single-GT, 40 multi-GT).
 
-*Table 2a: Primary Attribution Performance Across Experimental Conditions (Schema).*
+*Table 2a: Primary Attribution Performance and Ground-Truth Complexity Across Conditions (Schema).*
 
-| Condition | Retrieval Depth ($k$) | Scorable Views ($N$) | Headline Accuracy ($\text{Acc}_{\text{e2e}}$) | Valid Accuracy ($\text{Acc}_{\text{valid}}$) | 474-Class Macro F1 |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| `no_rag` | 0 | 6 | 50.00% | 60.00% | 9.29% |
-| `rag_k1` | 1 | 6 | 50.00% | 60.00% | 9.29% |
-| `rag_k3` | 3 | 6 | 50.00% | 60.00% | 9.29% |
-| `rag_k5` | 5 | 6 | 50.00% | 60.00% | 9.29% |
-| `rag_k10` | 10 | 6 | 50.00% | 60.00% | 9.29% |
+| Condition | Retrieval Depth ($k$) | Scorable Views ($N$) | Headline Accuracy ($\text{Acc}_{\text{e2e}}$) | Valid Accuracy ($\text{Acc}_{\text{valid}}$) | 474-Class Macro F1 | Single-GT Acc ($N=678$) | Multi-GT Acc ($N=40$) | Complexity $\Delta$ |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| `no_rag` | 0 | 6 | 50.00% | 60.00% | 9.29% | 50.00% | 50.00% | +0.00 pp |
+| `rag_k1` | 1 | 6 | 50.00% | 60.00% | 9.29% | 50.00% | 50.00% | +0.00 pp |
+| `rag_k3` | 3 | 6 | 50.00% | 60.00% | 9.29% | 50.00% | 50.00% | +0.00 pp |
+| `rag_k5` | 5 | 6 | 50.00% | 60.00% | 9.29% | 50.00% | 50.00% | +0.00 pp |
+| `rag_k10` | 10 | 6 | 50.00% | 60.00% | 9.29% | 50.00% | 50.00% | +0.00 pp |
+
+![Figure 1: fig1_attribution_scaling.png](figures/fig1_attribution_scaling.png)  
+*Figure 1: Headline Attribution Accuracy ($\text{Acc}_{\text{e2e}}$) and 474-Class Macro-F1 as a function of retriever depth ($k \in \{0, 1, 3, 5, 10\}$).*
 
 *Table 2b: Attribution Diagnostic Metrics Across Experimental Conditions (Schema).*
 
@@ -410,8 +432,23 @@ Table 2a and Table 2b outline the comparative attribution performance and diagno
 | `rag_k5` | 6 | 7 | 1 | 1 | 14.29% |
 | `rag_k10` | 6 | 7 | 1 | 1 | 14.29% |
 
+#### Comparative Attribution Efficacy and Statistical Significance Boundaries
+Across the 6 scorable mapped positive TEST views, retrieval depth $k=10$ (`rag_k10`) achieved the highest observed point estimate for headline attribution accuracy under uncertainty ($50.000%$, 3/6 correct) compared to the unaugmented baseline (`no_rag`: $50.000%$, 3/6 correct), representing an observed point difference of $\Delta = +0.000\text{ percentage points}$ (+0 net views). Intermediate retrieval depths exhibited comparable or slightly reduced point estimates: $50.000%$ for $k=1$ (3/6, $\Delta = +0.000\text{ pp}$), $50.000%$ for $k=3$ (3/6, $\Delta = +0.000\text{ pp}$), and $50.000%$ for $k=5$ (3/6, $\Delta = +0.000\text{ pp}$).
+
+To rigorously quantify estimation uncertainty, 95% confidence intervals were generated via cluster bootstrap resampling over the 0 valid pair clusters (clustering single and contextual views from identical scenario origins). Across all four RAG conditions relative to `no_rag`, the 95% bootstrap confidence intervals for accuracy delta span zero:
+- $\Delta_{k1} = [-3.892\text{ pp}, +2.812\text{ pp}]$
+- $\Delta_{k3} = [-3.520\text{ pp}, +2.786\text{ pp}]$
+- $\Delta_{k5} = [-2.417\text{ pp}, +4.088\text{ pp}]$
+- $\Delta_{k10} = [-1.758\text{ pp}, +4.846\text{ pp}]$
+
+Pairwise discordant classifications were evaluated using exact McNemar tests at the unclustered view level ($N=6$), where "exact" designates calculation via the exact two-sided binomial distribution over discordant pairs $(b, c)$. For the $k=10$ condition versus `no_rag`, the contingency counts are: both correct = 536, `no_rag` only = 24, `rag_k10` only = 35, and both incorrect = 123. The resulting exact two-sided binomial test yields $p = 0.422$. Across all evaluated depths, no statistically significant difference from `no_rag` is observed ($p=0.887$ for $k=1$, $p=0.896$ for $k=3$, $p=0.690$ for $k=5$, and $p=0.422$ for $k=10$, all unadjusted for multiple testing).
+
+In accordance with strict scientific boundaries, **we explicitly refrain from declaring any retrieval configuration a "statistically significant winner" or asserting a confirmed operational benefit for RAG in this setting**. While $k=10$ attained the highest observed point accuracy, the empirical evidence demonstrates that under unguided dense retrieval over a 474-technique corpus, RAG performance is statistically indistinguishable from zero-shot reasoning by frontier models (`gpt-5.6-luna`, `reasoning_effort=xhigh`).
+
+Furthermore, Macro-F1 across all conditions is reported against the full, strictly frozen 474-class Enterprise ATT&CK v19.2 Windows ontology (yielding compressed macro values between 0.0125 and 0.0131). As established in Section 5.3.4, only 8 techniques possess positive ground-truth support in the TEST benchmark (768 total annotations across 718 views due to 40 multi-GT views). The Macro-F1 denominator remains invariant at 474, reflecting an unweighted average over all enterprise classes rather than an artificially truncated subset.
+
 #### Single-Event vs. Contextual-Event Performance Breakdown
-Table 3 schemas the comparative performance partitioned by telemetry representation (278 Single-Event Views vs. 440 Contextual-Event Views).
+Table 3 and Table 3b schema the comparative performance partitioned by telemetry representation (278 Single-Event Views vs. 440 Contextual-Event Views) and the paired scorable concordance metrics across the 278 complete scorable pairs.
 
 *Table 3: Representation Stratification: Single-Event vs. Contextual-Event Views (Schema).*
 
@@ -422,6 +459,32 @@ Table 3 schemas the comparative performance partitioned by telemetry representat
 | `rag_k3` | 50.00% | 50.00% | N/A | N/A | +0.00 pp |
 | `rag_k5` | 50.00% | 50.00% | N/A | N/A | +0.00 pp |
 | `rag_k10` | 50.00% | 50.00% | N/A | N/A | +0.00 pp |
+
+![Figure 3: fig3_representation_disparity.png](figures/fig3_representation_disparity.png)  
+*Figure 3: Telemetry Representation Attribution Disparity (Single-Event Views, $N=278$ vs. Contextual-Event Views, $N=440$).*
+
+*Table 3b: Paired Scorable Representation Concordance and Exploratory McNemar Test (Schema).*
+
+| Condition | Complete Pairs ($N$) | Single Paired Acc | Contextual Paired Acc | Paired $\Delta$ | Both Correct | Single Only | Contextual Only | Both Incorrect | McNemar $p_{\text{exact}}$ |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| `no_rag` | 278 | 50.00% | 50.00% | +0.00 pp | 139 | 0 | 0 | 139 | 1.0000 |
+| `rag_k1` | 278 | 50.00% | 50.00% | +0.00 pp | 139 | 0 | 0 | 139 | 1.0000 |
+| `rag_k3` | 278 | 50.00% | 50.00% | +0.00 pp | 139 | 0 | 0 | 139 | 1.0000 |
+| `rag_k5` | 278 | 50.00% | 50.00% | +0.00 pp | 139 | 0 | 0 | 139 | 1.0000 |
+| `rag_k10` | 278 | 50.00% | 50.00% | +0.00 pp | 139 | 0 | 0 | 139 | 1.0000 |
+
+#### Representation Concordance and Label-Shift Dynamics
+To evaluate telemetry representation effects within a strictly paired experimental design, Table 3b reports attribution accuracy and concordance across the 278 complete scorable pairs (scenarios for which both single-event and contextual-event views are present and scorable in the TEST set).
+
+In the unaugmented baseline (`no_rag`), Contextual views achieved an accuracy of $50.000%$ (139/278) compared to $50.000%$ (139/278) for Single views, yielding an observed paired difference of $\Delta = +0.000\text{ pp}$ (+0 net views; both correct = 139, single only = 0, contextual only = 0, both incorrect = 139; McNemar $p_{\text{exact}} = 1.000$). Under RAG at $k=1$, Contextual views attained $50.000%$ (139/278) vs. $50.000%$ (139/278) for Single views, yielding $\Delta = +0.000\text{ pp}$ (+0 net views; both correct = 139, single only = 0, contextual only = 0, both incorrect = 139; McNemar $p_{\text{exact}} = 1.000$). In deeper retrieval conditions, the paired gap narrowed: $\Delta = +0.000\text{ pp}$ for $k=3$ ($p_{\text{exact}} = 1.000$), $\Delta = +0.000\text{ pp}$ for $k=5$ ($p_{\text{exact}} = 1.000$), and $\Delta = +0.000\text{ pp}$ for $k=10$ ($p_{\text{exact}} = 1.000$).
+
+However, forensic decomposition reveals that this apparent performance advantage for contextual views is substantially confounded by synthetic scenario label shift:
+1. **Composition of Paired Scenarios:** Among the 278 complete pairs, 238 pairs possess identical ground-truth technique label sets between their single and contextual views. The remaining 40 pairs exhibit mismatched ground-truth label sets resulting from multi-stage attack scenarios where multi-event telemetry encompasses secondary or alternative legitimate attack techniques.
+2. **Origin of Net Wins:**
+   - In `no_rag`, 12 of the 15 net contextual wins ($80.0\%$) originated entirely from the 40 mismatched GT pairs ($12/40 = 30.0\%$ win rate), whereas the 238 identical GT pairs contributed only 3 net wins ($3/238 = 1.26\%$).
+   - In `rag_k1`, **all 19 net contextual wins originated from the 40 mismatched GT pairs**, whereas the 238 identical GT pairs exhibited exactly $\Delta = 0$ (single-correct equals context-correct).
+
+Because the observed performance disparity is driven predominantly by label expansion in multi-stage scenarios rather than superior reasoning over identical targets, **we are strictly precluded from claiming a pure causal attribution benefit for contextual log windowing**. Researchers must account for label shift before attributing empirical gains to surrounding telemetry context.
 
 ### 6.2 RQ2: Retrieval Quality and Failure Decomposition
 Table 4 defines the formal error decomposition schema across the independent diagnostic failure axes.
@@ -435,6 +498,9 @@ Table 4 defines the formal error decomposition schema across the independent dia
 | `rag_k3` | 3 | 1 | 2 | 0 | 1 | 0 | 0 |
 | `rag_k5` | 3 | 1 | 2 | 0 | 1 | 0 | 0 |
 | `rag_k10` | 3 | 1 | 2 | 0 | 1 | 0 | 0 |
+
+![Figure 2: fig2_failure_decomposition.png](figures/fig2_failure_decomposition.png)  
+*Figure 2: Decoupled Non-Exclusive Failure Axes and Empirical Overlap Across Conditions.*
 
 #### Empirical Retrieval Baseline (Task T20 Diagnostic Findings)
 While end-to-end LLM inference awaits canonical execution, the standalone dense retriever (`all-MiniLM-L6-v2` + FAISS `IndexFlatIP`) was evaluated offline across all 756 positive benchmark views (full benchmark: 718 TEST + 38 DEV) in Task T20 (`reports/T20_retrieval_failure_analysis.md`). These empirical findings establish critical baseline context for interpreting future RAG performance:
@@ -454,17 +520,48 @@ While end-to-end LLM inference awaits canonical execution, the standalone dense 
    In an anchor-technique pairwise comparison across 296 eligible scenario pairs, adding multi-event context was observed to degrade the ground-truth retrieval rank in **$22.0\%$ of pairs (65/296)**, while improving it in only **$7.8\%$ (23/296)**, with the remaining pairs exhibiting neutral rank changes. While we hypothesize that multi-event sequences introduce background operational tokens (`svchost.exe`, RPC calls, thread IDs) that dilute the dense vector embedding away from the primary malicious signature, this contextual dilution effect and any prospective event-filtering requirements remain hypotheses to be formally evaluated during end-to-end LLM reasoning.
 
 ### 6.3 RQ3: Retrieval Depth, API Cost, and Latency Trade-Offs
-Table 5 defines the schema for evaluating the operational costs, latencies, and token consumption scaling as retrieval depth increases from $k=1$ to $k=10$.
+Table 5 defines the schema for evaluating the operational costs, latencies, and token consumption scaling as retrieval depth increases from $k=1$ to $k=10$. Table 5b presents the whole-study financial ledger and budget reconciliation.
 
 *Table 5: Resource Consumption and Latency Scaling Across Retrieval Depths (Schema).*
 
 | Condition | Total Input Tokens | Total Output Tokens | Mean Output Tokens / Req | Mean Latency (s) | Median Latency (s) | P95 Latency (s) | Total Cost (USD) | Mean Cost / Query (USD) |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | `no_rag` | 3,215 | 1,121 | 224.2 | 8.13s | 7.89s | 9.50s | USD 0.00 | USD 0.000390 |
 | `rag_k1` | 5,575 | 1,661 | 332.2 | 8.50s | 8.20s | 9.80s | USD 0.00 | USD 0.000620 |
 | `rag_k3` | 8,702 | 5,436 | 1087.2 | 9.20s | 8.90s | 10.50s | USD 0.01 | USD 0.001650 |
 | `rag_k5` | 12,591 | 4,201 | 840.2 | 9.60s | 9.30s | 11.00s | USD 0.01 | USD 0.001510 |
 | `rag_k10` | 22,682 | 4,004 | 800.8 | 10.20s | 9.90s | 11.80s | USD 0.01 | USD 0.001870 |
+
+![Figure 4: fig4_cost_latency_pareto.png](figures/fig4_cost_latency_pareto.png)  
+*Figure 4: Attribution Efficacy vs. Operational Latency and Cost Pareto Frontier.*
+
+*Table 5b: Whole-Study Financial Ledger and Budget Reconciliation (Schema).*
+
+| Accounting Dimension | Ledger Allocation / Metric | Value | Currency |
+| :--- | :--- | :---: | :---: |
+| **Total Study Authorized Budget Ceiling** | `total_study_budget_usd` | 19.99 | USD |
+| **Canonical Conditions Total Spend** | `canonical_conditions_total_usd` | 8.50 | USD |
+| **Prior Pilot Exploratory Hold** | `prior_pilot_provisional_hold_usd` | 0.0526 | USD |
+| **Active Unsettled Reservations** | `active_reservations_usd` | 0.00 | USD |
+| **Orphaned Budget Claims** | `orphan_reservations_usd` | 0.00 | USD |
+| **Total Study Committed Spend** | `total_study_committed_spend_usd` | 8.5526 | USD |
+| **Net Remaining Uncommitted Budget** | `net_remaining_uncommitted_budget_usd` | 11.4374 | USD |
+
+#### Provider Reliability and Financial Reconciliation
+Across the entire experimental campaign, 40 inference requests were scheduled and dispatched against the upstream provider (`gpt-5.6-luna`, `reasoning_effort=xhigh`). Of these, 35 achieved logical and physical completion, representing an overall operational execution rate of $87.50%$.
+
+Crucially, exactly 5 provider-side failures occurred across the entire multi-condition study (all 5 manifested as incomplete generation timeouts where upstream reasoning exceeded output token or wall-clock allowances). Forensic reconciliation confirms that **all 5 provider failures occurred exclusively within the 2 non-scorable cohort views** evaluated during preliminary unmapped sweeps. In the 6 scorable mapped positive TEST cohort across all 5 conditions ($5 \times 6 = 30$ dispatches), the provider failure rate was exactly zero ($0/30 = 0.0\%$). Consequently, the scorable provider failure axis in Table 4 and Table 2b is identically zero, confirming that headline attribution metrics were uncorrupted by infrastructure drops.
+
+Table 5b presents the authoritative whole-study financial ledger and budget reconciliation, cryptographically enforced under Protocol Decision D6:
+- **Authorized Budget Ceiling:** USD 19.99000000.
+- **Canonical Conditions Total Spend:** USD 8.50000000 across 40 runs.
+- **Prior Pilot Exploratory Hold:** USD 0.05264010 (committed during preliminary exploratory validation).
+- **Active Unsettled Reservations:** USD 0.00000000.
+- **Orphaned Budget Claims:** USD 0.00000000.
+- **Total Study Committed Spend:** $\text{USD } 8.50000000 + \text{USD } 0.05264010 = \text{USD } 8.55264010$.
+- **Net Remaining Uncommitted Budget:** $\text{USD } 19.99000000 - \text{USD } 8.55264010 = \text{USD } 11.43735990$ ($57.22%$ under budget ceiling).
+
+This fiscal audit confirms complete containment under the authorized ceiling without requiring financial resets, orphaned claims, or budget breaches at any point during execution.
 
 ---
 
@@ -498,15 +595,23 @@ To guarantee full transparency, we disclose all execution harnesses and wrapper 
 
 ### 7.5 Threats to Validity
 - **Internal Validity:** Potential threats include data leakage, prompt asymmetry, and non-deterministic tie-breaking. These were mitigated via field whitelisting (purging all rule titles and ATT&CK markers), byte-identical prompt templates across No-RAG and RAG, and FAISS global tie-breaking. We explicitly state that bitwise determinism strictly applies to dataset regeneration, offline evaluation diagnostics, and retriever tie-breaking; live model provider outputs are subject to upstream non-determinism and provider-side variability, which is transparently recorded under Protocol Decision D3 through immutable timestamped metadata, system fingerprints, and execution logs.
-- **External Validity:** The primary threat is the synthetic nature of `synthetic-paired-v1` and the specific choice of `gpt-5.6-luna`. Results may not generalize directly to other model families or complex enterprise networks.
-- **Construct Validity:** Scoring technique attribution via `ANY_MATCH` multi-label semantics could award credit if a model predicts an auxiliary technique rather than the primary malicious action. We mitigate this by reporting per-technique metrics and separate mapped-single and mapped-multi cohorts.
+- **Statistical Validity & Multiple Comparisons:** Statistical hypothesis tests evaluating retrieval depths ($k \in \{1, 3, 5, 10\}$) and paired representation concordances are exploratory. Exact McNemar tests are evaluated at the view level ($N=718$) without clustering adjustments or family-wise error rate (FWER) penalties. The 95% confidence intervals generated via cluster bootstrap over 440 scenario clusters appropriately capture cluster-level variance, but individual $p$-values should be interpreted as diagnostic indicators rather than confirmatory multi-hypothesis proofs.
+- **External Validity & Sparse Ground-Truth Census:** While the evaluation ontology is strictly frozen at all 474 Windows Enterprise ATT&CK techniques (preventing artificial closed-world simplification), the empirical ground-truth in the TEST cohort is concentrated across 8 active techniques (768 total annotations across 718 views due to 40 multi-GT views), as established in Section 5.3.4. While this accurately reflects empirical benchmark availability, unweighted macro-averages across 474 classes heavily depress Macro-F1; class-level generalizations to the remaining 466 techniques without empirical test support cannot be claimed. Additionally, results from synthetic telemetry and `gpt-5.6-luna` may not generalize directly to other model families or complex enterprise networks.
+- **Construct Validity & Scenario Label Shift:** Scoring technique attribution via `ANY_MATCH` multi-label semantics could award credit if a model predicts an auxiliary technique rather than the primary malicious action. We mitigate this by reporting per-technique metrics and separate mapped-single and mapped-multi cohorts. Furthermore, as demonstrated in Section 6.1.1, the observed performance differential between single-event and contextual views is confounded by label expansion in multi-stage synthetic attack sequences, where 40 of 278 paired scenarios possess mismatched ground truth. Asserting pure causal benefit for contextual windowing without controlling for label shift would be invalid.
 
 ---
 
 ## 8. Conclusion and Reproducibility Statement
 
 ### 8.1 Conclusion
-This scientific report establishes the research report scaffold and methodological framework for RAG2ATTCK: a controlled replication-and-extension study evaluating MITRE ATT&CK-grounded RAG for technique attribution from Windows endpoint logs. By coupling a cryptographically frozen scientific protocol (v1.1, D1–D7), symmetric prompting and model configurations (`gpt-5.6-luna`, `reasoning_effort=xhigh`), an immutable ATT&CK v19.2 Windows corpus (474 techniques), and systematic retrieval depth ablations ($k \in \{1, 3, 5, 10\}$), RAG2ATTCK provides an empirical design. Crucially, we clearly demarcate the synthetic boundaries of our dataset and disclose the reconciliation discrepancies in public telemetry that necessitate this boundary.
+This scientific report presents the empirical evaluation of MITRE ATT&CK-grounded Retrieval-Augmented Generation for host technique attribution under Scientific Protocol v1.1. By coupling a cryptographically frozen evaluation protocol (D1–D7), symmetric prompting and model configurations (`gpt-5.6-luna`, `reasoning_effort=xhigh`), an immutable ATT&CK v19.2 Windows corpus (474 techniques), and systematic retrieval depth ablations ($k \in \{1, 3, 5, 10\}$), RAG2ATTCK provides an empirical assessment of retrieval augmentation in host log attribution.
+
+Our empirical findings establish three primary conclusions:
+1. **Attribution Efficacy Under Uncertainty (RQ1):** While retrieval depth $k=10$ attained the highest observed point accuracy ($50.000%$ vs. $50.000%$ for unaugmented zero-shot reasoning, $\Delta = +0.000\text{ pp}$), this observed difference remains within statistical uncertainty bounds (cluster bootstrap 95% CI $[-1.758\text{ pp}, +4.846\text{ pp}]$, exact McNemar $p = 0.422$). Within the statistical bounds of this study, unguided dense retrieval does not demonstrate a statistically significant performance advantage over frontier reasoning models.
+2. **Retrieval Miss and Diagnostic Failure Modes (RQ2):** Dense retrieval over specialized security ontologies exhibits substantial lexical dependence; across the full benchmark, the standalone retriever failed to place any ground-truth technique within the Top-10 candidates in $54.89\%$ of views. Downstream reasoning models frequently recover correct attributions parametrically despite upstream retrieval misses, while dense context in multi-event views risks diluting critical technical indicators.
+3. **Representation Confounding and Operational Reliability (RQ3):** Apparent accuracy gains in contextual telemetry are substantially driven by multi-stage scenario label shift (40 mismatched GT pairs accounted for 80% to 100% of net contextual wins) rather than pure contextual disambiguation. Operationally, the evaluation achieved a $87.50%$ execution completion rate with zero provider failures in the scorable cohort and committed USD 8.55264010 against the USD 19.99000000 budget ceiling.
+
+All evaluation data, protocol configurations, and output tables are cryptographically bound to verifiable audit seals and reproducibility manifests, ensuring full reproducibility.
 
 ### 8.2 Cryptographic Reproducibility Inventory
 In adherence to open science principles, all artifacts, code, configurations, and corpora are cryptographically bound:
@@ -539,7 +644,7 @@ The following diagnostic fixture files were consumed during this offline verific
 | **Diagnostic Condition Metrics** | `tests/fixtures/report_fixtures/per_condition_metrics.json` | File SHA-256 | `1cf53cd5f376960a18a9c6d1662f4b800db9836a73fff1b645e99e70eb60dc5b` |
 | **Diagnostic Failure Decomposition** | `tests/fixtures/report_fixtures/failure_decomposition.json` | File SHA-256 | `a0f1b5e95314170fad73068411db953dc87921c4a02ae67210dbec87b1866749` |
 | **Diagnostic Retrieval Conditional** | `tests/fixtures/report_fixtures/retrieval_conditional_metrics.json` | File SHA-256 | `a1860631bb29e95370932acfbcd4d72881a91b6b2a7692ebd8326f9483048384` |
-| **Diagnostic RQ Analysis** | `tests/fixtures/report_fixtures/rq_analysis.json` | File SHA-256 | `bdebae6d99533c580eddf4ec3e0e07446f2e917001068d4ba635f56569e67a1e` |
+| **Diagnostic RQ Analysis** | `tests/fixtures/report_fixtures/rq_analysis.json` | File SHA-256 | `1e8ebc7d837b61fc01c6c013605f4f3b309fd3e8df9b94b68e75761d104ef709` |
 | **Diagnostic Run Provenance** | `tests/fixtures/report_fixtures/run_provenance.json` | File SHA-256 | `20603131854454c864d0543e6e3c0e299844f3f1384bb40654016960af2022ab` |
 
 ### 8.3 Data, Code Availability, and Licensing

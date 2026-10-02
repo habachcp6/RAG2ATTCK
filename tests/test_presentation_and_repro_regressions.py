@@ -298,3 +298,72 @@ def test_split_manifest_topology_and_cluster_invariants() -> None:
     # Total scorable views
     total_scorable_views = (both_scorable * 2) + contextual_only + single_only
     assert total_scorable_views == 718, "Must have exactly 718 scorable views"
+
+
+def test_fixture_population_helper_extracts_slots_with_private_label(tmp_path: Path) -> None:
+    """Fixture population helper extracts slots and writes private-labeled preview."""
+    from scripts.populate_presentation_fixtures import (
+        DEFAULT_FIXTURE_DIR,
+        DISCLAIMER_TEXT,
+        extract_fixture_slots,
+        generate_fixture_markdown_preview,
+    )
+
+    slots = extract_fixture_slots(DEFAULT_FIXTURE_DIR)
+    assert slots["_metadata"]["fixture_only"] is True
+    assert slots["_metadata"]["disclaimer"] == DISCLAIMER_TEXT
+
+    # Check key slots are present
+    assert slots["{{S2_MANIFEST_PATH}}"] == "data/ground_truth/synthetic/split_manifest.json"
+    assert slots["{{S2_TOTAL_TEST_VIEWS}}"] == "1,280"
+    assert slots["{{S2_SCORABLE_VIEWS}}"] == "718"
+    assert slots["{{S2_COMPLETE_SCORABLE_PAIRS}}"] == "278"
+    assert slots["{{S2_DISTINCT_ELIGIBLE_CLUSTERS}}"] == "440"
+    assert "{{S2_ACC_E2E_NO_RAG}}" in slots
+    assert "{{S2_ACC_E2E_RAG_K10}}" in slots
+    assert "{{S2_MACRO_F1_RAG_K10}}" in slots
+    assert "{{S2_RETRIEVAL_MISS_RATE_K10}}" in slots
+    assert "{{S2_MEDIAN_LAT_NO_RAG_SEC}}" in slots
+    assert "{{S2_COST_LOGICAL_REQ_NO_RAG}}" in slots
+    assert "{{S2_SINGLE_VIEW_ACC_E2E}}" in slots
+    assert "{{S2_PAIRED_DELTA_PP}}" in slots
+
+    out_md = tmp_path / "preview.md"
+    generate_fixture_markdown_preview(slots, out_md)
+    assert out_md.is_file()
+    md_content = out_md.read_text(encoding="utf-8")
+    assert DISCLAIMER_TEXT in md_content
+    assert "fixture_only: true" in md_content
+    assert "DIAGNOSTIC TEST FIXTURE ONLY" in md_content
+
+
+def test_fixture_population_helper_fails_closed_on_uncertified_data(tmp_path: Path) -> None:
+    """Population helper must raise RuntimeError if target is not certified as fixture."""
+    import pytest
+
+    from scripts.populate_presentation_fixtures import assert_fixture_safety
+
+    fake_live = {"fixture_only": False, "provenance_status": "canonical_study"}
+    with pytest.raises(RuntimeError, match=r"\[FAIL_CLOSED\]"):
+        assert_fixture_safety(tmp_path, fake_live)
+
+
+def test_js_deck_updater_helper_contract() -> None:
+    """JS deck updater script exists, adheres to artifact-tool pattern, and labels private."""
+    js_script = REPO_ROOT / "scripts" / "artifact_tool_deck_updater.js"
+    assert js_script.is_file(), "artifact_tool_deck_updater.js missing"
+    content = js_script.read_text(encoding="utf-8")
+
+    assert "@oai/artifact-tool" in content
+    assert "DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS" in content
+    assert "importPptx" in content
+    assert "inspect" in content
+    assert "resolve" in content
+    assert "exportPptx" in content
+    assert "fixture_only" in content
+
+    # Verify that production slides remain untampered with fixture numbers
+    slides_md = REPO_ROOT / "docs" / "presentation" / "slides.md"
+    assert slides_md.is_file()
+    md_text = slides_md.read_text(encoding="utf-8")
+    assert "[PENDING EXECUTION]" in md_text or "PENDING" in md_text

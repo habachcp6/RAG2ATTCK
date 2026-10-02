@@ -1250,6 +1250,10 @@ def test_numerical_binding_regressions_column_swaps() -> None:
     assert "COLUMN_SWAP_REGRESSION_SUCCESS" in proc.stdout
 
 
+@pytest.mark.skipif(
+    not has_artifact_tool_runtime(),
+    reason="Private Codex artifact-tool runtime not present in clean CI environment",
+)
 def test_js_deck_updater_canonical_mode_disjoint_and_labels(tmp_path: Path) -> None:
     """Updater in --canonical mode strictly validates slots and produces canonical output."""
     node_exe = _find_node_exe()

@@ -4,8 +4,9 @@ scripts/isolated_snapshot_worker.py
 
 Worker script executed in a fresh isolated child process inside the frozen snapshot.
 Installs offline socket and DNS guard before any application imports, verifies loaded module
-origins, spec bindings, byte hashes, and co_filename boundaries against snapshot_root,
-and executes strictly attested tasks.
+origins, spec bindings, byte hashes, co_filename boundaries against snapshot_root,
+attests dedicated virtual environment identity and locked dependencies, and executes
+strictly attested tasks.
 
 Pure standard-library implementation with zero external dependencies.
 """
@@ -25,6 +26,8 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 EXPECTED_CORE_MANIFEST_SHA256 = "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4"
 EXPECTED_ANALYSIS_SOURCE_SHA256 = "f85d7f7373e825dcc7171ce4491fd15c6fb755955da245041783fe317bc80351"
 EXPECTED_CORE_FILES_COUNT = 53
+EXPECTED_BASELINE_FILES_COUNT = 22
+EXPECTED_BASELINE_MANIFEST_PATH = "artifacts/orchestration/integration_protected_baseline.json"
 EXPECTED_SNAPSHOT_GIT_COMMIT = "b69a6909acda4c7588744acc7e1d6c20bfce2612"
 
 BLOCKED_SOCKET_EVENTS = {
@@ -45,6 +48,7 @@ class SnapshotGuardSecurityError(RuntimeError):
 
 
 _attempted_egress_count = 0
+_offline_guard_installed = False
 
 
 def _install_socket_guard() -> None:
@@ -52,7 +56,7 @@ def _install_socket_guard() -> None:
     Install comprehensive audit hook and monkey-patch socket methods to intercept
     network socket operations, address resolution, and DNS queries.
     """
-    global _attempted_egress_count
+    global _attempted_egress_count, _offline_guard_installed
 
     def audit_hook(event: str, args: tuple) -> None:
         global _attempted_egress_count
@@ -79,6 +83,8 @@ def _install_socket_guard() -> None:
                 setattr(socket, fn_name, _guarded_call(fn_name))
     except Exception:
         pass
+
+    _offline_guard_installed = True
 
 
 def compute_closed_snapshot_inventory(snapshot_root: Path) -> Tuple[str, Dict[str, str]]:
@@ -142,6 +148,78 @@ def verify_snapshot_git_identity(snapshot_root: Path) -> str:
     return actual_head
 
 
+def verify_protected_baselines(snapshot_root: Path) -> int:
+    """
+    Mandatory verification of 22 protected baseline files defined in
+    artifacts/orchestration/integration_protected_baseline.json.
+    Fails closed if the inventory file is missing, count is not 22, or any file hash mismatches.
+    """
+    inv_file = snapshot_root / EXPECTED_BASELINE_MANIFEST_PATH
+    if not inv_file.is_file():
+        raise FileNotFoundError(f"Missing protected baseline inventory: {inv_file}")
+
+    inv_data = json.loads(inv_file.read_bytes())
+    protected_files = inv_data.get("protected_files", {})
+    baseline_count = len(protected_files)
+    if baseline_count != EXPECTED_BASELINE_FILES_COUNT:
+        raise ValueError(
+            f"Protected baselines count mismatch: expected {EXPECTED_BASELINE_FILES_COUNT}, got {baseline_count}"
+        )
+
+    for rel_path, exp_sha in protected_files.items():
+        bf = snapshot_root / rel_path
+        if not bf.is_file():
+            raise FileNotFoundError(f"Missing protected baseline file: {rel_path}")
+        actual_bsha = hashlib.sha256(bf.read_bytes()).hexdigest()
+        if actual_bsha != exp_sha:
+            raise ValueError(
+                f"Protected baseline hash mismatch for '{rel_path}': expected {exp_sha}, got {actual_bsha}"
+            )
+
+    return baseline_count
+
+
+def gather_worker_runtime_attestation(snapshot_root: Path) -> Dict[str, Any]:
+    """
+    Attest sys.executable, sys.prefix, and actual installed dependencies within the dedicated venv.
+    Fails closed if sys.prefix or sys.executable is outside the snapshot .venv.
+    """
+    expected_venv = (snapshot_root / ".venv").resolve()
+    if not expected_venv.is_dir():
+        raise SnapshotGuardSecurityError(
+            f"Snapshot .venv directory missing or invalid: {expected_venv}"
+        )
+
+    actual_prefix = Path(sys.prefix).resolve()
+    if actual_prefix != expected_venv:
+        raise SnapshotGuardSecurityError(
+            f"Venv boundary breach: sys.prefix '{actual_prefix}' != expected snapshot venv '{expected_venv}'"
+        )
+
+    actual_exe = Path(sys.executable).resolve()
+    try:
+        actual_exe.relative_to(expected_venv)
+    except ValueError:
+        raise SnapshotGuardSecurityError(
+            f"Python executable breach: sys.executable '{actual_exe}' is outside snapshot venv '{expected_venv}'"
+        )
+
+    import importlib.metadata
+
+    installed_dependencies: Dict[str, str] = {}
+    for dist in importlib.metadata.distributions():
+        name = dist.metadata.get("Name")
+        if name:
+            norm_name = name.lower().replace("_", "-")
+            installed_dependencies[norm_name] = dist.version
+
+    return {
+        "sys_executable": str(actual_exe.as_posix()),
+        "sys_prefix": str(actual_prefix.as_posix()),
+        "installed_dependencies": installed_dependencies,
+    }
+
+
 def verify_module_origin_boundaries(
     snapshot_root: Path,
     expected_closed_inventory: Optional[Dict[str, str]] = None,
@@ -164,7 +242,7 @@ def verify_module_origin_boundaries(
             continue
         if target_modules is not None and mod_name not in target_modules:
             continue
-        # We enforce boundaries on our project packages
+        # Enforce boundaries on our project packages
         if mod_name == "src" or mod_name.startswith("src.") or mod_name.startswith("scripts.analysis"):
             spec = getattr(mod, "__spec__", None)
             origin = getattr(spec, "origin", None) if spec else None
@@ -314,9 +392,14 @@ def run_preflight_task(snapshot_root: Path) -> Dict[str, Any]:
             f"Core manifest SHA256 mismatch: expected {EXPECTED_CORE_MANIFEST_SHA256}, got {manifest_sha}"
         )
 
-    git_dir = snapshot_root / ".git"
-    if git_dir.exists():
-        verify_snapshot_git_identity(snapshot_root)
+    # Mandatory clean Git state
+    actual_git_commit = verify_snapshot_git_identity(snapshot_root)
+
+    # Mandatory 22 baselines verification
+    baseline_count = verify_protected_baselines(snapshot_root)
+
+    # Mandatory venv and locked dependencies attestation
+    runtime_attestation = gather_worker_runtime_attestation(snapshot_root)
 
     from src.experiment.authorization import (
         ScientificProtocolApproval,
@@ -353,9 +436,14 @@ def run_preflight_task(snapshot_root: Path) -> Dict[str, Any]:
         "task": "preflight",
         "file_count": len(inventory),
         "code_manifest_sha256": manifest_sha,
+        "git_commit": actual_git_commit,
+        "offline_guard_installed": _offline_guard_installed,
+        "attempted_egress_count": _attempted_egress_count,
+        "protected_baselines_verified_count": baseline_count,
         "readiness_report": readiness_report,
         "loaded_origins_count": len(origins),
         "loaded_origins": origins,
+        "worker_runtime_attestation": runtime_attestation,
     }
 
 
@@ -372,9 +460,8 @@ def run_verify_baselines_task(snapshot_root: Path) -> Dict[str, Any]:
     if manifest_sha != EXPECTED_CORE_MANIFEST_SHA256:
         raise ValueError(f"Core manifest SHA256 mismatch: {manifest_sha}")
 
-    git_dir = snapshot_root / ".git"
-    if git_dir.exists():
-        verify_snapshot_git_identity(snapshot_root)
+    # Mandatory clean Git state
+    actual_git_commit = verify_snapshot_git_identity(snapshot_root)
 
     # Check analysis script f85
     rq_script = snapshot_root / "scripts" / "analysis" / "evaluate_rqs.py"
@@ -391,20 +478,11 @@ def run_verify_baselines_task(snapshot_root: Path) -> Dict[str, Any]:
     has_bom = init_bytes.startswith(b"\xef\xbb\xbf")
     init_sha = hashlib.sha256(init_bytes).hexdigest()
 
-    # Verify 22 protected baseline files if inventory exists
-    inv_file = snapshot_root / "artifacts" / "orchestration" / "integration_protected_baseline.json"
-    baseline_count = 0
-    if inv_file.is_file():
-        inv_data = json.loads(inv_file.read_bytes())
-        protected_files = inv_data.get("protected_files", {})
-        baseline_count = len(protected_files)
-        for rel_path, exp_sha in protected_files.items():
-            bf = snapshot_root / rel_path
-            if not bf.is_file():
-                raise FileNotFoundError(f"Missing protected baseline file: {rel_path}")
-            actual_bsha = hashlib.sha256(bf.read_bytes()).hexdigest()
-            if actual_bsha != exp_sha:
-                raise ValueError(f"Protected baseline hash mismatch for '{rel_path}': expected {exp_sha}, got {actual_bsha}")
+    # Mandatory 22 baselines verification
+    baseline_count = verify_protected_baselines(snapshot_root)
+
+    # Mandatory venv and locked dependencies attestation
+    runtime_attestation = gather_worker_runtime_attestation(snapshot_root)
 
     # Explicitly import scientific modules to verify real module origin boundaries
     import src.experiment.authorization  # noqa: F401
@@ -420,13 +498,18 @@ def run_verify_baselines_task(snapshot_root: Path) -> Dict[str, Any]:
     return {
         "status": "PASS",
         "task": "verify_baselines",
+        "file_count": len(inventory),
         "code_manifest_sha256": manifest_sha,
+        "git_commit": actual_git_commit,
+        "offline_guard_installed": _offline_guard_installed,
+        "attempted_egress_count": _attempted_egress_count,
         "evaluate_rqs_sha256": rq_sha,
         "src_rag_init_sha256": init_sha,
         "src_rag_init_has_bom": has_bom,
         "protected_baselines_verified_count": baseline_count,
         "loaded_origins_count": len(origins),
         "loaded_origins": origins,
+        "worker_runtime_attestation": runtime_attestation,
     }
 
 

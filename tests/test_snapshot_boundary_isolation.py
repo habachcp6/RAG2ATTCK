@@ -2,20 +2,33 @@
 tests/test_snapshot_boundary_isolation.py
 
 Rigorous test suite verifying isolated snapshot execution boundaries and fail-closed protections:
-1. Positive control: genuine detached b69 snapshot passes preflight and baseline verification.
-2. Negative control: invalid/missing snapshot root fails closed.
-3. Negative control: arbitrary non-snapshot Python interpreter override is rejected.
-4. Negative control: partial or corrupt snapshot fails closed on 53 closed inventory verification.
-5. Negative control: child process exit-code non-zero with PASS payload fails closed.
-6. Negative control: credential re-introduction via extra_env and PYTHONPATH are scrubbed.
-7. Negative control: socket address resolution and DNS queries (socket.getaddrinfo) are blocked.
-8. Negative control: module with foreign __file__ or mismatched spec.origin fails boundary check.
-9. Negative control: callable with foreign co_filename inside loaded module fails boundary check.
-10. Negative control: output path inside snapshot root or targeting control scripts is rejected.
-11. Negative control: offline guard socket egress attempts are intercepted and blocked.
-12. Negative control: snapshot immutability violation during execution raises critical error.
-13. Negative control: current-tree source drift produces code manifest hash distinct from historical 8b.
-14. Negative control: dirty snapshot working tree or wrong Git commit is rejected.
+1. Positive control: genuine detached b69 snapshot passes preflight with strict schema and venv attestation.
+2. Positive control: genuine detached b69 snapshot passes verify_baselines (53 core, f85, 22 baselines, BOM).
+3. Negative control (Gap 1): missing or corrupt .venv (missing pyvenv.cfg) fails closed.
+4. Negative control (Gap 1): missing, zero count, or tampered baseline inventory fails closed.
+5. Negative control (Gap 1): missing .git directory or non-repository root fails closed.
+6. Negative control (Gap 2): minimal PASS payload missing required fields is rejected by controller.
+7. Negative control (Gap 2): wrong-task payload is rejected by controller.
+8. Negative control (Gap 2): missing origins, uninstalled guard, or non-zero egress in PASS is rejected.
+9. Positive control (Gap 3): worker runtime attestation and uv.lock dependency verification succeeds.
+10. Negative control (Gap 3): mismatched sys.prefix in worker runtime attestation is rejected.
+11. Negative control (Gap 3): dependency version mismatch against uv.lock is rejected.
+12. Negative control (Gap 4): post-execution drift in evaluate_rqs.py is caught by expanded inventory.
+13. Negative control (Gap 4): post-execution drift in 22 baselines, protocol, or lock is caught.
+14. Negative control (Gap 4): post-execution drift in Git state is caught by expanded inventory.
+15. Negative control: invalid/missing snapshot root fails closed.
+16. Negative control: arbitrary non-snapshot Python interpreter override is rejected.
+17. Negative control: partial or corrupt snapshot fails closed on core inventory verification.
+18. Negative control: child process exit-code non-zero with PASS payload fails closed.
+19. Negative control: credential re-introduction via extra_env and PYTHONPATH are scrubbed.
+20. Negative control: socket address resolution and DNS queries (socket.getaddrinfo) are blocked.
+21. Negative control: module with foreign __file__ or mismatched spec.origin fails boundary check.
+22. Negative control: callable with foreign co_filename inside loaded module fails boundary check.
+23. Negative control: output path inside snapshot root or targeting control scripts is rejected.
+24. Negative control: offline guard socket egress attempts are intercepted and blocked.
+25. Negative control: snapshot immutability violation during execution raises critical error.
+26. Negative control: current-tree source drift produces code manifest hash distinct from historical 8b.
+27. Negative control: dirty snapshot working tree or wrong Git commit is rejected.
 """
 
 from __future__ import annotations
@@ -36,20 +49,26 @@ from unittest.mock import patch
 import pytest
 
 from scripts.isolated_snapshot_controller import (
+    EXPECTED_ANALYSIS_SOURCE_SHA256,
+    EXPECTED_BASELINE_FILES_COUNT,
     EXPECTED_CORE_FILES_COUNT,
     EXPECTED_CORE_MANIFEST_SHA256,
     EXPECTED_SNAPSHOT_GIT_COMMIT,
     compute_closed_snapshot_inventory,
+    compute_expanded_snapshot_inventory,
     compute_quick_snapshot_fingerprint,
     execute_snapshot_task,
     resolve_snapshot_python,
     sanitize_environment,
     validate_output_path_containment,
+    validate_worker_attestation_schema,
     verify_snapshot_git_identity,
+    verify_snapshot_venv_dependencies,
 )
 from scripts.isolated_snapshot_worker import (
     SnapshotGuardSecurityError,
     verify_module_origin_boundaries,
+    verify_protected_baselines,
 )
 
 GENUINE_SNAPSHOT_ROOT = Path("C:/Users/hahoa/.codex/artifacts/rag2attck/finalization_snapshots/b69a690")
@@ -68,12 +87,23 @@ def test_positive_snapshot_preflight(tmp_path: Path):
     )
 
     assert result["status"] == "PASS"
+    assert result["task"] == "preflight"
     assert result["file_count"] == EXPECTED_CORE_FILES_COUNT
     assert result["code_manifest_sha256"] == EXPECTED_CORE_MANIFEST_SHA256
+    assert result["git_commit"] == EXPECTED_SNAPSHOT_GIT_COMMIT
+    assert result["protected_baselines_verified_count"] == EXPECTED_BASELINE_FILES_COUNT
+    assert result["offline_guard_installed"] is True
     assert result["attempted_egress_count"] == 0
-    assert result["controller_attestation"]["immutability_verified"] is True
-    assert result["controller_attestation"]["exit_code"] == 0
     assert result["loaded_origins_count"] > 0
+    assert result["controller_attestation"]["immutability_verified"] is True
+    assert result["controller_attestation"]["expanded_immutability_verified"] is True
+    assert result["controller_attestation"]["exit_code"] == 0
+
+    runtime = result["worker_runtime_attestation"]
+    assert "sys_executable" in runtime
+    assert "sys_prefix" in runtime
+    assert Path(runtime["sys_prefix"]).resolve() == (GENUINE_SNAPSHOT_ROOT / ".venv").resolve()
+    assert len(runtime["installed_dependencies"]) > 0
 
     # Ensure all loaded origins are strictly within snapshot root
     for mod_name, origin_path in result["loaded_origins"].items():
@@ -81,7 +111,7 @@ def test_positive_snapshot_preflight(tmp_path: Path):
 
 
 def test_positive_snapshot_baselines(tmp_path: Path):
-    """Verify baseline hashes, evaluate_rqs f85 hash, and BOM hash on snapshot."""
+    """Verify baseline hashes, evaluate_rqs f85 hash, BOM hash, and expanded inventory on snapshot."""
     if not GENUINE_SNAPSHOT_ROOT.is_dir():
         pytest.skip("Snapshot directory not found")
 
@@ -93,14 +123,288 @@ def test_positive_snapshot_baselines(tmp_path: Path):
     )
 
     assert result["status"] == "PASS"
+    assert result["task"] == "verify_baselines"
+    assert result["file_count"] == EXPECTED_CORE_FILES_COUNT
     assert result["code_manifest_sha256"] == EXPECTED_CORE_MANIFEST_SHA256
-    assert result["evaluate_rqs_sha256"] == "f85d7f7373e825dcc7171ce4491fd15c6fb755955da245041783fe317bc80351"
+    assert result["git_commit"] == EXPECTED_SNAPSHOT_GIT_COMMIT
+    assert result["evaluate_rqs_sha256"] == EXPECTED_ANALYSIS_SOURCE_SHA256
     assert result["src_rag_init_sha256"] == "1d16d258b4c3f89aac043fad68a19031bf16d21daad4251846ba2f4297fa16c1"
     assert result["src_rag_init_has_bom"] is True
+    assert result["protected_baselines_verified_count"] == EXPECTED_BASELINE_FILES_COUNT
+    assert result["offline_guard_installed"] is True
     assert result["attempted_egress_count"] == 0
     assert result["controller_attestation"]["exit_code"] == 0
+    assert result["controller_attestation"]["expanded_immutability_verified"] is True
     assert result["loaded_origins_count"] > 0
 
+
+# --- Gap 1 Tests ---
+
+def test_negative_missing_or_corrupt_venv_rejected(tmp_path: Path):
+    """Snapshot missing .venv or pyvenv.cfg must fail closed."""
+    fake_snap = tmp_path / "snap_no_venv"
+    fake_snap.mkdir()
+
+    with pytest.raises(FileNotFoundError, match="missing dedicated '.venv' directory"):
+        resolve_snapshot_python(fake_snap)
+
+    # Missing pyvenv.cfg
+    (fake_snap / ".venv").mkdir()
+    with pytest.raises(FileNotFoundError, match="missing pyvenv.cfg"):
+        resolve_snapshot_python(fake_snap)
+
+
+def test_negative_missing_or_zero_baselines_rejected(tmp_path: Path):
+    """Missing baseline manifest, count != 22, or hash mismatch must fail closed."""
+    fake_snap = tmp_path / "snap_baselines"
+    fake_snap.mkdir()
+
+    # Missing inventory file
+    with pytest.raises(FileNotFoundError, match="Missing protected baseline inventory"):
+        verify_protected_baselines(fake_snap)
+
+    # Empty / zero count inventory
+    inv_dir = fake_snap / "artifacts" / "orchestration"
+    inv_dir.mkdir(parents=True)
+    (inv_dir / "integration_protected_baseline.json").write_text(
+        json.dumps({"protected_files": {}}), encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match="Protected baselines count mismatch"):
+        verify_protected_baselines(fake_snap)
+
+
+def test_negative_missing_git_directory_rejected(tmp_path: Path):
+    """Snapshot without a .git directory must fail closed."""
+    fake_snap = tmp_path / "snap_no_git"
+    fake_snap.mkdir()
+
+    with pytest.raises(RuntimeError, match="missing .git directory or reference file"):
+        verify_snapshot_git_identity(fake_snap)
+
+
+# --- Gap 2 Tests ---
+
+def test_negative_minimal_pass_payload_rejected_by_controller(tmp_path: Path):
+    """Controller must reject a minimal PASS payload missing required schema fields."""
+    if not GENUINE_SNAPSHOT_ROOT.is_dir():
+        pytest.skip("Snapshot directory not found")
+
+    out_file = tmp_path / "minimal_pass.json"
+    orig_subprocess_run = subprocess.run
+
+    def fake_subprocess_run(cmd, *args, **kwargs):
+        if isinstance(cmd, list) and len(cmd) > 0 and "git" in str(cmd[0]):
+            return orig_subprocess_run(cmd, *args, **kwargs)
+        # Write minimal PASS payload without task, origins, core, guard
+        with open(out_file, "w", encoding="utf-8") as f:
+            json.dump({"status": "PASS"}, f)
+        return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
+
+    with patch("subprocess.run", side_effect=fake_subprocess_run):
+        with pytest.raises(RuntimeError, match="Worker attestation schema rejection"):
+            execute_snapshot_task(
+                snapshot_root=GENUINE_SNAPSHOT_ROOT,
+                task="preflight",
+                output_path=out_file,
+            )
+
+
+def test_negative_wrong_task_payload_rejected_by_controller(tmp_path: Path):
+    """Controller must reject worker output reporting a different task than expected."""
+    if not GENUINE_SNAPSHOT_ROOT.is_dir():
+        pytest.skip("Snapshot directory not found")
+
+    fake_output = {
+        "status": "PASS",
+        "task": "wrong_task",
+        "code_manifest_sha256": EXPECTED_CORE_MANIFEST_SHA256,
+        "file_count": EXPECTED_CORE_FILES_COUNT,
+        "offline_guard_installed": True,
+        "attempted_egress_count": 0,
+        "protected_baselines_verified_count": EXPECTED_BASELINE_FILES_COUNT,
+        "loaded_origins": {"src": str(GENUINE_SNAPSHOT_ROOT / "src")},
+        "loaded_origins_count": 1,
+        "worker_runtime_attestation": {
+            "sys_prefix": str(GENUINE_SNAPSHOT_ROOT / ".venv"),
+            "sys_executable": str(resolve_snapshot_python(GENUINE_SNAPSHOT_ROOT)),
+            "installed_dependencies": {"pytest": "9.1.1"},
+        },
+    }
+
+    with pytest.raises(RuntimeError, match="task mismatch! Expected 'preflight', got 'wrong_task'"):
+        validate_worker_attestation_schema(fake_output, "preflight", GENUINE_SNAPSHOT_ROOT)
+
+
+def test_negative_missing_origins_or_guard_in_pass_rejected(tmp_path: Path):
+    """Worker output claiming PASS with empty loaded_origins or uninstalled guard must fail closed."""
+    if not GENUINE_SNAPSHOT_ROOT.is_dir():
+        pytest.skip("Snapshot directory not found")
+
+    base_payload = {
+        "status": "PASS",
+        "task": "preflight",
+        "code_manifest_sha256": EXPECTED_CORE_MANIFEST_SHA256,
+        "file_count": EXPECTED_CORE_FILES_COUNT,
+        "offline_guard_installed": True,
+        "attempted_egress_count": 0,
+        "protected_baselines_verified_count": EXPECTED_BASELINE_FILES_COUNT,
+        "loaded_origins": {"src": str(GENUINE_SNAPSHOT_ROOT / "src")},
+        "loaded_origins_count": 1,
+        "worker_runtime_attestation": {
+            "sys_prefix": str(GENUINE_SNAPSHOT_ROOT / ".venv"),
+            "sys_executable": str(resolve_snapshot_python(GENUINE_SNAPSHOT_ROOT)),
+            "installed_dependencies": {"pytest": "9.1.1"},
+        },
+    }
+
+    # Case 1: uninstalled guard
+    bad_guard = dict(base_payload)
+    bad_guard["offline_guard_installed"] = False
+    with pytest.raises(RuntimeError, match="offline_guard_installed must be True"):
+        validate_worker_attestation_schema(bad_guard, "preflight", GENUINE_SNAPSHOT_ROOT)
+
+    # Case 2: non-zero egress
+    bad_egress = dict(base_payload)
+    bad_egress["attempted_egress_count"] = 1
+    with pytest.raises(RuntimeError, match="attempted_egress_count must be 0"):
+        validate_worker_attestation_schema(bad_egress, "preflight", GENUINE_SNAPSHOT_ROOT)
+
+    # Case 3: empty loaded_origins
+    bad_origins = dict(base_payload)
+    bad_origins["loaded_origins"] = {}
+    with pytest.raises(RuntimeError, match="loaded_origins must be a non-empty dictionary"):
+        validate_worker_attestation_schema(bad_origins, "preflight", GENUINE_SNAPSHOT_ROOT)
+
+
+# --- Gap 3 Tests ---
+
+def test_positive_worker_runtime_attestation_and_uv_lock_verification(tmp_path: Path):
+    """Verify that controller correctly cross-checks installed dependencies against uv.lock."""
+    if not GENUINE_SNAPSHOT_ROOT.is_dir():
+        pytest.skip("Snapshot directory not found")
+
+    valid_attestation = {
+        "sys_prefix": str(GENUINE_SNAPSHOT_ROOT / ".venv"),
+        "sys_executable": str(resolve_snapshot_python(GENUINE_SNAPSHOT_ROOT)),
+        "installed_dependencies": {
+            "pytest": "9.1.1",
+            "pydantic": "2.13.5",
+        },
+    }
+    # Should not raise
+    verify_snapshot_venv_dependencies(GENUINE_SNAPSHOT_ROOT, valid_attestation)
+
+
+def test_negative_venv_mismatched_sys_prefix_rejected(tmp_path: Path):
+    """Attestation reporting sys.prefix outside snapshot venv must be rejected."""
+    if not GENUINE_SNAPSHOT_ROOT.is_dir():
+        pytest.skip("Snapshot directory not found")
+
+    bad_payload = {
+        "status": "PASS",
+        "task": "preflight",
+        "code_manifest_sha256": EXPECTED_CORE_MANIFEST_SHA256,
+        "file_count": EXPECTED_CORE_FILES_COUNT,
+        "offline_guard_installed": True,
+        "attempted_egress_count": 0,
+        "protected_baselines_verified_count": EXPECTED_BASELINE_FILES_COUNT,
+        "loaded_origins": {"src": str(GENUINE_SNAPSHOT_ROOT / "src")},
+        "loaded_origins_count": 1,
+        "worker_runtime_attestation": {
+            "sys_prefix": str(tmp_path / "foreign_venv"),
+            "sys_executable": str(resolve_snapshot_python(GENUINE_SNAPSHOT_ROOT)),
+            "installed_dependencies": {"pytest": "9.1.1"},
+        },
+    }
+    with pytest.raises(RuntimeError, match="sys_prefix .* does not match snapshot venv"):
+        validate_worker_attestation_schema(bad_payload, "preflight", GENUINE_SNAPSHOT_ROOT)
+
+
+def test_negative_uv_lock_dependency_version_mismatch_rejected(tmp_path: Path):
+    """Attestation reporting a package version differing from uv.lock must fail closed."""
+    if not GENUINE_SNAPSHOT_ROOT.is_dir():
+        pytest.skip("Snapshot directory not found")
+
+    tampered_attestation = {
+        "sys_prefix": str(GENUINE_SNAPSHOT_ROOT / ".venv"),
+        "sys_executable": str(resolve_snapshot_python(GENUINE_SNAPSHOT_ROOT)),
+        "installed_dependencies": {
+            "pytest": "1.0.0-rogue",
+        },
+    }
+    with pytest.raises(RuntimeError, match="Venv dependency version mismatch for 'pytest'"):
+        verify_snapshot_venv_dependencies(GENUINE_SNAPSHOT_ROOT, tampered_attestation)
+
+
+# --- Gap 4 Tests ---
+
+def test_negative_expanded_inventory_drift_in_evaluate_rqs_rejected(tmp_path: Path):
+    """Drift in evaluate_rqs.py between pre and post must trigger immutability breach."""
+    if not GENUINE_SNAPSHOT_ROOT.is_dir():
+        pytest.skip("Snapshot directory not found")
+
+    out_file = tmp_path / "rq_drift.json"
+    pre_expanded = compute_expanded_snapshot_inventory(GENUINE_SNAPSHOT_ROOT)
+    post_expanded = copy.deepcopy(pre_expanded)
+    post_expanded["evaluate_rqs_sha256"] = "0000000000000000000000000000000000000000000000000000000000000000"
+
+    with patch(
+        "scripts.isolated_snapshot_controller.compute_expanded_snapshot_inventory",
+        side_effect=[pre_expanded, post_expanded],
+    ):
+        with pytest.raises(RuntimeError, match=r"Snapshot immutability violated.*evaluate_rqs_sha256"):
+            execute_snapshot_task(
+                snapshot_root=GENUINE_SNAPSHOT_ROOT,
+                task="preflight",
+                output_path=out_file,
+            )
+
+
+def test_negative_expanded_inventory_drift_in_baselines_or_protocol_rejected(tmp_path: Path):
+    """Drift in protected baselines or protocol between pre and post must trigger immutability breach."""
+    if not GENUINE_SNAPSHOT_ROOT.is_dir():
+        pytest.skip("Snapshot directory not found")
+
+    out_file = tmp_path / "baseline_drift.json"
+    pre_expanded = compute_expanded_snapshot_inventory(GENUINE_SNAPSHOT_ROOT)
+    post_expanded = copy.deepcopy(pre_expanded)
+    post_expanded["protected_baselines_map"]["attack/corpus/enterprise-windows-v19.2.jsonl"] = "drifted_sha"
+
+    with patch(
+        "scripts.isolated_snapshot_controller.compute_expanded_snapshot_inventory",
+        side_effect=[pre_expanded, post_expanded],
+    ):
+        with pytest.raises(RuntimeError, match=r"Snapshot immutability violated.*protected_baselines_map"):
+            execute_snapshot_task(
+                snapshot_root=GENUINE_SNAPSHOT_ROOT,
+                task="verify_baselines",
+                output_path=out_file,
+            )
+
+
+def test_negative_expanded_inventory_drift_in_git_state_rejected(tmp_path: Path):
+    """Drift in Git commit or working directory between pre and post must trigger immutability breach."""
+    if not GENUINE_SNAPSHOT_ROOT.is_dir():
+        pytest.skip("Snapshot directory not found")
+
+    out_file = tmp_path / "git_drift.json"
+    pre_expanded = compute_expanded_snapshot_inventory(GENUINE_SNAPSHOT_ROOT)
+    post_expanded = copy.deepcopy(pre_expanded)
+    post_expanded["git_commit"] = "ffffffffffffffffffffffffffffffffffffffff"
+
+    with patch(
+        "scripts.isolated_snapshot_controller.compute_expanded_snapshot_inventory",
+        side_effect=[pre_expanded, post_expanded],
+    ):
+        with pytest.raises(RuntimeError, match=r"Snapshot immutability violated.*git_commit"):
+            execute_snapshot_task(
+                snapshot_root=GENUINE_SNAPSHOT_ROOT,
+                task="preflight",
+                output_path=out_file,
+            )
+
+
+# --- Core Boundary Controls ---
 
 def test_negative_wrong_snapshot_root(tmp_path: Path):
     """Calling controller on a non-existent or invalid root must fail closed."""
@@ -138,7 +442,6 @@ def test_negative_partial_or_corrupt_snapshot_rejected(tmp_path: Path):
     (fake_snap / "config").mkdir(parents=True)
     (fake_snap / "src" / "experiment").mkdir(parents=True)
 
-    # Copy only 2 files instead of 53
     lock = GENUINE_SNAPSHOT_ROOT / "config" / "canonical_experiment_lock_v1.json"
     if lock.is_file():
         shutil.copy(lock, fake_snap / "config" / "canonical_experiment_lock_v1.json")
@@ -165,10 +468,8 @@ def test_negative_child_exit_nonzero_with_pass_payload_fails_closed(tmp_path: Pa
     orig_subprocess_run = subprocess.run
 
     def fake_subprocess_run(cmd, *args, **kwargs):
-        # Pass git commands through to genuine implementation
         if isinstance(cmd, list) and len(cmd) > 0 and "git" in str(cmd[0]):
             return orig_subprocess_run(cmd, *args, **kwargs)
-        # Intercept worker process execution
         with open(out_file, "w", encoding="utf-8") as f:
             json.dump({"status": "PASS", "task": "verify_baselines"}, f)
         return subprocess.CompletedProcess(
@@ -301,14 +602,13 @@ def test_negative_snapshot_immutability_violation(tmp_path: Path):
         pytest.skip("Snapshot directory not found")
 
     out_file = tmp_path / "immutability_test.json"
-    # Mock compute_closed_snapshot_inventory to return drifted hash post-run
-    pre_sha, pre_inv = compute_closed_snapshot_inventory(GENUINE_SNAPSHOT_ROOT)
-    mutated_inv = dict(pre_inv)
-    mutated_inv["src/experiment/config.py"] = "0000000000000000000000000000000000000000000000000000000000000000"
+    pre_expanded = compute_expanded_snapshot_inventory(GENUINE_SNAPSHOT_ROOT)
+    post_expanded = copy.deepcopy(pre_expanded)
+    post_expanded["core_manifest_sha256"] = "different_sha"
 
     with patch(
-        "scripts.isolated_snapshot_controller.compute_closed_snapshot_inventory",
-        side_effect=[(pre_sha, pre_inv), ("different_sha", mutated_inv)],
+        "scripts.isolated_snapshot_controller.compute_expanded_snapshot_inventory",
+        side_effect=[pre_expanded, post_expanded],
     ):
         with pytest.raises(RuntimeError, match="Snapshot immutability violated"):
             execute_snapshot_task(

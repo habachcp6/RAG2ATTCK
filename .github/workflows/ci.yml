@@ -148,6 +148,11 @@ jobs:
       - name: Acquire ATT&CK v19.2 reference
         run: uv run python -c "from pathlib import Path; from src.attack_loader import download_attack_reference; download_attack_reference(Path('.'))"
 
+      - name: Provision portable historical b69 snapshot
+        env:
+          RAG2ATTCK_SNAPSHOT_ROOT: ${{ runner.temp }}/rag2attck_snapshot_b69a690
+        run: uv run python scripts/provision_snapshot.py --target-dir "${{ runner.temp }}/rag2attck_snapshot_b69a690"
+
       - name: Lint T20 critical code paths
         run: >-
           uv run ruff check
@@ -174,6 +179,8 @@ jobs:
         run: uv run python -m src.experiment preflight
 
       - name: Run Full Test Suite
+        env:
+          RAG2ATTCK_SNAPSHOT_ROOT: ${{ runner.temp }}/rag2attck_snapshot_b69a690
         run: uv run python scripts/run_offline_tests.py -m pytest -m "not integration" -q
 
       - name: Verify frozen synthetic benchmark and same-seed reproduction

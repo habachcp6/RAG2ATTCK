@@ -192,9 +192,29 @@ def _assert_ci(workflow):
         _step(steps, "Verify frozen synthetic benchmark and same-seed reproduction")["run"]
     ) == GUARDED_PYTHON + ["src.data_ground_truth", "verify-synthetic"]
     assert shlex.split(_step(steps, "Acquire ATT&CK v19.2 reference")["run"]) == ACQUIRE_ATTACK
+
+    prov_step = _step(steps, "Provision portable historical b69 snapshot")
+    assert shlex.split(prov_step["run"]) == [
+        "uv",
+        "run",
+        "python",
+        "scripts/provision_snapshot.py",
+        "--target-dir",
+        "${{ runner.temp }}/rag2attck_snapshot_b69a690",
+    ]
+    expected_snap_root = "${{ runner.temp }}/rag2attck_snapshot_b69a690"
+    assert prov_step.get("env", {}).get("RAG2ATTCK_SNAPSHOT_ROOT") == expected_snap_root
+    assert (
+        _step(steps, "Run Full Test Suite").get("env", {}).get("RAG2ATTCK_SNAPSHOT_ROOT")
+        == expected_snap_root
+    )
+
     names = [step.get("name") for step in steps]
-    assert names.index("Acquire ATT&CK v19.2 reference") < names.index("Run Full Test Suite")
-    assert names.index("Run experiment preflight gate") < names.index("Run Full Test Suite")
+    idx_attack = names.index("Acquire ATT&CK v19.2 reference")
+    idx_snap = names.index("Provision portable historical b69 snapshot")
+    idx_tests = names.index("Run Full Test Suite")
+    assert idx_attack < idx_snap < idx_tests
+    assert names.index("Run experiment preflight gate") < idx_tests
 
 
 def _assert_integration(workflow):
@@ -241,6 +261,7 @@ def test_combined_ci_keeps_lint_guard_and_acquisition_contracts():
         "Lint T20 critical code paths",
         "Lint pre-experiment infrastructure",
         "Run experiment preflight gate",
+        "Provision portable historical b69 snapshot",
         "Run Full Test Suite",
         "Verify frozen synthetic benchmark and same-seed reproduction",
     ],
@@ -393,6 +414,7 @@ def test_shallow_checkout_for_provenance_tests_is_detected(workflow_name, job_na
         ("ci.yml", "full-test-suite", "Lint T20 critical code paths", _assert_ci),
         ("ci.yml", "full-test-suite", "Lint pre-experiment infrastructure", _assert_ci),
         ("ci.yml", "full-test-suite", "Run experiment preflight gate", _assert_ci),
+        ("ci.yml", "full-test-suite", "Provision portable historical b69 snapshot", _assert_ci),
         ("ci.yml", "full-test-suite", "Run Full Test Suite", _assert_ci),
         (
             "integration.yml",
@@ -452,3 +474,30 @@ def test_critical_job_with_needs_is_detected(job_name):
     workflow["jobs"][job_name]["needs"] = ["skippable-job"]
     with pytest.raises(AssertionError):
         _assert_ci(workflow)
+
+
+def test_provision_snapshot_after_tests_is_detected():
+    workflow = deepcopy(_workflow("ci.yml"))
+    steps = workflow["jobs"]["full-test-suite"]["steps"]
+    prov_step = _step(steps, "Provision portable historical b69 snapshot")
+    steps.remove(prov_step)
+    steps.append(prov_step)
+    with pytest.raises(AssertionError):
+        _assert_ci(workflow)
+
+
+def test_missing_snapshot_root_env_on_tests_is_detected():
+    workflow = deepcopy(_workflow("ci.yml"))
+    steps = workflow["jobs"]["full-test-suite"]["steps"]
+    del _step(steps, "Run Full Test Suite")["env"]["RAG2ATTCK_SNAPSHOT_ROOT"]
+    with pytest.raises(AssertionError):
+        _assert_ci(workflow)
+
+
+def test_missing_snapshot_root_env_on_provisioning_is_detected():
+    workflow = deepcopy(_workflow("ci.yml"))
+    steps = workflow["jobs"]["full-test-suite"]["steps"]
+    del _step(steps, "Provision portable historical b69 snapshot")["env"]["RAG2ATTCK_SNAPSHOT_ROOT"]
+    with pytest.raises(AssertionError):
+        _assert_ci(workflow)
+

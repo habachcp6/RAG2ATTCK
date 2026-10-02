@@ -520,6 +520,19 @@ async function runArtifactToolDeckUpdater(options = {}) {
   );
   modifiedShapeIds.add("sh/sna103ap");
 
+  // Slide 6: Subtitle sh/98rqt4r6
+  if (isCanonical) {
+    const sh6Sub = presentation.resolve("sh/98rqt4r6");
+    if (sh6Sub && sh6Sub.text) {
+      sh6Sub.text.set([
+        "5. Kết Quả RQ2: Chẩn Đoán Khâu Truy Xuất (Retrieval Quality)",
+        "Đánh giá độc lập bộ tìm kiếm trên 718 canonical TEST views",
+      ].join("\n"));
+      disclaimerEditsCount++;
+      modifiedShapeIds.add("sh/98rqt4r6");
+    }
+  }
+
   // Slide 6: Shape sh/7m98ru9g (RQ2 Retrieval Quality - 3 slots, separated cohorts, canonical primacy)
   const sh7m = presentation.resolve("sh/7m98ru9g");
   sh7m.text.fontSize = 11;
@@ -534,7 +547,7 @@ async function runArtifactToolDeckUpdater(options = {}) {
         `•  Tỷ lệ tìm trúng Hit@10: ${slots["{{S2_HIT_RATE_AT_K}}"]} (321 / 718 views tìm thấy kỹ thuật mục tiêu).`,
         `•  Macro Recall@10: ${slots["{{S2_RECALL_AT_K}}"]} (độ phủ kỹ thuật mục tiêu trong Top-10).`,
         `•  Retrieval Miss Rate (k=10): ${slots["{{S2_RETRIEVAL_MISS_RATE_K10}}"]} (397 / 718 views vắng mặt hoàn toàn kỹ thuật mục tiêu).`,
-        "•  Mean Rank khi trúng: 5.21 | Khoảng cách ngữ nghĩa: T1136.001 đạt 0/99 trúng Top-10 (lệch từ vựng Event ID 4720).",
+        "•  Khoảng cách từ vựng: T1136.001 (support N=95 trong TEST) đạt 0/95 trúng Top-10 do log Event ID 4720 lệch từ vựng so với STIX persistence.",
         "",
         "▶ BỐI CẢNH ĐỐI CHIẾU LỊCH SỬ (Secondary Context - Tuyệt đối không gộp mẫu số)",
         "•  Toàn bộ mẫu dương tính benchmark lịch sử (T20 Benchmark: N=756 views = 718 TEST + 38 DEV):",
@@ -563,15 +576,22 @@ async function runArtifactToolDeckUpdater(options = {}) {
   // Slide 6: Disclaimer banner sh/h4bupgn6
   const sh6Banner = presentation.resolve("sh/h4bupgn6");
   if (sh6Banner && sh6Banner.text) {
-    const targetPhrase = "đang được kiểm chứng đối chứng trên ma trận TEST.";
-    const rBanner = sh6Banner.text.get(targetPhrase);
-    if (!rBanner.isEmpty) {
-      const bannerSuffix = isCanonical
-        ? "đang được đối chứng xác thực trên ma trận TEST [CANONICAL STUDY EXECUTION]."
-        : `đang được kiểm chứng đối chứng trên ma trận TEST [${DISCLAIMER_TEXT}].`;
-      sh6Banner.text.replace(targetPhrase, bannerSuffix);
+    if (isCanonical) {
+      sh6Banner.text.set([
+        "Giả Thuyết Context Scaling & Dilution (k=1,3,5,10)",
+        "•  Khoảng cách ngữ nghĩa tại T1136.001 (Local Account): 0/95 lượt trúng Top-10 trong tập TEST scorable (support N=95) do log Event ID 4720 lệch từ vựng so với STIX persistence.",
+        "•  Giả thuyết pha loãng ngữ cảnh: Tăng k tăng độ phủ (Hit@k) nhưng tăng nguy cơ nhiễu; cơ chế này vẫn chưa được kiểm chứng sau khi hoàn thành đợt so sánh này, không khẳng định giả thuyết nhân quả về embedding.",
+      ].join("\n"));
       disclaimerEditsCount++;
       modifiedShapeIds.add("sh/h4bupgn6");
+    } else {
+      const targetPhrase = "đang được kiểm chứng đối chứng trên ma trận TEST.";
+      const rBanner = sh6Banner.text.get(targetPhrase);
+      if (!rBanner.isEmpty) {
+        sh6Banner.text.replace(targetPhrase, `đang được kiểm chứng đối chứng trên ma trận TEST [${DISCLAIMER_TEXT}].`);
+        disclaimerEditsCount++;
+        modifiedShapeIds.add("sh/h4bupgn6");
+      }
     }
   }
 
@@ -589,12 +609,25 @@ async function runArtifactToolDeckUpdater(options = {}) {
     }
   }
 
+  // Slide 7: Subtitle sh/zedcfa9g
+  if (isCanonical) {
+    const sh7Sub = presentation.resolve("sh/zedcfa9g");
+    if (sh7Sub && sh7Sub.text) {
+      sh7Sub.text.set([
+        "6. Tác Động Của Hình Thức Biểu Diễn Telemetry",
+        "So sánh thực nghiệm Single vs Contextual trên 278 complete GT-scorable pairs",
+      ].join("\n"));
+      disclaimerEditsCount++;
+      modifiedShapeIds.add("sh/zedcfa9g");
+    }
+  }
+
   // Slide 7: Shape sh/l0vuh0rm (Left Box - 278 Complete Pairs Breakdown)
   if (isCanonical) {
     const sh7Left = presentation.resolve("sh/l0vuh0rm");
     if (sh7Left && sh7Left.text) {
       sh7Left.text.set([
-        "Phân Tích Cặp Anchor Chuẩn Tắc (278 Cặp Complete Pairs - Canonical)",
+        "Phân Tích 278 Cặp Hoàn Chỉnh Đầy Đủ Nhãn GT (Complete GT-Scorable Paired Views)",
         "•  Quy mô scorable: 718 scorable TEST views trên 440 distinct eligible clusters.",
         "•  Phân rã 278 cặp đối ứng hoàn chỉnh (Complete Scorable Pairs):",
         "   • 238 cặp giữ nguyên nhãn Ground-Truth (identical GT).",
@@ -602,11 +635,11 @@ async function runArtifactToolDeckUpdater(options = {}) {
         "•  Phân tách biên (Marginal Views Breakdown):",
         `   • Single-event views: 278 views (độ chính xác ${slots["{{S2_SINGLE_VIEW_ACC_E2E}}"]}, 233/278).`,
         `   • Contextual-event views: 440 views (độ chính xác ${slots["{{S2_CONTEXT_VIEW_ACC_E2E}}"]}, 338/440).`,
-        "•  Hiệu năng cặp đối ứng hoàn chỉnh (278 complete pairs):",
+        "•  Hiệu năng cặp đối ứng hoàn chỉnh dưới điều kiện RAG k=10:",
         `   • Single-event Accuracy = ${slots["{{S2_PAIRED_SINGLE_ACC}}"]} (233 / 278).`,
         `   • Contextual-event Accuracy = ${slots["{{S2_PAIRED_CONTEXT_ACC}}"]} (233 / 278).`,
-        `   • Chênh lệch hiệu năng cặp (Paired Delta) = ${slots["{{S2_PAIRED_DELTA_PP}}"]} pp (p = 1.0000).`,
-        "•  Bối cảnh đối chiếu thứ hạng lịch sử (T20 Context):",
+        `   • Chênh lệch hiệu năng cặp (Paired Delta) = ${slots["{{S2_PAIRED_DELTA_PP}}"]} pp (McNemar p = 1.0000).`,
+        "•  Bối cảnh đối chiếu thứ hạng lịch sử (T20 Context, 296 pairs anchor):",
         "   • Single tốt hơn: 65 cặp (22.0%) | Contextual tốt hơn: 23 cặp (7.8%) | Ngang nhau: 208 cặp (70.3%).",
       ].join("\n"));
       modifiedShapeIds.add("sh/l0vuh0rm");
@@ -623,7 +656,7 @@ async function runArtifactToolDeckUpdater(options = {}) {
         "•  Hiện tượng dịch chuyển ngữ cảnh (Contextual Drift Observation):",
         "   • Khi ghép thêm các sự kiện lân cận vào log, thứ hạng truy xuất có sự biến động.",
         "   • Giả thuyết cơ chế: Sự gia tăng các token hệ thống thông thường có thể tạo nhiễu đối với bộ nhúng dense bi-encoder (đây là giả thuyết mô tả quan sát, không khẳng định quan hệ nhân quả).",
-        "•  Hiệu năng đối chứng cặp chuẩn tắc RAG k=10 [CANONICAL STUDY]:",
+        "•  Hiệu năng đối chứng cặp chuẩn tắc dưới điều kiện RAG k=10 [CANONICAL STUDY]:",
         `   • Marginal Views: Single-event Acc = ${slots["{{S2_SINGLE_VIEW_ACC_E2E}}"]} vs Contextual-event Acc = ${slots["{{S2_CONTEXT_VIEW_ACC_E2E}}"]} (Delta = ${slots["{{S2_VIEW_ACC_DELTA}}"]})`,
         `   • Paired Cohort (278 complete pairs): Single Acc = ${slots["{{S2_PAIRED_SINGLE_ACC}}"]} vs Context Acc = ${slots["{{S2_PAIRED_CONTEXT_ACC}}"]} (Delta = ${slots["{{S2_PAIRED_DELTA_PP}}"]} pp)`,
         `   • Pair Concordance: Both Correct = ${slots["{{S2_BOTH_CORRECT_COUNT}}"]}, Single-only Correct = ${slots["{{S2_SINGLE_ONLY_CORRECT}}"]}, Context-only Correct = ${slots["{{S2_CONTEXT_ONLY_CORRECT}}"]}, Both Incorrect = ${slots["{{S2_BOTH_INCORRECT_COUNT}}"]}`,
@@ -714,12 +747,12 @@ async function runArtifactToolDeckUpdater(options = {}) {
   if (shId0 && shId0.text) {
     if (isCanonical) {
       shId0.text.set([
-        "Các Thước Đo Có Điều Kiện & Trục Lỗi Độc Lập (k=10, N=718 Scorable Views)",
+        "Các Thước Đo Có Điều Kiện & Trục Lỗi Độc Lập (RAG k=10, N=718 Scorable Views)",
         `•  P(Correct | GT Retrieved) = ${slots["{{S2_P_CORRECT_GIVEN_RETRIEVED}}"]}: Xác suất gán đúng quan sát được khi kỹ thuật mục tiêu hiện diện trong Top-10 (293 / 321).`,
         `•  P(Correct | GT Absent) = ${slots["{{S2_P_CORRECT_GIVEN_ABSENT}}"]}: Xác suất gán đúng quan sát được khi kỹ thuật mục tiêu vắng mặt trong Top-10 (278 / 397; không giả định tự sửa sai nội tại).`,
-        `•  Fail-Closed Invariant: Provider Fail = ${slots["{{S2_PROVIDER_FAIL_RATE_K10}}"]}, Parse Fail = ${slots["{{S2_PARSE_FAIL_RATE_K10}}"]}, Invalid ID = ${slots["{{S2_INVALID_ATTACK_ID_RATE_K10}}"]} (trong 718 scorable records).`,
+        `•  Quan sát thực nghiệm scorable failure = 0: Provider Fail = ${slots["{{S2_PROVIDER_FAIL_RATE_K10}}"]}, Parse Fail = ${slots["{{S2_PARSE_FAIL_RATE_K10}}"]}, Invalid ID = ${slots["{{S2_INVALID_ATTACK_ID_RATE_K10}}"]} (trong 718 scorable records; 13 INCOMPLETE records được ghi nhận đầy đủ trên 6,400 dispatches).`,
         `•  Giao thoa lỗi thực tế: 119 / 147 ca phân loại sai (80.95%) xảy ra khi retrieval trượt Top-10.`,
-        "•  Phân định ranh giới mẫu số: Trong 718 scorable records, lỗi provider là 0.0000; trên toàn bộ 6,400 logical dispatches ghi nhận 13 INCOMPLETE records (6,387 VALID).",
+        "•  Phân định ranh giới mẫu số: Tỷ lệ lỗi provider trên 718 scorable records là 0.0000; toàn bộ 6,400 dispatches có 13 bản ghi INCOMPLETE (6,387 VALID).",
       ].join("\n"));
       disclaimerEditsCount++;
     } else {
@@ -764,16 +797,22 @@ async function runArtifactToolDeckUpdater(options = {}) {
   // Slide 9: Subtitle sh/mdonql4z (Provenance clarification)
   const shSub9 = presentation.resolve("sh/mdonql4z");
   if (shSub9 && shSub9.text) {
-    const targetSub9 =
-      "Dữ liệu DEV pilot (synthetic split), hạch toán token ước tính và kiểm soát ngân sách";
-    const rSub = shSub9.text.get(targetSub9);
-    if (!rSub.isEmpty) {
-      const sub9Suffix = isCanonical
-        ? "Hạch toán tài nguyên toàn diện trên toàn bộ 1,280 views/điều kiện (6,400 requests) [CANONICAL STUDY EXECUTION]"
-        : `Dữ liệu DEV pilot (synthetic split) đối chiếu Dự phóng Hạch toán Fixture [DIAGNOSTIC TEST FIXTURE ONLY]`;
-      shSub9.text.replace(targetSub9, sub9Suffix);
+    if (isCanonical) {
+      shSub9.text.set([
+        "8. Tiêu Thụ Tài Nguyên & Chi Phí Thực Nghiệm (RQ3)",
+        "Phân tích tài nguyên chuẩn tắc (TEST 718) và hạch toán toàn bộ 6,400 requests",
+      ].join("\n"));
       disclaimerEditsCount++;
       modifiedShapeIds.add("sh/mdonql4z");
+    } else {
+      const targetSub9 =
+        "Dữ liệu DEV pilot (synthetic split), hạch toán token ước tính và kiểm soát ngân sách";
+      const rSub = shSub9.text.get(targetSub9);
+      if (!rSub.isEmpty) {
+        shSub9.text.replace(targetSub9, `Dữ liệu DEV pilot (synthetic split) đối chiếu Dự phóng Hạch toán Fixture [DIAGNOSTIC TEST FIXTURE ONLY]`);
+        disclaimerEditsCount++;
+        modifiedShapeIds.add("sh/mdonql4z");
+      }
     }
   }
 
@@ -781,35 +820,47 @@ async function runArtifactToolDeckUpdater(options = {}) {
   const shOfq = presentation.resolve("sh/ofq5svm5");
   shOfq.text.fontSize = 11;
   const slide9Heading = isCanonical
-    ? "DEV Pilot Telemetry & Hạch Toán Nghiên Cứu [CANONICAL STUDY EXECUTION]"
+    ? "Phân Tích Tài Nguyên và Chi Phí Chuẩn Tắc (TEST 718) [CANONICAL STUDY]"
     : `DEV Pilot Telemetry & Hạch Toán Nghiên Cứu [${DISCLAIMER_TEXT}]`;
   const zone2Heading = isCanonical
-    ? "▶ ZONE 2: TÀI NGUYÊN & ĐỘ TRỄ (Toàn bộ 1,280 logical views/điều kiện, tổng 6,400 requests)"
+    ? "▶ ZONE 2: TÀI NGUYÊN & ĐỘ TRỄ (Mẫu số 1,280 views/điều kiện, N=6,400 dispatches)"
     : "▶ ZONE 2: DIAGNOSTIC TEST FIXTURE TELEMETRY (N=718 Scorable Views)";
-  const slide9Content = [
-    slide9Heading,
-    "",
-    "▶ ZONE 1: HISTORICAL DEV PILOT BASELINE (20 Requests Responses API)",
-    "•  Dữ liệu DEV pilot lịch sử: 20 requests (4 views x 5 điều kiện, tổng chi phí ~$0.0242 USD).",
-    "•  Ghi chú phân định tuyệt đối: Request thực tế không biến log tổng hợp thành in-the-wild telemetry.",
-    "",
-    zone2Heading,
-    `•  no_rag: trễ trung vị ${slots["{{S2_MEDIAN_LAT_NO_RAG_SEC}}"]}s (trung bình 2.90s) | ${slots["{{S2_MEAN_PROMPT_TOK_NO_RAG}}"]} prompt tokens | ~${slots["{{S2_COST_LOGICAL_REQ_NO_RAG}}"]} USD / logical req.`,
-    `•  rag_k10: trễ trung vị ${slots["{{S2_MEDIAN_LAT_K10_SEC}}"]}s (trung bình 4.37s) | ${slots["{{S2_MEAN_PROMPT_TOK_K10}}"]} prompt tokens | ~${slots["{{S2_COST_LOGICAL_REQ_K10}}"]} USD / logical req.`,
-    isCanonical
-      ? "•  Đánh đổi tài nguyên: Tăng k từ 0 lên 10 làm token đầu vào tăng ~7.6x, chi phí mỗi request tăng ~4.6x, trễ trung vị tăng +0.37s. Hit@k chuẩn tắc (N=718): Hit@1=3.760% -> Hit@10=44.708%."
-      : "",
-    "",
-    "▶ ZONE 3: WHOLE STUDY FINANCIAL ACCOUNTING (6,400 Matrix Canonical Conditions)",
-    `•  Hạch toán toàn thể điều kiện chuẩn (Canonical Total): ${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD ($6.57575890 USD đã quyết toán).`,
-    `•  Khoản giữ chỗ thận trọng pilot tạm thời: ${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD (prior_pilot_provisional_hold_usd).`,
-    `•  Tổng chi phí đã cam kết hạch toán: $6.63 USD ($6.62839900 USD total accounted spend).`,
-    `•  Ngân sách chưa cam kết còn lại (Net Remaining): ${slots["{{S2_NET_REMAINING_USD}}"]} USD ($13.36160100 USD khả dụng).`,
-    `•  Trần ngân sách đóng băng cứng (Hard Budget Cap): ${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD.`,
-    isCanonical
-      ? "•  Bản ghi ngoại lệ: Ghi nhận 13 INCOMPLETE records trên 6,400 dispatches và 1 attempt API_FAILURE được retry có phí thiếu usage là $0.53974560 USD."
-      : "",
-  ].filter(Boolean).join("\n");
+  const slide9Content = isCanonical
+    ? [
+        slide9Heading,
+        "•  Lưu ý chi phí: Ước tính thận trọng từ bảng giá đóng băng (conservative accounted tariff estimate), không phải hóa đơn tra cứu trực tiếp.",
+        "",
+        "▶ TÀI NGUYÊN & ĐỘ TRỄ (Toàn bộ 1,280 logical views/điều kiện, tổng 6,400 requests):",
+        `•  no_rag: trễ trung vị ${slots["{{S2_MEDIAN_LAT_NO_RAG_SEC}}"]}s (trung bình 2.90s) | ${slots["{{S2_MEAN_PROMPT_TOK_NO_RAG}}"]} prompt tokens | $${slots["{{S2_COST_LOGICAL_REQ_NO_RAG}}"]} USD / logical req.`,
+        `•  rag_k10: trễ trung vị ${slots["{{S2_MEDIAN_LAT_K10_SEC}}"]}s (trung bình 4.37s) | ${slots["{{S2_MEAN_PROMPT_TOK_K10}}"]} prompt tokens | $${slots["{{S2_COST_LOGICAL_REQ_K10}}"]} USD / logical req.`,
+        "•  Đánh đổi No-RAG vs RAG k10: Tăng k từ 0 lên 10 làm prompt tokens tăng ~7.6x, chi phí/query tăng ~4.6x, trễ trung vị tăng +0.37s. Hit rate chuẩn tắc (TEST 718) tăng từ 3.760% lên 44.708%.",
+        "",
+        "▶ HẠCH TOÁN TOÀN BỘ NGHIÊN CỨU (Whole Study Financial Accounting):",
+        `•  Đã quyết toán điều kiện chính thức: $${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD ($6.58 settled spend).`,
+        `•  Khoản giữ chỗ thận trọng pilot tạm thời: ${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD (prior_pilot_provisional_hold_usd).`,
+        `•  Tổng chi phí đã cam kết hạch toán: $6.63 USD ($6.62839900 USD total accounted spend).`,
+        `•  Ngân sách chưa cam kết còn lại (Net Remaining): ${slots["{{S2_NET_REMAINING_USD}}"]} USD ($13.36160100 USD khả dụng).`,
+        `•  Trần ngân sách đóng băng cứng (Hard Budget Cap): ${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD.`,
+        "•  Minh bạch ngoại lệ: Ghi nhận 13 INCOMPLETE records trên 6,400 dispatches; 1 lượt retry API_FAILURE có phí thiếu usage là $0.53974560 USD.",
+      ].join("\n")
+    : [
+        slide9Heading,
+        "",
+        "▶ ZONE 1: HISTORICAL DEV PILOT BASELINE (20 Requests Responses API)",
+        "•  Dữ liệu DEV pilot lịch sử: 20 requests (4 views x 5 điều kiện, tổng chi phí ~$0.0242 USD).",
+        "•  Ghi chú phân định tuyệt đối: Request thực tế không biến log tổng hợp thành in-the-wild telemetry.",
+        "",
+        zone2Heading,
+        `•  no_rag: trễ trung vị ${slots["{{S2_MEDIAN_LAT_NO_RAG_SEC}}"]}s (trung bình 2.90s) | ${slots["{{S2_MEAN_PROMPT_TOK_NO_RAG}}"]} prompt tokens | ~${slots["{{S2_COST_LOGICAL_REQ_NO_RAG}}"]} USD / logical req.`,
+        `•  rag_k10: trễ trung vị ${slots["{{S2_MEDIAN_LAT_K10_SEC}}"]}s (trung bình 4.37s) | ${slots["{{S2_MEAN_PROMPT_TOK_K10}}"]} prompt tokens | ~${slots["{{S2_COST_LOGICAL_REQ_K10}}"]} USD / logical req.`,
+        "",
+        "▶ ZONE 3: WHOLE STUDY FINANCIAL ACCOUNTING (6,400 Matrix Canonical Conditions)",
+        `•  Hạch toán toàn thể điều kiện chuẩn (Canonical Total): ${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD ($6.57575890 USD đã quyết toán).`,
+        `•  Khoản giữ chỗ thận trọng pilot tạm thời: ${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD (prior_pilot_provisional_hold_usd).`,
+        `•  Tổng chi phí đã cam kết hạch toán: $6.63 USD ($6.62839900 USD total accounted spend).`,
+        `•  Ngân sách chưa cam kết còn lại (Net Remaining): ${slots["{{S2_NET_REMAINING_USD}}"]} USD ($13.36160100 USD khả dụng).`,
+        `•  Trần ngân sách đóng băng cứng (Hard Budget Cap): ${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD.`,
+      ].join("\n");
 
   shOfq.text.set(slide9Content);
   disclaimerEditsCount++;
@@ -818,16 +869,25 @@ async function runArtifactToolDeckUpdater(options = {}) {
   // Slide 9: Card sh/oza1gfyh (Bottom right summary card)
   const shOza = presentation.resolve("sh/oza1gfyh");
   if (shOza && shOza.text) {
-    const targetOza =
-      "•  Dự báo chuẩn tắc tập TEST (< $10 USD) nằm an toàn dưới trần ngân sách đóng băng $19.99 USD.";
-    const rOza = shOza.text.get(targetOza);
-    if (!rOza.isEmpty) {
-      const ozaText = isCanonical
-        ? `•  Chi phí thực nghiệm chuẩn tắc: $6.628399 USD nằm an toàn dưới trần ngân sách đóng băng $19.99 USD [CANONICAL STUDY].`
-        : `•  Dự báo chuẩn tắc tập TEST: ${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD nằm an toàn dưới trần ngân sách đóng băng ${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD [DIAGNOSTIC FIXTURE].`;
-      shOza.text.replace(targetOza, ozaText);
+    if (isCanonical) {
+      shOza.text.set([
+        "Quy Luật Đánh Đổi Hiệu Năng & Chi Phí (RQ3 Canonical Trade-off)",
+        "•  Hit rate chuẩn tắc (TEST 718): tăng từ 3.760% (No-RAG) lên 44.708% (RAG k=10).",
+        "•  Mean prompt tokens: 674.3 (No-RAG) -> 5114.3 (RAG k=10), tăng ~7.6x từ baseline đến k=10.",
+        "•  Chi phí mỗi logical query: $0.000365 (No-RAG) -> $0.001679 USD (RAG k=10), tăng ~4.6x từ baseline đến k=10.",
+        "•  Hạch toán toàn bộ: $6.58 settled spend / $6.63 committed spend, nằm an toàn dưới trần ngân sách đóng băng $19.99 USD.",
+      ].join("\n"));
       disclaimerEditsCount++;
       modifiedShapeIds.add("sh/oza1gfyh");
+    } else {
+      const targetOza =
+        "•  Dự báo chuẩn tắc tập TEST (< $10 USD) nằm an toàn dưới trần ngân sách đóng băng $19.99 USD.";
+      const rOza = shOza.text.get(targetOza);
+      if (!rOza.isEmpty) {
+        shOza.text.replace(targetOza, `•  Dự báo chuẩn tắc tập TEST: ${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD nằm an toàn dưới trần ngân sách đóng băng ${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD [DIAGNOSTIC FIXTURE].`);
+        disclaimerEditsCount++;
+        modifiedShapeIds.add("sh/oza1gfyh");
+      }
     }
   }
 
@@ -877,7 +937,8 @@ async function runArtifactToolDeckUpdater(options = {}) {
     if (sh10_10 && sh10_10.text) {
       sh10_10.text.set([
         "Ý Nghĩa Thống Kê & Đảm Bảo Tái Lập Ngoại Tuyến",
-        "•  Khoảng tin cậy chênh lệch hiệu năng: Toàn bộ 4 khoảng tin cậy 95% Bootstrap CI của delta độ chính xác đều chứa 0 (p > 0.05); không có bằng chứng thống kê khẳng định RAG vượt trội No-RAG.",
+        "•  Khoảng tin cậy chênh lệch hiệu năng: Toàn bộ 4 khoảng tin cậy 95% Bootstrap CI của delta độ chính xác đều chứa 0 (ví dụ delta k10 là [-2.355, +5.300] pp).",
+        "•  Kiểm định McNemar: Phép thử McNemar thăm dò ở cấp độ view ghi nhận p = 0.4223 > 0.05, không có bằng chứng thống kê khẳng định RAG vượt trội No-RAG; không suy diễn quan hệ nhân quả hay khẳng định tri thức tham số thuần túy khi chưa kiểm chứng.",
         "•  Quy trình kiểm thử an toàn: Mọi kịch bản kiểm thử bắt buộc chạy qua runner offline scripts/run_offline_tests.py, can thiệp socket Python để chặn kết nối ngoài ý muốn.",
       ].join("\n"));
       modifiedShapeIds.add("sh/d87uxg3m");
@@ -950,8 +1011,9 @@ async function runArtifactToolDeckUpdater(options = {}) {
     if (slides[5].speakerNotes) {
       slides[5].speakerNotes.text = [
         "GHI CHÚ DIỄN GIẢ (Slide 6):",
-        `Chẩn đoán độc lập khâu tìm kiếm (RQ2) trên tập scorable TEST views (N=718) cho thấy Hit@10 đạt ${slots["{{S2_HIT_RATE_AT_K}}"]} (321 / 718), nghĩa là trong ${slots["{{S2_RETRIEVAL_MISS_RATE_K10}}"]} trường hợp (397 / 718), kỹ thuật đúng hoàn toàn vắng bóng trong Top-10 gửi cho LLM. Macro Recall@10 đạt ${slots["{{S2_RECALL_AT_K}}"]}. Điển hình là kỹ thuật T1136.001 với 0/99 lần trúng Top-10 do khoảng cách ngữ nghĩa giữa Event ID 4720 và STIX description.`,
-        "Lưu ý về bối cảnh đối chiếu: Con số N=756 views (341/756 trúng Top-10, 45.11%) là toàn bộ benchmark lịch sử gồm 718 TEST + 38 DEV; còn DEV Pilot chỉ gồm 20 requests (4 views x 5 điều kiện), tuyệt đối không gộp chung mẫu số với kết quả TEST chính thức.",
+        `Chẩn đoán độc lập khâu tìm kiếm (RQ2) trên tập scorable TEST views (N=718) cho thấy Hit@10 đạt ${slots["{{S2_HIT_RATE_AT_K}}"]} (321 / 718), nghĩa là trong ${slots["{{S2_RETRIEVAL_MISS_RATE_K10}}"]} trường hợp (397 / 718), kỹ thuật đúng hoàn toàn vắng bóng trong Top-10 gửi cho LLM. Macro Recall@10 đạt ${slots["{{S2_RECALL_AT_K}}"]}. Điển hình là kỹ thuật T1136.001 với support N=95 trong tập TEST đạt 0/95 lần trúng Top-10 do khoảng cách ngữ nghĩa giữa Event ID 4720 và STIX description.`,
+        "Lưu ý về bối cảnh đối chiếu lịch sử: Chỉ số Mean Rank 5.21 khi trúng và tỷ lệ 0/99 của T1136.001 là số liệu thuộc benchmark lịch sử T20 (N=756 views gồm 718 TEST + 38 DEV với 341/756 trúng Top-10, 45.11%); còn DEV Pilot chỉ gồm 20 requests (4 views x 5 điều kiện), tuyệt đối không gộp chung mẫu số với kết quả TEST chính thức.",
+        "Về cơ chế embedding: Giả thuyết pha loãng ngữ cảnh vẫn chưa được kiểm chứng sau khi hoàn thành đợt so sánh này, không khẳng định quan hệ nhân quả.",
         "Bằng chứng dự án: C:/Users/hahoa/.codex/artifacts/rag2attck/verified-native-figures-v1/canonical_rq2_retrieval.png; outputs/reproduction/tables/table_1_retrieval_diagnostics.md; tests/test_retrieval_diagnostics.py.",
       ].join("\n");
       disclaimerEditsCount++;
@@ -961,7 +1023,8 @@ async function runArtifactToolDeckUpdater(options = {}) {
       slides[6].speakerNotes.text = [
         "GHI CHÚ DIỄN GIẢ (Slide 7):",
         "Kết quả thực nghiệm chuẩn tắc trên tập scorable TEST views (N=718 views / 440 clusters) ghi nhận quan sát độc lập về biểu diễn telemetry dưới điều kiện RAG k=10:",
-        `Trong 278 cặp đối ứng hoàn chỉnh (238 cặp identical GT, 40 cặp divergent GT), độ chính xác của Single-event đạt ${slots["{{S2_PAIRED_SINGLE_ACC}}"]} (233/278) và Contextual-event cũng đạt ${slots["{{S2_PAIRED_CONTEXT_ACC}}"]} (233/278), chênh lệch Paired Delta là ${slots["{{S2_PAIRED_DELTA_PP}}"]} pp với kiểm định McNemar p=${slots["{{S2_MCNEMAR_P_ASYMPT}}"]} (không có ý nghĩa thống kê). Ở góc độ phân tách biên, 278 single views đạt ${slots["{{S2_SINGLE_VIEW_ACC_E2E}}"]} trong khi 440 contextual views đạt ${slots["{{S2_CONTEXT_VIEW_ACC_E2E}}"]}.`,
+        `Tập dữ liệu chính hiện tại là 278 complete GT-scorable pairs (238 cặp identical GT, 40 cặp divergent GT). Độ chính xác của Single-event đạt ${slots["{{S2_PAIRED_SINGLE_ACC}}"]} (233/278) và Contextual-event cũng đạt ${slots["{{S2_PAIRED_CONTEXT_ACC}}"]} (233/278), chênh lệch Paired Delta là ${slots["{{S2_PAIRED_DELTA_PP}}"]} pp với kiểm định McNemar p=${slots["{{S2_MCNEMAR_P_ASYMPT}}"]} (không có ý nghĩa thống kê). Ở góc độ phân tách biên, 278 single views đạt ${slots["{{S2_SINGLE_VIEW_ACC_E2E}}"]} trong khi 440 contextual views đạt ${slots["{{S2_CONTEXT_VIEW_ACC_E2E}}"]}.`,
+        "Ngữ cảnh lịch sử T20: Số liệu 670 kịch bản đối ứng / 296 cặp anchor thuộc benchmark lịch sử T20, đưa vào đây làm bối cảnh tham chiếu bổ sung.",
         "Hiện tượng dịch chuyển ngữ cảnh được giải thích theo giả thuyết mô tả quan sát (nhiễu từ token hệ thống thông thường), không khẳng định quan hệ nhân quả. Toàn bộ ma trận TEST 6,400 bản ghi đã hoàn tất trên 5 điều kiện đóng băng với prompt đồng nhất, loại bỏ hoàn toàn các khung khái niệm scaffold thử nghiệm.",
         "Bằng chứng dự án: outputs/reproduction/tables/table_4_pairwise_representation_comparison.md; tests/test_t20_canonical_artifacts.py.",
       ].join("\n");
@@ -972,9 +1035,9 @@ async function runArtifactToolDeckUpdater(options = {}) {
       slides[7].speakerNotes.text = [
         "GHI CHÚ DIỄN GIẢ (Slide 8):",
         "Khung đánh giá RQ1 & RQ2 được xây dựng trên định đề D2i (Independent Measurement Axes), phân tích trên 718 scorable TEST views với không gian 474 lớp kỹ thuật đóng băng của MITRE ATT&CK Enterprise v19.2.",
-        `Về hiệu năng RQ1: No-RAG đạt độ chính xác ${slots["{{S2_ACC_E2E_NO_RAG}}"]} (560/718), trong khi RAG k=10 đạt ${slots["{{S2_ACC_E2E_RAG_K10}}"]} (571/718), tăng ${slots["{{S2_ACC_DELTA_RAG_K10}}"]} (${slots["{{S2_MACRO_F1_DELTA_RAG_K10}}"]} F1). Toàn bộ 4 khoảng tin cậy 95% CI của chênh lệch độ chính xác so với No-RAG đều chứa 0 (p > .05), nghĩa là không có ý nghĩa thống kê; việc rag_k10 có độ chính xác cao nhất chỉ mang tính mô tả quan sát.`,
-        `Về chẩn đoán có điều kiện RQ2 (k=10): P(Correct | Retrieved) = ${slots["{{S2_P_CORRECT_GIVEN_RETRIEVED}}"]} (293/321) và P(Correct | Absent) = ${slots["{{S2_P_CORRECT_GIVEN_ABSENT}}"]} (278/397; không giả định khả năng tự sửa sai nội tại). Có ${slots["{{S2_OVERLAP_MISS_AND_WRONG_K10}}"]}/147 ca phân loại sai (80.95%) nằm ở nhánh truy xuất trượt.`,
-        "Về ranh giới mẫu số: Trong 718 scorable records, tỷ lệ provider failure là 0.0000. Trên toàn bộ 6,400 dispatches có 13 INCOMPLETE records được bảo toàn nguyên vẹn.",
+        `Về hiệu năng RQ1: No-RAG đạt độ chính xác ${slots["{{S2_ACC_E2E_NO_RAG}}"]} (560/718), trong khi RAG k=10 đạt ${slots["{{S2_ACC_E2E_RAG_K10}}"]} (571/718), tăng ${slots["{{S2_ACC_DELTA_RAG_K10}}"]} (${slots["{{S2_MACRO_F1_DELTA_RAG_K10}}"]} F1). Toàn bộ 4 khoảng tin cậy 95% CI của chênh lệch độ chính xác so với No-RAG đều chứa 0 (không có ý nghĩa thống kê); việc rag_k10 có độ chính xác cao nhất chỉ mang tính mô tả quan sát.`,
+        `Về chẩn đoán có điều kiện RQ2 (RAG k=10): P(Correct | Retrieved) = ${slots["{{S2_P_CORRECT_GIVEN_RETRIEVED}}"]} (293/321) và P(Correct | Absent) = ${slots["{{S2_P_CORRECT_GIVEN_ABSENT}}"]} (278/397; không giả định khả năng tự sửa sai nội tại). Có ${slots["{{S2_OVERLAP_MISS_AND_WRONG_K10}}"]}/147 ca phân loại sai (80.95%) nằm ở nhánh truy xuất trượt.`,
+        "Về ranh giới mẫu số: Tỷ lệ provider failure trên 718 scorable records là giá trị quan sát thực nghiệm scorable failure = 0.0000. Trên toàn bộ 6,400 dispatches có 13 INCOMPLETE records được bảo toàn nguyên vẹn.",
         "Bằng chứng dự án: C:/Users/hahoa/.codex/artifacts/rag2attck/verified-native-figures-v1/canonical_rq1_accuracy_and_macro.png; reports/experiment_protocol_v1.md.",
       ].join("\n");
       disclaimerEditsCount++;
@@ -984,10 +1047,10 @@ async function runArtifactToolDeckUpdater(options = {}) {
       slides[8].speakerNotes.text = [
         "GHI CHÚ DIỄN GIẢ (Slide 9):",
         "Trong phân tích RQ3, toàn bộ chỉ số tài nguyên, độ trễ và chi phí được tính trên toàn bộ 1,280 logical views mỗi điều kiện (tổng 6,400 dispatches), không rút gọn về 718 scorable views:",
-        `1. Độ trễ: Cần phân biệt rõ trễ trung vị (No-RAG ${slots["{{S2_MEDIAN_LAT_NO_RAG_SEC}}"]}s vs RAG k10 ${slots["{{S2_MEDIAN_LAT_K10_SEC}}"]}s) và trễ trung bình (No-RAG 2.90s vs RAG k10 4.37s). Lượng prompt tokens trung bình tăng từ ${slots["{{S2_MEAN_PROMPT_TOK_NO_RAG}}"]} lên ${slots["{{S2_MEAN_PROMPT_TOK_K10}}"]} (~7.6x), chi phí mỗi request tăng từ $${slots["{{S2_COST_LOGICAL_REQ_NO_RAG}}"]} lên $${slots["{{S2_COST_LOGICAL_REQ_K10}}"]} USD (~4.6x).`,
+        `1. Độ trễ & Tài nguyên: Phân biệt rõ trễ trung vị (No-RAG ${slots["{{S2_MEDIAN_LAT_NO_RAG_SEC}}"]}s vs RAG k10 ${slots["{{S2_MEDIAN_LAT_K10_SEC}}"]}s) và trễ trung bình (No-RAG 2.90s vs RAG k10 4.37s). Lượng prompt tokens trung bình tăng từ ${slots["{{S2_MEAN_PROMPT_TOK_NO_RAG}}"]} lên ${slots["{{S2_MEAN_PROMPT_TOK_K10}}"]} (~7.6x từ baseline đến k10), chi phí mỗi request tăng từ $${slots["{{S2_COST_LOGICAL_REQ_NO_RAG}}"]} lên $${slots["{{S2_COST_LOGICAL_REQ_K10}}"]} USD (~4.6x từ baseline đến k10).`,
         `2. Hiệu quả đánh đổi: Hit rate chuẩn tắc trên tập scorable N=718 tăng từ Hit@1 = 3.760% (27/718) lên Hit@10 = 44.708% (321/718).`,
-        `3. Hạch toán tài chính chuẩn tắc: Chi phí điều kiện chuẩn đã quyết toán là $6.57575890 USD ($${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD), cộng với khoản giữ chỗ thận trọng pilot $${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD, tổng chi phí đã cam kết là $6.62839900 USD. Ngân sách khả dụng còn lại là $${slots["{{S2_NET_REMAINING_USD}}"]} USD trên trần đóng băng cứng $${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD.`,
-        "4. Minh bạch ngoại lệ: 13 INCOMPLETE records được bảo toàn nguyên vẹn trên 6,400 requests; 1 attempt API_FAILURE được retry có khoản phí thiếu usage là $0.53974560 USD.",
+        `3. Hạch toán tài chính chuẩn tắc: Chi phí điều kiện chuẩn đã quyết toán là $6.57575890 USD ($${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD), cộng với khoản giữ chỗ thận trọng pilot $${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD, tổng chi phí đã cam kết là $6.62839900 USD ($6.63 USD committed spend). Ngân sách khả dụng còn lại là $${slots["{{S2_NET_REMAINING_USD}}"]} USD ($13.36160100 USD) trên trần đóng băng cứng $${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD. Chi phí được tính toán theo ước tính thận trọng từ bảng giá đóng băng (conservative accounted tariff estimate).`,
+        "4. Bối cảnh lịch sử & Ngoại lệ: DEV pilot lịch sử là 20 requests (~$0.0242 USD). Trên toàn bộ 6,400 requests có 13 INCOMPLETE records; 1 attempt API_FAILURE được retry có khoản phí thiếu usage là $0.53974560 USD.",
         "Bằng chứng dự án: C:/Users/hahoa/.codex/artifacts/rag2attck/verified-native-figures-v1/canonical_rq3_cost_and_latency.png; config/experiment_config.json; tests/test_monetary_guard.py.",
       ].join("\n");
       disclaimerEditsCount++;
@@ -999,7 +1062,7 @@ async function runArtifactToolDeckUpdater(options = {}) {
         "Nghiên cứu công khai đầy đủ các giới hạn khoa học và ràng buộc thực nghiệm:",
         "1. Dữ liệu: Kịch bản giả lập có cấu trúc synthetic-paired-v1 với 8 kỹ thuật có mẫu dương tính trong tổng số 474 lớp đóng băng; 40 cặp đối ứng có GT thay đổi khi mở rộng ngữ cảnh; dữ liệu telemetry thực tế in-the-wild (T15) chưa được kiểm chứng.",
         "2. Bộ tìm kiếm: Hạn chế từ vựng của dense bi-encoder được ghi nhận rõ, tuy nhiên giải pháp Hybrid Dense+BM25 chưa từng được thử nghiệm trong benchmark này và là hướng phát triển tương lai.",
-        "3. Thống kê: Toàn bộ 4 khoảng tin cậy 95% CI của chênh lệch độ chính xác so với No-RAG đều chứa 0, kết quả phụ thuộc vào họ mô hình gpt-5.6-luna và tính ngẫu nhiên của API.",
+        "3. Thống kê: Toàn bộ 4 khoảng tin cậy 95% CI của chênh lệch độ chính xác so với No-RAG đều chứa 0. Phép thử McNemar thăm dò ở cấp độ view cho kết quả p = 0.4223 > 0.05, không khẳng định RAG vượt trội No-RAG; không suy diễn quan hệ nhân quả hay khẳng định tri thức tham số thuần túy khi chưa được kiểm chứng.",
         "Bằng chứng dự án: docs/reproducibility.md; scripts/run_offline_tests.py; tests/test_offline_guard.py.",
       ].join("\n");
       disclaimerEditsCount++;

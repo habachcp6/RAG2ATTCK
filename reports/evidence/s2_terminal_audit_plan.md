@@ -174,7 +174,7 @@ The audit distinguishes between the two distinct byte representations of the can
 - **Production Script:** Implemented at [`scripts/audit_terminal_run.py`](scripts/audit_terminal_run.py).
 - **Offline Unit Test Suite:** Implemented at [`tests/test_terminal_audit.py`](tests/test_terminal_audit.py).
 - **Test Runner Guard:** Implemented at [`scripts/run_offline_tests.py`](scripts/run_offline_tests.py).
-- **Test Coverage (31/31 Passed Cleanly):**
+- **Test Coverage (39/39 Passed Cleanly):**
   1. `test_audit_passes_on_valid_fixture`: Verifies valid multi-sample flow.
   2. `test_audit_fails_on_duplicate_complete`: Asserts rejection of duplicate complete events.
   3. `test_audit_fails_on_duplicate_settle`: Asserts rejection of duplicate settle events.
@@ -206,6 +206,14 @@ The audit distinguishes between the two distinct byte representations of the can
   29. `test_audit_terminal_process_proof_success`: Verifies authoritative verification and SHA-256 binding of terminal process proof.
   30. `test_audit_fails_on_reordered_journal_events`: Asserts rejection when journal events violate required sequential ordering (`attempt` -> `complete` -> `monetary_settle`).
   31. `test_generate_audit_seal_fails_on_missing_required_file`: Asserts seal generation failure if any required production file or baseline is missing.
+  32. `test_terminal_proof_fails_on_missing_fields`: Asserts fail-closed rejection when any of the 8 required proof fields is missing.
+  33. `test_terminal_proof_fails_on_running_status`: Asserts strict rejection if terminal proof indicates process is still running.
+  34. `test_terminal_proof_fails_on_run_and_task_id_mismatch`: Asserts rejection on run_id or task_id drift.
+  35. `test_positive_native_preloader_and_lifecycle`: Verifies end-to-end execution of native load_evaluation_inputs and _resume_state without mocks.
+  36. `test_preloader_and_lifecycle_fails_on_header_max_requests_drift`: Asserts rejection when journal header max_requests differs from manifest cap.
+  37. `test_preloader_and_lifecycle_fails_on_foreign_header`: Asserts rejection on tampered or foreign journal header.
+  38. `test_preloader_and_lifecycle_fails_on_candidate_not_in_corpus`: Asserts rejection when retrieved candidates are absent from corpus.
+  39. `test_preloader_and_lifecycle_fails_on_orphan_reservation`: Asserts rejection when unclosed reservations remain in journal.
 
 ---
 
@@ -304,7 +312,7 @@ print("TERMINAL AUDIT PASSED 100%. CANONICAL SEAL GENERATED.")
 
 - **Deliverables Transmitted in Handback:**
   - Audit script: `scripts/audit_terminal_run.py`
-  - Offline unit tests: `tests/test_terminal_audit.py` (31/31 passed)
+  - Offline unit tests: `tests/test_terminal_audit.py` (39/39 passed)
   - Offline test runner: `scripts/run_offline_tests.py`
   - Plan document: `reports/evidence/s2_terminal_audit_plan.md`
   - Protected baseline inventory: `artifacts/orchestration/integration_protected_baseline.json` (22 files)

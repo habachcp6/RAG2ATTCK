@@ -13,7 +13,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
-from src.evaluation.experiment_metrics import load_evaluation_inputs
+from src.evaluation.experiment_metrics import EvaluationInputs, load_evaluation_inputs
 from src.experiment.authorization import (
     ScientificProtocolApproval,
     compute_code_manifest_sha256,
@@ -68,6 +68,19 @@ ALLOWED_JOURNAL_EVENTS: Set[str] = {
     "monetary_cancel_hold",
 }
 
+REQUIRED_PROOF_FIELDS: Set[str] = {
+    "run_id",
+    "task_id",
+    "pid",
+    "start_identity",
+    "process_status",
+    "exit_code",
+    "artifact_log_sha256",
+    "final_summary",
+}
+
+ALLOWED_PROCESS_STATUSES: Set[str] = {"non-running", "terminated", "exited"}
+
 
 class AuditVerificationError(RuntimeError):
     """Raised whenever a terminal audit gate or invariant is violated."""
@@ -77,6 +90,8 @@ def audit_completeness_and_cardinality(
     exp_dir: Path,
     expected_sample_ids: Set[str],
     require_all_conditions: bool = True,
+    registry_ids: Optional[Set[str]] = None,
+    corpus_ids: Optional[Set[str]] = None,
 ) -> Dict[Tuple[str, str], ExperimentRecord]:
     """Verify that prediction files exist, are newline-complete,
 
@@ -148,13 +163,13 @@ def audit_completeness_and_cardinality(
             )
 
     manifest_file = exp_dir / "manifest.json"
-    if manifest_file.exists():
+    if manifest_file.exists() and registry_ids is not None and corpus_ids is not None:
         manifest_data = _strict_json_loads(manifest_file.read_bytes())
         m_sha = digest(canonical_bytes(manifest_data))
         for rec in records_by_key.values():
             try:
                 _validate_record_binding(
-                    rec, manifest_data, m_sha, registry_ids=None, corpus_ids=None
+                    rec, manifest_data, m_sha, registry_ids=registry_ids, corpus_ids=corpus_ids
                 )
             except ValueError as exc:
                 raise AuditVerificationError(
@@ -716,25 +731,115 @@ def audit_protected_baseline_22_files(
     }
 
 
-def audit_terminal_process_proof(terminal_proof_file: Path) -> Dict[str, Any]:
-    """Verify authoritative task/process terminal proof."""
+def audit_terminal_process_proof(
+    terminal_proof_file: Path,
+    *,
+    expected_run_id: Optional[str] = None,
+    expected_task_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Verify authoritative task/process terminal proof with strict 8-field schema."""
     if not terminal_proof_file.exists():
         raise AuditVerificationError(f"Missing terminal proof file at {terminal_proof_file}")
     raw_bytes = terminal_proof_file.read_bytes()
     proof_sha256 = hashlib.sha256(raw_bytes).hexdigest()
     proof_data = _strict_json_loads(raw_bytes)
 
-    if proof_data.get("exit_code") != 0:
+    if not isinstance(proof_data, dict):
+        raise AuditVerificationError("Terminal process proof must be a JSON object")
+
+    missing = REQUIRED_PROOF_FIELDS - set(proof_data.keys())
+    if missing:
         raise AuditVerificationError(
-            f"Terminal process proof indicates non-zero exit: {proof_data.get('exit_code')}"
+            f"Terminal process proof missing required fields: {sorted(missing)}"
         )
+
+    # 1. run_id: non-empty string, matches expected if specified
+    run_id = proof_data["run_id"]
+    if not isinstance(run_id, str) or not run_id.strip():
+        raise AuditVerificationError(f"Terminal proof invalid 'run_id': {run_id}")
+    if expected_run_id is not None and run_id != expected_run_id:
+        raise AuditVerificationError(
+            f"Terminal proof run_id mismatch: expected '{expected_run_id}', got '{run_id}'"
+        )
+
+    # 2. task_id: non-empty string, matches expected if specified
+    task_id = proof_data["task_id"]
+    if not isinstance(task_id, str) or not task_id.strip():
+        raise AuditVerificationError(f"Terminal proof invalid 'task_id': {task_id}")
+    if expected_task_id is not None and task_id != expected_task_id:
+        raise AuditVerificationError(
+            f"Terminal proof task_id mismatch: expected '{expected_task_id}', got '{task_id}'"
+        )
+
+    # 3. pid: integer, strictly not bool
+    pid = proof_data["pid"]
+    if type(pid) is not int:
+        raise AuditVerificationError(
+            f"Terminal proof 'pid' must be an integer, got {type(pid).__name__}"
+        )
+
+    # 4. start_identity: non-empty string/valid identifier
+    start_identity = proof_data["start_identity"]
+    if not isinstance(start_identity, str) or not start_identity.strip():
+        raise AuditVerificationError(
+            f"Terminal proof missing valid 'start_identity': {start_identity}"
+        )
+
+    # 5. process_status: must be 'non-running', 'terminated', or 'exited', NEVER 'running'
+    process_status = proof_data["process_status"]
+    if not isinstance(process_status, str):
+        raise AuditVerificationError(
+            f"Terminal proof 'process_status' must be string, got {type(process_status).__name__}"
+        )
+    status_lower = process_status.strip().lower()
+    if status_lower == "running":
+        raise AuditVerificationError(
+            "Terminal proof process_status is still 'running'; runner must be terminated"
+        )
+    if status_lower not in ALLOWED_PROCESS_STATUSES:
+        raise AuditVerificationError(
+            f"Terminal proof invalid process_status '{process_status}'; "
+            f"expected one of {ALLOWED_PROCESS_STATUSES}"
+        )
+
+    # 6. exit_code: must be integer == 0
+    exit_code = proof_data["exit_code"]
+    if type(exit_code) is not int:
+        raise AuditVerificationError(
+            f"Terminal proof 'exit_code' must be an integer, got {type(exit_code).__name__}"
+        )
+    if exit_code != 0:
+        raise AuditVerificationError(f"Terminal process proof indicates non-zero exit: {exit_code}")
+
+    # 7. artifact_log_sha256: 64-char hex SHA-256 string
+    log_sha256 = proof_data["artifact_log_sha256"]
+    if (
+        not isinstance(log_sha256, str)
+        or len(log_sha256) != 64
+        or not re.fullmatch(r"[0-9a-fA-F]{64}", log_sha256)
+    ):
+        raise AuditVerificationError(f"Terminal proof invalid 'artifact_log_sha256': {log_sha256}")
+
+    # 8. final_summary: must be present and non-empty dict
+    final_summary = proof_data["final_summary"]
+    if not isinstance(final_summary, dict) or not final_summary:
+        raise AuditVerificationError(
+            f"Terminal proof missing or empty 'final_summary': {final_summary}"
+        )
+    if final_summary.get("complete") is False:
+        raise AuditVerificationError("Terminal proof final_summary indicates incomplete execution")
 
     return {
         "path": str(terminal_proof_file),
         "sha256": proof_sha256,
-        "exit_code": proof_data.get("exit_code"),
-        "task_id": proof_data.get("task_id"),
-        "pid": proof_data.get("pid"),
+        "run_id": run_id,
+        "task_id": task_id,
+        "pid": pid,
+        "start_identity": start_identity,
+        "process_status": process_status,
+        "exit_code": exit_code,
+        "artifact_log_sha256": log_sha256,
+        "final_summary": final_summary,
     }
 
 
@@ -742,25 +847,51 @@ def audit_production_preloader_and_lifecycle(
     validator_root: Path,
     exp_dir: Path,
     manifest: Dict[str, Any],
-) -> None:
+) -> EvaluationInputs:
     """Enforce native load_evaluation_inputs and _resume_state lifecycle checks."""
     manifest_path = exp_dir / "manifest.json"
     pred_paths = {c: exp_dir / f"{c}_predictions.jsonl" for c in CONDITIONS}
 
     # 1. Native preloader
     try:
-        load_evaluation_inputs(manifest_path, pred_paths, repository_root=validator_root)
-    except ValueError as exc:
+        inputs = load_evaluation_inputs(manifest_path, pred_paths, repository_root=validator_root)
+    except (ValueError, KeyError, TypeError) as exc:
         raise AuditVerificationError(
             f"Production native preloader validation failed: {exc}"
         ) from exc
 
+    registry_ids = set(inputs.registry.keys())
+    corpus_ids = set(inputs.corpus_ids)
+
     # 2. Recovery-aware lifecycle with _resume_state
     manifest_sha = digest(canonical_bytes(manifest))
-    cap = manifest.get("expected_request_count", 6400)
+    cap = (
+        manifest.get("authorized_max_provider_attempts")
+        or manifest.get("fixture_max_requests")
+        or manifest.get("authorized_max_requests")
+    )
+    if not isinstance(cap, int) or type(cap) is bool or cap <= 0:
+        raise AuditVerificationError(f"Invalid or missing attempt budget cap in manifest: {cap}")
+
+    # Verify journal header matches manifest and budget cap
+    journal_path = exp_dir / "request_journal.jsonl"
+    if not journal_path.exists():
+        raise AuditVerificationError(f"Missing request_journal.jsonl at {journal_path}")
+    raw_journal = journal_path.read_bytes()
+    if not raw_journal.strip():
+        raise AuditVerificationError(f"Empty request_journal.jsonl at {journal_path}")
+    first_line = raw_journal.splitlines()[0]
+    header = _strict_json_loads(first_line)
+    if header != {"event": "header", "manifest_sha256": manifest_sha, "max_requests": cap}:
+        raise AuditVerificationError(
+            f"Journal header does not match expected manifest/budget: "
+            f"expected event='header', manifest_sha256={manifest_sha}, max_requests={cap}; "
+            f"got {header}"
+        )
+
     try:
         resume_state = _resume_state(
-            exp_dir, manifest, manifest_sha, cap, registry_ids=None, corpus_ids=None
+            exp_dir, manifest, manifest_sha, cap, registry_ids=registry_ids, corpus_ids=corpus_ids
         )
         if resume_state.orphan_reservation is not None:
             raise AuditVerificationError(
@@ -776,6 +907,8 @@ def audit_production_preloader_and_lifecycle(
         raise AuditVerificationError(
             f"Native recovery-aware lifecycle audit failed: {exc}"
         ) from exc
+
+    return inputs
 
 
 def generate_audit_seal(
@@ -849,6 +982,14 @@ def generate_audit_seal(
         seal_payload["terminal_proof"] = {
             "path": terminal_proof_info.get("path"),
             "sha256": terminal_proof_info.get("sha256"),
+            "run_id": terminal_proof_info.get("run_id"),
+            "task_id": terminal_proof_info.get("task_id"),
+            "pid": terminal_proof_info.get("pid"),
+            "start_identity": terminal_proof_info.get("start_identity"),
+            "process_status": terminal_proof_info.get("process_status"),
+            "exit_code": terminal_proof_info.get("exit_code"),
+            "artifact_log_sha256": terminal_proof_info.get("artifact_log_sha256"),
+            "final_summary": terminal_proof_info.get("final_summary"),
         }
     if protected_baseline_info is not None:
         seal_payload["protected_baseline"] = protected_baseline_info
@@ -908,6 +1049,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help="Authoritative task exit code / PID start identity / absence evidence file",
     )
     parser.add_argument(
+        "--expected-run-id",
+        type=str,
+        default=None,
+        help="Expected run ID for terminal proof validation (defaults to manifest run_id)",
+    )
+    parser.add_argument(
+        "--expected-task-id",
+        type=str,
+        default="task-1264",
+        help="Expected task ID for terminal proof validation (default: task-1264)",
+    )
+    parser.add_argument(
         "--is-production",
         action="store_true",
         default=False,
@@ -960,7 +1113,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         # 3. Terminal proof file gate
         if not args.terminal_proof_file:
             raise AuditVerificationError("Production audit requires --terminal-proof-file")
-        terminal_proof_info = audit_terminal_process_proof(args.terminal_proof_file)
+        manifest_path = args.exp_dir / "manifest.json"
+        manifest = _strict_json_loads(manifest_path.read_bytes()) if manifest_path.exists() else {}
+        expected_run_id = args.expected_run_id or manifest.get("run_id") or "live-66b94b1676bf46a9"
+        expected_task_id = args.expected_task_id
+        terminal_proof_info = audit_terminal_process_proof(
+            args.terminal_proof_file,
+            expected_run_id=expected_run_id,
+            expected_task_id=expected_task_id,
+        )
 
         # 4. Launcher wrapper requirement
         launcher_wrapper = args.launcher_path or (
@@ -972,10 +1133,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             )
 
         # 5. Production execution mode and manifest validation
-        manifest_path = args.exp_dir / "manifest.json"
         if not manifest_path.exists():
             raise AuditVerificationError(f"Missing manifest file at {manifest_path}")
-        manifest = _strict_json_loads(manifest_path.read_bytes())
         if manifest.get("execution_mode") != "live":
             raise AuditVerificationError(
                 "Production audit requires execution_mode='live', "
@@ -987,7 +1146,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             )
 
         # 6. Native preloader and recovery-aware lifecycle validation
-        audit_production_preloader_and_lifecycle(args.validator_root, args.exp_dir, manifest)
+        eval_inputs = audit_production_preloader_and_lifecycle(
+            args.validator_root, args.exp_dir, manifest
+        )
+        prod_registry_ids = set(eval_inputs.registry.keys())
+        prod_corpus_ids = set(eval_inputs.corpus_ids)
 
         # 7. Protected 22 baseline gate
         protected_baseline_info = audit_protected_baseline_22_files(
@@ -996,7 +1159,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     else:
         launcher_wrapper = args.launcher_path
         terminal_proof_info = (
-            audit_terminal_process_proof(args.terminal_proof_file)
+            audit_terminal_process_proof(
+                args.terminal_proof_file,
+                expected_run_id=args.expected_run_id,
+                expected_task_id=args.expected_task_id,
+            )
             if args.terminal_proof_file and args.terminal_proof_file.exists()
             else None
         )
@@ -1011,13 +1178,19 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             if base_path.exists()
             else None
         )
+        prod_registry_ids = None
+        prod_corpus_ids = None
 
     plan = load_plan(args.validator_root / "config" / "experiment_config.json")
     expected_ids = {s.sample_id for s in plan.samples}
 
     print(f"Auditing completeness and cardinality in {args.exp_dir}...")
     records = audit_completeness_and_cardinality(
-        args.exp_dir, expected_ids, require_all_conditions=args.is_production
+        args.exp_dir,
+        expected_ids,
+        require_all_conditions=args.is_production,
+        registry_ids=prod_registry_ids,
+        corpus_ids=prod_corpus_ids,
     )
     print(f"Verified {len(records)} total records.")
 

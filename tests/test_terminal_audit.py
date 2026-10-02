@@ -1,8 +1,10 @@
 """Unit tests for Phase S2 Terminal Audit Script using isolated offline fixtures."""
 
+import hashlib
 import json
 from decimal import Decimal
 from pathlib import Path
+from typing import Any, Dict, Optional, Tuple
 
 import pytest
 
@@ -11,6 +13,7 @@ from scripts.audit_terminal_run import (
     audit_completeness_and_cardinality,
     audit_financial_ledger_and_tariffs,
     audit_journal_join_and_lifecycle,
+    audit_production_preloader_and_lifecycle,
     audit_protected_baseline_22_files,
     audit_provenance_and_hash_invariants,
     audit_secret_sanitization,
@@ -23,6 +26,72 @@ from src.experiment.schemas import CONDITIONS, Candidate, ExperimentRecord
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TEST_PRICING_SHA = "4adfe8a0630bc1703a92e233133ea55eeff21ef5312dc3102369c267767c9565"
+
+
+def _valid_terminal_proof_data(
+    *,
+    run_id: str = "live-66b94b1676bf46a9",
+    task_id: str = "task-1264",
+    pid: int = 50192,
+    start_identity: str = "2026-10-02T01:00:00Z",
+    process_status: str = "terminated",
+    exit_code: int = 0,
+    artifact_log_sha256: str = "a" * 64,
+    final_summary: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    return {
+        "run_id": run_id,
+        "task_id": task_id,
+        "pid": pid,
+        "start_identity": start_identity,
+        "process_status": process_status,
+        "exit_code": exit_code,
+        "artifact_log_sha256": artifact_log_sha256,
+        "final_summary": final_summary or {"complete": True, "record_count": 6400},
+    }
+
+
+def _create_real_producer_output(tmp_path: Path) -> Tuple[Path, Path, Dict[str, Any]]:
+    """Build a real valid producer output directory using bundle and MockProvider."""
+    from src.experiment.config import load_plan
+    from src.experiment.runner import MockProvider, run_mock_experiment
+    from tests.test_experiment import bundle
+
+    bundle_fn = getattr(bundle, "__wrapped__", bundle)
+    root, config_path, _ = bundle_fn(tmp_path)
+    cfg = json.loads(config_path.read_bytes())
+
+    # Switch split to dev so load_evaluation_inputs validates 2-sample cohort
+    sm_path = root / "split_manifest.json"
+    sm = {"dev": ["p1"], "test": []}
+    sm_path.write_bytes(json.dumps(sm).encode())
+    cfg["dataset"]["split_manifest"]["sha256"] = hashlib.sha256(sm_path.read_bytes()).hexdigest()
+
+    pairs_path = root / "pairs.jsonl"
+    pairs = [json.loads(line) for line in pairs_path.read_bytes().splitlines() if line.strip()]
+    for p in pairs:
+        p["split"] = "dev"
+    pairs_data = b"".join(json.dumps(p).encode() + b"\n" for p in pairs)
+    pairs_path.write_bytes(pairs_data)
+    cfg["dataset"]["pairs"]["sha256"] = hashlib.sha256(pairs_data).hexdigest()
+
+    dm_path = root / "dataset_manifest.json"
+    dm = json.loads(dm_path.read_bytes())
+    dm["split_counts"] = {"dev": 1, "test": 0}
+    dm["files"]["split_manifest.json"] = cfg["dataset"]["split_manifest"]["sha256"]
+    dm["files"]["pairs.jsonl"] = cfg["dataset"]["pairs"]["sha256"]
+    dm_data = json.dumps(dm).encode() + b"\n"
+    dm_path.write_bytes(dm_data)
+    cfg["dataset"]["manifest"]["sha256"] = hashlib.sha256(dm_data).hexdigest()
+
+    cfg["dataset"]["split"] = "dev"
+    config_path.write_bytes(json.dumps(cfg).encode() + b"\n")
+
+    plan = load_plan(config_path)
+    output = tmp_path / "producer_run"
+    run_mock_experiment(plan, output, MockProvider(), max_requests=10)
+    manifest = json.loads((output / "manifest.json").read_bytes())
+    return root, output, manifest
 
 
 def _create_mock_record(
@@ -916,7 +985,10 @@ def test_production_rejects_mock_fixture_mode(tmp_path):
         json.dumps({"complete": True, "record_count": 6400}), encoding="utf-8"
     )
     proof_file = tmp_path / "proof.json"
-    proof_file.write_text(json.dumps({"exit_code": 0, "pid": 1234}), encoding="utf-8")
+    proof_file.write_text(
+        json.dumps(_valid_terminal_proof_data(run_id="test_run", task_id="task-1264")),
+        encoding="utf-8",
+    )
     (exp_dir / "manifest.json").write_text(
         json.dumps({"execution_mode": "mock_fixture", "run_id": "test_run"}), encoding="utf-8"
     )
@@ -958,7 +1030,7 @@ def test_production_requires_terminal_proof_file(tmp_path):
 
     # Non-zero exit code
     bad_proof = tmp_path / "bad_proof.json"
-    bad_proof.write_text(json.dumps({"exit_code": 1}), encoding="utf-8")
+    bad_proof.write_text(json.dumps(_valid_terminal_proof_data(exit_code=1)), encoding="utf-8")
     with pytest.raises(
         AuditVerificationError, match="Terminal process proof indicates non-zero exit"
     ):
@@ -979,13 +1051,22 @@ def test_audit_terminal_process_proof_success(tmp_path):
     """Authoritative task terminal proof validation succeeds when exit_code is 0."""
     proof_path = tmp_path / "proof.json"
     proof_path.write_text(
-        json.dumps({"exit_code": 0, "task_id": "task-1264", "pid": 50192}), encoding="utf-8"
+        json.dumps(_valid_terminal_proof_data()),
+        encoding="utf-8",
     )
-    info = audit_terminal_process_proof(proof_path)
+    info = audit_terminal_process_proof(
+        proof_path,
+        expected_run_id="live-66b94b1676bf46a9",
+        expected_task_id="task-1264",
+    )
     assert info["exit_code"] == 0
     assert info["task_id"] == "task-1264"
     assert info["pid"] == 50192
     assert len(info["sha256"]) == 64
+    assert info["run_id"] == "live-66b94b1676bf46a9"
+    assert info["process_status"] == "terminated"
+    assert info["start_identity"] == "2026-10-02T01:00:00Z"
+    assert info["final_summary"] == {"complete": True, "record_count": 6400}
 
 
 def test_audit_fails_on_reordered_journal_events(tmp_path):
@@ -1041,3 +1122,115 @@ def test_generate_audit_seal_fails_on_missing_required_file(tmp_path):
             Decimal("0.0"),
             Decimal("19.99"),
         )
+
+
+def test_terminal_proof_fails_on_missing_fields(tmp_path):
+    """Terminal proof missing any required field raises AuditVerificationError."""
+    proof_path = tmp_path / "missing_fields_proof.json"
+    data = _valid_terminal_proof_data()
+    del data["pid"]
+    proof_path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="missing required fields"):
+        audit_terminal_process_proof(proof_path)
+
+    # Missing artifact_log_sha256
+    data2 = _valid_terminal_proof_data()
+    del data2["artifact_log_sha256"]
+    proof_path.write_text(json.dumps(data2), encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="missing required fields"):
+        audit_terminal_process_proof(proof_path)
+
+
+def test_terminal_proof_fails_on_running_status(tmp_path):
+    """Terminal proof with process_status='running' raises AuditVerificationError."""
+    proof_path = tmp_path / "running_proof.json"
+    data = _valid_terminal_proof_data(process_status="running")
+    proof_path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="process_status is still 'running'"):
+        audit_terminal_process_proof(proof_path)
+
+
+def test_terminal_proof_fails_on_run_and_task_id_mismatch(tmp_path):
+    """Terminal proof with mismatched run_id or task_id raises AuditVerificationError."""
+    proof_path = tmp_path / "mismatch_proof.json"
+    data = _valid_terminal_proof_data(run_id="wrong-run", task_id="wrong-task")
+    proof_path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(AuditVerificationError, match="run_id mismatch"):
+        audit_terminal_process_proof(proof_path, expected_run_id="live-66b94b1676bf46a9")
+
+    with pytest.raises(AuditVerificationError, match="task_id mismatch"):
+        audit_terminal_process_proof(proof_path, expected_task_id="task-1264")
+
+
+def test_positive_native_preloader_and_lifecycle(tmp_path):
+    """Real native preloader and _resume_state execute and validate successfully end-to-end."""
+    root, output, manifest = _create_real_producer_output(tmp_path)
+    inputs = audit_production_preloader_and_lifecycle(root, output, manifest)
+    assert len(inputs.records) == 10
+    registry_ids = set(inputs.registry.keys())
+    corpus_ids = set(inputs.corpus_ids)
+    assert len(registry_ids) > 0
+    assert len(corpus_ids) > 0
+
+    # Also verify completeness and cardinality with record binding check
+    records = audit_completeness_and_cardinality(
+        output,
+        {"s1", "s2"},
+        require_all_conditions=True,
+        registry_ids=registry_ids,
+        corpus_ids=corpus_ids,
+    )
+    assert len(records) == 10
+
+
+def test_preloader_and_lifecycle_fails_on_header_max_requests_drift(tmp_path):
+    """Journal header max_requests drift from manifest cap triggers AuditVerificationError."""
+    root, output, manifest = _create_real_producer_output(tmp_path)
+    jpath = output / "request_journal.jsonl"
+    lines = jpath.read_bytes().splitlines()
+    header = json.loads(lines[0])
+    header["max_requests"] = 6400  # Drift from 10
+    lines[0] = json.dumps(header).encode()
+    jpath.write_bytes(b"\n".join(lines) + b"\n")
+
+    with pytest.raises(AuditVerificationError, match="journal header does not match"):
+        audit_production_preloader_and_lifecycle(root, output, manifest)
+
+
+def test_preloader_and_lifecycle_fails_on_foreign_header(tmp_path):
+    """Foreign or corrupted journal header triggers AuditVerificationError."""
+    root, output, manifest = _create_real_producer_output(tmp_path)
+    jpath = output / "request_journal.jsonl"
+    lines = jpath.read_bytes().splitlines()
+    header = json.loads(lines[0])
+    header["manifest_sha256"] = "0" * 64  # Foreign manifest hash
+    lines[0] = json.dumps(header).encode()
+    jpath.write_bytes(b"\n".join(lines) + b"\n")
+
+    with pytest.raises(AuditVerificationError, match="journal header does not match"):
+        audit_production_preloader_and_lifecycle(root, output, manifest)
+
+
+def test_preloader_and_lifecycle_fails_on_candidate_not_in_corpus(tmp_path):
+    """Candidate technique ID outside corpus triggers AuditVerificationError."""
+    root, output, manifest = _create_real_producer_output(tmp_path)
+    pred_path = output / "rag_k1_predictions.jsonl"
+    rows = [json.loads(line) for line in pred_path.read_bytes().splitlines() if line.strip()]
+    rows[0]["retrieved_candidates"][0]["technique_id"] = "T9999"  # Not in corpus
+    pred_path.write_bytes(b"".join(json.dumps(r).encode() + b"\n" for r in rows))
+
+    with pytest.raises(AuditVerificationError, match="candidate not in corpus"):
+        audit_production_preloader_and_lifecycle(root, output, manifest)
+
+
+def test_preloader_and_lifecycle_fails_on_orphan_reservation(tmp_path):
+    """Orphan unclosed reservation in journal triggers AuditVerificationError."""
+    root, output, manifest = _create_real_producer_output(tmp_path)
+    jpath = output / "request_journal.jsonl"
+    orphan_event = json.dumps(
+        {"event": "monetary_reserve", "key": ["s1", "no_rag"], "amount_usd": "2.15898240"}
+    ).encode()
+    jpath.write_bytes(jpath.read_bytes() + orphan_event + b"\n")
+
+    with pytest.raises(AuditVerificationError, match="monetary reserve|lifecycle audit failed"):
+        audit_production_preloader_and_lifecycle(root, output, manifest)

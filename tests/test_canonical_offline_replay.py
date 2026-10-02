@@ -25,6 +25,11 @@ DEFAULT_BUNDLE_DIR = Path(
     )
 )
 CANONICAL_BUNDLE_SHA256 = "00cd9df247af395e924235b42108b91e1fdc7ca3e7a190499cb7544f6bc6612f"
+LOCAL_STAGED_BUNDLE_DIR = (
+    Path(__file__).resolve().parents[1]
+    / "artifacts/public_package_staging/canonical-bundle-public-v1"
+)
+EXPECTED_PUBLIC_MANIFEST_SHA256 = "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c"
 CANONICAL_WRAPPER_BLOCK_SHA256 = "e4a0115ff2d712bf6a0b896b50d9f4d412b786707d9721f47c74a4ac174e5f68"
 
 
@@ -552,3 +557,151 @@ class TestBuilderSafetyAndVerifierStrictness:
         ok, logs = verify_bundle_hashes(bundle_dir)
         assert ok is False, "Verifier must fail closed on missing provenance/runtime assets!"
         assert any("[FAIL] Invalid public provenance inventory" in line for line in logs)
+
+
+class TestPublicStagingManifestAuthenticationAndRQBinding:
+    """Verifies public release manifest authentication and secondary scope RQ binding."""
+
+    @pytest.mark.skipif(
+        not LOCAL_STAGED_BUNDLE_DIR.exists(),
+        reason="Local staged bundle not found",
+    )
+    def test_staged_public_manifest_matches_root_approved_sha(self):
+        """Positive test: staged public package manifest matches expected Root-approved SHA."""
+        from scripts.reproduce_canonical_study import (
+            EXPECTED_PUBLIC_MANIFEST_SHA256,
+            verify_bundle_hashes,
+        )
+
+        manifest_path = LOCAL_STAGED_BUNDLE_DIR / "canonical_bundle_manifest.json"
+        actual_sha = compute_sha256(manifest_path.read_bytes())
+        assert actual_sha == EXPECTED_PUBLIC_MANIFEST_SHA256
+
+        # verify_bundle_hashes succeeds with default expected sha
+        ok, logs = verify_bundle_hashes(LOCAL_STAGED_BUNDLE_DIR)
+        assert ok is True
+        assert any(f"sha256={EXPECTED_PUBLIC_MANIFEST_SHA256}" in line for line in logs)
+
+        # verify_bundle_hashes also succeeds when explicit matching
+        # expected_manifest_sha is provided
+        ok_exp, logs_exp = verify_bundle_hashes(
+            LOCAL_STAGED_BUNDLE_DIR, expected_manifest_sha=EXPECTED_PUBLIC_MANIFEST_SHA256
+        )
+        assert ok_exp is True
+
+    @pytest.mark.skipif(
+        not LOCAL_STAGED_BUNDLE_DIR.exists(),
+        reason="Local staged bundle not found",
+    )
+    def test_staged_public_manifest_fails_on_mismatched_expected_sha(self):
+        """Negative test: verifier MUST fail closed if --expected-manifest-sha does not match."""
+        from scripts.reproduce_canonical_study import verify_bundle_hashes
+
+        wrong_sha = "0" * 64
+        ok, logs = verify_bundle_hashes(LOCAL_STAGED_BUNDLE_DIR, expected_manifest_sha=wrong_sha)
+        assert ok is False
+        assert any("[MISMATCH] Public release manifest SHA-256" in line for line in logs)
+
+    @pytest.mark.skipif(
+        not LOCAL_STAGED_BUNDLE_DIR.exists(),
+        reason="Local staged bundle not found",
+    )
+    def test_rq_analysis_secondary_scope_binding_hash_verified(self):
+        """Positive test: outputs/rq_analysis.json has public secondary scope SHA-256 bound."""
+        from scripts.reproduce_canonical_study import (
+            APPROVED_PUBLIC_PROVENANCE_SPEC,
+        )
+
+        rq_path = LOCAL_STAGED_BUNDLE_DIR / "outputs/rq_analysis.json"
+        rq_obj = json.loads(rq_path.read_text(encoding="utf-8"))
+        actual_binding = rq_obj["analysis_run_parameters"]["secondary_scope_authorization_sha256"]
+        expected_pub_sha = APPROVED_PUBLIC_PROVENANCE_SPEC[
+            "provenance/s2_evaluation_execute_public.md"
+        ]
+        assert actual_binding == expected_pub_sha
+        assert actual_binding != "b988a599800bbbb01b0418e60bfd00fbbce3ab2c4d631da678f99bfd2141c4b5"
+
+    def test_verifier_fails_closed_on_tampered_rq_binding_hash(self, tmp_path):
+        """Negative test: verifier MUST fail closed if rq_analysis binding hash does not match."""
+        import shutil
+
+        from scripts.reproduce_canonical_study import (
+            EXPECTED_PUBLIC_MANIFEST_SHA256,
+            verify_bundle_hashes,
+        )
+
+        if not LOCAL_STAGED_BUNDLE_DIR.exists():
+            pytest.skip("Local staged bundle not found")
+
+        # Copy staged bundle to tmp_path
+        bundle_copy = tmp_path / "tampered_bundle"
+        shutil.copytree(LOCAL_STAGED_BUNDLE_DIR, bundle_copy)
+
+        # Tamper the secondary_scope_authorization_sha256 in outputs/rq_analysis.json
+        rq_path = bundle_copy / "outputs/rq_analysis.json"
+        rq_obj = json.loads(rq_path.read_text(encoding="utf-8"))
+        rq_obj["analysis_run_parameters"]["secondary_scope_authorization_sha256"] = "1" * 64
+        rq_path.write_text(json.dumps(rq_obj, indent=2), encoding="utf-8")
+
+        ok, logs = verify_bundle_hashes(
+            bundle_copy, expected_manifest_sha=EXPECTED_PUBLIC_MANIFEST_SHA256
+        )
+        assert ok is False
+        assert any("secondary_scope_authorization_sha256 binding" in line for line in logs)
+
+    def test_main_fails_closed_before_computation(self, monkeypatch):
+        """Negative test: main() MUST exit with code 1 immediately without running replay."""
+        import scripts.reproduce_canonical_study as rep
+
+        # Mock verify_protected_baseline to fail
+        monkeypatch.setattr(
+            rep,
+            "verify_protected_baseline",
+            lambda root: (False, ["[FAIL] Simulated baseline failure"]),
+        )
+
+        replay_called = []
+        monkeypatch.setattr(
+            rep,
+            "replay_saved_evaluation",
+            lambda *args, **kwargs: replay_called.append(True) or (True, []),
+        )
+
+        monkeypatch.setattr(sys, "argv", ["reproduce_canonical_study.py", "--all"])
+        exit_code = rep.main()
+
+        assert exit_code == 1, "main() must return exit code 1 on baseline failure"
+        assert len(replay_called) == 0, (
+            "replay_saved_evaluation must NOT be called after verification failure"
+        )
+
+    def test_main_fails_closed_on_hash_mismatch_before_computation(self, monkeypatch):
+        """Negative test: main() MUST exit 1 before computation if hash verification fails."""
+        import scripts.reproduce_canonical_study as rep
+
+        # Mock verify_protected_baseline to pass, but verify_bundle_hashes to fail
+        monkeypatch.setattr(
+            rep,
+            "verify_protected_baseline",
+            lambda root: (True, ["[PASS] Mocked baseline"]),
+        )
+        monkeypatch.setattr(
+            rep,
+            "verify_bundle_hashes",
+            lambda *args, **kwargs: (False, ["[FAIL] Mocked hash mismatch"]),
+        )
+
+        replay_called = []
+        monkeypatch.setattr(
+            rep,
+            "replay_saved_evaluation",
+            lambda *args, **kwargs: replay_called.append(True) or (True, []),
+        )
+
+        monkeypatch.setattr(sys, "argv", ["reproduce_canonical_study.py", "--all"])
+        exit_code = rep.main()
+
+        assert exit_code == 1, "main() must return exit code 1 on hash verification failure"
+        assert len(replay_called) == 0, (
+            "replay_saved_evaluation must NOT be called after hash failure"
+        )

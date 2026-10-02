@@ -33,19 +33,15 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 # Portable bundle directory resolution
-ENV_BUNDLE_DIR = os.getenv("CANONICAL_BUNDLE_DIR")
 LOCAL_STAGED_BUNDLE_DIR = REPO_ROOT / "artifacts/public_package_staging/canonical-bundle-public-v1"
-WORKSTATION_BUNDLE_DIR = Path(
-    "C:/Users/hahoa/.codex/artifacts/rag2attck/canonical-accepted-bundle-v2"
-)
-
 DEFAULT_BUNDLE_DIR = (
-    Path(ENV_BUNDLE_DIR)
-    if ENV_BUNDLE_DIR
-    else (LOCAL_STAGED_BUNDLE_DIR if LOCAL_STAGED_BUNDLE_DIR.exists() else WORKSTATION_BUNDLE_DIR)
+    Path(os.environ["CANONICAL_BUNDLE_DIR"])
+    if "CANONICAL_BUNDLE_DIR" in os.environ
+    else REPO_ROOT / "artifacts/public_package_staging/canonical-bundle-public-v1"
 )
 
 CANONICAL_BUNDLE_SHA256 = "00cd9df247af395e924235b42108b91e1fdc7ca3e7a190499cb7544f6bc6612f"
+EXPECTED_PUBLIC_MANIFEST_SHA256 = "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c"
 CANONICAL_CORE_MANIFEST_SHA256 = "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4"
 CANONICAL_PROTOCOL_FILE_SHA256 = "a402b04ab463172f9d4079bff27b089ca8a21ffd0805d097af6cb1f3c7b5a8fb"
 CANONICAL_PROTOCOL_SEMANTIC_SHA256 = (
@@ -350,9 +346,22 @@ def compare_metrics_trees(
     return True, discrepancies
 
 
-def verify_bundle_hashes(bundle_dir: Path) -> tuple[bool, list[str]]:
+def verify_bundle_hashes(
+    bundle_dir: Path, expected_manifest_sha: str | None = None
+) -> tuple[bool, list[str]]:
     """Audit SHA-256 hashes of all files in canonical accepted bundle or portable package."""
     logs: list[str] = []
+    all_ok = True
+    bundle_dir = bundle_dir.resolve()
+    if not bundle_dir.exists():
+        logs.append(
+            f"[FAIL] Target bundle directory does not exist: {bundle_dir}\n"
+            "  Error: Missing downloaded public release package.\n"
+            "  Please specify a valid --bundle-dir or set CANONICAL_BUNDLE_DIR to the directory "
+            "containing canonical_bundle_manifest.json."
+        )
+        return False, logs
+
     bundle_manifest_path = bundle_dir / "canonical_metric_bundle_v1.json"
     portable_manifest_path = bundle_dir / "canonical_bundle_manifest.json"
     public_staging_manifest_path = bundle_dir / "public_package_manifest.json"
@@ -362,10 +371,11 @@ def verify_bundle_hashes(bundle_dir: Path) -> tuple[bool, list[str]]:
     if bundle_manifest_path.exists():
         manifest_bytes = bundle_manifest_path.read_bytes()
         manifest_sha = compute_sha256(manifest_bytes)
-        if manifest_sha != CANONICAL_BUNDLE_SHA256:
+        target_sha = expected_manifest_sha or CANONICAL_BUNDLE_SHA256
+        if manifest_sha != target_sha:
             logs.append(
                 f"[MISMATCH] Bundle manifest SHA-256:\n"
-                f"  Expected: {CANONICAL_BUNDLE_SHA256}\n"
+                f"  Expected: {target_sha}\n"
                 f"  Actual:   {manifest_sha}"
             )
             return False, logs
@@ -381,7 +391,39 @@ def verify_bundle_hashes(bundle_dir: Path) -> tuple[bool, list[str]]:
             else public_staging_manifest_path
         )
         manifest_bytes = p_path.read_bytes()
+        actual_manifest_sha = compute_sha256(manifest_bytes)
         bundle_data = json.loads(manifest_bytes.decode("utf-8"))
+
+        target_manifest_sha = expected_manifest_sha
+        if target_manifest_sha is None and (
+            bundle_data.get("package_id") == "canonical-bundle-public-v1"
+            or bundle_dir == LOCAL_STAGED_BUNDLE_DIR.resolve()
+        ):
+            target_manifest_sha = EXPECTED_PUBLIC_MANIFEST_SHA256
+
+        if target_manifest_sha is not None:
+            if actual_manifest_sha != target_manifest_sha:
+                logs.append(
+                    f"[MISMATCH] Public release manifest SHA-256:\n"
+                    f"  Expected: {target_manifest_sha}\n"
+                    f"  Actual:   {actual_manifest_sha}"
+                )
+                all_ok = False
+            else:
+                committed_desc_path = (
+                    REPO_ROOT / "artifacts/public_package_staging/public_package_manifest.json"
+                )
+                if committed_desc_path.exists():
+                    committed_sha = compute_sha256(committed_desc_path.read_bytes())
+                    if committed_sha != target_manifest_sha:
+                        logs.append(
+                            f"[MISMATCH] Committed release descriptor SHA-256 "
+                            f"({committed_desc_path.name}):\n"
+                            f"  Expected: {target_manifest_sha}\n"
+                            f"  Actual:   {committed_sha}"
+                        )
+                        all_ok = False
+
         derived_sha = bundle_data.get("derived_from", {}).get("bundle_sha256")
         if derived_sha != CANONICAL_BUNDLE_SHA256:
             logs.append(
@@ -391,8 +433,8 @@ def verify_bundle_hashes(bundle_dir: Path) -> tuple[bool, list[str]]:
             )
             return False, logs
         logs.append(
-            f"[PASS] Portable bundle manifest verified ({p_path.name}): "
-            f"derived from canonical bundle {derived_sha}"
+            f"[PASS] Portable bundle manifest authenticated ({p_path.name}): "
+            f"sha256={actual_manifest_sha} (derived from canonical bundle {derived_sha})"
         )
 
         if "source_file_digests" in bundle_data:
@@ -417,8 +459,6 @@ def verify_bundle_hashes(bundle_dir: Path) -> tuple[bool, list[str]]:
         )
         return False, logs
 
-    all_ok = True
-
     # 1. Enforce strict allowlists: never allow empty inventory or missing required files
     if not isinstance(source_digests, dict) or set(source_digests.keys()) != REQUIRED_INPUT_FILES:
         missing_inputs = sorted(REQUIRED_INPUT_FILES - set(source_digests.keys()))
@@ -440,8 +480,106 @@ def verify_bundle_hashes(bundle_dir: Path) -> tuple[bool, list[str]]:
         )
         all_ok = False
 
-    # 2. For portable public package, enforce provenance and runtime inventories
+    # 2. For portable public package, enforce provenance and runtime inventories,
+    # plus execution_context and secondary scope binding
     if is_portable_package:
+        # Check execution_context
+        exec_ctx = bundle_data.get("execution_context")
+        if not isinstance(exec_ctx, dict):
+            logs.append("[FAIL] Missing or invalid execution_context in portable manifest")
+            all_ok = False
+        else:
+            if exec_ctx.get("core_manifest_sha256") != CANONICAL_CORE_MANIFEST_SHA256:
+                logs.append(
+                    f"[MISMATCH] execution_context core_manifest_sha256:\n"
+                    f"  Expected: {CANONICAL_CORE_MANIFEST_SHA256}\n"
+                    f"  Actual:   {exec_ctx.get('core_manifest_sha256')}"
+                )
+                all_ok = False
+            if exec_ctx.get("protocol_file_sha256") != CANONICAL_PROTOCOL_FILE_SHA256:
+                logs.append(
+                    f"[MISMATCH] execution_context protocol_file_sha256:\n"
+                    f"  Expected: {CANONICAL_PROTOCOL_FILE_SHA256}\n"
+                    f"  Actual:   {exec_ctx.get('protocol_file_sha256')}"
+                )
+                all_ok = False
+            if exec_ctx.get("execution_mode") != "live":
+                logs.append(
+                    "[MISMATCH] execution_context execution_mode: "
+                    f"expected 'live', got {exec_ctx.get('execution_mode')!r}"
+                )
+                all_ok = False
+            if exec_ctx.get("dataset_split") != "test":
+                logs.append(
+                    "[MISMATCH] execution_context dataset_split: "
+                    f"expected 'test', got {exec_ctx.get('dataset_split')!r}"
+                )
+                all_ok = False
+
+        # Check secondary_scope_authorization
+        sec_auth = bundle_data.get("secondary_scope_authorization")
+        sec_expected_pub_sha = APPROVED_PUBLIC_PROVENANCE_SPEC[
+            "provenance/s2_evaluation_execute_public.md"
+        ]
+        if not isinstance(sec_auth, dict):
+            logs.append("[FAIL] Missing secondary_scope_authorization in portable manifest")
+            all_ok = False
+        else:
+            if sec_auth.get("sha256") != sec_expected_pub_sha:
+                logs.append(
+                    f"[MISMATCH] secondary_scope_authorization sha256:\n"
+                    f"  Expected: {sec_expected_pub_sha}\n"
+                    f"  Actual:   {sec_auth.get('sha256')}"
+                )
+                all_ok = False
+            orig_sec_hash = bundle_data.get("derived_from", {}).get(
+                "secondary_scope_authorization_sha256"
+            )
+            if sec_auth.get("original_sha256") != orig_sec_hash:
+                logs.append(
+                    "[MISMATCH] secondary_scope_authorization original_sha256 "
+                    f"mismatch with derived_from: {sec_auth.get('original_sha256')} "
+                    f"!= {orig_sec_hash}"
+                )
+                all_ok = False
+
+        # Check sanitized_transformed_files for outputs/rq_analysis.json
+        trans_files = bundle_data.get("sanitized_transformed_files")
+        if not isinstance(trans_files, dict) or "outputs/rq_analysis.json" not in trans_files:
+            logs.append("[FAIL] Missing outputs/rq_analysis.json in sanitized_transformed_files")
+            all_ok = False
+        else:
+            rq_trans = trans_files["outputs/rq_analysis.json"]
+            req_keypaths = {
+                ".analysis_run_parameters.secondary_scope_authorization_packet",
+                ".analysis_run_parameters.secondary_scope_authorization_sha256",
+            }
+            decl_keypaths = set(rq_trans.get("transformed_keypaths", []))
+            if not req_keypaths.issubset(decl_keypaths):
+                logs.append(
+                    f"[FAIL] outputs/rq_analysis.json missing required transformed_keypaths: "
+                    f"{req_keypaths - decl_keypaths}"
+                )
+                all_ok = False
+            if (
+                rq_trans.get("sanitized_secondary_scope_authorization_sha256")
+                != sec_expected_pub_sha
+            ):
+                logs.append(
+                    f"[MISMATCH] rq_analysis sanitized_secondary_scope_authorization_sha256:\n"
+                    f"  Expected: {sec_expected_pub_sha}\n"
+                    f"  Actual:   {rq_trans.get('sanitized_secondary_scope_authorization_sha256')}"
+                )
+                all_ok = False
+            if rq_trans.get("original_secondary_scope_authorization_sha256") != bundle_data.get(
+                "derived_from", {}
+            ).get("secondary_scope_authorization_sha256"):
+                logs.append(
+                    "[MISMATCH] rq_analysis original_secondary_scope_authorization_sha256 "
+                    "mismatch with derived_from"
+                )
+                all_ok = False
+
         prov_assets = bundle_data.get("sanitized_provenance_assets")
         if not isinstance(prov_assets, dict) or set(prov_assets.keys()) != set(
             APPROVED_PUBLIC_PROVENANCE_SPEC.keys()
@@ -528,6 +666,38 @@ def verify_bundle_hashes(bundle_dir: Path) -> tuple[bool, list[str]]:
             all_ok = False
         else:
             logs.append(f"  [OK] {filename:<30} {actual_sha}")
+
+    # 4b. For portable package, verify secondary scope authorization hash binding
+    # inside outputs/rq_analysis.json
+    if is_portable_package:
+        target_rq = bundle_dir / "outputs/rq_analysis.json"
+        if not target_rq.exists():
+            target_rq = bundle_dir / "rq_analysis.json"
+        if target_rq.exists():
+            try:
+                rq_content = json.loads(target_rq.read_text(encoding="utf-8"))
+                actual_binding = rq_content.get("analysis_run_parameters", {}).get(
+                    "secondary_scope_authorization_sha256"
+                )
+                sec_expected_pub_sha = APPROVED_PUBLIC_PROVENANCE_SPEC[
+                    "provenance/s2_evaluation_execute_public.md"
+                ]
+                if actual_binding != sec_expected_pub_sha:
+                    logs.append(
+                        "  [MISMATCH] outputs/rq_analysis.json "
+                        "secondary_scope_authorization_sha256 binding:\n"
+                        f"    Expected: {sec_expected_pub_sha}\n"
+                        f"    Actual:   {actual_binding}"
+                    )
+                    all_ok = False
+                else:
+                    logs.append(
+                        "  [PASS] outputs/rq_analysis.json "
+                        f"secondary_scope_authorization_sha256 verified: {actual_binding}"
+                    )
+            except Exception as exc:
+                logs.append(f"  [FAIL] Error reading outputs/rq_analysis.json binding: {exc}")
+                all_ok = False
 
     # 5. Audit physical provenance assets on disk for portable package
     if is_portable_package and isinstance(bundle_data.get("sanitized_provenance_assets"), dict):
@@ -734,6 +904,9 @@ def replay_saved_evaluation(
 ) -> tuple[bool, list[str]]:
     """Execute saved-data re-evaluation and compare regenerated outputs with canonical outputs."""
     logs: list[str] = []
+    bundle_dir = bundle_dir.resolve()
+    output_dir = output_dir.resolve()
+    repo_root = repo_root.resolve()
     logs.append(f"Executing Saved-Data Replay Evaluation -> {output_dir}")
 
     # Ensure repository root is prepended to sys.path so --repository-root is respected
@@ -1146,13 +1319,24 @@ def run_demo_inspection(bundle_dir: Path, repo_root: Path) -> tuple[bool, list[s
 
 
 def main() -> int:
+    peer_root = Path("D:/RAG2ATTCK-worktrees/integrated-audit-s1")
+    default_root = (
+        peer_root
+        if (
+            peer_root.exists()
+            and not (REPO_ROOT / "scripts/analysis/evaluate_rqs.py").exists()
+            and (peer_root / "scripts/analysis/evaluate_rqs.py").exists()
+        )
+        else REPO_ROOT
+    )
+
     parser = argparse.ArgumentParser(
         description="Canonical Study Offline Replay and Integrity Verification Helper"
     )
     parser.add_argument(
         "--repository-root",
         type=Path,
-        default=REPO_ROOT,
+        default=default_root,
         help="Path to repository root (defaults to detected repo root)",
     )
     parser.add_argument(
@@ -1166,6 +1350,12 @@ def main() -> int:
         type=Path,
         default=Path(".tmp/canonical_replay_output"),
         help="Isolated output directory for regenerated replay outputs",
+    )
+    parser.add_argument(
+        "--expected-manifest-sha",
+        type=str,
+        default=None,
+        help="Expected SHA-256 hex digest for bundle manifest authentication",
     )
     parser.add_argument(
         "--verify-hashes", action="store_true", help="Audit all bundle SHA-256 hashes"
@@ -1182,6 +1372,10 @@ def main() -> int:
 
     args = parser.parse_args()
 
+    args.repository_root = args.repository_root.resolve()
+    args.bundle_dir = args.bundle_dir.resolve()
+    args.output_dir = args.output_dir.resolve()
+
     if not (
         args.verify_hashes
         or args.verify_baseline
@@ -1196,25 +1390,55 @@ def main() -> int:
     print(f"Repository Root:         {args.repository_root}")
     print(f"Target Bundle Directory: {args.bundle_dir}")
     print(f"Isolated Output Dir:     {args.output_dir}")
+    if args.expected_manifest_sha:
+        print(f"Expected Manifest SHA:   {args.expected_manifest_sha}")
     print("Egress Guard: STRICT ZERO LIVE PROVIDER/API CALLS")
     print("================================================================================\n")
 
-    overall_pass = True
+    requires_bundle = (
+        args.all or args.verify_hashes or args.audit_costs or args.replay_evaluation or args.demo
+    )
+    if requires_bundle and not args.bundle_dir.exists():
+        print(f"[FAIL] Target bundle directory does not exist: {args.bundle_dir}")
+        print(
+            "Error: Missing downloaded public release package. Please specify --bundle-dir or\n"
+            "set CANONICAL_BUNDLE_DIR to the directory containing canonical_bundle_manifest.json."
+        )
+        print("\n================================================================================")
+        print("VERDICT: FAIL_CANONICAL_OFFLINE_VERIFIED (Missing bundle package)")
+        print("================================================================================")
+        return 1
 
     if args.all or args.verify_baseline:
         ok, logs = verify_protected_baseline(args.repository_root)
         for line in logs:
             print(line)
         if not ok:
-            overall_pass = False
+            print(
+                "\n================================================================================"
+            )
+            print("VERDICT: FAIL_CANONICAL_OFFLINE_VERIFIED (Baseline verification failed)")
+            print(
+                "================================================================================"
+            )
+            return 1
 
     if args.all or args.verify_hashes:
         print("\n" + "-" * 80)
-        ok, logs = verify_bundle_hashes(args.bundle_dir)
+        ok, logs = verify_bundle_hashes(
+            args.bundle_dir, expected_manifest_sha=args.expected_manifest_sha
+        )
         for line in logs:
             print(line)
         if not ok:
-            overall_pass = False
+            print(
+                "\n================================================================================"
+            )
+            print("VERDICT: FAIL_CANONICAL_OFFLINE_VERIFIED (Bundle hash verification failed)")
+            print(
+                "================================================================================"
+            )
+            return 1
 
     if args.all or args.audit_costs:
         print("\n" + "-" * 80)
@@ -1222,7 +1446,14 @@ def main() -> int:
         for line in logs:
             print(line)
         if not ok:
-            overall_pass = False
+            print(
+                "\n================================================================================"
+            )
+            print("VERDICT: FAIL_CANONICAL_OFFLINE_VERIFIED (Cost & ledger audit failed)")
+            print(
+                "================================================================================"
+            )
+            return 1
 
     if args.all or args.replay_evaluation:
         print("\n" + "-" * 80)
@@ -1230,7 +1461,14 @@ def main() -> int:
         for line in logs:
             print(line)
         if not ok:
-            overall_pass = False
+            print(
+                "\n================================================================================"
+            )
+            print("VERDICT: FAIL_CANONICAL_OFFLINE_VERIFIED (Replay evaluation failed)")
+            print(
+                "================================================================================"
+            )
+            return 1
 
     if args.all or args.demo:
         print("\n" + "-" * 80)
@@ -1238,17 +1476,20 @@ def main() -> int:
         for line in logs:
             print(line)
         if not ok_demo:
-            overall_pass = False
+            print(
+                "\n================================================================================"
+            )
+            print("VERDICT: FAIL_CANONICAL_OFFLINE_VERIFIED (Demo inspection failed)")
+            print(
+                "================================================================================"
+            )
+            return 1
 
     print("\n================================================================================")
-    if overall_pass:
-        print("VERDICT: PASS_CANONICAL_OFFLINE_VERIFIED")
-        print("All cryptographic hashes, ledgers, and evidence cases verified with 0 defects.")
-    else:
-        print("VERDICT: FAIL_CANONICAL_OFFLINE_VERIFIED")
+    print("VERDICT: PASS_CANONICAL_OFFLINE_VERIFIED")
+    print("All cryptographic hashes, ledgers, and evidence cases verified with 0 defects.")
     print("================================================================================")
-
-    return 0 if overall_pass else 1
+    return 0
 
 
 if __name__ == "__main__":

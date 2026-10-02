@@ -218,72 +218,7 @@ def build_staged_package(
                 f"  [PRESERVED INPUT]    {fname:<25} {len(raw_bytes):>8} bytes  {actual_orig_sha}"
             )
 
-    # 5. Stage 8 Canonical Outputs (cleanly under outputs/ ONLY)
-    print("\nStaging 8 Canonical Analytical Outputs:")
-    for fname, expected_orig_sha in CANONICAL_OUTPUT_SPEC.items():
-        src_path = source_bundle_dir / "outputs" / fname
-        if not src_path.exists():
-            src_path = source_bundle_dir / fname
-        if not src_path.exists():
-            raise FileNotFoundError(f"Missing canonical output file: {fname}")
-
-        raw_bytes = src_path.read_bytes()
-        actual_orig_sha = compute_sha256(raw_bytes)
-        if actual_orig_sha != expected_orig_sha:
-            raise ValueError(
-                f"Source output {fname} SHA mismatch: "
-                f"expected {expected_orig_sha}, got {actual_orig_sha}"
-            )
-
-        dst_path = outputs_staging / fname
-        if fname == "rq_analysis.json":
-            # Semantic transformation of private secondary scope packet path
-            rq_obj = json.loads(raw_bytes.decode("utf-8"))
-            if "analysis_run_parameters" in rq_obj:
-                rq_obj["analysis_run_parameters"]["secondary_scope_authorization_packet"] = (
-                    "provenance/s2_evaluation_execute_public.md"
-                )
-
-            sanitized_bytes = json.dumps(rq_obj, indent=2, sort_keys=True).encode("utf-8") + b"\n"
-            dst_path.write_bytes(sanitized_bytes)
-            sanitized_sha = compute_sha256(sanitized_bytes)
-
-            transformed_registry["outputs/rq_analysis.json"] = {
-                "size_bytes": len(sanitized_bytes),
-                "original_sha256": expected_orig_sha,
-                "sanitized_sha256": sanitized_sha,
-                "transformed_keypaths": [
-                    ".analysis_run_parameters.secondary_scope_authorization_packet"
-                ],
-                "transform_map": {
-                    ".analysis_run_parameters.secondary_scope_authorization_packet": (
-                        "Neutralized private workstation path to "
-                        "relative provenance/s2_evaluation_execute_public.md"
-                    )
-                },
-                "numerical_invariance": (
-                    "Strictly invariant: all delta-F1 values, McNemar p-values, "
-                    "bootstrap confidence intervals, recall rates, token counts, and "
-                    "financial amounts remain 100% mathematically identical."
-                ),
-            }
-            print(
-                f"  [TRANSFORMED OUTPUT] {fname:<25} {len(sanitized_bytes):>8} bytes  "
-                f"new={sanitized_sha[:12]}... (orig={expected_orig_sha[:12]}...)"
-            )
-        else:
-            # Pure byte preservation
-            dst_path.write_bytes(raw_bytes)
-            byte_preserved_registry[f"outputs/{fname}"] = {
-                "size_bytes": len(raw_bytes),
-                "sha256": actual_orig_sha,
-                "classification": "byte_exact_preserved",
-            }
-            print(
-                f"  [PRESERVED OUTPUT]   {fname:<25} {len(raw_bytes):>8} bytes  {actual_orig_sha}"
-            )
-
-    # 6. Stage and Sanitize 4 Provenance Assets
+    # 5. Stage and Sanitize 4 Provenance Assets
     print("\nStaging & Sanitizing 4 Provenance Assets:")
     # Asset A: s2_evaluation_execute_public.md
     sec_src = orchestration_dir / "s2_evaluation_execute_20261002.md"
@@ -432,6 +367,85 @@ def build_staged_package(
         f"  [SANITIZED PROV]     terminal_original_bytes_inventory_public.json "
         f"{len(inv_dst_bytes):>8} bytes  {inv_pub_sha}"
     )
+
+    # 6. Stage 8 Canonical Outputs (cleanly under outputs/ ONLY)
+    print("\nStaging 8 Canonical Analytical Outputs:")
+    for fname, expected_orig_sha in CANONICAL_OUTPUT_SPEC.items():
+        src_path = source_bundle_dir / "outputs" / fname
+        if not src_path.exists():
+            src_path = source_bundle_dir / fname
+        if not src_path.exists():
+            raise FileNotFoundError(f"Missing canonical output file: {fname}")
+
+        raw_bytes = src_path.read_bytes()
+        actual_orig_sha = compute_sha256(raw_bytes)
+        if actual_orig_sha != expected_orig_sha:
+            raise ValueError(
+                f"Source output {fname} SHA mismatch: "
+                f"expected {expected_orig_sha}, got {actual_orig_sha}"
+            )
+
+        dst_path = outputs_staging / fname
+        if fname == "rq_analysis.json":
+            # Semantic transformation of private secondary scope packet path and hash binding
+            rq_obj = json.loads(raw_bytes.decode("utf-8"))
+            orig_sec_hash = None
+            if "analysis_run_parameters" in rq_obj:
+                orig_sec_hash = rq_obj["analysis_run_parameters"].get(
+                    "secondary_scope_authorization_sha256"
+                )
+                rq_obj["analysis_run_parameters"]["secondary_scope_authorization_packet"] = (
+                    "provenance/s2_evaluation_execute_public.md"
+                )
+                rq_obj["analysis_run_parameters"]["secondary_scope_authorization_sha256"] = (
+                    sec_pub_sha
+                )
+
+            sanitized_bytes = json.dumps(rq_obj, indent=2, sort_keys=True).encode("utf-8") + b"\n"
+            dst_path.write_bytes(sanitized_bytes)
+            sanitized_sha = compute_sha256(sanitized_bytes)
+
+            transformed_registry["outputs/rq_analysis.json"] = {
+                "size_bytes": len(sanitized_bytes),
+                "original_sha256": expected_orig_sha,
+                "sanitized_sha256": sanitized_sha,
+                "transformed_keypaths": [
+                    ".analysis_run_parameters.secondary_scope_authorization_packet",
+                    ".analysis_run_parameters.secondary_scope_authorization_sha256",
+                ],
+                "transform_map": {
+                    ".analysis_run_parameters.secondary_scope_authorization_packet": (
+                        "Neutralized private workstation path to "
+                        "relative provenance/s2_evaluation_execute_public.md"
+                    ),
+                    ".analysis_run_parameters.secondary_scope_authorization_sha256": (
+                        "Updated binding digest from original private packet hash "
+                        f"({orig_sec_hash}) to sanitized public packet hash ({sec_pub_sha})"
+                    ),
+                },
+                "original_secondary_scope_authorization_sha256": orig_sec_hash,
+                "sanitized_secondary_scope_authorization_sha256": sec_pub_sha,
+                "numerical_invariance": (
+                    "Strictly invariant: all delta-F1 values, McNemar p-values, "
+                    "bootstrap confidence intervals, recall rates, token counts, and "
+                    "financial amounts remain 100% mathematically identical."
+                ),
+            }
+            print(
+                f"  [TRANSFORMED OUTPUT] {fname:<25} {len(sanitized_bytes):>8} bytes  "
+                f"new={sanitized_sha[:12]}... (orig={expected_orig_sha[:12]}...)"
+            )
+        else:
+            # Pure byte preservation
+            dst_path.write_bytes(raw_bytes)
+            byte_preserved_registry[f"outputs/{fname}"] = {
+                "size_bytes": len(raw_bytes),
+                "sha256": actual_orig_sha,
+                "classification": "byte_exact_preserved",
+            }
+            print(
+                f"  [PRESERVED OUTPUT]   {fname:<25} {len(raw_bytes):>8} bytes  {actual_orig_sha}"
+            )
 
     # 7. Stage Portable Runtime Recovery Wrapper Asset
     print("\nStaging Portable Runtime Recovery Wrapper Asset:")

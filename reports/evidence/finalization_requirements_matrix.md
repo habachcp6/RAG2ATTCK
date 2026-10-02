@@ -1,15 +1,15 @@
 # RAG2ATTCK: Comprehensive Requirements Traceability Matrix v2
 
-**Generated:** `2026-10-02T17:56:42.025998+00:00`  
+**Generated:** `2026-10-02T18:08:47.701611+00:00`  
 **Candidate Base SHA:** `5754f45f4c46794bf1025bf4ee11644eb9289eb6`  
-**Total Tracked Requirements & Gates:** `166`  
+**Total Tracked Requirements & Gates:** `170`  
 
 ## 1. Candidate Status Summary
 
 > [!IMPORTANT]
 > In strict accordance with Codex audit directives, unexecuted candidate gates and deliverables are classified as **`NOT VERIFIED`** or **`PARTIAL`**. Only governing policies are marked as **`POLICY_ENFORCED`**. The terminal validator probe defect discovered by Codex is explicitly classified as **`FAIL`** pending Track A repair.
 
-- **`POLICY_ENFORCED` (Governing Rules & Architectural Contracts):** 19
+- **`POLICY_ENFORCED` (Governing Rules & Architectural Contracts):** 23
 - **`PARTIAL` (Historical Verification Exists; Candidate Execution Pending):** 66
 - **`NOT VERIFIED` (Deliverables / Gates to be Executed in Subsequent Phases):** 80
 - **`FAIL` (Defect Detected by Codex Independent Probe):** 1
@@ -105,6 +105,10 @@
 | `L.SEC-29` | L | Lines 672 | Report Section 29: References | `REPORT_SECTION` | `git_tracked` | `PARTIAL` | `PARTIAL` | Track |
 | `L.SEC-30` | L | Lines 673 | Report Section 30: Appendix / artifact hashes | `REPORT_SECTION` | `git_tracked` | `PARTIAL` | `PARTIAL` | Track |
 | `L.DOCX_DELIVERY` | L | Lines 631-637 | Dual Delivery of Markdown and Pristine DOCX | `DELIVERABLE` | `local_pending` | `VERIFIED` | `PARTIAL` | Track |
+| `M.01-SYNTHETIC_VS_LIVE` | M | Lines 690-695 | Distinguish Synthetic Inputs vs Real Provider Outputs | `POLICY` | `git_tracked` | `VERIFIED` | `POLICY_ENFORCED` | Track |
+| `M.02-DENOMINATOR_DISCIPLINE` | M | Lines 696-704 | Explicit Denominator & Universe Reporting | `POLICY` | `git_tracked` | `VERIFIED` | `POLICY_ENFORCED` | Track |
+| `M.03-NON_CAUSAL_DISCIPLINE` | M | Line 685 | Non-Causal Associational Claims Rule | `POLICY` | `git_tracked` | `VERIFIED` | `POLICY_ENFORCED` | Track |
+| `M.04-NON_PRODUCTION_DISCIPLINE` | M | Lines 679-688 | No Enterprise SOC / Production Telemetry Generalization Claims | `POLICY` | `git_tracked` | `VERIFIED` | `POLICY_ENFORCED` | Track |
 | `N.01-PRIMARY_LITERATURE` | N | Lines 709-725 | Primary Literature Verification (Yang & Hsu, H-TechniqueRAG, ATT&CK v19.2) | `LITERATURE_INTEGRITY` | `git_tracked` | `PARTIAL` | `NOT VERIFIED` | Track |
 | `O.FIG-01` | O | Lines 732-734 | Figure 1: Experimental Architecture | `PUBLICATION_FIGURE` | `local_pending` | `PARTIAL` | `NOT VERIFIED` | Track |
 | `O.FIG-02` | O | Lines 735-737 | Figure 2: Accuracy across k | `PUBLICATION_FIGURE` | `local_pending` | `PARTIAL` | `NOT VERIFIED` | Track |
@@ -1237,6 +1241,62 @@
 - **Evidence Hash:** `431c4b05fca249526df443dba347bac96a9f17df42f83b8b33f33b39f49d3d16`
 - **Description:** Deliver final docs/report/scientific_report.md and docs/report/scientific_report.docx without scaffold wording.
 - **Closure Step:** Export matching DOCX.
+
+### `M.01-SYNTHETIC_VS_LIVE`: Distinguish Synthetic Inputs vs Real Provider Outputs
+
+- **Section & Mapping:** M. REPORT QUALITY RULES (Lines 690-695)
+- **Item Type:** `POLICY`
+- **Owner:** Track C (Scientific Report)
+- **Candidate Status:** `POLICY_ENFORCED`
+- **Historical Status:** `VERIFIED` (Demarcated in report Section 8 (Dataset) and Section 15 (Provider Config).)
+- **Evidence Storage:** `git_tracked`
+- **Evidence Path:** `docs/report/scientific_report.md`
+- **Evidence Commit SHA:** `5754f45f4c46794bf1025bf4ee11644eb9289eb6`
+- **Evidence Hash:** `0ceb0e5d1656f4d2c88f11379ecb001a182b8a0ff1bb4025d576a8fa3d20476e`
+- **Description:** Explicitly distinguish synthetic benchmark endpoint inputs from real provider LLM outputs throughout all report text and metadata.
+- **Closure Step:** Enforce wording compliance in final report audit.
+
+### `M.02-DENOMINATOR_DISCIPLINE`: Explicit Denominator & Universe Reporting
+
+- **Section & Mapping:** M. REPORT QUALITY RULES (Lines 696-704)
+- **Item Type:** `POLICY`
+- **Owner:** Track C (Scientific Report)
+- **Candidate Status:** `POLICY_ENFORCED`
+- **Historical Status:** `VERIFIED` (Explicitly defined in report Section 8 and Section 17.)
+- **Evidence Storage:** `git_tracked`
+- **Evidence Path:** `docs/report/scientific_report.md`
+- **Evidence Commit SHA:** `5754f45f4c46794bf1025bf4ee11644eb9289eb6`
+- **Evidence Hash:** `0ceb0e5d1656f4d2c88f11379ecb001a182b8a0ff1bb4025d576a8fa3d20476e`
+- **Description:** Must explicitly report: synthetic benchmark universe (474 frozen techniques), ATT&CK v19.2 version, breakdown of mapped (718), unmapped (251), and ambiguous (311) views, and scorable headline denominator (718).
+- **Closure Step:** Verify across all 6 tables and 8 figures.
+
+### `M.03-NON_CAUSAL_DISCIPLINE`: Non-Causal Associational Claims Rule
+
+- **Section & Mapping:** M. REPORT QUALITY RULES (Line 685)
+- **Item Type:** `POLICY`
+- **Owner:** Track C (Scientific Report)
+- **Candidate Status:** `POLICY_ENFORCED`
+- **Historical Status:** `VERIFIED` (Section 19 (RQ2) audited for non-causal phrasing.)
+- **Evidence Storage:** `git_tracked`
+- **Evidence Path:** `docs/report/scientific_report.md`
+- **Evidence Commit SHA:** `5754f45f4c46794bf1025bf4ee11644eb9289eb6`
+- **Evidence Hash:** `0ceb0e5d1656f4d2c88f11379ecb001a182b8a0ff1bb4025d576a8fa3d20476e`
+- **Description:** Never claim causal retrieval effects when conducting conditional analyses; use associational language only ('associated with', 'observed conditional accuracy').
+- **Closure Step:** Text scan for forbidden causal phrasing.
+
+### `M.04-NON_PRODUCTION_DISCIPLINE`: No Enterprise SOC / Production Telemetry Generalization Claims
+
+- **Section & Mapping:** M. REPORT QUALITY RULES (Lines 679-688)
+- **Item Type:** `POLICY`
+- **Owner:** Track C (Scientific Report)
+- **Candidate Status:** `POLICY_ENFORCED`
+- **Historical Status:** `VERIFIED` (Codified in Section 26 (Limitations) and Section 25 (Threats to Validity).)
+- **Evidence Storage:** `git_tracked`
+- **Evidence Path:** `docs/report/scientific_report.md`
+- **Evidence Commit SHA:** `5754f45f4c46794bf1025bf4ee11644eb9289eb6`
+- **Evidence Hash:** `0ceb0e5d1656f4d2c88f11379ecb001a182b8a0ff1bb4025d576a8fa3d20476e`
+- **Description:** Strictly prohibit claims of production efficacy, enterprise SOC performance, or real-world generalization; do not refer to synthetic logs as real Windows APT telemetry; do not use 'proves'; no cherry-picking.
+- **Closure Step:** Text scan for hype words ('proves', 'enterprise SOC', 'production').
 
 ### `N.01-PRIMARY_LITERATURE`: Primary Literature Verification (Yang & Hsu, H-TechniqueRAG, ATT&CK v19.2)
 

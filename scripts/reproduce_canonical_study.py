@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 from decimal import Decimal
 from pathlib import Path
@@ -37,7 +38,12 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-DEFAULT_BUNDLE_DIR = Path("C:/Users/hahoa/.codex/artifacts/rag2attck/canonical-accepted-bundle-v2")
+DEFAULT_BUNDLE_DIR = Path(
+    os.getenv(
+        "CANONICAL_BUNDLE_DIR",
+        "C:/Users/hahoa/.codex/artifacts/rag2attck/canonical-accepted-bundle-v2",
+    )
+)
 
 CANONICAL_BUNDLE_SHA256 = "00cd9df247af395e924235b42108b91e1fdc7ca3e7a190499cb7544f6bc6612f"
 CANONICAL_CORE_MANIFEST_SHA256 = "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4"

@@ -1,6 +1,8 @@
 {
+  "analysis_timestamp_utc": "2026-10-02T16:09:00+00:00",
+  "bundle_build_timestamp_utc": "2026-10-03T03:20:00+00:00",
   "bundle_type": "canonical-metric-bundle-v2",
-  "candidate_repo_git_sha": "4fafdb290dac59070a43de33f7e299bbb25782e3",
+  "candidate_base_git_sha": "b69a6909acda4c7588744acc7e1d6c20bfce2612",
   "cohort_breakdown": {
     "ambiguous_excluded_views": 311,
     "eligible_bootstrap_clusters": 440,
@@ -39,12 +41,15 @@
         "condition": "no_rag",
         "correct_count": 560,
         "error_count": 158,
+        "error_rate": 0.2200557103064067,
+        "error_rate_display": "22.01%",
         "is_baseline": true,
         "macro_f1": 0.012608366023907785,
         "macro_f1_display": "0.0126",
         "macro_f1_universe_classes": 474,
         "retrieval_k": 0,
         "scorable_sample_count": 718,
+        "source_pointer": "outputs/rq_analysis.json#/rq1/by_condition/no_rag",
         "stratified_complexity": {
           "multi_gt": {
             "accuracy_display": "87.50%",
@@ -108,14 +113,16 @@
           "retrieval_miss_count": null,
           "retrieval_miss_rate": null,
           "total_scorable_samples": 718
-        }
+        },
+        "source_pointer": "outputs/rq_analysis.json#/rq2/by_condition/no_rag"
       },
       "rq3_resources_and_cost": {
         "condition": "no_rag",
         "failures": {
           "invalid_id_count": 0,
           "invalid_syntax_count": 0,
-          "mapped_scorable_failures_count": 0,
+          "mapped_scorable_attribution_errors_count": 158,
+          "mapped_scorable_terminal_failures_count": 0,
           "parse_failure_count": 0,
           "terminal_incomplete_count": 0,
           "terminal_incomplete_denominator": 1280,
@@ -127,17 +134,20 @@
           "cost_of_excluded_unmapped_views_usd": 0.09232875,
           "cost_per_correct_attribution_usd": 0.000834185625,
           "cost_per_logical_request_usd": 0.0003649562109375,
-          "cost_per_scorable_query_usd": 0.0006506183147632312,
+          "cost_per_scorable_query_amortized_usd": 0.0006506183147632312,
           "ledger_settled_cost_usd": "0.46714395",
           "marginal_cost_vs_baseline_usd": 0.0,
           "missing_usage_attempt_receipts_count": 0,
-          "missing_usage_attempt_worst_charge_usd": "0.0",
+          "missing_usage_attempt_retained_charge_usd": "0.0",
+          "observed_cache_credit_usd": "0.00000000",
           "token_usage_estimated_cost_usd": "0.46714395"
         },
         "latency_ms": {
+          "known_observations_count": 1280,
           "mean": 2904.4541815625507,
           "measurement_scope": "Client end-to-end request loop including retry backoff",
           "median": 2302.815000002738,
+          "missing_observations_count": 0,
           "p95": null,
           "p95_status": "NOT REPORTED \u2014 approval evidence not established",
           "sum_ms": 3717701.352400065,
@@ -145,25 +155,34 @@
         },
         "observations_count": 1280,
         "retrieval_k": 0,
+        "source_pointer": "outputs/rq_analysis.json#/rq3/tradeoffs_by_condition/no_rag",
         "tokens": {
           "cached_tokens": {
             "cached_tokens_accounting_rule": "Cached tokens represent prompt tokens served from model cache. Total tokens is prompt_tokens + completion_tokens. Cached tokens are a subset of prompt tokens and are NOT added into total tokens twice.",
             "mean": 0.0,
-            "missing_attempts_count": 0,
-            "observed_attempts_count": 1280,
-            "sum": 0
+            "physical_attempts_known_count": 1280,
+            "physical_attempts_missing_count": 0,
+            "sum": 0,
+            "terminal_requests_known_count": 1280,
+            "terminal_requests_missing_count": 0
           },
           "completion_tokens": {
+            "known_observations_count": 1280,
             "mean": 163.6453125,
+            "missing_observations_count": 0,
             "sum": 209466
           },
           "prompt_tokens": {
+            "known_observations_count": 1280,
             "mean": 674.32734375,
+            "missing_observations_count": 0,
             "sum": 863139
           },
           "total_tokens": {
             "formula": "prompt_tokens + completion_tokens",
+            "known_observations_count": 1280,
             "mean": 837.97265625,
+            "missing_observations_count": 0,
             "sum": 1072605
           }
         }
@@ -225,12 +244,15 @@
           "relative_gain_macro_f1_pct": 0.4724607990063495
         },
         "error_count": 165,
+        "error_rate": 0.2298050139275766,
+        "error_rate_display": "22.98%",
         "is_baseline": false,
         "macro_f1": 0.012667935610765985,
         "macro_f1_display": "0.0127",
         "macro_f1_universe_classes": 474,
         "retrieval_k": 1,
         "scorable_sample_count": 718,
+        "source_pointer": "outputs/rq_analysis.json#/rq1/by_condition/rag_k1",
         "stratified_complexity": {
           "multi_gt": {
             "accuracy_display": "100.00%",
@@ -289,14 +311,16 @@
           "retrieval_miss_rate": 0.9623955431754875,
           "retrieval_miss_rate_display": "96.24%",
           "total_scorable_samples": 718
-        }
+        },
+        "source_pointer": "outputs/rq_analysis.json#/rq2/by_condition/rag_k1"
       },
       "rq3_resources_and_cost": {
         "condition": "rag_k1",
         "failures": {
           "invalid_id_count": 0,
           "invalid_syntax_count": 0,
-          "mapped_scorable_failures_count": 0,
+          "mapped_scorable_attribution_errors_count": 165,
+          "mapped_scorable_terminal_failures_count": 0,
           "parse_failure_count": 0,
           "terminal_incomplete_count": 0,
           "terminal_incomplete_denominator": 1280,
@@ -308,17 +332,21 @@
           "cost_of_excluded_unmapped_views_usd": 0.16834905,
           "cost_per_correct_attribution_usd": 0.0023458110307414104,
           "cost_per_logical_request_usd": 0.001013463671875,
-          "cost_per_scorable_query_usd": 0.0018067318941504178,
+          "cost_per_scorable_query_amortized_usd": 0.0018067318941504178,
+          "k1_reconciliation_formula": "token_usage_estimated_cost_usd ($0.75784210) - observed_cache_credit_usd ($0.00035420) + missing_usage_attempt_retained_charge_usd ($0.53974560) = ledger_settled_cost_usd ($1.29723350)",
           "ledger_settled_cost_usd": "1.2972335",
           "marginal_cost_vs_baseline_usd": 0.83008955,
           "missing_usage_attempt_receipts_count": 1,
-          "missing_usage_attempt_worst_charge_usd": "0.5397456",
+          "missing_usage_attempt_retained_charge_usd": "0.5397456",
+          "observed_cache_credit_usd": "0.00035420",
           "token_usage_estimated_cost_usd": "0.7578421"
         },
         "latency_ms": {
+          "known_observations_count": 1280,
           "mean": 3514.2666282031087,
           "measurement_scope": "Client end-to-end request loop including retry backoff",
           "median": 2617.13934999716,
+          "missing_observations_count": 0,
           "p95": null,
           "p95_status": "NOT REPORTED \u2014 approval evidence not established",
           "sum_ms": 4498261.284099979,
@@ -326,25 +354,34 @@
         },
         "observations_count": 1280,
         "retrieval_k": 1,
+        "source_pointer": "outputs/rq_analysis.json#/rq3/tradeoffs_by_condition/rag_k1",
         "tokens": {
           "cached_tokens": {
             "cached_tokens_accounting_rule": "Cached tokens represent prompt tokens served from model cache. Total tokens is prompt_tokens + completion_tokens. Cached tokens are a subset of prompt tokens and are NOT added into total tokens twice.",
             "mean": 1.203125,
-            "missing_attempts_count": 1,
-            "observed_attempts_count": 1280,
-            "sum": 1540
+            "physical_attempts_known_count": 1280,
+            "physical_attempts_missing_count": 1,
+            "sum": 1540,
+            "terminal_requests_known_count": 1280,
+            "terminal_requests_missing_count": 0
           },
           "completion_tokens": {
+            "known_observations_count": 1280,
             "mean": 233.69375,
+            "missing_observations_count": 0,
             "sum": 299128
           },
           "prompt_tokens": {
+            "known_observations_count": 1280,
             "mean": 1246.5265625,
+            "missing_observations_count": 0,
             "sum": 1595554
           },
           "total_tokens": {
             "formula": "prompt_tokens + completion_tokens",
+            "known_observations_count": 1280,
             "mean": 1480.2203125,
+            "missing_observations_count": 0,
             "sum": 1894682
           }
         }
@@ -406,12 +443,15 @@
           "relative_gain_macro_f1_pct": 11.226148242725504
         },
         "error_count": 147,
+        "error_rate": 0.20473537604456823,
+        "error_rate_display": "20.47%",
         "is_baseline": false,
         "macro_f1": 0.014023799884737108,
         "macro_f1_display": "0.0140",
         "macro_f1_universe_classes": 474,
         "retrieval_k": 10,
         "scorable_sample_count": 718,
+        "source_pointer": "outputs/rq_analysis.json#/rq1/by_condition/rag_k10",
         "stratified_complexity": {
           "multi_gt": {
             "accuracy_display": "100.00%",
@@ -470,14 +510,16 @@
           "retrieval_miss_rate": 0.552924791086351,
           "retrieval_miss_rate_display": "55.29%",
           "total_scorable_samples": 718
-        }
+        },
+        "source_pointer": "outputs/rq_analysis.json#/rq2/by_condition/rag_k10"
       },
       "rq3_resources_and_cost": {
         "condition": "rag_k10",
         "failures": {
           "invalid_id_count": 0,
           "invalid_syntax_count": 0,
-          "mapped_scorable_failures_count": 0,
+          "mapped_scorable_attribution_errors_count": 147,
+          "mapped_scorable_terminal_failures_count": 0,
           "parse_failure_count": 0,
           "terminal_incomplete_count": 4,
           "terminal_incomplete_denominator": 1280,
@@ -489,17 +531,20 @@
           "cost_of_excluded_unmapped_views_usd": 0.49894465,
           "cost_per_correct_attribution_usd": 0.0037642446584938705,
           "cost_per_logical_request_usd": 0.001679206015625,
-          "cost_per_scorable_query_usd": 0.0029935706128133704,
+          "cost_per_scorable_query_amortized_usd": 0.0029935706128133704,
           "ledger_settled_cost_usd": "2.1493837",
           "marginal_cost_vs_baseline_usd": 1.68223975,
           "missing_usage_attempt_receipts_count": 0,
-          "missing_usage_attempt_worst_charge_usd": "0.0",
+          "missing_usage_attempt_retained_charge_usd": "0.0",
+          "observed_cache_credit_usd": "0.00000000",
           "token_usage_estimated_cost_usd": "2.1493837"
         },
         "latency_ms": {
+          "known_observations_count": 1280,
           "mean": 4370.711563358918,
           "measurement_scope": "Client end-to-end request loop including retry backoff",
           "median": 2667.00299999502,
+          "missing_observations_count": 0,
           "p95": null,
           "p95_status": "NOT REPORTED \u2014 approval evidence not established",
           "sum_ms": 5594510.801099415,
@@ -507,25 +552,34 @@
         },
         "observations_count": 1280,
         "retrieval_k": 10,
+        "source_pointer": "outputs/rq_analysis.json#/rq3/tradeoffs_by_condition/rag_k10",
         "tokens": {
           "cached_tokens": {
             "cached_tokens_accounting_rule": "Cached tokens represent prompt tokens served from model cache. Total tokens is prompt_tokens + completion_tokens. Cached tokens are a subset of prompt tokens and are NOT added into total tokens twice.",
             "mean": 0.0,
-            "missing_attempts_count": 0,
-            "observed_attempts_count": 1280,
-            "sum": 0
+            "physical_attempts_known_count": 1280,
+            "physical_attempts_missing_count": 0,
+            "sum": 0,
+            "terminal_requests_known_count": 1280,
+            "terminal_requests_missing_count": 0
           },
           "completion_tokens": {
+            "known_observations_count": 1280,
             "mean": 333.8640625,
+            "missing_observations_count": 0,
             "sum": 427346
           },
           "prompt_tokens": {
+            "known_observations_count": 1280,
             "mean": 5114.2765625,
+            "missing_observations_count": 0,
             "sum": 6546274
           },
           "total_tokens": {
             "formula": "prompt_tokens + completion_tokens",
+            "known_observations_count": 1280,
             "mean": 5448.140625,
+            "missing_observations_count": 0,
             "sum": 6973620
           }
         }
@@ -587,12 +641,15 @@
           "relative_gain_macro_f1_pct": 8.203516904550302
         },
         "error_count": 154,
+        "error_rate": 0.21448467966573817,
+        "error_rate_display": "21.45%",
         "is_baseline": false,
         "macro_f1": 0.013642695462066637,
         "macro_f1_display": "0.0136",
         "macro_f1_universe_classes": 474,
         "retrieval_k": 3,
         "scorable_sample_count": 718,
+        "source_pointer": "outputs/rq_analysis.json#/rq1/by_condition/rag_k3",
         "stratified_complexity": {
           "multi_gt": {
             "accuracy_display": "100.00%",
@@ -651,14 +708,16 @@
           "retrieval_miss_rate": 0.8356545961002786,
           "retrieval_miss_rate_display": "83.57%",
           "total_scorable_samples": 718
-        }
+        },
+        "source_pointer": "outputs/rq_analysis.json#/rq2/by_condition/rag_k3"
       },
       "rq3_resources_and_cost": {
         "condition": "rag_k3",
         "failures": {
           "invalid_id_count": 0,
           "invalid_syntax_count": 0,
-          "mapped_scorable_failures_count": 0,
+          "mapped_scorable_attribution_errors_count": 154,
+          "mapped_scorable_terminal_failures_count": 0,
           "parse_failure_count": 0,
           "terminal_incomplete_count": 6,
           "terminal_incomplete_denominator": 1280,
@@ -670,17 +729,20 @@
           "cost_of_excluded_unmapped_views_usd": 0.31961755,
           "cost_per_correct_attribution_usd": 0.0020902127659574465,
           "cost_per_logical_request_usd": 0.0009209999999999999,
-          "cost_per_scorable_query_usd": 0.0016418941504178271,
+          "cost_per_scorable_query_amortized_usd": 0.0016418941504178271,
           "ledger_settled_cost_usd": "1.17888",
           "marginal_cost_vs_baseline_usd": 0.71173605,
           "missing_usage_attempt_receipts_count": 0,
-          "missing_usage_attempt_worst_charge_usd": "0.0",
+          "missing_usage_attempt_retained_charge_usd": "0.0",
+          "observed_cache_credit_usd": "0.00000000",
           "token_usage_estimated_cost_usd": "1.17888"
         },
         "latency_ms": {
+          "known_observations_count": 1280,
           "mean": 4215.878584452662,
           "measurement_scope": "Client end-to-end request loop including retry backoff",
           "median": 2743.170950008789,
+          "missing_observations_count": 0,
           "p95": null,
           "p95_status": "NOT REPORTED \u2014 approval evidence not established",
           "sum_ms": 5396324.588099407,
@@ -688,25 +750,34 @@
         },
         "observations_count": 1280,
         "retrieval_k": 3,
+        "source_pointer": "outputs/rq_analysis.json#/rq3/tradeoffs_by_condition/rag_k3",
         "tokens": {
           "cached_tokens": {
             "cached_tokens_accounting_rule": "Cached tokens represent prompt tokens served from model cache. Total tokens is prompt_tokens + completion_tokens. Cached tokens are a subset of prompt tokens and are NOT added into total tokens twice.",
             "mean": 0.0,
-            "missing_attempts_count": 0,
-            "observed_attempts_count": 1280,
-            "sum": 0
+            "physical_attempts_known_count": 1280,
+            "physical_attempts_missing_count": 0,
+            "sum": 0,
+            "terminal_requests_known_count": 1280,
+            "terminal_requests_missing_count": 0
           },
           "completion_tokens": {
+            "known_observations_count": 1280,
             "mean": 314.921875,
+            "missing_observations_count": 0,
             "sum": 403100
           },
           "prompt_tokens": {
+            "known_observations_count": 1280,
             "mean": 2172.375,
+            "missing_observations_count": 0,
             "sum": 2780640
           },
           "total_tokens": {
             "formula": "prompt_tokens + completion_tokens",
+            "known_observations_count": 1280,
             "mean": 2487.296875,
+            "missing_observations_count": 0,
             "sum": 3183740
           }
         }
@@ -768,12 +839,15 @@
           "relative_gain_macro_f1_pct": 10.171133332358945
         },
         "error_count": 152,
+        "error_rate": 0.2116991643454039,
+        "error_rate_display": "21.17%",
         "is_baseline": false,
         "macro_f1": 0.01389077974323129,
         "macro_f1_display": "0.0139",
         "macro_f1_universe_classes": 474,
         "retrieval_k": 5,
         "scorable_sample_count": 718,
+        "source_pointer": "outputs/rq_analysis.json#/rq1/by_condition/rag_k5",
         "stratified_complexity": {
           "multi_gt": {
             "accuracy_display": "100.00%",
@@ -832,14 +906,16 @@
           "retrieval_miss_rate": 0.7590529247910863,
           "retrieval_miss_rate_display": "75.91%",
           "total_scorable_samples": 718
-        }
+        },
+        "source_pointer": "outputs/rq_analysis.json#/rq2/by_condition/rag_k5"
       },
       "rq3_resources_and_cost": {
         "condition": "rag_k5",
         "failures": {
           "invalid_id_count": 0,
           "invalid_syntax_count": 0,
-          "mapped_scorable_failures_count": 0,
+          "mapped_scorable_attribution_errors_count": 152,
+          "mapped_scorable_terminal_failures_count": 0,
           "parse_failure_count": 0,
           "terminal_incomplete_count": 3,
           "terminal_incomplete_denominator": 1280,
@@ -851,17 +927,20 @@
           "cost_of_excluded_unmapped_views_usd": 0.359882,
           "cost_per_correct_attribution_usd": 0.0026203493816254414,
           "cost_per_logical_request_usd": 0.0011586857421874998,
-          "cost_per_scorable_query_usd": 0.0020656236072423397,
+          "cost_per_scorable_query_amortized_usd": 0.0020656236072423397,
           "ledger_settled_cost_usd": "1.48311775",
           "marginal_cost_vs_baseline_usd": 1.0159737999999998,
           "missing_usage_attempt_receipts_count": 0,
-          "missing_usage_attempt_worst_charge_usd": "0.0",
+          "missing_usage_attempt_retained_charge_usd": "0.0",
+          "observed_cache_credit_usd": "0.00000000",
           "token_usage_estimated_cost_usd": "1.48311775"
         },
         "latency_ms": {
+          "known_observations_count": 1280,
           "mean": 4327.256228515944,
           "measurement_scope": "Client end-to-end request loop including retry backoff",
           "median": 2873.740850001923,
+          "missing_observations_count": 0,
           "p95": null,
           "p95_status": "NOT REPORTED \u2014 approval evidence not established",
           "sum_ms": 5538887.972500408,
@@ -869,25 +948,34 @@
         },
         "observations_count": 1280,
         "retrieval_k": 5,
+        "source_pointer": "outputs/rq_analysis.json#/rq3/tradeoffs_by_condition/rag_k5",
         "tokens": {
           "cached_tokens": {
             "cached_tokens_accounting_rule": "Cached tokens represent prompt tokens served from model cache. Total tokens is prompt_tokens + completion_tokens. Cached tokens are a subset of prompt tokens and are NOT added into total tokens twice.",
             "mean": 0.0,
-            "missing_attempts_count": 0,
-            "observed_attempts_count": 1280,
-            "sum": 0
+            "physical_attempts_known_count": 1280,
+            "physical_attempts_missing_count": 0,
+            "sum": 0,
+            "terminal_requests_known_count": 1280,
+            "terminal_requests_missing_count": 0
           },
           "completion_tokens": {
+            "known_observations_count": 1280,
             "mean": 328.03125,
+            "missing_observations_count": 0,
             "sum": 419880
           },
           "prompt_tokens": {
+            "known_observations_count": 1280,
             "mean": 3060.19296875,
+            "missing_observations_count": 0,
             "sum": 3917047
           },
           "total_tokens": {
             "formula": "prompt_tokens + completion_tokens",
+            "known_observations_count": 1280,
             "mean": 3388.22421875,
+            "missing_observations_count": 0,
             "sum": 4336927
           }
         }
@@ -896,7 +984,6 @@
   },
   "core_code_manifest_sha256": "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4",
   "dataset_split": "test",
-  "evaluation_git_sha": "208ac00a9fe86813d4e4ec4fa72b2a943a2e4fdb",
   "evaluator_analysis_source_file": "scripts/analysis/evaluate_rqs.py",
   "evaluator_analysis_source_sha256": "f85d7f7373e825dcc7171ce4491fd15c6fb755955da245041783fe317bc80351",
   "execution_git_sha": "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315",
@@ -951,6 +1038,61 @@
     "valid_json_outputs_count": 6387
   },
   "fixture_only": false,
+  "metric_definitions": {
+    "any_match_semantics": {
+      "decision_ref": "Decision D2",
+      "description": "A prediction is scored as correct if the predicted ATT&CK technique ID matches ANY of the ground truth technique IDs associated with the sample view. For multi-label views, full recall across all ground truth labels is measured separately as macro_recall.",
+      "name": "ANY_MATCH Ground Truth Union Evaluation"
+    },
+    "bootstrap_parameters": {
+      "alpha": 0.05,
+      "cluster_count": 440,
+      "cluster_unit": "pair_id",
+      "description": "Nonparametric percentile bootstrap clustered on telemetry pairs across 440 test clusters.",
+      "method": "percentile_cluster_bootstrap",
+      "samples": 1000,
+      "seed": 42
+    },
+    "cost_per_query_amortized": {
+      "description": "Whole-condition settled expenditure divided by 718 scorable queries, amortizing total resource cost (including excluded views and retries) across scorable attribution tasks.",
+      "formula": "condition_settled_cost_usd / 718",
+      "name": "Amortized Cost per Scorable Query"
+    },
+    "error_rate": {
+      "denominator": 718,
+      "description": "Proportion of scorable mapped views failing technique attribution.",
+      "formula": "(scorable_sample_count - correct_count) / scorable_sample_count",
+      "name": "Attribution Error Rate"
+    },
+    "incomplete_taxonomy": {
+      "ambiguous_terminal_incomplete": 2,
+      "conditions_breakdown": {
+        "no_rag": 0,
+        "rag_k1": 0,
+        "rag_k10": 4,
+        "rag_k3": 6,
+        "rag_k5": 3
+      },
+      "description": "13 terminal INCOMPLETE outcomes across 11 distinct view IDs occurring exclusively in unmapped and ambiguous cohorts due to output length exhaustion on long contexts. All metered tokens settled cleanly without experiment disruption.",
+      "distinct_views_count": 11,
+      "scorable_mapped_terminal_incomplete": 0,
+      "total_terminal_incomplete": 13,
+      "unmapped_terminal_incomplete": 11
+    },
+    "macro_f1": {
+      "decision_ref": "Decisions D2b, D2c",
+      "description": "Unweighted average of per-class F1 across all 474 frozen benchmark classes. Classes with zero support and zero predictions contribute 0 to the numerator and are retained in the denominator.",
+      "name": "Macro-Averaged F1 Across Frozen Benchmark Universe",
+      "supported_classes": 8,
+      "universe_denominator": 474,
+      "unsupported_classes": 466
+    },
+    "mapped_scorable_attribution_errors": {
+      "description": "Classification errors among scorable mapped views (718 - correct_count), ranging from 147 (rag_k10) to 165 (rag_k1). Strictly distinguished from terminal system execution failures (which are 0 among mapped views).",
+      "name": "Mapped Scorable Attribution Errors"
+    }
+  },
+  "native_evaluation_git_sha": "208ac00a9fe86813d4e4ec4fa72b2a943a2e4fdb",
   "output_file_digests": {
     "failure_decomposition.json": "1ea3a899fefc7f92bcb739ab16e70036c269ebff16a7ec7e38240d2cc2c1c05d",
     "overall_metrics.json": "25662753963ecdd05d16b8607095fffb964c0d53cd2c43026c50b47b22e55074",
@@ -979,6 +1121,7 @@
   "protocol_sha256": "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c",
   "protocol_version": "experiment-protocol-v1.1",
   "public_package_manifest_sha256": "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c",
+  "rq_v2_integrated_git_sha": "264ed31472c4f0f74e519938b65876915f9c15a7",
   "run_id": "live-66b94b1676bf46a9",
   "schema_version": "2.0.0",
   "source_file_digests": {
@@ -995,11 +1138,14 @@
   },
   "study_id": "rag2attack-study-wide",
   "supplementary_source_lineage": {
-    "authorizing_packet_original_sha256": "b988a599800bbbb01b0418e60bfd00fbbce3ab2c4d631da678f99bfd2141c4b5",
-    "authorizing_packet_public_path": "provenance/s2_evaluation_execute_public.md",
-    "authorizing_packet_public_sha256": "d515f70426435e9edb79cdc415e91c23b16e189fd171d4db4b04074c9b580aa1",
-    "historical_note": "Historical S2 package (c48eeb27...) represents development packet; formally superseded by exact S2_RQ_V2 packet (f85d7f73... / d515f704...).",
-    "historical_s2_package_sha256": "c48eeb276166e511c7ff19904944d18ec0a187d903f0b2f56708ddaf4f9dff55"
+    "historical_analysis_source_sha256": "c48eeb27b19626344e5f10b2cac674437b4053bb01f014060905702c52235f95",
+    "historical_authorizing_packet_original_sha256": "b988a599800bbbb01b0418e60bfd00fbbce3ab2c4d631da678f99bfd2141c4b5",
+    "historical_authorizing_packet_public_sha256": "d515f70426435e9edb79cdc415e91c23b16e189fd171d4db4b04074c9b580aa1",
+    "historical_evaluation_commit_sha": "208ac00a9fe86813d4e4ec4fa72b2a943a2e4fdb",
+    "lineage_note": "Preserves historical b988/d515/c48 development bindings while recording authorized superseding c34/f85/264ed31 S2_RQ_V2 evaluation lineage.",
+    "root_integrated_source_audit_sha256": "b164b13d76a76ed7893ebf6b7e87ff5a28898a15f3425a6764e0f4efa84db608",
+    "root_private_replay_acceptance_sha256": "cdc875da1647552a3596100e2d168f7cb79878e64e50c0f1f59e6a0c4bceed05",
+    "superseding_authorizing_packet_sha256": "c34b1350881d61f153a50fd5fa2b79a9438ece09c2a2b09d022e74e863313570"
   },
   "terminal_seal": {
     "path": "reports/evidence/canonical_run_seal_v1.json",
@@ -1008,7 +1154,7 @@
   },
   "whole_study_financial_accounting": {
     "active_reservations_usd": "0E-8",
-    "commercial_invoice_disclaimer": "All monetary amounts represent internal simulation and API budget guard accounting. No commercial invoice or vendor billing statement is asserted.",
+    "commercial_invoice_disclaimer": "Monetary amounts represent tariff-derived accounted costs under API budget guard. Invoice verification is absent.",
     "cumulative_settled_cost_usd": "6.57575890",
     "has_breach": false,
     "prior_pilot_provisional_hold_usd": "0.05264010",

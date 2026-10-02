@@ -4,28 +4,38 @@ tests/test_canonical_metric_bundle.py
 Comprehensive fail-closed test suite for Canonical Metric Bundle v2.
 Validates:
 - Positive controls on committed and genuine canonical bundle
+- Deterministic LF bytes and exact sidecar hash matches on disk
 - Rejection of tampered inputs, bad hashes, and broken manifests
-- Rejection of fixture seals as canonical
-- Enforcement of financial conservation of money
+- Rejection of fixture seals as canonical (even if hash check bypassed)
+- Enforcement of financial conservation of money and item-level reconciliation
 - Verification of token cache join telemetry (1,540 total, 1 network retry)
+- Detection of retry receipt mutations (foreign view, response_id drift, input drift, status drift)
+- Detection of non-integer/boolean cached token types
 - Preservation of D2i independent failure axes (no causal or exclusive claim)
 - Enforcement of p95 suppression policy
+- Machine-generated lineage markdown accuracy and exact table statistics
 """
 
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
+import math
 import os
 import shutil
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Dict, Optional
+from unittest.mock import patch
 
 import pytest
 
 from scripts.build_canonical_metric_bundle import (
+    AUTHORIZING_PACKET_ORIGINAL_SHA256,
+    AUTHORIZING_PACKET_PUBLIC_SHA256,
     BUDGET_CAP_USD,
+    CANDIDATE_BASE_GIT_SHA,
     COHORT_AMBIGUOUS_VIEWS,
     COHORT_MAPPED_VIEWS,
     COHORT_MULTI_GT_VIEWS,
@@ -33,6 +43,8 @@ from scripts.build_canonical_metric_bundle import (
     COHORT_TOTAL_PAIRS,
     COHORT_TOTAL_VIEWS,
     COHORT_UNMAPPED_VIEWS,
+    CONDITIONS,
+    EXECUTION_GIT_SHA,
     EXPECTED_ANALYSIS_SOURCE_SHA256,
     EXPECTED_CORE_MANIFEST_SHA256,
     EXPECTED_PRICING_CONTRACT_SHA256,
@@ -40,12 +52,20 @@ from scripts.build_canonical_metric_bundle import (
     EXPECTED_PUBLIC_MANIFEST_SHA256,
     EXPECTED_TERMINAL_PROOF_SHA256,
     EXPECTED_TERMINAL_SEAL_SHA256,
+    HISTORICAL_ANALYSIS_SOURCE_SHA256,
+    NATIVE_EVALUATION_GIT_SHA,
     P95_STATUS_POLICY,
     PILOT_HOLD_USD,
+    ROOT_INTEGRATED_SOURCE_AUDIT_SHA256,
+    ROOT_PRIVATE_REPLAY_ACCEPTANCE_SHA256,
+    RQ_V2_INTEGRATED_GIT_SHA,
     SETTLED_USD,
+    SUPERSEDING_AUTHORIZING_PACKET_SHA256,
     TOTAL_ACCOUNTED_USD,
     build_canonical_metric_bundle,
+    generate_lineage_markdown,
     parse_request_journal_cache,
+    verify_canonical_metric_bundle_file,
     verify_file_hash,
     verify_financial_invariants,
     verify_public_package,
@@ -54,6 +74,7 @@ from scripts.build_canonical_metric_bundle import (
 
 GENUINE_SEAL_PATH = Path("reports/evidence/canonical_run_seal_v1.json")
 COMMITTED_BUNDLE_PATH = Path("artifacts/results/canonical_metric_bundle_v2.json")
+COMMITTED_LINEAGE_PATH = Path("reports/evidence/canonical_metric_bundle_v2_lineage.md")
 
 
 def get_public_package_dir() -> Optional[Path]:
@@ -81,8 +102,8 @@ def get_test_bundle() -> Dict[str, Any]:
             output_path=None,
         )
     if COMMITTED_BUNDLE_PATH.is_file():
-        with open(COMMITTED_BUNDLE_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
+        actual_bytes = COMMITTED_BUNDLE_PATH.read_bytes()
+        return json.loads(actual_bytes.decode("utf-8"))
     pytest.skip("Neither raw public canonical package nor committed bundle is available")
 
 
@@ -118,6 +139,33 @@ def test_genuine_canonical_bundle_build():
     # Seal binding
     assert bundle["terminal_seal"]["sha256"] == EXPECTED_TERMINAL_SEAL_SHA256
     assert bundle["terminal_seal"]["terminal_proof_sha256"] == EXPECTED_TERMINAL_PROOF_SHA256
+
+
+def test_disk_bundle_byte_deterministic_and_matches_sidecar():
+    """Verify committed bundle has deterministic LF bytes and matches sidecar exactly."""
+    if not COMMITTED_BUNDLE_PATH.is_file():
+        pytest.skip("Committed bundle not found on disk")
+
+    actual_bytes = COMMITTED_BUNDLE_PATH.read_bytes()
+    assert b"\r" not in actual_bytes, "Committed bundle must contain only LF, no CRLF"
+
+    actual_sha = hashlib.sha256(actual_bytes).hexdigest()
+    sidecar_path = COMMITTED_BUNDLE_PATH.with_name(f"{COMMITTED_BUNDLE_PATH.name}.sha256")
+    assert sidecar_path.is_file(), "Sidecar checksum file must exist"
+
+    sidecar_sha = sidecar_path.read_bytes().decode("utf-8").strip().split()[0]
+    assert actual_sha == sidecar_sha, f"Physical byte hash {actual_sha} != sidecar {sidecar_sha}"
+
+
+def test_verify_bundle_validator_cli():
+    """Verify the --verify-bundle CLI entrypoint validates artifact cleanly."""
+    if not COMMITTED_BUNDLE_PATH.is_file():
+        pytest.skip("Committed bundle not found on disk")
+
+    bundle = verify_canonical_metric_bundle_file(COMMITTED_BUNDLE_PATH)
+    assert bundle["schema_version"] == "2.0.0"
+    assert bundle["bundle_type"] == "canonical-metric-bundle-v2"
+    assert bundle["fixture_only"] is False
 
 
 def test_cohort_and_denominator_specifications():
@@ -157,6 +205,8 @@ def test_rq1_exact_numerical_metrics():
     assert no_rag["accuracy_display"] == "77.99%"
     assert pytest.approx(no_rag["macro_f1"], abs=1e-6) == 0.012608
     assert no_rag["is_baseline"] is True
+    assert pytest.approx(no_rag["accuracy_e2e_ci_95"][0], abs=1e-4) == 0.7464
+    assert pytest.approx(no_rag["accuracy_e2e_ci_95"][1], abs=1e-4) == 0.8088
 
     # RAG k10
     k10 = conds["rag_k10"]["rq1_attribution"]
@@ -262,16 +312,18 @@ def test_rq3_cached_tokens_and_conservation():
     k1_toks = conds["rag_k1"]["rq3_resources_and_cost"]["tokens"]
     assert k1_toks["cached_tokens"]["sum"] == 1540
     assert pytest.approx(k1_toks["cached_tokens"]["mean"], abs=1e-6) == 1540 / 1280.0
-    assert k1_toks["cached_tokens"]["observed_attempts_count"] == 1280
-    assert k1_toks["cached_tokens"]["missing_attempts_count"] == 1
+    assert k1_toks["cached_tokens"]["terminal_requests_known_count"] == 1280
+    assert k1_toks["cached_tokens"]["physical_attempts_known_count"] == 1280
+    assert k1_toks["cached_tokens"]["physical_attempts_missing_count"] == 1
 
     # all others have 0 cached tokens
     for c_name in ["no_rag", "rag_k3", "rag_k5", "rag_k10"]:
         c_toks = conds[c_name]["rq3_resources_and_cost"]["tokens"]
         assert c_toks["cached_tokens"]["sum"] == 0
         assert c_toks["cached_tokens"]["mean"] == 0.0
-        assert c_toks["cached_tokens"]["observed_attempts_count"] == 1280
-        assert c_toks["cached_tokens"]["missing_attempts_count"] == 0
+        assert c_toks["cached_tokens"]["terminal_requests_known_count"] == 1280
+        assert c_toks["cached_tokens"]["physical_attempts_known_count"] == 1280
+        assert c_toks["cached_tokens"]["physical_attempts_missing_count"] == 0
 
 
 def test_p95_suppression_policy():
@@ -300,6 +352,47 @@ def test_whole_study_financial_accounting():
     avail = Decimal(fin["uncommitted_available_balance_usd"])
     cap = Decimal(fin["study_budget_cap_usd"])
     assert settled + hold + avail == cap
+
+
+def test_lineage_metadata_and_metric_definitions():
+    """Verify lineage binds all 6 distinct SHA identities and metric definitions."""
+    bundle = get_test_bundle()
+    assert bundle["execution_git_sha"] == EXECUTION_GIT_SHA
+    assert bundle["native_evaluation_git_sha"] == NATIVE_EVALUATION_GIT_SHA
+    assert bundle["rq_v2_integrated_git_sha"] == RQ_V2_INTEGRATED_GIT_SHA
+    assert bundle["candidate_base_git_sha"] == CANDIDATE_BASE_GIT_SHA
+
+    lineage = bundle["supplementary_source_lineage"]
+    assert lineage["historical_analysis_source_sha256"] == HISTORICAL_ANALYSIS_SOURCE_SHA256
+    assert lineage["superseding_authorizing_packet_sha256"] == SUPERSEDING_AUTHORIZING_PACKET_SHA256
+    assert lineage["root_integrated_source_audit_sha256"] == ROOT_INTEGRATED_SOURCE_AUDIT_SHA256
+    assert lineage["root_private_replay_acceptance_sha256"] == ROOT_PRIVATE_REPLAY_ACCEPTANCE_SHA256
+
+    defs = bundle["metric_definitions"]
+    assert "any_match_semantics" in defs
+    assert "macro_f1" in defs
+    assert "bootstrap_parameters" in defs
+    assert defs["bootstrap_parameters"]["samples"] == 1000
+    assert defs["bootstrap_parameters"]["seed"] == 42
+    assert defs["bootstrap_parameters"]["cluster_unit"] == "pair_id"
+    assert defs["bootstrap_parameters"]["cluster_count"] == 440
+
+
+def test_lineage_markdown_table_numerical_exactness():
+    """Verify that generated lineage markdown has exact values matching oracle."""
+    if not COMMITTED_LINEAGE_PATH.is_file():
+        pytest.skip("Committed lineage markdown not found on disk")
+
+    md_text = COMMITTED_LINEAGE_PATH.read_text(encoding="utf-8")
+    assert "[74.64%, 80.88%]" in md_text, "No-RAG CI must be [74.64%, 80.88%]"
+    assert "[-3.186, +1.124] pp" in md_text, "k1 delta CI must match exact pp"
+    assert "0.435" in md_text, "k1 McNemar p must be 0.435"
+    assert "[-2.355, +5.300] pp" in md_text, "k10 delta CI must match exact pp"
+    assert "0.422" in md_text, "k10 McNemar p must be 0.422"
+    assert "$0.75784210" in md_text, "k1 token estimate must be $0.75784210"
+    assert "$0.00035420" in md_text, "k1 cache credit must be $0.00035420"
+    assert "$0.53974560" in md_text, "k1 missing usage charge must be $0.53974560"
+    assert "$1.29723350" in md_text, "k1 settled cost must be $1.29723350"
 
 
 # =========================================================================
@@ -338,21 +431,140 @@ def test_fail_closed_tampered_seal_hash(tmp_path: Path):
 
 
 def test_fail_closed_fixture_seal_rejected(tmp_path: Path):
-    """A seal marked fixture_only or production_ready=False must be rejected."""
+    """A seal marked fixture_only or production_ready=False must be rejected even if hash bypassed."""
     if not GENUINE_SEAL_PATH.is_file():
         pytest.skip("Run seal not available in environment")
 
-    tampered_seal = tmp_path / "fixture_seal.json"
-    with open(GENUINE_SEAL_PATH, "r", encoding="utf-8") as f:
-        seal_data = json.load(f)
-    
+    seal_data = json.loads(GENUINE_SEAL_PATH.read_bytes().decode("utf-8"))
     seal_data["fixture_only"] = True
-    seal_data["production_ready"] = False
-    with open(tampered_seal, "w", encoding="utf-8") as f:
-        json.dump(seal_data, f)
+    seal_data["production_ready"] = True
 
-    with pytest.raises(ValueError):
-        verify_run_seal(tampered_seal)
+    tampered_seal = tmp_path / "fixture_seal.json"
+    tampered_bytes = json.dumps(seal_data).encode("utf-8")
+    tampered_seal.write_bytes(tampered_bytes)
+
+    # Bypass file hash check to test explicit semantic gate
+    with patch("scripts.build_canonical_metric_bundle.verify_file_hash", return_value=tampered_bytes):
+        with pytest.raises(ValueError, match="Run seal fixture_only must be False"):
+            verify_run_seal(tampered_seal)
+
+
+def test_fail_closed_retry_receipt_foreign_view():
+    """Mutating retry attempt receipt to have foreign view_id must fail closed."""
+    pkg_dir = get_public_package_dir()
+    if pkg_dir is None:
+        pytest.skip("Raw public canonical package not available in CI environment")
+
+    journal_path = pkg_dir / "inputs" / "request_journal.jsonl"
+    journal_lines = [json.loads(line) for line in journal_path.read_bytes().decode("utf-8").splitlines() if line.strip()]
+
+    # Find ordinal 5388 and mutate view_id
+    mutated = False
+    for row in journal_lines:
+        if row.get("event") == "attempt_receipt" and row.get("ordinal") == 5388:
+            row["key"][0] = "foreign_view"
+            mutated = True
+            break
+    assert mutated
+
+    mutant_bytes = "\n".join(json.dumps(r) for r in journal_lines).encode("utf-8")
+    with pytest.raises(ValueError, match="Retry receipt view_id|foreign view detected"):
+        parse_request_journal_cache(journal_path, raw_journal_bytes=mutant_bytes)
+
+
+def test_fail_closed_retry_receipt_input_usage_drift():
+    """Mutating retry attempt receipt input tokens from 1543 to 1544 must fail closed."""
+    pkg_dir = get_public_package_dir()
+    if pkg_dir is None:
+        pytest.skip("Raw public canonical package not available in CI environment")
+
+    journal_path = pkg_dir / "inputs" / "request_journal.jsonl"
+    journal_lines = [json.loads(line) for line in journal_path.read_bytes().decode("utf-8").splitlines() if line.strip()]
+
+    for row in journal_lines:
+        if row.get("event") == "attempt_receipt" and row.get("ordinal") == 5388:
+            row["input_tokens"] = 1544
+            break
+
+    mutant_bytes = "\n".join(json.dumps(r) for r in journal_lines).encode("utf-8")
+    with pytest.raises(ValueError, match="Retry receipt input_tokens mismatch"):
+        parse_request_journal_cache(journal_path, raw_journal_bytes=mutant_bytes)
+
+
+def test_fail_closed_retry_receipt_response_id_drift():
+    """Mutating retry attempt receipt response_id must fail closed."""
+    pkg_dir = get_public_package_dir()
+    if pkg_dir is None:
+        pytest.skip("Raw public canonical package not available in CI environment")
+
+    journal_path = pkg_dir / "inputs" / "request_journal.jsonl"
+    journal_lines = [json.loads(line) for line in journal_path.read_bytes().decode("utf-8").splitlines() if line.strip()]
+
+    for row in journal_lines:
+        if row.get("event") == "attempt_receipt" and row.get("ordinal") == 5388:
+            row["response_id"] = "wrong_response_id"
+            break
+
+    mutant_bytes = "\n".join(json.dumps(r) for r in journal_lines).encode("utf-8")
+    with pytest.raises(ValueError, match="Retry receipt response_id drift"):
+        parse_request_journal_cache(journal_path, raw_journal_bytes=mutant_bytes)
+
+
+def test_fail_closed_boolean_cached_tokens():
+    """Attempt receipt with boolean cached_tokens must fail closed."""
+    pkg_dir = get_public_package_dir()
+    if pkg_dir is None:
+        pytest.skip("Raw public canonical package not available in CI environment")
+
+    journal_path = pkg_dir / "inputs" / "request_journal.jsonl"
+    journal_lines = [json.loads(line) for line in journal_path.read_bytes().decode("utf-8").splitlines() if line.strip()]
+
+    # Mutate first attempt receipt
+    for row in journal_lines:
+        if row.get("event") == "attempt_receipt":
+            row["cached_tokens"] = False
+            break
+
+    mutant_bytes = "\n".join(json.dumps(r) for r in journal_lines).encode("utf-8")
+    with pytest.raises(TypeError, match="cached_tokens must be an integer"):
+        parse_request_journal_cache(journal_path, raw_journal_bytes=mutant_bytes)
+
+
+def test_fail_closed_ledger_item_tampering_top_totals_unchanged():
+    """Tampering with an individual settled item cost must fail closed on item reconciliation."""
+    pkg_dir = get_public_package_dir()
+    if pkg_dir is None:
+        pytest.skip("Raw public canonical package not available in CI environment")
+
+    ledger_path = pkg_dir / "inputs" / "study_ledger.json"
+    ledger_data = json.loads(ledger_path.read_bytes().decode("utf-8"))
+
+    # Alter first settled record to 99.00000000
+    first_key = next(iter(ledger_data["settled_records"]))
+    ledger_data["settled_records"][first_key]["cost_usd"] = "99.00000000"
+
+    mutant_bytes = json.dumps(ledger_data).encode("utf-8")
+    with pytest.raises(ValueError, match="Sum of settled record item costs"):
+        verify_financial_invariants(ledger_path, raw_ledger_bytes=mutant_bytes)
+
+
+def test_fail_closed_nan_in_rq_analysis(tmp_path: Path):
+    """RQ analysis containing NaN values must be rejected during load."""
+    pkg_dir = get_public_package_dir()
+    if pkg_dir is None:
+        pytest.skip("Raw public canonical package not available in CI environment")
+    if not GENUINE_SEAL_PATH.is_file():
+        pytest.skip("Run seal not available in environment")
+
+    # Get legitimate manifest and cache
+    manifest, cache = verify_public_package(pkg_dir)
+    rq_bytes = cache["outputs/rq_analysis.json"]
+    tampered_bytes = rq_bytes.replace(b'"accuracy_end_to_end": 0.7799442896935933', b'"accuracy_end_to_end": NaN')
+    cache["outputs/rq_analysis.json"] = tampered_bytes
+
+    with patch("scripts.build_canonical_metric_bundle.verify_public_package", return_value=(manifest, cache)):
+        with pytest.raises(ValueError, match="Non-finite JSON constant not allowed"):
+            build_canonical_metric_bundle(pkg_dir, GENUINE_SEAL_PATH, None)
 
 
 def test_fail_closed_money_conservation_breach(tmp_path: Path):

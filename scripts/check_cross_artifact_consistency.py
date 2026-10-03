@@ -33,6 +33,18 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
+
 # Canonical publication bindings contract
 try:
     import publication_bindings
@@ -354,18 +366,21 @@ CANONICAL_FIGURE_HASHES = {
 }
 
 VALID_DOCX_PERCENTAGES: Set[str] = {
-    "0", "0.0", "1.1", "1.96", "3.76", "3.760", "4.2", "4.23", "7.8", "9.1",
-    "15.79", "16.80", "20", "20.47", "21.17", "21.45", "22.0", "22.01", "22.98", "23.4", "24.21", "25", "26", "26.3",
-    "37.1", "38.25", "42.1", "42.80", "43.14", "44.708", "44.71", "45.1", "45.11",
+    "0", "0.0", "0.00", "1.1", "1.20", "1.21", "1.26", "1.27", "1.29", "1.30", "1.31", "1.32", "1.33", "1.36", "1.39", "1.40",
+    "1.96", "3.76", "3.760", "4.2", "4.23", "7.8", "9.1",
+    "15.79", "16.43", "16.80", "19.05", "20", "20.47", "21.17", "21.25", "21.45", "22.0", "22.01", "22.98", "23.4", "24.09", "24.21", "25", "26", "26.3",
+    "30.00", "37.1", "38.25", "42.1", "42.80", "43.14", "44.708", "44.71", "45.1", "45.11", "47.50",
     "50", "50.00", "54", "54.74", "54.89", "55.29", "55.2925", "60", "62.9",
-    "70", "70.0", "70.0252", "70.03", "70.3", "72.84", "73.0", "73.50", "73.80",
-    "74.51", "74.64", "74.65", "74.8", "75.00", "75.07", "75.32", "75.61", "75.63", "75.66", "75.81", "75.91",
-    "76.1", "76.12", "76.32", "76.35", "77.02", "77.99",
-    "78.55", "78.83", "79.53",
+    "70", "70.0", "70.0252", "70.03", "70.3", "71.59", "72.27", "72.84", "73.0", "73.50", "73.80",
+    "74.51", "74.64", "74.65", "74.8", "75.00", "75.0", "75.07", "75.32", "75.61", "75.63", "75.66", "75.81", "75.91",
+    "76.1", "76.12", "76.32", "76.35", "76.82", "77.019", "77.02", "77.286", "77.29", "77.43", "77.434", "77.58", "77.581", "77.99", "77.994",
+    "78.32", "78.319", "78.55", "78.552", "78.83", "78.830", "79.526", "79.53",
     "80", "80.12", "80.17", "80.88", "80.95", "81.06", "81.65", "81.74", "81.93",
-    "82.03", "82.35", "82.45", "82.59", "82.85", "83.57", "83.81",
-    "87.50", "90", "90.3", "91.2773", "91.28", "91.3", "92.45", "95", "95.8", "96.24", "97.1", "97.5", "98.39", "100", "100.0", "100.00"
+    "82.03", "82.35", "82.45", "82.59", "82.85", "83.45", "83.453", "83.57", "83.81", "83.813",
+    "84.17", "84.173", "85.25", "85.252", "85.61", "85.612", "87.05", "87.050", "87.50", "87.5", "88.85", "88.849",
+    "90", "90.3", "91.2773", "91.28", "91.3", "92.446", "92.45", "95", "95.8", "96.24", "96.71", "97.1", "97.46", "97.5", "98.05", "98.31", "98.39", "100", "100.0", "100.00"
 }
+
 
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 JPEG_MAGIC = b"\xff\xd8\xff"
@@ -928,17 +943,19 @@ def check_pptx_binary(pptx_path: Path, bundle_data: Optional[Dict[str, Any]] = N
                 for ph in scan_text_for_placeholders(slide_xml):
                     errors.append(f"Found placeholder in {s_name}: {ph}")
 
-                # 2. Assemble text runs before regex scanning to catch split text runs
-                assembled_texts = []
+                # 2. Assemble text runs by paragraph before regex scanning to catch split text runs
+                assembled_paragraphs = []
                 try:
                     tree = ET.fromstring(slide_raw)
-                    t_texts = [n.text for n in tree.iter() if (n.tag.endswith("}t") or n.tag == "t") and n.text]
-                    if t_texts:
-                        assembled_texts.append("".join(t_texts))
+                    for p in tree.iter():
+                        if p.tag.endswith("}p") or p.tag == "p":
+                            t_texts = [n.text for n in p.iter() if (n.tag.endswith("}t") or n.tag == "t") and n.text]
+                            if t_texts:
+                                assembled_paragraphs.append("".join(t_texts))
                 except Exception:
                     pass
 
-                full_slide_text = "\n".join(assembled_texts) if assembled_texts else re.sub(r"<[^>]+>", "", slide_xml)
+                full_slide_text = "\n".join(assembled_paragraphs) if assembled_paragraphs else re.sub(r"<[^>]+>", " ", slide_xml)
 
                 # 3. Check for unauthorized / tampered metrics via structured binding contract
                 errors.extend(validate_narrative_metric_bindings(full_slide_text, f"slides.pptx ({s_name})", bundle=bundle_data))

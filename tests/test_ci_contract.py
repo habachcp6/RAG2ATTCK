@@ -269,6 +269,10 @@ def _assert_integration(workflow):
         hist_step.get("env", {}).get("RAG2ATTCK_SNAPSHOT_ROOT")
         == expected_snap_root
     )
+    assert (
+        _step(steps, test_name).get("env", {}).get("RAG2ATTCK_SNAPSHOT_ROOT")
+        == expected_snap_root
+    )
     names = [step.get("name") for step in steps]
     for acquisition in (
         "Install dependencies",
@@ -561,3 +565,12 @@ def test_missing_snapshot_root_env_on_provisioning_is_detected():
     del _step(steps, "Provision portable historical b69 snapshot")["env"]["RAG2ATTCK_SNAPSHOT_ROOT"]
     with pytest.raises(AssertionError):
         _assert_ci(workflow)
+
+
+def test_missing_snapshot_root_env_on_integration_tests_is_detected():
+    workflow = deepcopy(_workflow("integration.yml"))
+    steps = workflow["jobs"]["real-retrieval"]["steps"]
+    test_step = _step(steps, "Run real retrieval integration tests without provider access")
+    del test_step["env"]["RAG2ATTCK_SNAPSHOT_ROOT"]
+    with pytest.raises(AssertionError):
+        _assert_integration(workflow)

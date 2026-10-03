@@ -143,4 +143,6 @@ jobs:
           --output "${{ runner.temp }}/snapshot_controller_attestation.json"
 
       - name: Run real retrieval integration tests without provider access
+        env:
+          RAG2ATTCK_SNAPSHOT_ROOT: ${{ runner.temp }}/rag2attck_snapshot_b69a690
         run: uv run python scripts/run_offline_tests.py -m pytest -m integration -q

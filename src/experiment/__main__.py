@@ -51,10 +51,20 @@ def _handle_dry_run(args: argparse.Namespace) -> int:
 
 
 def _handle_preflight(args: argparse.Namespace) -> int:
-    repo_root = Path(__file__).resolve().parents[2]
+    import os
+
+    snap_env = os.environ.get("RAG2ATTCK_SNAPSHOT_ROOT")
+    if snap_env and (Path(snap_env) / "config" / "canonical_experiment_lock_v1.json").is_file():
+        repo_root = Path(snap_env).resolve()
+    else:
+        repo_root = Path(__file__).resolve().parents[2]
 
     # Protocol file check
-    protocol_path = Path(args.protocol_file if args.protocol_file else _default_protocol())
+    protocol_path = (
+        Path(args.protocol_file)
+        if args.protocol_file
+        else (repo_root / "config" / "experiment_protocol_v1.json")
+    )
     if not protocol_path.exists():
         print(
             json.dumps(
@@ -91,7 +101,11 @@ def _handle_preflight(args: argparse.Namespace) -> int:
         return 1
 
     # Plan load
-    config_path = Path(args.config if args.config else _default_config())
+    config_path = (
+        Path(args.config)
+        if args.config
+        else (repo_root / "config" / "experiment_config.json")
+    )
     try:
         plan = load_plan(config_path)
     except Exception as exc:
@@ -797,13 +811,13 @@ def main(argv=None, *, provider_factory=None) -> int:
     preflight_parser.add_argument(
         "--config",
         type=Path,
-        default=_default_config(),
+        default=None,
         help="Path to experiment_config.json",
     )
     preflight_parser.add_argument(
         "--protocol-file",
         type=Path,
-        default=_default_protocol(),
+        default=None,
         help="Path to frozen experiment_protocol_v1.json",
     )
     preflight_parser.add_argument(

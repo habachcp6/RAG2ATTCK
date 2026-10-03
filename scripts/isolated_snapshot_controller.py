@@ -776,8 +776,8 @@ def main() -> int:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("reports/evidence/snapshot_controller_attestation.json"),
-        help="Output path for attestation report",
+        required=True,
+        help="Output path for attestation report (mandatory explicit path outside snapshot/source)",
     )
     args = parser.parse_args()
 

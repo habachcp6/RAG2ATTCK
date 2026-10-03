@@ -4381,9 +4381,10 @@ def test_resume_rejects_dirty_source(snapshot_env, monkeypatch, tmp_path, capsys
 
     from src.experiment.authorization import validate_experiment_readiness
 
-    config_path = ROOT / "config" / "experiment_config.json"
+    target_root = snapshot_env if snapshot_env else ROOT
+    config_path = target_root / "config" / "experiment_config.json"
     plan = load_plan(config_path)
-    proto_path = ROOT / "config" / "experiment_protocol_v1.json"
+    proto_path = target_root / "config" / "experiment_protocol_v1.json"
     proto = ScientificProtocolApproval(**parse_json(proto_path.read_bytes()))
     auth = ExecutionAuthorization(
         human_approval_token="TOKEN_RESUME_DIRTY",
@@ -4408,6 +4409,7 @@ def test_resume_rejects_dirty_source(snapshot_env, monkeypatch, tmp_path, capsys
             plan=plan,
             protocol=proto,
             authorization=auth,
+            repo_root=target_root,
             output_dir=tmp_path / "resume_dirty",
             is_live=True,
             is_resume=True,

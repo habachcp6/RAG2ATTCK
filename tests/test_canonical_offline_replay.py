@@ -18,12 +18,8 @@ from typing import Any
 
 import pytest
 
-DEFAULT_BUNDLE_DIR = Path(
-    os.getenv(
-        "CANONICAL_BUNDLE_DIR",
-        "C:/Users/hahoa/.codex/artifacts/rag2attck/canonical-accepted-bundle-v2",
-    )
-)
+CANONICAL_BUNDLE_DIR_ENV = os.getenv("CANONICAL_BUNDLE_DIR")
+DEFAULT_BUNDLE_DIR = Path(CANONICAL_BUNDLE_DIR_ENV).resolve() if CANONICAL_BUNDLE_DIR_ENV else None
 CANONICAL_BUNDLE_SHA256 = "00cd9df247af395e924235b42108b91e1fdc7ca3e7a190499cb7544f6bc6612f"
 LOCAL_STAGED_BUNDLE_DIR = (
     Path(__file__).resolve().parents[1]
@@ -39,11 +35,16 @@ def compute_sha256(data: bytes) -> str:
 
 
 @pytest.mark.skipif(
-    not DEFAULT_BUNDLE_DIR.exists(),
-    reason="Canonical accepted bundle not found on CI runner (local artifact)",
+    not CANONICAL_BUNDLE_DIR_ENV,
+    reason="CANONICAL_BUNDLE_DIR environment variable not configured",
 )
 class TestCanonicalBundleIntegrity:
     """Verifies cryptographic integrity of the Root-accepted canonical metric bundle."""
+
+    @pytest.fixture(autouse=True)
+    def _validate_configured_bundle(self):
+        if not DEFAULT_BUNDLE_DIR or not DEFAULT_BUNDLE_DIR.is_dir():
+            pytest.fail(f"Configured CANONICAL_BUNDLE_DIR does not exist: {DEFAULT_BUNDLE_DIR}")
 
     def test_bundle_manifest_exists_and_matches_sha(self):
         manifest_path = DEFAULT_BUNDLE_DIR / "canonical_metric_bundle_v1.json"
@@ -84,11 +85,16 @@ class TestCanonicalBundleIntegrity:
 
 
 @pytest.mark.skipif(
-    not DEFAULT_BUNDLE_DIR.exists(),
-    reason="Canonical accepted bundle not found on CI runner (local artifact)",
+    not CANONICAL_BUNDLE_DIR_ENV,
+    reason="CANONICAL_BUNDLE_DIR environment variable not configured",
 )
 class TestCanonicalAccountingReconciliation:
     """Verifies monetary ledger, anchor, journal, and retry reconciliation."""
+
+    @pytest.fixture(autouse=True)
+    def _validate_configured_bundle(self):
+        if not DEFAULT_BUNDLE_DIR or not DEFAULT_BUNDLE_DIR.is_dir():
+            pytest.fail(f"Configured CANONICAL_BUNDLE_DIR does not exist: {DEFAULT_BUNDLE_DIR}")
 
     def test_monetary_arithmetic_consistency(self):
         inputs_dir = DEFAULT_BUNDLE_DIR / "inputs"
@@ -229,13 +235,14 @@ class TestMathematicalComparatorAndFailClosed:
         assert len(disc) == 3, f"Expected 3 missing key discrepancies, got {len(disc)}"
 
     def test_baseline_22_files_verification_on_disk(self):
-        from scripts.reproduce_canonical_study import REPO_ROOT, verify_protected_baseline
+        from scripts.reproduce_canonical_study import verify_protected_baseline
 
-        snap_env = os.environ.get(
-            "RAG2ATTCK_SNAPSHOT_ROOT",
-            "C:/Users/hahoa/.codex/artifacts/rag2attck/finalization_snapshots/b69a690",
-        )
-        target_root = Path(snap_env) if Path(snap_env).exists() else REPO_ROOT
+        snap_env = os.environ.get("RAG2ATTCK_SNAPSHOT_ROOT")
+        if not snap_env:
+            pytest.skip("RAG2ATTCK_SNAPSHOT_ROOT environment variable not configured")
+        target_root = Path(snap_env).resolve()
+        if not target_root.is_dir():
+            pytest.fail(f"Configured RAG2ATTCK_SNAPSHOT_ROOT does not exist: {target_root}")
         ok, logs = verify_protected_baseline(target_root)
         assert ok is True, f"Baseline verification failed: {logs}"
 
@@ -311,10 +318,13 @@ class TestMathematicalComparatorAndFailClosed:
 class TestDispatchSpiesAndFailClosedReplay:
     """Verifies evaluator/RQ dispatch spies, mutants, and fail-closed missing module gates."""
 
-    @pytest.mark.skipif(
-        not DEFAULT_BUNDLE_DIR.exists(),
-        reason="Canonical accepted bundle not found on CI runner (local artifact)",
-    )
+    @pytest.fixture(autouse=True)
+    def _validate_configured_bundle(self):
+        if not CANONICAL_BUNDLE_DIR_ENV:
+            pytest.skip("CANONICAL_BUNDLE_DIR environment variable not configured")
+        if not DEFAULT_BUNDLE_DIR or not DEFAULT_BUNDLE_DIR.is_dir():
+            pytest.fail(f"Configured CANONICAL_BUNDLE_DIR does not exist: {DEFAULT_BUNDLE_DIR}")
+
     def test_native_evaluator_invocation_spy(self, monkeypatch, tmp_path):
         """Verify native evaluate_experiment is invoked with strict protocol and inputs."""
         import src.evaluation.experiment_metrics as em
@@ -346,10 +356,6 @@ class TestDispatchSpiesAndFailClosedReplay:
         assert hasattr(spy_called["inputs"], "records")
         assert hasattr(spy_called["protocol"], "protocol_version")
 
-    @pytest.mark.skipif(
-        not DEFAULT_BUNDLE_DIR.exists(),
-        reason="Canonical accepted bundle not found on CI runner (local artifact)",
-    )
     def test_rq_analysis_invocation_spy(self, monkeypatch, tmp_path):
         """Verify run_rq_analysis is genuinely invoked with required analytical parameters."""
         from scripts.reproduce_canonical_study import REPO_ROOT, replay_saved_evaluation
@@ -416,10 +422,6 @@ class TestDispatchSpiesAndFailClosedReplay:
         assert ok2 is False, "No-op empty result must fail closed"
         assert len(disc2) >= 3
 
-    @pytest.mark.skipif(
-        not DEFAULT_BUNDLE_DIR.exists(),
-        reason="Canonical accepted bundle not found on CI runner (local artifact)",
-    )
     def test_missing_rq_module_fails_closed_never_passes(self, monkeypatch, tmp_path):
         """Verify that missing scripts.analysis.evaluate_rqs returns False, NEVER True."""
         import builtins

@@ -128,8 +128,19 @@ jobs:
           c=json.load(open('config/retrieval.json', encoding='utf-8'));
           SentenceTransformer(c['embedding_model_id'], revision=c['embedding_model_revision'])"
 
-      - name: Run experiment preflight gate
-        run: uv run python -m src.experiment preflight
+      - name: Provision portable historical b69 snapshot
+        env:
+          RAG2ATTCK_SNAPSHOT_ROOT: ${{ runner.temp }}/rag2attck_snapshot_b69a690
+        run: uv run python scripts/provision_snapshot.py --target-dir "${{ runner.temp }}/rag2attck_snapshot_b69a690"
+
+      - name: Verify historical positive via isolated snapshot controller
+        env:
+          RAG2ATTCK_SNAPSHOT_ROOT: ${{ runner.temp }}/rag2attck_snapshot_b69a690
+        run: >-
+          uv run python scripts/isolated_snapshot_controller.py
+          --snapshot-root "${{ runner.temp }}/rag2attck_snapshot_b69a690"
+          --task preflight
+          --output "${{ runner.temp }}/snapshot_controller_attestation.json"
 
       - name: Run real retrieval integration tests without provider access
         run: uv run python scripts/run_offline_tests.py -m pytest -m integration -q

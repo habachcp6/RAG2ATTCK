@@ -78,9 +78,9 @@ from scripts.isolated_snapshot_worker import (
 
 def get_snapshot_root() -> Path:
     env_root = os.environ.get("RAG2ATTCK_SNAPSHOT_ROOT")
-    if env_root:
-        return Path(env_root).resolve()
-    return Path("C:/Users/hahoa/.codex/artifacts/rag2attck/finalization_snapshots/b69a690")
+    if env_root and env_root.strip():
+        return Path(env_root.strip()).resolve()
+    return Path("")
 
 
 GENUINE_SNAPSHOT_ROOT = get_snapshot_root()
@@ -92,7 +92,7 @@ def require_genuine_snapshot() -> Path:
     If RAG2ATTCK_SNAPSHOT_ROOT environment variable is configured (e.g. in CI or test runner),
     any missing directory, missing .venv, or invalid snapshot state MUST fail closed (pytest.fail).
     If unconfigured (local workstation without env var), skip cleanly with a clear scope label:
-    'Local test skipped: RAG2ATTCK_SNAPSHOT_ROOT not configured'.
+    'Test skipped: RAG2ATTCK_SNAPSHOT_ROOT not configured'.
     """
     global GENUINE_SNAPSHOT_ROOT
     env_root = os.environ.get("RAG2ATTCK_SNAPSHOT_ROOT")
@@ -855,3 +855,53 @@ def test_negative_dirty_or_wrong_git_commit_rejected(tmp_path: Path):
         ]
         with pytest.raises(RuntimeError, match="Snapshot working directory is dirty"):
             verify_snapshot_git_identity(fake_repo)
+
+
+def test_negative_current_drift_denial_when_snapshot_env_configured(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """Regression test: current tree with code drift must fail-closed on
+    validate_canonical_experiment_lock even when RAG2ATTCK_SNAPSHOT_ROOT points
+    to a valid detached b69 snapshot.
+    A changed tree must NEVER pass validation simply because a valid historical snapshot exists.
+    Must strictly NOT dispatch any provider calls.
+    """
+    from src.experiment.authorization import (
+        ProtocolNotFrozenError,
+        ScientificProtocolApproval,
+        validate_canonical_experiment_lock,
+    )
+    from src.experiment.config import load_plan
+
+    proto_dict = json.loads(
+        Path("config/experiment_protocol_v1.json").read_text(encoding="utf-8")
+    )
+    proto = ScientificProtocolApproval(**proto_dict)
+    plan = load_plan("config/experiment_config.json")
+
+    # If snapshot is available, point RAG2ATTCK_SNAPSHOT_ROOT to it
+    if GENUINE_SNAPSHOT_ROOT and GENUINE_SNAPSHOT_ROOT.is_dir():
+        monkeypatch.setenv("RAG2ATTCK_SNAPSHOT_ROOT", str(GENUINE_SNAPSHOT_ROOT))
+    else:
+        monkeypatch.setenv("RAG2ATTCK_SNAPSHOT_ROOT", "some/mock/valid/snapshot")
+
+    # Calling validate_canonical_experiment_lock on the current worktree
+    # (which has drifted files in src/) MUST raise ProtocolNotFrozenError.
+    with pytest.raises(ProtocolNotFrozenError, match="code drift detected"):
+        validate_canonical_experiment_lock(plan, proto, repo_root=Path("."))
+
+
+def test_controller_cli_requires_output_argument():
+    """Controller CLI entrypoint must reject execution without explicit --output argument."""
+    controller_script = (
+        Path(__file__).resolve().parent.parent / "scripts" / "isolated_snapshot_controller.py"
+    )
+    res = subprocess.run(
+        [sys.executable, str(controller_script), "--task", "preflight"],
+        capture_output=True,
+        text=True,
+    )
+    assert res.returncode != 0
+    assert "the following arguments are required: --output" in (res.stdout + res.stderr)
+
+

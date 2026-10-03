@@ -185,9 +185,21 @@ def _assert_ci(workflow):
     assert shlex.split(_step(steps, "Run Full Test Suite")["run"]) == (
         GUARDED_PYTHON + ["pytest", "-m", "not integration", "-q"]
     )
-    assert _step(steps, "Run experiment preflight gate")["run"] == (
-        "uv run python -m src.experiment preflight"
-    )
+    hist_step = _step(steps, "Verify historical positive via isolated snapshot controller")
+    assert shlex.split(hist_step["run"]) == [
+        "uv",
+        "run",
+        "python",
+        "scripts/isolated_snapshot_controller.py",
+        "--snapshot-root",
+        "${{ runner.temp }}/rag2attck_snapshot_b69a690",
+        "--task",
+        "preflight",
+        "--output",
+        "${{ runner.temp }}/snapshot_controller_attestation.json",
+    ]
+    drift_step = _step(steps, "Verify current tree code drift is denied fail-closed")
+    assert "src.experiment" in drift_step["run"] and "preflight" in drift_step["run"]
     assert shlex.split(
         _step(steps, "Verify frozen synthetic benchmark and same-seed reproduction")["run"]
     ) == GUARDED_PYTHON + ["src.data_ground_truth", "verify-synthetic"]
@@ -205,7 +217,11 @@ def _assert_ci(workflow):
     expected_snap_root = "${{ runner.temp }}/rag2attck_snapshot_b69a690"
     assert prov_step.get("env", {}).get("RAG2ATTCK_SNAPSHOT_ROOT") == expected_snap_root
     assert (
-        _step(steps, "Run experiment preflight gate").get("env", {}).get("RAG2ATTCK_SNAPSHOT_ROOT")
+        hist_step.get("env", {}).get("RAG2ATTCK_SNAPSHOT_ROOT")
+        == expected_snap_root
+    )
+    assert (
+        drift_step.get("env", {}).get("RAG2ATTCK_SNAPSHOT_ROOT")
         == expected_snap_root
     )
     assert (
@@ -216,9 +232,10 @@ def _assert_ci(workflow):
     names = [step.get("name") for step in steps]
     idx_attack = names.index("Acquire ATT&CK v19.2 reference")
     idx_snap = names.index("Provision portable historical b69 snapshot")
-    idx_preflight = names.index("Run experiment preflight gate")
+    idx_hist = names.index("Verify historical positive via isolated snapshot controller")
+    idx_drift = names.index("Verify current tree code drift is denied fail-closed")
     idx_tests = names.index("Run Full Test Suite")
-    assert idx_attack < idx_snap < idx_preflight < idx_tests
+    assert idx_attack < idx_snap < idx_hist < idx_drift < idx_tests
 
 
 def _assert_integration(workflow):
@@ -232,8 +249,25 @@ def _assert_integration(workflow):
     assert shlex.split(_step(steps, test_name)["run"]) == (
         GUARDED_PYTHON + ["pytest", "-m", "integration", "-q"]
     )
-    assert _step(steps, "Run experiment preflight gate")["run"] == (
-        "uv run python -m src.experiment preflight"
+    hist_step = _step(steps, "Verify historical positive via isolated snapshot controller")
+    assert shlex.split(hist_step["run"]) == [
+        "uv",
+        "run",
+        "python",
+        "scripts/isolated_snapshot_controller.py",
+        "--snapshot-root",
+        "${{ runner.temp }}/rag2attck_snapshot_b69a690",
+        "--task",
+        "preflight",
+        "--output",
+        "${{ runner.temp }}/snapshot_controller_attestation.json",
+    ]
+    prov_step = _step(steps, "Provision portable historical b69 snapshot")
+    expected_snap_root = "${{ runner.temp }}/rag2attck_snapshot_b69a690"
+    assert prov_step.get("env", {}).get("RAG2ATTCK_SNAPSHOT_ROOT") == expected_snap_root
+    assert (
+        hist_step.get("env", {}).get("RAG2ATTCK_SNAPSHOT_ROOT")
+        == expected_snap_root
     )
     names = [step.get("name") for step in steps]
     for acquisition in (
@@ -243,7 +277,11 @@ def _assert_integration(workflow):
     ):
         _step(steps, acquisition)
         assert names.index(acquisition) < names.index(test_name)
-    assert names.index("Run experiment preflight gate") < names.index(test_name)
+    assert names.index("Provision portable historical b69 snapshot") < names.index(test_name)
+    assert (
+        names.index("Verify historical positive via isolated snapshot controller")
+        < names.index(test_name)
+    )
     assert shlex.split(_step(steps, "Acquire ATT&CK v19.2 reference")["run"]) == ACQUIRE_ATTACK
     assert (
         shlex.split(_step(steps, "Acquire pinned embedding model before offline checks")["run"])
@@ -265,7 +303,8 @@ def test_combined_ci_keeps_lint_guard_and_acquisition_contracts():
     [
         "Lint T20 critical code paths",
         "Lint pre-experiment infrastructure",
-        "Run experiment preflight gate",
+        "Verify historical positive via isolated snapshot controller",
+        "Verify current tree code drift is denied fail-closed",
         "Provision portable historical b69 snapshot",
         "Run Full Test Suite",
         "Verify frozen synthetic benchmark and same-seed reproduction",
@@ -418,13 +457,30 @@ def test_shallow_checkout_for_provenance_tests_is_detected(workflow_name, job_na
     [
         ("ci.yml", "full-test-suite", "Lint T20 critical code paths", _assert_ci),
         ("ci.yml", "full-test-suite", "Lint pre-experiment infrastructure", _assert_ci),
-        ("ci.yml", "full-test-suite", "Run experiment preflight gate", _assert_ci),
+        (
+            "ci.yml",
+            "full-test-suite",
+            "Verify historical positive via isolated snapshot controller",
+            _assert_ci,
+        ),
+        (
+            "ci.yml",
+            "full-test-suite",
+            "Verify current tree code drift is denied fail-closed",
+            _assert_ci,
+        ),
         ("ci.yml", "full-test-suite", "Provision portable historical b69 snapshot", _assert_ci),
         ("ci.yml", "full-test-suite", "Run Full Test Suite", _assert_ci),
         (
             "integration.yml",
             "real-retrieval",
-            "Run experiment preflight gate",
+            "Provision portable historical b69 snapshot",
+            _assert_integration,
+        ),
+        (
+            "integration.yml",
+            "real-retrieval",
+            "Verify historical positive via isolated snapshot controller",
             _assert_integration,
         ),
         (

@@ -441,16 +441,27 @@ def execute_probe_8(tmp_path: Path) -> AuditProbeResult:
 
 
 def execute_probe_9() -> AuditProbeResult:
-    """Probe 9: Run canonical acceptance verification on production candidate package."""
+    """Probe 9: Run canonical acceptance verification on production candidate package with explicit expected manifest SHA."""
     res = AuditProbeResult(
         9,
         "Production Candidate Package Acceptance Verification",
         "Run verify_canonical_package_acceptance.py on actual candidate package -> MUST PASS with zero violations",
     )
+    inv_path = REPO_ROOT / "reports/evidence/public_v4_candidate_envelope_inventory.json"
+    expected_manifest_sha = None
+    if inv_path.is_file():
+        try:
+            inv_data = json.loads(inv_path.read_text(encoding="utf-8"))
+            expected_manifest_sha = inv_data.get("candidate_package", {}).get("manifest_sha256")
+        except Exception:
+            pass
+
     cmd = [
         sys.executable,
         str(REPO_ROOT / "scripts/verify_canonical_package_acceptance.py"),
     ]
+    if expected_manifest_sha:
+        cmd.extend(["--expected-manifest-sha256", expected_manifest_sha])
     proc = subprocess.run(cmd, capture_output=True, text=True)
 
     if proc.returncode == 0 and "ACCEPTANCE VERIFICATION VERDICT: PASS" in proc.stdout:

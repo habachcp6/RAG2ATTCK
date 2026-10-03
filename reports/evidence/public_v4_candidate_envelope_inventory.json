@@ -3,16 +3,16 @@
     "base_v3_items_count": 23,
     "base_v3_manifest_sha256": "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c",
     "manifest_file": "package_manifest_v4.json",
-    "manifest_sha256": "0e40bd954c4532bd4321213ed69548fe70e84dd776e2e07e1613d236ad47b271",
-    "manifest_size_bytes": 9908,
+    "manifest_sha256": "dbc2e133e8de30d6afa8345dcfa8b82890b13367a2bb24775278cc814a83dee2",
+    "manifest_size_bytes": 9940,
     "output_directory": "artifacts/packages/public_v4_candidate_20261003",
     "output_zip": "artifacts/packages/public_v4_candidate_20261003.zip",
     "supplemental_items_count": 7,
-    "total_files_in_package": 33,
-    "zip_sha256": "13ff3ce9a188edff354abd653c7e13bf5b7c8e88f52a369e1be8007879ce9e10",
-    "zip_size_bytes": 2343099
+    "total_files_in_package": 34,
+    "zip_sha256": "1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1",
+    "zip_size_bytes": 2343105
   },
-  "generated_timestamp_utc": "2026-10-03T10:51:02Z",
+  "generated_timestamp_utc": "2026-10-03T11:47:28Z",
   "role_index": {
     "accepted_metric_bundle": "supplemental/evidence/canonical_metric_bundle_v2.json",
     "base_manifest_descriptor": "base_public_v3/canonical_bundle_manifest.json",

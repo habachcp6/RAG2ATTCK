@@ -73,7 +73,13 @@ def run_acceptance_verification(
             print(f"FAIL / BLOCKED: Target file for role '{role}' missing: {target_f}", file=sys.stderr)
             sys.exit(1)
 
-    # 4. Verify base v3 descriptor matches trusted anchor
+    # 4. Require README.md in candidate directory
+    readme_file = candidate_dir / "README.md"
+    if not readme_file.is_file():
+        print(f"FAIL / BLOCKED: Required package file 'README.md' missing from candidate directory: {readme_file}", file=sys.stderr)
+        sys.exit(1)
+
+    # 5. Verify base v3 descriptor matches trusted anchor
     base_pkg = manifest.get("base_package", {})
     if base_pkg.get("manifest_sha256") != BASE_V3_DESCRIPTOR_SHA256:
         print(
@@ -82,7 +88,7 @@ def run_acceptance_verification(
         )
         sys.exit(1)
 
-    # 5. Verify ZIP archive integrity if provided
+    # 6. Verify ZIP archive integrity if provided
     zip_verified = False
     zip_sha = None
     zip_len = None
@@ -217,21 +223,34 @@ def run_acceptance_verification(
                 for rel_p, spec in tools_dict.items():
                     expected_inventory[rel_p] = spec
 
+                base_man_target = candidate_dir / base_man_rel
+                if not base_man_target.is_file():
+                    print(
+                        f"FAIL / BLOCKED: Required base manifest descriptor missing from candidate directory: {base_man_target}",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
+                _, bm_sha, bm_len = read_verified_buffer(base_man_target)
                 expected_inventory[base_man_rel] = {
-                    "sha256": base_pkg.get("manifest_sha256"),
-                    "size_bytes": (candidate_dir / base_man_rel).stat().st_size if (candidate_dir / base_man_rel).is_file() else 0,
+                    "sha256": bm_sha,
+                    "size_bytes": bm_len,
                 }
                 expected_inventory["package_manifest_v4.json"] = {
                     "sha256": m_sha,
                     "size_bytes": m_len,
                 }
                 readme_target = candidate_dir / "README.md"
-                if readme_target.is_file():
-                    _, r_sha, r_len = read_verified_buffer(readme_target)
-                    expected_inventory["README.md"] = {
-                        "sha256": r_sha,
-                        "size_bytes": r_len,
-                    }
+                if not readme_target.is_file():
+                    print(
+                        f"FAIL / BLOCKED: Required package file 'README.md' missing from candidate directory: {readme_target}",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
+                _, r_sha, r_len = read_verified_buffer(readme_target)
+                expected_inventory["README.md"] = {
+                    "sha256": r_sha,
+                    "size_bytes": r_len,
+                }
 
                 for item_rel, spec in expected_inventory.items():
                     # Stream hashing directly from ZIP member stream

@@ -496,6 +496,7 @@ def build_candidate_package(
         },
         "role_index": role_index,
         "total_package_payload_files": len(base_items_spec) + len(supplemental_items_spec) + 1,  # +1 for verifier
+        "total_files_in_package": len(base_items_spec) + len(supplemental_items_spec) + 4,  # +1 base descriptor, +1 manifest, +1 verifier, +1 readme
     }
 
     # Format manifest cleanly without self-referential hash
@@ -530,6 +531,18 @@ def build_candidate_package(
 
     _, zip_sha, zip_len = read_verified_buffer(output_zip)
 
+    # Dynamic package file count check across physical filesystem
+    actual_package_files = [
+        f for f in output_dir.rglob("*")
+        if f.is_file() and f.suffix not in {".pyc", ".zip"} and "__pycache__" not in f.parts
+    ]
+    actual_total_file_count = len(actual_package_files)
+    expected_total_file_count = len(base_items_spec) + len(supplemental_items_spec) + 4
+    if actual_total_file_count != expected_total_file_count:
+        raise ValueError(
+            f"Package member count mismatch: physical count {actual_total_file_count} != expected {expected_total_file_count}"
+        )
+
     # Step 8: Build externally Git-anchored Trust Envelope Inventory
     git_inventory = {
         "schema_version": "public_v4_candidate_envelope_inventory_v1",
@@ -561,7 +574,7 @@ def build_candidate_package(
             "base_v3_manifest_sha256": base_man_sha,
             "base_v3_items_count": len(base_items_spec),
             "supplemental_items_count": len(supplemental_items_spec),
-            "total_files_in_package": len(base_items_spec) + len(supplemental_items_spec) + 3,  # +manifest, verifier, readme
+            "total_files_in_package": actual_total_file_count,
         },
         "role_index": role_index,
         "verification_attestation": {

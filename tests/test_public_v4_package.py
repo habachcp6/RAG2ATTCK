@@ -109,6 +109,7 @@ class TestPublicV4PackageUnit:
         assert inv_data["candidate_package"]["base_v3_manifest_sha256"] == BASE_V3_DESCRIPTOR_SHA256
         assert inv_data["candidate_package"]["base_v3_items_count"] == 23
         assert inv_data["candidate_package"]["supplemental_items_count"] == 7
+        assert inv_data["candidate_package"]["total_files_in_package"] == 34
         assert inv_data["verification_attestation"]["offline_egress_guaranteed"] is True
         assert inv_data["verification_attestation"]["base_public_v3_exact_bytes_preserved"] is True
 
@@ -359,6 +360,22 @@ class TestPublicV4PackageUnit:
             run_acceptance_verification(candidate_dir=fake_dir, candidate_zip=non_existent_zip)
         assert exc_info.value.code == 1
 
+    def test_acceptance_runner_missing_readme_fails_closed(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+        """Verify acceptance runner strictly fails closed if README.md is missing from candidate directory."""
+        if not OUTPUT_V4_DEFAULT_DIR.is_dir():
+            pytest.skip("Requires staged package")
+        clone = tmp_path / "pkg_no_readme"
+        shutil.copytree(OUTPUT_V4_DEFAULT_DIR, clone)
+        readme = clone / "README.md"
+        if readme.is_file():
+            readme.unlink()
+
+        with pytest.raises(SystemExit) as exc_info:
+            run_acceptance_verification(candidate_dir=clone)
+        assert exc_info.value.code == 1
+        captured = capsys.readouterr()
+        assert "Required package file 'README.md' missing from candidate directory" in captured.err
+
 
 class TestPublicV4PackageCanonicalAcceptance:
     """
@@ -509,3 +526,12 @@ class TestPublicV4PackageCanonicalAcceptance:
         assert res["verified_supplemental_items"] == 7
         assert res["verified_roles_count"] >= 8
         assert res["privacy_violations_count"] == 0
+
+    def test_package_total_files_count_exact_34(self, package_dir: Path, manifest: dict) -> None:
+        """Verify candidate package contains exactly 34 files (23 base + 7 supplemental + 1 base descriptor + 1 manifest + 1 verifier + 1 readme)."""
+        actual_files = [
+            f for f in package_dir.rglob("*")
+            if f.is_file() and f.suffix not in {".pyc", ".zip"} and "__pycache__" not in f.parts
+        ]
+        assert len(actual_files) == 34
+        assert manifest.get("total_files_in_package") == 34

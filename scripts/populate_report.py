@@ -112,6 +112,17 @@ def compute_file_sha256(filepath: Path) -> str:
     return h.hexdigest()
 
 
+def _normalize_repo_rel_path(path: Any) -> str:
+    """Normalize path relative to repository root to prevent machine path leaks."""
+    if not path:
+        return ""
+    p = Path(path)
+    try:
+        return str(p.resolve().relative_to(REPO_ROOT.resolve())).replace("\\", "/")
+    except Exception:
+        return str(p).replace("\\", "/")
+
+
 def validate_finite_number(
     val: Any,
     name: str,
@@ -989,7 +1000,7 @@ def extract_slots(
             "manifest_sha256": manifest_digest,
             "protocol_version": seal.get("protocol_version"),
             "timestamp_utc": datetime.now(timezone.utc).isoformat(),
-            "source_data_dir": str(data["data_dir"]),
+            "source_data_dir": _normalize_repo_rel_path(data["data_dir"]),
         }
 
         slots: dict[str, Any] = {
@@ -1220,14 +1231,14 @@ def extract_slots(
             "manifest_sha256": manifest_digest,
             "protocol_version": data.get("seal", {}).get("protocol_version"),
             "timestamp_utc": datetime.now(timezone.utc).isoformat(),
-            "source_data_dir": str(data["data_dir"]),
+            "source_data_dir": _normalize_repo_rel_path(data["data_dir"]),
         }
     else:
         metadata_dict = {
             "fixture_only": True,
             "disclaimer": DISCLAIMER_TEXT,
             "timestamp_utc": datetime.now(timezone.utc).isoformat(),
-            "source_fixture_dir": str(data["data_dir"]),
+            "source_fixture_dir": _normalize_repo_rel_path(data["data_dir"]),
         }
 
     slots: dict[str, Any] = {

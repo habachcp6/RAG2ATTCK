@@ -1,0 +1,42 @@
+{
+  "candidate_package": {
+    "base_v3_items_count": 23,
+    "base_v3_manifest_sha256": "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c",
+    "manifest_file": "package_manifest_v4.json",
+    "manifest_sha256": "a907a4beaf5b2eafe08df7793b98f6bfcb483763bf757b8bcd3f290e847fb201",
+    "manifest_size_bytes": 9907,
+    "output_directory": "C:/Users/hahoa/.codex/artifacts/rag2attck/public_v4_candidate_20261003",
+    "output_zip": "C:/Users/hahoa/.codex/artifacts/rag2attck/public_v4_candidate_20261003.zip",
+    "supplemental_items_count": 7,
+    "total_files_in_package": 33,
+    "zip_sha256": "fc153dbceb929ac943860c4a471501fe934e97dcbfc83f7789deb9c158505d71",
+    "zip_size_bytes": 2340521
+  },
+  "generated_timestamp_utc": "2026-10-03T03:57:45Z",
+  "role_index": {
+    "accepted_metric_bundle": "supplemental/evidence/canonical_metric_bundle_v2.json",
+    "base_manifest_descriptor": "base_public_v3/canonical_bundle_manifest.json",
+    "canonical_run_seal": "supplemental/evidence/canonical_run_seal_v1.json",
+    "execution_log": "supplemental/logs/task-1264.log",
+    "root_freeze_envelope": "supplemental/evidence/root_metric_bundle_v2_freeze_95c0233.json",
+    "root_inventory_acceptance": "supplemental/evidence/root_public_inventory_acceptance_30b9834.json",
+    "root_track_a_acceptance": "supplemental/evidence/root_track_a_acceptance_b69a690.json",
+    "sanitized_rq_provenance": "supplemental/provenance/s2_rq_v2_execute_public.md"
+  },
+  "root_acceptance_receipt": {
+    "bytes": 2405,
+    "path": "reports/evidence/root_public_inventory_acceptance_30b9834.json",
+    "sha256": "4dfd888bcce1330a26789068517aef37631e484c59a65c0dfd7e2915180adda9",
+    "source_sha": "30b9834dcb63c3e27299e1fec2978052abedc57c",
+    "verdict": "PASS_INVENTORY_AND_GENERATED_PLAN_SCOPE"
+  },
+  "schema_version": "public_v4_candidate_envelope_inventory_v1",
+  "source_repository": "habachcp6/RAG2ATTCK",
+  "verification_attestation": {
+    "base_public_v3_exact_bytes_preserved": true,
+    "no_new_scorers_or_statistical_replay": true,
+    "offline_egress_guaranteed": true,
+    "privacy_scan_clean": true,
+    "verifier_self_contained": true
+  }
+}

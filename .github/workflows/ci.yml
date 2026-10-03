@@ -188,7 +188,7 @@ jobs:
         env:
           RAG2ATTCK_SNAPSHOT_ROOT: ${{ runner.temp }}/rag2attck_snapshot_b69a690
         run: >-
-          uv run python -c "import subprocess, sys; res = subprocess.run([sys.executable, '-m', 'src.experiment', 'preflight'], capture_output=True, text=True); out = res.stdout + res.stderr; assert res.returncode != 0; assert 'code drift detected' in out and 'LIVE_EXECUTION_BLOCKED' in out; print('SUCCESS - current tree code drift denied fail-closed')"
+          uv run python -c "import os, subprocess, sys; e = dict(os.environ); e.pop('RAG2ATTCK_SNAPSHOT_ROOT', None); res = subprocess.run([sys.executable, '-m', 'src.experiment', 'preflight'], env=e, capture_output=True, text=True); out = res.stdout + res.stderr; assert res.returncode != 0; assert 'code drift detected' in out and 'LIVE_EXECUTION_BLOCKED' in out; print('SUCCESS - current tree code drift denied fail-closed')"
 
       - name: Run Full Test Suite
         env:

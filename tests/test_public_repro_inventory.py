@@ -36,6 +36,12 @@ from scripts.collect_public_repro_inventory import (
 from src.experiment.config import canonical_bytes, digest
 from src.experiment.authorization import compute_code_manifest, compute_code_manifest_sha256
 
+if not (REPO_ROOT / "artifacts/public_package_staging/03_public_canonical_package").is_dir():
+    pytest.skip(
+        "Public package staging directory not available in CI environment",
+        allow_module_level=True,
+    )
+
 
 class TestPublicReproInventory:
     """Test suite for public reproduction master evidence inventory."""

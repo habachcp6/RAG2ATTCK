@@ -27,6 +27,12 @@ from scripts.build_public_v4_package import (
     run_privacy_scan,
 )
 
+if not OUTPUT_V4_DEFAULT_DIR.is_dir():
+    pytest.skip(
+        "Candidate public v4 package not available in CI environment",
+        allow_module_level=True,
+    )
+
 
 class TestPublicV4Package:
     """Test suite for Public v4 Candidate Package and Verification Envelope."""

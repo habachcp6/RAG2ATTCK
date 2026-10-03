@@ -188,7 +188,7 @@ jobs:
         env:
           RAG2ATTCK_SNAPSHOT_ROOT: ${{ runner.temp }}/rag2attck_snapshot_b69a690
         run: >-
-          uv run python -c "import os, subprocess, sys; e = dict(os.environ); e.pop('RAG2ATTCK_SNAPSHOT_ROOT', None); res = subprocess.run([sys.executable, '-m', 'src.experiment', 'preflight'], env=e, capture_output=True, text=True); out = res.stdout + res.stderr; assert res.returncode != 0; assert 'code drift detected' in out and 'LIVE_EXECUTION_BLOCKED' in out; print('SUCCESS - current tree code drift denied fail-closed')"
+          uv run python -c "import os, subprocess, sys; r1 = subprocess.run([sys.executable, '-m', 'src.experiment', 'preflight'], capture_output=True, text=True); o1 = r1.stdout + r1.stderr; assert r1.returncode != 0, f'Expected non-zero when env PRESENT, got {r1.returncode}'; assert 'code drift detected' in o1 and 'LIVE_EXECUTION_BLOCKED' in o1; e = dict(os.environ); e.pop('RAG2ATTCK_SNAPSHOT_ROOT', None); r2 = subprocess.run([sys.executable, '-m', 'src.experiment', 'preflight'], env=e, capture_output=True, text=True); o2 = r2.stdout + r2.stderr; assert r2.returncode != 0, f'Expected non-zero when env ABSENT, got {r2.returncode}'; assert 'code drift detected' in o2 and 'LIVE_EXECUTION_BLOCKED' in o2; print('SUCCESS - current tree code drift denied fail-closed with env present and absent')"
 
       - name: Run Full Test Suite
         env:

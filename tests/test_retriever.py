@@ -6,7 +6,6 @@ Separates fast, 100% offline tests from live-model integration tests.
 from __future__ import annotations
 
 import json
-import os
 import re
 from pathlib import Path
 
@@ -458,9 +457,10 @@ class TestFAISSRetrieverIntegration:
         )
 
         # Testcase fixture lock allows integration test to run against current drifted tree
+        canonical_sha = "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4"
         monkeypatch.setattr(
             "src.experiment.authorization.compute_code_manifest_sha256",
-            lambda *args, **kwargs: "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4",
+            lambda *args, **kwargs: canonical_sha,
         )
 
         sample = plan.samples[0]

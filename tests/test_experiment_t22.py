@@ -2795,13 +2795,30 @@ def test_frozen_protocol_v1_integrity_and_validation():
 # ===========================================================================
 
 
-def test_cli_preflight_ready(snapshot_env, capsys):
-    """CLI preflight succeeds when run with --allow-dirty and outputs EXPERIMENT_PREFLIGHT_READY."""
-    ret = main(["preflight", "--allow-dirty"])
-    assert ret == 0
-    out = capsys.readouterr().out
-    assert "EXPERIMENT_PREFLIGHT_READY" in out
-    data = json.loads(out)
+def test_cli_preflight_ready(snapshot_env, tmp_path):
+    """Genuine historical preflight positive succeeds when executed via isolated snapshot
+    controller in a fresh child, attesting loaded b69 origins with zero provider calls.
+    """
+    from scripts.isolated_snapshot_controller import execute_snapshot_task
+
+    out_file = tmp_path / "preflight_attestation.json"
+    result = execute_snapshot_task(
+        snapshot_root=snapshot_env,
+        task="preflight",
+        output_path=out_file,
+    )
+    assert result["status"] == "PASS"
+    assert result["task"] == "preflight"
+    assert result["controller_attestation"]["exit_code"] == 0
+    assert result["loaded_origins_count"] > 0
+    assert result["attempted_egress_count"] == 0
+
+    # Attest that all loaded modules originate strictly from snapshot root
+    snap_posix = snapshot_env.as_posix()
+    for mod_name, origin_path in result["loaded_origins"].items():
+        assert snap_posix in origin_path, f"Origin breach: {mod_name} -> {origin_path}"
+
+    data = result["readiness_report"]
     assert data["provider_calls"] == 0
     assert data["prediction_writes"] == 0
     assert data["split"] == "test"
@@ -2809,6 +2826,19 @@ def test_cli_preflight_ready(snapshot_env, capsys):
     assert data["condition_count"] == 5
     assert data["expected_requests"] == 6400
     assert data["worst_case_attempts"] == 25600
+
+
+def test_cli_preflight_fails_closed_when_modern_code_drifted_with_snapshot_present(
+    snapshot_env, capsys
+):
+    """Current live preflight must deny drift fail-closed even when RAG2ATTCK_SNAPSHOT_ROOT
+    is present and valid, ensuring snapshot env cannot bypass live root guard.
+    """
+    ret = main(["preflight", "--allow-dirty"])
+    assert ret == 1
+    err = capsys.readouterr().err
+    assert "LIVE_EXECUTION_BLOCKED" in err
+    assert "code drift detected" in err
 
 
 def test_cli_preflight_fails_closed_when_modern_code_drifted_without_snapshot(monkeypatch, capsys):
@@ -2823,7 +2853,7 @@ def test_cli_preflight_fails_closed_when_modern_code_drifted_without_snapshot(mo
     assert "code drift detected" in err
 
 
-def test_cli_preflight_dirty_source_blocks(snapshot_env, capsys, monkeypatch):
+def test_cli_preflight_dirty_source_blocks(capsys, monkeypatch):
     """CLI preflight detects uncommitted/dirty changes and fails closed."""
     import subprocess
 
@@ -2836,6 +2866,10 @@ def test_cli_preflight_dirty_source_blocks(snapshot_env, capsys, monkeypatch):
         return orig_run(*args, **kwargs)
 
     monkeypatch.setattr(subprocess, "run", fake_git_status)
+    monkeypatch.setattr(
+        "src.experiment.authorization.compute_code_manifest_sha256",
+        lambda *args, **kwargs: "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4",
+    )
     ret = main(["preflight"])
     assert ret == 1
     err = capsys.readouterr().err
@@ -2865,8 +2899,12 @@ def test_cli_preflight_tampered_protocol_hash_blocks(capsys, tmp_path):
     assert "protocol SHA-256 hash mismatch" in err
 
 
-def test_cli_preflight_insufficient_max_attempts_blocks(snapshot_env, capsys):
+def test_cli_preflight_insufficient_max_attempts_blocks(capsys, monkeypatch):
     """CLI preflight rejects max-attempts smaller than worst-case requirement."""
+    monkeypatch.setattr(
+        "src.experiment.authorization.compute_code_manifest_sha256",
+        lambda *args, **kwargs: "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4",
+    )
     ret = main(["preflight", "--allow-dirty", "--max-attempts", "100"])
     assert ret == 1
     err = capsys.readouterr().err

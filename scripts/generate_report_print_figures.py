@@ -94,10 +94,164 @@ def svg_footer_print() -> str:
     return "</svg>\n"
 
 
-def generate_fig1_architecture_report_v1(out_path: Path, fixture_only: bool = False) -> None:
+FIXTURE_B_FIELDS: Dict[str, Any] = {
+    "total_pairs": 640,
+    "total_views": 1280,
+    "mapped_scorable_views": 718,
+    "macro_universe_classes": 474,
+    "condition_count": 5,
+    "k_depths_str": "1, 3, 5, 10",
+    "no_rag_k": 0,
+    "budget_cap_display": "19.99",
+    "k10_succ_n": 321,
+    "k10_fail_n": 397,
+    "k10_succ_corr": 293,
+    "k10_fail_corr": 278,
+    "k10_succ_p_display": "91.28%",
+    "k10_fail_p_display": "70.03%",
+}
+
+
+def extract_report_print_b_fields(bundle: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Extract required numerical fields for report-print variants directly from
+    the authenticated metric bundle v2.
+
+    Fail-closed: missing keys or invalid values raise KeyError/ValueError immediately.
+    No fallback numbers are permitted.
+    """
+    if not isinstance(bundle, dict):
+        raise ValueError("[FAIL_CLOSED] Metric bundle must be a dictionary")
+
+    # 1. Cohort breakdown
+    if "cohort_breakdown" not in bundle or not isinstance(bundle["cohort_breakdown"], dict):
+        raise KeyError("[FAIL_CLOSED] Metric bundle missing 'cohort_breakdown'")
+    cohort = bundle["cohort_breakdown"]
+
+    req_cohort_keys = ["total_pairs", "total_views", "mapped_scorable_views", "macro_universe_classes"]
+    for k in req_cohort_keys:
+        if k not in cohort:
+            raise KeyError(f"[FAIL_CLOSED] Missing required cohort key: '{k}'")
+        if not isinstance(cohort[k], int) or cohort[k] <= 0:
+            raise ValueError(f"[FAIL_CLOSED] Invalid cohort field '{k}': {cohort[k]}")
+
+    total_pairs = cohort["total_pairs"]
+    total_views = cohort["total_views"]
+    mapped_scorable_views = cohort["mapped_scorable_views"]
+    macro_universe_classes = cohort["macro_universe_classes"]
+
+    # 2. Conditions
+    if "conditions" not in bundle or not isinstance(bundle["conditions"], dict):
+        raise KeyError("[FAIL_CLOSED] Metric bundle missing 'conditions'")
+    conditions = bundle["conditions"]
+    expected_conditions = ["no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10"]
+    for c in expected_conditions:
+        if c not in conditions:
+            raise KeyError(f"[FAIL_CLOSED] Metric bundle missing condition '{c}'")
+
+    condition_count = len(conditions)
+
+    # Validate retrieval_k for no_rag and rag conditions
+    no_rag_k = conditions["no_rag"].get("retrieval_k")
+    if no_rag_k is None or no_rag_k != 0:
+        raise ValueError(f"[FAIL_CLOSED] Invalid no_rag retrieval_k: {no_rag_k}")
+
+    rag_k_vals = []
+    for rk in ["rag_k1", "rag_k3", "rag_k5", "rag_k10"]:
+        c_k = conditions[rk].get("retrieval_k")
+        if c_k is None or not isinstance(c_k, int) or c_k <= 0:
+            raise ValueError(f"[FAIL_CLOSED] Invalid retrieval_k for {rk}: {c_k}")
+        rag_k_vals.append(c_k)
+    k_depths_str = ", ".join(str(k) for k in rag_k_vals)
+
+    # 3. Whole-study financial accounting budget cap
+    if "whole_study_financial_accounting" not in bundle or not isinstance(bundle["whole_study_financial_accounting"], dict):
+        raise KeyError("[FAIL_CLOSED] Metric bundle missing 'whole_study_financial_accounting'")
+    fin = bundle["whole_study_financial_accounting"]
+    if "study_budget_cap_usd" not in fin:
+        raise KeyError("[FAIL_CLOSED] Missing 'study_budget_cap_usd' in whole_study_financial_accounting")
+
+    raw_cap = fin["study_budget_cap_usd"]
+    try:
+        cap_float = float(raw_cap)
+        if cap_float <= 0.0:
+            raise ValueError(f"study_budget_cap_usd non-positive: {cap_float}")
+        cap_display = f"{cap_float:.2f}"
+    except (ValueError, TypeError) as exc:
+        raise ValueError(f"[FAIL_CLOSED] Invalid study_budget_cap_usd '{raw_cap}': {exc}") from exc
+
+    # 4. Fig 5 Subgroups (k=10 conditional accuracy)
+    k10_cond = conditions["rag_k10"]
+    if "rq2_retrieval_and_error" not in k10_cond or not isinstance(k10_cond["rq2_retrieval_and_error"], dict):
+        raise KeyError("[FAIL_CLOSED] Missing 'rq2_retrieval_and_error' in condition 'rag_k10'")
+    rq2 = k10_cond["rq2_retrieval_and_error"]
+
+    if "generation_conditional_accuracy" not in rq2 or not isinstance(rq2["generation_conditional_accuracy"], dict):
+        raise KeyError("[FAIL_CLOSED] Missing 'generation_conditional_accuracy' in rag_k10 rq2")
+    gen_acc = rq2["generation_conditional_accuracy"]
+
+    req_gen_keys = [
+        "retrieval_success_sample_count",
+        "retrieval_failure_sample_count",
+        "correct_given_retrieval_success_count",
+        "correct_given_retrieval_failure_count",
+        "p_correct_given_retrieval_success_display",
+        "p_correct_given_retrieval_failure_display",
+    ]
+    for rk in req_gen_keys:
+        if rk not in gen_acc:
+            raise KeyError(f"[FAIL_CLOSED] Missing required generation_conditional_accuracy key '{rk}'")
+
+    succ_n = gen_acc["retrieval_success_sample_count"]
+    fail_n = gen_acc["retrieval_failure_sample_count"]
+    succ_corr = gen_acc["correct_given_retrieval_success_count"]
+    fail_corr = gen_acc["correct_given_retrieval_failure_count"]
+    succ_p_str = gen_acc["p_correct_given_retrieval_success_display"]
+    fail_p_str = gen_acc["p_correct_given_retrieval_failure_display"]
+
+    if not isinstance(succ_n, int) or succ_n <= 0:
+        raise ValueError(f"[FAIL_CLOSED] Invalid retrieval_success_sample_count: {succ_n}")
+    if not isinstance(fail_n, int) or fail_n <= 0:
+        raise ValueError(f"[FAIL_CLOSED] Invalid retrieval_failure_sample_count: {fail_n}")
+    if not isinstance(succ_corr, int) or succ_corr < 0 or succ_corr > succ_n:
+        raise ValueError(f"[FAIL_CLOSED] Invalid correct_given_retrieval_success_count: {succ_corr}")
+    if not isinstance(fail_corr, int) or fail_corr < 0 or fail_corr > fail_n:
+        raise ValueError(f"[FAIL_CLOSED] Invalid correct_given_retrieval_failure_count: {fail_corr}")
+    if not isinstance(succ_p_str, str) or not succ_p_str.endswith("%"):
+        raise ValueError(f"[FAIL_CLOSED] Invalid p_correct_given_retrieval_success_display: {succ_p_str}")
+    if not isinstance(fail_p_str, str) or not fail_p_str.endswith("%"):
+        raise ValueError(f"[FAIL_CLOSED] Invalid p_correct_given_retrieval_failure_display: {fail_p_str}")
+
+    # Subgroup sum must equal mapped scorable views
+    if succ_n + fail_n != mapped_scorable_views:
+        raise ValueError(
+            f"[FAIL_CLOSED] Subgroup sum ({succ_n} + {fail_n} = {succ_n + fail_n}) "
+            f"does not match mapped_scorable_views ({mapped_scorable_views})"
+        )
+
+    return {
+        "total_pairs": total_pairs,
+        "total_views": total_views,
+        "mapped_scorable_views": mapped_scorable_views,
+        "macro_universe_classes": macro_universe_classes,
+        "condition_count": condition_count,
+        "k_depths_str": k_depths_str,
+        "no_rag_k": no_rag_k,
+        "budget_cap_display": cap_display,
+        "k10_succ_n": succ_n,
+        "k10_fail_n": fail_n,
+        "k10_succ_corr": succ_corr,
+        "k10_fail_corr": fail_corr,
+        "k10_succ_p_display": succ_p_str,
+        "k10_fail_p_display": fail_p_str,
+    }
+
+
+def generate_fig1_architecture_report_v1(out_path: Path, b_fields: Dict[str, Any], fixture_only: bool = False) -> None:
     """
     Fig 1: System Architecture Diagram (Report Print Variant v1).
     Optimized for 468pt width with all fonts >= 8.5pt.
+    All numbers are machine-generated from authenticated bundle fields.
     """
     width = 468
     height = 550
@@ -105,12 +259,12 @@ def generate_fig1_architecture_report_v1(out_path: Path, fixture_only: bool = Fa
 
     # Title & Subtitle
     svg += '  <text x="234" y="24" class="title">Figure 1: RAG2ATTCK Dual-View Attribution Architecture</text>\n'
-    svg += '  <text x="234" y="38" class="subtitle">Controlled evaluation across 5 conditions with strict monetary &amp; ledger governance</text>\n'
+    svg += f'  <text x="234" y="38" class="subtitle">Controlled evaluation across {b_fields["condition_count"]} conditions with strict monetary &amp; ledger governance</text>\n'
 
     # Stage 1: Telemetry Input (top, width 428, centered)
     svg += '  <rect x="20" y="52" width="428" height="46" rx="6" ry="6" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>\n'
-    svg += '  <text x="234" y="68" class="stage-title" fill="#1d4ed8">Telemetry Input (640 Paired Scenarios / N=1,280 Views)</text>\n'
-    svg += '  <text x="234" y="84" class="stage-body">Single-Event Views &amp; Contextual Views | N=718 Mapped Scorable Views</text>\n'
+    svg += f'  <text x="234" y="68" class="stage-title" fill="#1d4ed8">Telemetry Input ({b_fields["total_pairs"]} Paired Scenarios / N={b_fields["total_views"]:,} Views)</text>\n'
+    svg += f'  <text x="234" y="84" class="stage-body">Single-Event Views &amp; Contextual Views | N={b_fields["mapped_scorable_views"]} Mapped Scorable Views</text>\n'
 
     # Split connecting arrows to Stage 2
     # Left arrow to Dense Retrieval
@@ -125,12 +279,12 @@ def generate_fig1_architecture_report_v1(out_path: Path, fixture_only: bool = Fa
     svg += '  <rect x="20" y="116" width="208" height="58" rx="6" ry="6" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="1.5"/>\n'
     svg += '  <text x="124" y="132" class="stage-title" fill="#6d28d9">Dense Retrieval (RAG)</text>\n'
     svg += '  <text x="124" y="148" class="stage-body">all-MiniLM-L6-v2 + FAISS IndexFlatIP</text>\n'
-    svg += '  <text x="124" y="162" class="stage-body">Retrieval depths: k in {1, 3, 5, 10}</text>\n'
+    svg += f'  <text x="124" y="162" class="stage-body">Retrieval depths: k in {{{b_fields["k_depths_str"]}}}</text>\n'
 
     # Right: No-RAG Direct Bypass (k=0)
     svg += '  <rect x="240" y="116" width="208" height="58" rx="6" ry="6" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4,4"/>\n'
-    svg += '  <text x="344" y="132" class="stage-title" fill="#1d4ed8">No-RAG Direct Bypass (k=0)</text>\n'
-    svg += '  <text x="344" y="148" class="stage-body">Direct Baseline Prompt (k=0)</text>\n'
+    svg += f'  <text x="344" y="132" class="stage-title" fill="#1d4ed8">No-RAG Direct Bypass (k={b_fields["no_rag_k"]})</text>\n'
+    svg += f'  <text x="344" y="148" class="stage-body">Direct Baseline Prompt (k={b_fields["no_rag_k"]})</text>\n'
     svg += '  <text x="344" y="162" class="stage-body">Retrieval omitted (not applicable)</text>\n'
 
     # Merging arrows to Stage 3
@@ -153,7 +307,7 @@ def generate_fig1_architecture_report_v1(out_path: Path, fixture_only: bool = Fa
     # Stage 4: Attribution Output & Canonical Evaluation (y=254, height=46)
     svg += '  <rect x="20" y="254" width="428" height="46" rx="6" ry="6" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5"/>\n'
     svg += '  <text x="234" y="270" class="stage-title" fill="#b45309">Attribution Output &amp; Canonical Evaluation</text>\n'
-    svg += '  <text x="234" y="286" class="stage-body">MITRE ATT&amp;CK Technique ID | ANY_MATCH Ground Truth | 474 Macro Classes</text>\n'
+    svg += f'  <text x="234" y="286" class="stage-body">MITRE ATT&amp;CK Technique ID | ANY_MATCH Ground Truth | {b_fields["macro_universe_classes"]} Macro Classes</text>\n'
 
     # Bottom Container: Protocol & Budget Governance Controls (Decisions D1–D7)
     svg += '  <rect x="20" y="312" width="428" height="226" rx="6" ry="6" fill="#f8fafc" stroke="#64748b" stroke-width="1.2" stroke-dasharray="4,4"/>\n'
@@ -163,10 +317,10 @@ def generate_fig1_architecture_report_v1(out_path: Path, fixture_only: bool = Fa
     gov_cards = [
         # Col 1
         (28, 338, "D1: RECORD_ONLY Prompt Policy", "Raw model responses recorded verbatim", "No in-flight prompt mutations; retries recorded in attempt journal"),
-        (28, 400, "D2: Evaluation &amp; Denominators", "ANY_MATCH ground truth; 718 mapped views", "Evaluated across 474 frozen macro classes"),
+        (28, 400, "D2: Evaluation &amp; Denominators", f"ANY_MATCH ground truth; {b_fields['mapped_scorable_views']} mapped views", f"Evaluated across {b_fields['macro_universe_classes']} frozen macro classes"),
         (28, 462, "D3 &amp; D4: Concurrency &amp; Identity", "Strict sequential execution (concurrency=1)", "System fingerprint &amp; response ID logged"),
         # Col 2
-        (238, 338, "D5: Study Budget Ledger Guard", "USD19.99 study cap; reserve before dispatch", "Atomic dual-lock ledger reservation"),
+        (238, 338, "D5: Study Budget Ledger Guard", f"USD{b_fields['budget_cap_display']} study cap; reserve before dispatch", "Atomic dual-lock ledger reservation"),
         (238, 400, "D6 &amp; D7: Synthetic Scope", "Pair-wise synthetic enterprise telemetry", "Generalization to live prod unsupported"),
         (238, 462, "Independent Failure Axes (D2i)", "Retrieval misses &amp; generation errors", "Evaluated independently (no forced cause)"),
     ]
@@ -189,11 +343,12 @@ def generate_fig1_architecture_report_v1(out_path: Path, fixture_only: bool = Fa
     write_text_lf(out_path, svg)
 
 
-def generate_fig5_conditional_accuracy_report_v1(data: Dict[str, Any], out_path: Path) -> None:
+def generate_fig5_conditional_accuracy_report_v1(data: Dict[str, Any], b_fields: Dict[str, Any], out_path: Path) -> None:
     """
     Fig 5: Conditional Attribution Accuracy (Report Print Variant v1).
     Optimized for 468pt width with all fonts >= 8.5pt.
     Preserves exact subgroup sample sizes and 2-line observational caveat.
+    All numbers are machine-generated from authenticated bundle fields.
     """
     fixture_only = data.get("fixture_only", False)
     width = 468
@@ -266,12 +421,14 @@ def generate_fig5_conditional_accuracy_report_v1(data: Dict[str, Any], out_path:
     svg += '  <rect x="270" y="328" width="12" height="12" rx="2" fill="#f59e0b"/>\n'
     svg += '  <text x="288" y="338" class="legend-text">P(Correct | Retrieval Miss)</text>\n'
 
-    # Subgroup Sample Counts for k=10
-    succ_n = 321
-    fail_n = 397
-    succ_corr = 293
-    fail_corr = 278
-    subgroup_str = f"k=10 Subgroups: Retrieved N={succ_n} (91.28%, {succ_corr}/{succ_n}) | Missed N={fail_n} (70.03%, {fail_corr}/{fail_n})"
+    # Subgroup Sample Counts for k=10 derived from authenticated bundle
+    succ_n = b_fields["k10_succ_n"]
+    fail_n = b_fields["k10_fail_n"]
+    succ_corr = b_fields["k10_succ_corr"]
+    fail_corr = b_fields["k10_fail_corr"]
+    succ_p_str = b_fields["k10_succ_p_display"]
+    fail_p_str = b_fields["k10_fail_p_display"]
+    subgroup_str = f"k=10 Subgroups: Retrieved N={succ_n} ({succ_p_str}, {succ_corr}/{succ_n}) | Missed N={fail_n} ({fail_p_str}, {fail_corr}/{fail_n})"
     svg += f'  <text x="234" y="366" class="subgroup-text">{subgroup_str}</text>\n'
 
     # 2-line observational disclaimer (no forced causality)
@@ -298,9 +455,20 @@ def generate_report_print_figures(
     if fixture_only:
         data = FIXTURE_DATA.copy()
         bundle_hash = "fixture-mode-no-bundle"
+        b_fields = FIXTURE_B_FIELDS.copy()
     else:
         if bundle_path is None:
             raise ValueError("[FAIL_CLOSED] Must provide --metric-bundle when not in --fixture-only mode")
+        actual_bundle_sha = compute_sha256(bundle_path)
+        if expected_bundle_sha256 is not None:
+            if actual_bundle_sha.lower() != expected_bundle_sha256.lower():
+                raise ValueError(
+                    f"[FAIL_CLOSED] Externally trusted bundle SHA-256 mismatch: "
+                    f"actual {actual_bundle_sha} != expected {expected_bundle_sha256}"
+                )
+        with open(bundle_path, "r", encoding="utf-8") as f:
+            raw_bundle = json.load(f)
+        b_fields = extract_report_print_b_fields(raw_bundle)
         data = load_data_from_bundle(bundle_path, expected_bundle_sha256=expected_bundle_sha256)
         bundle_hash = data["bundle_sha256"]
 
@@ -309,12 +477,12 @@ def generate_report_print_figures(
     # Figure definitions and dimensions (width, height)
     figs = {
         "fig1_system_architecture_report_v1": (
-            lambda p: generate_fig1_architecture_report_v1(p, fixture_only=is_fixture),
+            lambda p: generate_fig1_architecture_report_v1(p, b_fields=b_fields, fixture_only=is_fixture),
             468,
             550,
         ),
         "fig5_conditional_accuracy_report_v1": (
-            lambda p: generate_fig5_conditional_accuracy_report_v1(data, p),
+            lambda p: generate_fig5_conditional_accuracy_report_v1(data, b_fields=b_fields, out_path=p),
             468,
             440,
         ),
@@ -396,13 +564,13 @@ def generate_report_print_figures(
             "run_id": data["run_id"],
             "fig1_decisions": ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D2i"],
             "fig5_subgroups": {
-                "k10_retrieved_sample_count": 321,
-                "k10_retrieved_correct_count": 293,
-                "k10_retrieved_accuracy_pct": "91.28%",
-                "k10_missed_sample_count": 397,
-                "k10_missed_correct_count": 278,
-                "k10_missed_accuracy_pct": "70.03%",
-                "mapped_scorable_views_total": 718,
+                "k10_retrieved_sample_count": b_fields["k10_succ_n"],
+                "k10_retrieved_correct_count": b_fields["k10_succ_corr"],
+                "k10_retrieved_accuracy_pct": b_fields["k10_succ_p_display"],
+                "k10_missed_sample_count": b_fields["k10_fail_n"],
+                "k10_missed_correct_count": b_fields["k10_fail_corr"],
+                "k10_missed_accuracy_pct": b_fields["k10_fail_p_display"],
+                "mapped_scorable_views_total": b_fields["mapped_scorable_views"],
             },
             "observational_caveat": "Subgroup differences are observational (association-only); retrieval hit/miss is not randomly assigned.",
         },

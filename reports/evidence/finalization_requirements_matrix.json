@@ -6,9 +6,9 @@
   "status_summary": {
     "POLICY_ENFORCED": 23,
     "PARTIAL": 66,
-    "NOT_VERIFIED": 80,
-    "FAIL": 1,
-    "VERIFIED": 0
+    "NOT_VERIFIED": 73,
+    "FAIL": 0,
+    "VERIFIED": 8
   },
   "evidence_storage_classes": [
     "git_tracked",

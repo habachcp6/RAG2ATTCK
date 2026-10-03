@@ -36,13 +36,6 @@ from scripts.collect_public_repro_inventory import (
 from src.experiment.config import canonical_bytes, digest
 from src.experiment.authorization import compute_code_manifest, compute_code_manifest_sha256
 
-if not (REPO_ROOT / "artifacts/public_package_staging/03_public_canonical_package").is_dir():
-    pytest.skip(
-        "Public package staging directory not available in CI environment",
-        allow_module_level=True,
-    )
-
-
 class TestPublicReproInventory:
     """Test suite for public reproduction master evidence inventory."""
 
@@ -51,12 +44,13 @@ class TestPublicReproInventory:
         freeze_path = REPO_ROOT / "reports/evidence/root_metric_bundle_v2_freeze_95c0233.json"
         log_path = REPO_ROOT / "logs/task-1264.log"
         pkg_dir = REPO_ROOT / "artifacts/public_package_staging/03_public_canonical_package"
+        actual_pkg_dir = pkg_dir if pkg_dir.is_dir() else None
         return collect_inventory(
             repo_root=REPO_ROOT,
             freeze_envelope_path=freeze_path,
             terminal_log_path=log_path,
-            public_package_dir=pkg_dir,
-            expected_public_manifest_sha256=EXPECTED_PUBLIC_MANIFEST_SHA256,
+            public_package_dir=actual_pkg_dir,
+            expected_public_manifest_sha256=EXPECTED_PUBLIC_MANIFEST_SHA256 if actual_pkg_dir else None,
             expected_bundle_sha256=EXPECTED_BUNDLE_SHA256,
         )
 
@@ -228,6 +222,12 @@ class TestPublicReproInventory:
 
     def test_public_package_comprehensive_coverage(self, inventory: dict) -> None:
         """Verify descriptor 32f and all 23 declared public package items in authenticated mode."""
+        pkg_dir = REPO_ROOT / "artifacts/public_package_staging/03_public_canonical_package"
+        if not pkg_dir.is_dir():
+            pytest.skip(
+                f"Canonical public package staging directory not present at {pkg_dir}; "
+                "required in acceptance coverage test"
+            )
         pkg = inventory.get("public_canonical_package")
         assert pkg is not None
         assert pkg["manifest_sha256"] == EXPECTED_PUBLIC_MANIFEST_SHA256
@@ -246,9 +246,14 @@ class TestPublicReproInventory:
 
     def test_unanchored_mode_validation_label(self) -> None:
         """Verify that omitting external trust anchor labels validation mode as unanchored."""
+        pkg_dir = REPO_ROOT / "artifacts/public_package_staging/03_public_canonical_package"
+        if not pkg_dir.is_dir():
+            pytest.skip(
+                f"Canonical public package staging directory not present at {pkg_dir}; "
+                "required in unanchored mode test"
+            )
         freeze_path = REPO_ROOT / "reports/evidence/root_metric_bundle_v2_freeze_95c0233.json"
         log_path = REPO_ROOT / "logs/task-1264.log"
-        pkg_dir = REPO_ROOT / "artifacts/public_package_staging/03_public_canonical_package"
 
         inv = collect_inventory(
             repo_root=REPO_ROOT,
@@ -370,13 +375,14 @@ class TestPublicReproInventory:
         freeze_path = REPO_ROOT / "reports/evidence/root_metric_bundle_v2_freeze_95c0233.json"
         log_path = REPO_ROOT / "logs/task-1264.log"
         pkg_dir = REPO_ROOT / "artifacts/public_package_staging/03_public_canonical_package"
+        actual_pkg_dir = pkg_dir if pkg_dir.is_dir() else None
 
         # 1. Positive authenticated anchor with expected_bundle_sha256
         inv_auth = collect_inventory(
             repo_root=REPO_ROOT,
             freeze_envelope_path=freeze_path,
             terminal_log_path=log_path,
-            public_package_dir=pkg_dir,
+            public_package_dir=actual_pkg_dir,
             expected_bundle_sha256=EXPECTED_BUNDLE_SHA256,
         )
         assert inv_auth["summary"]["canonical_bundle_authenticated"] is True
@@ -391,7 +397,7 @@ class TestPublicReproInventory:
             repo_root=REPO_ROOT,
             freeze_envelope_path=freeze_path,
             terminal_log_path=log_path,
-            public_package_dir=pkg_dir,
+            public_package_dir=actual_pkg_dir,
             expected_freeze_envelope_sha256=EXPECTED_FREEZE_ENVELOPE_SHA256,
         )
         assert inv_freeze["summary"]["canonical_bundle_authenticated"] is True
@@ -403,7 +409,7 @@ class TestPublicReproInventory:
                 repo_root=REPO_ROOT,
                 freeze_envelope_path=freeze_path,
                 terminal_log_path=log_path,
-                public_package_dir=pkg_dir,
+                public_package_dir=actual_pkg_dir,
                 expected_bundle_sha256="d6734866" + "0" * 56,
             )
 
@@ -413,7 +419,7 @@ class TestPublicReproInventory:
                 repo_root=REPO_ROOT,
                 freeze_envelope_path=freeze_path,
                 terminal_log_path=log_path,
-                public_package_dir=pkg_dir,
+                public_package_dir=actual_pkg_dir,
                 expected_freeze_envelope_sha256="0" * 64,
             )
 
@@ -422,7 +428,7 @@ class TestPublicReproInventory:
             repo_root=REPO_ROOT,
             freeze_envelope_path=freeze_path,
             terminal_log_path=log_path,
-            public_package_dir=pkg_dir,
+            public_package_dir=actual_pkg_dir,
             expected_bundle_sha256=None,
             expected_freeze_envelope_sha256=None,
         )

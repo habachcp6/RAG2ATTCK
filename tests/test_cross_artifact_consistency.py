@@ -24,6 +24,7 @@ from __future__ import annotations
 import json
 import xml.etree.ElementTree as ET
 import zipfile
+import shutil
 from pathlib import Path
 
 import pytest
@@ -302,3 +303,49 @@ def test_pptx_binary_inspection_fail_closed(tmp_path: Path):
     assert len(errors) >= 2
     assert any("[PENDING EXECUTION]" in e for e in errors)
     assert any("Tiny font size" in e for e in errors)
+
+
+def test_end_to_end_manuscript_metric_mutation_fails_closed(tmp_path: Path):
+    """
+    End-to-end mutation test:
+    Verifies that mutating a bound metric field in a copied manuscript causes the whole strict
+    cross-artifact consistency audit to fail closed with the exact mismatch identified.
+    """
+    repo_root = Path(".").resolve()
+    # Copy relevant artifact trees to isolated sandbox
+    shutil.copytree(repo_root / "docs", tmp_path / "docs")
+    shutil.copy2(repo_root / "README.md", tmp_path / "README.md")
+    shutil.copytree(repo_root / "artifacts", tmp_path / "artifacts")
+
+    bundle_path = tmp_path / "artifacts/results/canonical_metric_bundle_v2.json"
+    expected_sha = "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34"
+
+    # 1. Unmutated baseline passes strict audit cleanly
+    res_orig = run_consistency_audit(
+        repo_root=tmp_path,
+        bundle_path=bundle_path,
+        expected_bundle_sha256=expected_sha,
+        strict=True,
+        scope="all",
+    )
+    assert res_orig["verdict"] == "PASS", f"Expected PASS for unmutated baseline, got: {res_orig}"
+
+    # 2. Mutate bound headline metric in scientific_report.md
+    report_md = tmp_path / "docs/report/scientific_report.md"
+    content = report_md.read_text(encoding="utf-8")
+    mutated_content = content.replace("77.99%", "12.34%")
+    report_md.write_text(mutated_content, encoding="utf-8")
+
+    # 3. Mutated audit must fail closed
+    res_mut = run_consistency_audit(
+        repo_root=tmp_path,
+        bundle_path=bundle_path,
+        expected_bundle_sha256=expected_sha,
+        strict=True,
+        scope="all",
+    )
+    assert res_mut["verdict"] == "FAIL"
+    mismatches = res_mut["numerical_consistency"]["mismatches"]
+    assert len(mismatches) > 0
+    assert any("12.34%" in m and "77.99" in m for m in mismatches)
+

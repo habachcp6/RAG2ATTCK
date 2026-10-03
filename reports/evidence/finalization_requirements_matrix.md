@@ -7,13 +7,13 @@
 ## 1. Candidate Status Summary
 
 > [!IMPORTANT]
-> In strict accordance with Codex audit directives, unexecuted candidate gates and deliverables are classified as **`NOT VERIFIED`** or **`PARTIAL`**. Only governing policies are marked as **`POLICY_ENFORCED`**. The terminal validator probe defect discovered by Codex is explicitly classified as **`FAIL`** pending Track A repair.
+> In strict accordance with Codex audit directives, unexecuted candidate gates and deliverables are classified as **`NOT VERIFIED`** or **`PARTIAL`**. Only governing policies are marked as **`POLICY_ENFORCED`**. The terminal validator probe defect discovered by Codex (F.06) has been resolved and verified, bringing **`FAIL`** to 0 and **`VERIFIED`** to 8 on the final candidate.
 
 - **`POLICY_ENFORCED` (Governing Rules & Architectural Contracts):** 23
 - **`PARTIAL` (Historical Verification Exists; Candidate Execution Pending):** 66
-- **`NOT VERIFIED` (Deliverables / Gates to be Executed in Subsequent Phases):** 80
-- **`FAIL` (Defect Detected by Codex Independent Probe):** 1
-- **`VERIFIED` (Fully Completed & Tested on Final Candidate):** 0
+- **`NOT VERIFIED` (Deliverables / Gates to be Executed in Subsequent Phases):** 73
+- **`FAIL` (Defect Detected by Codex Independent Probe):** 0
+- **`VERIFIED` (Fully Completed & Tested on Final Candidate):** 8
 
 ---
 

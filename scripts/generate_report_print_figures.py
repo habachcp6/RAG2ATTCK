@@ -109,6 +109,8 @@ FIXTURE_B_FIELDS: Dict[str, Any] = {
     "k10_fail_corr": 278,
     "k10_succ_p_display": "91.28%",
     "k10_fail_p_display": "70.03%",
+    "retrieval_k_by_condition": {"rag_k1": 1, "rag_k3": 3, "rag_k5": 5, "rag_k10": 10},
+    "k10_depth": 10,
 }
 
 
@@ -157,12 +159,17 @@ def extract_report_print_b_fields(bundle: Dict[str, Any]) -> Dict[str, Any]:
         raise ValueError(f"[FAIL_CLOSED] Invalid no_rag retrieval_k: {no_rag_k}")
 
     rag_k_vals = []
+    retrieval_k_by_condition: Dict[str, int] = {}
     for rk in ["rag_k1", "rag_k3", "rag_k5", "rag_k10"]:
         c_k = conditions[rk].get("retrieval_k")
         if c_k is None or not isinstance(c_k, int) or c_k <= 0:
             raise ValueError(f"[FAIL_CLOSED] Invalid retrieval_k for {rk}: {c_k}")
         rag_k_vals.append(c_k)
+        retrieval_k_by_condition[rk] = c_k
     k_depths_str = ", ".join(str(k) for k in rag_k_vals)
+    k10_depth = conditions["rag_k10"].get("retrieval_k")
+    if k10_depth is None or not isinstance(k10_depth, int) or k10_depth <= 0:
+        raise ValueError(f"[FAIL_CLOSED] Invalid retrieval_k for rag_k10: {k10_depth}")
 
     # 3. Whole-study financial accounting budget cap
     if "whole_study_financial_accounting" not in bundle or not isinstance(bundle["whole_study_financial_accounting"], dict):
@@ -244,6 +251,8 @@ def extract_report_print_b_fields(bundle: Dict[str, Any]) -> Dict[str, Any]:
         "k10_fail_corr": fail_corr,
         "k10_succ_p_display": succ_p_str,
         "k10_fail_p_display": fail_p_str,
+        "retrieval_k_by_condition": retrieval_k_by_condition,
+        "k10_depth": k10_depth,
     }
 
 
@@ -380,9 +389,10 @@ def generate_fig5_conditional_accuracy_report_v1(data: Dict[str, Any], b_fields:
     # Y-axis Label
     svg += '  <text x="18" y="185" class="axis-label" transform="rotate(-90 18 185)" text-anchor="middle">Conditional Accuracy (%)</text>\n'
 
-    # Conditions
+    # Conditions and depth labels machine-derived from authenticated bundle
     conditions = ["rag_k1", "rag_k3", "rag_k5", "rag_k10"]
-    labels = ["k=1", "k=3", "k=5", "k=10"]
+    retrieval_k_map = b_fields["retrieval_k_by_condition"]
+    labels = [f"k={retrieval_k_map[c_name]}" for c_name in conditions]
     x_positions = [110, 206.5, 303, 399.5]
     bar_w = 26
 
@@ -422,13 +432,14 @@ def generate_fig5_conditional_accuracy_report_v1(data: Dict[str, Any], b_fields:
     svg += '  <text x="288" y="338" class="legend-text">P(Correct | Retrieval Miss)</text>\n'
 
     # Subgroup Sample Counts for k=10 derived from authenticated bundle
+    k10_k = b_fields["k10_depth"]
     succ_n = b_fields["k10_succ_n"]
     fail_n = b_fields["k10_fail_n"]
     succ_corr = b_fields["k10_succ_corr"]
     fail_corr = b_fields["k10_fail_corr"]
     succ_p_str = b_fields["k10_succ_p_display"]
     fail_p_str = b_fields["k10_fail_p_display"]
-    subgroup_str = f"k=10 Subgroups: Retrieved N={succ_n} ({succ_p_str}, {succ_corr}/{succ_n}) | Missed N={fail_n} ({fail_p_str}, {fail_corr}/{fail_n})"
+    subgroup_str = f"k={k10_k} Subgroups: Retrieved N={succ_n} ({succ_p_str}, {succ_corr}/{succ_n}) | Missed N={fail_n} ({fail_p_str}, {fail_corr}/{fail_n})"
     svg += f'  <text x="234" y="366" class="subgroup-text">{subgroup_str}</text>\n'
 
     # 2-line observational disclaimer (no forced causality)
@@ -564,6 +575,8 @@ def generate_report_print_figures(
             "run_id": data["run_id"],
             "fig1_decisions": ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D2i"],
             "fig5_subgroups": {
+                "k10_depth": b_fields["k10_depth"],
+                "retrieval_k_by_condition": b_fields["retrieval_k_by_condition"],
                 "k10_retrieved_sample_count": b_fields["k10_succ_n"],
                 "k10_retrieved_correct_count": b_fields["k10_succ_corr"],
                 "k10_retrieved_accuracy_pct": b_fields["k10_succ_p_display"],

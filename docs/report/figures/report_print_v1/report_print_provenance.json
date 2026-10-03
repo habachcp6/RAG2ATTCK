@@ -17,7 +17,7 @@
       "subgroup_sample_sizes": "8.5pt bold",
       "subtitle": "8.5pt",
       "tick_labels": "8.5pt",
-      "title": "11.5pt bold"
+      "title": "12.5pt bold"
     }
   },
   "figures_count": 2,
@@ -28,12 +28,23 @@
   ],
   "fixture_only": false,
   "generated_figures": {
-    "fig1_system_architecture_report_v1.pdf": "1eb5656bd148fa40a7a8cc5a9049918beaaa179e7cefbe10211af9c8867318b7",
-    "fig1_system_architecture_report_v1.png": "41fae9058768864e70416fe524370fc479333008b5bdeda79ad20e820f15152b",
-    "fig1_system_architecture_report_v1.svg": "393ceaa276fae6bbc6f748a3fcba757c0bddd53d8244f494e5425a775b357965",
-    "fig5_conditional_accuracy_report_v1.pdf": "3c204a8da3b6fba25dfe70271c79ebf9d7e1c989af06a198ca84fdb8e0606681",
+    "fig1_system_architecture_report_v1.pdf": "d285531fa13ff16fcd0330ecf70823d023109c01aaed8052601b2a5fc164ca9b",
+    "fig1_system_architecture_report_v1.png": "28b6247eea4b152483a708a0dab81af594cad6d114ceb48ca1afdea11774b746",
+    "fig1_system_architecture_report_v1.svg": "a8a5b376a33c071f471130786e54de99b4293bc13632d0c346644ddb6f3f6458",
+    "fig5_conditional_accuracy_report_v1.pdf": "a5ddff2d40d8043ae3c7ba747536389e23fca9ebefeffbaa924f25da3963427a",
     "fig5_conditional_accuracy_report_v1.png": "73e561401a8f1e927e3187687b29d2235e21ad1ae1f66d9f36e5044f36969cd7",
     "fig5_conditional_accuracy_report_v1.svg": "0df82ce4dab75759b90f8b78773a288dfdda53424c7a2d9e4265f0a08aff4715"
+  },
+  "physical_scale_and_placement_notes": {
+    "canvas_width_user_units": 468,
+    "css_user_unit_mapping": "SVG class .title has CSS font-size 12.5px, which equals 12.5pt when placed at 468pt canvas width in Word report.",
+    "pdf_native_geometry_and_scaling": "PDF native width is 351.12pt (browser CSS px-to-pt ratio 0.75), yielding native text ~6.38pt; scaling to 468pt Word placement yields >= 8.5pt physical print scale. Standalone 100% unscaled PDF print does not claim 8.5pt.",
+    "png_placement_scale": "PNG 468x550 / 468x440 achieves minimum 8.5pt font size when placed at 468pt column width in Word report document."
+  },
+  "role_mapping_and_governance": {
+    "final_report_figure1_role": "fig1_system_architecture_report_v1 (corrected approved report-print variant)",
+    "final_report_figure5_role": "fig5_conditional_accuracy_report_v1 (corrected approved report-print variant)",
+    "legacy_figure1_defect_record": "The label '$0.0526 hold/request' belonged to legacy unapproved draft Figure 1 (fig1_system_architecture) and conflated whole-study prior-pilot hold ($0.05264010) with per-request reservations. Legacy Figure 1 was not selected as final authority. The approved report print variant strictly uses 'USD19.99 study cap; reserve before dispatch' and 'No in-flight prompt mutations; retries recorded in attempt journal' without claiming per-request hold or implying zero retries (accounting for 1 transport retry across 6,401 attempts / 6,400 records)."
   },
   "schema_version": "2.0.0",
   "scientific_data_integrity": {

@@ -162,11 +162,11 @@ def generate_fig1_architecture_report_v1(out_path: Path, fixture_only: bool = Fa
     # 6 Governance Cards in 2 columns x 3 rows
     gov_cards = [
         # Col 1
-        (28, 338, "D1: RECORD_ONLY Prompt Policy", "Raw model responses recorded verbatim", "Zero in-flight prompt mutations / retries"),
+        (28, 338, "D1: RECORD_ONLY Prompt Policy", "Raw model responses recorded verbatim", "No in-flight prompt mutations; retries recorded in attempt journal"),
         (28, 400, "D2: Evaluation &amp; Denominators", "ANY_MATCH ground truth; 718 mapped views", "Evaluated across 474 frozen macro classes"),
         (28, 462, "D3 &amp; D4: Concurrency &amp; Identity", "Strict sequential execution (concurrency=1)", "System fingerprint &amp; response ID logged"),
         # Col 2
-        (238, 338, "D5: Study Budget Ledger Guard", "$19.99 hard cap; $0.0526 hold/request", "Atomic dual-lock ledger reservation"),
+        (238, 338, "D5: Study Budget Ledger Guard", "USD19.99 study cap; reserve before dispatch", "Atomic dual-lock ledger reservation"),
         (238, 400, "D6 &amp; D7: Synthetic Scope", "Pair-wise synthetic enterprise telemetry", "Generalization to live prod unsupported"),
         (238, 462, "Independent Failure Axes (D2i)", "Retrieval misses &amp; generation errors", "Evaluated independently (no forced cause)"),
     ]
@@ -175,8 +175,14 @@ def generate_fig1_architecture_report_v1(out_path: Path, fixture_only: bool = Fa
         svg += f'  <rect x="{cx}" y="{cy}" width="202" height="56" rx="4" ry="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>\n'
         svg += f'  <circle cx="{cx + 10}" cy="{cy + 13}" r="2.5" fill="#2563eb"/>\n'
         svg += f'  <text x="{cx + 17}" y="{cy + 16}" class="card-title">{ctitle}</text>\n'
-        svg += f'  <text x="{cx + 8}" y="{cy + 31}" class="card-body">{cline1}</text>\n'
-        svg += f'  <text x="{cx + 8}" y="{cy + 44}" class="card-body">{cline2}</text>\n'
+        if len(cline1) > 42:
+            svg += f'  <text x="{cx + 8}" y="{cy + 31}" class="card-body" textLength="186" lengthAdjust="spacingAndGlyphs">{cline1}</text>\n'
+        else:
+            svg += f'  <text x="{cx + 8}" y="{cy + 31}" class="card-body">{cline1}</text>\n'
+        if len(cline2) > 42:
+            svg += f'  <text x="{cx + 8}" y="{cy + 44}" class="card-body" textLength="186" lengthAdjust="spacingAndGlyphs">{cline2}</text>\n'
+        else:
+            svg += f'  <text x="{cx + 8}" y="{cy + 44}" class="card-body">{cline2}</text>\n'
 
     svg += svg_footer_print()
     ET.fromstring(svg)
@@ -364,7 +370,7 @@ def generate_report_print_figures(
                 "governance_card_lines": "8.5pt",
             },
             "fig5_conditional_accuracy_report_v1": {
-                "title": "11.5pt bold",
+                "title": "12.5pt bold",
                 "subtitle": "8.5pt",
                 "axis_label": "9.0pt bold",
                 "tick_labels": "8.5pt",
@@ -373,6 +379,17 @@ def generate_report_print_figures(
                 "subgroup_sample_sizes": "8.5pt bold",
                 "caveat": "8.5pt (2 lines)",
             },
+        },
+        "physical_scale_and_placement_notes": {
+            "canvas_width_user_units": 468,
+            "png_placement_scale": "PNG 468x550 / 468x440 achieves minimum 8.5pt font size when placed at 468pt column width in Word report document.",
+            "pdf_native_geometry_and_scaling": "PDF native width is 351.12pt (browser CSS px-to-pt ratio 0.75), yielding native text ~6.38pt; scaling to 468pt Word placement yields >= 8.5pt physical print scale. Standalone 100% unscaled PDF print does not claim 8.5pt.",
+            "css_user_unit_mapping": "SVG class .title has CSS font-size 12.5px, which equals 12.5pt when placed at 468pt canvas width in Word report.",
+        },
+        "role_mapping_and_governance": {
+            "final_report_figure1_role": "fig1_system_architecture_report_v1 (corrected approved report-print variant)",
+            "final_report_figure5_role": "fig5_conditional_accuracy_report_v1 (corrected approved report-print variant)",
+            "legacy_figure1_defect_record": "The label '$0.0526 hold/request' belonged to legacy unapproved draft Figure 1 (fig1_system_architecture) and conflated whole-study prior-pilot hold ($0.05264010) with per-request reservations. Legacy Figure 1 was not selected as final authority. The approved report print variant strictly uses 'USD19.99 study cap; reserve before dispatch' and 'No in-flight prompt mutations; retries recorded in attempt journal' without claiming per-request hold or implying zero retries (accounting for 1 transport retry across 6,401 attempts / 6,400 records).",
         },
         "scientific_data_integrity": {
             "canonical_bundle_sha256": bundle_hash,

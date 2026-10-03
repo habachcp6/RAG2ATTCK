@@ -56,7 +56,7 @@
   <circle cx="38" cy="351" r="2.5" fill="#2563eb"/>
   <text x="45" y="354" class="card-title">D1: RECORD_ONLY Prompt Policy</text>
   <text x="36" y="369" class="card-body">Raw model responses recorded verbatim</text>
-  <text x="36" y="382" class="card-body">Zero in-flight prompt mutations / retries</text>
+  <text x="36" y="382" class="card-body" textLength="186" lengthAdjust="spacingAndGlyphs">No in-flight prompt mutations; retries recorded in attempt journal</text>
   <rect x="28" y="400" width="202" height="56" rx="4" ry="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
   <circle cx="38" cy="413" r="2.5" fill="#2563eb"/>
   <text x="45" y="416" class="card-title">D2: Evaluation &amp; Denominators</text>
@@ -65,12 +65,12 @@
   <rect x="28" y="462" width="202" height="56" rx="4" ry="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
   <circle cx="38" cy="475" r="2.5" fill="#2563eb"/>
   <text x="45" y="478" class="card-title">D3 &amp; D4: Concurrency &amp; Identity</text>
-  <text x="36" y="493" class="card-body">Strict sequential execution (concurrency=1)</text>
-  <text x="36" y="506" class="card-body">System fingerprint &amp; response ID logged</text>
+  <text x="36" y="493" class="card-body" textLength="186" lengthAdjust="spacingAndGlyphs">Strict sequential execution (concurrency=1)</text>
+  <text x="36" y="506" class="card-body" textLength="186" lengthAdjust="spacingAndGlyphs">System fingerprint &amp; response ID logged</text>
   <rect x="238" y="338" width="202" height="56" rx="4" ry="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
   <circle cx="248" cy="351" r="2.5" fill="#2563eb"/>
   <text x="255" y="354" class="card-title">D5: Study Budget Ledger Guard</text>
-  <text x="246" y="369" class="card-body">$19.99 hard cap; $0.0526 hold/request</text>
+  <text x="246" y="369" class="card-body" textLength="186" lengthAdjust="spacingAndGlyphs">USD19.99 study cap; reserve before dispatch</text>
   <text x="246" y="382" class="card-body">Atomic dual-lock ledger reservation</text>
   <rect x="238" y="400" width="202" height="56" rx="4" ry="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
   <circle cx="248" cy="413" r="2.5" fill="#2563eb"/>

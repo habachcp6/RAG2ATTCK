@@ -1,0 +1,40 @@
+{
+  "binary_errors": [],
+  "bundle_error": null,
+  "figures_provenance": {
+    "figures_count": 8,
+    "fixture_only": true,
+    "hash_mismatches": [],
+    "missing_figures": [],
+    "provenance_sha256": "336721802fc91523c94eeaa24a615470793c44c3de2d9c4b638e25eea1be8f4c",
+    "status": "PASS",
+    "xml_errors": []
+  },
+  "fixture_in_all_scope": false,
+  "leak_audit": {
+    "findings": [],
+    "leak_count": 0,
+    "status": "PASS"
+  },
+  "missing_required_files": [],
+  "mode": "strict",
+  "numerical_consistency": {
+    "mismatches": [],
+    "status": "NOT_AUDITED_NO_BUNDLE"
+  },
+  "placeholder_audit": {
+    "findings": [],
+    "placeholder_count": 0,
+    "status": "PASS"
+  },
+  "scope": "generated",
+  "tables_provenance": {
+    "fixture_only": true,
+    "hash_mismatches": [],
+    "missing_tables": [],
+    "provenance_sha256": "52287efe8f60d9aa96dc9f260bb5f97bdfee73f9bd934425590203927145def7",
+    "status": "PASS",
+    "tables_count": 6
+  },
+  "verdict": "PASS"
+}

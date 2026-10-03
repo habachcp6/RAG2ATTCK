@@ -1,0 +1,16 @@
+{
+  "bundle_sha256": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+  "fixture_only": false,
+  "generated_tables": {
+    "table1_dataset_and_cohort.md": "a493acdaf97cb649acd6c6d44fdb99aeca32ae70ed3b19f08382def2678f9a6e",
+    "table2_experimental_conditions.md": "c74b7a173ec5fdbb9e32211141a09b111bdfc413d92630a88f9d0ddcf7dd509f",
+    "table3_rq1_attribution_performance.md": "5fdd0558a46cfd2e638841654d2e04510045107d331c3b719b99919d7429695a",
+    "table4_rq2_retrieval_and_error.md": "7c5ee9338d2b8fd01870a4a563eb0bc53b8eb119c65d9bea18c6a1463495a8b9",
+    "table5_rq3_resources_and_cost.md": "81c6aa974ca0ddd40828aa73373acc445eaf2551b05c284a2eefdd15417c2729",
+    "table6_provenance_and_hashes.md": "2911407aab6ad3d9a430ab576e0cfca2193d45e4f83f30c6966a5092d19e8c56"
+  },
+  "run_id": "live-66b94b1676bf46a9",
+  "schema_version": "2.0.0",
+  "tables_count": 6,
+  "workstation_paths_sanitized": true
+}

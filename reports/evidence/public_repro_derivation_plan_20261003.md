@@ -101,13 +101,13 @@ When Root issues the `EXECUTE` directive, the additive package will be construct
 2. **Inclusion of Execution Log:**
    - Package sanitized `logs/task-1264.log` (`fcacacf6...`) accompanied by a privacy attestation manifest.
 3. **Reproducibility Verification Adapter:**
-   - Provide an offline verification script consuming public inputs (`inputs/` predictions and `run_summary.json`), joining with ground truth, and verifying the computed metric dictionary hashes byte-for-byte to `442b5933...`.
+   - Provide an offline verification script consuming public inputs (`inputs/` predictions and `run_summary.json`), joining with ground truth, and verifying the computed canonical metric bundle v2 file hashes byte-for-byte to `442b5933...` (49,465 bytes whole-bundle file digest, not isolated metric dictionary).
 4. **Validation Receipt:**
    - Package `reports/evidence/root_metric_bundle_v2_freeze_95c0233.json` certifying Root acceptance.
 
 ## 5. Affirmation & Hold Status
 
-Coordinator and Owner B explicitly reaffirm:
-- **This document constitutes an updated factual plan, NOT an execution.**
-- No files have been created, modified, or generated in `native-bundle`.
-- Track B remains completely dormant in **IDLE READ-ONLY** pending Root Reviewer review and explicit `EXECUTE` authorization.
+Coordinator and Owner B explicitly affirm:
+- **Current Inventory Phase Completed:** The authoritative reproduction inventory collection tool (`scripts/collect_public_repro_inventory.py`), test suite (`tests/test_public_repro_inventory.py`), and machine-readable evidence inventory manifest (`reports/evidence/public_repro_inventory_v1.json`) are completed, verified offline, and contractually consistent with trusted Root freeze envelope `e284344e` and canonical metric bundle v2 `442b5933`.
+- **Future Scope Strictly Held Pending EXECUTE:** Construction of the additive `public_v4` distribution package, generation of derivative verification adapters, and public replay execution remain held in pending status awaiting explicit Root `EXECUTE` authorization.
+- **Zero Egress & Non-Interference:** All operations remain strictly offline (egress = 0) with zero unauthorized file mutations.

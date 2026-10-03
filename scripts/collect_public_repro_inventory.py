@@ -791,13 +791,27 @@ def update_plan_markdown(plan_path: Path, inventory: Dict[str, Any]) -> None:
         f"2. **Inclusion of Execution Log:**\n"
         f"   - Package sanitized `{log_path}` (`{log_sha[:8]}...`) accompanied by a privacy attestation manifest.\n"
         f"3. **Reproducibility Verification Adapter:**\n"
-        f"   - Provide an offline verification script consuming public inputs (`inputs/` predictions and `run_summary.json`), joining with ground truth, and verifying the computed metric dictionary hashes byte-for-byte to `{bundle_sha[:8]}...`.\n"
+        f"   - Provide an offline verification script consuming public inputs (`inputs/` predictions and `run_summary.json`), joining with ground truth, and verifying the computed canonical metric bundle v2 file hashes byte-for-byte to `{bundle_sha[:8]}...` ({bundle_bytes:,} bytes whole-bundle file digest, not isolated metric dictionary).\n"
         f"4. **Validation Receipt:**\n"
         f"   - Package `{freeze_path}` certifying Root acceptance."
     )
     content = re.sub(
         r"## 4\. Proposed Structure of the Additive `public_v4` Envelope[\s\S]*?(?=## 5\.)",
         sec4_block + "\n\n",
+        content,
+    )
+
+    # 9. Section 5: Affirmation & Hold Status
+    sec5_block = (
+        "## 5. Affirmation & Hold Status\n\n"
+        "Coordinator and Owner B explicitly affirm:\n"
+        "- **Current Inventory Phase Completed:** The authoritative reproduction inventory collection tool (`scripts/collect_public_repro_inventory.py`), test suite (`tests/test_public_repro_inventory.py`), and machine-readable evidence inventory manifest (`reports/evidence/public_repro_inventory_v1.json`) are completed, verified offline, and contractually consistent with trusted Root freeze envelope `e284344e` and canonical metric bundle v2 `442b5933`.\n"
+        "- **Future Scope Strictly Held Pending EXECUTE:** Construction of the additive `public_v4` distribution package, generation of derivative verification adapters, and public replay execution remain held in pending status awaiting explicit Root `EXECUTE` authorization.\n"
+        "- **Zero Egress & Non-Interference:** All operations remain strictly offline (egress = 0) with zero unauthorized file mutations."
+    )
+    content = re.sub(
+        r"## 5\. Affirmation & Hold Status[\s\S]*$",
+        sec5_block + "\n",
         content,
     )
 

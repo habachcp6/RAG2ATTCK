@@ -37,6 +37,11 @@ def extract_braced(s: str, start_brace_idx: int) -> tuple[str, int]:
 class LatexToOmml:
     """Converts LaTeX formulas to OpenXML Math (<m:oMath>)."""
 
+    OPERATORS = {
+        "min", "max", "cos", "sin", "tan", "log", "ln", "exp",
+        "det", "lim", "dim", "ker", "arg", "sup", "inf",
+    }
+
     SYMBOL_MAP = {
         r"\Delta": "Δ",
         r"\to": "→",
@@ -56,7 +61,10 @@ class LatexToOmml:
         r"\approx": "≈",
         r"\sim": "~",
         r"\times": "×",
+        r"\div": "÷",
         r"\cdot": "·",
+        r"\dots": "…",
+        r"\cdots": "⋯",
         r"\forall": "∀",
         r"\exists": "∃",
         r"\equiv": "≡",
@@ -81,11 +89,78 @@ class LatexToOmml:
         r"\mid": "|",
         r"\pm": "±",
         r"\infty": "∞",
+        r"\alpha": "α",
+        r"\beta": "β",
+        r"\gamma": "γ",
+        r"\theta": "θ",
+        r"\lambda": "λ",
+        r"\mu": "μ",
+        r"\sigma": "σ",
+        r"\tau": "τ",
+        r"\phi": "φ",
+        r"\chi": "χ",
+        r"\psi": "ψ",
+        r"\omega": "ω",
+        r"\Gamma": "Γ",
+        r"\Theta": "Θ",
+        r"\Lambda": "Λ",
+        r"\Sigma": "Σ",
+        r"\Phi": "Φ",
+        r"\Psi": "Ψ",
+        r"\Omega": "Ω",
+        r"\top": "⊤",
+        r"\bot": "⊥",
+        r"\prime": "′",
     }
 
     @classmethod
     def _escape(cls, text: str) -> str:
         return html.escape(text, quote=True)
+
+    @classmethod
+    def _extract_sub_sup(cls, s: str, idx: int) -> tuple[str | None, str | None, int]:
+        """Check if s[idx:] has attached _ or ^ and extract sub_text, sup_text, new_idx."""
+        n = len(s)
+        sub_text = None
+        sup_text = None
+        while idx < n and s[idx].isspace():
+            idx += 1
+        if idx < n and s[idx] in ("_", "^"):
+            for _ in range(2):
+                if idx < n and s[idx] == "_":
+                    idx += 1
+                    if idx < n and s[idx] == "{":
+                        sub_text, idx = extract_braced(s, idx)
+                    elif idx < n:
+                        sub_text = s[idx]
+                        idx += 1
+                    while idx < n and s[idx].isspace():
+                        idx += 1
+                elif idx < n and s[idx] == "^":
+                    idx += 1
+                    if idx < n and s[idx] == "{":
+                        sup_text, idx = extract_braced(s, idx)
+                    elif idx < n:
+                        sup_text = s[idx]
+                        idx += 1
+                    while idx < n and s[idx].isspace():
+                        idx += 1
+        return sub_text, sup_text, idx
+
+    @classmethod
+    def _wrap_sub_sup(cls, base_xml: str, sub_text: str | None, sup_text: str | None) -> str:
+        """Wrap base_xml with OMML sub, sup, or subSup if present."""
+        if sub_text is not None and sup_text is not None:
+            sub_xml = cls._parse_tokens(sub_text)
+            sup_xml = cls._parse_tokens(sup_text)
+            return f"<m:sSubSup><m:e>{base_xml}</m:e><m:sub>{sub_xml}</m:sub><m:sup>{sup_xml}</m:sup></m:sSubSup>"
+        elif sub_text is not None:
+            sub_xml = cls._parse_tokens(sub_text)
+            return f"<m:sSub><m:e>{base_xml}</m:e><m:sub>{sub_xml}</m:sub></m:sSub>"
+        elif sup_text is not None:
+            sup_xml = cls._parse_tokens(sup_text)
+            return f"<m:sSup><m:e>{base_xml}</m:e><m:sup>{sup_xml}</m:sup></m:sSup>"
+        return base_xml
 
     @classmethod
     def convert_to_omml(cls, latex: str, is_display: bool = False) -> str:
@@ -96,7 +171,6 @@ class LatexToOmml:
         elif s.startswith("$") and s.endswith("$"):
             s = s[1:-1].strip()
 
-        # Handle simple \langle ... \rangle wrapper
         if r"\langle" in s and r"\rangle" in s:
             s = s.replace(r"\langle", "⟨").replace(r"\rangle", "⟩")
 
@@ -104,8 +178,6 @@ class LatexToOmml:
         ns = 'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"'
 
         if is_display:
-            # Wrap in <m:oMathPara> or single <m:oMath>
-            # Inside a Word paragraph, <m:oMath> styled paragraph is the most robust
             return f'<m:oMath {ns}>{inner_xml}</m:oMath>'
         else:
             return f'<m:oMath {ns}>{inner_xml}</m:oMath>'
@@ -120,9 +192,7 @@ class LatexToOmml:
         while i < n:
             ch = s[i]
 
-            # Whitespace
             if ch.isspace():
-                # Add tiny spacing or ignore
                 i += 1
                 continue
 
@@ -139,46 +209,20 @@ class LatexToOmml:
                         den_text, end_idx = extract_braced(s, next_idx)
                         num_xml = cls._parse_tokens(num_text)
                         den_xml = cls._parse_tokens(den_text)
-                        xml_parts.append(
-                            f"<m:f><m:num>{num_xml}</m:num><m:den>{den_xml}</m:den></m:f>"
-                        )
-                        i = end_idx
+                        base_frac = f"<m:f><m:num>{num_xml}</m:num><m:den>{den_xml}</m:den></m:f>"
+                        sub_text, sup_text, idx = cls._extract_sub_sup(s, end_idx)
+                        xml_parts.append(cls._wrap_sub_sup(base_frac, sub_text, sup_text))
+                        i = idx
                         continue
 
             # Summation: \sum_{lower}^{upper} or \sum_{lower} or \sum
             if s[i:].startswith(r"\sum"):
                 idx = i + 4
-                while idx < n and s[idx].isspace():
-                    idx += 1
-                sub_text = None
-                sup_text = None
-
-                # Check for sub or sup
-                for _ in range(2):
-                    if idx < n and s[idx] == "_":
-                        idx += 1
-                        if idx < n and s[idx] == "{":
-                            sub_text, idx = extract_braced(s, idx)
-                        elif idx < n:
-                            sub_text = s[idx]
-                            idx += 1
-                        while idx < n and s[idx].isspace():
-                            idx += 1
-                    elif idx < n and s[idx] == "^":
-                        idx += 1
-                        if idx < n and s[idx] == "{":
-                            sup_text, idx = extract_braced(s, idx)
-                        elif idx < n:
-                            sup_text = s[idx]
-                            idx += 1
-                        while idx < n and s[idx].isspace():
-                            idx += 1
-
+                sub_text, sup_text, idx = cls._extract_sub_sup(s, idx)
                 sub_hide = "0" if sub_text is not None else "1"
                 sup_hide = "0" if sup_text is not None else "1"
                 sub_xml = cls._parse_tokens(sub_text) if sub_text else ""
                 sup_xml = cls._parse_tokens(sup_text) if sup_text else ""
-
                 xml_parts.append(
                     f"<m:nary>"
                     f"<m:naryPr>"
@@ -195,6 +239,17 @@ class LatexToOmml:
                 i = idx
                 continue
 
+            # Math Operators: \min, \max, \cos, \sin, etc.
+            op_match = re.match(r"^\\([a-zA-Z]+)", s[i:])
+            if op_match and op_match.group(1) in cls.OPERATORS:
+                op_name = op_match.group(1)
+                idx = i + len(op_match.group(0))
+                sub_text, sup_text, idx = cls._extract_sub_sup(s, idx)
+                base_xml = f"<m:r><m:rPr><m:nor/></m:rPr><m:t>{op_name}</m:t></m:r>"
+                xml_parts.append(cls._wrap_sub_sup(base_xml, sub_text, sup_text))
+                i = idx
+                continue
+
             # Text wrapper: \text{...}, \mathrm{...}, \mathbf{...}, \mathit{...}, \mathbb{...}, \mathcal{...}
             tag_match = re.match(r"^\\(text|mathrm|mathbf|mathit|mathbb|mathcal)\{", s[i:])
             if tag_match:
@@ -202,143 +257,90 @@ class LatexToOmml:
                 brace_start = i + len(tag_match.group(0)) - 1
                 inner, next_idx = extract_braced(s, brace_start)
                 if tag_name in ("text", "mathrm"):
-                    # Normal upright text
-                    # replace escaped underscores or symbols
                     clean_inner = inner.replace(r"\_", "_").replace(r"\%", "%")
-                    xml_parts.append(
-                        f"<m:r><m:rPr><m:nor/></m:rPr><m:t>{cls._escape(clean_inner)}</m:t></m:r>"
-                    )
+                    base_xml = f"<m:r><m:rPr><m:nor/></m:rPr><m:t>{cls._escape(clean_inner)}</m:t></m:r>"
                 elif tag_name == "mathbf":
-                    xml_parts.append(
-                        f"<m:r><m:rPr><m:b/></m:rPr><m:t>{cls._escape(inner)}</m:t></m:r>"
-                    )
+                    base_xml = f"<m:r><m:rPr><m:b/></m:rPr><m:t>{cls._escape(inner)}</m:t></m:r>"
                 elif tag_name == "mathbb":
-                    # E.g. \mathbb{I} -> 𝕀 or I
                     rep = {"I": "𝕀", "R": "ℝ", "N": "ℕ", "C": "ℂ"}.get(inner, inner)
-                    xml_parts.append(f"<m:r><m:t>{cls._escape(rep)}</m:t></m:r>")
+                    base_xml = f"<m:r><m:t>{cls._escape(rep)}</m:t></m:r>"
                 elif tag_name == "mathcal":
-                    # E.g. \mathcal{C} -> 𝓒 or C
                     rep = {"C": "𝓒", "L": "𝓛", "N": "𝓝"}.get(inner, inner)
-                    xml_parts.append(f"<m:r><m:t>{cls._escape(rep)}</m:t></m:r>")
+                    base_xml = f"<m:r><m:t>{cls._escape(rep)}</m:t></m:r>"
                 else:
-                    xml_parts.append(f"<m:r><m:t>{cls._escape(inner)}</m:t></m:r>")
-                i = next_idx
+                    base_xml = f"<m:r><m:t>{cls._escape(inner)}</m:t></m:r>"
+
+                sub_text, sup_text, idx = cls._extract_sub_sup(s, next_idx)
+                xml_parts.append(cls._wrap_sub_sup(base_xml, sub_text, sup_text))
+                i = idx
                 continue
 
             # Accents: \hat{...}
             if s[i:].startswith(r"\hat{"):
                 inner, next_idx = extract_braced(s, i + 4)
-                # In OMML accent: <m:acc><m:accPr><m:chr m:val="̂"/></m:accPr><m:e>...</m:e></m:acc>
                 e_xml = cls._parse_tokens(inner)
-                # Check if followed by subscript/superscript
-                after_idx = next_idx
-                has_sub = False
-                has_sup = False
-                sub_text = None
-                sup_text = None
-                while after_idx < n and s[after_idx].isspace():
-                    after_idx += 1
-                if after_idx < n and s[after_idx] == "_":
-                    has_sub = True
-                    after_idx += 1
-                    if after_idx < n and s[after_idx] == "{":
-                        sub_text, after_idx = extract_braced(s, after_idx)
-                    elif after_idx < n:
-                        sub_text = s[after_idx]
-                        after_idx += 1
                 acc_xml = f'<m:acc><m:accPr><m:chr m:val="̂"/></m:accPr><m:e>{e_xml}</m:e></m:acc>'
-                if has_sub:
-                    sub_xml = cls._parse_tokens(sub_text)
-                    xml_parts.append(f"<m:sSub><m:e>{acc_xml}</m:e><m:sub>{sub_xml}</m:sub></m:sSub>")
-                    i = after_idx
-                    continue
-                else:
-                    xml_parts.append(acc_xml)
-                    i = next_idx
-                    continue
+                sub_text, sup_text, idx = cls._extract_sub_sup(s, next_idx)
+                xml_parts.append(cls._wrap_sub_sup(acc_xml, sub_text, sup_text))
+                i = idx
+                continue
 
             # Norm: \| ... \|
             if s[i:].startswith(r"\|"):
-                # find matching \|
                 end_norm = s.find(r"\|", i + 2)
                 if end_norm != -1:
                     inner = s[i+2:end_norm]
                     inner_xml = cls._parse_tokens(inner)
-                    xml_parts.append(
-                        f'<m:d><m:dPr><m:begChr m:val="‖"/><m:endChr m:val="‖"/></m:dPr><m:e>{inner_xml}</m:e></m:d>'
-                    )
-                    i = end_norm + 2
+                    base_xml = f'<m:d><m:dPr><m:begChr m:val="‖"/><m:endChr m:val="‖"/></m:dPr><m:e>{inner_xml}</m:e></m:d>'
+                    idx = end_norm + 2
+                    sub_text, sup_text, idx = cls._extract_sub_sup(s, idx)
+                    xml_parts.append(cls._wrap_sub_sup(base_xml, sub_text, sup_text))
+                    i = idx
                     continue
 
-            # Known LaTeX symbol commands
+            # Known LaTeX symbol commands: \Delta, \times, etc.
             matched_sym = False
             for cmd, sym in cls.SYMBOL_MAP.items():
                 if s[i:].startswith(cmd):
-                    # Check boundary so e.g. \sum doesn't match something else
                     after_ch_idx = i + len(cmd)
                     if after_ch_idx < n and cmd[-1].isalpha() and s[after_ch_idx].isalpha():
                         continue
-                    xml_parts.append(f"<m:r><m:t>{cls._escape(sym)}</m:t></m:r>")
-                    i = after_ch_idx
+                    base_xml = f"<m:r><m:t>{cls._escape(sym)}</m:t></m:r>"
+                    sub_text, sup_text, idx = cls._extract_sub_sup(s, after_ch_idx)
+                    xml_parts.append(cls._wrap_sub_sup(base_xml, sub_text, sup_text))
+                    i = idx
                     matched_sym = True
                     break
             if matched_sym:
                 continue
 
-            # Identifiers or operators with Subscripts and Superscripts
-            # Pattern: base followed by _ or ^
-            base_match = re.match(r"^([a-zA-Z0-9]+|[\(\)\[\]\{\}\+\-\=\<\>\,\.\:\;])", s[i:])
+            # Braced group: {...}
+            if s[i] == "{":
+                inner, next_idx = extract_braced(s, i)
+                inner_xml = cls._parse_tokens(inner)
+                sub_text, sup_text, idx = cls._extract_sub_sup(s, next_idx)
+                xml_parts.append(cls._wrap_sub_sup(inner_xml, sub_text, sup_text))
+                i = idx
+                continue
+
+            # Unattached Subscripts or Superscripts: attach to previous XML element if present
+            if s[i] in ("_", "^") and xml_parts:
+                last_xml = xml_parts.pop()
+                sub_text, sup_text, idx = cls._extract_sub_sup(s, i)
+                xml_parts.append(cls._wrap_sub_sup(last_xml, sub_text, sup_text))
+                i = idx
+                continue
+
+            # Identifiers or single tokens with Subscripts and Superscripts
+            base_match = re.match(r"^([a-zA-Z0-9]+|[\(\)\[\]\+\-\=\<\>\,\.\:\;])", s[i:])
             if base_match:
                 base_str = base_match.group(1)
                 idx = i + len(base_str)
-                # Check for sub/sup
-                sub_text = None
-                sup_text = None
-                if idx < n and s[idx] in ("_", "^"):
-                    # Parse attached sub and sup
-                    for _ in range(2):
-                        if idx < n and s[idx] == "_":
-                            idx += 1
-                            if idx < n and s[idx] == "{":
-                                sub_text, idx = extract_braced(s, idx)
-                            elif idx < n:
-                                sub_text = s[idx]
-                                idx += 1
-                        elif idx < n and s[idx] == "^":
-                            idx += 1
-                            if idx < n and s[idx] == "{":
-                                sup_text, idx = extract_braced(s, idx)
-                            elif idx < n:
-                                sup_text = s[idx]
-                                idx += 1
-
+                sub_text, sup_text, idx = cls._extract_sub_sup(s, idx)
                 base_xml = f"<m:r><m:t>{cls._escape(base_str)}</m:t></m:r>"
-                if sub_text is not None and sup_text is not None:
-                    sub_xml = cls._parse_tokens(sub_text)
-                    sup_xml = cls._parse_tokens(sup_text)
-                    xml_parts.append(
-                        f"<m:sSubSup><m:e>{base_xml}</m:e><m:sub>{sub_xml}</m:sub><m:sup>{sup_xml}</m:sup></m:sSubSup>"
-                    )
-                    i = idx
-                    continue
-                elif sub_text is not None:
-                    sub_xml = cls._parse_tokens(sub_text)
-                    xml_parts.append(
-                        f"<m:sSub><m:e>{base_xml}</m:e><m:sub>{sub_xml}</m:sub></m:sSub>"
-                    )
-                    i = idx
-                    continue
-                elif sup_text is not None:
-                    sup_xml = cls._parse_tokens(sup_text)
-                    xml_parts.append(
-                        f"<m:sSup><m:e>{base_xml}</m:e><m:sup>{sup_xml}</m:sup></m:sSup>"
-                    )
-                    i = idx
-                    continue
-                else:
-                    xml_parts.append(base_xml)
-                    i = idx
-                    continue
+                xml_parts.append(cls._wrap_sub_sup(base_xml, sub_text, sup_text))
+                i = idx
+                continue
 
             # Fallback for any other character
             xml_parts.append(f"<m:r><m:t>{cls._escape(s[i])}</m:t></m:r>")

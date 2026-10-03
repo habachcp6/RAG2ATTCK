@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import html
 import re
+import sys
 import zipfile
 from pathlib import Path
 
@@ -20,6 +21,12 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import nsdecls, qn
 from docx.shared import Inches, Pt, RGBColor
+
+try:
+    from scripts.latex_to_omml import LatexToOmml
+except ImportError:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from scripts.latex_to_omml import LatexToOmml
 
 
 def extract_braced(s: str, start_brace_idx: int) -> tuple[str, int]:
@@ -152,294 +159,7 @@ def latex_to_unicode(text: str) -> str:
     return s
 
 
-class LatexToOmml:
-    """Converts LaTeX mathematical expressions into native Word OMML (<m:oMath>)."""
-
-    SYMBOL_MAP = {
-        r"\Delta": "Δ",
-        r"\to": "→",
-        r"\in": "∈",
-        r"\notin": "∉",
-        r"\subseteq": "⊆",
-        r"\subset": "⊂",
-        r"\cap": "∩",
-        r"\cup": "∪",
-        r"\emptyset": "∅",
-        r"\neq": "≠",
-        r"\ne": "≠",
-        r"\le": "≤",
-        r"\leq": "≤",
-        r"\ge": "≥",
-        r"\geq": "≥",
-        r"\approx": "≈",
-        r"\sim": "~",
-        r"\times": "×",
-        r"\cdot": "·",
-        r"\forall": "∀",
-        r"\exists": "∃",
-        r"\equiv": "≡",
-        r"\land": "∧",
-        r"\lor": "∨",
-        r"\quad": "  ",
-        r"\qquad": "    ",
-        r"\,": " ",
-        r"\;": " ",
-        r"\:": " ",
-        r"\!": "",
-        r"\left(": "(",
-        r"\right)": ")",
-        r"\left[": "[",
-        r"\right]": "]",
-        r"\left\{": "{",
-        r"\right\}": "}",
-        r"\{": "{",
-        r"\}": "}",
-        r"\_": "_",
-        r"\%": "%",
-        r"\mid": "|",
-        r"\pm": "±",
-        r"\infty": "∞",
-    }
-
-    @classmethod
-    def _escape(cls, text: str) -> str:
-        return html.escape(text, quote=True)
-
-    @classmethod
-    def convert_to_omml(cls, latex: str, is_display: bool = False) -> str:
-        """Main entry point: returns <m:oMath> XML string."""
-        s = latex.strip()
-        if s.startswith("$$") and s.endswith("$$"):
-            s = s[2:-2].strip()
-        elif s.startswith("$") and s.endswith("$"):
-            s = s[1:-1].strip()
-
-        if r"\langle" in s and r"\rangle" in s:
-            s = s.replace(r"\langle", "⟨").replace(r"\rangle", "⟩")
-
-        inner_xml = cls._parse_tokens(s)
-        ns = 'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"'
-        return f'<m:oMath {ns}>{inner_xml}</m:oMath>'
-
-    @classmethod
-    def _parse_tokens(cls, s: str) -> str:
-        """Parse LaTeX string into sequence of OMML XML elements."""
-        xml_parts = []
-        i = 0
-        n = len(s)
-
-        while i < n:
-            ch = s[i]
-
-            if ch.isspace():
-                i += 1
-                continue
-
-            # Fraction: \frac{num}{den}
-            if s[i:].startswith(r"\frac"):
-                idx = i + 5
-                while idx < n and s[idx].isspace():
-                    idx += 1
-                if idx < n and s[idx] == "{":
-                    num_text, next_idx = extract_braced(s, idx)
-                    while next_idx < n and s[next_idx].isspace():
-                        next_idx += 1
-                    if next_idx < n and s[next_idx] == "{":
-                        den_text, end_idx = extract_braced(s, next_idx)
-                        num_xml = cls._parse_tokens(num_text)
-                        den_xml = cls._parse_tokens(den_text)
-                        xml_parts.append(
-                            f"<m:f><m:num>{num_xml}</m:num><m:den>{den_xml}</m:den></m:f>"
-                        )
-                        i = end_idx
-                        continue
-
-            # Summation: \sum_{lower}^{upper} or \sum_{lower} or \sum
-            if s[i:].startswith(r"\sum"):
-                idx = i + 4
-                while idx < n and s[idx].isspace():
-                    idx += 1
-                sub_text = None
-                sup_text = None
-
-                for _ in range(2):
-                    if idx < n and s[idx] == "_":
-                        idx += 1
-                        if idx < n and s[idx] == "{":
-                            sub_text, idx = extract_braced(s, idx)
-                        elif idx < n:
-                            sub_text = s[idx]
-                            idx += 1
-                        while idx < n and s[idx].isspace():
-                            idx += 1
-                    elif idx < n and s[idx] == "^":
-                        idx += 1
-                        if idx < n and s[idx] == "{":
-                            sup_text, idx = extract_braced(s, idx)
-                        elif idx < n:
-                            sup_text = s[idx]
-                            idx += 1
-                        while idx < n and s[idx].isspace():
-                            idx += 1
-
-                sub_hide = "0" if sub_text is not None else "1"
-                sup_hide = "0" if sup_text is not None else "1"
-                sub_xml = cls._parse_tokens(sub_text) if sub_text else ""
-                sup_xml = cls._parse_tokens(sup_text) if sup_text else ""
-
-                xml_parts.append(
-                    f"<m:nary>"
-                    f"<m:naryPr>"
-                    f'<m:chr m:val="∑"/>'
-                    f'<m:limLoc m:val="undOvr"/>'
-                    f'<m:subHide m:val="{sub_hide}"/>'
-                    f'<m:supHide m:val="{sup_hide}"/>'
-                    f"</m:naryPr>"
-                    f"<m:sub>{sub_xml}</m:sub>"
-                    f"<m:sup>{sup_xml}</m:sup>"
-                    f"<m:e/>"
-                    f"</m:nary>"
-                )
-                i = idx
-                continue
-
-            # Text wrapper: \text{...}, \mathrm{...}, \mathbf{...}, \mathit{...}, \mathbb{...}, \mathcal{...}
-            tag_match = re.match(r"^\\(text|mathrm|mathbf|mathit|mathbb|mathcal)\{", s[i:])
-            if tag_match:
-                tag_name = tag_match.group(1)
-                brace_start = i + len(tag_match.group(0)) - 1
-                inner, next_idx = extract_braced(s, brace_start)
-                if tag_name in ("text", "mathrm"):
-                    clean_inner = inner.replace(r"\_", "_").replace(r"\%", "%")
-                    xml_parts.append(
-                        f"<m:r><m:rPr><m:nor/></m:rPr><m:t>{cls._escape(clean_inner)}</m:t></m:r>"
-                    )
-                elif tag_name == "mathbf":
-                    xml_parts.append(
-                        f"<m:r><m:rPr><m:b/></m:rPr><m:t>{cls._escape(inner)}</m:t></m:r>"
-                    )
-                elif tag_name == "mathbb":
-                    rep = {"I": "𝕀", "R": "ℝ", "N": "ℕ", "C": "ℂ"}.get(inner, inner)
-                    xml_parts.append(f"<m:r><m:t>{cls._escape(rep)}</m:t></m:r>")
-                elif tag_name == "mathcal":
-                    rep = {"C": "𝓒", "L": "𝓛", "N": "𝓝"}.get(inner, inner)
-                    xml_parts.append(f"<m:r><m:t>{cls._escape(rep)}</m:t></m:r>")
-                else:
-                    xml_parts.append(f"<m:r><m:t>{cls._escape(inner)}</m:t></m:r>")
-                i = next_idx
-                continue
-
-            # Accents: \hat{...}
-            if s[i:].startswith(r"\hat{"):
-                inner, next_idx = extract_braced(s, i + 4)
-                e_xml = cls._parse_tokens(inner)
-                after_idx = next_idx
-                has_sub = False
-                sub_text = None
-                while after_idx < n and s[after_idx].isspace():
-                    after_idx += 1
-                if after_idx < n and s[after_idx] == "_":
-                    has_sub = True
-                    after_idx += 1
-                    if after_idx < n and s[after_idx] == "{":
-                        sub_text, after_idx = extract_braced(s, after_idx)
-                    elif after_idx < n:
-                        sub_text = s[after_idx]
-                        after_idx += 1
-                acc_xml = f'<m:acc><m:accPr><m:chr m:val="̂"/></m:accPr><m:e>{e_xml}</m:e></m:acc>'
-                if has_sub:
-                    sub_xml = cls._parse_tokens(sub_text)
-                    xml_parts.append(f"<m:sSub><m:e>{acc_xml}</m:e><m:sub>{sub_xml}</m:sub></m:sSub>")
-                    i = after_idx
-                    continue
-                else:
-                    xml_parts.append(acc_xml)
-                    i = next_idx
-                    continue
-
-            # Norm: \| ... \|
-            if s[i:].startswith(r"\|"):
-                end_norm = s.find(r"\|", i + 2)
-                if end_norm != -1:
-                    inner = s[i+2:end_norm]
-                    inner_xml = cls._parse_tokens(inner)
-                    xml_parts.append(
-                        f'<m:d><m:dPr><m:begChr m:val="‖"/><m:endChr m:val="‖"/></m:dPr><m:e>{inner_xml}</m:e></m:d>'
-                    )
-                    i = end_norm + 2
-                    continue
-
-            # Known LaTeX symbol commands
-            matched_sym = False
-            for cmd, sym in cls.SYMBOL_MAP.items():
-                if s[i:].startswith(cmd):
-                    after_ch_idx = i + len(cmd)
-                    if after_ch_idx < n and cmd[-1].isalpha() and s[after_ch_idx].isalpha():
-                        continue
-                    xml_parts.append(f"<m:r><m:t>{cls._escape(sym)}</m:t></m:r>")
-                    i = after_ch_idx
-                    matched_sym = True
-                    break
-            if matched_sym:
-                continue
-
-            # Identifiers or operators with Subscripts and Superscripts
-            base_match = re.match(r"^([a-zA-Z0-9]+|[\(\)\[\]\{\}\+\-\=\<\>\,\.\:\;])", s[i:])
-            if base_match:
-                base_str = base_match.group(1)
-                idx = i + len(base_str)
-                sub_text = None
-                sup_text = None
-                if idx < n and s[idx] in ("_", "^"):
-                    for _ in range(2):
-                        if idx < n and s[idx] == "_":
-                            idx += 1
-                            if idx < n and s[idx] == "{":
-                                sub_text, idx = extract_braced(s, idx)
-                            elif idx < n:
-                                sub_text = s[idx]
-                                idx += 1
-                        elif idx < n and s[idx] == "^":
-                            idx += 1
-                            if idx < n and s[idx] == "{":
-                                sup_text, idx = extract_braced(s, idx)
-                            elif idx < n:
-                                sup_text = s[idx]
-                                idx += 1
-
-                base_xml = f"<m:r><m:t>{cls._escape(base_str)}</m:t></m:r>"
-                if sub_text is not None and sup_text is not None:
-                    sub_xml = cls._parse_tokens(sub_text)
-                    sup_xml = cls._parse_tokens(sup_text)
-                    xml_parts.append(
-                        f"<m:sSubSup><m:e>{base_xml}</m:e><m:sub>{sub_xml}</m:sub><m:sup>{sup_xml}</m:sup></m:sSubSup>"
-                    )
-                    i = idx
-                    continue
-                elif sub_text is not None:
-                    sub_xml = cls._parse_tokens(sub_text)
-                    xml_parts.append(
-                        f"<m:sSub><m:e>{base_xml}</m:e><m:sub>{sub_xml}</m:sub></m:sSub>"
-                    )
-                    i = idx
-                    continue
-                elif sup_text is not None:
-                    sup_xml = cls._parse_tokens(sup_text)
-                    xml_parts.append(
-                        f"<m:sSup><m:e>{base_xml}</m:e><m:sup>{sup_xml}</m:sup></m:sSup>"
-                    )
-                    i = idx
-                    continue
-                else:
-                    xml_parts.append(base_xml)
-                    i = idx
-                    continue
-
-            # Fallback for any other character
-            xml_parts.append(f"<m:r><m:t>{cls._escape(s[i])}</m:t></m:r>")
-            i += 1
-
-        return "".join(xml_parts)
+# Note: LatexToOmml is imported from scripts.latex_to_omml
 
 
 def set_cell_margins(cell, top=60, bottom=60, left=50, right=50):
@@ -477,10 +197,11 @@ def set_cell_border(cell, **kwargs):
     tcPr.append(tcBorders)
 
 
-def apply_table_pagination_rules(table):
+def apply_table_pagination_rules(table, table_id: str | None = None):
     """Ensure repeat header on page break (<w:tblHeader/>) and
-    prevent row splitting (<w:cantSplit/>).
+    prevent row splitting (<w:cantSplit/>), with orphan row and table tearing prevention.
     """
+    total_rows = len(table.rows)
     for r_idx, row in enumerate(table.rows):
         trPr = row._tr.get_or_add_trPr()
         cantSplit = parse_xml(f"<w:cantSplit {nsdecls('w')}/>")
@@ -492,6 +213,20 @@ def apply_table_pagination_rules(table):
             for cell in row.cells:
                 for p in cell.paragraphs:
                     p.paragraph_format.keep_with_next = True
+        else:
+            # Compact tables (Table 2a, 2b, 3, 3b, 4, 5 or <= 8 rows): keep entirely intact on 1 page
+            # by setting keep_with_next on all rows before the last row
+            if table_id in ("table_2a", "table_2b", "table_3", "table_3b", "table_4", "table_5") or total_rows <= 8:
+                if r_idx < total_rows - 1:
+                    for cell in row.cells:
+                        for p in cell.paragraphs:
+                            p.paragraph_format.keep_with_next = True
+            elif table_id == "table_6" or total_rows > 8:
+                # Large tables: prevent orphan rows at start and end of page break
+                if r_idx <= 2 or r_idx == total_rows - 2:
+                    for cell in row.cells:
+                        for p in cell.paragraphs:
+                            p.paragraph_format.keep_with_next = True
 
 
 def assign_table_column_widths(table, num_cols: int, header_texts: list[str]) -> list[float]:
@@ -614,7 +349,7 @@ def format_inline_runs(
         elif part.startswith("`") and part.endswith("`"):
             run = paragraph.add_run(part[1:-1])
             run.font.name = "Consolas"
-            code_size = Pt(font_size.pt * 0.9) if font_size else Pt(9.5)
+            code_size = max(font_size, Pt(8.5)) if font_size else Pt(9.5)
             run.font.size = code_size
             run.font.color.rgb = RGBColor(0x8A, 0x1F, 0x11)
         elif part.startswith("[") and "]" in part and part.endswith(")"):
@@ -642,7 +377,26 @@ def format_inline_runs(
             math_content = part[1:-1]
             try:
                 omml_xml = LatexToOmml.convert_to_omml(math_content, is_display=False)
-                paragraph._element.append(parse_xml(omml_xml))
+                elem = parse_xml(omml_xml)
+                color_hex = (
+                    f"{default_color[0]:02X}{default_color[1]:02X}{default_color[2]:02X}"
+                    if default_color is not None
+                    else None
+                )
+                sz_val = str(int(round(font_size.pt * 2))) if font_size is not None else None
+                if color_hex or sz_val or default_bold:
+                    for r_node in elem.iter("{http://schemas.openxmlformats.org/officeDocument/2006/math}r"):
+                        rPr_parts = []
+                        if color_hex:
+                            rPr_parts.append(f'<w:color w:val="{color_hex}"/>')
+                        if sz_val:
+                            rPr_parts.append(f'<w:sz w:val="{sz_val}"/>')
+                        if default_bold:
+                            rPr_parts.append('<w:b/>')
+                        if rPr_parts:
+                            wrPr = parse_xml(f'<w:rPr {nsdecls("w")}>{"".join(rPr_parts)}</w:rPr>')
+                            r_node.insert(0, wrPr)
+                paragraph._element.append(elem)
             except Exception:
                 converted = latex_to_unicode(math_content)
                 run = paragraph.add_run(converted)
@@ -688,7 +442,13 @@ def add_display_math(doc, math_text: str):
 
     try:
         omml_xml = LatexToOmml.convert_to_omml(math_text, is_display=True)
-        p._element.append(parse_xml(omml_xml))
+        elem = parse_xml(omml_xml)
+        sz_val = "21"  # 10.5 pt * 2
+        color_hex = "0A2540"
+        for r_node in elem.iter("{http://schemas.openxmlformats.org/officeDocument/2006/math}r"):
+            wrPr = parse_xml(f'<w:rPr {nsdecls("w")}><w:color w:val="{color_hex}"/><w:sz w:val="{sz_val}"/></w:rPr>')
+            r_node.insert(0, wrPr)
+        p._element.append(elem)
     except Exception:
         converted = latex_to_unicode(math_text)
         run = p.add_run(converted)
@@ -704,12 +464,43 @@ def build_docx_from_markdown(
     """Convert scientific_report.md into a high-quality Word document."""
     doc = docx.Document()
 
-    # Configure page margins (1.0 inch all around)
+    # Configure page margins (1.0 inch all around) and footer page numbering
     for section in doc.sections:
         section.top_margin = Inches(1.0)
         section.bottom_margin = Inches(1.0)
         section.left_margin = Inches(1.0)
         section.right_margin = Inches(1.0)
+
+        footer = section.footer
+        p_footer = footer.paragraphs[0]
+        p_footer.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        p_footer.text = ""
+        p_footer.paragraph_format.space_before = Pt(0)
+        p_footer.paragraph_format.space_after = Pt(0)
+
+        run_ft_left = p_footer.add_run("RAG2ATTCK Replication-and-Extension Study   |   Page ")
+        run_ft_left.font.name = "Calibri"
+        run_ft_left.font.size = Pt(9.0)
+        run_ft_left.font.color.rgb = RGBColor(0x6E, 0x77, 0x81)
+
+        fld_page = parse_xml(
+            f'<w:fldSimple {nsdecls("w")} w:instr="PAGE">'
+            f'<w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="18"/><w:color w:val="6E7781"/></w:rPr><w:t>1</w:t></w:r>'
+            f'</w:fldSimple>'
+        )
+        p_footer._element.append(fld_page)
+
+        run_ft_mid = p_footer.add_run(" of ")
+        run_ft_mid.font.name = "Calibri"
+        run_ft_mid.font.size = Pt(9.0)
+        run_ft_mid.font.color.rgb = RGBColor(0x6E, 0x77, 0x81)
+
+        fld_numpages = parse_xml(
+            f'<w:fldSimple {nsdecls("w")} w:instr="NUMPAGES">'
+            f'<w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="18"/><w:color w:val="6E7781"/></w:rPr><w:t>1</w:t></w:r>'
+            f'</w:fldSimple>'
+        )
+        p_footer._element.append(fld_numpages)
 
     # Base Normal style
     style_normal = doc.styles["Normal"]
@@ -828,6 +619,9 @@ def build_docx_from_markdown(
 
                 if is_header:
                     set_cell_background(cell, "092C4C")  # Dark Navy Header
+                    pPr = p._element.get_or_add_pPr()
+                    pPr_rPr = parse_xml(f'<w:rPr {nsdecls("w")}><w:color w:val="FFFFFF"/><w:b/></w:rPr>')
+                    pPr.append(pPr_rPr)
                     format_inline_runs(
                         p,
                         cell_text,
@@ -878,7 +672,7 @@ def build_docx_from_markdown(
                         sdt_content.append(r_elem)
                     p._element.append(sdt_elem)
 
-        apply_table_pagination_rules(table)
+        apply_table_pagination_rules(table, table_id=table_id)
         header_texts = raw_rows[0] if raw_rows else []
         assign_table_column_widths(table, num_cols, header_texts)
 
@@ -901,6 +695,7 @@ def build_docx_from_markdown(
         p.paragraph_format.space_before = Pt(4)
         p.paragraph_format.space_after = Pt(6)
         p.paragraph_format.line_spacing = 1.0
+        p.paragraph_format.keep_together = True
 
         run = p.add_run(code_text)
         run.font.name = "Consolas"
@@ -983,13 +778,13 @@ def build_docx_from_markdown(
             p.paragraph_format.space_before = Pt(12)
             p.paragraph_format.space_after = Pt(8)
             p.paragraph_format.keep_with_next = True
-            run = p.add_run(line[2:].strip())
+            run = p.add_run(line[2:].replace("`", "").strip())
             run.font.name = "Georgia"
             run.font.size = Pt(20)
             run.font.bold = True
             run.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
         elif line.startswith("## "):
-            sec_title = line[3:].strip()
+            sec_title = line[3:].replace("`", "").strip()
             if sec_title.lower().startswith("references"):
                 in_references = True
             else:
@@ -1008,7 +803,7 @@ def build_docx_from_markdown(
             h.paragraph_format.space_before = Pt(10)
             h.paragraph_format.space_after = Pt(4)
             h.paragraph_format.keep_with_next = True
-            run = h.add_run(line[4:].strip())
+            run = h.add_run(line[4:].replace("`", "").strip())
             run.font.name = "Calibri"
             run.font.size = Pt(12)
             run.font.bold = True
@@ -1018,7 +813,7 @@ def build_docx_from_markdown(
             h.paragraph_format.space_before = Pt(8)
             h.paragraph_format.space_after = Pt(2)
             h.paragraph_format.keep_with_next = True
-            run = h.add_run(line[5:].strip())
+            run = h.add_run(line[5:].replace("`", "").strip())
             run.font.name = "Calibri"
             run.font.size = Pt(11)
             run.font.bold = True
@@ -1129,6 +924,12 @@ def build_docx_from_markdown(
                 p.paragraph_format.first_line_indent = Inches(-0.20)
                 p.paragraph_format.space_after = Pt(2)
                 p.paragraph_format.line_spacing = 1.15
+                stripped_content = content.strip()
+                if (
+                    stripped_content.startswith("**")
+                    and (stripped_content.endswith(":**") or stripped_content.endswith(":"))
+                ) or stripped_content.endswith(":"):
+                    p.paragraph_format.keep_with_next = True
                 num_run = p.add_run(f"{num_str}. ")
                 num_run.bold = True
                 num_run.font.name = "Calibri"
@@ -1185,7 +986,7 @@ def build_docx_from_markdown(
                 p_img.paragraph_format.keep_with_next = True
 
                 run_img = p_img.add_run()
-                run_img.add_picture(str(resolved_img), width=Inches(6.25))
+                run_img.add_picture(str(resolved_img), width=Inches(6.50))
 
                 tag_val = f"fig_{fig_num}"
                 alias_val = f"Figure {fig_num}"
@@ -1358,6 +1159,17 @@ def audit_docx_quality(doc_path: Path):
                 f"Table {t_idx} width {col_widths_sum:.2f}in exceeds printable limit of 6.50in"
             )
 
+        # Audit table run font sizes (>= 8.5 pt)
+        for r_idx, row in enumerate(table.rows):
+            for c_idx, cell in enumerate(row.cells):
+                for cp in cell.paragraphs:
+                    for crun in cp.runs:
+                        if crun.text.strip() and crun.font.size and crun.font.size < Pt(8.5):
+                            errors.append(
+                                f"Table {t_idx} row {r_idx} col {c_idx} run '{crun.text[:30]}' "
+                                f"has font size {crun.font.size.pt}pt < 8.5pt"
+                            )
+
     if not t1a_found:
         errors.append("Table 1a (Comparators 1-4) not found in DOCX tables")
     if not t1b_found:
@@ -1373,7 +1185,21 @@ def audit_docx_quality(doc_path: Path):
     if not has_sdt_text:
         errors.append("DOCX tables have empty OpenXML SDT tags (<w:sdtContent/> has no visible text)")
 
-    # 6. Audit embedded images in word/media package (All 8 canonical figures)
+    # 6. Audit footer dynamic page numbering (PAGE and NUMPAGES fields)
+    has_page_field = False
+    has_numpages_field = False
+    for section in doc.sections:
+        footer_xml = section.footer._element.xml
+        if 'w:instr="PAGE"' in footer_xml:
+            has_page_field = True
+        if 'w:instr="NUMPAGES"' in footer_xml:
+            has_numpages_field = True
+    if not has_page_field:
+        errors.append("DOCX footer is missing dynamic page number field (<w:fldSimple w:instr=\"PAGE\"/>)")
+    if not has_numpages_field:
+        errors.append("DOCX footer is missing dynamic total pages field (<w:fldSimple w:instr=\"NUMPAGES\"/>)")
+
+    # 7. Audit embedded images in word/media package (All 8 canonical figures)
     PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
     with zipfile.ZipFile(doc_path) as z:
         media_files = [f for f in z.namelist() if f.startswith("word/media/")]

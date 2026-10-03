@@ -918,19 +918,57 @@ def extract_slots(
 
     if is_bundle_v2:
         raw_b = data.get("_bundle_raw_bytes")
-        if raw_b is not None:
-            if json.loads(raw_b) != seal:
-                raise RuntimeError(
-                    "[FAIL_CLOSED] In-memory seal tampering detected! "
-                    "Authenticated buffer does not match current seal object."
-                )
+        if raw_b is None:
+            raise ValueError("[FAIL_CLOSED] Missing _bundle_raw_bytes in canonical mode")
+        actual_seal_path = seal_path or DEFAULT_SEAL_PATH
+        trusted_sha = (
+            data.get("_authenticated_bundle_sha256")
+            or (compute_file_sha256(actual_seal_path) if actual_seal_path.is_file() else None)
+        )
+        if not trusted_sha or len(trusted_sha) != 64:
+            raise ValueError(
+                f"[FAIL_CLOSED] Missing or invalid trusted bundle digest: {trusted_sha!r}"
+            )
+        computed_bundle_sha = hashlib.sha256(raw_b).hexdigest()
+        if computed_bundle_sha.lower() != trusted_sha.lower():
+            raise RuntimeError(
+                f"[FAIL_CLOSED] Cached bundle buffer digest mismatch! "
+                f"computed '{computed_bundle_sha}' != trusted '{trusted_sha}'"
+            )
+        verified_seal = json.loads(raw_b)
+        if seal is not None and seal != verified_seal:
+            raise RuntimeError(
+                "[FAIL_CLOSED] In-memory seal tampering detected! "
+                "Provided seal object does not match verified bundle buffer."
+            )
+        seal = verified_seal
+
         files_raw = data.get("_files_raw_bytes")
-        if files_raw and "rq_analysis.json" in files_raw:
-            if json.loads(files_raw["rq_analysis.json"]) != data.get("rq_analysis"):
-                raise RuntimeError(
-                    "[FAIL_CLOSED] In-memory rq_analysis tampering detected! "
-                    "Authenticated buffer does not match current rq_analysis object."
-                )
+        if not isinstance(files_raw, dict):
+            raise ValueError("[FAIL_CLOSED] Missing _files_raw_bytes in canonical mode")
+        out_digests = verified_seal.get("output_file_digests", {})
+        if not isinstance(out_digests, dict):
+            raise TypeError("[FAIL_CLOSED] output_file_digests must be a dictionary in verified seal")
+
+        for fname, fbytes in files_raw.items():
+            if fname in out_digests:
+                exp_digest = out_digests[fname]
+                computed_f_sha = hashlib.sha256(fbytes).hexdigest()
+                if computed_f_sha.lower() != exp_digest.lower():
+                    raise RuntimeError(
+                        f"[FAIL_CLOSED] Cached output buffer digest mismatch for '{fname}': "
+                        f"computed '{computed_f_sha}' != expected '{exp_digest}'"
+                    )
+
+        if "rq_analysis.json" not in files_raw:
+            raise KeyError("[FAIL_CLOSED] rq_analysis.json missing in _files_raw_bytes")
+        verified_rq_analysis = json.loads(files_raw["rq_analysis.json"])
+        if data.get("rq_analysis") is not None and data.get("rq_analysis") != verified_rq_analysis:
+            raise RuntimeError(
+                "[FAIL_CLOSED] In-memory rq_analysis tampering detected! "
+                "Provided rq_analysis object does not match verified buffer."
+            )
+        rq_analysis = verified_rq_analysis
 
         actual_seal_path = seal_path or DEFAULT_SEAL_PATH
         seal_digest = (
@@ -967,7 +1005,7 @@ def extract_slots(
 
         depth_map = {"no_rag": 0, "rag_k1": 1, "rag_k3": 3, "rag_k5": 5, "rag_k10": 10}
         b_conds = seal["conditions"]
-        rq_analysis = data["rq_analysis"]
+        rq_analysis = verified_rq_analysis
         rq3_views = rq_analysis.get("rq3", {}).get("view_diagnostics", {})
 
         for c in CONDITIONS:
@@ -1729,19 +1767,57 @@ def build_prose_slots(
 
     if is_bundle_v2:
         raw_b = data.get("_bundle_raw_bytes")
-        if raw_b is not None:
-            if json.loads(raw_b) != seal:
-                raise RuntimeError(
-                    "[FAIL_CLOSED] In-memory seal tampering detected! "
-                    "Authenticated buffer does not match current seal object."
-                )
+        if raw_b is None:
+            raise ValueError("[FAIL_CLOSED] Missing _bundle_raw_bytes in canonical mode")
+        actual_seal_path = data.get("seal_path") or DEFAULT_SEAL_PATH
+        trusted_sha = (
+            data.get("_authenticated_bundle_sha256")
+            or (compute_file_sha256(actual_seal_path) if actual_seal_path.is_file() else None)
+        )
+        if not trusted_sha or len(trusted_sha) != 64:
+            raise ValueError(
+                f"[FAIL_CLOSED] Missing or invalid trusted bundle digest: {trusted_sha!r}"
+            )
+        computed_bundle_sha = hashlib.sha256(raw_b).hexdigest()
+        if computed_bundle_sha.lower() != trusted_sha.lower():
+            raise RuntimeError(
+                f"[FAIL_CLOSED] Cached bundle buffer digest mismatch! "
+                f"computed '{computed_bundle_sha}' != trusted '{trusted_sha}'"
+            )
+        verified_seal = json.loads(raw_b)
+        if seal is not None and seal != verified_seal:
+            raise RuntimeError(
+                "[FAIL_CLOSED] In-memory seal tampering detected! "
+                "Provided seal object does not match verified bundle buffer."
+            )
+        seal = verified_seal
+
         files_raw = data.get("_files_raw_bytes")
-        if files_raw and "rq_analysis.json" in files_raw:
-            if json.loads(files_raw["rq_analysis.json"]) != data.get("rq_analysis"):
-                raise RuntimeError(
-                    "[FAIL_CLOSED] In-memory rq_analysis tampering detected! "
-                    "Authenticated buffer does not match current rq_analysis object."
-                )
+        if not isinstance(files_raw, dict):
+            raise ValueError("[FAIL_CLOSED] Missing _files_raw_bytes in canonical mode")
+        out_digests = verified_seal.get("output_file_digests", {})
+        if not isinstance(out_digests, dict):
+            raise TypeError("[FAIL_CLOSED] output_file_digests must be a dictionary in verified seal")
+
+        for fname, fbytes in files_raw.items():
+            if fname in out_digests:
+                exp_digest = out_digests[fname]
+                computed_f_sha = hashlib.sha256(fbytes).hexdigest()
+                if computed_f_sha.lower() != exp_digest.lower():
+                    raise RuntimeError(
+                        f"[FAIL_CLOSED] Cached output buffer digest mismatch for '{fname}': "
+                        f"computed '{computed_f_sha}' != expected '{exp_digest}'"
+                    )
+
+        if "rq_analysis.json" not in files_raw:
+            raise KeyError("[FAIL_CLOSED] rq_analysis.json missing in _files_raw_bytes")
+        verified_rq_analysis = json.loads(files_raw["rq_analysis.json"])
+        if data.get("rq_analysis") is not None and data.get("rq_analysis") != verified_rq_analysis:
+            raise RuntimeError(
+                "[FAIL_CLOSED] In-memory rq_analysis tampering detected! "
+                "Provided rq_analysis object does not match verified buffer."
+            )
+        rq_analysis = verified_rq_analysis
 
         b_conds = seal["conditions"]
         scorable_n_int = int(b_conds["no_rag"]["rq1_attribution"]["scorable_sample_count"])
@@ -1769,7 +1845,7 @@ def build_prose_slots(
 
         k10_delta_num_str = f"{(b_conds['rag_k10']['rq1_attribution']['accuracy_end_to_end'] - no_rag_acc_val) * 100:+.3f}"
 
-        rq_analysis = data["rq_analysis"]
+        rq_analysis = verified_rq_analysis
         rq1 = rq_analysis.get("rq1", {})
         rq1_by_cond = rq1.get("by_condition", {})
         pair_clusters_raw = rq1.get("cluster_count") or rq1_by_cond.get("rag_k1", {}).get(

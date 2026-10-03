@@ -1620,6 +1620,56 @@ def test_canonical_tamper_detection_rq_analysis_mutation_fails_closed() -> None:
         extract_slots(data, mode="canonical", seal_path=DEFAULT_METRIC_BUNDLE_V2_PATH)
 
 
+def test_canonical_tamper_detection_paired_rq_analysis_and_buffer_fails_closed() -> None:
+    """Track C: Paired in-memory mutation of rq_analysis object and raw buffer fails closed."""
+    from scripts.populate_report import (
+        DEFAULT_CANONICAL_DATA_DIR,
+        DEFAULT_METRIC_BUNDLE_V2_PATH,
+        TRUSTED_CANONICAL_BUNDLE_V2_SHA256,
+        extract_slots,
+        load_report_data,
+    )
+    data = load_report_data(
+        DEFAULT_CANONICAL_DATA_DIR,
+        mode="canonical",
+        seal_path=DEFAULT_METRIC_BUNDLE_V2_PATH,
+        expected_bundle_sha256=TRUSTED_CANONICAL_BUNDLE_V2_SHA256,
+    )
+    # Tamper with rq_analysis object AND its cached buffer
+    data["rq_analysis"]["rq1"]["by_condition"]["rag_k10"]["delta_vs_baseline"]["mcnemar_test"][
+        "p_value_exact"
+    ] = 0.001
+    data["_files_raw_bytes"]["rq_analysis.json"] = json.dumps(data["rq_analysis"]).encode()
+    with pytest.raises(
+        RuntimeError, match=r"\[FAIL_CLOSED\] Cached output buffer digest mismatch for 'rq_analysis.json'"
+    ):
+        extract_slots(data, mode="canonical", seal_path=DEFAULT_METRIC_BUNDLE_V2_PATH)
+
+
+def test_canonical_tamper_detection_paired_seal_and_buffer_fails_closed() -> None:
+    """Track C: Paired in-memory mutation of seal object and raw buffer fails closed."""
+    from scripts.populate_report import (
+        DEFAULT_CANONICAL_DATA_DIR,
+        DEFAULT_METRIC_BUNDLE_V2_PATH,
+        TRUSTED_CANONICAL_BUNDLE_V2_SHA256,
+        extract_slots,
+        load_report_data,
+    )
+    data = load_report_data(
+        DEFAULT_CANONICAL_DATA_DIR,
+        mode="canonical",
+        seal_path=DEFAULT_METRIC_BUNDLE_V2_PATH,
+        expected_bundle_sha256=TRUSTED_CANONICAL_BUNDLE_V2_SHA256,
+    )
+    # Tamper with seal object AND its cached raw buffer
+    data["seal"]["conditions"]["rag_k10"]["rq1_attribution"]["accuracy_end_to_end"] = 0.001
+    data["_bundle_raw_bytes"] = json.dumps(data["seal"]).encode()
+    with pytest.raises(
+        RuntimeError, match=r"\[FAIL_CLOSED\] Cached bundle buffer digest mismatch"
+    ):
+        extract_slots(data, mode="canonical", seal_path=DEFAULT_METRIC_BUNDLE_V2_PATH)
+
+
 def test_canonical_candidate_banner_idempotency(tmp_path: Path) -> None:
     """Track C: Multiple canonical population passes yield identical idempotent banner."""
     from scripts.populate_report import (

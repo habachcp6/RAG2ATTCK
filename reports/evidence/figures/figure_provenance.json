@@ -1,19 +1,41 @@
 {
+  "bundle_sha256": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+  "figures_count": 8,
+  "figures_formats": [
+    "vector_svg",
+    "raster_png",
+    "print_pdf"
+  ],
   "fixture_only": false,
-  "scope": "Verified native metrics, RQ1 intervals and settled costs only; known RQ2 consumer v1 defects not used",
-  "source_digests": {
-    "C:\\Users\\hahoa\\.codex\\artifacts\\rag2attck\\canonical-metrics-208ac00-v1\\native\\per_condition_metrics.json": "e6592f9a0f97739be1168f9d1448e0d209fe4a300727ff6ad78902523f1591d6",
-    "C:\\Users\\hahoa\\.codex\\artifacts\\rag2attck\\canonical-metrics-208ac00-v1\\rq\\rq_analysis.json": "20747fab4150e05e5c816ed072c35d6c99482d83206508632378ab2e256adbc1",
-    "D:\\RAG2ATT&CK\\artifacts\\orchestration\\root_independent_canonical_numbers.json": "6ca7338b534f70d9c6cddd160ed46ad2652beb340cca82888aaaf06f5f22870e"
+  "generated_figures": {
+    "fig1_system_architecture.pdf": "b2bf23b9b1fad06cff7298b712de67a6e8d60a13309d3150c12678df3f06ce61",
+    "fig1_system_architecture.png": "b8e9e070c7c027882f97ff64b090f57e50b51ebac43480a61c3f2bf67fcc16c2",
+    "fig1_system_architecture.svg": "390a20d82453ece92e29ac30bf8ddd24409831745125a5c8ee76a0e91770eeb2",
+    "fig2_accuracy_vs_k.pdf": "227f71b66c15505a09e0c2036e229b8e7f059f67de5517f23a5c373591cfa054",
+    "fig2_accuracy_vs_k.png": "303c0e0c2255f5c5dfb828bdde0073a7a7d06c8eb61d3c06d889e4ccb4518965",
+    "fig2_accuracy_vs_k.svg": "f6c6358497d9cb074de1ec2da3363332b3f53f93fc90a56d7f3efa9306e6f721",
+    "fig3_macro_f1_vs_k.pdf": "e889d3cbd51fa9683d69eb3006e98a5a5a8667f0cd0b1bd5228070456f44f44c",
+    "fig3_macro_f1_vs_k.png": "22f0ebdaa565d2c1b576aa9b0a74470459cda94f051ff879c9e123b258dc99d6",
+    "fig3_macro_f1_vs_k.svg": "3250dd2c52f108d9717d5d4607eb07e4052b11135e53a6e6731380df9c5de42e",
+    "fig4_retrieval_hit_rate.pdf": "cfa4ba05c3f88d87439c1674a4a3f61e92c83f40e5c2c25255f0467dda890082",
+    "fig4_retrieval_hit_rate.png": "f8287936d2b5fc24e89584349028f393b801b6bebe668f8bea449c6b67f2128f",
+    "fig4_retrieval_hit_rate.svg": "2c7bacf2d80753bceb9b863c59dad89011902811662ddbab3512bac9956ee7cf",
+    "fig5_conditional_accuracy.pdf": "f545f0460ae9cb2940c1c5537a5f1c365ec8bbdfd0c018b2695d704717dfee81",
+    "fig5_conditional_accuracy.png": "8a896be3eccf13bb67a953d6bf70656e06aa6e2c35cb393c24fd2d03e21a91a9",
+    "fig5_conditional_accuracy.svg": "80090de1cd54b04c0758bb3eeabfc0114b5b485421d851e4aa711efe3b31050f",
+    "fig6_latency_vs_k.pdf": "33499a51bbf6feef3ace8c353f222fa406ef6e8993181310d7266b384ec66586",
+    "fig6_latency_vs_k.png": "48011a5a586947a11c88fb0bc67f6e5801069837e2e5df655af5d5b554328b03",
+    "fig6_latency_vs_k.svg": "451180e694aaec17b263da35894ef3bc577aed6da44ac1628ce70ab0580b00c5",
+    "fig7_cost_and_tokens_vs_k.pdf": "10365d0a30c119e6ad9914cb4f0631cfcebf0e630d4dd7774e74133c251c2e4d",
+    "fig7_cost_and_tokens_vs_k.png": "ca296165b38b499432f851618e3d6a512964c461e59dc3b646e647ddcb70bfb1",
+    "fig7_cost_and_tokens_vs_k.svg": "b0194313704b0672ebb8c664192bb7f85d2dedefd7fc04c9dca06dab2c687255",
+    "fig8_failure_decomposition.pdf": "ac6e7e6fb26252ace23aa84d59d0033e0c23decd0dabb9e6eea13d63ab922f09",
+    "fig8_failure_decomposition.png": "ed26f381337e7608445a6dcbfd028d161cc7a053d31cc373951a31a7cf9d77bb",
+    "fig8_failure_decomposition.svg": "b90d61d4fcd806c3affb1ef017dcf7aacad1c09a4b4e4a5dbf7421b6306f4e6c"
   },
-  "outputs": {
-    "canonical_rq1_accuracy_and_macro.pdf": "798b7e3c7ead2a701bc2045e548e0554ee8d495bc2157ea33b6025da722010a3",
-    "canonical_rq1_accuracy_and_macro.png": "fbeb37c324360cf31081f802b523999c2ca59a999c353c7ccbb6ad122f77dc19",
-    "canonical_rq2_retrieval.pdf": "43d496abcaabe3fb4966438845f10596b7cc771455ca1e2bf8a8e985e2ad0a51",
-    "canonical_rq2_retrieval.png": "7c15f5d04db785c2f211cbb6bfd0f8c0a45a48229a2723fa36ae11b79e3de513",
-    "canonical_rq3_cost_and_latency.pdf": "51cf74ed24bfea090f53aede762cf6a3529aa8be8b286d6770fb05eb4083d9eb",
-    "canonical_rq3_cost_and_latency.png": "5b9c31be2b37cad34f76624171b9f7fdc8a4686d3c13e452dc8ca8369e472941"
-  },
-  "analysis_source": "208ac00/c48",
-  "run_id": "live-66b94b1676bf46a9"
+  "p95_latency_status": "NOT REPORTED \u2014 approval evidence not established",
+  "plot_data_sha256": "965452e7d84e6522f1c0a673ae6e1cd9e92e765a89b222fab2213c8ffbe7f4ac",
+  "run_id": "live-66b94b1676bf46a9",
+  "schema_version": "2.0.0",
+  "workstation_paths_sanitized": true
 }

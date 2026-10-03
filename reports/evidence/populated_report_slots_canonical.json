@@ -6,7 +6,7 @@
     "experiment_id": "synthetic-paired-test-1",
     "manifest_sha256": null,
     "protocol_version": "experiment-protocol-v1.1",
-    "timestamp_utc": "2026-10-02T23:19:22.671198+00:00",
+    "timestamp_utc": "2026-10-03T01:11:28.834846+00:00",
     "source_data_dir": "C:\\Users\\hahoa\\.codex\\artifacts\\rag2attck\\finalization_worktrees_20261003\\native-report\\artifacts\\results\\outputs"
   },
   "table_2a": {

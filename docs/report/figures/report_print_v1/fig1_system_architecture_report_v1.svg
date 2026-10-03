@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 468 550" width="468" height="550">
+  <defs>
+    <style>
+      @page { size: 468px 550px; margin: 0; }
+      .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 12.5px; font-weight: bold; fill: #0f172a; text-anchor: middle; }
+      .subtitle { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 8.5px; fill: #475569; text-anchor: middle; }
+      .axis-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 9.0px; font-weight: bold; fill: #334155; }
+      .tick-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 8.5px; fill: #475569; }
+      .grid-line { stroke: #e2e8f0; stroke-width: 1; stroke-dasharray: 3,3; }
+      .data-hit { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 8.5px; font-weight: bold; fill: #065f46; text-anchor: middle; }
+      .data-miss { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 8.5px; font-weight: bold; fill: #92400e; text-anchor: middle; }
+      .legend-text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 8.5px; fill: #334155; }
+      .subgroup-text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 8.5px; font-weight: bold; fill: #1e293b; text-anchor: middle; }
+      .caveat-text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 8.5px; fill: #64748b; text-anchor: middle; }
+      .stage-title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 9.5px; font-weight: bold; text-anchor: middle; }
+      .stage-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 8.5px; fill: #334155; text-anchor: middle; }
+      .card-title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 8.5px; font-weight: bold; fill: #1e293b; }
+      .card-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 8.5px; fill: #475569; }
+      .fixture-banner { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 8.5px; font-weight: bold; fill: #b91c1c; text-anchor: end; }
+    </style>
+  </defs>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="234" y="24" class="title">Figure 1: RAG2ATTCK Dual-View Attribution Architecture</text>
+  <text x="234" y="38" class="subtitle">Controlled evaluation across 5 conditions with strict monetary &amp; ledger governance</text>
+  <rect x="20" y="52" width="428" height="46" rx="6" ry="6" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="234" y="68" class="stage-title" fill="#1d4ed8">Telemetry Input (640 Paired Scenarios / N=1,280 Views)</text>
+  <text x="234" y="84" class="stage-body">Single-Event Views &amp; Contextual Views | N=718 Mapped Scorable Views</text>
+  <line x1="124" y1="98" x2="124" y2="114" stroke="#6b7280" stroke-width="1.5"/>
+  <polygon points="124,116 120,110 128,110" fill="#6b7280"/>
+  <line x1="344" y1="98" x2="344" y2="114" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <polygon points="344,116 340,110 348,110" fill="#2563eb"/>
+  <rect x="20" y="116" width="208" height="58" rx="6" ry="6" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="124" y="132" class="stage-title" fill="#6d28d9">Dense Retrieval (RAG)</text>
+  <text x="124" y="148" class="stage-body">all-MiniLM-L6-v2 + FAISS IndexFlatIP</text>
+  <text x="124" y="162" class="stage-body">Retrieval depths: k in {1, 3, 5, 10}</text>
+  <rect x="240" y="116" width="208" height="58" rx="6" ry="6" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4,4"/>
+  <text x="344" y="132" class="stage-title" fill="#1d4ed8">No-RAG Direct Bypass (k=0)</text>
+  <text x="344" y="148" class="stage-body">Direct Baseline Prompt (k=0)</text>
+  <text x="344" y="162" class="stage-body">Retrieval omitted (not applicable)</text>
+  <line x1="124" y1="174" x2="124" y2="190" stroke="#6b7280" stroke-width="1.5"/>
+  <polygon points="124,192 120,186 128,186" fill="#6b7280"/>
+  <line x1="344" y1="174" x2="344" y2="190" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <polygon points="344,192 340,186 348,186" fill="#2563eb"/>
+  <rect x="20" y="192" width="428" height="46" rx="6" ry="6" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+  <text x="234" y="208" class="stage-title" fill="#047857">LLM Reasoning Engine (gpt-5.6-luna)</text>
+  <text x="234" y="224" class="stage-body">xhigh reasoning effort | Strict JSON Schema | Frozen fingerprint</text>
+  <line x1="234" y1="238" x2="234" y2="252" stroke="#6b7280" stroke-width="1.5"/>
+  <polygon points="234,254 230,248 238,248" fill="#6b7280"/>
+  <rect x="20" y="254" width="428" height="46" rx="6" ry="6" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="234" y="270" class="stage-title" fill="#b45309">Attribution Output &amp; Canonical Evaluation</text>
+  <text x="234" y="286" class="stage-body">MITRE ATT&amp;CK Technique ID | ANY_MATCH Ground Truth | 474 Macro Classes</text>
+  <rect x="20" y="312" width="428" height="226" rx="6" ry="6" fill="#f8fafc" stroke="#64748b" stroke-width="1.2" stroke-dasharray="4,4"/>
+  <text x="234" y="328" font-size="9.5" font-weight="bold" fill="#1e293b" text-anchor="middle">Protocol &amp; Budget Governance Controls (Decisions D1–D7)</text>
+  <rect x="28" y="338" width="202" height="56" rx="4" ry="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <circle cx="38" cy="351" r="2.5" fill="#2563eb"/>
+  <text x="45" y="354" class="card-title">D1: RECORD_ONLY Prompt Policy</text>
+  <text x="36" y="369" class="card-body">Raw model responses recorded verbatim</text>
+  <text x="36" y="382" class="card-body">Zero in-flight prompt mutations / retries</text>
+  <rect x="28" y="400" width="202" height="56" rx="4" ry="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <circle cx="38" cy="413" r="2.5" fill="#2563eb"/>
+  <text x="45" y="416" class="card-title">D2: Evaluation &amp; Denominators</text>
+  <text x="36" y="431" class="card-body">ANY_MATCH ground truth; 718 mapped views</text>
+  <text x="36" y="444" class="card-body">Evaluated across 474 frozen macro classes</text>
+  <rect x="28" y="462" width="202" height="56" rx="4" ry="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <circle cx="38" cy="475" r="2.5" fill="#2563eb"/>
+  <text x="45" y="478" class="card-title">D3 &amp; D4: Concurrency &amp; Identity</text>
+  <text x="36" y="493" class="card-body">Strict sequential execution (concurrency=1)</text>
+  <text x="36" y="506" class="card-body">System fingerprint &amp; response ID logged</text>
+  <rect x="238" y="338" width="202" height="56" rx="4" ry="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <circle cx="248" cy="351" r="2.5" fill="#2563eb"/>
+  <text x="255" y="354" class="card-title">D5: Study Budget Ledger Guard</text>
+  <text x="246" y="369" class="card-body">$19.99 hard cap; $0.0526 hold/request</text>
+  <text x="246" y="382" class="card-body">Atomic dual-lock ledger reservation</text>
+  <rect x="238" y="400" width="202" height="56" rx="4" ry="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <circle cx="248" cy="413" r="2.5" fill="#2563eb"/>
+  <text x="255" y="416" class="card-title">D6 &amp; D7: Synthetic Scope</text>
+  <text x="246" y="431" class="card-body">Pair-wise synthetic enterprise telemetry</text>
+  <text x="246" y="444" class="card-body">Generalization to live prod unsupported</text>
+  <rect x="238" y="462" width="202" height="56" rx="4" ry="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <circle cx="248" cy="475" r="2.5" fill="#2563eb"/>
+  <text x="255" y="478" class="card-title">Independent Failure Axes (D2i)</text>
+  <text x="246" y="493" class="card-body">Retrieval misses &amp; generation errors</text>
+  <text x="246" y="506" class="card-body">Evaluated independently (no forced cause)</text>
+</svg>

@@ -1,0 +1,67 @@
+{
+  "effective_font_sizes": {
+    "fig1_system_architecture_report_v1": {
+      "governance_card_lines": "8.5pt",
+      "governance_card_titles": "8.5pt bold",
+      "governance_title": "9.5pt bold",
+      "stage_body": "8.5pt",
+      "stage_headers": "9.5pt bold",
+      "subtitle": "8.5pt",
+      "title": "12.5pt bold"
+    },
+    "fig5_conditional_accuracy_report_v1": {
+      "axis_label": "9.0pt bold",
+      "bar_data_labels": "8.5pt bold",
+      "caveat": "8.5pt (2 lines)",
+      "legend": "8.5pt",
+      "subgroup_sample_sizes": "8.5pt bold",
+      "subtitle": "8.5pt",
+      "tick_labels": "8.5pt",
+      "title": "11.5pt bold"
+    }
+  },
+  "figures_count": 2,
+  "figures_formats": [
+    "vector_svg",
+    "raster_png",
+    "print_pdf"
+  ],
+  "fixture_only": false,
+  "generated_figures": {
+    "fig1_system_architecture_report_v1.pdf": "1eb5656bd148fa40a7a8cc5a9049918beaaa179e7cefbe10211af9c8867318b7",
+    "fig1_system_architecture_report_v1.png": "41fae9058768864e70416fe524370fc479333008b5bdeda79ad20e820f15152b",
+    "fig1_system_architecture_report_v1.svg": "393ceaa276fae6bbc6f748a3fcba757c0bddd53d8244f494e5425a775b357965",
+    "fig5_conditional_accuracy_report_v1.pdf": "3c204a8da3b6fba25dfe70271c79ebf9d7e1c989af06a198ca84fdb8e0606681",
+    "fig5_conditional_accuracy_report_v1.png": "73e561401a8f1e927e3187687b29d2235e21ad1ae1f66d9f36e5044f36969cd7",
+    "fig5_conditional_accuracy_report_v1.svg": "0df82ce4dab75759b90f8b78773a288dfdda53424c7a2d9e4265f0a08aff4715"
+  },
+  "schema_version": "2.0.0",
+  "scientific_data_integrity": {
+    "canonical_bundle_sha256": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+    "fig1_decisions": [
+      "D1",
+      "D2",
+      "D3",
+      "D4",
+      "D5",
+      "D6",
+      "D7",
+      "D2i"
+    ],
+    "fig5_subgroups": {
+      "k10_missed_accuracy_pct": "70.03%",
+      "k10_missed_correct_count": 278,
+      "k10_missed_sample_count": 397,
+      "k10_retrieved_accuracy_pct": "91.28%",
+      "k10_retrieved_correct_count": 293,
+      "k10_retrieved_sample_count": 321,
+      "mapped_scorable_views_total": 718
+    },
+    "observational_caveat": "Subgroup differences are observational (association-only); retrieval hit/miss is not randomly assigned.",
+    "run_id": "live-66b94b1676bf46a9"
+  },
+  "target_font_size_min_pt": 8.5,
+  "target_page_column_width_pt": 468,
+  "variant": "report_print_v1",
+  "workstation_paths_sanitized": true
+}

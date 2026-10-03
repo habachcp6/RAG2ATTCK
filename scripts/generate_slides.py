@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
 import sys
 from dataclasses import dataclass
@@ -32,10 +33,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from PIL import Image, ImageFile
 from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.util import Inches, Pt
+
+ImageFile.LOAD_TRUNCATED_IMAGES = False
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_PATH = REPO_ROOT / "docs/presentation/slides.pptx"
@@ -70,29 +74,90 @@ PINNED_MEDIA_DIGESTS: dict[str, dict[str, Any]] = {
 }
 
 
+@dataclass(frozen=True)
+class VerifiedPresentationFigure:
+    """Cryptographically verified presentation figure buffer."""
+
+    role: str
+    path: Path
+    raw_bytes: bytes
+    sha256: str
+    byte_size: int
+
+    def get_stream(self) -> io.BytesIO:
+        """Return an isolated in-memory buffer stream of verified decoded bytes."""
+        return io.BytesIO(self.raw_bytes)
+
+    def exists(self) -> bool:
+        return self.path.exists()
+
+    def is_file(self) -> bool:
+        return self.path.is_file()
+
+    def read_bytes(self) -> bytes:
+        return self.raw_bytes
+
+
 def resolve_and_verify_presentation_figure(
     role: str,
     *,
     canonical_mode: bool,
-) -> Path | None:
+) -> VerifiedPresentationFigure | None:
     """Resolve and verify pinned presentation figures under fail-closed media guard.
 
     In canonical mode:
-    - Reads decoded PNG bytes directly.
-    - Validates against root presentation media pin descriptor (if present) and pinned SHA-256 / size.
+    - Enforces presence and exact cryptographic digest of root presentation media pin descriptor.
+    - Binds requested role to descriptor specification.
+    - Reads decoded PNG bytes into an isolated memory buffer directly.
+    - Validates SHA-256 and byte size against pinned specification.
+    - Decodes PNG raster and verifies IDAT/CRC integrity via PIL.Image.
+    - Returns a VerifiedPresentationFigure containing the verified bytes for direct in-memory embedding.
     - Zero fallback to historical T20 figures; raises immediately on missing or mutated assets.
     """
     spec = PINNED_MEDIA_DIGESTS.get(role)
     if not spec:
         raise ValueError(f"[FAIL_CLOSED] Unknown presentation figure role: {role}")
 
-    if canonical_mode and ROOT_MEDIA_PIN_PATH.is_file():
+    if canonical_mode:
+        if not ROOT_MEDIA_PIN_PATH.is_file():
+            raise FileNotFoundError(
+                f"[FAIL_CLOSED] Root presentation media pin descriptor missing at {ROOT_MEDIA_PIN_PATH}"
+            )
         descriptor_bytes = ROOT_MEDIA_PIN_PATH.read_bytes()
         actual_pin_sha = hashlib.sha256(descriptor_bytes).hexdigest()
         if actual_pin_sha != EXPECTED_ROOT_MEDIA_PIN_SHA256:
             raise ValueError(
                 f"[FAIL_CLOSED] Root presentation media pin descriptor SHA-256 mismatch: "
                 f"expected {EXPECTED_ROOT_MEDIA_PIN_SHA256}, got {actual_pin_sha}"
+            )
+        try:
+            pin_data = json.loads(descriptor_bytes.decode("utf-8"))
+        except Exception as exc:
+            raise ValueError(
+                f"[FAIL_CLOSED] Root presentation media pin descriptor is not valid JSON: {exc}"
+            ) from exc
+
+        descriptor_assets = pin_data.get("assets", [])
+        matched_entry = None
+        for asset in descriptor_assets:
+            if asset.get("role") == role or (
+                role == "rq3_resource_consumption" and asset.get("role") == "rq3_cost_and_tokens"
+            ):
+                matched_entry = asset
+                break
+        if not matched_entry:
+            raise ValueError(
+                f"[FAIL_CLOSED] Role '{role}' not declared in root presentation media pin descriptor assets"
+            )
+        if matched_entry.get("sha256") != spec["sha256"]:
+            raise ValueError(
+                f"[FAIL_CLOSED] Descriptor SHA-256 mismatch for role '{role}': "
+                f"expected {spec['sha256']}, got {matched_entry.get('sha256')}"
+            )
+        if matched_entry.get("byte_size") != spec["byte_size"]:
+            raise ValueError(
+                f"[FAIL_CLOSED] Descriptor byte size mismatch for role '{role}': "
+                f"expected {spec['byte_size']}, got {matched_entry.get('byte_size')}"
             )
 
     candidates = [spec["primary_file"], spec["alias_file"]]
@@ -121,9 +186,39 @@ def resolve_and_verify_presentation_figure(
                 f"[FAIL_CLOSED] Figure byte size mismatch for role '{role}' ({resolved_path}): "
                 f"expected {spec['byte_size']}, got {len(raw_bytes)}."
             )
-        return resolved_path
 
-    return resolved_path
+        # Decode PNG buffer to verify IDAT chunks & CRC integrity
+        try:
+            with Image.open(io.BytesIO(raw_bytes)) as img:
+                if img.format != "PNG":
+                    raise ValueError(f"Decoded format is {img.format}, expected PNG")
+                img.verify()
+            with Image.open(io.BytesIO(raw_bytes)) as img:
+                img.load()
+        except Exception as exc:
+            raise ValueError(
+                f"[FAIL_CLOSED] PNG decode verification failed for role '{role}' ({resolved_path}): {exc}"
+            ) from exc
+
+        return VerifiedPresentationFigure(
+            role=role,
+            path=resolved_path,
+            raw_bytes=raw_bytes,
+            sha256=actual_sha,
+            byte_size=len(raw_bytes),
+        )
+
+    if resolved_path:
+        raw_bytes = resolved_path.read_bytes()
+        return VerifiedPresentationFigure(
+            role=role,
+            path=resolved_path,
+            raw_bytes=raw_bytes,
+            sha256=hashlib.sha256(raw_bytes).hexdigest(),
+            byte_size=len(raw_bytes),
+        )
+
+    return None
 
 
 # Color Palette
@@ -1162,13 +1257,13 @@ def build_slide_6_rq2_diagnostics(prs: Presentation, ctx: DeckContext) -> None:
         item_spacing=3.0,
     )
 
-    fig_path = resolve_and_verify_presentation_figure(
+    fig_asset = resolve_and_verify_presentation_figure(
         "rq2_retrieval_hit_rate",
         canonical_mode=ctx.canonical_mode,
     )
 
-    if fig_path is not None and fig_path.exists():
-        slide.shapes.add_picture(str(fig_path), Inches(6.833), Inches(1.35), width=Inches(5.7))
+    if fig_asset is not None and fig_asset.exists():
+        slide.shapes.add_picture(fig_asset.get_stream(), Inches(6.833), Inches(1.35), width=Inches(5.7))
         add_card(
             slide,
             6.833,
@@ -1544,13 +1639,13 @@ def build_slide_9_rq3_cost(prs: Presentation, ctx: DeckContext) -> None:
         item_spacing=1.8,
     )
 
-    fig_path = resolve_and_verify_presentation_figure(
+    fig_asset = resolve_and_verify_presentation_figure(
         "rq3_resource_consumption",
         canonical_mode=ctx.canonical_mode,
     )
 
-    if fig_path is not None and fig_path.exists():
-        slide.shapes.add_picture(str(fig_path), Inches(6.833), Inches(1.35), width=Inches(5.7))
+    if fig_asset is not None and fig_asset.exists():
+        slide.shapes.add_picture(fig_asset.get_stream(), Inches(6.833), Inches(1.35), width=Inches(5.7))
         add_card(
             slide,
             6.833,

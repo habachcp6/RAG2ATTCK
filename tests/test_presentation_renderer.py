@@ -22,6 +22,7 @@ Verifies:
 """
 
 import hashlib
+import io
 import json
 import re
 import zipfile
@@ -29,6 +30,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from PIL import Image
 from pptx import Presentation
 
 from scripts.generate_slides import (
@@ -650,5 +652,147 @@ def test_absence_of_unsupported_claims_and_causal_statements() -> None:
     assert "nhờ năng lực nội tại" not in md_text
     assert "tương quan quan sát" in s7_text.lower() or "tương quan quan sát" in s7_notes.lower()
     assert "Schema So Sánh Đối Chứng Scaffold: Không sử dụng prompt scaffold trong giao thức chuẩn tắc." in s7_text
+
+
+def test_fail_closed_media_guard_rejects_missing_root_descriptor(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Verifies that resolve_and_verify_presentation_figure fails closed if root pin descriptor is missing or tampered."""
+    import scripts.generate_slides as gs
+
+    # Missing descriptor file
+    missing_desc = tmp_path / "missing_root_pin.json"
+    monkeypatch.setattr(gs, "ROOT_MEDIA_PIN_PATH", missing_desc)
+    with pytest.raises(
+        FileNotFoundError, match=r"\[FAIL_CLOSED\] Root presentation media pin descriptor missing"
+    ):
+        gs.resolve_and_verify_presentation_figure("rq2_retrieval_hit_rate", canonical_mode=True)
+
+    # Tampered descriptor file (digest mismatch)
+    tampered_desc = tmp_path / "tampered_root_pin.json"
+    tampered_desc.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(gs, "ROOT_MEDIA_PIN_PATH", tampered_desc)
+    with pytest.raises(
+        ValueError, match=r"\[FAIL_CLOSED\] Root presentation media pin descriptor SHA-256 mismatch"
+    ):
+        gs.resolve_and_verify_presentation_figure("rq2_retrieval_hit_rate", canonical_mode=True)
+
+
+def test_fail_closed_media_guard_rejects_corrupt_idat(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Verifies that resolve_and_verify_presentation_figure fails closed on corrupt IDAT / invalid raster data."""
+    import copy
+    import scripts.generate_slides as gs
+
+    genuine_file = PINNED_MEDIA_DIGESTS["rq2_retrieval_hit_rate"]["primary_file"]
+    orig_bytes = genuine_file.read_bytes()
+
+    # 1. Post-hash drift on disk: file content mutated so SHA does not match spec
+    drift_file = tmp_path / "drifted_figure.png"
+    drift_file.write_bytes(b"not_a_valid_png_content_at_all")
+    mock_digests = copy.deepcopy(PINNED_MEDIA_DIGESTS)
+    mock_digests["rq2_retrieval_hit_rate"]["primary_file"] = drift_file
+    mock_digests["rq2_retrieval_hit_rate"]["alias_file"] = drift_file
+    monkeypatch.setattr(gs, "PINNED_MEDIA_DIGESTS", mock_digests)
+
+    with pytest.raises(ValueError, match=r"\[FAIL_CLOSED\] Figure SHA-256 mismatch"):
+        gs.resolve_and_verify_presentation_figure("rq2_retrieval_hit_rate", canonical_mode=True)
+
+    # 2. Corrupt IDAT chunk where hash matches descriptor but PIL decode/verification fails
+    corrupted_bytes = bytearray(orig_bytes)
+    corrupted_bytes[100] = (corrupted_bytes[100] ^ 0xFF)
+    corrupted_bytes_fixed = bytes(corrupted_bytes)
+
+    corrupted_sha = hashlib.sha256(corrupted_bytes_fixed).hexdigest()
+    corrupted_size = len(corrupted_bytes_fixed)
+    corrupt_png = tmp_path / "corrupt_idat.png"
+    corrupt_png.write_bytes(corrupted_bytes_fixed)
+
+    custom_desc = {
+        "schema_version": "root-candidate-presentation-media-pin-v1",
+        "assets": [
+            {
+                "role": "rq2_retrieval_hit_rate",
+                "sha256": corrupted_sha,
+                "byte_size": corrupted_size,
+            },
+            {
+                "role": "rq3_cost_and_tokens",
+                "sha256": gs.PINNED_MEDIA_DIGESTS["rq3_resource_consumption"]["sha256"],
+                "byte_size": gs.PINNED_MEDIA_DIGESTS["rq3_resource_consumption"]["byte_size"],
+            },
+        ],
+    }
+    desc_bytes = json.dumps(custom_desc).encode("utf-8")
+    desc_path = tmp_path / "custom_root_pin.json"
+    desc_path.write_bytes(desc_bytes)
+
+    mock_digests["rq2_retrieval_hit_rate"]["primary_file"] = corrupt_png
+    mock_digests["rq2_retrieval_hit_rate"]["alias_file"] = corrupt_png
+    mock_digests["rq2_retrieval_hit_rate"]["sha256"] = corrupted_sha
+    mock_digests["rq2_retrieval_hit_rate"]["byte_size"] = corrupted_size
+
+    monkeypatch.setattr(gs, "PINNED_MEDIA_DIGESTS", mock_digests)
+    monkeypatch.setattr(gs, "ROOT_MEDIA_PIN_PATH", desc_path)
+    monkeypatch.setattr(gs, "EXPECTED_ROOT_MEDIA_PIN_SHA256", hashlib.sha256(desc_bytes).hexdigest())
+
+    with pytest.raises(
+        ValueError, match=r"\[FAIL_CLOSED\] PNG decode verification failed for role 'rq2_retrieval_hit_rate'"
+    ):
+        gs.resolve_and_verify_presentation_figure("rq2_retrieval_hit_rate", canonical_mode=True)
+
+
+def test_genuine_output_media_parity_across_archive() -> None:
+    """Verifies genuine output media parity inside PPTX zip archive: exact SHA-256, byte size, and PIL decode."""
+    assert PPTX_PATH.is_file(), f"Deck file missing: {PPTX_PATH}"
+
+    expected_specs = {
+        "rq2": {
+            "sha256": "f8287936d2b5fc24e89584349028f393b801b6bebe668f8bea449c6b67f2128f",
+            "byte_size": 20165,
+            "role": "rq2_retrieval_hit_rate",
+        },
+        "rq3": {
+            "sha256": "ca296165b38b499432f851618e3d6a512964c461e59dc3b646e647ddcb70bfb1",
+            "byte_size": 27984,
+            "role": "rq3_resource_consumption",
+        },
+    }
+
+    verified_rq2 = resolve_and_verify_presentation_figure("rq2_retrieval_hit_rate", canonical_mode=True)
+    verified_rq3 = resolve_and_verify_presentation_figure("rq3_resource_consumption", canonical_mode=True)
+    assert verified_rq2 is not None
+    assert verified_rq3 is not None
+
+    with zipfile.ZipFile(str(PPTX_PATH), "r") as zf:
+        media_members = [name for name in zf.namelist() if name.startswith("ppt/media/")]
+        assert len(media_members) == 2, f"Expected exactly 2 media files, found: {media_members}"
+
+        found_shas: dict[str, bytes] = {}
+        for member_name in media_members:
+            raw_bytes = zf.read(member_name)
+            digest = hashlib.sha256(raw_bytes).hexdigest()
+            found_shas[digest] = raw_bytes
+
+            with Image.open(io.BytesIO(raw_bytes)) as img:
+                img.verify()
+            with Image.open(io.BytesIO(raw_bytes)) as img:
+                img.load()
+                assert img.format == "PNG"
+                assert img.size[0] > 0 and img.size[1] > 0
+
+        # Verify RQ2 exact parity
+        rq2_sha = expected_specs["rq2"]["sha256"]
+        assert rq2_sha in found_shas, f"RQ2 media SHA {rq2_sha} not in archive media"
+        assert len(found_shas[rq2_sha]) == expected_specs["rq2"]["byte_size"]
+        assert found_shas[rq2_sha] == verified_rq2.raw_bytes
+
+        # Verify RQ3 exact parity
+        rq3_sha = expected_specs["rq3"]["sha256"]
+        assert rq3_sha in found_shas, f"RQ3 media SHA {rq3_sha} not in archive media"
+        assert len(found_shas[rq3_sha]) == expected_specs["rq3"]["byte_size"]
+        assert found_shas[rq3_sha] == verified_rq3.raw_bytes
+
 
 

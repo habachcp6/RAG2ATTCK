@@ -1,0 +1,31 @@
+{
+  "schema_version": "root-candidate-presentation-media-pin-v1",
+  "status": "ROOT_REVIEWED_CANONICAL_CANDIDATE_PIXELS",
+  "scope": "Only these two canonical PNG pixels and their role/source bindings. Generator/checker and full deck remain under review; this is not project-final acceptance.",
+  "repository": "habachcp6/RAG2ATTCK",
+  "figure_source_git_sha": "e6aec2e189629a3cecf0c34dcfbe811d78fbdb04",
+  "figure_source_pr": "https://github.com/habachcp6/RAG2ATTCK/pull/33",
+  "observed_deck_source_git_sha": "496b299351034d0e1092745102a8af204377e315",
+  "trusted_metric_bundle_sha256": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+  "independent_review_sha256": "8d3fe3b18bef4a9797a4f6bde3700e12fbcd3d6a519cc8956baf061deb692355",
+  "controls": {
+    "actual_embedded_pngs_match_reviewed_git_bytes": true,
+    "canonical_b_bundle_authentication_verified": true,
+    "slides_individually_rendered_and_inspected": 12
+  },
+  "assets": [
+    {
+      "role": "rq2_retrieval_hit_rate",
+      "source_path": "docs/report/figures/fig4_retrieval_hit_rate.png",
+      "sha256": "f8287936d2b5fc24e89584349028f393b801b6bebe668f8bea449c6b67f2128f",
+      "byte_size": 20165
+    },
+    {
+      "role": "rq3_cost_and_tokens",
+      "source_path": "docs/report/figures/fig7_cost_and_tokens_vs_k.png",
+      "sha256": "ca296165b38b499432f851618e3d6a512964c461e59dc3b646e647ddcb70bfb1",
+      "byte_size": 27984
+    }
+  ],
+  "consumer_contract": "Caller authenticates this descriptor using an independently supplied Root/Git digest. Each required role must resolve to decoded PNG bytes matching the pinned digest; aliases are allowed only for identical bytes. Missing/wrong assets fail canonical mode; no historical/fixture fallback."
+}

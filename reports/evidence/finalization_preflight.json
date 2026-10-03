@@ -1,0 +1,854 @@
+{
+  "schema_version": "finalization-preflight-v1",
+  "timestamp_utc": "2026-10-02T17:47:26.713449+00:00",
+  "repository": "habachcp6/RAG2ATTCK",
+  "main_sha": "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315",
+  "candidate_initial_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
+  "candidate_branch": "codex/finalization-20261003",
+  "relevant_prs": [
+    {
+      "headRefName": "codex/s2-terminal-validator",
+      "headRefOid": "9c5d6c8ac1e7bc5bb85cef9206f79ef1a43348f7",
+      "isDraft": true,
+      "mergeable": "MERGEABLE",
+      "number": 29,
+      "title": "feat(validator): independent S2 terminal validation protocol and fail-closed audit suite",
+      "url": "https://github.com/habachcp6/RAG2ATTCK/pull/29",
+      "baseRefName": "main",
+      "mergeStateStatus": "CLEAN",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T02:03:59Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36953801527/job/110672225971",
+          "name": "Registry Validation",
+          "startedAt": "2026-10-02T02:03:02Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T02:04:05Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36953801527/job/110672225722",
+          "name": "Synthetic Tests",
+          "startedAt": "2026-10-02T02:03:02Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T02:06:00Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36953801527/job/110672225942",
+          "name": "Full Test Suite (ubuntu-24.04)",
+          "startedAt": "2026-10-02T02:03:02Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T02:08:34Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36953801527/job/110672225940",
+          "name": "Full Test Suite (windows-latest)",
+          "startedAt": "2026-10-02T02:03:01Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        }
+      ],
+      "exact_head_runs": [
+        {
+          "conclusion": "success",
+          "databaseId": 36953801527,
+          "event": "pull_request",
+          "headBranch": "codex/s2-terminal-validator",
+          "headSha": "9c5d6c8ac1e7bc5bb85cef9206f79ef1a43348f7",
+          "status": "completed",
+          "url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36953801527",
+          "workflowName": "CI"
+        }
+      ],
+      "head_is_ancestor_of_pr28": false,
+      "ancestry_exit_code": 1
+    },
+    {
+      "headRefName": "codex/s1-integrated-audit",
+      "headRefOid": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
+      "isDraft": true,
+      "mergeable": "MERGEABLE",
+      "number": 28,
+      "title": "Finalize synthetic study handover and authenticated offline replay",
+      "url": "https://github.com/habachcp6/RAG2ATTCK/pull/28",
+      "baseRefName": "main",
+      "mergeStateStatus": "CLEAN",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T11:33:53Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37001608954/job/110820343287",
+          "name": "Registry Validation",
+          "startedAt": "2026-10-02T11:33:00Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T11:34:32Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37001609133/job/110820343279",
+          "name": "Real Retrieval Integration",
+          "startedAt": "2026-10-02T11:33:00Z",
+          "status": "COMPLETED",
+          "workflowName": "Real Retrieval Integration"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T11:33:44Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37001608954/job/110820342996",
+          "name": "Synthetic Tests",
+          "startedAt": "2026-10-02T11:33:00Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T11:36:15Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37001608954/job/110820343125",
+          "name": "Full Test Suite (ubuntu-24.04)",
+          "startedAt": "2026-10-02T11:33:00Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T11:38:34Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37001608954/job/110820343329",
+          "name": "Full Test Suite (windows-latest)",
+          "startedAt": "2026-10-02T11:33:00Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        }
+      ],
+      "exact_head_runs": [
+        {
+          "conclusion": "success",
+          "databaseId": 37001609133,
+          "event": "pull_request",
+          "headBranch": "codex/s1-integrated-audit",
+          "headSha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
+          "status": "completed",
+          "url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37001609133",
+          "workflowName": "Real Retrieval Integration"
+        },
+        {
+          "conclusion": "success",
+          "databaseId": 37001608954,
+          "event": "pull_request",
+          "headBranch": "codex/s1-integrated-audit",
+          "headSha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
+          "status": "completed",
+          "url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37001608954",
+          "workflowName": "CI"
+        }
+      ],
+      "head_is_ancestor_of_pr28": true,
+      "ancestry_exit_code": 0
+    },
+    {
+      "headRefName": "codex/s1-evaluator-prep",
+      "headRefOid": "fe9fd9cbacc9614d24029fe3f751fc6f90b3f027",
+      "isDraft": true,
+      "mergeable": "MERGEABLE",
+      "number": 27,
+      "title": "feat(evaluation): add offline RQ analysis tooling, contract tests, and Phase S1 evidence",
+      "url": "https://github.com/habachcp6/RAG2ATTCK/pull/27",
+      "baseRefName": "main",
+      "mergeStateStatus": "CLEAN",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T04:26:11Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36964463633/job/110705073133",
+          "name": "Registry Validation",
+          "startedAt": "2026-10-02T04:25:12Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T04:26:22Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36964463633/job/110705073076",
+          "name": "Synthetic Tests",
+          "startedAt": "2026-10-02T04:25:12Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T04:27:49Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36964463633/job/110705072970",
+          "name": "Full Test Suite (ubuntu-24.04)",
+          "startedAt": "2026-10-02T04:25:12Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T04:30:26Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36964463633/job/110705073161",
+          "name": "Full Test Suite (windows-latest)",
+          "startedAt": "2026-10-02T04:25:12Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        }
+      ],
+      "exact_head_runs": [
+        {
+          "conclusion": "success",
+          "databaseId": 36964463633,
+          "event": "pull_request",
+          "headBranch": "codex/s1-evaluator-prep",
+          "headSha": "fe9fd9cbacc9614d24029fe3f751fc6f90b3f027",
+          "status": "completed",
+          "url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36964463633",
+          "workflowName": "CI"
+        }
+      ],
+      "head_is_ancestor_of_pr28": true,
+      "ancestry_exit_code": 0
+    },
+    {
+      "headRefName": "codex/s1-reproducibility-presentation",
+      "headRefOid": "d679746c08fb3df2145c6d3269cd74872de7295f",
+      "isDraft": true,
+      "mergeable": "MERGEABLE",
+      "number": 26,
+      "title": "docs(reproducibility): deliver Phase S1 offline reproduction package and presentation deck",
+      "url": "https://github.com/habachcp6/RAG2ATTCK/pull/26",
+      "baseRefName": "main",
+      "mergeStateStatus": "CLEAN",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T10:19:43Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36994713651/job/110798674486",
+          "name": "Registry Validation",
+          "startedAt": "2026-10-02T10:18:48Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T10:19:53Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36994713654/job/110798674138",
+          "name": "Real Retrieval Integration",
+          "startedAt": "2026-10-02T10:18:12Z",
+          "status": "COMPLETED",
+          "workflowName": "Real Retrieval Integration"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T10:19:26Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36994713651/job/110798674885",
+          "name": "Synthetic Tests",
+          "startedAt": "2026-10-02T10:18:13Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T10:21:08Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36994713651/job/110798674846",
+          "name": "Full Test Suite (ubuntu-24.04)",
+          "startedAt": "2026-10-02T10:18:13Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T10:23:40Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36994713651/job/110798674727",
+          "name": "Full Test Suite (windows-latest)",
+          "startedAt": "2026-10-02T10:18:12Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        }
+      ],
+      "exact_head_runs": [
+        {
+          "conclusion": "success",
+          "databaseId": 36994713651,
+          "event": "pull_request",
+          "headBranch": "codex/s1-reproducibility-presentation",
+          "headSha": "d679746c08fb3df2145c6d3269cd74872de7295f",
+          "status": "completed",
+          "url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36994713651",
+          "workflowName": "CI"
+        },
+        {
+          "conclusion": "success",
+          "databaseId": 36994713654,
+          "event": "pull_request",
+          "headBranch": "codex/s1-reproducibility-presentation",
+          "headSha": "d679746c08fb3df2145c6d3269cd74872de7295f",
+          "status": "completed",
+          "url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36994713654",
+          "workflowName": "Real Retrieval Integration"
+        }
+      ],
+      "head_is_ancestor_of_pr28": true,
+      "ancestry_exit_code": 0
+    },
+    {
+      "headRefName": "codex/s1-report-related-work",
+      "headRefOid": "28708013efece823ffc2e076ee5dccee6286f65a",
+      "isDraft": true,
+      "mergeable": "MERGEABLE",
+      "number": 25,
+      "title": "docs(report): publication-grade scientific report scaffold and docx exporter (Phase S1)",
+      "url": "https://github.com/habachcp6/RAG2ATTCK/pull/25",
+      "baseRefName": "main",
+      "mergeStateStatus": "CLEAN",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T08:12:02Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36982599006/job/110760277990",
+          "name": "Registry Validation",
+          "startedAt": "2026-10-02T08:11:04Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T08:12:07Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36982599006/job/110760278190",
+          "name": "Synthetic Tests",
+          "startedAt": "2026-10-02T08:11:04Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T08:14:23Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36982599006/job/110760278219",
+          "name": "Full Test Suite (ubuntu-24.04)",
+          "startedAt": "2026-10-02T08:11:04Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T08:16:10Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36982599006/job/110760278213",
+          "name": "Full Test Suite (windows-latest)",
+          "startedAt": "2026-10-02T08:11:06Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        }
+      ],
+      "exact_head_runs": [
+        {
+          "conclusion": "success",
+          "databaseId": 36982599006,
+          "event": "pull_request",
+          "headBranch": "codex/s1-report-related-work",
+          "headSha": "28708013efece823ffc2e076ee5dccee6286f65a",
+          "status": "completed",
+          "url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36982599006",
+          "workflowName": "CI"
+        }
+      ],
+      "head_is_ancestor_of_pr28": true,
+      "ancestry_exit_code": 0
+    },
+    {
+      "headRefName": "codex/s1-audit-recovery",
+      "headRefOid": "e896b6fba01feb50fe5db277c9d9ce135b4ba23f",
+      "isDraft": true,
+      "mergeable": "MERGEABLE",
+      "number": 24,
+      "title": "audit(recovery): verify runtime recovery determinism and Windows atomic replacement wrapper (Phase S1)",
+      "url": "https://github.com/habachcp6/RAG2ATTCK/pull/24",
+      "baseRefName": "main",
+      "mergeStateStatus": "CLEAN",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T10:18:37Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36994660256/job/110798501345",
+          "name": "Registry Validation",
+          "startedAt": "2026-10-02T10:17:40Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T10:18:45Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36994660256/job/110798501010",
+          "name": "Synthetic Tests",
+          "startedAt": "2026-10-02T10:17:37Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T10:20:47Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36994660256/job/110798501166",
+          "name": "Full Test Suite (ubuntu-24.04)",
+          "startedAt": "2026-10-02T10:17:36Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-02T10:23:18Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36994660256/job/110798501175",
+          "name": "Full Test Suite (windows-latest)",
+          "startedAt": "2026-10-02T10:17:38Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        }
+      ],
+      "exact_head_runs": [
+        {
+          "conclusion": "success",
+          "databaseId": 36994660256,
+          "event": "pull_request",
+          "headBranch": "codex/s1-audit-recovery",
+          "headSha": "e896b6fba01feb50fe5db277c9d9ce135b4ba23f",
+          "status": "completed",
+          "url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/36994660256",
+          "workflowName": "CI"
+        }
+      ],
+      "head_is_ancestor_of_pr28": true,
+      "ancestry_exit_code": 0
+    },
+    {
+      "headRefName": "docs/t33-related-work",
+      "headRefOid": "6783f20971cbff91f105d0280ddd07cb0925aab0",
+      "isDraft": true,
+      "mergeable": "MERGEABLE",
+      "number": 8,
+      "title": "docs(T33): correct comparator evidence and document source-access blockers",
+      "url": "https://github.com/habachcp6/RAG2ATTCK/pull/8",
+      "baseRefName": "main",
+      "mergeStateStatus": "CLEAN",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-09-21T18:30:29Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/35638706278/job/106462465094",
+          "name": "Registry Validation",
+          "startedAt": "2026-09-21T18:29:30Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-09-21T18:30:29Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/35638706278/job/106462465548",
+          "name": "Synthetic Tests",
+          "startedAt": "2026-09-21T18:29:31Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-09-21T18:31:47Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/35638706278/job/106462465644",
+          "name": "Full Test Suite (ubuntu-24.04)",
+          "startedAt": "2026-09-21T18:29:30Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-09-21T18:32:58Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/35638706278/job/106462465490",
+          "name": "Full Test Suite (windows-latest)",
+          "startedAt": "2026-09-21T18:29:30Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        }
+      ],
+      "exact_head_runs": [
+        {
+          "conclusion": "success",
+          "databaseId": 35638706278,
+          "event": "pull_request",
+          "headBranch": "docs/t33-related-work",
+          "headSha": "6783f20971cbff91f105d0280ddd07cb0925aab0",
+          "status": "completed",
+          "url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/35638706278",
+          "workflowName": "CI"
+        }
+      ],
+      "head_is_ancestor_of_pr28": false,
+      "ancestry_exit_code": 1
+    }
+  ],
+  "release_snapshot": {
+    "assets": [
+      {
+        "apiUrl": "https://api.github.com/repos/habachcp6/RAG2ATTCK/releases/assets/605512483",
+        "contentType": "application/zip",
+        "createdAt": "2026-10-02T11:57:17Z",
+        "digest": "sha256:a12a9c6b8990ae0ffbfd4c55373e776bf3620997b564a59a5950d64abd6c85d0",
+        "downloadCount": 0,
+        "id": "RA_kwDOUbm0sc4kF2Mj",
+        "label": "",
+        "name": "final_handover_package_v3_20261002.zip",
+        "size": 4772892,
+        "state": "uploaded",
+        "updatedAt": "2026-10-02T11:57:25Z",
+        "url": "https://github.com/habachcp6/RAG2ATTCK/releases/download/untagged-12049af9c0b52dfae9a3/final_handover_package_v3_20261002.zip"
+      },
+      {
+        "apiUrl": "https://api.github.com/repos/habachcp6/RAG2ATTCK/releases/assets/605512484",
+        "contentType": "text/plain; charset=utf-8",
+        "createdAt": "2026-10-02T11:57:17Z",
+        "digest": "sha256:008527e63e95f2686ff92d2354fe50e5014e552142642ba1d9bab03fe2b3ffde",
+        "downloadCount": 0,
+        "id": "RA_kwDOUbm0sc4kF2Mk",
+        "label": "",
+        "name": "final_handover_v3_SHA256SUMS.txt",
+        "size": 369,
+        "state": "uploaded",
+        "updatedAt": "2026-10-02T11:57:18Z",
+        "url": "https://github.com/habachcp6/RAG2ATTCK/releases/download/untagged-12049af9c0b52dfae9a3/final_handover_v3_SHA256SUMS.txt"
+      },
+      {
+        "apiUrl": "https://api.github.com/repos/habachcp6/RAG2ATTCK/releases/assets/605512486",
+        "contentType": "application/json",
+        "createdAt": "2026-10-02T11:57:17Z",
+        "digest": "sha256:be2a884ec7334a86c958bb9e7bc82638823ef359edb701ef69098fb13d1ea75f",
+        "downloadCount": 0,
+        "id": "RA_kwDOUbm0sc4kF2Mm",
+        "label": "",
+        "name": "root_final_handover_v3_acceptance_20261002.json",
+        "size": 3406,
+        "state": "uploaded",
+        "updatedAt": "2026-10-02T11:57:18Z",
+        "url": "https://github.com/habachcp6/RAG2ATTCK/releases/download/untagged-12049af9c0b52dfae9a3/root_final_handover_v3_acceptance_20261002.json"
+      }
+    ],
+    "isDraft": true,
+    "targetCommitish": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
+    "url": "https://github.com/habachcp6/RAG2ATTCK/releases/tag/untagged-12049af9c0b52dfae9a3"
+  },
+  "worktree_ownership_sanitized": "worktree <coordinator>\nHEAD 80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315\nbranch refs/heads/main\n\nworktree <coordinator>-baseline-infra\nHEAD dbe2d579a5dab77a932a33fbe40dd7b1746034bd\nbranch refs/heads/task/t19-rag-pipeline\n\nworktree <legacy-worktree-prefix>pr18\nHEAD d5907e2847ab79c856b723bbc4417376357c32b8\nbranch refs/heads/codex/pre-experiment-integration-fixes\n\nworktree <legacy-worktree-prefix>t22\nHEAD 9bfa42107a5f439f25a1da30baa87c7ae0940fe6\nbranch refs/heads/fix/t22-finalization\n\nworktree <worktree-root>/analysis-t20-reproducible\nHEAD cc62d22896c702b306dd20fedfff7802db1f68d5\nbranch refs/heads/analysis/t20-reproducible-failure-analysis\n\nworktree <worktree-root>/audit-recovery-s1\nHEAD e896b6fba01feb50fe5db277c9d9ce135b4ba23f\nbranch refs/heads/codex/s1-audit-recovery\n\nworktree <worktree-root>/canonical-live-usd1999\nHEAD 80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315\ndetached\n\nworktree <worktree-root>/docs-cleanup\nHEAD 8fc0201dd35be67f598e13e7088befb464aed764\nbranch refs/heads/docs/final-hardening-cleanup\n\nworktree <worktree-root>/finalization-20261003\nHEAD 5754f45f4c46794bf1025bf4ee11644eb9289eb6\nbranch refs/heads/codex/finalization-20261003\n\nworktree <worktree-root>/fix-live-retry-backoff\nHEAD b0398a5e25cbf7abd3f3e8ca1854d9571fd903f9\nbranch refs/heads/codex/fix-live-retry-backoff\n\nworktree <worktree-root>/integrated-audit-s1\nHEAD 307c30e37ac9bce4ee90ca46d1a5e34c8f6aa46f\nbranch refs/heads/codex/s1-integrated-audit\n\nworktree <worktree-root>/integrated-clean-s1\nHEAD 5754f45f4c46794bf1025bf4ee11644eb9289eb6\ndetached\n\nworktree <worktree-root>/pre-experiment-finalization\nHEAD d5907e2847ab79c856b723bbc4417376357c32b8\nbranch refs/heads/fix/pre-experiment-finalization\n\nworktree <worktree-root>/prep-evaluator-s1\nHEAD fe9fd9cbacc9614d24029fe3f751fc6f90b3f027\nbranch refs/heads/codex/s1-evaluator-prep\n\nworktree <worktree-root>/provisional-replay-audit\nHEAD 91872aea4b36e80c4cf8b63f7860400206030270\ndetached\n\nworktree <worktree-root>/report-s1\nHEAD 28708013efece823ffc2e076ee5dccee6286f65a\nbranch refs/heads/codex/s1-report-related-work\n\nworktree <worktree-root>/repro-presentation-s1\nHEAD d679746c08fb3df2145c6d3269cd74872de7295f\nbranch refs/heads/codex/s1-reproducibility-presentation\n\nworktree <worktree-root>/t15-pilot-hardening-v2\nHEAD 3e4806cc91908b991645e9239860ec95632e24f8\nbranch refs/heads/fix/t15-pilot-hardening-v2\n\nworktree <worktree-root>/t20-artifact-integrity\nHEAD 3f4de8ce413062c8f76b20d03a1c7530f3c74776\nbranch refs/heads/fix/t20-pairwise-anchor-correctness\n\nworktree <worktree-root>/t20-retrieval-diagnostics\nHEAD 5ce34cd8c0d4b38bbdf83e7fd3cf2b2542a22b2f\nbranch refs/heads/task/t20-retrieval-diagnostics\n\nworktree <worktree-root>/t21-experiment-infrastructure\nHEAD ebc134f2ee88abf32f50b3f1ab287c27f137df4d\nbranch refs/heads/prep/t21-experiment-infrastructure\n\nworktree <worktree-root>/t27-t28-evaluator\nHEAD 96e20daa87a5d17458927b3e85ef6d8d3198d956\nbranch refs/heads/prep/t27-t28-evaluator\n\nworktree <worktree-root>/usd20-budget-guard\nHEAD 8265feafe169776df744f29855463f6388e266b1\nbranch refs/heads/codex/usd20-budget-guard\n\nworktree <worktree-root>/validator-prep-80dbeb3\nHEAD 9c5d6c8ac1e7bc5bb85cef9206f79ef1a43348f7\nbranch refs/heads/codex/s2-terminal-validator",
+  "canonical_inventory": {
+    "manifest.json": {
+      "sha256": "66b658cfa9dd42e131ec567bbe043b8bc87ac6e92aeaa5e8f6661b0195e486e5",
+      "bytes": 127772
+    },
+    "no_rag_predictions.jsonl": {
+      "sha256": "70034c5e3c417fc4a28c357d00d6a046751175ed03e7815645fa09e0411e228a",
+      "bytes": 2207966
+    },
+    "rag_k10_predictions.jsonl": {
+      "sha256": "40cd9d2b19c691ed8bcb97ff5dfbebd378857346e9a06b00a9ab54e51fd9a122",
+      "bytes": 3046881
+    },
+    "rag_k1_predictions.jsonl": {
+      "sha256": "745cb883a90b4d1bac7c76c4007b143893834530a843e153fc24277aae5da7ac",
+      "bytes": 2292294
+    },
+    "rag_k3_predictions.jsonl": {
+      "sha256": "29f215d74a3139df53036c642c8a14762bec4542d04685125cf28d024571b006",
+      "bytes": 2459866
+    },
+    "rag_k5_predictions.jsonl": {
+      "sha256": "896d900d10e25af748e00235c33cace84511c450bf7cfb0da2b4d1a658124178",
+      "bytes": 2626661
+    },
+    "request_journal.jsonl": {
+      "sha256": "f36e0f3099ef704e6ed5e0bc0097affbe98932e1620563a6db22e631ae114f31",
+      "bytes": 7571342
+    },
+    "run_summary.json": {
+      "sha256": "67df38e336b4250b5a5c044b754ab02e8cc1826b8569f76d9bdf265ae4f84c2a",
+      "bytes": 593
+    }
+  },
+  "canonical_summary_observed": {
+    "complete": true,
+    "consumed_provider_attempts": 6401,
+    "execution_mode": "live",
+    "new_records": 6175,
+    "record_count": 6400,
+    "requests_consumed": 6401,
+    "run_id": "live-66b94b1676bf46a9",
+    "study_budget": {
+      "active_reservations_usd": "0E-8",
+      "breached_records_count": 0,
+      "cumulative_settled_cost_usd": "6.57575890",
+      "has_breach": false,
+      "pricing_contract_sha256": "4adfe8a0630bc1703a92e233133ea55eeff21ef5312dc3102369c267767c9565",
+      "prior_pilot_provisional_hold_usd": "0.05264010",
+      "service_tier": "default",
+      "settlement_records_count": 6400,
+      "total_budget_usd": "19.99000000",
+      "uncommitted_available_balance_usd": "13.36160100"
+    }
+  },
+  "canonical_record_inventory": {
+    "unique_keys": 6400,
+    "duplicate_keys": [],
+    "terminal_status_counts": {
+      "VALID": 6387,
+      "INCOMPLETE": 13
+    },
+    "per_condition_status_counts": {
+      "no_rag": {
+        "VALID": 1280
+      },
+      "rag_k10": {
+        "VALID": 1276,
+        "INCOMPLETE": 4
+      },
+      "rag_k1": {
+        "VALID": 1280
+      },
+      "rag_k3": {
+        "VALID": 1274,
+        "INCOMPLETE": 6
+      },
+      "rag_k5": {
+        "VALID": 1277,
+        "INCOMPLETE": 3
+      }
+    }
+  },
+  "prior_production_seal": {
+    "sha256": "16fbfca3dc55deccaf91b95b84d289a4a1e7eb3218d45fdd511c9a9c22d91357",
+    "seal_type": "canonical-independent-validation-seal-v1",
+    "fixture_only": false,
+    "total_records": 6400,
+    "state": "EXISTING_SEAL_REQUIRES_INDEPENDENT_REVALIDATION"
+  },
+  "prior_handover_archive": {
+    "name": "final_handover_package_v3_20261002.zip",
+    "sha256": "a12a9c6b8990ae0ffbfd4c55373e776bf3620997b564a59a5950d64abd6c85d0",
+    "bytes": 4772892,
+    "state": "PREVIOUS_SCOPE_ONLY"
+  },
+  "protected_baseline": {
+    "inventory_sha256": "75b9691ea8778112d6baa469082eda031719a6152ecbccb72e09e22ea5b6a7e6",
+    "inventory": {
+      "observed_utc": "2026-10-01T22:52:44.406429+00:00",
+      "baseline_sha": "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315",
+      "source": "immutable execution worktree read-only bytes",
+      "protected_files": {
+        "attack/corpus/enterprise-windows-v19.2.jsonl": "b219341154ddf2f12e97d622158a04ab7d57641df6a865559258d365852c3c75",
+        "attack/corpus/enterprise-windows-v19.2.manifest.json": "6bd769324f6ac9193d7df82e7f54f5a1397a41b9bc72be767da5a72b54b3a47c",
+        "attack/index/enterprise-windows-v19.2.docmap.json": "a7de3dfcf2b6e186e639d2922fcbc27766c160ae58bbafea74b5efc0faf30586",
+        "attack/index/enterprise-windows-v19.2.index": "7e3b9944870860766ebd5ba76f19a420c1bbe57cebd4e4238b06fd31128578e5",
+        "attack/index/enterprise-windows-v19.2.manifest.json": "ad1fc8c8118ef897943597e30c3ab71cf30556f675b38bbeba6772537127ed0a",
+        "attack/raw/enterprise-v19.2/enterprise-attack-19.2.json": "dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4",
+        "config/benchmark_scope.json": "d6aa89831dec75362b4fd48de0fd6e7082290f2be0cb7bd0afc6bc518148db8b",
+        "config/canonical_experiment_lock_v1.json": "d0ce198ad4853f4c41ef2bfbafbe10a395e4927a6c6561b3e72c055c4b887e9f",
+        "config/experiment_config.json": "961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac",
+        "config/experiment_protocol_v1.json": "a402b04ab463172f9d4079bff27b089ca8a21ffd0805d097af6cb1f3c7b5a8fb",
+        "config/model.json": "312c34cedd84106f2004c6070b72aeac1dd84209a464e2993fee3ec87822697f",
+        "config/pricing_v1.json": "e8afd6311f04dbbf5c34bb030e88a5b9d394f92c84d3e51feb32b327a08655a5",
+        "config/retrieval.json": "b33a93913e7f6de36f6f9021f77b2c9dcb1d426929162acb250a3c73ac8e6e25",
+        "data/ground_truth/synthetic/dataset_manifest.json": "4576b793360d02b60d619d199fd34d4555ace33215303ee847715c162a50dcc2",
+        "data/ground_truth/synthetic/ground_truth.jsonl": "8f3d73bac7e81336a3e90bfa5a5d0850a51ac5588385ee53ad940bcbc3612608",
+        "data/ground_truth/synthetic/inference.jsonl": "90d5f59e64f669f95d5ddccd86f1f047e10ee3dc46e4b67a8cd13d1ddf2cd4b8",
+        "data/ground_truth/synthetic/pairs.jsonl": "079e57a441b18d127739f610e7f62c263d943eefa19ca4ea5c6eab8b8a07665d",
+        "data/ground_truth/synthetic/split_manifest.json": "37fce63ccaa6db8e13604b7e3783997a10635f58995881b5e41913e6f550f43f",
+        "data/ground_truth/synthetic/views.jsonl": "1e6b0d3bd525b8fe9f97ba9e5656905597a3939e47c130a9e6f74535e2cd421d",
+        "docs/context/RAG_ATTCK_Project_Tracker_Updated.xlsx": "ed946fa1918af54a0634a317b6bf3d2b4291501219524de691c5da8b15725ef8",
+        "docs/context/RAG_ATTCK_Research_Plan_Updated.docx": "39499aa68188530eed81d1426af4d2f0217e17e10d9d016ddc0b38c0ae7a91af",
+        "prompts/baseline_v1.txt": "b751fde1ee33b03ec0bdc07cbba10267002d2086cf22b91a74bdfd123856f206"
+      },
+      "tracker_policy": "read-only; hashing only; no workbook edits",
+      "core_manifest_sha256": "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4"
+    },
+    "candidate_selected_file_hashes": {
+      "config/canonical_experiment_lock_v1.json": "d0ce198ad4853f4c41ef2bfbafbe10a395e4927a6c6561b3e72c055c4b887e9f",
+      "config/experiment_config.json": "961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac",
+      "reports/experiment_protocol_v1.md": "639fd68ae16deec86e9f6baab0980c1abb265c6cd7bb9b4662f562b87e54e819"
+    }
+  },
+  "open_blockers": [
+    "Final main merge requires explicit final authorization; ordinary offline engineering can proceed."
+  ],
+  "open_verification_gaps": [
+    "Production validator not integrated in PR28; independently revalidate before reuse.",
+    "New finalization acceptance must be audited item by item; previous package acceptance cannot establish new full scope.",
+    "No versioned canonical metric bundle at requested artifacts/results path in current candidate.",
+    "Verify all 8 required figure topics, six tables, machine-generation provenance, structured cross-artifact checks and final report completeness.",
+    "Resolve PR24-29 ancestry/content, clean-clone reproduction and exact final candidate CI."
+  ],
+  "finalization_plan": [
+    {
+      "phase": 0,
+      "deliverable": "GitHub and protected-baseline snapshot",
+      "state": "SNAPSHOT_CREATED"
+    },
+    {
+      "phase": 1,
+      "deliverable": "Independently rerun production terminal validator, reconcile original hashes and exact accounting",
+      "state": "NOT VERIFIED"
+    },
+    {
+      "phase": 2,
+      "deliverable": "Freeze versioned canonical metric bundle after canonical integrity acceptance",
+      "state": "NOT VERIFIED"
+    },
+    {
+      "phase": "3-5",
+      "deliverable": "Verify RQ1-RQ3, denominators and statistics against frozen protocol",
+      "state": "NOT VERIFIED"
+    },
+    {
+      "phase": "6-9",
+      "deliverable": "Failure analysis, complete report, 8 figures/6 tables, cross-artifact checker, slides and clean clone replay",
+      "state": "NOT VERIFIED"
+    },
+    {
+      "phase": "10-final",
+      "deliverable": "Integrate needed PR heads without loss of ancestry, exact-final-SHA checks, committed review package and merge recommendation",
+      "state": "NOT VERIFIED"
+    }
+  ],
+  "guardrails": {
+    "provider_calls_authorized": false,
+    "frozen_scientific_mutation_authorized": false,
+    "main_merge_authorized": false,
+    "tracker_access": "read_only"
+  },
+  "snapshot_commands": [
+    {
+      "command": "gh pr list --repo habachcp6/RAG2ATTCK --state open --limit 50 --json number,title,headRefName,headRefOid,isDraft,mergeable,url",
+      "cwd_role": "candidate",
+      "exit_code": 0
+    },
+    {
+      "command": "gh pr view 29 --repo habachcp6/RAG2ATTCK --json baseRefName,headRefOid,statusCheckRollup,mergeStateStatus",
+      "cwd_role": "candidate",
+      "exit_code": 0
+    },
+    {
+      "command": "gh run list --repo habachcp6/RAG2ATTCK --commit 9c5d6c8ac1e7bc5bb85cef9206f79ef1a43348f7 --limit 6 --json databaseId,headSha,headBranch,event,status,conclusion,url,workflowName",
+      "cwd_role": "candidate",
+      "exit_code": 0
+    },
+    {
+      "command": "gh pr view 28 --repo habachcp6/RAG2ATTCK --json baseRefName,headRefOid,statusCheckRollup,mergeStateStatus",
+      "cwd_role": "candidate",
+      "exit_code": 0
+    },
+    {
+      "command": "gh run list --repo habachcp6/RAG2ATTCK --commit 5754f45f4c46794bf1025bf4ee11644eb9289eb6 --limit 6 --json databaseId,headSha,headBranch,event,status,conclusion,url,workflowName",
+      "cwd_role": "candidate",
+      "exit_code": 0
+    },
+    {
+      "command": "gh pr view 27 --repo habachcp6/RAG2ATTCK --json baseRefName,headRefOid,statusCheckRollup,mergeStateStatus",
+      "cwd_role": "candidate",
+      "exit_code": 0
+    },
+    {
+      "command": "gh run list --repo habachcp6/RAG2ATTCK --commit fe9fd9cbacc9614d24029fe3f751fc6f90b3f027 --limit 6 --json databaseId,headSha,headBranch,event,status,conclusion,url,workflowName",
+      "cwd_role": "candidate",
+      "exit_code": 0
+    },
+    {
+      "command": "gh pr view 26 --repo habachcp6/RAG2ATTCK --json baseRefName,headRefOid,statusCheckRollup,mergeStateStatus",
+      "cwd_role": "candidate",
+      "exit_code": 0
+    },
+    {
+      "command": "gh run list --repo habachcp6/RAG2ATTCK --commit d679746c08fb3df2145c6d3269cd74872de7295f --limit 6 --json databaseId,headSha,headBranch,event,status,conclusion,url,workflowName",
+      "cwd_role": "candidate",
+      "exit_code": 0
+    },
+    {
+      "command": "gh pr view 25 --repo habachcp6/RAG2ATTCK --json baseRefName,headRefOid,statusCheckRollup,mergeStateStatus",
+      "cwd_role": "candidate",
+      "exit_code": 0
+    },
+    {
+      "command": "gh run list --repo habachcp6/RAG2ATTCK --commit 28708013efece823ffc2e076ee5dccee6286f65a --limit 6 --json databaseId,headSha,headBranch,event,status,conclusion,url,workflowName",
+      "cwd_role": "candidate",
+      "exit_code": 0
+    },
+    {
+      "command": "gh pr view 24 --repo habachcp6/RAG2ATTCK --json baseRefName,headRefOid,statusCheckRollup,mergeStateStatus",
+      "cwd_role": "candidate",
+      "exit_code": 0
+    },
+    {
+      "command": "gh run list --repo habachcp6/RAG2ATTCK --commit e896b6fba01feb50fe5db277c9d9ce135b4ba23f --limit 6 --json databaseId,headSha,headBranch,event,status,conclusion,url,workflowName",
+      "cwd_role": "candidate",
+      "exit_code": 0
+    },
+    {
+      "command": "gh pr view 8 --repo habachcp6/RAG2ATTCK --json baseRefName,headRefOid,statusCheckRollup,mergeStateStatus",
+      "cwd_role": "candidate",
+      "exit_code": 0
+    },
+    {
+      "command": "gh run list --repo habachcp6/RAG2ATTCK --commit 6783f20971cbff91f105d0280ddd07cb0925aab0 --limit 6 --json databaseId,headSha,headBranch,event,status,conclusion,url,workflowName",
+      "cwd_role": "candidate",
+      "exit_code": 0
+    },
+    {
+      "command": "gh api repos/habachcp6/RAG2ATTCK/git/ref/heads/main --jq .object.sha",
+      "cwd_role": "candidate",
+      "exit_code": 0
+    },
+    {
+      "command": "gh release view canonical-study-2026-10-02-review --repo habachcp6/RAG2ATTCK --json isDraft,targetCommitish,assets,url",
+      "cwd_role": "candidate",
+      "exit_code": 0
+    },
+    {
+      "command": "git worktree list --porcelain",
+      "cwd_role": "coordinator",
+      "exit_code": 0
+    },
+    {
+      "command": "git rev-parse HEAD",
+      "cwd_role": "candidate",
+      "exit_code": 0
+    },
+    {
+      "command": "git branch --show-current",
+      "cwd_role": "candidate",
+      "exit_code": 0
+    }
+  ]
+}

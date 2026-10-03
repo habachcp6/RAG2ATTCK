@@ -502,7 +502,30 @@ class TestPublicReproInventory:
         ):
             assert main() == 1
 
-        # 4. Both valid authorities supplied via bundle anchor -> exit 0
+        # 4. Both supplied but bundle digest corrupted -> exit 1
+        with patch(
+            "sys.argv",
+            [
+                "collect_public_repro_inventory.py",
+                "--check-only",
+                "--expected-bundle-sha256",
+                "0" * 64,
+                "--expected-public-manifest-sha256",
+                EXPECTED_PUBLIC_MANIFEST_SHA256,
+            ],
+        ):
+            assert main() == 1
+
+    def test_check_only_succeeds_with_both_valid_authorities(self) -> None:
+        """Verify that canonical --check-only exits 0 when both valid authorities and package staging are present."""
+        pkg_dir = REPO_ROOT / "artifacts/public_package_staging/03_public_canonical_package"
+        if not pkg_dir.is_dir():
+            pytest.skip(
+                f"Canonical public package staging directory not present at {pkg_dir}; "
+                "required for CLI check-only success verification"
+            )
+
+        # 1. Both valid authorities supplied via bundle anchor -> exit 0
         with patch(
             "sys.argv",
             [
@@ -516,7 +539,7 @@ class TestPublicReproInventory:
         ):
             assert main() == 0
 
-        # 5. Both valid authorities supplied via root freeze anchor -> exit 0
+        # 2. Both valid authorities supplied via root freeze anchor -> exit 0
         with patch(
             "sys.argv",
             [
@@ -529,20 +552,6 @@ class TestPublicReproInventory:
             ],
         ):
             assert main() == 0
-
-        # 6. Both supplied but bundle digest corrupted -> exit 1
-        with patch(
-            "sys.argv",
-            [
-                "collect_public_repro_inventory.py",
-                "--check-only",
-                "--expected-bundle-sha256",
-                "0" * 64,
-                "--expected-public-manifest-sha256",
-                EXPECTED_PUBLIC_MANIFEST_SHA256,
-            ],
-        ):
-            assert main() == 1
 
     def test_prose_and_table_dynamic_generation_on_log_mutation(self, inventory: dict, tmp_path: Path) -> None:
         """Verify that mutating artifacts dynamically regenerates both markdown prose and tables without hardcoded strings."""

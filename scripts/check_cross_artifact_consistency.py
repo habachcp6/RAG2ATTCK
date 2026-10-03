@@ -160,13 +160,13 @@ except ImportError:
 
         def build_canonical_bindings_registry(bundle: Optional[Dict[str, Any]] = None) -> List[MetricBinding]:
             return [
-                MetricBinding("no_rag_accuracy", "conditions/no_rag/rq1_attribution/accuracy_display", 0.779944, "77.99%", "outputs/rq_analysis.json#/rq1/by_condition/no_rag"),
-                MetricBinding("rag_k1_accuracy", "conditions/rag_k1/rq1_attribution/accuracy_display", 0.770195, "77.02%", "outputs/rq_analysis.json#/rq1/by_condition/rag_k1"),
-                MetricBinding("rag_k3_accuracy", "conditions/rag_k3/rq1_attribution/accuracy_display", 0.785515, "78.55%", "outputs/rq_analysis.json#/rq1/by_condition/rag_k3"),
-                MetricBinding("rag_k5_accuracy", "conditions/rag_k5/rq1_attribution/accuracy_display", 0.788301, "78.83%", "outputs/rq_analysis.json#/rq1/by_condition/rag_k5"),
-                MetricBinding("rag_k10_accuracy", "conditions/rag_k10/rq1_attribution/accuracy_display", 0.795265, "79.53%", "outputs/rq_analysis.json#/rq1/by_condition/rag_k10"),
-                MetricBinding("rag_k1_mcnemar_p", "conditions/rag_k1/rq1_attribution/delta_vs_baseline/mcnemar_test/display_p_exact", 0.435, "0.435", "outputs/rq_analysis.json#/rq1/by_condition/rag_k1/delta_vs_baseline/mcnemar_test"),
-                MetricBinding("rag_k10_mcnemar_p", "conditions/rag_k10/rq1_attribution/delta_vs_baseline/mcnemar_test/display_p_exact", 0.422, "0.422", "outputs/rq_analysis.json#/rq1/by_condition/rag_k10/delta_vs_baseline/mcnemar_test"),
+                MetricBinding("no_rag_accuracy", "conditions/no_rag/rq1_attribution/accuracy_end_to_end", 0.7799442896935933, "77.99%", "outputs/rq_analysis.json#/rq1/by_condition/no_rag"),
+                MetricBinding("rag_k1_accuracy", "conditions/rag_k1/rq1_attribution/accuracy_end_to_end", 0.7701949860724234, "77.02%", "outputs/rq_analysis.json#/rq1/by_condition/rag_k1"),
+                MetricBinding("rag_k3_accuracy", "conditions/rag_k3/rq1_attribution/accuracy_end_to_end", 0.7855153203342619, "78.55%", "outputs/rq_analysis.json#/rq1/by_condition/rag_k3"),
+                MetricBinding("rag_k5_accuracy", "conditions/rag_k5/rq1_attribution/accuracy_end_to_end", 0.7883008356545961, "78.83%", "outputs/rq_analysis.json#/rq1/by_condition/rag_k5"),
+                MetricBinding("rag_k10_accuracy", "conditions/rag_k10/rq1_attribution/accuracy_end_to_end", 0.7952646239554317, "79.53%", "outputs/rq_analysis.json#/rq1/by_condition/rag_k10"),
+                MetricBinding("rag_k1_mcnemar_p", "conditions/rag_k1/rq1_attribution/delta_vs_baseline/mcnemar_test/p_value_exact", 0.4349928051221534, "0.435", "outputs/rq_analysis.json#/rq1/by_condition/rag_k1/delta_vs_baseline/mcnemar_test"),
+                MetricBinding("rag_k10_mcnemar_p", "conditions/rag_k10/rq1_attribution/delta_vs_baseline/mcnemar_test/p_value_exact", 0.4219388330129739, "0.422", "outputs/rq_analysis.json#/rq1/by_condition/rag_k10/delta_vs_baseline/mcnemar_test"),
                 MetricBinding("settled_cost", "whole_study_financial_accounting/cumulative_settled_cost_usd", "6.57575890", "$6.57575890", "outputs/rq_analysis.json#/rq3/whole_study_financial_accounting"),
                 MetricBinding("total_accounted", "whole_study_financial_accounting/total_accounted_expenditure_usd", "6.62839900", "$6.62839900", "outputs/rq_analysis.json#/rq3/whole_study_financial_accounting"),
             ]
@@ -324,11 +324,11 @@ CANONICAL_METRIC_BINDINGS: List[MetricBinding] = (
     build_canonical_bindings_registry()
     if callable(globals().get("build_canonical_bindings_registry"))
     else [
-        MetricBinding("no_rag_accuracy", "conditions/no_rag/rq1_attribution/accuracy_display", 0.779944, "77.99%", "outputs/rq_analysis.json#/rq1/by_condition/no_rag"),
-        MetricBinding("rag_k1_accuracy", "conditions/rag_k1/rq1_attribution/accuracy_display", 0.770195, "77.02%", "outputs/rq_analysis.json#/rq1/by_condition/rag_k1"),
-        MetricBinding("rag_k3_accuracy", "conditions/rag_k3/rq1_attribution/accuracy_display", 0.785515, "78.55%", "outputs/rq_analysis.json#/rq1/by_condition/rag_k3"),
-        MetricBinding("rag_k5_accuracy", "conditions/rag_k5/rq1_attribution/accuracy_display", 0.788301, "78.83%", "outputs/rq_analysis.json#/rq1/by_condition/rag_k5"),
-        MetricBinding("rag_k10_accuracy", "conditions/rag_k10/rq1_attribution/accuracy_display", 0.795265, "79.53%", "outputs/rq_analysis.json#/rq1/by_condition/rag_k10"),
+        MetricBinding("no_rag_accuracy", "conditions/no_rag/rq1_attribution/accuracy_end_to_end", 0.7799442896935933, "77.99%", "outputs/rq_analysis.json#/rq1/by_condition/no_rag"),
+        MetricBinding("rag_k1_accuracy", "conditions/rag_k1/rq1_attribution/accuracy_end_to_end", 0.7701949860724234, "77.02%", "outputs/rq_analysis.json#/rq1/by_condition/rag_k1"),
+        MetricBinding("rag_k3_accuracy", "conditions/rag_k3/rq1_attribution/accuracy_end_to_end", 0.7855153203342619, "78.55%", "outputs/rq_analysis.json#/rq1/by_condition/rag_k3"),
+        MetricBinding("rag_k5_accuracy", "conditions/rag_k5/rq1_attribution/accuracy_end_to_end", 0.7883008356545961, "78.83%", "outputs/rq_analysis.json#/rq1/by_condition/rag_k5"),
+        MetricBinding("rag_k10_accuracy", "conditions/rag_k10/rq1_attribution/accuracy_end_to_end", 0.7952646239554317, "79.53%", "outputs/rq_analysis.json#/rq1/by_condition/rag_k10"),
     ]
 )
 
@@ -1075,6 +1075,18 @@ def run_consistency_audit(
             raw_text = p.read_text(encoding="utf-8", errors="ignore")
             binding_errs = validate_narrative_metric_bindings(raw_text, p.name, bundle=b_data)
             numerical_mismatches.extend(binding_errs)
+
+    # 7b. Validate and resolve CANONICAL_METRIC_BINDINGS registry against authenticated bundle
+    active_bindings = (
+        build_canonical_bindings_registry(bundle=b_data)
+        if callable(globals().get("build_canonical_bindings_registry"))
+        else CANONICAL_METRIC_BINDINGS
+    )
+    if b_data and not active_bindings:
+        numerical_mismatches.append("Failed to build canonical metric bindings registry from authenticated bundle")
+    for binding in (active_bindings or CANONICAL_METRIC_BINDINGS):
+        if binding.canonical_value is None or not binding.bundle_pointer:
+            numerical_mismatches.append(f"MetricBinding '{binding.metric_id}' has unpopulated canonical value or pointer")
 
     if numerical_mismatches:
         numerical_status = "FAIL"

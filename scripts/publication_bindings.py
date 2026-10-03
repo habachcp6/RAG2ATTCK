@@ -93,6 +93,8 @@ def load_trusted_bundle(bundle_path: Optional[Path] = None, bundle_dict: Optiona
         Path("artifacts/results/canonical_metric_bundle_v2.json"),
         Path("bundle.json"),
         Path("../artifacts/results/canonical_metric_bundle_v2.json"),
+        Path(__file__).resolve().parent.parent / "artifacts/results/canonical_metric_bundle_v2.json",
+        Path(__file__).resolve().parent / "bundle.json",
     ])
     for cand in candidates:
         if cand.is_file():
@@ -105,8 +107,11 @@ def load_trusted_bundle(bundle_path: Optional[Path] = None, bundle_dict: Optiona
 
 def extract_table3_conditions(bundle: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     """Extract Table 3 attribution performance conditions dynamically from authenticated bundle."""
-    result = {}
-    conditions = bundle.get("conditions", {})
+    if not bundle:
+        return {}
+    conditions = bundle.get("conditions")
+    if not isinstance(conditions, dict):
+        raise KeyError("Authenticated bundle missing 'conditions' mapping")
     label_map = {
         "no_rag": "No-RAG",
         "rag_k1": "RAG (k=1)",
@@ -114,35 +119,91 @@ def extract_table3_conditions(bundle: Dict[str, Any]) -> Dict[str, Dict[str, Any
         "rag_k5": "RAG (k=5)",
         "rag_k10": "RAG (k=10)",
     }
+    result = {}
     for c_key, c_label in label_map.items():
         if c_key not in conditions:
-            continue
+            raise KeyError(f"Authenticated bundle missing condition '{c_key}'")
         cond_data = conditions[c_key]
-        rq1 = cond_data.get("rq1_attribution", {})
+        rq1 = cond_data.get("rq1_attribution")
+        if not isinstance(rq1, dict):
+            raise KeyError(f"Condition '{c_key}' missing 'rq1_attribution'")
         delta_obj = rq1.get("delta_vs_baseline")
         mcnemar = delta_obj.get("mcnemar_test") if isinstance(delta_obj, dict) else None
         
+        cohort_obj = cond_data.get("cohort")
+        if not isinstance(cohort_obj, dict) or "total_scorable_mapped_views" not in cohort_obj:
+            raise KeyError(f"Condition '{c_key}' missing 'cohort/total_scorable_mapped_views'")
+        cohort_n = cohort_obj["total_scorable_mapped_views"]
+
+        if "accuracy_display" not in rq1 or "accuracy_end_to_end" not in rq1:
+            raise KeyError(f"Condition '{c_key}' missing accuracy fields")
+        acc_disp = rq1["accuracy_display"]
+        acc_num = rq1["accuracy_end_to_end"]
+        if not isinstance(acc_num, (int, float)):
+            raise ValueError(f"Condition '{c_key}' accuracy_end_to_end must be numeric, got {type(acc_num)}")
+
+        if "macro_f1_display" not in rq1 or "macro_f1" not in rq1:
+            raise KeyError(f"Condition '{c_key}' missing macro_f1 fields")
+        f1_disp = rq1["macro_f1_display"]
+        f1_num = rq1["macro_f1"]
+        if not isinstance(f1_num, (int, float)):
+            raise ValueError(f"Condition '{c_key}' macro_f1 must be numeric, got {type(f1_num)}")
+
+        p_disp = "—"
+        p_num = None
+        delta_disp = "Baseline"
+        ci_disp = "—"
+        if isinstance(delta_obj, dict):
+            delta_disp = delta_obj.get("delta_accuracy_display_pp", "Baseline")
+            ci_disp = delta_obj.get("delta_accuracy_ci_95_display_pp", "—")
+            if isinstance(mcnemar, dict):
+                if "display_p_exact" not in mcnemar or "p_value_exact" not in mcnemar:
+                    raise KeyError(f"Condition '{c_key}' mcnemar_test missing p-value fields")
+                p_disp = mcnemar["display_p_exact"]
+                p_num = mcnemar["p_value_exact"]
+                if not isinstance(p_num, (int, float)):
+                    raise ValueError(f"Condition '{c_key}' p_value_exact must be numeric, got {type(p_num)}")
+
         result[c_key] = {
             "label": c_label,
             "condition": c_key,
-            "cohort": cond_data.get("cohort", {}).get("total_scorable_mapped_views", 718),
-            "acc": rq1.get("accuracy_display", ""),
-            "acc_num": rq1.get("accuracy_e2e", 0.0),
+            "cohort": cohort_n,
+            "acc": acc_disp,
+            "acc_num": acc_num,
             "acc_ci": rq1.get("accuracy_ci_95_display", ""),
-            "f1": rq1.get("macro_f1_display", ""),
-            "f1_num": rq1.get("macro_f1", 0.0),
-            "delta": delta_obj.get("delta_accuracy_display_pp", "Baseline") if isinstance(delta_obj, dict) else "Baseline",
-            "ci": delta_obj.get("delta_accuracy_ci_95_display_pp", "—") if isinstance(delta_obj, dict) else "—",
-            "p_val": mcnemar.get("display_p_exact", "—") if isinstance(mcnemar, dict) else "—",
-            "p_num": mcnemar.get("p_exact") if isinstance(mcnemar, dict) else None,
+            "f1": f1_disp,
+            "f1_num": f1_num,
+            "delta": delta_disp,
+            "ci": ci_disp,
+            "p_val": p_disp,
+            "p_num": p_num,
         }
     return result
 
 
 def extract_table5_data(bundle: Dict[str, Any]) -> Dict[str, Any]:
     """Extract Table 5 operational resource, token, and financial metrics dynamically from authenticated bundle."""
-    fin = bundle.get("whole_study_financial_accounting", {})
-    conditions = bundle.get("conditions", {})
+    if not bundle:
+        return {"rows": {}, "financial": {}}
+    fin = bundle.get("whole_study_financial_accounting")
+    if not isinstance(fin, dict):
+        raise KeyError("Authenticated bundle missing 'whole_study_financial_accounting'")
+    for required_fin in [
+        "cumulative_settled_cost_usd",
+        "total_accounted_expenditure_usd",
+        "prior_pilot_provisional_hold_usd",
+        "uncommitted_available_balance_usd",
+    ]:
+        if required_fin not in fin:
+            raise KeyError(f"Missing required financial field '{required_fin}' in whole_study_financial_accounting")
+    if "study_budget_cap_usd" not in fin and "budget_cap_usd" not in fin:
+        raise KeyError("Missing required financial field 'study_budget_cap_usd' in whole_study_financial_accounting")
+    budget_cap = str(fin.get("study_budget_cap_usd", fin.get("budget_cap_usd")))
+
+    conditions = bundle.get("conditions")
+    if not isinstance(conditions, dict):
+        raise KeyError("Authenticated bundle missing 'conditions' mapping")
+
     label_map = {
         "no_rag": "No-RAG (k=0)",
         "rag_k1": "RAG (k=1)",
@@ -153,90 +214,125 @@ def extract_table5_data(bundle: Dict[str, Any]) -> Dict[str, Any]:
     rows = {}
     for c_key, c_label in label_map.items():
         if c_key not in conditions:
-            continue
+            raise KeyError(f"Authenticated bundle missing condition '{c_key}'")
         c_data = conditions[c_key]
-        rq3 = c_data.get("rq3_resources_and_cost", {})
-        tokens = rq3.get("tokens", {})
-        lat = rq3.get("latency_ms", {})
-        cost_obj = rq3.get("financial_cost_usd", {})
+        rq3 = c_data.get("rq3_resources_and_cost")
+        if not isinstance(rq3, dict):
+            raise KeyError(f"Condition '{c_key}' missing 'rq3_resources_and_cost'")
+        tokens = rq3.get("tokens")
+        if not isinstance(tokens, dict):
+            raise KeyError(f"Condition '{c_key}' missing 'tokens'")
+        lat = rq3.get("latency_ms")
+        if not isinstance(lat, dict):
+            raise KeyError(f"Condition '{c_key}' missing 'latency_ms'")
+        cost_obj = rq3.get("financial_cost_usd")
+        if not isinstance(cost_obj, dict):
+            raise KeyError(f"Condition '{c_key}' missing 'financial_cost_usd'")
         
-        prompt_sum = tokens.get("prompt_tokens", {}).get("sum", 0)
-        completion_sum = tokens.get("completion_tokens", {}).get("sum", 0)
-        cached_sum = tokens.get("cached_tokens", {}).get("sum", 0)
-        settled_cost = cost_obj.get("ledger_settled_cost_usd", "0.00000000")
+        cohort_obj = c_data.get("cohort")
+        if not isinstance(cohort_obj, dict) or "total_logical_requests" not in cohort_obj:
+            raise KeyError(f"Condition '{c_key}' missing 'cohort/total_logical_requests'")
+
+        prompt_sum = tokens.get("prompt_tokens", {}).get("sum")
+        completion_sum = tokens.get("completion_tokens", {}).get("sum")
+        cached_sum = tokens.get("cached_tokens", {}).get("sum")
+        if prompt_sum is None or completion_sum is None or cached_sum is None:
+            raise KeyError(f"Condition '{c_key}' missing token sums")
+
+        settled_cost = cost_obj.get("ledger_settled_cost_usd")
+        if settled_cost is None:
+            raise KeyError(f"Condition '{c_key}' missing 'ledger_settled_cost_usd'")
         
+        if "mean" not in lat or "median" not in lat:
+            raise KeyError(f"Condition '{c_key}' missing latency mean/median")
+
         rows[c_key] = {
             "label": c_label,
             "condition": c_key,
-            "cohort": c_data.get("cohort", {}).get("total_logical_requests", 1280),
-            "mean_latency": f"{lat.get('mean', 0.0):,.1f}",
-            "median_latency": f"{lat.get('median', 0.0):,.1f}",
+            "cohort": cohort_obj["total_logical_requests"],
+            "mean_latency": f"{lat['mean']:,.1f}",
+            "median_latency": f"{lat['median']:,.1f}",
             "prompt_tokens": f"{prompt_sum:,}",
             "prompt_tokens_int": prompt_sum,
             "completion_tokens": f"{completion_sum:,}",
             "completion_tokens_int": completion_sum,
             "cached_tokens": f"{cached_sum:,}",
             "cached_tokens_int": cached_sum,
-            "settled_cost": f"${float(settled_cost):.8f}" if settled_cost else "$0.00000000",
+            "settled_cost": f"${float(settled_cost):.8f}",
             "settled_cost_raw": settled_cost,
         }
         
     return {
         "rows": rows,
         "financial": {
-            "settled_cost": str(fin.get("cumulative_settled_cost_usd", "6.57575890")),
-            "settled_cost_display": f"${str(fin.get('cumulative_settled_cost_usd', '6.57575890'))}",
-            "total_accounted": str(fin.get("total_accounted_expenditure_usd", "6.62839900")),
-            "total_accounted_display": f"${str(fin.get('total_accounted_expenditure_usd', '6.62839900'))}",
-            "budget_cap": str(fin.get("budget_cap_usd", "19.99000000")),
-            "provisional_hold": str(fin.get("prior_pilot_provisional_hold_usd", "0.05264010")),
-            "available_balance": str(fin.get("uncommitted_available_balance_usd", "13.36160100")),
+            "settled_cost": str(fin["cumulative_settled_cost_usd"]),
+            "settled_cost_display": f"${str(fin['cumulative_settled_cost_usd'])}",
+            "total_accounted": str(fin["total_accounted_expenditure_usd"]),
+            "total_accounted_display": f"${str(fin['total_accounted_expenditure_usd'])}",
+            "budget_cap": budget_cap,
+            "provisional_hold": str(fin["prior_pilot_provisional_hold_usd"]),
+            "available_balance": str(fin["uncommitted_available_balance_usd"]),
         }
     }
 
 
 # Dynamic bundle-extracted structures
-CANONICAL_TABLE3_CONDITIONS = extract_table3_conditions(load_trusted_bundle())
-CANONICAL_TABLE5_FINANCIAL = extract_table5_data(load_trusted_bundle())["financial"]
+_bundle_init = load_trusted_bundle()
+CANONICAL_TABLE3_CONDITIONS = extract_table3_conditions(_bundle_init) if _bundle_init else {}
+CANONICAL_TABLE5_FINANCIAL = extract_table5_data(_bundle_init)["financial"] if _bundle_init else {}
 
 
 def build_canonical_bindings_registry(bundle: Optional[Dict[str, Any]] = None) -> List[MetricBinding]:
     """Build the typed canonical metric bindings registry dynamically from authenticated bundle."""
     b = load_trusted_bundle(bundle_dict=bundle)
+    if not b:
+        return []
     bindings: List[MetricBinding] = []
-    conditions = b.get("conditions", {})
+    conditions = b.get("conditions")
+    if not isinstance(conditions, dict):
+        raise KeyError("Authenticated bundle missing 'conditions' mapping")
 
     for c_key in ["no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10"]:
         if c_key not in conditions:
-            continue
+            raise KeyError(f"Authenticated bundle missing condition '{c_key}'")
         c_obj = conditions[c_key]
-        rq1 = c_obj.get("rq1_attribution", {})
+        rq1 = c_obj.get("rq1_attribution")
+        if not isinstance(rq1, dict):
+            raise KeyError(f"Condition '{c_key}' missing 'rq1_attribution'")
         cohort_n = c_obj.get("cohort", {}).get("total_scorable_mapped_views", 718)
         
         # Accuracy
-        acc_disp = rq1.get("accuracy_display", "")
-        acc_num = rq1.get("accuracy_e2e", 0.0)
+        if "accuracy_display" not in rq1 or "accuracy_end_to_end" not in rq1:
+            raise KeyError(f"Condition '{c_key}' missing accuracy fields")
+        acc_disp = rq1["accuracy_display"]
+        acc_num = rq1["accuracy_end_to_end"]
+        if not isinstance(acc_num, (int, float)):
+            raise ValueError(f"Condition '{c_key}' accuracy_end_to_end must be numeric, got {type(acc_num)}")
         bindings.append(MetricBinding(
             metric_id=f"{c_key}_accuracy",
             condition=c_key,
             cohort=cohort_n,
             unit="percentage",
             locator=f"outputs/rq_analysis.json#/rq1/by_condition/{c_key}",
-            bundle_pointer=f"conditions/{c_key}/rq1_attribution/accuracy_display",
+            bundle_pointer=f"conditions/{c_key}/rq1_attribution/accuracy_end_to_end",
             canonical_value=acc_num,
             formatted_string=acc_disp,
         ))
 
         # Macro-F1
-        f1_disp = rq1.get("macro_f1_display", "")
-        f1_num = rq1.get("macro_f1", 0.0)
+        if "macro_f1_display" not in rq1 or "macro_f1" not in rq1:
+            raise KeyError(f"Condition '{c_key}' missing macro_f1 fields")
+        f1_disp = rq1["macro_f1_display"]
+        f1_num = rq1["macro_f1"]
+        if not isinstance(f1_num, (int, float)):
+            raise ValueError(f"Condition '{c_key}' macro_f1 must be numeric, got {type(f1_num)}")
         bindings.append(MetricBinding(
             metric_id=f"{c_key}_macro_f1",
             condition=c_key,
             cohort=cohort_n,
             unit="f1",
             locator=f"outputs/rq_analysis.json#/rq1/by_condition/{c_key}",
-            bundle_pointer=f"conditions/{c_key}/rq1_attribution/macro_f1_display",
+            bundle_pointer=f"conditions/{c_key}/rq1_attribution/macro_f1",
             canonical_value=f1_num,
             formatted_string=f1_disp,
         ))
@@ -244,73 +340,88 @@ def build_canonical_bindings_registry(bundle: Optional[Dict[str, Any]] = None) -
         # McNemar p-value & Delta
         delta_obj = rq1.get("delta_vs_baseline")
         if isinstance(delta_obj, dict):
-            mcnemar = delta_obj.get("mcnemar_test", {})
-            p_disp = mcnemar.get("display_p_exact", "")
-            p_num = mcnemar.get("p_exact", 0.0)
+            mcnemar = delta_obj.get("mcnemar_test")
+            if not isinstance(mcnemar, dict):
+                raise KeyError(f"Condition '{c_key}' delta_vs_baseline missing 'mcnemar_test'")
+            if "display_p_exact" not in mcnemar or "p_value_exact" not in mcnemar:
+                raise KeyError(f"Condition '{c_key}' mcnemar_test missing p-value fields")
+            p_disp = mcnemar["display_p_exact"]
+            p_num = mcnemar["p_value_exact"]
+            if not isinstance(p_num, (int, float)):
+                raise ValueError(f"Condition '{c_key}' p_value_exact must be numeric, got {type(p_num)}")
             bindings.append(MetricBinding(
                 metric_id=f"{c_key}_mcnemar_p",
                 condition=c_key,
                 cohort=cohort_n,
                 unit="p_value",
                 locator=f"outputs/rq_analysis.json#/rq1/by_condition/{c_key}/delta_vs_baseline/mcnemar_test",
-                bundle_pointer=f"conditions/{c_key}/rq1_attribution/delta_vs_baseline/mcnemar_test/display_p_exact",
+                bundle_pointer=f"conditions/{c_key}/rq1_attribution/delta_vs_baseline/mcnemar_test/p_value_exact",
                 canonical_value=p_num,
                 formatted_string=p_disp,
             ))
-            delta_ci_disp = delta_obj.get("delta_accuracy_ci_95_display_pp", "")
-            delta_ci_raw = delta_obj.get("delta_accuracy_ci_95", [])
+            if "delta_accuracy_ci_95_display_pp" not in delta_obj or "delta_accuracy_ci_95" not in delta_obj:
+                raise KeyError(f"Condition '{c_key}' delta_vs_baseline missing CI fields")
+            delta_ci_disp = delta_obj["delta_accuracy_ci_95_display_pp"]
+            delta_ci_raw = delta_obj["delta_accuracy_ci_95"]
             bindings.append(MetricBinding(
                 metric_id=f"{c_key}_delta_ci",
                 condition=c_key,
                 cohort=cohort_n,
                 unit="confidence_interval",
                 locator=f"outputs/rq_analysis.json#/rq1/by_condition/{c_key}/delta_vs_baseline",
-                bundle_pointer=f"conditions/{c_key}/rq1_attribution/delta_vs_baseline/delta_accuracy_ci_95_display_pp",
+                bundle_pointer=f"conditions/{c_key}/rq1_attribution/delta_vs_baseline/delta_accuracy_ci_95",
                 canonical_value=delta_ci_raw,
                 formatted_string=delta_ci_disp,
             ))
 
         # RQ3 Prompt tokens
-        rq3 = c_obj.get("rq3_resources_and_cost", {})
+        rq3 = c_obj.get("rq3_resources_and_cost")
+        if not isinstance(rq3, dict):
+            raise KeyError(f"Condition '{c_key}' missing 'rq3_resources_and_cost'")
         prompt_sum = rq3.get("tokens", {}).get("prompt_tokens", {}).get("sum")
-        if prompt_sum is not None:
-            bindings.append(MetricBinding(
-                metric_id=f"{c_key}_prompt_tokens",
-                condition=c_key,
-                cohort=c_obj.get("cohort", {}).get("total_logical_requests", 1280),
-                unit="tokens",
-                locator=f"outputs/rq_analysis.json#/rq3/tradeoffs_by_condition/{c_key}",
-                bundle_pointer=f"conditions/{c_key}/rq3_resources_and_cost/tokens/prompt_tokens/sum",
-                canonical_value=prompt_sum,
-                formatted_string=f"{prompt_sum:,}",
-            ))
+        if prompt_sum is None:
+            raise KeyError(f"Condition '{c_key}' missing tokens/prompt_tokens/sum")
+        bindings.append(MetricBinding(
+            metric_id=f"{c_key}_prompt_tokens",
+            condition=c_key,
+            cohort=c_obj.get("cohort", {}).get("total_logical_requests", 1280),
+            unit="tokens",
+            locator=f"outputs/rq_analysis.json#/rq3/tradeoffs_by_condition/{c_key}",
+            bundle_pointer=f"conditions/{c_key}/rq3_resources_and_cost/tokens/prompt_tokens/sum",
+            canonical_value=prompt_sum,
+            formatted_string=f"{prompt_sum:,}",
+        ))
 
     # Whole study financial
-    fin = b.get("whole_study_financial_accounting", {})
+    fin = b.get("whole_study_financial_accounting")
+    if not isinstance(fin, dict):
+        raise KeyError("Authenticated bundle missing 'whole_study_financial_accounting'")
     settled = fin.get("cumulative_settled_cost_usd")
-    if settled is not None:
-        bindings.append(MetricBinding(
-            metric_id="cumulative_settled_expenditure",
-            condition=None,
-            cohort=1280,
-            unit="usd",
-            locator="outputs/rq_analysis.json#/rq3/whole_study_financial_accounting",
-            bundle_pointer="whole_study_financial_accounting/cumulative_settled_cost_usd",
-            canonical_value=Decimal(str(settled)),
-            formatted_string=f"${settled}",
-        ))
+    if settled is None:
+        raise KeyError("Missing cumulative_settled_cost_usd")
+    bindings.append(MetricBinding(
+        metric_id="cumulative_settled_expenditure",
+        condition=None,
+        cohort=1280,
+        unit="usd",
+        locator="outputs/rq_analysis.json#/rq3/whole_study_financial_accounting",
+        bundle_pointer="whole_study_financial_accounting/cumulative_settled_cost_usd",
+        canonical_value=Decimal(str(settled)),
+        formatted_string=f"${settled}",
+    ))
     total_acc = fin.get("total_accounted_expenditure_usd")
-    if total_acc is not None:
-        bindings.append(MetricBinding(
-            metric_id="total_accounted_expenditure",
-            condition=None,
-            cohort=1280,
-            unit="usd",
-            locator="outputs/rq_analysis.json#/rq3/whole_study_financial_accounting",
-            bundle_pointer="whole_study_financial_accounting/total_accounted_expenditure_usd",
-            canonical_value=Decimal(str(total_acc)),
-            formatted_string=f"${total_acc}",
-        ))
+    if total_acc is None:
+        raise KeyError("Missing total_accounted_expenditure_usd")
+    bindings.append(MetricBinding(
+        metric_id="total_accounted_expenditure",
+        condition=None,
+        cohort=1280,
+        unit="usd",
+        locator="outputs/rq_analysis.json#/rq3/whole_study_financial_accounting",
+        bundle_pointer="whole_study_financial_accounting/total_accounted_expenditure_usd",
+        canonical_value=Decimal(str(total_acc)),
+        formatted_string=f"${total_acc}",
+    ))
 
     return bindings
 
@@ -622,7 +733,10 @@ def validate_table5_structure_and_bindings(content: str, bundle: Optional[Dict[s
                 f"Table 5 Total Accounted Expenditure mismatch: expected '${fin_expected['total_accounted']}', got '${accounted_val}'"
             )
 
-    # 2. Condition-specific row validation (prompt tokens, completion tokens, costs, latencies)
+    # 2. Condition-specific row validation (prompt tokens, completion tokens, cached tokens, costs, latencies)
+    found_conditions: Dict[str, Dict[str, str]] = {}
+    condition_counts: Dict[str, int] = {k: 0 for k in rows_expected}
+
     lines = clean.splitlines()
     for line in lines:
         if "|" in line:
@@ -631,32 +745,92 @@ def validate_table5_structure_and_bindings(content: str, bundle: Optional[Dict[s
                 cond_cell = parts[1]
                 for c_key, r_info in rows_expected.items():
                     if r_info["label"] in cond_cell:
-                        mean_lat = parts[2]
-                        med_lat = parts[3]
-                        prompt_tok = parts[4]
-                        comp_tok = parts[5]
-                        cost_cell = parts[7]
+                        condition_counts[c_key] += 1
+                        found_conditions[c_key] = {
+                            "mean_lat": parts[2],
+                            "med_lat": parts[3],
+                            "prompt_tok": parts[4],
+                            "comp_tok": parts[5],
+                            "cached_tok": parts[6],
+                            "cost_cell": parts[7],
+                        }
 
-                        if prompt_tok != r_info["prompt_tokens"]:
-                            errors.append(
-                                f"Table 5 {r_info['label']} prompt tokens mismatch: expected '{r_info['prompt_tokens']}', got '{prompt_tok}'"
-                            )
-                        if comp_tok != r_info["completion_tokens"]:
-                            errors.append(
-                                f"Table 5 {r_info['label']} completion tokens mismatch: expected '{r_info['completion_tokens']}', got '{comp_tok}'"
-                            )
-                        if mean_lat != r_info["mean_latency"]:
-                            errors.append(
-                                f"Table 5 {r_info['label']} mean latency mismatch: expected '{r_info['mean_latency']}', got '{mean_lat}'"
-                            )
-                        if med_lat != r_info["median_latency"]:
-                            errors.append(
-                                f"Table 5 {r_info['label']} median latency mismatch: expected '{r_info['median_latency']}', got '{med_lat}'"
-                            )
-                        if cost_cell != r_info["settled_cost"]:
-                            errors.append(
-                                f"Table 5 {r_info['label']} settled cost mismatch: expected '{r_info['settled_cost']}', got '{cost_cell}'"
-                            )
+    # Verify presence and unicity across all conditions
+    for c_key, r_info in rows_expected.items():
+        cnt = condition_counts[c_key]
+        if cnt == 0:
+            errors.append(f"Table 5 missing required condition row: '{r_info['label']}'")
+        elif cnt > 1:
+            errors.append(f"Table 5 contains duplicate condition row: '{r_info['label']}' ({cnt} occurrences)")
+        else:
+            row = found_conditions[c_key]
+            mean_lat = row["mean_lat"]
+            med_lat = row["med_lat"]
+            prompt_tok = row["prompt_tok"]
+            comp_tok = row["comp_tok"]
+            cached_tok = row["cached_tok"]
+            cost_cell = row["cost_cell"]
+
+            if prompt_tok != r_info["prompt_tokens"]:
+                errors.append(
+                    f"Table 5 {r_info['label']} prompt tokens mismatch: expected '{r_info['prompt_tokens']}', got '{prompt_tok}'"
+                )
+            try:
+                p_int = int(prompt_tok.replace(",", ""))
+                if p_int != r_info["prompt_tokens_int"]:
+                    errors.append(
+                        f"Table 5 {r_info['label']} prompt tokens integer mismatch: expected {r_info['prompt_tokens_int']}, got {p_int}"
+                    )
+            except ValueError:
+                errors.append(f"Table 5 {r_info['label']} invalid prompt tokens integer '{prompt_tok}'")
+
+            if comp_tok != r_info["completion_tokens"]:
+                errors.append(
+                    f"Table 5 {r_info['label']} completion tokens mismatch: expected '{r_info['completion_tokens']}', got '{comp_tok}'"
+                )
+            try:
+                c_int = int(comp_tok.replace(",", ""))
+                if c_int != r_info["completion_tokens_int"]:
+                    errors.append(
+                        f"Table 5 {r_info['label']} completion tokens integer mismatch: expected {r_info['completion_tokens_int']}, got {c_int}"
+                    )
+            except ValueError:
+                errors.append(f"Table 5 {r_info['label']} invalid completion tokens integer '{comp_tok}'")
+
+            if cached_tok != r_info["cached_tokens"]:
+                errors.append(
+                    f"Table 5 {r_info['label']} cached tokens mismatch: expected '{r_info['cached_tokens']}', got '{cached_tok}'"
+                )
+            try:
+                k_int = int(cached_tok.replace(",", ""))
+                if k_int != r_info["cached_tokens_int"]:
+                    errors.append(
+                        f"Table 5 {r_info['label']} cached tokens integer mismatch: expected {r_info['cached_tokens_int']}, got {k_int}"
+                    )
+            except ValueError:
+                errors.append(f"Table 5 {r_info['label']} invalid cached tokens integer '{cached_tok}'")
+
+            if mean_lat != r_info["mean_latency"]:
+                errors.append(
+                    f"Table 5 {r_info['label']} mean latency mismatch: expected '{r_info['mean_latency']}', got '{mean_lat}'"
+                )
+            if med_lat != r_info["median_latency"]:
+                errors.append(
+                    f"Table 5 {r_info['label']} median latency mismatch: expected '{r_info['median_latency']}', got '{med_lat}'"
+                )
+            if cost_cell != r_info["settled_cost"]:
+                errors.append(
+                    f"Table 5 {r_info['label']} settled cost mismatch: expected '{r_info['settled_cost']}', got '{cost_cell}'"
+                )
+            try:
+                cost_val = float(cost_cell.replace("$", "").strip())
+                cost_expected = float(r_info["settled_cost_raw"])
+                if abs(cost_val - cost_expected) > 1e-8:
+                    errors.append(
+                        f"Table 5 {r_info['label']} settled cost value mismatch: expected {cost_expected}, got {cost_val}"
+                    )
+            except ValueError:
+                errors.append(f"Table 5 {r_info['label']} invalid settled cost '{cost_cell}'")
 
     # 3. Mapped cohort claim audit (Table 5 measured on full execution cohort N=1,280, not 718)
     first_100_lines = "\n".join(lines[:100])

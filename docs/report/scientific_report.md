@@ -61,7 +61,7 @@ While RAG has become ubiquitous across natural language processing, its empirica
 
 To maintain strict scientific integrity, **RAG2ATTCK does not claim global novelty for:**
 - The concept of applying RAG to MITRE ATT&CK mapping (established in CTI text by Lekssays et al. [5] and Morbiato et al. [6]).
-- The use of Windows Sysmon or command logs for LLM-based security detection (investigated by Yang & Hsu [7], Landauer et al. [8], and Okuma et al. [9]).
+- The use of Windows Sysmon or command logs for LLM-based security interpretation (investigated by Yang & Hsu [7] and Landauer et al. [8]; we note Okuma et al. [9] addresses Sysmon log mapping to ATT&CK, though its internal method and full text remain UNVERIFIED beyond the bibliographic record).
 - Evaluating RAG against an unaugmented prompting baseline (conducted in cloud telemetry by Adediran et al. [10] and in Linux graphs by Lupinacci et al. [11]).
 - Evaluating candidate retrieval depth ($k$) or retrieval failure trade-offs in isolation (explored in CTI text by Morbiato et al. [6]).
 
@@ -122,13 +122,13 @@ Table 1a and Table 1b present a comprehensive 16-dimension comparison across the
 | **1. Primary Input** | Unstructured CTI text reports | Linux eBPF provenance graphs | Windows Sysmon event logs | Chronological command/script traces | **Windows endpoint telemetry (Sysmon / Security logs)** |
 | **2. Target Platform** | Cross-platform (CTI text) | Linux | Windows | Cross-platform host OS | **Windows Enterprise** |
 | **3. Core Task** | CTI technique annotation & context routing | Kernel telemetry to ATT&CK mapping | UNVERIFIED (bibliographic record only) | APT detection & TTP mapping | **Exact ATT&CK Technique / Sub-technique attribution** |
-| **4. ATT&CK Target Granularity** | Tactic $\to$ Technique hierarchy | Ranked Technique & Sub-technique candidates | Technique level (`Txxxx`) | Ranked Technique candidates (Top-1/3/10) | **Exact Technique & Sub-technique (`Txxxx.yyy`)** |
+| **4. ATT&CK Target Granularity** | Tactic $\to$ Technique hierarchy | Ranked Technique & Sub-technique candidates | UNVERIFIED | Ranked Technique candidates (Top-1/3/10) | **Exact Technique & Sub-technique (`Txxxx.yyy`)** |
 | **5. RAG Architecture** | Hierarchical dense RAG (FAISS IVF) | Dense chunk retrieval (Chroma + MMR) | UNVERIFIED | **None** (Rubric prompting with static ATT&CK text) | **Dense semantic RAG (FAISS IndexFlatIP cosine)** |
-| **6. Retrieval Corpus** | ATT&CK Enterprise (CTI-RCM, TRAM, MITRE) | ATT&CK Enterprise KB (800-word chunks) | N/A | N/A | **Official ATT&CK Enterprise v19.2 (474 active Windows docs)** |
+| **6. Retrieval Corpus** | ATT&CK Enterprise (CTI-RCM, TRAM, MITRE) | ATT&CK Enterprise KB (800-word chunks) | UNVERIFIED | N/A | **Official ATT&CK Enterprise v19.2 (474 active Windows docs)** |
 | **7. Matched No-RAG Baseline?** | **Yes** (Zero-shot Llama 3 direct-prompt baseline) | **Yes** (Prompting baseline w/o RAG) | **UNVERIFIED** (full text access blocked) | Prompting only (no RAG ablation) | **Yes (Strictly matched gpt-5.6-luna w/o RAG)** |
-| **8. Top-k Retrieval Ablation?** | Tactic count $M$ sensitivity (peak $M=3$, quota $K_A=15$); not flat $k$ sweep | Fixed retriever depth (5 chunks), output cutoff 5 | No | Output cutoff $k \in \{1, 3, 10\}$, not retriever depth | **Yes ($k \in \{1, 3, 5, 10\}$ systematically ablated)** |
-| **9. Standalone Retriever Metrics?** | Micro P/R/F1, MAP@10; standalone Recall@k NOT REPORTED | **NOT REPORTED** (Fixed 5 chunks; standalone Recall@k not separable from downstream scores) | N/A | N/A | **Yes (Hit@k, Recall@k, Median Rank explicitly reported)** |
-| **10. Failure Decomposition?** | Analyzes distractor impact in flat vs hierarchical | No (End-to-end system evaluation) | No | No | **Independent axes with overlaps** |
+| **8. Top-k Retrieval Ablation?** | Tactic count $M$ sensitivity (peak $M=3$, quota $K_A=15$); not flat $k$ sweep | Fixed retriever depth (5 chunks), output cutoff 5 | UNVERIFIED | Output cutoff $k \in \{1, 3, 10\}$, not retriever depth | **Yes ($k \in \{1, 3, 5, 10\}$ systematically ablated)** |
+| **9. Standalone Retriever Metrics?** | Micro P/R/F1, MAP@10; standalone Recall@k NOT REPORTED | **NOT REPORTED** (Fixed 5 chunks; standalone Recall@k not separable from downstream scores) | UNVERIFIED | N/A | **Yes (Hit@k, Recall@k, Median Rank explicitly reported)** |
+| **10. Failure Decomposition?** | Analyzes distractor impact in flat vs hierarchical | No (End-to-end system evaluation) | UNVERIFIED | No | **Independent axes with overlaps** |
 | **11. Telemetry Leakage Controls** | CTI text; curated benchmarks | Kernel syscalls; no detector rule metadata | **UNVERIFIED** (full text access blocked) | Script command lines analyzed | **Strict field whitelist; detector rules/labels purged** |
 | **12. Primary Models** | Llama-3-8B-Instruct | foundation-sec-8b, qwen3.5-9b, gpt-oss, gemma4-31b-it, deepseek-r1-qwen32b, llama3.3-70b | **NOT REPORTED / UNVERIFIED** | GPT-4, Claude-3-Opus, Llama-3-70B | **OpenAI gpt-5.6-luna (xhigh reasoning effort)** |
 | **13. Headline Metrics** | Micro P/R/F1, MAP@10, Latency, API calls | HR@5, MRR@5, NDCG@5 | **NOT REPORTED / UNVERIFIED** | Precision, Recall, F1, HR/MRR/NDCG @ 3, 10 | **End-to-End Accuracy, 474-class Macro-F1, Recall@k** |

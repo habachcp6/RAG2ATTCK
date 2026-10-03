@@ -1,8 +1,8 @@
 # RAG2ATTCK: Comprehensive Requirements Traceability Matrix v3
 
-**Generated:** `2026-10-03T15:43:12.010881+00:00`  
+**Generated:** `2026-10-03T15:56:40.886523+00:00`  
 **Candidate Base SHA:** `c309e497c104cac10f43317c2bd6b8872fa6443a`  
-**Tested CI Head SHA:** `c1b8803707f15de3e132dcb56681c901c18c3dcc` (Run: [37132814789](https://github.com/habachcp6/RAG2ATTCK/actions/runs/37132814789))  
+**Tested CI Head SHA:** `5bfdbf4d77a5b5a4c8e436fd3bc75d7e05938ced` (Run: [37134304644](https://github.com/habachcp6/RAG2ATTCK/actions/runs/37134304644))  
 **Historical Track A Baseline SHA:** `b69a6909acda4c7588744acc7e1d6c20bfce2612` (Run: [37126021603](https://github.com/habachcp6/RAG2ATTCK/actions/runs/37126021603))  
 **Total Tracked Requirements & Gates:** `170`  
 

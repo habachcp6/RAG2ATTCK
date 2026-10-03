@@ -91,8 +91,8 @@ def resolve_snapshot_python(snapshot_root: Path) -> Path:
 
 def compute_closed_snapshot_inventory(snapshot_root: Path) -> Tuple[str, Dict[str, str]]:
     """
-    Compute exact closed 53-file path-to-SHA256 mapping and canonical digest using pure standard library.
-    Excludes pyc, __pycache__, and .pytest_cache.
+    Compute exact closed 53-file path-to-SHA256 mapping and canonical digest
+    using pure standard library. Excludes pyc, __pycache__, and .pytest_cache.
     """
     patterns = (
         "src",
@@ -138,27 +138,31 @@ def verify_snapshot_git_identity(snapshot_root: Path) -> str:
     """
     git_dir = snapshot_root / ".git"
     if not git_dir.exists():
-        raise RuntimeError(f"Snapshot root '{snapshot_root}' is missing .git directory or reference file!")
+        raise RuntimeError(
+            f"Snapshot root '{snapshot_root}' is missing .git directory or reference file!"
+        )
 
     cmd_head = ["git", "-C", str(snapshot_root), "rev-parse", "HEAD"]
     p_head = subprocess.run(cmd_head, capture_output=True, text=True)
     if p_head.returncode != 0:
-        raise RuntimeError(f"Failed to get git commit for {snapshot_root}: {p_head.stderr.strip()}")
+        err_msg = p_head.stderr.strip()
+        raise RuntimeError(f"Failed to get git commit for {snapshot_root}: {err_msg}")
     actual_head = p_head.stdout.strip()
     if actual_head != EXPECTED_SNAPSHOT_GIT_COMMIT:
         raise RuntimeError(
-            f"Snapshot Git commit mismatch: expected {EXPECTED_SNAPSHOT_GIT_COMMIT}, got {actual_head}"
+            f"Snapshot Git commit mismatch: expected {EXPECTED_SNAPSHOT_GIT_COMMIT}, "
+            f"got {actual_head}"
         )
 
     cmd_status = ["git", "-C", str(snapshot_root), "status", "--porcelain=v1"]
     p_status = subprocess.run(cmd_status, capture_output=True, text=True)
     if p_status.returncode != 0:
-        raise RuntimeError(f"Failed to check git status for {snapshot_root}: {p_status.stderr.strip()}")
+        raise RuntimeError(
+            f"Failed to check git status for {snapshot_root}: {p_status.stderr.strip()}"
+        )
     status_output = p_status.stdout.strip()
     if status_output:
-        raise RuntimeError(
-            f"Snapshot working directory is dirty! git status:\n{status_output}"
-        )
+        raise RuntimeError(f"Snapshot working directory is dirty! git status:\n{status_output}")
     return actual_head
 
 
@@ -177,11 +181,13 @@ def compute_expanded_snapshot_inventory(snapshot_root: Path) -> Dict[str, Any]:
     core_sha, core_inventory = compute_closed_snapshot_inventory(snapshot_root)
     if len(core_inventory) != EXPECTED_CORE_FILES_COUNT:
         raise RuntimeError(
-            f"Snapshot core inventory count mismatch: expected {EXPECTED_CORE_FILES_COUNT}, got {len(core_inventory)}"
+            f"Snapshot core inventory count mismatch: expected {EXPECTED_CORE_FILES_COUNT}, "
+            f"got {len(core_inventory)}"
         )
     if core_sha != EXPECTED_CORE_MANIFEST_SHA256:
         raise RuntimeError(
-            f"Snapshot core manifest hash mismatch: expected {EXPECTED_CORE_MANIFEST_SHA256}, got {core_sha}"
+            f"Snapshot core manifest hash mismatch: expected {EXPECTED_CORE_MANIFEST_SHA256}, "
+            f"got {core_sha}"
         )
 
     # 1. evaluate_rqs.py (f85)
@@ -191,7 +197,8 @@ def compute_expanded_snapshot_inventory(snapshot_root: Path) -> Dict[str, Any]:
     rq_sha = hashlib.sha256(rq_file.read_bytes()).hexdigest()
     if rq_sha != EXPECTED_ANALYSIS_SOURCE_SHA256:
         raise RuntimeError(
-            f"evaluate_rqs.py SHA mismatch: expected {EXPECTED_ANALYSIS_SOURCE_SHA256}, got {rq_sha}"
+            f"evaluate_rqs.py SHA mismatch: expected {EXPECTED_ANALYSIS_SOURCE_SHA256}, "
+            f"got {rq_sha}"
         )
 
     # 2. 22 baselines
@@ -203,7 +210,8 @@ def compute_expanded_snapshot_inventory(snapshot_root: Path) -> Dict[str, Any]:
     protected_files = baseline_data.get("protected_files", {})
     if len(protected_files) != EXPECTED_BASELINE_FILES_COUNT:
         raise RuntimeError(
-            f"Protected baselines count mismatch: expected {EXPECTED_BASELINE_FILES_COUNT}, got {len(protected_files)}"
+            f"Protected baselines count mismatch: expected {EXPECTED_BASELINE_FILES_COUNT}, "
+            f"got {len(protected_files)}"
         )
     baselines_map: Dict[str, str] = {}
     for rel_path, exp_sha in sorted(protected_files.items()):
@@ -271,7 +279,9 @@ def _evaluate_marker(marker_str: Optional[str], platform_name: Optional[str] = N
         "platform_python_implementation": platform.python_implementation(),
         "implementation_name": sys.implementation.name,
         "python_version": f"{sys.version_info.major}.{sys.version_info.minor}",
-        "python_full_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+        "python_full_version": (
+            f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        ),
         "extra": "",
     }
     try:
@@ -283,10 +293,10 @@ def _evaluate_marker(marker_str: Optional[str], platform_name: Optional[str] = N
 def extract_required_dependencies_from_uv_lock(
     uv_lock_path: Path, platform_name: Optional[str] = None
 ) -> Dict[str, str]:
-    """
-    Extract all required dependencies and locked versions for the current platform
+    """Extract all required dependencies and locked versions for the current platform
     by traversing from the root virtual package (e.g. rag2attck) in uv.lock,
-    evaluating platform environment markers and following edge.extra and package.optional-dependencies.
+    evaluating platform environment markers and following edge.extra and
+    package.optional-dependencies.
     """
     if not uv_lock_path.is_file():
         raise FileNotFoundError(f"Missing uv.lock file: {uv_lock_path}")
@@ -314,7 +324,7 @@ def extract_required_dependencies_from_uv_lock(
     def _walk(pkg_name: str, extras: Optional[List[str]] = None) -> None:
         if pkg_name not in all_pkgs:
             return
-        is_first_visit = (pkg_name not in visited_pkgs)
+        is_first_visit = pkg_name not in visited_pkgs
         visited_pkgs.add(pkg_name)
         pkg_info = all_pkgs[pkg_name]
 
@@ -358,14 +368,14 @@ def verify_snapshot_venv_dependencies(
     worker_attestation: Dict[str, Any],
     platform_name: Optional[str] = None,
 ) -> None:
-    """
-    Directly cross-check installed dependency versions attested by child worker
+    """Directly cross-check installed dependency versions attested by child worker
     against the snapshot venv original uv.lock.
     Enforces that:
     1. installed_dependencies is a non-empty dictionary.
     2. All required installed distributions extracted from uv.lock are present (no missing packages,
        no empty map, no small subset).
-    3. No unauthorized or unknown packages are installed (fails closed if any package is not in uv.lock).
+    3. No unauthorized or unknown packages are installed (fails closed if any package
+       is not in uv.lock).
     4. Every installed package version matches the locked version in uv.lock.
     """
     uv_lock_path = snapshot_root / "uv.lock"
@@ -383,7 +393,9 @@ def verify_snapshot_venv_dependencies(
 
     installed = worker_attestation.get("installed_dependencies")
     if not isinstance(installed, dict) or not installed:
-        raise RuntimeError("Worker runtime attestation has missing or empty installed_dependencies!")
+        raise RuntimeError(
+            "Worker runtime attestation has missing or empty installed_dependencies!"
+        )
 
     norm_installed: Dict[str, str] = {
         k.lower().replace("_", "-"): str(v) for k, v in installed.items()
@@ -393,7 +405,8 @@ def verify_snapshot_venv_dependencies(
     unknown_packages = set(norm_installed.keys()) - set(all_locked_packages.keys())
     if unknown_packages:
         raise RuntimeError(
-            f"Unauthorized or unknown installed package(s) not found in uv.lock: {sorted(unknown_packages)}"
+            "Unauthorized or unknown installed package(s) not found in uv.lock: "
+            f"{sorted(unknown_packages)}"
         )
 
     # 2. Reject version mismatches against uv.lock
@@ -411,9 +424,10 @@ def verify_snapshot_venv_dependencies(
     )
     missing_required = set(required_deps.keys()) - set(norm_installed.keys())
     if missing_required:
+        subset = sorted(missing_required)[:10]
         raise RuntimeError(
-            f"Venv dependency attestation missing {len(missing_required)} required packages from uv.lock: "
-            f"{sorted(missing_required)[:10]} (small subset or incomplete installation rejected)"
+            f"Venv dependency attestation missing {len(missing_required)} required packages "
+            f"from uv.lock: {subset} (small subset or incomplete installation rejected)"
         )
 
 
@@ -449,9 +463,10 @@ def validate_worker_attestation_schema(
 
     # 2. Core manifest check
     if worker_output.get("code_manifest_sha256") != EXPECTED_CORE_MANIFEST_SHA256:
+        got_sha = worker_output.get("code_manifest_sha256")
         raise RuntimeError(
-            f"Worker attestation schema rejection: code_manifest_sha256 mismatch! "
-            f"Expected {EXPECTED_CORE_MANIFEST_SHA256}, got {worker_output.get('code_manifest_sha256')}"
+            "Worker attestation schema rejection: code_manifest_sha256 mismatch! "
+            f"Expected {EXPECTED_CORE_MANIFEST_SHA256}, got {got_sha}"
         )
     if worker_output.get("file_count") != EXPECTED_CORE_FILES_COUNT:
         raise RuntimeError(
@@ -472,9 +487,10 @@ def validate_worker_attestation_schema(
 
     # 4. Baselines check (Reject baseline PASS count 0 or missing)
     if worker_output.get("protected_baselines_verified_count") != EXPECTED_BASELINE_FILES_COUNT:
+        got_count = worker_output.get("protected_baselines_verified_count")
         raise RuntimeError(
-            f"Worker attestation schema rejection: protected_baselines_verified_count must be {EXPECTED_BASELINE_FILES_COUNT}, "
-            f"got {worker_output.get('protected_baselines_verified_count')}"
+            "Worker attestation schema rejection: protected_baselines_verified_count "
+            f"must be {EXPECTED_BASELINE_FILES_COUNT}, got {got_count}"
         )
 
     # 5. Loaded origins check
@@ -484,7 +500,11 @@ def validate_worker_attestation_schema(
         raise RuntimeError(
             "Worker attestation schema rejection: loaded_origins must be a non-empty dictionary!"
         )
-    if not isinstance(origins_count, int) or origins_count <= 0 or origins_count != len(loaded_origins):
+    if (
+        not isinstance(origins_count, int)
+        or origins_count <= 0
+        or origins_count != len(loaded_origins)
+    ):
         raise RuntimeError(
             f"Worker attestation schema rejection: loaded_origins_count ({origins_count}) "
             f"mismatch with loaded_origins length ({len(loaded_origins)})!"
@@ -497,8 +517,8 @@ def validate_worker_attestation_schema(
             p.relative_to(resolved_snap)
         except ValueError:
             raise RuntimeError(
-                f"Worker attestation schema rejection: loaded module '{mod_name}' origin '{origin_path}' "
-                f"is outside snapshot root '{resolved_snap}'!"
+                f"Worker attestation schema rejection: loaded module '{mod_name}' origin "
+                f"'{origin_path}' is outside snapshot root '{resolved_snap}'!"
             )
 
     # 6. Worker runtime attestation check
@@ -550,7 +570,8 @@ def validate_output_path_containment(output_path: Path, snapshot_root: Path) -> 
     try:
         resolved_out.relative_to(resolved_snap)
         raise ValueError(
-            f"SECURITY REJECTION: output_path '{resolved_out}' is inside snapshot root '{resolved_snap}'! "
+            f"SECURITY REJECTION: output_path '{resolved_out}' is inside snapshot root "
+            f"'{resolved_snap}'! "
             "Output files must never be written inside the protected snapshot."
         )
     except ValueError as e:
@@ -642,7 +663,8 @@ def execute_snapshot_task(
     if not worker_script.is_file():
         raise FileNotFoundError(f"Missing worker script: {worker_script}")
 
-    # Compute pre-execution expanded inventory (core 53, f85 analysis, 22 baselines, protocol, lock, git)
+    # Compute pre-execution expanded inventory
+    # (core 53, f85 analysis, 22 baselines, protocol, lock, git)
     pre_expanded = compute_expanded_snapshot_inventory(snapshot_root)
 
     clean_env = sanitize_environment(extra_env)
@@ -675,7 +697,7 @@ def execute_snapshot_task(
 
     # Post-execution expanded inventory verification (comprehensive immutability check)
     post_expanded = compute_expanded_snapshot_inventory(snapshot_root)
-    immutability_ok = (pre_expanded == post_expanded)
+    immutability_ok = pre_expanded == post_expanded
     if not immutability_ok:
         diff_keys = [k for k in pre_expanded if pre_expanded.get(k) != post_expanded.get(k)]
         raise RuntimeError(
@@ -697,11 +719,13 @@ def execute_snapshot_task(
     if proc.returncode != 0:
         if worker_output.get("status") == "PASS":
             raise RuntimeError(
-                f"Worker process exited with non-zero code {proc.returncode} but claimed PASS in JSON payload.\n"
+                f"Worker process exited with non-zero code {proc.returncode} but claimed PASS "
+                "in JSON payload.\n"
                 f"STDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}"
             )
 
-    # Strict attestation schema validation (rejects minimal PASS, wrong task, missing origins/guard/baselines)
+    # Strict attestation schema validation
+    # (rejects minimal PASS, wrong task, missing origins/guard/baselines)
     validate_worker_attestation_schema(worker_output, task, snapshot_root)
 
     worker_output["controller_attestation"] = {
@@ -710,8 +734,12 @@ def execute_snapshot_task(
         "task": task,
         "pre_fingerprint": pre_expanded["core_manifest_sha256"],
         "post_fingerprint": post_expanded["core_manifest_sha256"],
-        "pre_expanded_sha256": hashlib.sha256(json.dumps(pre_expanded, sort_keys=True).encode()).hexdigest(),
-        "post_expanded_sha256": hashlib.sha256(json.dumps(post_expanded, sort_keys=True).encode()).hexdigest(),
+        "pre_expanded_sha256": hashlib.sha256(
+            json.dumps(pre_expanded, sort_keys=True).encode()
+        ).hexdigest(),
+        "post_expanded_sha256": hashlib.sha256(
+            json.dumps(post_expanded, sort_keys=True).encode()
+        ).hexdigest(),
         "expanded_immutability_verified": immutability_ok,
         "exit_code": proc.returncode,
         "immutability_verified": immutability_ok,
@@ -748,8 +776,8 @@ def main() -> int:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("reports/evidence/snapshot_controller_attestation.json"),
-        help="Output path for attestation report",
+        required=True,
+        help="Output path for attestation report (mandatory explicit path outside snapshot/source)",
     )
     args = parser.parse_args()
 
@@ -759,7 +787,10 @@ def main() -> int:
             task=args.task,
             output_path=args.output,
         )
-        if res.get("status") == "PASS" and res.get("controller_attestation", {}).get("exit_code") == 0:
+        if (
+            res.get("status") == "PASS"
+            and res.get("controller_attestation", {}).get("exit_code") == 0
+        ):
             print(f"PASS: Isolated snapshot task '{args.task}' succeeded.")
             print(f"Status: {res.get('status')}")
             print(f"Report written to: {args.output}")

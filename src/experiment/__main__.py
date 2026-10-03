@@ -54,7 +54,11 @@ def _handle_preflight(args: argparse.Namespace) -> int:
     repo_root = Path(__file__).resolve().parents[2]
 
     # Protocol file check
-    protocol_path = Path(args.protocol_file if args.protocol_file else _default_protocol())
+    protocol_path = (
+        Path(args.protocol_file)
+        if args.protocol_file
+        else (repo_root / "config" / "experiment_protocol_v1.json")
+    )
     if not protocol_path.exists():
         print(
             json.dumps(
@@ -91,7 +95,11 @@ def _handle_preflight(args: argparse.Namespace) -> int:
         return 1
 
     # Plan load
-    config_path = Path(args.config if args.config else _default_config())
+    config_path = (
+        Path(args.config)
+        if args.config
+        else (repo_root / "config" / "experiment_config.json")
+    )
     try:
         plan = load_plan(config_path)
     except Exception as exc:
@@ -321,6 +329,7 @@ def _handle_evaluate(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         return 1
+
 
 def _inspect_historical_counts(output_dir: Path | str | None) -> tuple[int, int]:
     """Inspect output directory journal to extract historical provider calls and writes.
@@ -716,9 +725,7 @@ def main(argv=None, *, provider_factory=None) -> int:
         "--protocol-file", type=Path, help="Path to JSON file with frozen D1-D7 protocol"
     )
     live_parser.add_argument("--auth-token", type=str, help="Human authorization approval token")
-    live_parser.add_argument(
-        "--max-attempts", type=int, help="Authorized max provider attempts"
-    )
+    live_parser.add_argument("--max-attempts", type=int, help="Authorized max provider attempts")
     live_parser.add_argument(
         "--allow-live-dispatch",
         action="store_true",
@@ -765,9 +772,7 @@ def main(argv=None, *, provider_factory=None) -> int:
         action="store_true",
         help="Explicit live dispatch permission",
     )
-    resume_parser.add_argument(
-        "--max-attempts", type=int, help="Authorized max provider attempts"
-    )
+    resume_parser.add_argument("--max-attempts", type=int, help="Authorized max provider attempts")
     resume_parser.add_argument(
         "--protocol-file", type=Path, help="Optional path to verify frozen D1-D7 protocol"
     )
@@ -800,13 +805,13 @@ def main(argv=None, *, provider_factory=None) -> int:
     preflight_parser.add_argument(
         "--config",
         type=Path,
-        default=_default_config(),
+        default=None,
         help="Path to experiment_config.json",
     )
     preflight_parser.add_argument(
         "--protocol-file",
         type=Path,
-        default=_default_protocol(),
+        default=None,
         help="Path to frozen experiment_protocol_v1.json",
     )
     preflight_parser.add_argument(

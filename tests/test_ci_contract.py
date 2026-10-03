@@ -185,8 +185,33 @@ def _assert_ci(workflow):
     assert shlex.split(_step(steps, "Run Full Test Suite")["run"]) == (
         GUARDED_PYTHON + ["pytest", "-m", "not integration", "-q"]
     )
-    assert _step(steps, "Run experiment preflight gate")["run"] == (
-        "uv run python -m src.experiment preflight"
+    hist_step = _step(steps, "Verify historical positive via isolated snapshot controller")
+    assert shlex.split(hist_step["run"]) == [
+        "uv",
+        "run",
+        "python",
+        "scripts/isolated_snapshot_controller.py",
+        "--snapshot-root",
+        "${{ runner.temp }}/rag2attck_snapshot_b69a690",
+        "--task",
+        "preflight",
+        "--output",
+        "${{ runner.temp }}/snapshot_controller_attestation.json",
+    ]
+    drift_step = _step(steps, "Verify current tree code drift is denied fail-closed")
+    drift_cmd = drift_step["run"]
+    assert "uv run python -c" in drift_cmd
+    assert "src.experiment" in drift_cmd and "preflight" in drift_cmd
+    assert "RAG2ATTCK_SNAPSHOT_ROOT" in drift_cmd
+    assert (
+        ".pop('RAG2ATTCK_SNAPSHOT_ROOT'" in drift_cmd
+        or '.pop("RAG2ATTCK_SNAPSHOT_ROOT"' in drift_cmd
+    )
+    assert "r1.returncode != 0" in drift_cmd and "r2.returncode != 0" in drift_cmd
+    assert "'code drift detected' in o1" in drift_cmd and "'code drift detected' in o2" in drift_cmd
+    assert (
+        "'LIVE_EXECUTION_BLOCKED' in o1" in drift_cmd
+        and "'LIVE_EXECUTION_BLOCKED' in o2" in drift_cmd
     )
     assert shlex.split(
         _step(steps, "Verify frozen synthetic benchmark and same-seed reproduction")["run"]
@@ -205,6 +230,14 @@ def _assert_ci(workflow):
     expected_snap_root = "${{ runner.temp }}/rag2attck_snapshot_b69a690"
     assert prov_step.get("env", {}).get("RAG2ATTCK_SNAPSHOT_ROOT") == expected_snap_root
     assert (
+        hist_step.get("env", {}).get("RAG2ATTCK_SNAPSHOT_ROOT")
+        == expected_snap_root
+    )
+    assert (
+        drift_step.get("env", {}).get("RAG2ATTCK_SNAPSHOT_ROOT")
+        == expected_snap_root
+    )
+    assert (
         _step(steps, "Run Full Test Suite").get("env", {}).get("RAG2ATTCK_SNAPSHOT_ROOT")
         == expected_snap_root
     )
@@ -212,9 +245,10 @@ def _assert_ci(workflow):
     names = [step.get("name") for step in steps]
     idx_attack = names.index("Acquire ATT&CK v19.2 reference")
     idx_snap = names.index("Provision portable historical b69 snapshot")
+    idx_hist = names.index("Verify historical positive via isolated snapshot controller")
+    idx_drift = names.index("Verify current tree code drift is denied fail-closed")
     idx_tests = names.index("Run Full Test Suite")
-    assert idx_attack < idx_snap < idx_tests
-    assert names.index("Run experiment preflight gate") < idx_tests
+    assert idx_attack < idx_snap < idx_hist < idx_drift < idx_tests
 
 
 def _assert_integration(workflow):
@@ -228,8 +262,29 @@ def _assert_integration(workflow):
     assert shlex.split(_step(steps, test_name)["run"]) == (
         GUARDED_PYTHON + ["pytest", "-m", "integration", "-q"]
     )
-    assert _step(steps, "Run experiment preflight gate")["run"] == (
-        "uv run python -m src.experiment preflight"
+    hist_step = _step(steps, "Verify historical positive via isolated snapshot controller")
+    assert shlex.split(hist_step["run"]) == [
+        "uv",
+        "run",
+        "python",
+        "scripts/isolated_snapshot_controller.py",
+        "--snapshot-root",
+        "${{ runner.temp }}/rag2attck_snapshot_b69a690",
+        "--task",
+        "preflight",
+        "--output",
+        "${{ runner.temp }}/snapshot_controller_attestation.json",
+    ]
+    prov_step = _step(steps, "Provision portable historical b69 snapshot")
+    expected_snap_root = "${{ runner.temp }}/rag2attck_snapshot_b69a690"
+    assert prov_step.get("env", {}).get("RAG2ATTCK_SNAPSHOT_ROOT") == expected_snap_root
+    assert (
+        hist_step.get("env", {}).get("RAG2ATTCK_SNAPSHOT_ROOT")
+        == expected_snap_root
+    )
+    assert (
+        _step(steps, test_name).get("env", {}).get("RAG2ATTCK_SNAPSHOT_ROOT")
+        == expected_snap_root
     )
     names = [step.get("name") for step in steps]
     for acquisition in (
@@ -239,11 +294,16 @@ def _assert_integration(workflow):
     ):
         _step(steps, acquisition)
         assert names.index(acquisition) < names.index(test_name)
-    assert names.index("Run experiment preflight gate") < names.index(test_name)
+    assert names.index("Provision portable historical b69 snapshot") < names.index(test_name)
+    assert (
+        names.index("Verify historical positive via isolated snapshot controller")
+        < names.index(test_name)
+    )
     assert shlex.split(_step(steps, "Acquire ATT&CK v19.2 reference")["run"]) == ACQUIRE_ATTACK
-    assert shlex.split(
-        _step(steps, "Acquire pinned embedding model before offline checks")["run"]
-    ) == ACQUIRE_MODEL
+    assert (
+        shlex.split(_step(steps, "Acquire pinned embedding model before offline checks")["run"])
+        == ACQUIRE_MODEL
+    )
 
 
 def test_combined_ci_keeps_lint_guard_and_acquisition_contracts():
@@ -260,7 +320,8 @@ def test_combined_ci_keeps_lint_guard_and_acquisition_contracts():
     [
         "Lint T20 critical code paths",
         "Lint pre-experiment infrastructure",
-        "Run experiment preflight gate",
+        "Verify historical positive via isolated snapshot controller",
+        "Verify current tree code drift is denied fail-closed",
         "Provision portable historical b69 snapshot",
         "Run Full Test Suite",
         "Verify frozen synthetic benchmark and same-seed reproduction",
@@ -413,13 +474,30 @@ def test_shallow_checkout_for_provenance_tests_is_detected(workflow_name, job_na
     [
         ("ci.yml", "full-test-suite", "Lint T20 critical code paths", _assert_ci),
         ("ci.yml", "full-test-suite", "Lint pre-experiment infrastructure", _assert_ci),
-        ("ci.yml", "full-test-suite", "Run experiment preflight gate", _assert_ci),
+        (
+            "ci.yml",
+            "full-test-suite",
+            "Verify historical positive via isolated snapshot controller",
+            _assert_ci,
+        ),
+        (
+            "ci.yml",
+            "full-test-suite",
+            "Verify current tree code drift is denied fail-closed",
+            _assert_ci,
+        ),
         ("ci.yml", "full-test-suite", "Provision portable historical b69 snapshot", _assert_ci),
         ("ci.yml", "full-test-suite", "Run Full Test Suite", _assert_ci),
         (
             "integration.yml",
             "real-retrieval",
-            "Run experiment preflight gate",
+            "Provision portable historical b69 snapshot",
+            _assert_integration,
+        ),
+        (
+            "integration.yml",
+            "real-retrieval",
+            "Verify historical positive via isolated snapshot controller",
             _assert_integration,
         ),
         (
@@ -498,6 +576,62 @@ def test_missing_snapshot_root_env_on_provisioning_is_detected():
     workflow = deepcopy(_workflow("ci.yml"))
     steps = workflow["jobs"]["full-test-suite"]["steps"]
     del _step(steps, "Provision portable historical b69 snapshot")["env"]["RAG2ATTCK_SNAPSHOT_ROOT"]
+    with pytest.raises(AssertionError):
+        _assert_ci(workflow)
+
+
+def test_missing_snapshot_root_env_on_integration_tests_is_detected():
+    workflow = deepcopy(_workflow("integration.yml"))
+    steps = workflow["jobs"]["real-retrieval"]["steps"]
+    test_step = _step(steps, "Run real retrieval integration tests without provider access")
+    del test_step["env"]["RAG2ATTCK_SNAPSHOT_ROOT"]
+    with pytest.raises(AssertionError):
+        _assert_integration(workflow)
+
+
+def test_drift_step_without_real_command_is_detected():
+    workflow = deepcopy(_workflow("ci.yml"))
+    _step(
+        workflow["jobs"]["full-test-suite"]["steps"],
+        "Verify current tree code drift is denied fail-closed",
+    )["run"] = "echo skipped"
+    with pytest.raises(AssertionError):
+        _assert_ci(workflow)
+
+
+def test_drift_step_single_branch_only_is_detected():
+    workflow = deepcopy(_workflow("ci.yml"))
+    _step(
+        workflow["jobs"]["full-test-suite"]["steps"],
+        "Verify current tree code drift is denied fail-closed",
+    )["run"] = (
+        'uv run python -c "import subprocess, sys; '
+        'r = subprocess.run([sys.executable, \'-m\', \'src.experiment\', \'preflight\']); '
+        'assert r.returncode != 0"'
+    )
+    with pytest.raises(AssertionError):
+        _assert_ci(workflow)
+
+
+@pytest.mark.parametrize(
+    "tampered_snippet",
+    [
+        "'code drift detected' in o1",
+        "'code drift detected' in o2",
+        "'LIVE_EXECUTION_BLOCKED' in o1",
+        "'LIVE_EXECUTION_BLOCKED' in o2",
+        "r1.returncode != 0",
+        "r2.returncode != 0",
+        ".pop('RAG2ATTCK_SNAPSHOT_ROOT'",
+    ],
+)
+def test_drift_step_missing_assertions_is_detected(tampered_snippet):
+    workflow = deepcopy(_workflow("ci.yml"))
+    step = _step(
+        workflow["jobs"]["full-test-suite"]["steps"],
+        "Verify current tree code drift is denied fail-closed",
+    )
+    step["run"] = step["run"].replace(tampered_snippet, "True")
     with pytest.raises(AssertionError):
         _assert_ci(workflow)
 

@@ -1225,9 +1225,7 @@ def test_terminal_proof_fails_on_summary_wrong_run_count_mode(tmp_path):
 def test_terminal_proof_fails_on_summary_complete_null(tmp_path):
     """Probe regression: final_summary complete=None/non-True is rejected."""
     proof_path = tmp_path / "complete_null.json"
-    data = _valid_terminal_proof_data(
-        final_summary={"complete": None}
-    )
+    data = _valid_terminal_proof_data(final_summary={"complete": None})
     proof_path.write_text(json.dumps(data), encoding="utf-8")
     with pytest.raises(AuditVerificationError, match="missing required fields|strictly True"):
         audit_terminal_process_proof(
@@ -1269,14 +1267,18 @@ def test_terminal_proof_fails_on_unbound_log_digest(tmp_path):
 
 
 def test_generate_audit_seal_fails_on_production_without_terminal_proof(tmp_path):
-    """Direct API: generate_audit_seal fails closed when is_production=True lacks proof or baseline."""
+    """Direct API: generate_audit_seal fails closed when is_production=True
+    lacks proof or baseline.
+    """
     exp_dir = tmp_path / "exp"
     exp_dir.mkdir()
     study_root = tmp_path / "study"
     records = {("view_01", "no_rag"): _create_mock_record("view_01", "no_rag")}
 
     # Missing terminal_proof_info
-    with pytest.raises(AuditVerificationError, match="Production seal requires verified terminal_proof_info"):
+    with pytest.raises(
+        AuditVerificationError, match="Production seal requires verified terminal_proof_info"
+    ):
         generate_audit_seal(
             exp_dir,
             study_root,
@@ -1292,7 +1294,9 @@ def test_generate_audit_seal_fails_on_production_without_terminal_proof(tmp_path
 
 def test_genuine_terminal_process_proof_positive_control():
     """Probe positive control: genuine canonical terminal process proof passes all checks."""
-    canonical_proof = Path(r"D:\RAG2ATT&CK\artifacts\orchestration\terminal_process_proof_20261002.json")
+    canonical_proof = Path(
+        r"D:\RAG2ATT&CK\artifacts\orchestration\terminal_process_proof_20261002.json"
+    )
     if not canonical_proof.exists():
         pytest.skip("Canonical terminal proof file not found in study root")
 
@@ -1663,19 +1667,23 @@ def test_generate_audit_seal_sanitizes_machine_path(tmp_path):
     (study_root / ".study_anchor.json").write_text("{}\n", encoding="utf-8")
     (study_root / "artifacts" / "study_budget").mkdir(parents=True)
     (study_root / "artifacts" / "study_budget" / "study_ledger.json").write_text(
-        json.dumps({
-            "cumulative_settled_cost_usd": "6.57575890",
-            "uncommitted_available_balance_usd": "13.36160100",
-        }),
-        encoding="utf-8",
-    )
-    (exp_dir / "run_summary.json").write_text(
-        json.dumps({
-            "study_budget": {
+        json.dumps(
+            {
                 "cumulative_settled_cost_usd": "6.57575890",
                 "uncommitted_available_balance_usd": "13.36160100",
             }
-        }),
+        ),
+        encoding="utf-8",
+    )
+    (exp_dir / "run_summary.json").write_text(
+        json.dumps(
+            {
+                "study_budget": {
+                    "cumulative_settled_cost_usd": "6.57575890",
+                    "uncommitted_available_balance_usd": "13.36160100",
+                }
+            }
+        ),
         encoding="utf-8",
     )
 
@@ -1705,7 +1713,10 @@ def test_generate_audit_seal_sanitizes_machine_path(tmp_path):
         protected_baseline_info=valid_baseline,
     )
 
-    assert seal["terminal_proof"]["path"] == "artifacts/orchestration/terminal_process_proof_20261002.json"
+    assert (
+        seal["terminal_proof"]["path"]
+        == "artifacts/orchestration/terminal_process_proof_20261002.json"
+    )
     assert "D:" not in seal["terminal_proof"]["path"]
 
 
@@ -1727,12 +1738,14 @@ def test_cli_fails_on_mismatched_run_summary_and_proof(tmp_path):
         json.dumps({"execution_mode": "live", "run_id": "live-66b94b1676bf46a9"}), encoding="utf-8"
     )
     (exp_dir / "run_summary.json").write_text(
-        json.dumps({
-            "complete": True,
-            "record_count": 6400,
-            "requests_consumed": 6401,
-            "consumed_provider_attempts": 6401,
-        }),
+        json.dumps(
+            {
+                "complete": True,
+                "record_count": 6400,
+                "requests_consumed": 6401,
+                "consumed_provider_attempts": 6401,
+            }
+        ),
         encoding="utf-8",
     )
 
@@ -1761,4 +1774,3 @@ def test_cli_fails_on_mismatched_run_summary_and_proof(tmp_path):
                 "--is-production",
             ]
         )
-

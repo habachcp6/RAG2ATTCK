@@ -118,9 +118,7 @@ def _parse_strict_positive_decimal(
             f"Terminal proof study_budget '{field_name}' must be strictly positive, got {d}"
         )
     if max_cap is not None and d > max_cap:
-        raise AuditVerificationError(
-            f"Terminal proof budget cap exceeded: {d} > {max_cap}"
-        )
+        raise AuditVerificationError(f"Terminal proof budget cap exceeded: {d} > {max_cap}")
     return d
 
 
@@ -914,7 +912,11 @@ def audit_terminal_process_proof(
         raise AuditVerificationError(f"Terminal proof invalid 'artifact_log_sha256': {log_sha256}")
 
     target_log_path = log_file_path
-    if target_log_path is None and "authoritative_log" in proof_data and proof_data["authoritative_log"]:
+    if (
+        target_log_path is None
+        and "authoritative_log" in proof_data
+        and proof_data["authoritative_log"]
+    ):
         target_log_path = Path(proof_data["authoritative_log"])
 
     if target_log_path is not None:
@@ -926,9 +928,7 @@ def audit_terminal_process_proof(
                     f"got {computed_log_sha} from {target_log_path}"
                 )
         elif require_log_file or log_file_path is not None:
-            raise AuditVerificationError(
-                f"Authoritative log file not found at {target_log_path}"
-            )
+            raise AuditVerificationError(f"Authoritative log file not found at {target_log_path}")
     elif require_log_file:
         raise AuditVerificationError(
             "Terminal proof verification requires an authoritative log file path for byte binding"
@@ -950,29 +950,39 @@ def audit_terminal_process_proof(
     complete_val = final_summary.get("complete")
     if type(complete_val) is not bool or complete_val is not True:
         raise AuditVerificationError(
-            f"Terminal proof final_summary 'complete' must be strictly True (boolean), got {complete_val}"
+            "Terminal proof final_summary 'complete' must be strictly True (boolean), "
+            f"got {complete_val}"
         )
 
     summary_run_id = final_summary.get("run_id")
     if not isinstance(summary_run_id, str) or not summary_run_id.strip():
-        raise AuditVerificationError(f"Terminal proof final_summary invalid 'run_id': {summary_run_id}")
+        raise AuditVerificationError(
+            f"Terminal proof final_summary invalid 'run_id': {summary_run_id}"
+        )
     if summary_run_id != run_id:
         raise AuditVerificationError(
-            f"Terminal proof final_summary run_id mismatch: summary has '{summary_run_id}', proof has '{run_id}'"
+            f"Terminal proof final_summary run_id mismatch: summary has '{summary_run_id}', "
+            f"proof has '{run_id}'"
         )
     if expected_run_id is not None and summary_run_id != expected_run_id:
         raise AuditVerificationError(
-            f"Terminal proof final_summary run_id mismatch: summary has '{summary_run_id}', expected '{expected_run_id}'"
+            f"Terminal proof final_summary run_id mismatch: summary has '{summary_run_id}', "
+            f"expected '{expected_run_id}'"
         )
 
     mode = final_summary.get("execution_mode")
     if not isinstance(mode, str) or not mode.strip():
-        raise AuditVerificationError(f"Terminal proof final_summary invalid 'execution_mode': {mode}")
+        raise AuditVerificationError(
+            f"Terminal proof final_summary invalid 'execution_mode': {mode}"
+        )
     if expected_execution_mode is not None and mode != expected_execution_mode:
         raise AuditVerificationError(
-            f"Terminal proof final_summary execution_mode mismatch: expected '{expected_execution_mode}', got '{mode}'"
+            "Terminal proof final_summary execution_mode mismatch: "
+            f"expected '{expected_execution_mode}', got '{mode}'"
         )
-    elif (run_id.startswith("live-") or (expected_run_id and expected_run_id.startswith("live-"))) and mode != "live":
+    elif (
+        run_id.startswith("live-") or (expected_run_id and expected_run_id.startswith("live-"))
+    ) and mode != "live":
         raise AuditVerificationError(
             f"Terminal proof final_summary execution_mode must be 'live' for live run, got '{mode}'"
         )
@@ -980,36 +990,44 @@ def audit_terminal_process_proof(
     record_count = final_summary.get("record_count")
     if type(record_count) is not int or record_count <= 0:
         raise AuditVerificationError(
-            f"Terminal proof final_summary 'record_count' must be a positive integer, got {record_count}"
+            "Terminal proof final_summary 'record_count' must be a positive integer, "
+            f"got {record_count}"
         )
     if expected_record_count is not None and record_count != expected_record_count:
         raise AuditVerificationError(
-            f"Terminal proof final_summary record_count mismatch: expected {expected_record_count}, got {record_count}"
+            "Terminal proof final_summary record_count mismatch: "
+            f"expected {expected_record_count}, got {record_count}"
         )
 
     rc = final_summary.get("requests_consumed")
     cpa = final_summary.get("consumed_provider_attempts")
     if type(rc) is not int or rc <= 0:
         raise AuditVerificationError(
-            f"Terminal proof final_summary 'requests_consumed' must be a positive integer, got {rc!r}"
+            "Terminal proof final_summary 'requests_consumed' must be a positive integer, "
+            f"got {rc!r}"
         )
     if type(cpa) is not int or cpa <= 0:
         raise AuditVerificationError(
-            f"Terminal proof final_summary 'consumed_provider_attempts' must be a positive integer, got {cpa!r}"
+            "Terminal proof final_summary 'consumed_provider_attempts' must be a "
+            f"positive integer, got {cpa!r}"
         )
     if rc != cpa:
         raise AuditVerificationError(
-            f"Terminal proof final_summary requests_consumed ({rc}) != consumed_provider_attempts ({cpa})"
+            f"Terminal proof final_summary requests_consumed ({rc}) != "
+            f"consumed_provider_attempts ({cpa})"
         )
     if expected_record_count == 6400 and (rc != 6401 or cpa != 6401):
         raise AuditVerificationError(
-            f"Canonical live run expects exactly 6,401 attempts/requests, got requests_consumed={rc}, consumed_provider_attempts={cpa}"
+            "Canonical live run expects exactly 6,401 attempts/requests, "
+            f"got requests_consumed={rc}, consumed_provider_attempts={cpa}"
         )
 
     if "study_budget" in final_summary:
         sb = final_summary["study_budget"]
         if not isinstance(sb, dict):
-            raise AuditVerificationError("Terminal proof final_summary 'study_budget' must be a dictionary")
+            raise AuditVerificationError(
+                "Terminal proof final_summary 'study_budget' must be a dictionary"
+            )
         if sb.get("has_breach") is not False:
             raise AuditVerificationError("Terminal proof final_summary reports budget breach")
 
@@ -1026,13 +1044,17 @@ def audit_terminal_process_proof(
         avail = None
         if "uncommitted_available_balance_usd" in sb:
             avail = _parse_strict_nonnegative_decimal(
-                sb.get("uncommitted_available_balance_usd"), "uncommitted_available_balance_usd", max_cap=tb
+                sb.get("uncommitted_available_balance_usd"),
+                "uncommitted_available_balance_usd",
+                max_cap=tb,
             )
 
         hold = None
         if "prior_pilot_provisional_hold_usd" in sb:
             hold = _parse_strict_nonnegative_decimal(
-                sb.get("prior_pilot_provisional_hold_usd"), "prior_pilot_provisional_hold_usd", max_cap=tb
+                sb.get("prior_pilot_provisional_hold_usd"),
+                "prior_pilot_provisional_hold_usd",
+                max_cap=tb,
             )
 
         active = None
@@ -1046,13 +1068,18 @@ def audit_terminal_process_proof(
             total_sum = settled + avail + hold + active_val
             if total_sum != tb:
                 raise AuditVerificationError(
-                    f"Terminal proof study_budget money conservation mismatch: "
-                    f"settled ({settled}) + avail ({avail}) + hold ({hold}) + active ({active_val}) = {total_sum} != total_budget ({tb})"
+                    "Terminal proof study_budget money conservation mismatch: "
+                    f"settled ({settled}) + avail ({avail}) + hold ({hold}) + "
+                    f"active ({active_val}) = {total_sum} != total_budget ({tb})"
                 )
 
-        if "pricing_contract_sha256" in sb and sb["pricing_contract_sha256"] != EXPECTED_PRICING_CONTRACT_SHA256:
+        if (
+            "pricing_contract_sha256" in sb
+            and sb["pricing_contract_sha256"] != EXPECTED_PRICING_CONTRACT_SHA256
+        ):
             raise AuditVerificationError(
-                f"Terminal proof pricing_contract_sha256 mismatch: {sb['pricing_contract_sha256']} != {EXPECTED_PRICING_CONTRACT_SHA256}"
+                "Terminal proof pricing_contract_sha256 mismatch: "
+                f"{sb['pricing_contract_sha256']} != {EXPECTED_PRICING_CONTRACT_SHA256}"
             )
 
     return {
@@ -1161,7 +1188,9 @@ def generate_audit_seal(
         if terminal_proof_info is None or not isinstance(terminal_proof_info, dict):
             raise AuditVerificationError("Production seal requires verified terminal_proof_info")
         if protected_baseline_info is None or not isinstance(protected_baseline_info, dict):
-            raise AuditVerificationError("Production seal requires verified protected_baseline_info")
+            raise AuditVerificationError(
+                "Production seal requires verified protected_baseline_info"
+            )
         if (
             not protected_baseline_info.get("all_22_files_verified")
             or protected_baseline_info.get("verified_file_count") != 22
@@ -1175,11 +1204,13 @@ def generate_audit_seal(
             )
         if cumulative_settled_usd > Decimal("19.99"):
             raise AuditVerificationError(
-                f"Production seal cumulative settled cost ${cumulative_settled_usd} exceeds $19.99 ceiling"
+                f"Production seal cumulative settled cost ${cumulative_settled_usd} "
+                "exceeds $19.99 ceiling"
             )
         if cumulative_settled_usd <= Decimal("0"):
             raise AuditVerificationError(
-                f"Production seal cumulative settled cost must be positive, got ${cumulative_settled_usd}"
+                "Production seal cumulative settled cost must be positive, "
+                f"got ${cumulative_settled_usd}"
             )
 
         # Deep inspection of terminal_proof_info payload
@@ -1196,7 +1227,8 @@ def generate_audit_seal(
         tp_log_sha = terminal_proof_info.get("artifact_log_sha256")
         if not isinstance(tp_log_sha, str) or len(tp_log_sha) != 64:
             raise AuditVerificationError(
-                f"Production seal requires valid artifact_log_sha256 in terminal proof, got {tp_log_sha}"
+                "Production seal requires valid artifact_log_sha256 in terminal proof, "
+                f"got {tp_log_sha}"
             )
         tp_summary = terminal_proof_info.get("final_summary")
         if not isinstance(tp_summary, dict):
@@ -1204,16 +1236,16 @@ def generate_audit_seal(
                 "Production seal requires valid final_summary dictionary in terminal proof"
             )
         if tp_summary.get("complete") is not True:
-            raise AuditVerificationError(
-                "Production seal requires complete=True in terminal proof"
-            )
+            raise AuditVerificationError("Production seal requires complete=True in terminal proof")
         if tp_summary.get("execution_mode") != "live":
             raise AuditVerificationError(
-                f"Production seal requires execution_mode='live' in terminal proof, got {tp_summary.get('execution_mode')}"
+                "Production seal requires execution_mode='live' in terminal proof, "
+                f"got {tp_summary.get('execution_mode')}"
             )
         if tp_summary.get("record_count") != 6400:
             raise AuditVerificationError(
-                f"Production seal requires record_count=6400 in terminal proof, got {tp_summary.get('record_count')}"
+                "Production seal requires record_count=6400 in terminal proof, "
+                f"got {tp_summary.get('record_count')}"
             )
         rc = tp_summary.get("requests_consumed")
         cpa = tp_summary.get("consumed_provider_attempts")
@@ -1244,7 +1276,9 @@ def generate_audit_seal(
             )
 
         pf_avail = _parse_strict_positive_decimal(
-            sb.get("uncommitted_available_balance_usd"), "uncommitted_available_balance_usd", max_cap=tb
+            sb.get("uncommitted_available_balance_usd"),
+            "uncommitted_available_balance_usd",
+            max_cap=tb,
         )
         if uncommitted_avail_usd != pf_avail:
             raise AuditVerificationError(
@@ -1253,7 +1287,9 @@ def generate_audit_seal(
             )
 
         hold = _parse_strict_nonnegative_decimal(
-            sb.get("prior_pilot_provisional_hold_usd", "0"), "prior_pilot_provisional_hold_usd", max_cap=tb
+            sb.get("prior_pilot_provisional_hold_usd", "0"),
+            "prior_pilot_provisional_hold_usd",
+            max_cap=tb,
         )
         active = _parse_strict_nonnegative_decimal(
             sb.get("active_reservations_usd", "0"), "active_reservations_usd", max_cap=tb
@@ -1272,7 +1308,9 @@ def generate_audit_seal(
             if not isinstance(ledger_data, dict):
                 raise AuditVerificationError(f"Malformed study ledger at {ledger_path}")
             ledger_settled = _parse_strict_positive_decimal(
-                ledger_data.get("cumulative_settled_cost_usd"), "ledger cumulative_settled_cost_usd", max_cap=tb
+                ledger_data.get("cumulative_settled_cost_usd"),
+                "ledger cumulative_settled_cost_usd",
+                max_cap=tb,
             )
             if cumulative_settled_usd != ledger_settled:
                 raise AuditVerificationError(
@@ -1280,7 +1318,9 @@ def generate_audit_seal(
                     f"argument has {cumulative_settled_usd}, ledger has {ledger_settled}"
                 )
             ledger_avail = _parse_strict_positive_decimal(
-                ledger_data.get("uncommitted_available_balance_usd"), "ledger uncommitted_available_balance_usd", max_cap=tb
+                ledger_data.get("uncommitted_available_balance_usd"),
+                "ledger uncommitted_available_balance_usd",
+                max_cap=tb,
             )
             if uncommitted_avail_usd != ledger_avail:
                 raise AuditVerificationError(
@@ -1297,21 +1337,27 @@ def generate_audit_seal(
                 if isinstance(sum_sb, dict):
                     if "cumulative_settled_cost_usd" in sum_sb:
                         sum_settled = _parse_strict_positive_decimal(
-                            sum_sb["cumulative_settled_cost_usd"], "run_summary cumulative_settled_cost_usd", max_cap=tb
+                            sum_sb["cumulative_settled_cost_usd"],
+                            "run_summary cumulative_settled_cost_usd",
+                            max_cap=tb,
                         )
                         if cumulative_settled_usd != sum_settled:
                             raise AuditVerificationError(
-                                f"Production seal cumulative settled cost mismatch with run_summary: "
-                                f"argument has {cumulative_settled_usd}, run_summary has {sum_settled}"
+                                "Production seal cumulative settled cost mismatch with "
+                                f"run_summary: argument has {cumulative_settled_usd}, "
+                                f"run_summary has {sum_settled}"
                             )
                     if "uncommitted_available_balance_usd" in sum_sb:
                         sum_avail = _parse_strict_positive_decimal(
-                            sum_sb["uncommitted_available_balance_usd"], "run_summary uncommitted_available_balance_usd", max_cap=tb
+                            sum_sb["uncommitted_available_balance_usd"],
+                            "run_summary uncommitted_available_balance_usd",
+                            max_cap=tb,
                         )
                         if uncommitted_avail_usd != sum_avail:
                             raise AuditVerificationError(
-                                f"Production seal uncommitted available balance mismatch with run_summary: "
-                                f"argument has {uncommitted_avail_usd}, run_summary has {sum_avail}"
+                                "Production seal uncommitted available balance mismatch with "
+                                f"run_summary: argument has {uncommitted_avail_usd}, "
+                                f"run_summary has {sum_avail}"
                             )
 
     required_artifacts = [
@@ -1489,11 +1535,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             )
         if "requests_consumed" in summary and summary.get("requests_consumed") != 6401:
             raise AuditVerificationError(
-                f"Terminal proof failed: run_summary requests_consumed={summary.get('requests_consumed')} != 6401"
+                "Terminal proof failed: run_summary requests_consumed="
+                f"{summary.get('requests_consumed')} != 6401"
             )
-        if "consumed_provider_attempts" in summary and summary.get("consumed_provider_attempts") != 6401:
+        if (
+            "consumed_provider_attempts" in summary
+            and summary.get("consumed_provider_attempts") != 6401
+        ):
             raise AuditVerificationError(
-                f"Terminal proof failed: run_summary consumed_provider_attempts={summary.get('consumed_provider_attempts')} != 6401"
+                "Terminal proof failed: run_summary consumed_provider_attempts="
+                f"{summary.get('consumed_provider_attempts')} != 6401"
             )
         if summary.get("has_breach") is True:
             raise AuditVerificationError("Terminal proof failed: run_summary reports breach")
@@ -1524,7 +1575,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         expected_task_id = args.expected_task_id
         terminal_proof_info = audit_terminal_process_proof(
             args.terminal_proof_file,
-            expected_run_id=expected_run_id if manifest_path.exists() or args.expected_run_id else None,
+            expected_run_id=expected_run_id
+            if manifest_path.exists() or args.expected_run_id
+            else None,
             expected_task_id=expected_task_id,
             log_file_path=args.log_file_path,
             expected_execution_mode="live" if manifest.get("execution_mode") == "live" else None,
@@ -1569,8 +1622,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 if mkey in sb_sum and mkey in sb_pf:
                     if sb_sum[mkey] != sb_pf[mkey]:
                         raise AuditVerificationError(
-                            f"Terminal proof study_budget mismatch with run_summary.json for '{mkey}': "
-                            f"proof has {sb_pf[mkey]!r}, run_summary has {sb_sum[mkey]!r}"
+                            "Terminal proof study_budget mismatch with run_summary.json "
+                            f"for '{mkey}': proof has {sb_pf[mkey]!r}, "
+                            f"run_summary has {sb_sum[mkey]!r}"
                         )
 
         # 4. Launcher wrapper requirement
@@ -1648,7 +1702,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         total_journal_receipts = sum(len(r) for r in receipts.values())
         if total_journal_receipts != 6401:
             raise AuditVerificationError(
-                f"Production journal receipts count mismatch: expected 6,401, got {total_journal_receipts}"
+                "Production journal receipts count mismatch: "
+                f"expected 6,401, got {total_journal_receipts}"
             )
         if len(settles) != 6400:
             raise AuditVerificationError(
@@ -1669,13 +1724,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             if "cumulative_settled_cost_usd" in pf_sb:
                 if Decimal(str(pf_sb["cumulative_settled_cost_usd"])) != settled_usd:
                     raise AuditVerificationError(
-                        f"Terminal proof cumulative settled cost ({pf_sb['cumulative_settled_cost_usd']}) "
+                        "Terminal proof cumulative settled cost "
+                        f"({pf_sb['cumulative_settled_cost_usd']}) "
                         f"does not match ledger settled cost ({settled_usd})"
                     )
             if "uncommitted_available_balance_usd" in pf_sb:
                 if Decimal(str(pf_sb["uncommitted_available_balance_usd"])) != avail_usd:
                     raise AuditVerificationError(
-                        f"Terminal proof available balance ({pf_sb['uncommitted_available_balance_usd']}) "
+                        "Terminal proof available balance "
+                        f"({pf_sb['uncommitted_available_balance_usd']}) "
                         f"does not match ledger available balance ({avail_usd})"
                     )
 

@@ -33,8 +33,11 @@ from tests.test_llm_client import create_mock_responses_api_response
 def _fixture_source_snapshot(samples):
     """TEST ONLY: explicit provenance stand-in, never an approved real source."""
     rows = [
-        {"sample_id": sample.sample_id, "source_id": sample.source_id,
-         "endpoint_evidence": sample.endpoint_evidence}
+        {
+            "sample_id": sample.sample_id,
+            "source_id": sample.source_id,
+            "endpoint_evidence": sample.endpoint_evidence,
+        }
         for sample in samples
     ]
     content = ("\n".join(json.dumps(row) for row in rows) + "\n").encode("utf-8")
@@ -57,7 +60,9 @@ def _fixture_source_snapshot(samples):
 def _run_fixture_samples(samples, pipeline, *, live_budget):
     """Call the real public runner with explicit fixture provenance and allowlist."""
     return run_no_rag_pilot(
-        samples, pipeline, live_budget=live_budget,
+        samples,
+        pipeline,
+        live_budget=live_budget,
         source_snapshot=_fixture_source_snapshot(samples),
         approved_source_ids={samples[0].source_id},
     )
@@ -67,8 +72,12 @@ def _run_fake_pipeline(samples, pipeline):
     """Unit-only pipeline stubs still declare the runner's accounting contract."""
     budget = LiveBudget(len(samples) * 4)
     pipeline.client = SimpleNamespace(
-        live_budget=budget, is_live=True, max_retries=3,
-        provider="openai", model="gpt-5.6-luna", reasoning_effort="xhigh",
+        live_budget=budget,
+        is_live=True,
+        max_retries=3,
+        provider="openai",
+        model="gpt-5.6-luna",
+        reasoning_effort="xhigh",
     )
     pipeline.prompt_version = "baseline_v1"
     return _run_fixture_samples(samples, pipeline, live_budget=budget)
@@ -116,7 +125,9 @@ def test_source_manifest_hash_mismatch_blocks_before_dispatch(tmp_path: Path):
 
 def test_source_id_mismatch_blocks_before_dispatch(tmp_path: Path):
     input_path, manifest_path, manifest = _write_inputs(tmp_path, source_id="manifest-source")
-    rows = [json.loads(line) for line in input_path.read_text(encoding="utf-8").splitlines() if line]
+    rows = [
+        json.loads(line) for line in input_path.read_text(encoding="utf-8").splitlines() if line
+    ]
     rows[0]["source_id"] = "different-source"
     input_path.write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
     manifest["input_sha256"] = hashlib.sha256(input_path.read_bytes()).hexdigest()
@@ -144,7 +155,9 @@ def test_pilot_budget_requires_finite_positive_integer(budget):
 
 def test_sample_loader_rejects_duplicate_ids(tmp_path: Path):
     input_path, _, _ = _write_inputs(tmp_path)
-    rows = [json.loads(line) for line in input_path.read_text(encoding="utf-8").splitlines() if line]
+    rows = [
+        json.loads(line) for line in input_path.read_text(encoding="utf-8").splitlines() if line
+    ]
     rows[1]["sample_id"] = rows[0]["sample_id"]
     input_path.write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match="Duplicate sample_id"):
@@ -175,12 +188,14 @@ def test_no_rag_runner_forwards_no_context_and_preserves_metadata():
             )
 
     run = _run_fake_pipeline([PilotSample("s1", "source-1", "EventID 1")], FakePipeline())
-    assert calls == [{
-        "sample_id": "s1",
-        "endpoint_evidence": "EventID 1",
-        "retrieved_context": None,
-        "condition": "no_rag",
-    }]
+    assert calls == [
+        {
+            "sample_id": "s1",
+            "endpoint_evidence": "EventID 1",
+            "retrieved_context": None,
+            "condition": "no_rag",
+        }
+    ]
     assert run.complete is True
     assert run.records[0]["condition"] == "no_rag"
     assert run.records[0]["provider"] == "openai"
@@ -259,7 +274,9 @@ def test_retry_accounting_consumes_two_budget_units():
             sleep_fn=lambda _: None,
         )
     )
-    run = _run_fixture_samples([PilotSample("s1", "source-1", "EventID 1")], pipeline, live_budget=budget)
+    run = _run_fixture_samples(
+        [PilotSample("s1", "source-1", "EventID 1")], pipeline, live_budget=budget
+    )
     summary = summarize_predictions(run.records, run=run, live_budget=budget)
     assert run.complete is True
     assert budget.count == 2
@@ -290,7 +307,9 @@ def test_summary_uses_non_overlapping_status_categories():
 
 def test_valid_source_manifest_and_sidecar_metadata(tmp_path: Path):
     input_path, manifest_path, manifest = _write_inputs(tmp_path, count=1)
-    validate_source_manifest(manifest, input_path=input_path, approved_source_ids={"approved-source"})
+    validate_source_manifest(
+        manifest, input_path=input_path, approved_source_ids={"approved-source"}
+    )
     run = PilotRun([], 1, 0, False, True)
     budget = LiveBudget(1)
     prompt_path = tmp_path / "prompt.txt"
@@ -385,12 +404,15 @@ def test_openai_api_timeout_normalized_as_timeout():
     assert run.records[0]["error_type"] == "APITimeoutError"
 
 
-@pytest.mark.parametrize("exc", [
-    PermissionError("permission denied"),
-    FileNotFoundError("file missing"),
-    RuntimeError("unexpected runtime failure"),
-    TypeError("unexpected type defect"),
-])
+@pytest.mark.parametrize(
+    "exc",
+    [
+        PermissionError("permission denied"),
+        FileNotFoundError("file missing"),
+        RuntimeError("unexpected runtime failure"),
+        TypeError("unexpected type defect"),
+    ],
+)
 def test_filesystem_oserror_is_not_masked(exc: Exception):
     class DefectPipeline:
         def run_sample(self, **kwargs):
@@ -400,19 +422,22 @@ def test_filesystem_oserror_is_not_masked(exc: Exception):
         _run_fake_pipeline([PilotSample("s1", "source-1", "EventID 1")], DefectPipeline())
 
 
-@pytest.mark.parametrize("missing_field", [
-    "dataset_id",
-    "source_id",
-    "source_reference",
-    "license",
-    "version",
-    "acquisition_date",
-    "schema",
-    "sanitization_status",
-    "is_real_data",
-    "input_sha256",
-    "expected_record_count",
-])
+@pytest.mark.parametrize(
+    "missing_field",
+    [
+        "dataset_id",
+        "source_id",
+        "source_reference",
+        "license",
+        "version",
+        "acquisition_date",
+        "schema",
+        "sanitization_status",
+        "is_real_data",
+        "input_sha256",
+        "expected_record_count",
+    ],
+)
 def test_manifest_contract_validates_all_canonical_fields(tmp_path: Path, missing_field: str):
     _, _, manifest = _write_inputs(tmp_path)
     del manifest[missing_field]

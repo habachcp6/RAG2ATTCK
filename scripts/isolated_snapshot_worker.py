@@ -16,7 +16,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -44,6 +43,7 @@ BLOCKED_SOCKET_EVENTS = {
 
 class SnapshotGuardSecurityError(RuntimeError):
     """Raised when an offline guard violation or origin boundary breach occurs."""
+
     pass
 
 
@@ -76,9 +76,16 @@ def _install_socket_guard() -> None:
                 global _attempted_egress_count
                 _attempted_egress_count += 1
                 raise SnapshotGuardSecurityError(f"OFFLINE_GUARD: Blocked socket function '{name}'")
+
             return _fn
 
-        for fn_name in ("getaddrinfo", "gethostbyname", "gethostbyaddr", "getnameinfo", "create_connection"):
+        for fn_name in (
+            "getaddrinfo",
+            "gethostbyname",
+            "gethostbyaddr",
+            "getnameinfo",
+            "create_connection",
+        ):
             if hasattr(socket, fn_name):
                 setattr(socket, fn_name, _guarded_call(fn_name))
     except Exception:
@@ -124,7 +131,9 @@ def verify_snapshot_git_identity(snapshot_root: Path) -> str:
     """Verify clean Git state and exact commit b69a690."""
     git_dir = snapshot_root / ".git"
     if not git_dir.exists():
-        raise RuntimeError(f"Snapshot root '{snapshot_root}' is missing .git directory or reference file!")
+        raise RuntimeError(
+            f"Snapshot root '{snapshot_root}' is missing .git directory or reference file!"
+        )
 
     cmd_head = ["git", "-C", str(snapshot_root), "rev-parse", "HEAD"]
     p_head = subprocess.run(cmd_head, capture_output=True, text=True)
@@ -133,18 +142,19 @@ def verify_snapshot_git_identity(snapshot_root: Path) -> str:
     actual_head = p_head.stdout.strip()
     if actual_head != EXPECTED_SNAPSHOT_GIT_COMMIT:
         raise RuntimeError(
-            f"Snapshot Git commit mismatch: expected {EXPECTED_SNAPSHOT_GIT_COMMIT}, got {actual_head}"
+            f"Snapshot Git commit mismatch: expected {EXPECTED_SNAPSHOT_GIT_COMMIT}, "
+            f"got {actual_head}"
         )
 
     cmd_status = ["git", "-C", str(snapshot_root), "status", "--porcelain=v1"]
     p_status = subprocess.run(cmd_status, capture_output=True, text=True)
     if p_status.returncode != 0:
-        raise RuntimeError(f"Failed to check git status for {snapshot_root}: {p_status.stderr.strip()}")
+        raise RuntimeError(
+            f"Failed to check git status for {snapshot_root}: {p_status.stderr.strip()}"
+        )
     status_output = p_status.stdout.strip()
     if status_output:
-        raise RuntimeError(
-            f"Snapshot working directory is dirty! git status:\n{status_output}"
-        )
+        raise RuntimeError(f"Snapshot working directory is dirty! git status:\n{status_output}")
     return actual_head
 
 
@@ -163,7 +173,8 @@ def verify_protected_baselines(snapshot_root: Path) -> int:
     baseline_count = len(protected_files)
     if baseline_count != EXPECTED_BASELINE_FILES_COUNT:
         raise ValueError(
-            f"Protected baselines count mismatch: expected {EXPECTED_BASELINE_FILES_COUNT}, got {baseline_count}"
+            f"Protected baselines count mismatch: expected {EXPECTED_BASELINE_FILES_COUNT}, "
+            f"got {baseline_count}"
         )
 
     for rel_path, exp_sha in protected_files.items():
@@ -173,7 +184,8 @@ def verify_protected_baselines(snapshot_root: Path) -> int:
         actual_bsha = hashlib.sha256(bf.read_bytes()).hexdigest()
         if actual_bsha != exp_sha:
             raise ValueError(
-                f"Protected baseline hash mismatch for '{rel_path}': expected {exp_sha}, got {actual_bsha}"
+                f"Protected baseline hash mismatch for '{rel_path}': "
+                f"expected {exp_sha}, got {actual_bsha}"
             )
 
     return baseline_count
@@ -193,7 +205,8 @@ def gather_worker_runtime_attestation(snapshot_root: Path) -> Dict[str, Any]:
     actual_prefix = Path(sys.prefix).absolute()
     if actual_prefix != expected_venv and actual_prefix.resolve() != expected_venv.resolve():
         raise SnapshotGuardSecurityError(
-            f"Venv boundary breach: sys.prefix '{actual_prefix}' != expected snapshot venv '{expected_venv}'"
+            f"Venv boundary breach: sys.prefix '{actual_prefix}' != "
+            f"expected snapshot venv '{expected_venv}'"
         )
 
     actual_exe = Path(sys.executable).absolute()
@@ -202,7 +215,8 @@ def gather_worker_runtime_attestation(snapshot_root: Path) -> Dict[str, Any]:
     except ValueError:
         if actual_prefix != expected_venv and actual_prefix.resolve() != expected_venv.resolve():
             raise SnapshotGuardSecurityError(
-                f"Python executable breach: sys.executable '{actual_exe}' is outside snapshot venv '{expected_venv}'"
+                f"Python executable breach: sys.executable '{actual_exe}' is outside "
+                f"snapshot venv '{expected_venv}'"
             )
 
     import importlib.metadata
@@ -244,7 +258,11 @@ def verify_module_origin_boundaries(
         if target_modules is not None and mod_name not in target_modules:
             continue
         # Enforce boundaries on our project packages
-        if mod_name == "src" or mod_name.startswith("src.") or mod_name.startswith("scripts.analysis"):
+        if (
+            mod_name == "src"
+            or mod_name.startswith("src.")
+            or mod_name.startswith("scripts.analysis")
+        ):
             spec = getattr(mod, "__spec__", None)
             origin = getattr(spec, "origin", None) if spec else None
             file_path = getattr(mod, "__file__", None)
@@ -261,7 +279,8 @@ def verify_module_origin_boundaries(
                     resolved_file.relative_to(snapshot_root_resolved)
                 except ValueError:
                     raise SnapshotGuardSecurityError(
-                        f"BOUNDARY BREACH: Module '{mod_name}' __file__ resolved outside snapshot root!\n"
+                        f"BOUNDARY BREACH: Module '{mod_name}' __file__ "
+                        "resolved outside snapshot root!\n"
                         f"  __file__:      {resolved_file}\n"
                         f"  Snapshot root: {snapshot_root_resolved}"
                     )
@@ -273,7 +292,8 @@ def verify_module_origin_boundaries(
                     resolved_origin.relative_to(snapshot_root_resolved)
                 except ValueError:
                     raise SnapshotGuardSecurityError(
-                        f"BOUNDARY BREACH: Module '{mod_name}' __spec__.origin resolved outside snapshot root!\n"
+                        f"BOUNDARY BREACH: Module '{mod_name}' __spec__.origin "
+                        "resolved outside snapshot root!\n"
                         f"  origin:        {resolved_origin}\n"
                         f"  Snapshot root: {snapshot_root_resolved}"
                     )
@@ -281,7 +301,8 @@ def verify_module_origin_boundaries(
             if resolved_file is not None and resolved_origin is not None:
                 if resolved_file != resolved_origin:
                     raise SnapshotGuardSecurityError(
-                        f"BOUNDARY BREACH: Module '{mod_name}' has mismatched __file__ and __spec__.origin!\n"
+                        f"BOUNDARY BREACH: Module '{mod_name}' has mismatched "
+                        "__file__ and __spec__.origin!\n"
                         f"  __file__: {resolved_file}\n"
                         f"  origin:   {resolved_origin}"
                     )
@@ -294,13 +315,15 @@ def verify_module_origin_boundaries(
                 rel_posix = effective_path.relative_to(snapshot_root_resolved).as_posix()
                 if rel_posix not in expected_closed_inventory:
                     raise SnapshotGuardSecurityError(
-                        f"BOUNDARY BREACH: Module '{mod_name}' file '{rel_posix}' is not in closed 53-file inventory!"
+                        f"BOUNDARY BREACH: Module '{mod_name}' file '{rel_posix}' "
+                        "is not in closed 53-file inventory!"
                     )
                 actual_sha = hashlib.sha256(effective_path.read_bytes()).hexdigest()
                 if actual_sha != expected_closed_inventory[rel_posix]:
                     raise SnapshotGuardSecurityError(
-                        f"BOUNDARY BREACH: Module '{mod_name}' file '{rel_posix}' byte hash mismatch! "
-                        f"Expected {expected_closed_inventory[rel_posix]}, got {actual_sha}"
+                        f"BOUNDARY BREACH: Module '{mod_name}' file '{rel_posix}' "
+                        f"byte hash mismatch! Expected {expected_closed_inventory[rel_posix]}, "
+                        f"got {actual_sha}"
                     )
 
             # Inspect callables/functions inside the module's dictionary
@@ -317,7 +340,8 @@ def verify_module_origin_boundaries(
                         code_path = Path(code_file).resolve()
                         fn_mod = getattr(target_fn, "__module__", None)
 
-                        # If callable was defined in this project module, its co_filename MUST be in snapshot_root
+                        # If callable was defined in this project module,
+                        # its co_filename MUST be in snapshot_root
                         if fn_mod == mod_name:
                             try:
                                 code_path.relative_to(snapshot_root_resolved)
@@ -329,7 +353,8 @@ def verify_module_origin_boundaries(
                                     f"  Snapshot root: {snapshot_root_resolved}"
                                 )
                         else:
-                            # For foreign/imported callables, verify they reside in snapshot_root, stdlib, or venv
+                            # For foreign/imported callables, verify they reside
+                            # in snapshot_root, stdlib, or venv
                             in_snapshot = False
                             try:
                                 code_path.relative_to(snapshot_root_resolved)
@@ -372,7 +397,8 @@ def verify_module_origin_boundaries(
                     resolved_code.relative_to(snapshot_root_resolved)
                 except ValueError:
                     raise SnapshotGuardSecurityError(
-                        f"BOUNDARY BREACH: Callable '{fn.__name__}' co_filename resolved outside snapshot root!\n"
+                        f"BOUNDARY BREACH: Callable '{fn.__name__}' co_filename "
+                        "resolved outside snapshot root!\n"
                         f"  co_filename:   {resolved_code}\n"
                         f"  Snapshot root: {snapshot_root_resolved}"
                     )
@@ -386,11 +412,13 @@ def run_preflight_task(snapshot_root: Path) -> Dict[str, Any]:
     manifest_sha, inventory = compute_closed_snapshot_inventory(snapshot_root)
     if len(inventory) != EXPECTED_CORE_FILES_COUNT:
         raise ValueError(
-            f"Core manifest file count mismatch: expected {EXPECTED_CORE_FILES_COUNT}, got {len(inventory)}"
+            f"Core manifest file count mismatch: expected {EXPECTED_CORE_FILES_COUNT}, "
+            f"got {len(inventory)}"
         )
     if manifest_sha != EXPECTED_CORE_MANIFEST_SHA256:
         raise ValueError(
-            f"Core manifest SHA256 mismatch: expected {EXPECTED_CORE_MANIFEST_SHA256}, got {manifest_sha}"
+            f"Core manifest SHA256 mismatch: expected {EXPECTED_CORE_MANIFEST_SHA256}, "
+            f"got {manifest_sha}"
         )
 
     # Mandatory clean Git state
@@ -429,7 +457,11 @@ def run_preflight_task(snapshot_root: Path) -> Dict[str, Any]:
     origins = verify_module_origin_boundaries(
         snapshot_root=snapshot_root,
         expected_closed_inventory=inventory,
-        target_callables=[compute_code_manifest, compute_code_manifest_sha256, validate_experiment_readiness],
+        target_callables=[
+            compute_code_manifest,
+            compute_code_manifest_sha256,
+            validate_experiment_readiness,
+        ],
     )
 
     return {
@@ -456,7 +488,8 @@ def run_verify_baselines_task(snapshot_root: Path) -> Dict[str, Any]:
     manifest_sha, inventory = compute_closed_snapshot_inventory(snapshot_root)
     if len(inventory) != EXPECTED_CORE_FILES_COUNT:
         raise ValueError(
-            f"Core inventory count mismatch: expected {EXPECTED_CORE_FILES_COUNT}, got {len(inventory)}"
+            f"Core inventory count mismatch: expected {EXPECTED_CORE_FILES_COUNT}, "
+            f"got {len(inventory)}"
         )
     if manifest_sha != EXPECTED_CORE_MANIFEST_SHA256:
         raise ValueError(f"Core manifest SHA256 mismatch: {manifest_sha}")
@@ -471,7 +504,9 @@ def run_verify_baselines_task(snapshot_root: Path) -> Dict[str, Any]:
 
     rq_sha = hashlib.sha256(rq_script.read_bytes()).hexdigest()
     if rq_sha != EXPECTED_ANALYSIS_SOURCE_SHA256:
-        raise ValueError(f"evaluate_rqs.py sha mismatch: {rq_sha} != {EXPECTED_ANALYSIS_SOURCE_SHA256}")
+        raise ValueError(
+            f"evaluate_rqs.py sha mismatch: {rq_sha} != {EXPECTED_ANALYSIS_SOURCE_SHA256}"
+        )
 
     # Check BOM presence in src/rag/__init__.py
     rag_init = snapshot_root / "src" / "rag" / "__init__.py"
@@ -519,9 +554,15 @@ def main() -> int:
     _install_socket_guard()
 
     parser = argparse.ArgumentParser(description="Isolated Snapshot Science Worker")
-    parser.add_argument("--snapshot-root", type=Path, required=True, help="Path to frozen snapshot root")
-    parser.add_argument("--task", choices=["preflight", "verify_baselines", "egress_test"], required=True)
-    parser.add_argument("--output", type=Path, required=True, help="Path to destination evidence JSON")
+    parser.add_argument(
+        "--snapshot-root", type=Path, required=True, help="Path to frozen snapshot root"
+    )
+    parser.add_argument(
+        "--task", choices=["preflight", "verify_baselines", "egress_test"], required=True
+    )
+    parser.add_argument(
+        "--output", type=Path, required=True, help="Path to destination evidence JSON"
+    )
     args = parser.parse_args()
 
     snapshot_root = args.snapshot_root.resolve()
@@ -541,6 +582,7 @@ def main() -> int:
             result = run_verify_baselines_task(snapshot_root)
         elif args.task == "egress_test":
             import socket
+
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect(("127.0.0.1", 80))
             result = {"status": "FAIL_EGRESS_NOT_BLOCKED"}

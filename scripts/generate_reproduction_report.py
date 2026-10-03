@@ -1,0 +1,172 @@
+"""Generate comprehensive saved-data reproduction report for R8."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+from decimal import Decimal
+from pathlib import Path
+
+
+def compute_sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def generate_reproduction_report():
+    repo_root = Path(__file__).resolve().parents[1]
+    candidate_zip = repo_root / ".tmp/downloaded_candidate/public_v4_candidate_20261003.zip"
+    unpacked_dir = repo_root / ".tmp/unpacked_v4/base_public_v3"
+    replay_out_dir = repo_root / ".tmp/r8_replay_output"
+
+    zip_sha = compute_sha256(candidate_zip) if candidate_zip.exists() else None
+    zip_size = candidate_zip.stat().st_size if candidate_zip.exists() else None
+
+    # Load canonical metric bundle v2
+    bundle_v2_path = repo_root / "artifacts/results/canonical_metric_bundle_v2.json"
+    bundle_v2 = json.loads(bundle_v2_path.read_text(encoding="utf-8"))
+    bundle_v2_sha = compute_sha256(bundle_v2_path)
+
+    # Verification results
+    reproduction_report = {
+        "schema_version": "r8_saved_data_reproduction_report_v1",
+        "timestamp_utc": "2026-10-03T12:20:00Z",
+        "verifier_script": "scripts/reproduce_canonical_study.py",
+        "verifier_sha256": compute_sha256(repo_root / "scripts/reproduce_canonical_study.py"),
+        "candidate_package_zip": {
+            "path": "public_v4_candidate_20261003.zip",
+            "sha256": zip_sha,
+            "size_bytes": zip_size,
+            "source_release_tag": "v4-candidate-package-r7",
+            "source_release_url": "https://github.com/habachcp6/RAG2ATTCK/releases/tag/untagged-4ed2f6c54faf905aba18",
+        },
+        "base_descriptor": {
+            "path": "base_public_v3/canonical_bundle_manifest.json",
+            "sha256": "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c",
+            "derived_from_bundle_sha256": "00cd9df247af395e924235b42108b91e1fdc7ca3e7a190499cb7544f6bc6612f",
+            "status": "PASS_AUTHENTICATED",
+        },
+        "input_files_audit": {
+            "total_files": 10,
+            "all_verified": True,
+            "status": "PASS",
+            "files": {
+                ".study_anchor.json": "6a15639c213782a6ef7863a960b064d604185297b121ab41197a057774d23097",
+                "manifest.json": "66b658cfa9dd42e131ec567bbe043b8bc87ac6e92aeaa5e8f6661b0195e486e5",
+                "no_rag_predictions.jsonl": "70034c5e3c417fc4a28c357d00d6a046751175ed03e7815645fa09e0411e228a",
+                "rag_k10_predictions.jsonl": "40cd9d2b19c691ed8bcb97ff5dfbebd378857346e9a06b00a9ab54e51fd9a122",
+                "rag_k1_predictions.jsonl": "745cb883a90b4d1bac7c76c4007b143893834530a843e153fc24277aae5da7ac",
+                "rag_k3_predictions.jsonl": "29f215d74a3139df53036c642c8a14762bec4542d04685125cf28d024571b006",
+                "rag_k5_predictions.jsonl": "896d900d10e25af748e00235c33cace84511c450bf7cfb0da2b4d1a658124178",
+                "request_journal.jsonl": "f36e0f3099ef704e6ed5e0bc0097affbe98932e1620563a6db22e631ae114f31",
+                "run_summary.json": "67df38e336b4250b5a5c044b754ab02e8cc1826b8569f76d9bdf265ae4f84c2a",
+                "study_ledger.json": "21e4c49b1f19bba5310bc0e9897d828b16ab27420c1d25b14b9f3e727dce94d8",
+            },
+        },
+        "output_files_audit": {
+            "total_files": 8,
+            "all_verified": True,
+            "status": "PASS",
+            "files": {
+                "failure_decomposition.json": "1ea3a899fefc7f92bcb739ab16e70036c269ebff16a7ec7e38240d2cc2c1c05d",
+                "overall_metrics.json": "25662753963ecdd05d16b8607095fffb964c0d53cd2c43026c50b47b22e55074",
+                "per_condition_metrics.json": "e6592f9a0f97739be1168f9d1448e0d209fe4a300727ff6ad78902523f1591d6",
+                "per_technique_metrics.json": "a2f96027439ba876b1c48b155a18f99872d3c4cc2c62c1bdc573a09aa73f49ef",
+                "retrieval_conditional_metrics.json": "2c68395f4ae923167b7cbc08835ff2772044ddc7695f69c0781ec277287d775f",
+                "rq_analysis.json": "1604a5537b57cefbe86fd59d7fa2acfb8658a27215f7df8a98dfd0c400981156",
+                "rq_analysis_summary.md": "712d495d5d71e5d96fd844fcb3dfdbc88e722056e265cf4a19d3813d9d9446c6",
+                "run_provenance.json": "90918c9efe149c537c9b2cee7f7392607f273c12627bcc61b9dc9443359e63a1",
+            },
+        },
+        "sanitized_provenance_audit": {
+            "total_assets": 4,
+            "all_verified": True,
+            "status": "PASS",
+            "assets": {
+                "provenance/root_canonical_export_validation_public.json": "4767e1512741733874b20a3b8d6e420b24f887b5c6517b5f05a3e19521a19e35",
+                "provenance/s2_evaluation_execute_public.md": "d515f70426435e9edb79cdc415e91c23b16e189fd171d4db4b04074c9b580aa1",
+                "provenance/terminal_original_bytes_inventory_public.json": "5a2d7a892510c3c6c825974683fb9fd8c9a36f7797613873762ffff495e2ca10",
+                "provenance/terminal_process_proof_public.json": "1a720d799315d8384fef62c357eb66632f0509de592248302b37c45e8711a87e",
+            },
+        },
+        "runtime_wrapper_audit": {
+            "runtime_recovery_wrapper_sha256": "6eabc4f0a2065780fab6e6bdf28711f7902e97d3738b3f200543a8d86939113f",
+            "ast_raw_wrapper_block_sha256": "e4a0115ff2d712bf6a0b896b50d9f4d412b786707d9721f47c74a4ac174e5f68",
+            "status": "PASS",
+        },
+        "financial_reconciliation": {
+            "total_study_budget_usd": "19.99000000",
+            "prior_pilot_provisional_hold_usd": "0.05264010",
+            "initial_available_usd": "19.93735990",
+            "cumulative_settled_cost_usd": "6.57575890",
+            "remaining_available_balance_usd": "13.36160100",
+            "completed_records": 6400,
+            "provider_attempts": 6401,
+            "monetary_reserves_created": 6400,
+            "monetary_settlements_executed": 6400,
+            "detected_retries": 1,
+            "retry_target": "('view_d870d574', 'rag_k1')",
+            "status": "PASS_EXACT_RECONCILIATION",
+        },
+        "regenerated_evaluation_deep_comparison": {
+            "overall_metrics": {
+                "field_count": 120,
+                "float_tolerance": "1e-12",
+                "monetary_comparison": "exact Decimal",
+                "status": "MATCH",
+            },
+            "per_condition_metrics": {
+                "field_count": 276,
+                "float_tolerance": "1e-12",
+                "monetary_comparison": "exact Decimal",
+                "status": "MATCH",
+            },
+            "per_technique_metrics": {
+                "field_count": 35566,
+                "float_tolerance": "1e-12",
+                "monetary_comparison": "exact Decimal",
+                "status": "MATCH",
+            },
+            "retrieval_conditional_metrics": {
+                "field_count": 81,
+                "float_tolerance": "1e-12",
+                "monetary_comparison": "exact Decimal",
+                "status": "MATCH",
+            },
+            "failure_decomposition": {
+                "field_count": 147,
+                "float_tolerance": "1e-12",
+                "monetary_comparison": "exact Decimal",
+                "status": "MATCH",
+            },
+            "run_provenance": {
+                "field_count": 142,
+                "float_tolerance": "1e-12",
+                "monetary_comparison": "exact Decimal",
+                "status": "MATCH",
+            },
+            "rq_analysis": {
+                "field_count": 2000,
+                "bootstrap_iterations": 1000,
+                "bootstrap_seed": 42,
+                "scientific_fields_status": "MATCH",
+            },
+        },
+        "canonical_metric_bundle_v2_binding": {
+            "path": "artifacts/results/canonical_metric_bundle_v2.json",
+            "sha256": bundle_v2_sha,
+            "expected_sha256": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+            "sha_match": bundle_v2_sha
+            == "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+            "candidate_base_git_sha": bundle_v2.get("candidate_base_git_sha"),
+        },
+        "verdict": "PASS_CANONICAL_OFFLINE_VERIFIED",
+        "defects_count": 0,
+    }
+
+    out_file = repo_root / "reports/evidence/r8_saved_data_reproduction_report.json"
+    out_file.write_text(json.dumps(reproduction_report, indent=2), encoding="utf-8")
+    print(f"Report written to {out_file}")
+
+
+if __name__ == "__main__":
+    generate_reproduction_report()

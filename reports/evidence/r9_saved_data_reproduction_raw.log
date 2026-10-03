@@ -1,0 +1,128 @@
+================================================================================
+RAG2ATTCK CANONICAL OFFLINE STUDY VERIFICATION HELPER
+Repository Root:         D:\RAG2ATTCK-worktrees\finalization-20261003
+Target Bundle Directory: D:\RAG2ATTCK-worktrees\finalization-20261003\.tmp\unpacked_v4\base_public_v3
+Isolated Output Dir:     D:\RAG2ATTCK-worktrees\finalization-20261003\.tmp\r9_replay_output
+Egress Guard: STRICT ZERO LIVE PROVIDER/API CALLS
+================================================================================
+
+
+--------------------------------------------------------------------------------
+[PASS] Portable bundle manifest authenticated (canonical_bundle_manifest.json): sha256=32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c (derived from canonical bundle 00cd9df247af395e924235b42108b91e1fdc7ca3e7a190499cb7544f6bc6612f)
+
+Verifying 10 Canonical Input Files:
+  [OK] .study_anchor.json             6a15639c213782a6ef7863a960b064d604185297b121ab41197a057774d23097
+  [OK] manifest.json                  66b658cfa9dd42e131ec567bbe043b8bc87ac6e92aeaa5e8f6661b0195e486e5
+  [OK] no_rag_predictions.jsonl       70034c5e3c417fc4a28c357d00d6a046751175ed03e7815645fa09e0411e228a
+  [OK] rag_k10_predictions.jsonl      40cd9d2b19c691ed8bcb97ff5dfbebd378857346e9a06b00a9ab54e51fd9a122
+  [OK] rag_k1_predictions.jsonl       745cb883a90b4d1bac7c76c4007b143893834530a843e153fc24277aae5da7ac
+  [OK] rag_k3_predictions.jsonl       29f215d74a3139df53036c642c8a14762bec4542d04685125cf28d024571b006
+  [OK] rag_k5_predictions.jsonl       896d900d10e25af748e00235c33cace84511c450bf7cfb0da2b4d1a658124178
+  [OK] request_journal.jsonl          f36e0f3099ef704e6ed5e0bc0097affbe98932e1620563a6db22e631ae114f31
+  [OK] run_summary.json               67df38e336b4250b5a5c044b754ab02e8cc1826b8569f76d9bdf265ae4f84c2a
+  [OK] study_ledger.json              21e4c49b1f19bba5310bc0e9897d828b16ab27420c1d25b14b9f3e727dce94d8
+
+Verifying 8 Canonical Output Files:
+  [OK] failure_decomposition.json     1ea3a899fefc7f92bcb739ab16e70036c269ebff16a7ec7e38240d2cc2c1c05d
+  [OK] overall_metrics.json           25662753963ecdd05d16b8607095fffb964c0d53cd2c43026c50b47b22e55074
+  [OK] per_condition_metrics.json     e6592f9a0f97739be1168f9d1448e0d209fe4a300727ff6ad78902523f1591d6
+  [OK] per_technique_metrics.json     a2f96027439ba876b1c48b155a18f99872d3c4cc2c62c1bdc573a09aa73f49ef
+  [OK] retrieval_conditional_metrics.json 2c68395f4ae923167b7cbc08835ff2772044ddc7695f69c0781ec277287d775f
+  [OK] rq_analysis.json               1604a5537b57cefbe86fd59d7fa2acfb8658a27215f7df8a98dfd0c400981156
+  [OK] rq_analysis_summary.md         712d495d5d71e5d96fd844fcb3dfdbc88e722056e265cf4a19d3813d9d9446c6
+  [OK] run_provenance.json            90918c9efe149c537c9b2cee7f7392607f273c12627bcc61b9dc9443359e63a1
+  [PASS] outputs/rq_analysis.json secondary_scope_authorization_sha256 verified: d515f70426435e9edb79cdc415e91c23b16e189fd171d4db4b04074c9b580aa1
+
+Verifying 4 Sanitized Provenance Assets:
+  [OK] provenance/root_canonical_export_validation_public.json 4767e1512741733874b20a3b8d6e420b24f887b5c6517b5f05a3e19521a19e35
+  [OK] provenance/s2_evaluation_execute_public.md    d515f70426435e9edb79cdc415e91c23b16e189fd171d4db4b04074c9b580aa1
+  [OK] provenance/terminal_original_bytes_inventory_public.json 5a2d7a892510c3c6c825974683fb9fd8c9a36f7797613873762ffff495e2ca10
+  [OK] provenance/terminal_process_proof_public.json 1a720d799315d8384fef62c357eb66632f0509de592248302b37c45e8711a87e
+
+Verifying 1 Portable Runtime Assets:
+  [OK] runtime/runtime_recovery_wrapper.py           6eabc4f0a2065780fab6e6bdf28711f7902e97d3738b3f200543a8d86939113f
+
+--------------------------------------------------------------------------------
+Cost and Financial Provenance Audit:
+  Total Study Budget:              $19.99000000
+  Prior Pilot Provisional Hold:    $0.05264010
+  Initial Available USD:           $19.93735990
+  Cumulative Settled Cost:         $6.57575890
+  Remaining Available Balance:     $13.36160100
+
+Operational Request & Retry Accounting:
+  Total Completed Records:         6400
+  Total Provider Attempts:         6401
+  Monetary Reserves Created:       6400
+  Monetary Settlements Executed:   6400
+  Detected Retries:                1
+  [PASS] Exactly 1 API retry detected: ('view_d870d574', 'rag_k1')
+  [PASS] 6,400 records and 6,401 attempts strictly reconciled!
+
+--------------------------------------------------------------------------------
+Executing Saved-Data Replay Evaluation -> D:\RAG2ATTCK-worktrees\finalization-20261003\.tmp\r9_replay_output
+  Executing evaluate_experiment on saved predictions...
+  Native evaluation completed successfully.
+  [PASS] overall_metrics.json             MATCH (120 fields, tol 1e-12, exact Decimals)
+  [PASS] per_condition_metrics.json       MATCH (276 fields, tol 1e-12, exact Decimals)
+  [PASS] per_technique_metrics.json       MATCH (35566 fields, tol 1e-12, exact Decimals)
+  [PASS] retrieval_conditional_metrics.json MATCH (81 fields, tol 1e-12, exact Decimals)
+  [PASS] failure_decomposition.json       MATCH (147 fields, tol 1e-12, exact Decimals)
+  [PASS] run_provenance.json              MATCH (142 fields, tol 1e-12, exact Decimals)
+  [PASS] RQ analysis source SHA-256 verified: f85d7f7373e825dcc7171ce4491fd15c6fb755955da245041783fe317bc80351
+  Executing run_rq_analysis (RQ1, RQ2, RQ3, bootstrap=1000, seed=42)...
+  RQ analysis execution completed successfully.
+  [PASS] rq_analysis.json                    MATCH (2000 scientific fields, sha256=a9eb7ad4d5ca7164...)
+  [INFO] rq_analysis_summary.md regenerated (sha256=f5bea8343bfede7b...)
+
+--------------------------------------------------------------------------------
+================================================================================
+CANONICAL DEMO: OPERATOR SAVED-PREDICTION & FAILURE EVIDENCE REVIEW
+================================================================================
+
+[OPERATIONAL EVIDENCE 1] The 1 Transient API Failure & Automatic Recovery:
+  Item Key: ('view_d870d574', 'rag_k1')
+  Attempt 1 (Ordinal 5387): Status API_FAILURE, Error: InternalServerError
+    (No usage/tokens or service tier reported; gateway returned internal error)
+  Attempt 2 (Ordinal 5388): Status SUCCESS, Default Tier
+    Input Tokens: 1,543 (including 1,540 cached tokens), Output Tokens: 452
+    Response ID: resp_0efb218e56a6ecc1006abf0be6419887d0bca3815a8a0b3f0d
+  Financial Reconciliation:
+    Provisional hold: $0.53974560 (worst-case uncommitted reserve)
+    Attempt 2 settled native cost: $0.00057395
+    Logical settled cost for record: $0.54031955 (refund $1.61866285 from $2.15898240)
+
+[OPERATIONAL EVIDENCE 2] The 13 INCOMPLETE Records Due to Token Ceiling:
+  Condition Distribution: rag_k3: 6 | rag_k10: 4 | rag_k5: 3 | (no_rag: 0, rag_k1: 0)
+  Ground Truth Status: 11 unmapped + 2 ambiguous (0 in 718 scorable mapped views)
+  Exemplar Case: view_1b91ff45 (rag_k3, pair_c1188be0, GT unmapped)
+  Completion Tokens: 8,192 (Hit strict max_output_tokens provider ceiling)
+  Error Message: 'Response incomplete: max_output_tokens'
+  Fail-Closed Behavior: Parsed techniques defaulted to [], recorded as provider failure.
+
+[EVALUATION EVIDENCE 3] Controlled Comparison Cases Across Conditions:
+
+  [Exemplar 1] Full 5-Condition Sweep on Scorable View view_0088e302 (GT: T1547.001):
+    no_rag   | Pred: ['T1547.001'] | Prompt/Comp: 949/97 | Candidates: []
+    rag_k1   | Pred: ['T1547.001'] | Prompt/Comp: 1640/146 | Candidates: ['T1546.012']
+    rag_k3   | Pred: ['T1547.001'] | Prompt/Comp: 2783/240 | Candidates: ['T1546.012', 'T1574.011', 'T1546.001']
+    rag_k5   | Pred: ['T1547.001'] | Prompt/Comp: 4220/67 | Candidates: first 3 of 5: ['T1546.012', 'T1574.011', 'T1546.001']
+    rag_k10  | Pred: ['T1547.001'] | Prompt/Comp: 5921/81 | Candidates: first 3 of 10: ['T1546.012', 'T1574.011', 'T1546.001']
+
+  [Exemplar 2] Observed Divergent Prediction Matching Ground Truth Under Retrieval at k>=3 (view_0265275a):
+    Ground Truth: ['T1685.005'] (Clear Windows Event Logs, STIX v19.2 sub-technique)
+    no_rag   Pred: ['T1070.001'] (Divergent sub-technique ID, INCORRECT)
+    rag_k1   Pred: ['T1070.001'] (Retrieved T1547.004, missed GT, INCORRECT)
+    rag_k3   Pred: ['T1685.005'] (Retrieved T1685.005 at rank 3, CORRECT)
+    rag_k5   Pred: ['T1685.005'] (Retrieved T1685.005 at rank 3, CORRECT)
+    rag_k10  Pred: ['T1685.005'] (Retrieved T1685.005 at rank 3, CORRECT)
+
+  [Exemplar 3] Multi-Technique View under ANY_MATCH Protocol (view_026cbe9e):
+    Ground Truth: ['T1059.003', 'T1105'] (Command Shell + Ingress Tool Transfer)
+    rag_k3   Pred: ['T1105']       Status: VALID -> CORRECT_ANY_MATCH
+    rag_k10  Pred: ['T1059.003']       Status: VALID -> CORRECT_ANY_MATCH
+
+================================================================================
+VERDICT: PASS_CANONICAL_OFFLINE_VERIFIED
+All cryptographic hashes, ledgers, and evidence cases verified with 0 defects.
+================================================================================

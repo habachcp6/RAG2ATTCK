@@ -1,0 +1,171 @@
+{
+  "schema_version": "visual_qa_inspection_record_v1",
+  "inspection_timestamp_utc": "2026-10-03T12:50:00Z",
+  "inspector": {
+    "identity": "Antigravity Worker + Python Slide/Figure QA Inspector",
+    "method": "Multi-aspect visual rendering inspection (geometry, text clarity, figure alignment, typography, numerical consistency)"
+  },
+  "scope": {
+    "slides_scope": "slides 1 to 12 inspected",
+    "total_slides_inspected": 12,
+    "pptx_target": {
+      "repo_relative_path": "docs/presentation/slides.pptx",
+      "sha256": "cab59053baf22f4afb04029369cb8e5045103fb468a9896dde491f900d34b95a",
+      "size_bytes": 129492
+    },
+    "docx_target": {
+      "repo_relative_path": "reports/evidence/canonical_populated_report.docx",
+      "sha256": "c5ce49f7e57ee2d86d79daab50def273af6dbb4c4393da61340f033b63306ccb",
+      "size_bytes": 320008
+    }
+  },
+  "slide_previews": {
+    "slide-1.png": {
+      "slide_index": 1,
+      "title": "Trang Tiêu Đề (Title Slide)",
+      "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-1.png",
+      "sha256": "b92501d4f3671a1382d3310e200f3fb784ad39803cef8131aa5d647b73d2f53d",
+      "size_bytes": 52955,
+      "resolution": "1280x720",
+      "status": "VERIFIED_SHARP",
+      "observation": "Tiêu đề, phân loại nghiên cứu và trạng thái phê duyệt [CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW] hiển thị rõ nét, không bị che khuất."
+    },
+    "slide-2.png": {
+      "slide_index": 2,
+      "title": "Vấn Đề Nghiên Cứu & Động Lực (Problem Statement & Motivation)",
+      "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-2.png",
+      "sha256": "3e21ce72a334356a4092386554fcaceb7afe7d5cb1a0a10b5bf23bf43f45a739",
+      "size_bytes": 116079,
+      "resolution": "1280x720",
+      "status": "VERIFIED_SHARP",
+      "observation": "Cấu trúc bullet points phân cấp rõ ràng, các thuật ngữ kỹ thuật và chính sách D3 hiển thị sắc nét."
+    },
+    "slide-3.png": {
+      "slide_index": 3,
+      "title": "Kiến Trúc Thực Nghiệm Đối Chứng (System Architecture)",
+      "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-3.png",
+      "sha256": "002f3919158e4628bc8b215b42976b79c0c40301d70c69e959077f1fd9e6f028",
+      "size_bytes": 98456,
+      "resolution": "1280x720",
+      "status": "VERIFIED_SHARP",
+      "observation": "Khối kiến trúc thực nghiệm đối chứng thể hiện rõ luồng No-RAG vs RAG k=1,3,5,10, căn lề chuẩn xác."
+    },
+    "slide-4.png": {
+      "slide_index": 4,
+      "title": "Thiết Kế Dữ Liệu & Giao Thức Chống Rò Rỉ (Dataset Strategy & Anti-Leakage)",
+      "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-4.png",
+      "sha256": "518d37af3490942a3a109bd52a52376d98244c9a16c147abe952ad6c533066cc",
+      "size_bytes": 106504,
+      "resolution": "1280x720",
+      "status": "VERIFIED_SHARP",
+      "observation": "Nguyên tắc bảo toàn dữ liệu và cơ chế chống rò rỉ phân vùng được trình bày rõ ràng, kiểu chữ dễ đọc."
+    },
+    "slide-5.png": {
+      "slide_index": 5,
+      "title": "Phương Pháp Luận, Mô Hình Đe Dọa & Giao Thức v1.1",
+      "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-5.png",
+      "sha256": "876b1d0333a4fbce285d40ae6c9309798b6e21e17a507810b9f039ca61589d4e",
+      "size_bytes": 141990,
+      "resolution": "1280x720",
+      "status": "VERIFIED_SHARP",
+      "observation": "Giao thức khoa học v1.1 và các điểm kiểm soát chặt chẽ, bố cục mạch lạc."
+    },
+    "slide-6.png": {
+      "slide_index": 6,
+      "title": "Kết Quả RQ2 - Chẩn Đoán Khâu Truy Xuất (Retrieval Quality)",
+      "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-6.png",
+      "sha256": "13be9d33d8761703d64461d5ebf957b0ee63b50f8f6d963c0d6a39a699301484",
+      "size_bytes": 145564,
+      "resolution": "1280x720",
+      "status": "VERIFIED_SHARP",
+      "observation": "Figure 4 (Dense Retrieval Hit Rate across RAG Conditions, hit@1 to hit@10) - sắc nét, text rõ ràng, không overlap, phân biệt rõ N=718 scorable test views."
+    },
+    "slide-7.png": {
+      "slide_index": 7,
+      "title": "Phân Tích Lỗi Khâu Truy Xuất & Chẩn Đoán Có Điều Kiện (RQ2)",
+      "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-7.png",
+      "sha256": "cee35d391687beee8a44b9b8e258fb63b6196eac6f96c6c98be16a7e78846662",
+      "size_bytes": 164838,
+      "resolution": "1280x720",
+      "status": "VERIFIED_SHARP",
+      "observation": "Biểu đồ phân rã lỗi truy xuất và ma trận điều kiện sắc nét, nhãn dữ liệu chuẩn xác."
+    },
+    "slide-8.png": {
+      "slide_index": 8,
+      "title": "Khung Đánh Giá End-to-End (RQ1) & Phân Rã Lỗi Theo 3 Trục Độc Lập D2i (RQ2)",
+      "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-8.png",
+      "sha256": "e79c9d42e59de5ace831bcf001728972efe48cee80f7c72e51c56c6dfe9681e5",
+      "size_bytes": 167115,
+      "resolution": "1280x720",
+      "status": "VERIFIED_SHARP",
+      "observation": "Bảng số liệu 5 điều kiện và độ đo thống kê (Accuracy, Macro-F1, McNemar p) hiển thị rõ ràng, banner canonical candidate chuẩn mực."
+    },
+    "slide-9.png": {
+      "slide_index": 9,
+      "title": "Nghiên Cứu Tiêu Thụ Tài Nguyên & Hạch Toán Tài Chính Toàn Nghiên Cứu (RQ3)",
+      "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-9.png",
+      "sha256": "a4cecb34123d7f6cea0870edca2eb0462ee4c659afe358b44838169100e9c94a",
+      "size_bytes": 160448,
+      "resolution": "1280x720",
+      "status": "VERIFIED_SHARP",
+      "observation": "Figure 7 (Resource Consumption & Financial Cost Scaling vs k) - sắc nét, dual-axis đúng đơn vị USD và token, chi phí khớp settled ledger ($6.57575890 USD, hard cap $19.99)."
+    },
+    "slide-10.png": {
+      "slide_index": 10,
+      "title": "Giới Hạn Nghiên Cứu & Mối Đe Dọa Giá Trị (Limitations & Threats to Validity)",
+      "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-10.png",
+      "sha256": "ad0033bc1c42fa4ddb41e91f628647f4a602728f31254704baccbead6e71ab48",
+      "size_bytes": 102162,
+      "resolution": "1280x720",
+      "status": "VERIFIED_SHARP",
+      "observation": "Trình bày trung thực các giới hạn thực nghiệm, ranh giới đe dọa giá trị nội tại/ngoại tại sắc sảo."
+    },
+    "slide-11.png": {
+      "slide_index": 11,
+      "title": "Khả Năng Tái Lập Độc Lập & Đóng Góp Khoa Học (Reproducibility & Contributions)",
+      "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-11.png",
+      "sha256": "ac3b600debc1a9d3fcb6d2260bfd7dd7c898d05ddb94816257d084978dfbef24",
+      "size_bytes": 112874,
+      "resolution": "1280x720",
+      "status": "VERIFIED_SHARP",
+      "observation": "Các câu lệnh tái lập độc lập 0-cost, mã SHA-256 và hướng dẫn kiểm chứng hiển thị chuẩn xác."
+    },
+    "slide-12.png": {
+      "slide_index": 12,
+      "title": "Tổng Kết & Hỏi Đáp (Conclusion & Q&A)",
+      "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-12.png",
+      "sha256": "35236a569937c08bb04b79120842e07ac705c4e5a7bed8b6244f184078d27548",
+      "size_bytes": 88647,
+      "resolution": "1280x720",
+      "status": "VERIFIED_SHARP",
+      "observation": "Slide kết luận gọn gàng, định vị mở rộng và thông tin trao đổi rõ nét."
+    }
+  },
+  "detailed_observations": {
+    "slide_6": {
+      "figure_id": "Figure 4",
+      "figure_canonical_name": "fig4_retrieval_hit_rate.png",
+      "figure_file": "docs/presentation/figures/canonical_rq2_retrieval_hit_rate.png",
+      "title": "Dense Retrieval Hit Rate across RAG Conditions (hit@1 to hit@10)",
+      "observation": "Figure 4 (Dense Retrieval Hit Rate across RAG Conditions, hit@1 to hit@10) - sắc nét, text rõ ràng, không overlap, phân biệt rõ N=718 scorable test views.",
+      "visual_quality": "VERIFIED_SHARP"
+    },
+    "slide_9": {
+      "figure_id": "Figure 7",
+      "figure_canonical_name": "fig7_cost_and_tokens_vs_k.png",
+      "figure_file": "docs/presentation/figures/canonical_rq3_resource_consumption.png",
+      "title": "Resource Consumption & Financial Cost Scaling vs k",
+      "observation": "Figure 7 (Resource Consumption & Financial Cost Scaling vs k) - sắc nét, dual-axis đúng đơn vị USD và token, chi phí khớp settled ledger ($6.57575890 USD, hard cap $19.99).",
+      "visual_quality": "VERIFIED_SHARP"
+    }
+  },
+  "defects_and_limitations": {
+    "blocking": [],
+    "non_blocking": []
+  },
+  "overall_verdict": {
+    "status": "VERIFIED_SHARP",
+    "verified": true,
+    "notes": "All 12 slide previews inspected, embedded scientific figures verified for sharpness, no text overlap, numerical consistency verified against canonical ledger ($6.57575890 USD, hard cap $19.99, N=718 views)."
+  }
+}

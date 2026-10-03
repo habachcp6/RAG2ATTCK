@@ -52,8 +52,38 @@ from src.experiment.monetary_ledger import compute_pricing_contract_sha256
 # Canonical Constants
 INPUT_AUTHORITY_GIT_SHA = "95c02338d146bfb060accc5efbc63bfab89a686d"
 EXPECTED_PUBLIC_MANIFEST_SHA256 = "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c"
+EXPECTED_BUNDLE_SHA256 = "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34"
+EXPECTED_FREEZE_ENVELOPE_SHA256 = "e284344e8d571a61e40aa03dd6fbf529dc1e097378f2532c07d596936c10fad2"
 AUTHENTICATED_VALIDATION_LABEL = "CANONICAL_AUTHENTICATED_VERIFICATION"
 UNANCHORED_VALIDATION_LABEL = "OBSERVED / NOT VERIFIED (No external trust anchor provided)"
+
+
+def validate_utc_iso_timestamp(ts: str) -> str:
+    """
+    Parse and validate that ts is a valid timezone-aware ISO 8601 UTC timestamp.
+    Must be parseable as a datetime and explicitly specify UTC timezone
+    (either trailing 'Z' or '+00:00' / '-00:00' offset).
+    Returns normalized UTC ISO 8601 string with trailing 'Z'.
+    Raises ValueError if invalid, not a timestamp, or lacking timezone awareness.
+    """
+    if not ts or not isinstance(ts, str):
+        raise ValueError("Timestamp must be a non-empty string")
+
+    normalized = ts.strip()
+    try:
+        iso_str = normalized.replace("Z", "+00:00") if normalized.endswith("Z") else normalized
+        dt = datetime.fromisoformat(iso_str)
+    except Exception as exc:
+        raise ValueError(f"Invalid ISO 8601 timestamp string '{ts}': {exc}") from exc
+
+    if dt.tzinfo is None:
+        raise ValueError(f"Timestamp '{ts}' is naive; timezone-aware UTC timestamp required")
+
+    offset = dt.utcoffset()
+    if offset is None or offset.total_seconds() != 0:
+        raise ValueError(f"Timestamp '{ts}' has non-zero UTC offset: {offset}")
+
+    return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def read_verified_buffer(path: Path) -> Tuple[bytes, str, int]:
@@ -108,13 +138,20 @@ def collect_inventory(
     terminal_log_path: Path,
     public_package_dir: Optional[Path] = None,
     expected_public_manifest_sha256: Optional[str] = None,
+    expected_bundle_sha256: Optional[str] = None,
+    expected_freeze_envelope_sha256: Optional[str] = None,
     timestamp_utc: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Collect comprehensive authoritative inventory directly from single-read buffers.
     Strictly forbids handtyped byte sizes or hashes.
     """
-    gen_ts = timestamp_utc or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    actual_now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if timestamp_utc is not None:
+        validated_epoch: Optional[str] = validate_utc_iso_timestamp(timestamp_utc)
+    else:
+        validated_epoch = None
+    gen_ts = validated_epoch or actual_now_utc
     current_git_head = get_git_head_sha(repo_root)
 
     # 1. Canonical Metric Bundle v2
@@ -122,7 +159,42 @@ def collect_inventory(
     _, bundle_sha, bundle_size = read_verified_buffer(bundle_path)
 
     # 2. Root Freeze Envelope (strictly fail-closed on provided path)
-    _, freeze_sha, freeze_size = read_verified_buffer(freeze_envelope_path)
+    freeze_raw, freeze_sha, freeze_size = read_verified_buffer(freeze_envelope_path)
+
+    # Resolve bundle trust anchor
+    effective_expected_bundle_sha = expected_bundle_sha256
+    if expected_freeze_envelope_sha256 is not None:
+        if freeze_sha != expected_freeze_envelope_sha256:
+            raise ValueError(
+                f"Root freeze envelope digest mismatch: actual {freeze_sha} != expected {expected_freeze_envelope_sha256}"
+            )
+        freeze_json = json.loads(freeze_raw.decode("utf-8"))
+        trusted_bundle_from_freeze = freeze_json.get("bundle_sha256")
+        if not trusted_bundle_from_freeze:
+            raise ValueError("Root freeze envelope missing bundle_sha256 field")
+        if effective_expected_bundle_sha is not None and effective_expected_bundle_sha != trusted_bundle_from_freeze:
+            raise ValueError(
+                f"Conflicting bundle anchors: expected_bundle_sha256 ({effective_expected_bundle_sha}) "
+                f"!= freeze envelope bundle_sha256 ({trusted_bundle_from_freeze})"
+            )
+        effective_expected_bundle_sha = trusted_bundle_from_freeze
+
+    if effective_expected_bundle_sha is not None:
+        if bundle_sha != effective_expected_bundle_sha:
+            raise ValueError(
+                f"Canonical metric bundle v2 digest mismatch: actual {bundle_sha} != expected {effective_expected_bundle_sha}"
+            )
+        bundle_authenticated = True
+        bundle_logical_name = "Accepted Metric Bundle v2"
+        bundle_authority = "Exact file bytes (Canonical Anchor - Authenticated)"
+        bundle_classification = "canonical_bundle"
+        bundle_status = "CANONICAL_AUTHENTICATED"
+    else:
+        bundle_authenticated = False
+        bundle_logical_name = "Observed Metric Bundle v2 (Unanchored)"
+        bundle_authority = "Observed file bytes (UNVERIFIED / No external bundle anchor)"
+        bundle_classification = "canonical_bundle"
+        bundle_status = "OBSERVED_NOT_VERIFIED"
 
     # 3. Canonical Run Seal v1
     seal_path = repo_root / "reports/evidence/canonical_run_seal_v1.json"
@@ -175,12 +247,13 @@ def collect_inventory(
     # Master repository artifacts list
     master_artifacts = [
         {
-            "logical_name": "Accepted Metric Bundle v2",
+            "logical_name": bundle_logical_name,
             "repository_path": "artifacts/results/canonical_metric_bundle_v2.json",
             "file_bytes": bundle_size,
             "sha256": bundle_sha,
-            "domain_authority": "Exact file bytes (Canonical Anchor)",
-            "classification": "canonical_bundle",
+            "domain_authority": bundle_authority,
+            "classification": bundle_classification,
+            "validation_status": bundle_status,
         },
         {
             "logical_name": "Root Freeze Envelope",
@@ -467,6 +540,8 @@ def collect_inventory(
     return {
         "schema_version": "public-repro-inventory-v1",
         "generated_timestamp_utc": gen_ts,
+        "actual_generated_timestamp_utc": actual_now_utc,
+        "reproducibility_epoch_utc": validated_epoch,
         "source_repository": "habachcp6/RAG2ATTCK",
         "input_authority_git_sha": INPUT_AUTHORITY_GIT_SHA,
         "producer_git_head_sha": current_git_head,
@@ -483,6 +558,8 @@ def collect_inventory(
             "total_master_artifacts": len(master_artifacts),
             "canonical_bundle_sha256": bundle_sha,
             "canonical_bundle_bytes": bundle_size,
+            "canonical_bundle_authenticated": bundle_authenticated,
+            "canonical_bundle_validation_status": bundle_status,
             "freeze_envelope_sha256": freeze_sha,
             "freeze_envelope_bytes": freeze_size,
             "code_manifest_sha256": code_manifest_sha,
@@ -492,6 +569,11 @@ def collect_inventory(
             "public_package_manifest_sha256": public_pkg_info["manifest_sha256"] if public_pkg_info else None,
             "public_package_declared_items": public_pkg_info["total_declared_items"] if public_pkg_info else 0,
             "public_package_validation_mode": public_pkg_info["validation_mode"] if public_pkg_info else UNANCHORED_VALIDATION_LABEL,
+            "overall_validation_mode": (
+                AUTHENTICATED_VALIDATION_LABEL
+                if (bundle_authenticated and (public_pkg_info is not None and public_pkg_info["validation_mode"] == AUTHENTICATED_VALIDATION_LABEL))
+                else UNANCHORED_VALIDATION_LABEL
+            ),
         },
         "artifacts": master_artifacts,
         "code_manifest_details": {
@@ -522,21 +604,72 @@ def generate_master_markdown_table(inventory: Dict[str, Any]) -> str:
 
 
 def update_plan_markdown(plan_path: Path, inventory: Dict[str, Any]) -> None:
-    """Update derivation plan markdown prose and tables directly from inventory."""
+    """Update derivation plan markdown prose and tables directly from inventory without handtyping."""
     if not plan_path.is_file():
         raise FileNotFoundError(f"Plan markdown not found: {plan_path}")
 
     content = plan_path.read_text(encoding="utf-8")
     table_md = generate_master_markdown_table(inventory)
 
-    # 1. Update header constants
-    bundle_bytes = inventory["summary"]["canonical_bundle_bytes"]
-    bundle_sha = inventory["summary"]["canonical_bundle_sha256"]
-    freeze_bytes = inventory["summary"]["freeze_envelope_bytes"]
-    freeze_sha = inventory["summary"]["freeze_envelope_sha256"]
-    pricing_digest = inventory["summary"]["pricing_contract_digest"]
-    proto_digest = inventory["summary"]["protocol_decisions_digest"]
+    art_by_name = {a["logical_name"]: a for a in inventory["artifacts"]}
+    art_by_class: Dict[str, Any] = {}
+    for a in inventory["artifacts"]:
+        art_by_class.setdefault(a["classification"], a)
 
+    def find_art(pattern: str) -> Dict[str, Any]:
+        pat = pattern.lower()
+        for a in inventory["artifacts"]:
+            if pat in a.get("logical_name", "").lower():
+                return a
+        for a in inventory["artifacts"]:
+            if pat in a.get("repository_path", "").lower():
+                return a
+        for a in inventory["artifacts"]:
+            if pat in a.get("classification", "").lower():
+                return a
+        raise KeyError(f"Artifact not found matching '{pattern}'")
+
+    bundle_art = find_art("metric bundle")
+    bundle_bytes = bundle_art["file_bytes"]
+    bundle_sha = bundle_art["sha256"]
+
+    freeze_art = find_art("freeze envelope")
+    freeze_bytes = freeze_art["file_bytes"]
+    freeze_sha = freeze_art["sha256"]
+    freeze_path = freeze_art["repository_path"]
+
+    seal_art = find_art("run seal")
+    seal_bytes = seal_art["file_bytes"]
+    seal_sha = seal_art["sha256"]
+    seal_path = seal_art["repository_path"]
+
+    log_art = find_art("execution log")
+    log_bytes = log_art["file_bytes"]
+    log_sha = log_art["sha256"]
+    log_path = log_art["repository_path"]
+
+    proto_cfg = find_art("protocol_v1.json")
+    proto_cfg_bytes = proto_cfg["file_bytes"]
+    proto_cfg_sha = proto_cfg["sha256"]
+    proto_sem_sha = inventory["summary"]["protocol_decisions_digest"]
+
+    pricing_cfg = find_art("pricing_v1.json")
+    pricing_cfg_bytes = pricing_cfg["file_bytes"]
+    pricing_cfg_sha = pricing_cfg["sha256"]
+    pricing_sem_sha = inventory["summary"]["pricing_contract_digest"]
+
+    code_manifest_sha = inventory["summary"]["code_manifest_sha256"]
+    code_manifest_count = inventory["summary"]["code_manifest_files_count"]
+
+    gt_art = find_art("ground_truth.jsonl")
+    views_art = find_art("views.jsonl")
+    pairs_art = find_art("pairs.jsonl")
+    split_art = find_art("split_manifest.json")
+    lock_art = find_art("uv.lock")
+
+    census = inventory["ground_truth_census"]
+
+    # 1. Update header constants
     content = re.sub(
         r"> \*\*Accepted Metric Bundle v2 SHA-256:\*\* `[a-f0-9]+`.*",
         f"> **Accepted Metric Bundle v2 SHA-256:** `{bundle_sha}` ({bundle_bytes:,} bytes)",
@@ -548,51 +681,84 @@ def update_plan_markdown(plan_path: Path, inventory: Dict[str, Any]) -> None:
         content,
     )
 
-    # 2. Update Section 2 Prose
-    # Execution log
-    content = re.sub(
-        r"The actual execution terminal log `logs/task-1264.log` is \*\*[\d,]+ bytes\*\*",
-        "The actual execution terminal log `logs/task-1264.log` is **1,141 bytes**",
-        content,
-    )
-    # Run seal
-    content = re.sub(
-        r"The run seal is \*\*[\d,]+ bytes\*\*",
-        "The run seal is **3,046 bytes**",
-        content,
-    )
-    # Protocol Configuration
-    content = re.sub(
-        r"- \*\*Protocol Configuration \(`config/experiment_protocol_v1.json`\)(?::|\*\*:?)[\s\S]*?(?=- \*\*Pricing Configuration)",
-        f"- **Protocol Configuration (`config/experiment_protocol_v1.json`):**\n  * Raw File SHA-256: `a402b04ab463172f9d4079bff27b089ca8a21ffd0805d097af6cb1f3c7b5a8fb` (1,051 bytes).\n  * Semantic Decisions Digest: `{proto_digest}` (computed over canonical D1–D7 fields).\n",
-        content,
-    )
-    # Pricing Configuration
-    content = re.sub(
-        r"- \*\*Pricing Configuration \(`config/pricing_v1.json`\)(?::|\*\*:?)[\s\S]*?(?=- \*\*Code Manifest)",
-        f"- **Pricing Configuration (`config/pricing_v1.json`):**\n  * Raw File SHA-256: `e8afd6311f04dbbf5c34bb030e88a5b9d394f92c84d3e51feb32b327a08655a5` (1,468 bytes).\n  * Contract Semantic Digest: `{pricing_digest}` (computed over canonical tariff values).\n",
-        content,
-    )
-    # Section 2D: Ground Truth Census & Dataset Partitioning
-    sec2d_block = (
-        "### D. Ground Truth Census & Dataset Partitioning\n"
-        "- **Total Benchmark Census:** 1,340 views / 670 pairs total, partitioned by `split_manifest.json` into:\n"
-        "  * **Test Split:** 1,280 views / 640 pairs (evaluated in canonical metric bundle v2).\n"
-        "  * **Dev Split:** 60 views / 30 pairs.\n"
-        "- **Dataset Files & Exact Inventory:**\n"
-        "  * Ground Truth Dataset: `data/ground_truth/synthetic/ground_truth.jsonl` (733,851 bytes, SHA-256: `8f3d73bac7e81336a3e90bfa5a5d0850a51ac5588385ee53ad940bcbc3612608`, 1,340 records / views).\n"
-        "  * Paired Views Dataset: `data/ground_truth/synthetic/views.jsonl` (153,500 bytes, SHA-256: `1e6b0d3bd525b8fe9f97ba9e5656905597a3939e47c130a9e6f74535e2cd421d`, 1,340 records / views).\n"
-        "  * Paired Cases Dataset: `data/ground_truth/synthetic/pairs.jsonl` (2,221,465 bytes, SHA-256: `079e57a441b18d127739f610e7f62c263d943eefa19ca4ea5c6eab8b8a07665d`, 670 records / pairs).\n"
-        "  * Split Manifest: `data/ground_truth/synthetic/split_manifest.json` (10,739 bytes, SHA-256: `37fce63ccaa6db8e13604b7e3783997a10635f58995881b5e41913e6f550f43f`, partitions 640 test pairs and 30 dev pairs).\n"
-        "- **Public Candidate Input Directory:** `inputs/{condition}_predictions.jsonl` and `inputs/run_summary.json` (strictly conforming to public package layout, avoiding fabricated paths under `artifacts/results/`).\n"
+    # 2. Section 2A: Execution Log Reality
+    sec2a_block = (
+        f"### A. Execution Log Reality (`{log_path}`): {log_bytes:,} Bytes, Not >250MB\n"
+        f"- **Correction:** The actual execution terminal log `{log_path}` is **{log_bytes:,} bytes** (SHA-256: `{log_sha}`).\n"
+        f"- **Clarification:** The previously cited hash `05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa` belongs to the native launcher script `launch_canonical_resume.py`, not the log file.\n"
+        f"- **Resolution:** The claim of multi-gigabyte or >250MB log omission is completely retracted. The genuine {log_bytes:,}-byte log can either be included directly in the public envelope (following privacy sanitization review) or attested via a verified public derivative with explicit observer boundary disclosures."
     )
     content = re.sub(
-        r"### D\. Ground Truth (?:Census & Dataset Partitioning|& Dataset Paths)[\s\S]*?(?=### E\.)",
-        sec2d_block + "\n",
+        r"### A\. Execution Log Reality[\s\S]*?(?=### B\.)",
+        sec2a_block + "\n\n",
         content,
     )
 
-    # 3. Replace Section 3 Table
+    # 3. Section 2B: Tracked Status of Canonical Run Seal
+    sec2b_block = (
+        f"### B. Tracked Status of Canonical Run Seal (`{seal_path}`)\n"
+        f"- **Correction:** The run seal is **{seal_bytes:,} bytes** with exact SHA-256 `{seal_sha}`.\n"
+        f"- **Clarification:** This file is **already tracked** in public Git at `{seal_path}` (present in commits `b69a690` and `95c0233`). It was merely omitted from the distribution zip `public_v3`, and is NOT a private laboratory secret.\n"
+        f"- **Resolution:** The minimal and robust solution is to add and document this exact tracked Git artifact in the additive `public_v4` envelope. Writing a new unanchored scientific derivation is unnecessary."
+    )
+    content = re.sub(
+        r"### B\. Tracked Status of Canonical Run Seal[\s\S]*?(?=### C\.)",
+        sec2b_block + "\n\n",
+        content,
+    )
+
+    # 4. Section 2C: Raw File Hashes vs. Semantic Mapping Digests
+    sec2c_block = (
+        "### C. Distinction Between Raw File Hashes vs. Semantic Mapping Digests\n"
+        f"- **Protocol Configuration (`config/experiment_protocol_v1.json`):**\n"
+        f"  * Raw File SHA-256: `{proto_cfg_sha}` ({proto_cfg_bytes:,} bytes).\n"
+        f"  * Semantic Decisions Digest: `{proto_sem_sha}` (computed over canonical D1–D7 fields).\n"
+        f"- **Pricing Configuration (`config/pricing_v1.json`):**\n"
+        f"  * Raw File SHA-256: `{pricing_cfg_sha}` ({pricing_cfg_bytes:,} bytes).\n"
+        f"  * Contract Semantic Digest: `{pricing_sem_sha}` (computed over canonical tariff values).\n"
+        f"- **Code Manifest:**\n"
+        f"  * Digest `{code_manifest_sha}` represents the **semantic code manifest hash** across the {code_manifest_count} frozen core files, computed dynamically by `compute_code_manifest_sha256()`. There is no separate physical file named `code_manifest`.\n"
+        f"- **Root Freeze Envelope:**\n"
+        f"  * Located at `{freeze_path}` (SHA-256: `{freeze_sha}`). Created following B `95c0233` during integration `17ae696`."
+    )
+    content = re.sub(
+        r"### C\. Distinction Between Raw File Hashes vs\. Semantic Mapping Digests[\s\S]*?(?=### D\.)",
+        sec2c_block + "\n\n",
+        content,
+    )
+
+    # 5. Section 2D: Ground Truth Census & Dataset Partitioning
+    sec2d_block = (
+        "### D. Ground Truth Census & Dataset Partitioning\n"
+        f"- **Total Benchmark Census:** {census['total_views']:,} views / {census['total_pairs']:,} pairs total, partitioned by `split_manifest.json` into:\n"
+        f"  * **Test Split:** {census['test_views']:,} views / {census['test_pairs']:,} pairs (evaluated in canonical metric bundle v2).\n"
+        f"  * **Dev Split:** {census['dev_views']:,} views / {census['dev_pairs']:,} pairs.\n"
+        f"- **Dataset Files & Exact Inventory:**\n"
+        f"  * Ground Truth Dataset: `{gt_art['repository_path']}` ({gt_art['file_bytes']:,} bytes, SHA-256: `{gt_art['sha256']}`, {census['total_views']:,} records / views).\n"
+        f"  * Paired Views Dataset: `{views_art['repository_path']}` ({views_art['file_bytes']:,} bytes, SHA-256: `{views_art['sha256']}`, {census['total_views']:,} records / views).\n"
+        f"  * Paired Cases Dataset: `{pairs_art['repository_path']}` ({pairs_art['file_bytes']:,} bytes, SHA-256: `{pairs_art['sha256']}`, {census['total_pairs']:,} records / pairs).\n"
+        f"  * Split Manifest: `{split_art['repository_path']}` ({split_art['file_bytes']:,} bytes, SHA-256: `{split_art['sha256']}`, partitions {census['test_pairs']:,} test pairs and {census['dev_pairs']:,} dev pairs).\n"
+        "- **Public Candidate Input Directory:** `inputs/{condition}_predictions.jsonl` and `inputs/run_summary.json` (strictly conforming to public package layout, avoiding fabricated paths under `artifacts/results/`)."
+    )
+    content = re.sub(
+        r"### D\. Ground Truth (?:Census & Dataset Partitioning|& Dataset Paths)[\s\S]*?(?=### E\.)",
+        sec2d_block + "\n\n",
+        content,
+    )
+
+    # 6. Section 2E: Locked Toolchain & NumPy Specification
+    sec2e_block = (
+        "### E. Locked Toolchain & NumPy Specification\n"
+        f"- Lockfile (`uv.lock`): {lock_art['file_bytes']:,} bytes, SHA-256: `{lock_art['sha256']}`.\n"
+        "- Python & NumPy: Python 3.13.0 with NumPy **exactly `2.5.3`** (frozen in `uv.lock`)."
+    )
+    content = re.sub(
+        r"### E\. Locked Toolchain & NumPy Specification[\s\S]*?(?=### F\.)",
+        sec2e_block + "\n\n",
+        content,
+    )
+
+    # 7. Section 3: Calibrated Master Evidence Inventory Table
     sec3_pattern = re.compile(
         r"(## 3\. Calibrated Master Evidence Inventory\s*\n\n)(?:\|[^\n]+\n)+",
         re.MULTILINE,
@@ -614,8 +780,28 @@ def update_plan_markdown(plan_path: Path, inventory: Dict[str, Any]) -> None:
                 new_content = content
         else:
             new_content = content
+    content = new_content
 
-    plan_path.write_bytes(new_content.encode("utf-8"))
+    # 8. Section 4: Proposed Structure of Additive public_v4 Envelope
+    sec4_block = (
+        "## 4. Proposed Structure of the Additive `public_v4` Envelope\n\n"
+        "When Root issues the `EXECUTE` directive, the additive package will be constructed without altering `public_v3`:\n\n"
+        f"1. **Inclusion of Tracked Seal:**\n"
+        f"   - Package `{seal_path}` (`{seal_sha[:8]}...`) into `v4/evidence/`.\n"
+        f"2. **Inclusion of Execution Log:**\n"
+        f"   - Package sanitized `{log_path}` (`{log_sha[:8]}...`) accompanied by a privacy attestation manifest.\n"
+        f"3. **Reproducibility Verification Adapter:**\n"
+        f"   - Provide an offline verification script consuming public inputs (`inputs/` predictions and `run_summary.json`), joining with ground truth, and verifying the computed metric dictionary hashes byte-for-byte to `{bundle_sha[:8]}...`.\n"
+        f"4. **Validation Receipt:**\n"
+        f"   - Package `{freeze_path}` certifying Root acceptance."
+    )
+    content = re.sub(
+        r"## 4\. Proposed Structure of the Additive `public_v4` Envelope[\s\S]*?(?=## 5\.)",
+        sec4_block + "\n\n",
+        content,
+    )
+
+    plan_path.write_bytes(content.encode("utf-8"))
 
 
 def main() -> int:
@@ -646,6 +832,18 @@ def main() -> int:
         help="Expected SHA-256 for public package manifest (canonical authentication anchor)",
     )
     parser.add_argument(
+        "--expected-bundle-sha256",
+        type=str,
+        default=None,
+        help="Expected SHA-256 for canonical metric bundle v2 (canonical anchor)",
+    )
+    parser.add_argument(
+        "--expected-freeze-envelope-sha256",
+        type=str,
+        default=None,
+        help="Expected SHA-256 for root freeze envelope (trust anchor)",
+    )
+    parser.add_argument(
         "--output-json",
         type=Path,
         default=REPO_ROOT / "reports/evidence/public_repro_inventory_v1.json",
@@ -666,33 +864,68 @@ def main() -> int:
     parser.add_argument("--check-only", action="store_true", help="Validate without writing files")
     args = parser.parse_args()
 
-    inventory = collect_inventory(
-        repo_root=args.repo_root,
-        freeze_envelope_path=args.freeze_envelope,
-        terminal_log_path=args.terminal_log,
-        public_package_dir=args.public_package_dir,
-        expected_public_manifest_sha256=args.expected_public_manifest_sha256,
-        timestamp_utc=args.timestamp_utc,
-    )
+    # If --timestamp-utc is provided, validate immediately to fail closed on bad input
+    if args.timestamp_utc is not None:
+        try:
+            validate_utc_iso_timestamp(args.timestamp_utc)
+        except Exception as exc:
+            print(f"FAIL: Invalid --timestamp-utc: {exc}")
+            return 1
+
+    try:
+        inventory = collect_inventory(
+            repo_root=args.repo_root,
+            freeze_envelope_path=args.freeze_envelope,
+            terminal_log_path=args.terminal_log,
+            public_package_dir=args.public_package_dir,
+            expected_public_manifest_sha256=args.expected_public_manifest_sha256,
+            expected_bundle_sha256=args.expected_bundle_sha256,
+            expected_freeze_envelope_sha256=args.expected_freeze_envelope_sha256,
+            timestamp_utc=args.timestamp_utc,
+        )
+    except Exception as exc:
+        print(f"FAIL: Inventory collection failed: {exc}")
+        return 1
 
     if args.check_only:
-        # If expected manifest hash was provided, verify authenticated validation succeeded
-        if args.expected_public_manifest_sha256 is not None:
-            pkg = inventory.get("public_canonical_package")
-            if not pkg:
-                print("FAIL: Expected public manifest SHA-256 was provided but package was not inspected.")
-                return 1
-            if pkg.get("validation_mode") != AUTHENTICATED_VALIDATION_LABEL:
-                print(f"FAIL: Expected validation mode {AUTHENTICATED_VALIDATION_LABEL}, got {pkg.get('validation_mode')}")
-                return 1
-            for item in pkg.get("declared_items", []):
-                if not item.get("status", "").startswith("VERIFIED_"):
-                    print(f"FAIL: Item {item.get('relative_path')} status is not verified: {item.get('status')}")
-                    return 1
+        # Canonical check-only MUST NOT report verified when missing required external authorities
+        has_bundle_authority = (
+            args.expected_bundle_sha256 is not None or args.expected_freeze_envelope_sha256 is not None
+        )
+        has_manifest_authority = (args.expected_public_manifest_sha256 is not None)
 
-        print("PASS: Authoritative inventory collection verified successfully in check mode.")
+        if not (has_bundle_authority and has_manifest_authority):
+            missing_auths = []
+            if not has_bundle_authority:
+                missing_auths.append("bundle trust anchor (--expected-bundle-sha256 or --expected-freeze-envelope-sha256)")
+            if not has_manifest_authority:
+                missing_auths.append("public manifest trust anchor (--expected-public-manifest-sha256)")
+            print(
+                f"FAIL: Canonical --check-only requires required external authorities ({', '.join(missing_auths)}). "
+                f"Cannot report verified in unanchored OBSERVED mode."
+            )
+            return 1
+
+        # Both authorities are supplied: verify authenticated validation succeeded
+        if not inventory["summary"]["canonical_bundle_authenticated"]:
+            print(f"FAIL: Canonical bundle authentication failed: {inventory['summary'].get('canonical_bundle_validation_status')}")
+            return 1
+
+        pkg = inventory.get("public_canonical_package")
+        if not pkg:
+            print("FAIL: Expected public manifest SHA-256 was provided but package was not inspected.")
+            return 1
+        if pkg.get("validation_mode") != AUTHENTICATED_VALIDATION_LABEL:
+            print(f"FAIL: Expected validation mode {AUTHENTICATED_VALIDATION_LABEL}, got {pkg.get('validation_mode')}")
+            return 1
+        for item in pkg.get("declared_items", []):
+            if not item.get("status", "").startswith("VERIFIED_"):
+                print(f"FAIL: Item {item.get('relative_path')} status is not verified: {item.get('status')}")
+                return 1
+
+        print("PASS: Authoritative canonical reproduction inventory verified successfully in check mode.")
         print(f"Total master artifacts: {inventory['summary']['total_master_artifacts']}")
-        print(f"Bundle SHA-256: {inventory['summary']['canonical_bundle_sha256']}")
+        print(f"Bundle SHA-256: {inventory['summary']['canonical_bundle_sha256']} [AUTHENTICATED]")
         print(f"Freeze Envelope SHA-256: {inventory['summary']['freeze_envelope_sha256']}")
         print(f"Public Package Validation Mode: {inventory['summary']['public_package_validation_mode']}")
         return 0
@@ -704,6 +937,7 @@ def main() -> int:
     print(f"Inventory JSON successfully written to: {args.output_json}")
     print(f"  SHA-256: {hashlib.sha256(json_bytes).hexdigest()}")
     print(f"  Size: {len(json_bytes)} bytes")
+    print(f"  Validation Mode: {inventory['summary']['overall_validation_mode']}")
 
     # Update Markdown
     if args.plan_markdown.is_file():

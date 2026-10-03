@@ -27,12 +27,12 @@ This revised document supersedes the preliminary draft and incorporates the fact
 
 Independent review of the actual Git objects, disk contents, and `public_v3` package established the following ground truth facts:
 
-### A. Execution Log Reality (`task-1264.log`): 1,141 Bytes, Not >250MB
+### A. Execution Log Reality (`logs/task-1264.log`): 1,141 Bytes, Not >250MB
 - **Correction:** The actual execution terminal log `logs/task-1264.log` is **1,141 bytes** (SHA-256: `fcacacf67d72797b8f1781d4998ed77bbf6d3e59e3e4d2e26fd0a9a7cca29b44`).
 - **Clarification:** The previously cited hash `05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa` belongs to the native launcher script `launch_canonical_resume.py`, not the log file.
 - **Resolution:** The claim of multi-gigabyte or >250MB log omission is completely retracted. The genuine 1,141-byte log can either be included directly in the public envelope (following privacy sanitization review) or attested via a verified public derivative with explicit observer boundary disclosures.
 
-### B. Tracked Status of Canonical Run Seal (`canonical_run_seal_v1.json`)
+### B. Tracked Status of Canonical Run Seal (`reports/evidence/canonical_run_seal_v1.json`)
 - **Correction:** The run seal is **3,046 bytes** with exact SHA-256 `ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701`.
 - **Clarification:** This file is **already tracked** in public Git at `reports/evidence/canonical_run_seal_v1.json` (present in commits `b69a690` and `95c0233`). It was merely omitted from the distribution zip `public_v3`, and is NOT a private laboratory secret.
 - **Resolution:** The minimal and robust solution is to add and document this exact tracked Git artifact in the additive `public_v4` envelope. Writing a new unanchored scientific derivation is unnecessary.
@@ -73,7 +73,7 @@ Independent review of the actual Git objects, disk contents, and `public_v3` pac
 
 | Logical Artifact | Concrete Repository Path | Actual File Bytes | Verified SHA-256 Hash | Hash Domain / Authority |
 | :--- | :--- | :--- | :--- | :--- |
-| **Accepted Metric Bundle v2** | `artifacts/results/canonical_metric_bundle_v2.json` | 49,465 | `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34` | Exact file bytes (Canonical Anchor) |
+| **Accepted Metric Bundle v2** | `artifacts/results/canonical_metric_bundle_v2.json` | 49,465 | `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34` | Exact file bytes (Canonical Anchor - Authenticated) |
 | **Root Freeze Envelope** | `reports/evidence/root_metric_bundle_v2_freeze_95c0233.json` | 4,335 | `e284344e8d571a61e40aa03dd6fbf529dc1e097378f2532c07d596936c10fad2` | Exact file bytes (Root Envelope) |
 | **Canonical Run Seal v1** | `reports/evidence/canonical_run_seal_v1.json` | 3,046 | `ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701` | Exact file bytes (Tracked in Git 95c/b69) |
 | **Execution Log** | `logs/task-1264.log` | 1,141 | `fcacacf67d72797b8f1781d4998ed77bbf6d3e59e3e4d2e26fd0a9a7cca29b44` | Exact file bytes (Original run terminal log) |
@@ -99,13 +99,11 @@ When Root issues the `EXECUTE` directive, the additive package will be construct
 1. **Inclusion of Tracked Seal:**
    - Package `reports/evidence/canonical_run_seal_v1.json` (`ae7a9ada...`) into `v4/evidence/`.
 2. **Inclusion of Execution Log:**
-   - Package sanitized `task-1264.log` (`fcacacf6...`) accompanied by a privacy attestation manifest.
+   - Package sanitized `logs/task-1264.log` (`fcacacf6...`) accompanied by a privacy attestation manifest.
 3. **Reproducibility Verification Adapter:**
    - Provide an offline verification script consuming public inputs (`inputs/` predictions and `run_summary.json`), joining with ground truth, and verifying the computed metric dictionary hashes byte-for-byte to `442b5933...`.
 4. **Validation Receipt:**
-   - Package `root_metric_bundle_v2_freeze_95c0233.json` certifying Root acceptance.
-
----
+   - Package `reports/evidence/root_metric_bundle_v2_freeze_95c0233.json` certifying Root acceptance.
 
 ## 5. Affirmation & Hold Status
 

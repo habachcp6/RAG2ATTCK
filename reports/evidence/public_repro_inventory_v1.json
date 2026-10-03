@@ -1,12 +1,14 @@
 {
+  "actual_generated_timestamp_utc": "2026-10-03T01:44:02Z",
   "artifacts": [
     {
       "classification": "canonical_bundle",
-      "domain_authority": "Exact file bytes (Canonical Anchor)",
+      "domain_authority": "Exact file bytes (Canonical Anchor - Authenticated)",
       "file_bytes": 49465,
       "logical_name": "Accepted Metric Bundle v2",
       "repository_path": "artifacts/results/canonical_metric_bundle_v2.json",
-      "sha256": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34"
+      "sha256": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "validation_status": "CANONICAL_AUTHENTICATED"
     },
     {
       "classification": "root_receipt",
@@ -190,7 +192,7 @@
       "uv.lock": "77cd432fddf200a53671e6496cf1e046441823444cb490b9ead021944f4174a7"
     }
   },
-  "generated_timestamp_utc": "2026-10-03T01:24:55Z",
+  "generated_timestamp_utc": "2026-10-03T01:44:02Z",
   "ground_truth_census": {
     "dev_pairs": 30,
     "dev_views": 60,
@@ -201,7 +203,7 @@
     "total_views": 1340
   },
   "input_authority_git_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
-  "producer_git_head_sha": "19bcfc22bf8d38ece0d50ce148d197bfd4908513",
+  "producer_git_head_sha": "71f4cb31f7b33962f7e36629e4b0ff6b90ed657e",
   "public_canonical_package": {
     "declared_items": [
       {
@@ -430,15 +432,19 @@
     "total_declared_items": 23,
     "validation_mode": "CANONICAL_AUTHENTICATED_VERIFICATION"
   },
+  "reproducibility_epoch_utc": null,
   "schema_version": "public-repro-inventory-v1",
   "source_repository": "habachcp6/RAG2ATTCK",
   "summary": {
+    "canonical_bundle_authenticated": true,
     "canonical_bundle_bytes": 49465,
     "canonical_bundle_sha256": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+    "canonical_bundle_validation_status": "CANONICAL_AUTHENTICATED",
     "code_manifest_files_count": 53,
     "code_manifest_sha256": "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4",
     "freeze_envelope_bytes": 4335,
     "freeze_envelope_sha256": "e284344e8d571a61e40aa03dd6fbf529dc1e097378f2532c07d596936c10fad2",
+    "overall_validation_mode": "CANONICAL_AUTHENTICATED_VERIFICATION",
     "pricing_contract_digest": "4adfe8a0630bc1703a92e233133ea55eeff21ef5312dc3102369c267767c9565",
     "protocol_decisions_digest": "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c",
     "public_package_declared_items": 23,

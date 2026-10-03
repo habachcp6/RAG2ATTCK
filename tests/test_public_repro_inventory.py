@@ -19,6 +19,8 @@ import pytest
 
 from scripts.collect_public_repro_inventory import (
     AUTHENTICATED_VALIDATION_LABEL,
+    EXPECTED_BUNDLE_SHA256,
+    EXPECTED_FREEZE_ENVELOPE_SHA256,
     EXPECTED_PUBLIC_MANIFEST_SHA256,
     INPUT_AUTHORITY_GIT_SHA,
     REPO_ROOT,
@@ -26,8 +28,10 @@ from scripts.collect_public_repro_inventory import (
     collect_inventory,
     generate_master_markdown_table,
     get_git_head_sha,
+    main,
     read_verified_buffer,
     update_plan_markdown,
+    validate_utc_iso_timestamp,
 )
 from src.experiment.config import canonical_bytes, digest
 from src.experiment.authorization import compute_code_manifest, compute_code_manifest_sha256
@@ -47,6 +51,7 @@ class TestPublicReproInventory:
             terminal_log_path=log_path,
             public_package_dir=pkg_dir,
             expected_public_manifest_sha256=EXPECTED_PUBLIC_MANIFEST_SHA256,
+            expected_bundle_sha256=EXPECTED_BUNDLE_SHA256,
         )
 
     def test_collect_inventory_schema_and_git_lineage(self, inventory: dict) -> None:
@@ -349,3 +354,214 @@ class TestPublicReproInventory:
 
         # Ensure outdated 4adfe864 hash is completely gone
         assert "4adfe864" not in content
+
+    def test_b_master_bytes_anchor_and_tamper_rejection(self) -> None:
+        """Verify that B v2 master bytes require explicit external anchor and reject tampering fail-closed."""
+        freeze_path = REPO_ROOT / "reports/evidence/root_metric_bundle_v2_freeze_95c0233.json"
+        log_path = REPO_ROOT / "logs/task-1264.log"
+        pkg_dir = REPO_ROOT / "artifacts/public_package_staging/03_public_canonical_package"
+
+        # 1. Positive authenticated anchor with expected_bundle_sha256
+        inv_auth = collect_inventory(
+            repo_root=REPO_ROOT,
+            freeze_envelope_path=freeze_path,
+            terminal_log_path=log_path,
+            public_package_dir=pkg_dir,
+            expected_bundle_sha256=EXPECTED_BUNDLE_SHA256,
+        )
+        assert inv_auth["summary"]["canonical_bundle_authenticated"] is True
+        assert inv_auth["summary"]["canonical_bundle_validation_status"] == "CANONICAL_AUTHENTICATED"
+        b_auth = next(a for a in inv_auth["artifacts"] if a["repository_path"] == "artifacts/results/canonical_metric_bundle_v2.json")
+        assert b_auth["logical_name"] == "Accepted Metric Bundle v2"
+        assert b_auth["validation_status"] == "CANONICAL_AUTHENTICATED"
+        assert "Canonical Anchor - Authenticated" in b_auth["domain_authority"]
+
+        # 2. Positive authenticated anchor derived from root freeze envelope
+        inv_freeze = collect_inventory(
+            repo_root=REPO_ROOT,
+            freeze_envelope_path=freeze_path,
+            terminal_log_path=log_path,
+            public_package_dir=pkg_dir,
+            expected_freeze_envelope_sha256=EXPECTED_FREEZE_ENVELOPE_SHA256,
+        )
+        assert inv_freeze["summary"]["canonical_bundle_authenticated"] is True
+        assert inv_freeze["summary"]["canonical_bundle_validation_status"] == "CANONICAL_AUTHENTICATED"
+
+        # 3. Tampered bundle bytes mismatch fails closed
+        with pytest.raises(ValueError, match="Canonical metric bundle v2 digest mismatch"):
+            collect_inventory(
+                repo_root=REPO_ROOT,
+                freeze_envelope_path=freeze_path,
+                terminal_log_path=log_path,
+                public_package_dir=pkg_dir,
+                expected_bundle_sha256="d6734866" + "0" * 56,
+            )
+
+        # 4. Tampered freeze envelope mismatch fails closed
+        with pytest.raises(ValueError, match="Root freeze envelope digest mismatch"):
+            collect_inventory(
+                repo_root=REPO_ROOT,
+                freeze_envelope_path=freeze_path,
+                terminal_log_path=log_path,
+                public_package_dir=pkg_dir,
+                expected_freeze_envelope_sha256="0" * 64,
+            )
+
+        # 5. Generic unanchored mode does not claim accepted canonical authority
+        inv_unanchored = collect_inventory(
+            repo_root=REPO_ROOT,
+            freeze_envelope_path=freeze_path,
+            terminal_log_path=log_path,
+            public_package_dir=pkg_dir,
+            expected_bundle_sha256=None,
+            expected_freeze_envelope_sha256=None,
+        )
+        assert inv_unanchored["summary"]["canonical_bundle_authenticated"] is False
+        assert inv_unanchored["summary"]["canonical_bundle_validation_status"] == "OBSERVED_NOT_VERIFIED"
+        b_un = next(a for a in inv_unanchored["artifacts"] if a["repository_path"] == "artifacts/results/canonical_metric_bundle_v2.json")
+        assert b_un["logical_name"] == "Observed Metric Bundle v2 (Unanchored)"
+        assert "UNVERIFIED" in b_un["domain_authority"]
+        assert b_un["validation_status"] == "OBSERVED_NOT_VERIFIED"
+
+    def test_timestamp_utc_timezone_aware_validation(self) -> None:
+        """Verify timezone-aware UTC validation and separation of actual generation vs reproducibility epoch."""
+        freeze_path = REPO_ROOT / "reports/evidence/root_metric_bundle_v2_freeze_95c0233.json"
+        log_path = REPO_ROOT / "logs/task-1264.log"
+
+        # Valid UTC timestamps
+        assert validate_utc_iso_timestamp("2026-10-03T12:34:56Z") == "2026-10-03T12:34:56Z"
+        assert validate_utc_iso_timestamp("2026-10-03T12:34:56+00:00") == "2026-10-03T12:34:56Z"
+
+        # Invalid formats fail closed
+        with pytest.raises(ValueError, match="Invalid ISO 8601 timestamp"):
+            validate_utc_iso_timestamp("not-a-time")
+        with pytest.raises(ValueError, match="is naive"):
+            validate_utc_iso_timestamp("2026-10-03T12:34:56")
+        with pytest.raises(ValueError, match="has non-zero UTC offset"):
+            validate_utc_iso_timestamp("2026-10-03T12:34:56+07:00")
+
+        # CLI fails closed with exit code 1 on bad timestamp
+        with patch("sys.argv", ["collect_public_repro_inventory.py", "--timestamp-utc", "not-a-time"]):
+            assert main() == 1
+
+        # Inventory preserves reproducibility epoch alongside actual timestamp
+        inv_ts = collect_inventory(
+            repo_root=REPO_ROOT,
+            freeze_envelope_path=freeze_path,
+            terminal_log_path=log_path,
+            timestamp_utc="2026-10-03T00:00:00Z",
+        )
+        assert inv_ts["generated_timestamp_utc"] == "2026-10-03T00:00:00Z"
+        assert inv_ts["reproducibility_epoch_utc"] == "2026-10-03T00:00:00Z"
+        assert "actual_generated_timestamp_utc" in inv_ts
+        assert inv_ts["actual_generated_timestamp_utc"].endswith("Z")
+
+    def test_check_only_requires_both_external_authorities(self) -> None:
+        """Verify that canonical --check-only requires both bundle anchor and public manifest anchor."""
+        # 1. No authorities supplied -> exit 1
+        with patch("sys.argv", ["collect_public_repro_inventory.py", "--check-only"]):
+            assert main() == 1
+
+        # 2. Only manifest anchor supplied -> exit 1
+        with patch(
+            "sys.argv",
+            [
+                "collect_public_repro_inventory.py",
+                "--check-only",
+                "--expected-public-manifest-sha256",
+                EXPECTED_PUBLIC_MANIFEST_SHA256,
+            ],
+        ):
+            assert main() == 1
+
+        # 3. Only bundle anchor supplied -> exit 1
+        with patch(
+            "sys.argv",
+            [
+                "collect_public_repro_inventory.py",
+                "--check-only",
+                "--expected-bundle-sha256",
+                EXPECTED_BUNDLE_SHA256,
+            ],
+        ):
+            assert main() == 1
+
+        # 4. Both valid authorities supplied via bundle anchor -> exit 0
+        with patch(
+            "sys.argv",
+            [
+                "collect_public_repro_inventory.py",
+                "--check-only",
+                "--expected-bundle-sha256",
+                EXPECTED_BUNDLE_SHA256,
+                "--expected-public-manifest-sha256",
+                EXPECTED_PUBLIC_MANIFEST_SHA256,
+            ],
+        ):
+            assert main() == 0
+
+        # 5. Both valid authorities supplied via root freeze anchor -> exit 0
+        with patch(
+            "sys.argv",
+            [
+                "collect_public_repro_inventory.py",
+                "--check-only",
+                "--expected-freeze-envelope-sha256",
+                EXPECTED_FREEZE_ENVELOPE_SHA256,
+                "--expected-public-manifest-sha256",
+                EXPECTED_PUBLIC_MANIFEST_SHA256,
+            ],
+        ):
+            assert main() == 0
+
+        # 6. Both supplied but bundle digest corrupted -> exit 1
+        with patch(
+            "sys.argv",
+            [
+                "collect_public_repro_inventory.py",
+                "--check-only",
+                "--expected-bundle-sha256",
+                "0" * 64,
+                "--expected-public-manifest-sha256",
+                EXPECTED_PUBLIC_MANIFEST_SHA256,
+            ],
+        ):
+            assert main() == 1
+
+    def test_prose_and_table_dynamic_generation_on_log_mutation(self, inventory: dict, tmp_path: Path) -> None:
+        """Verify that mutating artifacts dynamically regenerates both markdown prose and tables without hardcoded strings."""
+        import copy
+
+        plan_path = REPO_ROOT / "reports/evidence/public_repro_derivation_plan_20261003.md"
+        tmp_plan = tmp_path / "plan.md"
+        tmp_plan.write_text(plan_path.read_text(encoding="utf-8"), encoding="utf-8")
+
+        mutated_inv = copy.deepcopy(inventory)
+        for art in mutated_inv["artifacts"]:
+            if art["classification"] == "terminal_log":
+                art["file_bytes"] = 1142
+                art["sha256"] = "1111111111111111111111111111111111111111111111111111111111111111"
+            elif art["classification"] == "terminal_seal":
+                art["file_bytes"] = 3047
+                art["sha256"] = "2222222222222222222222222222222222222222222222222222222222222222"
+
+        # First update
+        update_plan_markdown(tmp_plan, mutated_inv)
+        first_content = tmp_plan.read_text(encoding="utf-8")
+
+        # Factual prose and table must reflect mutated values
+        assert "1,142" in first_content
+        assert "1111111111111111111111111111111111111111111111111111111111111111" in first_content
+        assert "3,047" in first_content
+        assert "2222222222222222222222222222222222222222222222222222222222222222" in first_content
+
+        # Stale values must be completely purged from both table and prose
+        assert "1,141" not in first_content
+        assert "fcacacf6" not in first_content
+        assert "3,046" not in first_content
+        assert "ae7a9ada" not in first_content
+
+        # Second update must be strictly idempotent
+        update_plan_markdown(tmp_plan, mutated_inv)
+        second_content = tmp_plan.read_text(encoding="utf-8")
+        assert second_content == first_content

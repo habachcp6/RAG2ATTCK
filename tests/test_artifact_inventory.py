@@ -4,8 +4,13 @@ Tests fail-closed behavior across:
 1. test_empty_directory_fails: Empty directory strictly exits with code 1 and verdict FAIL_MISSING_REQUIRED_ARTIFACTS.
 2. test_missing_pptx_fails: Missing PPTX file strictly exits with code 1 and identifies missing artifact.
 3. test_missing_previews_fails: Missing slide preview PNG strictly exits with code 1.
-4. test_missing_or_mismatched_qa_record_fails: Missing or tampered QA record strictly exits with code 1.
-5. test_genuine_artifacts_inventory_passes: Genuine repository passes with exit code 0 and verdict PASS_ALL_ARTIFACTS_VERIFIED.
+4. test_missing_figures_directory_fails: Missing figures directory strictly exits with code 1 and FAIL_MISSING_REQUIRED_ARTIFACTS.
+5. test_missing_one_required_figure_fails: Missing 1 required figure strictly exits with code 1 and FAIL_MISSING_REQUIRED_ARTIFACTS.
+6. test_required_png_replaced_with_plain_text_fails: Fake text PNG strictly exits with code 1 and FAIL_STRUCTURE_CHECK.
+7. test_figure_tampered_bytes_fails: Modified figure bytes strictly exits with code 1 and FAIL_HASH_MISMATCH.
+8. test_missing_or_mismatched_qa_record_fails: Missing or tampered QA record strictly exits with code 1.
+9. test_genuine_artifacts_inventory_passes: Genuine repository passes with exit code 0 and verdict PASS_ALL_ARTIFACTS_VERIFIED.
+10. test_cli_execution_fail_closed: CLI executions on empty dir vs genuine repo.
 """
 
 from __future__ import annotations
@@ -22,7 +27,6 @@ from scripts.generate_r9_artifact_inventory import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-
 
 REQUIRED_ARTIFACT_REL_PATHS = [
     "artifacts/results/canonical_metric_bundle_v2.json",
@@ -52,14 +56,15 @@ def setup_mock_repo(target_root: Path, omit_paths: List[str] | None = None) -> N
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dst)
 
-    # Also copy figures directory if needed
     figures_src = REPO_ROOT / "reports/evidence/figures"
     if figures_src.is_dir() and "reports/evidence/figures" not in omit_set:
         figures_dst = target_root / "reports/evidence/figures"
         figures_dst.mkdir(parents=True, exist_ok=True)
         for f in figures_src.iterdir():
             if f.is_file():
-                shutil.copy2(f, figures_dst / f.name)
+                rel = f"reports/evidence/figures/{f.name}"
+                if rel not in omit_set:
+                    shutil.copy2(f, figures_dst / f.name)
 
 
 def test_empty_directory_fails(tmp_path: Path) -> None:
@@ -69,7 +74,7 @@ def test_empty_directory_fails(tmp_path: Path) -> None:
     assert code == 1, "Expected exit code 1 for empty directory"
     assert inventory["verdict"] == "FAIL_MISSING_REQUIRED_ARTIFACTS"
     assert inventory["validation_summary"]["missing_required_count"] > 0
-    assert len(inventory["validation_summary"]["missing_required_artifacts"]) == len(
+    assert len(inventory["validation_summary"]["missing_required_artifacts"]) >= len(
         REQUIRED_ARTIFACT_REL_PATHS
     )
 
@@ -112,6 +117,85 @@ def test_missing_previews_fails(tmp_path: Path) -> None:
     )
 
 
+def test_missing_figures_directory_fails(tmp_path: Path) -> None:
+    """Verify that a completely missing reports/evidence/figures dir fails with FAIL_MISSING_REQUIRED_ARTIFACTS."""
+    setup_mock_repo(tmp_path, omit_paths=["reports/evidence/figures"])
+
+    inventory, code = generate_inventory(repo_root=tmp_path)
+
+    assert code == 1, "Expected exit code 1 when figures directory is missing"
+    assert inventory["verdict"] == "FAIL_MISSING_REQUIRED_ARTIFACTS"
+    assert (
+        "reports/evidence/figures"
+        in inventory["validation_summary"]["missing_required_artifacts"]
+    )
+
+
+def test_missing_one_required_figure_fails(tmp_path: Path) -> None:
+    """Verify that missing a single required figure triggers FAIL_MISSING_REQUIRED_ARTIFACTS."""
+    target_rel = "reports/evidence/figures/fig4_retrieval_hit_rate.png"
+    setup_mock_repo(tmp_path, omit_paths=[target_rel])
+
+    inventory, code = generate_inventory(repo_root=tmp_path)
+
+    assert code == 1, "Expected exit code 1 when one required figure is missing"
+    assert inventory["verdict"] == "FAIL_MISSING_REQUIRED_ARTIFACTS"
+    assert target_rel in inventory["validation_summary"]["missing_required_artifacts"]
+    assert (
+        inventory["scientific_figures_inventory"]["files"]["fig4_retrieval_hit_rate.png"][
+            "exists"
+        ]
+        is False
+    )
+
+
+def test_required_png_replaced_with_plain_text_fails(tmp_path: Path) -> None:
+    """Verify that replacing a required .png with plain text triggers FAIL_STRUCTURE_CHECK."""
+    setup_mock_repo(tmp_path)
+    target_file = tmp_path / "reports/evidence/figures/fig4_retrieval_hit_rate.png"
+    target_file.write_text("THIS IS PLAIN TEXT, NOT A VALID PNG IMAGE.", encoding="utf-8")
+
+    inventory, code = generate_inventory(repo_root=tmp_path)
+
+    assert code == 1, "Expected exit code 1 when PNG is corrupted to plain text"
+    assert inventory["verdict"] == "FAIL_STRUCTURE_CHECK"
+    assert (
+        "reports/evidence/figures/fig4_retrieval_hit_rate.png"
+        in inventory["validation_summary"]["structure_failure_artifacts"]
+    )
+    assert (
+        inventory["scientific_figures_inventory"]["files"]["fig4_retrieval_hit_rate.png"][
+            "lifecycle_states"
+        ]["STRUCTURE_CHECKED"]
+        is False
+    )
+
+
+def test_figure_tampered_bytes_fails(tmp_path: Path) -> None:
+    """Verify that altering figure bytes while keeping magic header triggers FAIL_HASH_MISMATCH."""
+    setup_mock_repo(tmp_path)
+    target_file = tmp_path / "reports/evidence/figures/fig4_retrieval_hit_rate.png"
+    raw = bytearray(target_file.read_bytes())
+    # Keep 8-byte PNG header intact, alter byte 20
+    raw[20] = raw[20] ^ 0xFF
+    target_file.write_bytes(bytes(raw))
+
+    inventory, code = generate_inventory(repo_root=tmp_path)
+
+    assert code == 1, "Expected exit code 1 when figure bytes are tampered"
+    assert inventory["verdict"] == "FAIL_HASH_MISMATCH"
+    assert (
+        "reports/evidence/figures/fig4_retrieval_hit_rate.png"
+        in inventory["validation_summary"]["hash_mismatch_artifacts"]
+    )
+    assert (
+        inventory["scientific_figures_inventory"]["files"]["fig4_retrieval_hit_rate.png"][
+            "lifecycle_states"
+        ]["HASH_VERIFIED"]
+        is False
+    )
+
+
 def test_missing_or_mismatched_qa_record_fails(tmp_path: Path) -> None:
     """Verify that missing or tampered QA record strictly fails closed."""
     qa_rel = "reports/evidence/qa/visual_qa_inspection_record.json"
@@ -130,6 +214,8 @@ def test_missing_or_mismatched_qa_record_fails(tmp_path: Path) -> None:
     qa_file_b = tmp_path_b / qa_rel
     data_b = json.loads(qa_file_b.read_text(encoding="utf-8"))
     data_b["scope"]["pptx_target"]["sha256"] = "0" * 64
+    if "presentation_deck_qa" in data_b:
+        data_b["presentation_deck_qa"]["pptx_target"]["sha256"] = "0" * 64
     qa_file_b.write_text(json.dumps(data_b, indent=2), encoding="utf-8")
 
     inv_b, code_b = generate_inventory(repo_root=tmp_path_b)
@@ -156,6 +242,25 @@ def test_missing_or_mismatched_qa_record_fails(tmp_path: Path) -> None:
     assert any(
         "slide-9.png SHA256 mismatch" in err
         for err in inv_c["visual_qa_mapping"]["qa_validation_errors"]
+    )
+
+    # Sub-case D: Mismatched DOCX hash in QA record
+    tmp_path_d = tmp_path / "case_d"
+    tmp_path_d.mkdir()
+    setup_mock_repo(tmp_path_d)
+    qa_file_d = tmp_path_d / qa_rel
+    data_d = json.loads(qa_file_d.read_text(encoding="utf-8"))
+    data_d["scope"]["docx_target"]["sha256"] = "e" * 64
+    if "docx_report_qa" in data_d:
+        data_d["docx_report_qa"]["docx_target"]["sha256"] = "e" * 64
+    qa_file_d.write_text(json.dumps(data_d, indent=2), encoding="utf-8")
+
+    inv_d, code_d = generate_inventory(repo_root=tmp_path_d)
+    assert code_d == 1
+    assert inv_d["verdict"] == "FAIL_QA_VERIFICATION_MISMATCH"
+    assert inv_d["visual_qa_mapping"]["qa_record_verified"] is False
+    assert any(
+        "DOCX SHA256 mismatch" in err for err in inv_d["visual_qa_mapping"]["qa_validation_errors"]
     )
 
 
@@ -212,7 +317,22 @@ def test_genuine_artifacts_inventory_passes() -> None:
         assert s_info["lifecycle_states"]["VISUALLY_REVIEWED"] is True
 
     # Figures in reports/evidence/figures
-    assert inventory["scientific_figures_inventory"]["total_figures"] >= 30
+    figures_inv = inventory["scientific_figures_inventory"]
+    assert figures_inv["total_figures"] == 32
+    for f_name, f_info in figures_inv["files"].items():
+        assert f_info["exists"] is True
+        assert f_info["verified"] is True
+        states = f_info["lifecycle_states"]
+        assert states["FILE_PRESENT"] is True
+        assert states["HASH_VERIFIED"] is True
+        assert states["STRUCTURE_CHECKED"] is True
+        assert states["NUMERICAL_CHECKED"] is True
+        assert states["RENDERED"] is True
+        # VISUALLY_REVIEWED is strictly True only for figures specifically in QA record
+        if f_name in ["fig4_retrieval_hit_rate.png", "fig7_cost_and_tokens_vs_k.png"]:
+            assert states["VISUALLY_REVIEWED"] is True
+        else:
+            assert states["VISUALLY_REVIEWED"] is False
 
     # Summary clean
     summary = inventory["validation_summary"]

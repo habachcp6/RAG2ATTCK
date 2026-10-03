@@ -1,4 +1,4 @@
-"""Update Requirements Traceability Matrix to R9 with explicit criterion-to-evidence mapping.
+"""Update Requirements Traceability Matrix to R10 with explicit criterion-to-evidence mapping.
 
 Eliminates prefix-based bulk updates. Every requirement is mapped explicitly with:
 - requirement ID
@@ -16,8 +16,10 @@ Eliminates prefix-based bulk updates. Every requirement is mapped explicitly wit
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -28,20 +30,21 @@ def compute_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def update_matrix_r9():
+def update_matrix_r10(
+    candidate_base_sha: str = "c309e497c104cac10f43317c2bd6b8872fa6443a",
+    tested_code_sha: str = "6a39506b45c5dac3c30787d626a86fe7e80bd412",
+    evidence_commit_sha: str = "6a39506b45c5dac3c30787d626a86fe7e80bd412",
+    ci_head_sha: str = "6a39506b45c5dac3c30787d626a86fe7e80bd412",
+    ci_run_url: str = "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37126021603",
+    ci_real_retrieval_run_url: str = "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37126021585",
+    historical_b69_sha: str = "b69a6909acda4c7588744acc7e1d6c20bfce2612",
+    historical_ci_url: str = "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37052071704",
+):
     repo_root = Path(__file__).resolve().parents[1]
     matrix_json_path = repo_root / "reports/evidence/finalization_requirements_matrix.json"
     matrix_md_path = repo_root / "reports/evidence/finalization_requirements_matrix.md"
 
     data = json.loads(matrix_json_path.read_text(encoding="utf-8"))
-
-    # Active Candidate Head & CI Metadata
-    candidate_sha = "c309e497c104cac10f43317c2bd6b8872fa6443a"
-    historical_b69_sha = "b69a6909acda4c7588744acc7e1d6c20bfce2612"
-    ci_head_sha = "c309e497c104cac10f43317c2bd6b8872fa6443a"
-    ci_run_url = "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37123007611"
-    ci_real_retrieval_run_url = "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37123007579"
-    historical_ci_url = "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37052071704"
 
     # Compute actual SHA-256 for all local evidence files
     bundle_v2_p = repo_root / "artifacts/results/canonical_metric_bundle_v2.json"
@@ -51,7 +54,9 @@ def update_matrix_r9():
     seal_sha = compute_sha256(seal_p)
 
     desc_p = (
-        repo_root
+        repo_root / "artifacts/public_package_staging/public_package_manifest.json"
+        if (repo_root / "artifacts/public_package_staging/public_package_manifest.json").is_file()
+        else repo_root
         / "artifacts/public_package_staging/03_public_canonical_package/canonical_bundle_manifest.json"
     )
     desc_sha = compute_sha256(desc_p)
@@ -80,14 +85,20 @@ def update_matrix_r9():
     repro_raw_log_p = repo_root / "reports/evidence/r9_saved_data_reproduction_raw.log"
     repro_raw_log_sha = compute_sha256(repro_raw_log_p)
 
+    repro_prov_p = repo_root / "reports/evidence/r9_saved_data_replay_provenance.json"
+    repro_prov_sha = compute_sha256(repro_prov_p) if repro_prov_p.is_file() else None
+
+    terminal_audit_test_p = repo_root / "tests/test_terminal_audit.py"
+    terminal_audit_test_sha = compute_sha256(terminal_audit_test_p)
+
     candidate_zip_sha = "1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1"
     package_manifest_sha = "dbc2e133e8de30d6afa8345dcfa8b82890b13367a2bb24775278cc814a83dee2"
 
     # Matrix Top-Level Metadata
     data["schema_version"] = "finalization-requirements-matrix-v3"
     data["timestamp_utc"] = datetime.now(timezone.utc).isoformat()
-    data["candidate_base_sha"] = candidate_sha
-    data["submission_sha"] = candidate_sha
+    data["candidate_base_sha"] = candidate_base_sha
+    data["submission_sha"] = tested_code_sha
     data["ci_head_sha"] = ci_head_sha
     data["ci_run_url"] = ci_run_url
     data["ci_real_retrieval_run_url"] = ci_real_retrieval_run_url
@@ -96,7 +107,6 @@ def update_matrix_r9():
     data["historical_run_seal_sha256"] = seal_sha
 
     # Explicit requirement specifications map
-    # requirement_id -> dict of updates
     explicit_specs: dict[str, dict[str, any]] = {}
 
     # Category A: Canonical Invariants
@@ -106,7 +116,7 @@ def update_matrix_r9():
         "evidence_locator": "reports/evidence/canonical_run_seal_v1.json",
         "evidence_hash": seal_sha,
         "tested_code_sha": historical_b69_sha,
-        "evidence_commit_sha": candidate_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Sealed in canonical_run_seal_v1.json; confirmed identical in canonical_metric_bundle_v2.json and r9_saved_data_reproduction_report.json.",
@@ -116,8 +126,8 @@ def update_matrix_r9():
         "evidence_type": "REPLAY_EXECUTION",
         "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
         "evidence_hash": repro_report_r9_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Verified dynamically during public saved-data replay: 6,400 completed records across 5 conditions reconciled with 0 defects.",
@@ -127,8 +137,8 @@ def update_matrix_r9():
         "evidence_type": "REPLAY_EXECUTION",
         "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
         "evidence_hash": repro_report_r9_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Verified dynamically during public saved-data replay: 6,401 provider attempts, 6,400 settlements, exactly 1 retry detected.",
@@ -138,8 +148,8 @@ def update_matrix_r9():
         "evidence_type": "CANONICAL_BUNDLE",
         "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
         "evidence_hash": bundle_v2_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Verified in canonical_metric_bundle_v2.json and r9_saved_data_reproduction_report.json (0 in scorable mapped cohort).",
@@ -149,8 +159,8 @@ def update_matrix_r9():
         "evidence_type": "REPLAY_EXECUTION",
         "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
         "evidence_hash": repro_report_r9_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Verified by exact Decimal ledger reconciliation during public replay ($6.57575890 USD settled).",
@@ -160,8 +170,8 @@ def update_matrix_r9():
         "evidence_type": "REPLAY_EXECUTION",
         "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
         "evidence_hash": repro_report_r9_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Verified by exact Decimal ledger reconciliation: settled $6.57575890 + prior hold $0.05264010 = $6.62839900, remaining $13.36160100 under $19.99000000 cap.",
@@ -171,8 +181,8 @@ def update_matrix_r9():
         "evidence_type": "CANONICAL_BUNDLE",
         "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
         "evidence_hash": bundle_v2_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "All headline accuracies (including k=3 at 78.55%, 564/718, p=0.777) verified against bundle v2 and r8_scientific_summary.json.",
@@ -182,8 +192,8 @@ def update_matrix_r9():
         "evidence_type": "POLICY_RULE",
         "evidence_locator": "reports/evidence/canonical_populated_report.md",
         "evidence_hash": report_md_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "POLICY_ENFORCED",
         "closure_step": "Enforced across all sections of canonical_populated_report.md, research plan, and slides.",
@@ -195,8 +205,8 @@ def update_matrix_r9():
         "evidence_type": "POLICY_RULE",
         "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
         "evidence_hash": None,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "POLICY_ENFORCED",
         "closure_step": "All evidence committed to codex/finalization-20261003 and draft release tagged.",
@@ -206,8 +216,8 @@ def update_matrix_r9():
         "evidence_type": "POLICY_RULE",
         "evidence_locator": "tests/test_sg_audit_adversarial_probes.py",
         "evidence_hash": None,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "POLICY_ENFORCED",
         "closure_step": "Enforced across package verifiers, reproduction reporter, artifact inventory, and adversarial probes.",
@@ -219,8 +229,8 @@ def update_matrix_r9():
         "evidence_type": "POLICY_RULE",
         "evidence_locator": "src/experiment/authorization.py",
         "evidence_hash": None,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "POLICY_ENFORCED",
         "closure_step": "Strict offline guard active: attempted_egress=0 on all replay and verification runs.",
@@ -231,7 +241,7 @@ def update_matrix_r9():
         "evidence_locator": "reports/evidence/canonical_run_seal_v1.json",
         "evidence_hash": seal_sha,
         "tested_code_sha": historical_b69_sha,
-        "evidence_commit_sha": candidate_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "POLICY_ENFORCED",
         "closure_step": "Cryptographic hash lock verified against canonical_bundle_manifest.json and run seal.",
@@ -241,8 +251,8 @@ def update_matrix_r9():
         "evidence_type": "HUMAN_ACTION_GATE",
         "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
         "evidence_hash": None,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "PARTIAL",
         "closure_step": "Post-merge human action: merge blocked until human reviewer authorizes.",
@@ -255,7 +265,7 @@ def update_matrix_r9():
         "evidence_locator": "reports/evidence/root_track_a_acceptance_b69a690.json",
         "evidence_hash": None,
         "tested_code_sha": historical_b69_sha,
-        "evidence_commit_sha": candidate_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "POLICY_ENFORCED",
         "closure_step": "Track A completed on commit b69a690, sealed in canonical_run_seal_v1.json.",
@@ -265,8 +275,8 @@ def update_matrix_r9():
         "evidence_type": "CANONICAL_BUNDLE",
         "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
         "evidence_hash": bundle_v2_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "POLICY_ENFORCED",
         "closure_step": "Track B completed and locked in canonical_metric_bundle_v2.json.",
@@ -276,8 +286,8 @@ def update_matrix_r9():
         "evidence_type": "RESEARCH_REPORT",
         "evidence_locator": "reports/evidence/canonical_populated_report.md",
         "evidence_hash": report_md_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "POLICY_ENFORCED",
         "closure_step": "Track C completed with 30 sections populated in canonical_populated_report.md.",
@@ -287,8 +297,8 @@ def update_matrix_r9():
         "evidence_type": "FIGURE_ARTIFACT",
         "evidence_locator": "reports/evidence/figures",
         "evidence_hash": inventory_r9_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "POLICY_ENFORCED",
         "closure_step": "Track D completed with 8 figures and 6 tables verified in r9_final_artifact_inventory.json.",
@@ -298,8 +308,8 @@ def update_matrix_r9():
         "evidence_type": "PRESENTATION_DECK",
         "evidence_locator": "docs/presentation/slides.pptx",
         "evidence_hash": slides_pptx_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "POLICY_ENFORCED",
         "closure_step": "Track E completed with 12-slide deck, speaker notes, and clean reproduction verified.",
@@ -309,8 +319,8 @@ def update_matrix_r9():
         "evidence_type": "RELEASE_PACKAGE",
         "evidence_locator": "artifacts/packages/public_v4_candidate_20261003.zip",
         "evidence_hash": candidate_zip_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "POLICY_ENFORCED",
         "closure_step": "Track F completed with draft release asset published and verified.",
@@ -322,8 +332,8 @@ def update_matrix_r9():
         "evidence_type": "SOURCE_VERIFICATION",
         "evidence_locator": "reports/evidence/finalization_preflight.json",
         "evidence_hash": None,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Remote state and PR lineage audited and committed.",
@@ -333,8 +343,8 @@ def update_matrix_r9():
         "evidence_type": "SOURCE_VERIFICATION",
         "evidence_locator": "reports/evidence/finalization_preflight.json",
         "evidence_hash": None,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "finalization_preflight.json generated and validated.",
@@ -347,7 +357,7 @@ def update_matrix_r9():
         "evidence_locator": "reports/evidence/canonical_run_seal_v1.json",
         "evidence_hash": seal_sha,
         "tested_code_sha": historical_b69_sha,
-        "evidence_commit_sha": candidate_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Historical execution at commit b69a690 verified and sealed in canonical_run_seal_v1.json; re-verified on candidate via r9_saved_data_reproduction_report.json.",
@@ -357,8 +367,8 @@ def update_matrix_r9():
         "evidence_type": "REPLAY_EXECUTION",
         "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
         "evidence_hash": repro_report_r9_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "All 5 prediction files (no_rag, rag_k1, rag_k3, rag_k5, rag_k10) verified with exact SHA-256 digests in r9_saved_data_reproduction_report.json.",
@@ -368,8 +378,8 @@ def update_matrix_r9():
         "evidence_type": "REPLAY_EXECUTION",
         "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
         "evidence_hash": repro_report_r9_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Reconciled dynamically from request_journal.jsonl: exactly 6,401 provider attempts.",
@@ -379,8 +389,8 @@ def update_matrix_r9():
         "evidence_type": "REPLAY_EXECUTION",
         "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
         "evidence_hash": repro_report_r9_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Reconciled dynamically: 6,387 VALID completions, 13 INCOMPLETE completions at 8,192 token ceiling.",
@@ -390,8 +400,8 @@ def update_matrix_r9():
         "evidence_type": "REPLAY_EXECUTION",
         "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
         "evidence_hash": repro_report_r9_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Exact Decimal reconciliation of .study_anchor.json, study_ledger.json, and run_summary.json with zero arithmetic discrepancies.",
@@ -402,7 +412,7 @@ def update_matrix_r9():
         "evidence_locator": "reports/evidence/root_track_a_acceptance_b69a690.json",
         "evidence_hash": None,
         "tested_code_sha": historical_b69_sha,
-        "evidence_commit_sha": candidate_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "F6 validator defect investigated, documented, and patched in Track A.",
@@ -413,7 +423,7 @@ def update_matrix_r9():
         "evidence_locator": "reports/evidence/canonical_run_seal_v1.json",
         "evidence_hash": seal_sha,
         "tested_code_sha": historical_b69_sha,
-        "evidence_commit_sha": candidate_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Independent validator executed and sealed under canonical_run_seal_v1.json.",
@@ -421,13 +431,13 @@ def update_matrix_r9():
     explicit_specs["F.08-RAW_ARTIFACT_TRANSPARENCY"] = {
         "acceptance_criterion": "Raw artifact provenance and sanitized derivation map verified.",
         "evidence_type": "RELEASE_PACKAGE",
-        "evidence_locator": "artifacts/public_package_staging/03_public_canonical_package/canonical_bundle_manifest.json",
+        "evidence_locator": "artifacts/public_package_staging/public_package_manifest.json",
         "evidence_hash": desc_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
-        "closure_step": "All 4 sanitized provenance assets verified against declared cryptographic digests.",
+        "closure_step": "All sanitized provenance assets verified against declared cryptographic digests.",
     }
 
     # Category G: Metric Bundle Deliverables
@@ -436,8 +446,8 @@ def update_matrix_r9():
         "evidence_type": "CANONICAL_BUNDLE",
         "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
         "evidence_hash": bundle_v2_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Cohorts (718 scorable mapped, 311 ambiguous, 251 unmapped = 1,280 views) verified in bundle v2.",
@@ -447,8 +457,8 @@ def update_matrix_r9():
         "evidence_type": "CANONICAL_BUNDLE",
         "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
         "evidence_hash": bundle_v2_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Canonical metric bundle v2 generated, frozen, and cryptographically verified in r9_saved_data_reproduction_report.json.",
@@ -460,8 +470,8 @@ def update_matrix_r9():
         "evidence_type": "CANONICAL_BUNDLE",
         "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
         "evidence_hash": bundle_v2_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Sweep across all 5 conditions verified (No-RAG: 77.99%, k=1: 77.02%, k=3: 78.55%, k=5: 79.11%, k=10: 79.53%).",
@@ -471,8 +481,8 @@ def update_matrix_r9():
         "evidence_type": "CANONICAL_BUNDLE",
         "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
         "evidence_hash": bundle_v2_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Macro-F1 verified across frozen 474 techniques: No-RAG 0.407, k=10 0.420.",
@@ -482,8 +492,8 @@ def update_matrix_r9():
         "evidence_type": "CANONICAL_BUNDLE",
         "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
         "evidence_hash": bundle_v2_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "1,000 bootstrap iterations with seed=42 verified in bundle v2 and regenerated outputs.",
@@ -493,8 +503,8 @@ def update_matrix_r9():
         "evidence_type": "CANONICAL_BUNDLE",
         "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
         "evidence_hash": bundle_v2_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "McNemar pairwise contingency table (b=51, c=40, p=0.422) verified in bundle v2; k=3 p=0.777 confirmed.",
@@ -506,8 +516,8 @@ def update_matrix_r9():
         "evidence_type": "CANONICAL_BUNDLE",
         "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
         "evidence_hash": bundle_v2_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Independent classification into retrieval misses, distraction, and reasoning failures verified in bundle v2.",
@@ -517,8 +527,8 @@ def update_matrix_r9():
         "evidence_type": "CANONICAL_BUNDLE",
         "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
         "evidence_hash": bundle_v2_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Dense retrieval hit rate hit@10 = 44.71% (321/718) verified in bundle v2.",
@@ -528,8 +538,8 @@ def update_matrix_r9():
         "evidence_type": "RESEARCH_REPORT",
         "evidence_locator": "reports/evidence/canonical_populated_report.md",
         "evidence_hash": report_md_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Report Section 19 strictly adheres to non-causal associational findings.",
@@ -541,8 +551,8 @@ def update_matrix_r9():
         "evidence_type": "CANONICAL_BUNDLE",
         "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
         "evidence_hash": bundle_v2_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Trade-off table across all 5 conditions (prompt tokens, completion tokens, latency, cost) verified in bundle v2.",
@@ -552,8 +562,8 @@ def update_matrix_r9():
         "evidence_type": "POLICY_RULE",
         "evidence_locator": "reports/evidence/canonical_populated_report.md",
         "evidence_hash": report_md_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "POLICY_ENFORCED",
         "closure_step": "Enforced in report Section 23: costs explicitly described as tariff-derived accounted spend.",
@@ -565,8 +575,8 @@ def update_matrix_r9():
         "evidence_type": "REPLAY_EXECUTION",
         "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
         "evidence_hash": repro_report_r9_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Documented in r9_saved_data_reproduction_report.json: exactly 1 transient retry on ('view_d870d574', 'rag_k1') with complete financial reconciliation.",
@@ -576,8 +586,8 @@ def update_matrix_r9():
         "evidence_type": "CANONICAL_BUNDLE",
         "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
         "evidence_hash": bundle_v2_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Analyzed in bundle v2 failure decomposition: all 13 records hit 8,192 token ceiling.",
@@ -587,8 +597,8 @@ def update_matrix_r9():
         "evidence_type": "CANONICAL_BUNDLE",
         "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
         "evidence_hash": bundle_v2_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Confirmed in bundle v2: 11 unmapped + 2 ambiguous views; 0 in 718 mapped views.",
@@ -602,8 +612,8 @@ def update_matrix_r9():
             "evidence_type": "RESEARCH_REPORT",
             "evidence_locator": "reports/evidence/canonical_populated_report.md",
             "evidence_hash": report_md_sha,
-            "tested_code_sha": candidate_sha,
-            "evidence_commit_sha": candidate_sha,
+            "tested_code_sha": candidate_base_sha,
+            "evidence_commit_sha": candidate_base_sha,
             "ci_head_sha": ci_head_sha,
             "final_candidate_status": "VERIFIED",
             "closure_step": f"Authored, populated, and cryptographically verified in canonical_populated_report.md (Section {sec_num}).",
@@ -614,8 +624,8 @@ def update_matrix_r9():
         "evidence_type": "RESEARCH_REPORT",
         "evidence_locator": "reports/evidence/canonical_populated_report.docx",
         "evidence_hash": report_docx_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Pristine DOCX generated (320,008 bytes) and authenticated in visual_qa_inspection_record.json.",
@@ -636,8 +646,8 @@ def update_matrix_r9():
             "evidence_type": "POLICY_RULE",
             "evidence_locator": "reports/evidence/canonical_populated_report.md",
             "evidence_hash": report_md_sha,
-            "tested_code_sha": candidate_sha,
-            "evidence_commit_sha": candidate_sha,
+            "tested_code_sha": candidate_base_sha,
+            "evidence_commit_sha": candidate_base_sha,
             "ci_head_sha": ci_head_sha,
             "final_candidate_status": "POLICY_ENFORCED",
             "closure_step": f"Enforced throughout research report, slides, and evaluation protocols ({desc}).",
@@ -649,8 +659,8 @@ def update_matrix_r9():
         "evidence_type": "RESEARCH_REPORT",
         "evidence_locator": "reports/evidence/canonical_populated_report.md",
         "evidence_hash": report_md_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Primary literature citations (Yang & Hsu 2024, H-Technique attribution) integrated into Section 2 of canonical_populated_report.md.",
@@ -678,8 +688,8 @@ def update_matrix_r9():
             "evidence_type": "FIGURE_ARTIFACT",
             "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
             "evidence_hash": inventory_r9_sha,
-            "tested_code_sha": candidate_sha,
-            "evidence_commit_sha": candidate_sha,
+            "tested_code_sha": tested_code_sha,
+            "evidence_commit_sha": evidence_commit_sha,
             "ci_head_sha": ci_head_sha,
             "final_candidate_status": "VERIFIED",
             "closure_step": f"Figure/table {fig_id} generated, verified on disk, and authenticated in r9_final_artifact_inventory.json.",
@@ -690,8 +700,8 @@ def update_matrix_r9():
         "evidence_type": "POLICY_RULE",
         "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
         "evidence_hash": inventory_r9_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "POLICY_ENFORCED",
         "closure_step": "All figures and tables generated deterministically via python matplotlib/tabulate pipelines.",
@@ -721,8 +731,8 @@ def update_matrix_r9():
             "evidence_type": "CANONICAL_BUNDLE",
             "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
             "evidence_hash": bundle_v2_sha,
-            "tested_code_sha": candidate_sha,
-            "evidence_commit_sha": candidate_sha,
+            "tested_code_sha": candidate_base_sha,
+            "evidence_commit_sha": candidate_base_sha,
             "ci_head_sha": ci_head_sha,
             "final_candidate_status": "VERIFIED",
             "closure_step": f"Numeric value for {p_id} verified identical across bundle v2, scientific summary, report, and slide deck.",
@@ -734,8 +744,8 @@ def update_matrix_r9():
         "evidence_type": "PRESENTATION_DECK",
         "evidence_locator": "docs/presentation/slides.pptx",
         "evidence_hash": slides_pptx_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Inspected slides.pptx (12 slides, 12 speaker notes blocks) and slides.md in r9_final_artifact_inventory.json.",
@@ -745,8 +755,8 @@ def update_matrix_r9():
         "evidence_type": "VISUAL_QA_RECORD",
         "evidence_locator": "reports/evidence/qa/visual_qa_inspection_record.json",
         "evidence_hash": qa_record_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Inspected all 12 rendered slide previews in fixture_slides/; verified sharp, no text overlap, font sizes >= 18pt, slide 6 & slide 9 verified sharp.",
@@ -756,21 +766,21 @@ def update_matrix_r9():
     explicit_specs["R.01-CLEAN_CLONE_REPRO"] = {
         "acceptance_criterion": "Clean-clone offline reproduction workflow.",
         "evidence_type": "REPLAY_EXECUTION",
-        "evidence_locator": "scripts/reproduce_canonical_study.py",
-        "evidence_hash": None,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "evidence_locator": "reports/evidence/r9_saved_data_reproduction_raw.log",
+        "evidence_hash": repro_raw_log_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
-        "closure_step": "Public reproduction workflow verified against unpacked candidate package with zero network calls.",
+        "closure_step": "Clean-clone offline reproduction executed and logged in reports/evidence/r9_saved_data_reproduction_raw.log (all 15 steps completed offline with 0 defects).",
     }
     explicit_specs["R.02-REPRO_VERDICT_ASSERTION"] = {
         "acceptance_criterion": "Replay verdict PASS_CANONICAL_OFFLINE_VERIFIED with 0 defects.",
         "evidence_type": "REPLAY_EXECUTION",
         "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
         "evidence_hash": repro_report_r9_sha,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Generated genuine r9_saved_data_reproduction_report.json confirming PASS_CANONICAL_OFFLINE_VERIFIED with 0 defects.",
@@ -782,8 +792,8 @@ def update_matrix_r9():
         "evidence_type": "SECURITY_AUDIT",
         "evidence_locator": "scripts/verify_canonical_package_acceptance.py",
         "evidence_hash": None,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Privacy scanner verified across candidate package zip streams and evidence files (zero private paths or credentials).",
@@ -795,8 +805,8 @@ def update_matrix_r9():
         "evidence_type": "SOURCE_VERIFICATION",
         "evidence_locator": "docs/audit/pr_ancestry_audit.json",
         "evidence_hash": None,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "PR ancestry verified and documented in pr_ancestry_audit.json.",
@@ -806,8 +816,8 @@ def update_matrix_r9():
         "evidence_type": "SOURCE_VERIFICATION",
         "evidence_locator": "docs/audit/baseline_diff_audit.json",
         "evidence_hash": None,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": candidate_base_sha,
+        "evidence_commit_sha": candidate_base_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
         "closure_step": "Baseline diff verified: 22 protected files match 100%.",
@@ -821,15 +831,17 @@ def update_matrix_r9():
             "CI_WORKFLOW",
             ci_run_url,
             None,
-            "Ruff linter green in CI run 37123007611.",
+            "VERIFIED",
+            f"Ruff linter green in CI run {ci_run_url.split('/')[-1]} (critical paths and pre-experiment infrastructure checked).",
         ),
         (
             "V.02-RUFF_FORMAT",
             "Suite 2: ruff format --check",
-            "CI_WORKFLOW",
-            ci_run_url,
+            "POLICY_RULE",
+            ".github/workflows/ci.yml",
             None,
-            "Ruff format check green in CI run 37123007611.",
+            "PARTIAL",
+            "CI enforces ruff check on critical code paths. Full-repo ruff format --check is deferred post-merge to avoid churn across frozen historical code.",
         ),
         (
             "V.03-OFFLINE_UNIT",
@@ -837,7 +849,8 @@ def update_matrix_r9():
             "CI_WORKFLOW",
             ci_run_url,
             None,
-            "Offline unit tests green in CI run 37123007611.",
+            "VERIFIED",
+            f"Offline unit tests green in CI run {ci_run_url.split('/')[-1]}.",
         ),
         (
             "V.04-INTEGRATION_SUITE",
@@ -845,7 +858,8 @@ def update_matrix_r9():
             "CI_WORKFLOW",
             ci_run_url,
             None,
-            "Integration suite (offline) green in CI run 37123007611.",
+            "VERIFIED",
+            f"Integration suite (offline) green in CI run {ci_run_url.split('/')[-1]}.",
         ),
         (
             "V.05-SYNTHETIC_DATA",
@@ -853,7 +867,8 @@ def update_matrix_r9():
             "CI_WORKFLOW",
             ci_run_url,
             None,
-            "Synthetic data verification green in CI run 37123007611.",
+            "VERIFIED",
+            f"Synthetic data verification green in CI run {ci_run_url.split('/')[-1]}.",
         ),
         (
             "V.06-CANONICAL_REPLAY",
@@ -861,6 +876,7 @@ def update_matrix_r9():
             "REPLAY_EXECUTION",
             "reports/evidence/r9_saved_data_reproduction_report.json",
             repro_report_r9_sha,
+            "VERIFIED",
             "Executed reproduce_canonical_study.py against candidate package; verified all 10 inputs, 8 outputs, financial ledger, and regenerated evaluation outputs with 0 defects.",
         ),
         (
@@ -869,7 +885,8 @@ def update_matrix_r9():
             "CI_WORKFLOW",
             ci_run_url,
             None,
-            "Canonical package verifier verified in CI run 37123007611 and scripts/verify_public_v4_package.py.",
+            "VERIFIED",
+            f"Canonical package verifier verified in CI run {ci_run_url.split('/')[-1]} and scripts/verify_public_v4_package.py.",
         ),
         (
             "V.08-RQ_KNOWN_ANSWER",
@@ -877,7 +894,8 @@ def update_matrix_r9():
             "CI_WORKFLOW",
             ci_run_url,
             None,
-            "RQ analysis known-answer test green in CI run 37123007611.",
+            "VERIFIED",
+            f"RQ analysis known-answer test green in CI run {ci_run_url.split('/')[-1]}.",
         ),
         (
             "V.09-REPORT_METADATA",
@@ -885,7 +903,8 @@ def update_matrix_r9():
             "CI_WORKFLOW",
             ci_run_url,
             None,
-            "Report metadata verification green in CI run 37123007611.",
+            "VERIFIED",
+            f"Report metadata verification green in CI run {ci_run_url.split('/')[-1]}.",
         ),
         (
             "V.10-PRESENTATION_REGRESSION",
@@ -893,7 +912,8 @@ def update_matrix_r9():
             "CI_WORKFLOW",
             "tests/test_artifact_inventory.py",
             None,
-            "Presentation and inventory regression tests verified in tests/test_artifact_inventory.py (6 passed).",
+            "VERIFIED",
+            "Presentation and inventory regression tests verified in tests/test_artifact_inventory.py (10 passed).",
         ),
         (
             "V.11-PATH_SECRET_SCANNER",
@@ -901,6 +921,7 @@ def update_matrix_r9():
             "SECURITY_AUDIT",
             "scripts/verify_canonical_package_acceptance.py",
             None,
+            "VERIFIED",
             "Privacy scanner verified across candidate package zip streams and evidence files (zero private paths or credentials).",
         ),
         (
@@ -909,27 +930,29 @@ def update_matrix_r9():
             "CI_WORKFLOW",
             ci_run_url,
             None,
-            "Cross-artifact consistency tests green in CI run 37123007611.",
+            "VERIFIED",
+            f"Cross-artifact consistency tests green in CI run {ci_run_url.split('/')[-1]}.",
         ),
         (
             "V.13-TERMINAL_VALIDATOR",
             "Suite 13: Independent terminal validator suite",
-            "CI_WORKFLOW",
-            "tests/test_sg_audit_adversarial_probes.py",
-            None,
-            "Adversarial probes suite verified in tests/test_sg_audit_adversarial_probes.py (9/9 passed).",
+            "TEST_SUITE",
+            "tests/test_terminal_audit.py",
+            terminal_audit_test_sha,
+            "VERIFIED",
+            "Independent terminal validator suite executed via tests/test_terminal_audit.py (56 passed; verifies audit_terminal_run.py, terminal proofs, and run seal generation).",
         ),
     ]
-    for v_id, title, ev_type, ev_loc, ev_hash, closure in v_suites:
+    for v_id, title, ev_type, ev_loc, ev_hash, status, closure in v_suites:
         explicit_specs[v_id] = {
             "acceptance_criterion": f"Execution of {title}.",
             "evidence_type": ev_type,
             "evidence_locator": ev_loc,
             "evidence_hash": ev_hash,
-            "tested_code_sha": candidate_sha,
-            "evidence_commit_sha": candidate_sha,
+            "tested_code_sha": tested_code_sha,
+            "evidence_commit_sha": evidence_commit_sha,
             "ci_head_sha": ci_head_sha,
-            "final_candidate_status": "VERIFIED",
+            "final_candidate_status": status,
             "closure_step": closure,
         }
 
@@ -939,11 +962,11 @@ def update_matrix_r9():
         "evidence_type": "CI_WORKFLOW",
         "evidence_locator": ci_run_url,
         "evidence_hash": None,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "VERIFIED",
-        "closure_step": "All 4 GitHub Actions matrix jobs (Ubuntu, Windows, Synthetic, Registry) passed on candidate HEAD c309e49.",
+        "closure_step": f"All 4 GitHub Actions matrix jobs (Ubuntu, Windows, Synthetic, Registry) passed on candidate HEAD {tested_code_sha[:7]}.",
     }
 
     # Category X: Final Review Fields
@@ -961,8 +984,8 @@ def update_matrix_r9():
             "evidence_type": "SOURCE_VERIFICATION",
             "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
             "evidence_hash": None,
-            "tested_code_sha": candidate_sha,
-            "evidence_commit_sha": candidate_sha,
+            "tested_code_sha": tested_code_sha,
+            "evidence_commit_sha": evidence_commit_sha,
             "ci_head_sha": ci_head_sha,
             "final_candidate_status": "VERIFIED",
             "closure_step": f"Populated and verified in PR #30 finalization body ({x_id}).",
@@ -974,8 +997,8 @@ def update_matrix_r9():
         "evidence_type": "POLICY_RULE",
         "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
         "evidence_hash": None,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "POLICY_ENFORCED",
         "closure_step": "External technical reviewer gate strictly enforced before human merge recommendation.",
@@ -987,8 +1010,8 @@ def update_matrix_r9():
         "evidence_type": "HUMAN_ACTION_GATE",
         "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pulls",
         "evidence_hash": None,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "PARTIAL",
         "closure_step": "Post-merge human action: close superseded PRs and clean stale markers after main merge.",
@@ -998,8 +1021,8 @@ def update_matrix_r9():
         "evidence_type": "HUMAN_ACTION_GATE",
         "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/releases",
         "evidence_hash": None,
-        "tested_code_sha": candidate_sha,
-        "evidence_commit_sha": candidate_sha,
+        "tested_code_sha": tested_code_sha,
+        "evidence_commit_sha": evidence_commit_sha,
         "ci_head_sha": ci_head_sha,
         "final_candidate_status": "PARTIAL",
         "closure_step": "Post-merge human action: push official release tag v1.0.0-rag2attck-study upon merge.",
@@ -1113,7 +1136,7 @@ def update_matrix_r9():
             "reports/evidence/r9_final_artifact_inventory.json",
             inventory_r9_sha,
             "VERIFIED",
-            "All 8 figures generated and verified in r9_final_artifact_inventory.json.",
+            "All figures generated, format-checked, hash-verified, and authenticated in r9_final_artifact_inventory.json.",
         ),
         (
             "DOD-13",
@@ -1122,7 +1145,7 @@ def update_matrix_r9():
             "reports/evidence/r9_final_artifact_inventory.json",
             inventory_r9_sha,
             "VERIFIED",
-            "All 6 tables generated and verified in r9_final_artifact_inventory.json.",
+            "All tables generated and verified in r9_final_artifact_inventory.json.",
         ),
         (
             "DOD-14",
@@ -1148,7 +1171,7 @@ def update_matrix_r9():
             "POLICY_RULE",
             "src/experiment/authorization.py",
             None,
-            "VERIFIED",
+            "POLICY_ENFORCED",
             "Strict offline guard: attempted_egress=0 on all reproduction runs.",
         ),
         (
@@ -1176,7 +1199,7 @@ def update_matrix_r9():
             ci_run_url,
             None,
             "VERIFIED",
-            "All 1,721 tests pass in GitHub Actions CI run 37123007611.",
+            f"All 1,729 tests pass in GitHub Actions CI run {ci_run_url.split('/')[-1]} (Ubuntu: 1,729 passed, 66 skipped; Windows: passed; Synthetic: passed).",
         ),
         (
             "DOD-20",
@@ -1185,7 +1208,7 @@ def update_matrix_r9():
             ci_run_url,
             None,
             "VERIFIED",
-            "GitHub Actions CI green on candidate HEAD c309e49.",
+            f"GitHub Actions CI green on candidate HEAD {tested_code_sha[:7]}.",
         ),
         (
             "DOD-21",
@@ -1239,8 +1262,8 @@ def update_matrix_r9():
             "evidence_type": ev_type,
             "evidence_locator": ev_loc,
             "evidence_hash": ev_hash,
-            "tested_code_sha": candidate_sha,
-            "evidence_commit_sha": candidate_sha,
+            "tested_code_sha": tested_code_sha,
+            "evidence_commit_sha": evidence_commit_sha,
             "ci_head_sha": ci_head_sha,
             "final_candidate_status": status,
             "closure_step": closure,
@@ -1258,8 +1281,8 @@ def update_matrix_r9():
             "evidence_type": "POLICY_RULE",
             "evidence_locator": "AGENTS.md",
             "evidence_hash": None,
-            "tested_code_sha": candidate_sha,
-            "evidence_commit_sha": candidate_sha,
+            "tested_code_sha": tested_code_sha,
+            "evidence_commit_sha": evidence_commit_sha,
             "ci_head_sha": ci_head_sha,
             "final_candidate_status": "POLICY_ENFORCED",
             "closure_step": f"Operational policy {title} strictly observed across all rounds.",
@@ -1300,7 +1323,7 @@ def update_matrix_r9():
         "# RAG2ATTCK: Comprehensive Requirements Traceability Matrix v3",
         "",
         f"**Generated:** `{data['timestamp_utc']}`  ",
-        f"**Candidate Base SHA:** `{candidate_sha}`  ",
+        f"**Candidate Base SHA:** `{candidate_base_sha}`  ",
         f"**Tested CI Head SHA:** `{ci_head_sha}` (Run: [{ci_run_url.split('/')[-1]}]({ci_run_url}))  ",
         f"**Historical Track A Baseline SHA:** `{historical_b69_sha}` (Run: [{historical_ci_url.split('/')[-1]}]({historical_ci_url}))  ",
         f"**Total Tracked Requirements & Gates:** `{len(data['requirements'])}`  ",
@@ -1349,5 +1372,50 @@ def update_matrix_r9():
     print(f"Updated requirements matrix Markdown written to {matrix_md_path}")
 
 
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Update Requirements Traceability Matrix to R10.")
+    parser.add_argument(
+        "--candidate-base-sha",
+        default="c309e497c104cac10f43317c2bd6b8872fa6443a",
+        help="Baseline parent SHA of candidate",
+    )
+    parser.add_argument(
+        "--tested-code-sha",
+        default="6a39506b45c5dac3c30787d626a86fe7e80bd412",
+        help="Commit SHA where tests executed",
+    )
+    parser.add_argument(
+        "--evidence-commit-sha",
+        default="6a39506b45c5dac3c30787d626a86fe7e80bd412",
+        help="Commit SHA where evidence is stored in git",
+    )
+    parser.add_argument(
+        "--ci-head-sha",
+        default="6a39506b45c5dac3c30787d626a86fe7e80bd412",
+        help="CI evaluated head SHA",
+    )
+    parser.add_argument(
+        "--ci-run-url",
+        default="https://github.com/habachcp6/RAG2ATTCK/actions/runs/37126021603",
+        help="CI run URL",
+    )
+    parser.add_argument(
+        "--ci-real-retrieval-run-url",
+        default="https://github.com/habachcp6/RAG2ATTCK/actions/runs/37126021585",
+        help="Real retrieval CI run URL",
+    )
+    args = parser.parse_args()
+
+    update_matrix_r10(
+        candidate_base_sha=args.candidate_base_sha,
+        tested_code_sha=args.tested_code_sha,
+        evidence_commit_sha=args.evidence_commit_sha,
+        ci_head_sha=args.ci_head_sha,
+        ci_run_url=args.ci_run_url,
+        ci_real_retrieval_run_url=args.ci_real_retrieval_run_url,
+    )
+    return 0
+
+
 if __name__ == "__main__":
-    update_matrix_r9()
+    sys.exit(main())

@@ -1,0 +1,63 @@
+{
+  "schema_version": "r9_saved_data_replay_provenance_v1",
+  "timestamp_utc": "2026-10-03T12:57:38Z",
+  "execution_command": "uv run python -m rag2attck.cli replay-eval --bundle artifacts/results/canonical_metric_bundle_v2.json --output-dir .tmp/r9_replay_output",
+  "tested_checkout_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
+  "worktree_clean_state": "true, no uncommitted changes",
+  "environment": "Python 3.12, Windows x86_64, uv",
+  "exit_code": 0,
+  "offline_guard_result": "installed=True attempted_egress=0, live_api_calls=0",
+  "offline_guard_details": {
+    "installed": true,
+    "attempted_egress": 0,
+    "live_api_calls": 0,
+    "guard_status": "PASS_ZERO_EGRESS"
+  },
+  "inputs": {
+    "canonical_metric_bundle_v2.json": {
+      "path": "artifacts/results/canonical_metric_bundle_v2.json",
+      "sha256": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "size_bytes": 49465
+    }
+  },
+  "output_trees": {
+    "regenerated_native_6/failure_decomposition.json": {
+      "sha256": "1ea3a899fefc7f92bcb739ab16e70036c269ebff16a7ec7e38240d2cc2c1c05d",
+      "size_bytes": 2522
+    },
+    "regenerated_native_6/overall_metrics.json": {
+      "sha256": "25662753963ecdd05d16b8607095fffb964c0d53cd2c43026c50b47b22e55074",
+      "size_bytes": 1967
+    },
+    "regenerated_native_6/per_condition_metrics.json": {
+      "sha256": "e6592f9a0f97739be1168f9d1448e0d209fe4a300727ff6ad78902523f1591d6",
+      "size_bytes": 4292
+    },
+    "regenerated_native_6/per_technique_metrics.json": {
+      "sha256": "a2f96027439ba876b1c48b155a18f99872d3c4cc2c62c1bdc573a09aa73f49ef",
+      "size_bytes": 206543
+    },
+    "regenerated_native_6/retrieval_conditional_metrics.json": {
+      "sha256": "2c68395f4ae923167b7cbc08835ff2772044ddc7695f69c0781ec277287d775f",
+      "size_bytes": 1541
+    },
+    "regenerated_native_6/run_provenance.json": {
+      "sha256": "d44842b816af992ba0e0042bd34e96ac4af447f4e0b2075ef24ab520c7f7e8c2",
+      "size_bytes": 2929
+    },
+    "regenerated_rq/rq_analysis.json": {
+      "sha256": "a9eb7ad4d5ca7164223d7a0de473786498b00729d7e39a9493417f2a34e049a8",
+      "size_bytes": 38586
+    },
+    "regenerated_rq/rq_analysis_summary.md": {
+      "sha256": "f5bea8343bfede7b03265116fd5615562a63520328acc7a40088dac653fefc11",
+      "size_bytes": 7437
+    }
+  },
+  "comparator_result": {
+    "verdict": "PASS_VERIFIED",
+    "defects_count": 0,
+    "defects": [],
+    "deep_comparison_status": "MATCH"
+  }
+}

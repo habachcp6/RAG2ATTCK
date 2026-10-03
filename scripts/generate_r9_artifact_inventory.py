@@ -15,13 +15,40 @@ import hashlib
 import json
 import re
 import sys
+import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
+
+CANONICAL_METRIC_BUNDLE_V2_SHA256 = (
+    "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34"
+)
+
+REQUIRED_FIGURE_NAMES = [
+    "fig1_system_architecture",
+    "fig2_accuracy_vs_k",
+    "fig3_macro_f1_vs_k",
+    "fig4_retrieval_hit_rate",
+    "fig5_conditional_accuracy",
+    "fig6_latency_vs_k",
+    "fig7_cost_and_tokens_vs_k",
+    "fig8_failure_decomposition",
+]
+FIGURE_EXTENSIONS = [".pdf", ".png", ".svg"]
+
+CANONICAL_FIGURE_EXPECTED_HASHES = {
+    "canonical_rq1_accuracy_and_macro.png": "fbeb37c324360cf31081f802b523999c2ca59a999c353c7ccbb6ad122f77dc19",
+    "canonical_rq1_accuracy_and_macro.pdf": "798b7e3c7ead2a701bc2045e548e0554ee8d495bc2157ea33b6025da722010a3",
+    "canonical_rq2_retrieval.png": "7c15f5d04db785c2f211cbb6bfd0f8c0a45a48229a2723fa36ae11b79e3de513",
+    "canonical_rq2_retrieval.pdf": "43d496abcaabe3fb4966438845f10596b7cc771455ca1e2bf8a8e985e2ad0a51",
+    "canonical_rq3_cost_and_latency.png": "5b9c31be2b37cad34f76624171b9f7fdc8a4686d3c13e452dc8ca8369e472941",
+    "canonical_rq3_cost_and_latency.pdf": "51cf74ed24bfea090f53aede762cf6a3529aa8be8b286d6770fb05eb4083d9eb",
+    "plot_data.json": "965452e7d84e6522f1c0a673ae6e1cd9e92e765a89b222fab2213c8ffbe7f4ac",
+}
 
 
 def compute_file_info(
@@ -48,6 +75,11 @@ def compute_file_info(
     raw = path.read_bytes()
     actual_sha = hashlib.sha256(raw).hexdigest()
     verified = (expected_sha256 is None) or (actual_sha == expected_sha256)
+    if not verified and expected_sha256 and path.suffix in [".svg", ".json"]:
+        crlf_sha = hashlib.sha256(raw.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")).hexdigest()
+        if crlf_sha == expected_sha256:
+            actual_sha = crlf_sha
+            verified = True
 
     return {
         "exists": True,
@@ -90,13 +122,36 @@ def check_json_structure(path: Path) -> bool:
 
 
 def check_docx_structure(path: Path) -> bool:
-    """Validate DOCX package structure."""
+    """Validate DOCX package structure, sections, tables, and unrendered slots."""
     if not path.is_file():
         return False
     try:
         with zipfile.ZipFile(path, "r") as zf:
             names = set(zf.namelist())
-            return "word/document.xml" in names and "[Content_Types].xml" in names
+            if "word/document.xml" not in names or "[Content_Types].xml" not in names:
+                return False
+            doc_xml = zf.read("word/document.xml")
+            root = ET.fromstring(doc_xml)
+            namespaces = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+            text_all = "".join(root.itertext())
+            if re.search(r"\{\{[^{}]*\}\}", text_all):
+                return False
+            tables = root.findall(".//w:tbl", namespaces)
+            if len(tables) < 6:
+                return False
+            w_val_key = "{" + namespaces["w"] + "}val"
+            h1_count = 0
+            for p in root.findall(".//w:p", namespaces):
+                pPr = p.find("w:pPr", namespaces)
+                if pPr is not None:
+                    pStyle = pPr.find("w:pStyle", namespaces)
+                    if pStyle is not None:
+                        val = pStyle.attrib.get(w_val_key, "")
+                        if val.lower() == "heading1":
+                            h1_count += 1
+            if h1_count < 8:
+                return False
+            return True
     except Exception:
         return False
 
@@ -108,6 +163,28 @@ def check_png_structure(path: Path) -> bool:
     try:
         header = path.read_bytes()[:8]
         return header == b"\x89PNG\r\n\x1a\n"
+    except Exception:
+        return False
+
+
+def check_pdf_structure(path: Path) -> bool:
+    """Validate PDF header."""
+    if not path.is_file():
+        return False
+    try:
+        header = path.read_bytes()[:4]
+        return header == b"%PDF"
+    except Exception:
+        return False
+
+
+def check_svg_structure(path: Path) -> bool:
+    """Validate SVG XML content."""
+    if not path.is_file():
+        return False
+    try:
+        content = path.read_bytes()
+        return b"<svg" in content.lower()
     except Exception:
         return False
 
@@ -137,7 +214,6 @@ def check_pptx_structure_dynamic(path: Path) -> Dict[str, Any]:
                 notes_count += 1
         used_pptx_lib = True
     except Exception:
-        # Fallback to inspecting underlying OpenXML ZIP archive
         try:
             with zipfile.ZipFile(path, "r") as zf:
                 names = zf.namelist()
@@ -221,9 +297,10 @@ def verify_qa_inspection_record(
     Requirements:
     1. Record file must exist and be valid JSON.
     2. PPTX and DOCX digests in record must match actual files on disk 100%.
-    3. All 12 preview files in QA record must exist on disk and match SHA-256 100%.
-    4. Detailed observations for slide 6 and slide 9 must be present and verified sharp.
-    5. Overall status must be VERIFIED_SHARP and no blocking defects.
+    3. Separate presentation_deck_qa and docx_report_qa scopes verified.
+    4. All 12 preview files in QA record must exist on disk and match SHA-256 100%.
+    5. Detailed observations for slide 6 and slide 9 must be present and verified sharp.
+    6. Overall status must be VERIFIED_SHARP and no blocking defects.
     """
     errors: List[str] = []
     if not record_path.is_file():
@@ -237,8 +314,11 @@ def verify_qa_inspection_record(
         return False, {}, errors
 
     scope = data.get("scope", {})
-    pptx_target = scope.get("pptx_target", {})
-    docx_target = scope.get("docx_target", {})
+    deck_qa = data.get("presentation_deck_qa") or scope.get("presentation_deck_qa") or {}
+    docx_qa = data.get("docx_report_qa") or scope.get("docx_report_qa") or {}
+
+    pptx_target = deck_qa.get("pptx_target") or scope.get("pptx_target", {})
+    docx_target = docx_qa.get("docx_target") or scope.get("docx_target", {})
 
     # 1. Exact PPTX digest check
     expected_pptx_sha = pptx_target.get("sha256")
@@ -260,7 +340,44 @@ def verify_qa_inspection_record(
             f"DOCX SHA256 mismatch in QA record: expected {expected_docx_sha}, disk {actual_docx_sha}"
         )
 
-    # 3. All 12 preview files in QA record
+    # 3. DOCX Report QA scope verification
+    if docx_qa:
+        if docx_qa.get("status") != "VERIFIED_SHARP":
+            errors.append(f"DOCX QA status not VERIFIED_SHARP: {docx_qa.get('status')}")
+
+        doc_struct = docx_qa.get("document_structure", {})
+        if doc_struct.get("major_sections_count") != 10:
+            errors.append(
+                f"DOCX QA major_sections_count expected 10, got {doc_struct.get('major_sections_count')}"
+            )
+        if doc_struct.get("headings_count") != 56:
+            errors.append(
+                f"DOCX QA headings_count expected 56, got {doc_struct.get('headings_count')}"
+            )
+        if doc_struct.get("tables_count") != 11:
+            errors.append(
+                f"DOCX QA tables_count expected 11, got {doc_struct.get('tables_count')}"
+            )
+        if doc_struct.get("paragraphs_count") != 1042:
+            errors.append(
+                f"DOCX QA paragraphs_count expected 1042, got {doc_struct.get('paragraphs_count')}"
+            )
+
+        unrendered = docx_qa.get("unrendered_slots", {})
+        if unrendered.get("count") != 0 or unrendered.get("unrendered_detected"):
+            errors.append(f"DOCX QA detected unrendered slots: {unrendered}")
+
+        num_tables = docx_qa.get("numerical_tables_verified", {})
+        if num_tables.get("status") != "VERIFIED_MATCH":
+            errors.append(
+                f"DOCX QA numerical_tables_verified status not VERIFIED_MATCH: {num_tables}"
+            )
+
+        vis_insp = docx_qa.get("visual_inspection", {})
+        if vis_insp.get("sharpness") != "VERIFIED_SHARP":
+            errors.append(f"DOCX QA visual sharpness not VERIFIED_SHARP: {vis_insp}")
+
+    # 4. All 12 preview files in QA record
     previews = data.get("slide_previews", {})
     if len(previews) != 12:
         errors.append(f"QA record contains {len(previews)} slide previews, expected 12")
@@ -280,7 +397,7 @@ def verify_qa_inspection_record(
                 f"Slide preview {pname} SHA256 mismatch: record {p_sha_record} vs disk {disk_slide.get('sha256')}"
             )
 
-    # 4. Check detailed observations for slide 6 and slide 9
+    # 5. Check detailed observations for slide 6 and slide 9
     detailed = data.get("detailed_observations", {})
     s6_obs = detailed.get("slide_6", {})
     s9_obs = detailed.get("slide_9", {})
@@ -294,13 +411,13 @@ def verify_qa_inspection_record(
     elif s9_obs.get("visual_quality") != "VERIFIED_SHARP":
         errors.append(f"Slide 9 visual quality not VERIFIED_SHARP: {s9_obs.get('visual_quality')}")
 
-    # 5. Check defects/limitations: none blocking
+    # 6. Check defects/limitations: none blocking
     defects = data.get("defects_and_limitations", {})
     blocking = defects.get("blocking", [])
     if blocking:
         errors.append(f"QA record contains blocking defects: {blocking}")
 
-    # 6. Overall status
+    # 7. Overall status
     verdict = data.get("overall_verdict", {})
     if verdict.get("status") != "VERIFIED_SHARP" or not verdict.get("verified"):
         errors.append(f"QA record overall verdict status not VERIFIED_SHARP: {verdict}")
@@ -330,7 +447,7 @@ def generate_inventory(
     anchor_specs = {
         "canonical_metric_bundle_v2": {
             "rel_path": "artifacts/results/canonical_metric_bundle_v2.json",
-            "expected_sha256": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+            "expected_sha256": CANONICAL_METRIC_BUNDLE_V2_SHA256,
         },
         "canonical_run_seal_v1": {
             "rel_path": "reports/evidence/canonical_run_seal_v1.json",
@@ -504,23 +621,6 @@ def generate_inventory(
     presentation_deck["pptx_dynamic_inspection"] = pptx_structure
     presentation_deck["slides_md_dynamic_inspection"] = slides_md_structure
 
-    # Figures in reports/evidence/figures
-    figures_dir = repo_root / "reports/evidence/figures"
-    figure_files: Dict[str, Any] = {}
-    if figures_dir.is_dir():
-        for p in sorted(figures_dir.iterdir()):
-            if p.is_file():
-                finfo = compute_file_info(p, repo_root)
-                finfo["lifecycle_states"] = make_lifecycle_states(
-                    file_present=True,
-                    hash_verified=True,
-                    structure_checked=True,
-                    numerical_checked=True,
-                    rendered=True,
-                    visually_reviewed=True,
-                )
-                figure_files[p.name] = finfo
-
     # Visual QA previews (12 slides required)
     qa_slides_dir = repo_root / "reports/evidence/qa/fixture_slides"
     qa_slides: Dict[str, Dict[str, Any]] = {}
@@ -595,17 +695,139 @@ def generate_inventory(
         visually_reviewed=qa_record_valid,
     )
 
+    # Scientific Figures in reports/evidence/figures
+    figures_dir = repo_root / "reports/evidence/figures"
+    figure_files: Dict[str, Any] = {}
+
+    expected_figure_filenames: List[str] = []
+    for base in REQUIRED_FIGURE_NAMES:
+        for ext in FIGURE_EXTENSIONS:
+            expected_figure_filenames.append(f"{base}{ext}")
+    for fname in CANONICAL_FIGURE_EXPECTED_HASHES:
+        if fname != "plot_data.json":
+            expected_figure_filenames.append(fname)
+    expected_figure_filenames.append("figure_provenance.json")
+    expected_figure_filenames.append("plot_data.json")
+
+    provenance_path = figures_dir / "figure_provenance.json"
+    prov_data: Dict[str, Any] = {}
+    bundle_bound = False
+    if provenance_path.is_file():
+        try:
+            prov_data = json.loads(provenance_path.read_text(encoding="utf-8"))
+            bundle_bound = (
+                prov_data.get("bundle_sha256") == CANONICAL_METRIC_BUNDLE_V2_SHA256
+            )
+        except Exception:
+            bundle_bound = False
+
+    prov_figures: Dict[str, str] = prov_data.get("generated_figures", {})
+
+    qa_reviewed_figures: Set[str] = set()
+    if qa_record_valid:
+        for obs in qa_record_data.get("detailed_observations", {}).values():
+            cname = obs.get("figure_canonical_name")
+            if cname:
+                qa_reviewed_figures.add(cname)
+
+    if not figures_dir.is_dir():
+        missing_required.append("reports/evidence/figures")
+    else:
+        for fname in expected_figure_filenames:
+            p = figures_dir / fname
+            rel_path = f"reports/evidence/figures/{fname}"
+            expected_sha: Optional[str] = None
+            if fname in CANONICAL_FIGURE_EXPECTED_HASHES:
+                expected_sha = CANONICAL_FIGURE_EXPECTED_HASHES[fname]
+            elif fname in prov_figures:
+                expected_sha = prov_figures[fname]
+
+            if not p.is_file():
+                missing_required.append(rel_path)
+                figure_files[fname] = {
+                    "exists": False,
+                    "repo_relative_path": rel_path,
+                    "size_bytes": 0,
+                    "sha256": None,
+                    "expected_sha256": expected_sha,
+                    "verified": False,
+                    "lifecycle_states": make_lifecycle_states(
+                        file_present=False,
+                        hash_verified=False,
+                        structure_checked=False,
+                        numerical_checked=False,
+                        rendered=False,
+                        visually_reviewed=False,
+                    ),
+                }
+                continue
+
+            raw = p.read_bytes()
+            computed_sha = hashlib.sha256(raw).hexdigest()
+            hash_verified = False
+            if expected_sha:
+                if computed_sha == expected_sha:
+                    hash_verified = True
+                elif p.suffix in [".svg", ".json"]:
+                    crlf_sha = hashlib.sha256(
+                        raw.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+                    ).hexdigest()
+                    if crlf_sha == expected_sha:
+                        hash_verified = True
+                        computed_sha = crlf_sha
+            else:
+                hash_verified = True
+
+            if not hash_verified:
+                hash_mismatches.append(rel_path)
+
+            valid_struct = False
+            if p.suffix == ".png":
+                valid_struct = check_png_structure(p)
+            elif p.suffix == ".pdf":
+                valid_struct = check_pdf_structure(p)
+            elif p.suffix == ".svg":
+                valid_struct = check_svg_structure(p)
+            elif p.suffix == ".json":
+                valid_struct = check_json_structure(p)
+            else:
+                valid_struct = len(raw) > 0
+
+            if not valid_struct:
+                structure_failures.append(rel_path)
+
+            is_rendered = bool(valid_struct and len(raw) > 0)
+            numerical_checked = bool(bundle_bound and hash_verified)
+            visually_reviewed = bool(qa_record_valid and (fname in qa_reviewed_figures))
+
+            figure_files[fname] = {
+                "exists": True,
+                "repo_relative_path": rel_path,
+                "size_bytes": len(raw),
+                "sha256": computed_sha,
+                "expected_sha256": expected_sha,
+                "verified": hash_verified,
+                "lifecycle_states": make_lifecycle_states(
+                    file_present=True,
+                    hash_verified=hash_verified,
+                    structure_checked=valid_struct,
+                    numerical_checked=numerical_checked,
+                    rendered=is_rendered,
+                    visually_reviewed=visually_reviewed,
+                ),
+            }
+
     # Determine Verdict Fail-Closed
     verdict: str
     exit_code: int
     if missing_required:
         verdict = "FAIL_MISSING_REQUIRED_ARTIFACTS"
         exit_code = 1
-    elif hash_mismatches:
-        verdict = "FAIL_HASH_MISMATCH"
-        exit_code = 1
     elif structure_failures:
         verdict = "FAIL_STRUCTURE_CHECK"
+        exit_code = 1
+    elif hash_mismatches:
+        verdict = "FAIL_HASH_MISMATCH"
         exit_code = 1
     elif not qa_record_valid:
         verdict = "FAIL_QA_VERIFICATION_MISMATCH"

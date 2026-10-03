@@ -222,108 +222,12 @@
   "scientific_figures_inventory": {
     "total_figures": 32,
     "files": {
-      "canonical_rq1_accuracy_and_macro.pdf": {
-        "exists": true,
-        "repo_relative_path": "reports/evidence/figures/canonical_rq1_accuracy_and_macro.pdf",
-        "size_bytes": 31562,
-        "sha256": "798b7e3c7ead2a701bc2045e548e0554ee8d495bc2157ea33b6025da722010a3",
-        "expected_sha256": null,
-        "verified": true,
-        "lifecycle_states": {
-          "FILE_PRESENT": true,
-          "HASH_VERIFIED": true,
-          "STRUCTURE_CHECKED": true,
-          "NUMERICAL_CHECKED": true,
-          "RENDERED": true,
-          "VISUALLY_REVIEWED": true
-        }
-      },
-      "canonical_rq1_accuracy_and_macro.png": {
-        "exists": true,
-        "repo_relative_path": "reports/evidence/figures/canonical_rq1_accuracy_and_macro.png",
-        "size_bytes": 136851,
-        "sha256": "fbeb37c324360cf31081f802b523999c2ca59a999c353c7ccbb6ad122f77dc19",
-        "expected_sha256": null,
-        "verified": true,
-        "lifecycle_states": {
-          "FILE_PRESENT": true,
-          "HASH_VERIFIED": true,
-          "STRUCTURE_CHECKED": true,
-          "NUMERICAL_CHECKED": true,
-          "RENDERED": true,
-          "VISUALLY_REVIEWED": true
-        }
-      },
-      "canonical_rq2_retrieval.pdf": {
-        "exists": true,
-        "repo_relative_path": "reports/evidence/figures/canonical_rq2_retrieval.pdf",
-        "size_bytes": 28088,
-        "sha256": "43d496abcaabe3fb4966438845f10596b7cc771455ca1e2bf8a8e985e2ad0a51",
-        "expected_sha256": null,
-        "verified": true,
-        "lifecycle_states": {
-          "FILE_PRESENT": true,
-          "HASH_VERIFIED": true,
-          "STRUCTURE_CHECKED": true,
-          "NUMERICAL_CHECKED": true,
-          "RENDERED": true,
-          "VISUALLY_REVIEWED": true
-        }
-      },
-      "canonical_rq2_retrieval.png": {
-        "exists": true,
-        "repo_relative_path": "reports/evidence/figures/canonical_rq2_retrieval.png",
-        "size_bytes": 93401,
-        "sha256": "7c15f5d04db785c2f211cbb6bfd0f8c0a45a48229a2723fa36ae11b79e3de513",
-        "expected_sha256": null,
-        "verified": true,
-        "lifecycle_states": {
-          "FILE_PRESENT": true,
-          "HASH_VERIFIED": true,
-          "STRUCTURE_CHECKED": true,
-          "NUMERICAL_CHECKED": true,
-          "RENDERED": true,
-          "VISUALLY_REVIEWED": true
-        }
-      },
-      "canonical_rq3_cost_and_latency.pdf": {
-        "exists": true,
-        "repo_relative_path": "reports/evidence/figures/canonical_rq3_cost_and_latency.pdf",
-        "size_bytes": 32606,
-        "sha256": "51cf74ed24bfea090f53aede762cf6a3529aa8be8b286d6770fb05eb4083d9eb",
-        "expected_sha256": null,
-        "verified": true,
-        "lifecycle_states": {
-          "FILE_PRESENT": true,
-          "HASH_VERIFIED": true,
-          "STRUCTURE_CHECKED": true,
-          "NUMERICAL_CHECKED": true,
-          "RENDERED": true,
-          "VISUALLY_REVIEWED": true
-        }
-      },
-      "canonical_rq3_cost_and_latency.png": {
-        "exists": true,
-        "repo_relative_path": "reports/evidence/figures/canonical_rq3_cost_and_latency.png",
-        "size_bytes": 129904,
-        "sha256": "5b9c31be2b37cad34f76624171b9f7fdc8a4686d3c13e452dc8ca8369e472941",
-        "expected_sha256": null,
-        "verified": true,
-        "lifecycle_states": {
-          "FILE_PRESENT": true,
-          "HASH_VERIFIED": true,
-          "STRUCTURE_CHECKED": true,
-          "NUMERICAL_CHECKED": true,
-          "RENDERED": true,
-          "VISUALLY_REVIEWED": true
-        }
-      },
       "fig1_system_architecture.pdf": {
         "exists": true,
         "repo_relative_path": "reports/evidence/figures/fig1_system_architecture.pdf",
         "size_bytes": 113908,
         "sha256": "b2bf23b9b1fad06cff7298b712de67a6e8d60a13309d3150c12678df3f06ce61",
-        "expected_sha256": null,
+        "expected_sha256": "b2bf23b9b1fad06cff7298b712de67a6e8d60a13309d3150c12678df3f06ce61",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -331,7 +235,7 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig1_system_architecture.png": {
@@ -339,7 +243,7 @@
         "repo_relative_path": "reports/evidence/figures/fig1_system_architecture.png",
         "size_bytes": 57211,
         "sha256": "b8e9e070c7c027882f97ff64b090f57e50b51ebac43480a61c3f2bf67fcc16c2",
-        "expected_sha256": null,
+        "expected_sha256": "b8e9e070c7c027882f97ff64b090f57e50b51ebac43480a61c3f2bf67fcc16c2",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -347,15 +251,15 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig1_system_architecture.svg": {
         "exists": true,
         "repo_relative_path": "reports/evidence/figures/fig1_system_architecture.svg",
         "size_bytes": 7784,
-        "sha256": "7623e1c20792b1c90c97064387bdef99014f11e6d91635bce272a89fa06c97b1",
-        "expected_sha256": null,
+        "sha256": "390a20d82453ece92e29ac30bf8ddd24409831745125a5c8ee76a0e91770eeb2",
+        "expected_sha256": "390a20d82453ece92e29ac30bf8ddd24409831745125a5c8ee76a0e91770eeb2",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -363,7 +267,7 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig2_accuracy_vs_k.pdf": {
@@ -371,7 +275,7 @@
         "repo_relative_path": "reports/evidence/figures/fig2_accuracy_vs_k.pdf",
         "size_bytes": 87734,
         "sha256": "227f71b66c15505a09e0c2036e229b8e7f059f67de5517f23a5c373591cfa054",
-        "expected_sha256": null,
+        "expected_sha256": "227f71b66c15505a09e0c2036e229b8e7f059f67de5517f23a5c373591cfa054",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -379,7 +283,7 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig2_accuracy_vs_k.png": {
@@ -387,7 +291,7 @@
         "repo_relative_path": "reports/evidence/figures/fig2_accuracy_vs_k.png",
         "size_bytes": 23976,
         "sha256": "303c0e0c2255f5c5dfb828bdde0073a7a7d06c8eb61d3c06d889e4ccb4518965",
-        "expected_sha256": null,
+        "expected_sha256": "303c0e0c2255f5c5dfb828bdde0073a7a7d06c8eb61d3c06d889e4ccb4518965",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -395,15 +299,15 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig2_accuracy_vs_k.svg": {
         "exists": true,
         "repo_relative_path": "reports/evidence/figures/fig2_accuracy_vs_k.svg",
         "size_bytes": 6560,
-        "sha256": "1bddfd900b4e5bb20d90b2a68064cb5e2aa0a58066a14641e5f128958ecaa2b4",
-        "expected_sha256": null,
+        "sha256": "f6c6358497d9cb074de1ec2da3363332b3f53f93fc90a56d7f3efa9306e6f721",
+        "expected_sha256": "f6c6358497d9cb074de1ec2da3363332b3f53f93fc90a56d7f3efa9306e6f721",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -411,7 +315,7 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig3_macro_f1_vs_k.pdf": {
@@ -419,7 +323,7 @@
         "repo_relative_path": "reports/evidence/figures/fig3_macro_f1_vs_k.pdf",
         "size_bytes": 47302,
         "sha256": "e889d3cbd51fa9683d69eb3006e98a5a5a8667f0cd0b1bd5228070456f44f44c",
-        "expected_sha256": null,
+        "expected_sha256": "e889d3cbd51fa9683d69eb3006e98a5a5a8667f0cd0b1bd5228070456f44f44c",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -427,7 +331,7 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig3_macro_f1_vs_k.png": {
@@ -435,7 +339,7 @@
         "repo_relative_path": "reports/evidence/figures/fig3_macro_f1_vs_k.png",
         "size_bytes": 19490,
         "sha256": "22f0ebdaa565d2c1b576aa9b0a74470459cda94f051ff879c9e123b258dc99d6",
-        "expected_sha256": null,
+        "expected_sha256": "22f0ebdaa565d2c1b576aa9b0a74470459cda94f051ff879c9e123b258dc99d6",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -443,15 +347,15 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig3_macro_f1_vs_k.svg": {
         "exists": true,
         "repo_relative_path": "reports/evidence/figures/fig3_macro_f1_vs_k.svg",
         "size_bytes": 4056,
-        "sha256": "aff69a0bd3cfb37948a73e4ead5d885670f426e3e0132d3a1f13f536bf7acd28",
-        "expected_sha256": null,
+        "sha256": "3250dd2c52f108d9717d5d4607eb07e4052b11135e53a6e6731380df9c5de42e",
+        "expected_sha256": "3250dd2c52f108d9717d5d4607eb07e4052b11135e53a6e6731380df9c5de42e",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -459,7 +363,7 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig4_retrieval_hit_rate.pdf": {
@@ -467,7 +371,7 @@
         "repo_relative_path": "reports/evidence/figures/fig4_retrieval_hit_rate.pdf",
         "size_bytes": 72836,
         "sha256": "cfa4ba05c3f88d87439c1674a4a3f61e92c83f40e5c2c25255f0467dda890082",
-        "expected_sha256": null,
+        "expected_sha256": "cfa4ba05c3f88d87439c1674a4a3f61e92c83f40e5c2c25255f0467dda890082",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -475,7 +379,7 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig4_retrieval_hit_rate.png": {
@@ -483,7 +387,7 @@
         "repo_relative_path": "reports/evidence/figures/fig4_retrieval_hit_rate.png",
         "size_bytes": 20165,
         "sha256": "f8287936d2b5fc24e89584349028f393b801b6bebe668f8bea449c6b67f2128f",
-        "expected_sha256": null,
+        "expected_sha256": "f8287936d2b5fc24e89584349028f393b801b6bebe668f8bea449c6b67f2128f",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -498,8 +402,8 @@
         "exists": true,
         "repo_relative_path": "reports/evidence/figures/fig4_retrieval_hit_rate.svg",
         "size_bytes": 4074,
-        "sha256": "c01c563727549f73a48d3c4a9c24dc391e023d4ea5a930958f4ffb736e8c937f",
-        "expected_sha256": null,
+        "sha256": "2c7bacf2d80753bceb9b863c59dad89011902811662ddbab3512bac9956ee7cf",
+        "expected_sha256": "2c7bacf2d80753bceb9b863c59dad89011902811662ddbab3512bac9956ee7cf",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -507,7 +411,7 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig5_conditional_accuracy.pdf": {
@@ -515,7 +419,7 @@
         "repo_relative_path": "reports/evidence/figures/fig5_conditional_accuracy.pdf",
         "size_bytes": 94425,
         "sha256": "f545f0460ae9cb2940c1c5537a5f1c365ec8bbdfd0c018b2695d704717dfee81",
-        "expected_sha256": null,
+        "expected_sha256": "f545f0460ae9cb2940c1c5537a5f1c365ec8bbdfd0c018b2695d704717dfee81",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -523,7 +427,7 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig5_conditional_accuracy.png": {
@@ -531,7 +435,7 @@
         "repo_relative_path": "reports/evidence/figures/fig5_conditional_accuracy.png",
         "size_bytes": 26219,
         "sha256": "8a896be3eccf13bb67a953d6bf70656e06aa6e2c35cb393c24fd2d03e21a91a9",
-        "expected_sha256": null,
+        "expected_sha256": "8a896be3eccf13bb67a953d6bf70656e06aa6e2c35cb393c24fd2d03e21a91a9",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -539,15 +443,15 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig5_conditional_accuracy.svg": {
         "exists": true,
         "repo_relative_path": "reports/evidence/figures/fig5_conditional_accuracy.svg",
         "size_bytes": 5733,
-        "sha256": "1d7497283ae0537c52e88a5e00803d0381e1b62ec5e44471e75ed5090bdb14a9",
-        "expected_sha256": null,
+        "sha256": "80090de1cd54b04c0758bb3eeabfc0114b5b485421d851e4aa711efe3b31050f",
+        "expected_sha256": "80090de1cd54b04c0758bb3eeabfc0114b5b485421d851e4aa711efe3b31050f",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -555,7 +459,7 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig6_latency_vs_k.pdf": {
@@ -563,7 +467,7 @@
         "repo_relative_path": "reports/evidence/figures/fig6_latency_vs_k.pdf",
         "size_bytes": 79513,
         "sha256": "33499a51bbf6feef3ace8c353f222fa406ef6e8993181310d7266b384ec66586",
-        "expected_sha256": null,
+        "expected_sha256": "33499a51bbf6feef3ace8c353f222fa406ef6e8993181310d7266b384ec66586",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -571,7 +475,7 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig6_latency_vs_k.png": {
@@ -579,7 +483,7 @@
         "repo_relative_path": "reports/evidence/figures/fig6_latency_vs_k.png",
         "size_bytes": 19731,
         "sha256": "48011a5a586947a11c88fb0bc67f6e5801069837e2e5df655af5d5b554328b03",
-        "expected_sha256": null,
+        "expected_sha256": "48011a5a586947a11c88fb0bc67f6e5801069837e2e5df655af5d5b554328b03",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -587,15 +491,15 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig6_latency_vs_k.svg": {
         "exists": true,
         "repo_relative_path": "reports/evidence/figures/fig6_latency_vs_k.svg",
         "size_bytes": 5892,
-        "sha256": "a1b192768437b61fa2a0a0eea82c19011a75a8005639000fae77019e1a281b2a",
-        "expected_sha256": null,
+        "sha256": "451180e694aaec17b263da35894ef3bc577aed6da44ac1628ce70ab0580b00c5",
+        "expected_sha256": "451180e694aaec17b263da35894ef3bc577aed6da44ac1628ce70ab0580b00c5",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -603,7 +507,7 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig7_cost_and_tokens_vs_k.pdf": {
@@ -611,7 +515,7 @@
         "repo_relative_path": "reports/evidence/figures/fig7_cost_and_tokens_vs_k.pdf",
         "size_bytes": 91841,
         "sha256": "10365d0a30c119e6ad9914cb4f0631cfcebf0e630d4dd7774e74133c251c2e4d",
-        "expected_sha256": null,
+        "expected_sha256": "10365d0a30c119e6ad9914cb4f0631cfcebf0e630d4dd7774e74133c251c2e4d",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -619,7 +523,7 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig7_cost_and_tokens_vs_k.png": {
@@ -627,7 +531,7 @@
         "repo_relative_path": "reports/evidence/figures/fig7_cost_and_tokens_vs_k.png",
         "size_bytes": 27984,
         "sha256": "ca296165b38b499432f851618e3d6a512964c461e59dc3b646e647ddcb70bfb1",
-        "expected_sha256": null,
+        "expected_sha256": "ca296165b38b499432f851618e3d6a512964c461e59dc3b646e647ddcb70bfb1",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -642,8 +546,8 @@
         "exists": true,
         "repo_relative_path": "reports/evidence/figures/fig7_cost_and_tokens_vs_k.svg",
         "size_bytes": 6734,
-        "sha256": "38349b81e25574b8bd8424e5e7a251b7c2d1a5c0344a6ed2b8cced98a50d8431",
-        "expected_sha256": null,
+        "sha256": "b0194313704b0672ebb8c664192bb7f85d2dedefd7fc04c9dca06dab2c687255",
+        "expected_sha256": "b0194313704b0672ebb8c664192bb7f85d2dedefd7fc04c9dca06dab2c687255",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -651,7 +555,7 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig8_failure_decomposition.pdf": {
@@ -659,7 +563,7 @@
         "repo_relative_path": "reports/evidence/figures/fig8_failure_decomposition.pdf",
         "size_bytes": 112101,
         "sha256": "ac6e7e6fb26252ace23aa84d59d0033e0c23decd0dabb9e6eea13d63ab922f09",
-        "expected_sha256": null,
+        "expected_sha256": "ac6e7e6fb26252ace23aa84d59d0033e0c23decd0dabb9e6eea13d63ab922f09",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -667,7 +571,7 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig8_failure_decomposition.png": {
@@ -675,7 +579,7 @@
         "repo_relative_path": "reports/evidence/figures/fig8_failure_decomposition.png",
         "size_bytes": 31839,
         "sha256": "ed26f381337e7608445a6dcbfd028d161cc7a053d31cc373951a31a7cf9d77bb",
-        "expected_sha256": null,
+        "expected_sha256": "ed26f381337e7608445a6dcbfd028d161cc7a053d31cc373951a31a7cf9d77bb",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -683,15 +587,15 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "fig8_failure_decomposition.svg": {
         "exists": true,
         "repo_relative_path": "reports/evidence/figures/fig8_failure_decomposition.svg",
         "size_bytes": 3824,
-        "sha256": "2cd89e99326650fa9ab069d2f83c13ef23dedbcaea0e75c5360a5e0082c65ba5",
-        "expected_sha256": null,
+        "sha256": "b90d61d4fcd806c3affb1ef017dcf7aacad1c09a4b4e4a5dbf7421b6306f4e6c",
+        "expected_sha256": "b90d61d4fcd806c3affb1ef017dcf7aacad1c09a4b4e4a5dbf7421b6306f4e6c",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -699,7 +603,103 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "canonical_rq1_accuracy_and_macro.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/canonical_rq1_accuracy_and_macro.png",
+        "size_bytes": 136851,
+        "sha256": "fbeb37c324360cf31081f802b523999c2ca59a999c353c7ccbb6ad122f77dc19",
+        "expected_sha256": "fbeb37c324360cf31081f802b523999c2ca59a999c353c7ccbb6ad122f77dc19",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "canonical_rq1_accuracy_and_macro.pdf": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/canonical_rq1_accuracy_and_macro.pdf",
+        "size_bytes": 31562,
+        "sha256": "798b7e3c7ead2a701bc2045e548e0554ee8d495bc2157ea33b6025da722010a3",
+        "expected_sha256": "798b7e3c7ead2a701bc2045e548e0554ee8d495bc2157ea33b6025da722010a3",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "canonical_rq2_retrieval.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/canonical_rq2_retrieval.png",
+        "size_bytes": 93401,
+        "sha256": "7c15f5d04db785c2f211cbb6bfd0f8c0a45a48229a2723fa36ae11b79e3de513",
+        "expected_sha256": "7c15f5d04db785c2f211cbb6bfd0f8c0a45a48229a2723fa36ae11b79e3de513",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "canonical_rq2_retrieval.pdf": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/canonical_rq2_retrieval.pdf",
+        "size_bytes": 28088,
+        "sha256": "43d496abcaabe3fb4966438845f10596b7cc771455ca1e2bf8a8e985e2ad0a51",
+        "expected_sha256": "43d496abcaabe3fb4966438845f10596b7cc771455ca1e2bf8a8e985e2ad0a51",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "canonical_rq3_cost_and_latency.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/canonical_rq3_cost_and_latency.png",
+        "size_bytes": 129904,
+        "sha256": "5b9c31be2b37cad34f76624171b9f7fdc8a4686d3c13e452dc8ca8369e472941",
+        "expected_sha256": "5b9c31be2b37cad34f76624171b9f7fdc8a4686d3c13e452dc8ca8369e472941",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "canonical_rq3_cost_and_latency.pdf": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/canonical_rq3_cost_and_latency.pdf",
+        "size_bytes": 32606,
+        "sha256": "51cf74ed24bfea090f53aede762cf6a3529aa8be8b286d6770fb05eb4083d9eb",
+        "expected_sha256": "51cf74ed24bfea090f53aede762cf6a3529aa8be8b286d6770fb05eb4083d9eb",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
         }
       },
       "figure_provenance.json": {
@@ -715,15 +715,15 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       },
       "plot_data.json": {
         "exists": true,
         "repo_relative_path": "reports/evidence/figures/plot_data.json",
         "size_bytes": 3760,
-        "sha256": "e6515f6ae89f0b98539eceb526a0d8bd0e72558d393c333345248b512912f375",
-        "expected_sha256": null,
+        "sha256": "965452e7d84e6522f1c0a673ae6e1cd9e92e765a89b222fab2213c8ffbe7f4ac",
+        "expected_sha256": "965452e7d84e6522f1c0a673ae6e1cd9e92e765a89b222fab2213c8ffbe7f4ac",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -731,7 +731,7 @@
           "STRUCTURE_CHECKED": true,
           "NUMERICAL_CHECKED": true,
           "RENDERED": true,
-          "VISUALLY_REVIEWED": true
+          "VISUALLY_REVIEWED": false
         }
       }
     }
@@ -936,8 +936,8 @@
     "qa_record_file": {
       "exists": true,
       "repo_relative_path": "reports/evidence/qa/visual_qa_inspection_record.json",
-      "size_bytes": 9059,
-      "sha256": "397173a19943e1bdaebf47b30c7f828047d4d79d6a3c90efc4544521d6c842b0",
+      "size_bytes": 13954,
+      "sha256": "f1cf1f9dd8320e38ca0f70923015a988062f14f6075214a0bfe5b4203871edfd",
       "expected_sha256": null,
       "verified": true,
       "lifecycle_states": {

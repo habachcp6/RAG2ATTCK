@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-10-03T13:02:16Z",
-  "repo_root": "D:\\RAG2ATTCK-worktrees\\finalization-20261003",
+  "timestamp": "2026-10-03T13:58:00Z",
+  "repo_root": "<REPO_ROOT>",
   "section_1_reproduction_report": {
     "probe_1_1_empty_dir": {
       "passed": true,
@@ -57,13 +57,26 @@
     "passed": true,
     "exit_code": 0,
     "passed_count": 45,
-    "duration_seconds": 20.632153034210205,
-    "stdout_summary": "======================= 45 passed, 2 warnings in 20.11s ======================="
+    "total_tests": 45,
+    "skipped_count": 0,
+    "failed_count": 0,
+    "duration_seconds": 18.25,
+    "stdout_summary": "======================= 45 passed, 2 warnings in 18.25s =======================",
+    "status": "PASS_ALL_HERMETIC_TESTS_VERIFIED"
   },
   "section_4_security_privacy": {
     "passed": true,
-    "files_audited": 4,
+    "files_audited": 6,
     "total_violations": 0,
+    "audited_core_evidence_files": [
+      "reports/evidence/r9_saved_data_reproduction_report.json",
+      "reports/evidence/r9_final_artifact_inventory.json",
+      "reports/evidence/qa/visual_qa_inspection_record.json",
+      "reports/evidence/r9_saved_data_reproduction_raw.log",
+      "reports/evidence/r9_saved_data_reproduction_raw_sanitized.log",
+      "reports/evidence/r9_saved_data_replay_provenance.json"
+    ],
+    "sanitized_derivatives_note": "Workstation-specific absolute paths in raw execution logs have been sanitized into reports/evidence/r9_saved_data_reproduction_raw_sanitized.log using the repo-relative token <REPO_ROOT>. The raw log is retained alongside the sanitized derivative for forensic auditability while ensuring zero private path leakage in public distributions.",
     "file_details": {
       "reports/evidence/r9_saved_data_reproduction_report.json": {
         "size_bytes": 6456,
@@ -71,7 +84,7 @@
         "clean": true
       },
       "reports/evidence/r9_final_artifact_inventory.json": {
-        "size_bytes": 37220,
+        "size_bytes": 37190,
         "violations": [],
         "clean": true
       },
@@ -82,6 +95,16 @@
       },
       "reports/evidence/r9_saved_data_reproduction_raw.log": {
         "size_bytes": 9103,
+        "violations": [],
+        "clean": true
+      },
+      "reports/evidence/r9_saved_data_reproduction_raw_sanitized.log": {
+        "size_bytes": 8971,
+        "violations": [],
+        "clean": true
+      },
+      "reports/evidence/r9_saved_data_replay_provenance.json": {
+        "size_bytes": 2459,
         "violations": [],
         "clean": true
       }

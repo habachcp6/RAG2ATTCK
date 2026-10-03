@@ -459,16 +459,11 @@ def validate_live_authorization(
     # Gate 5: Reject external self-signed lock or external plan root on TEST split
     is_test_split = plan.manifest.get("split") == "test"
     is_canonical_scale = len(getattr(plan, "samples", [])) == 1280
-    valid_roots = {REPO_ROOT.resolve()}
-    snap_env = os.environ.get("RAG2ATTCK_SNAPSHOT_ROOT")
-    if snap_env and (Path(snap_env) / "config" / "canonical_experiment_lock_v1.json").is_file():
-        valid_roots.add(Path(snap_env).resolve())
-
     if is_test_split:
         has_external_lock = (
             hasattr(plan, "root")
             and (plan.root / "config" / "canonical_experiment_lock_v1.json").exists()
-            and plan.root.resolve() not in valid_roots
+            and plan.root.resolve() != REPO_ROOT.resolve()
         )
         if has_external_lock:
             raise ProtocolNotFrozenError(
@@ -478,7 +473,7 @@ def validate_live_authorization(
         if (
             is_canonical_scale
             and hasattr(plan, "root")
-            and plan.root.resolve() not in valid_roots
+            and plan.root.resolve() != REPO_ROOT.resolve()
         ):
             raise ProtocolNotFrozenError(
                 "LIVE_EXECUTION_BLOCKED: canonical TEST execution must execute from repo root; "
@@ -486,8 +481,7 @@ def validate_live_authorization(
             )
 
     # Gate 6: Canonical experiment lock enforcement for canonical TEST execution
-    target_code_root = getattr(plan, "root", None) or REPO_ROOT
-    validate_canonical_experiment_lock(plan, protocol, repo_root=target_code_root)
+    validate_canonical_experiment_lock(plan, protocol)
 
 
 def validate_canonical_experiment_lock(

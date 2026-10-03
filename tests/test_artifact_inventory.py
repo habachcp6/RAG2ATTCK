@@ -6,11 +6,16 @@ Tests fail-closed behavior across:
 3. test_missing_previews_fails: Missing slide preview PNG strictly exits with code 1.
 4. test_missing_figures_directory_fails: Missing figures directory strictly exits with code 1 and FAIL_MISSING_REQUIRED_ARTIFACTS.
 5. test_missing_one_required_figure_fails: Missing 1 required figure strictly exits with code 1 and FAIL_MISSING_REQUIRED_ARTIFACTS.
-6. test_required_png_replaced_with_plain_text_fails: Fake text PNG strictly exits with code 1 and FAIL_STRUCTURE_CHECK.
-7. test_figure_tampered_bytes_fails: Modified figure bytes strictly exits with code 1 and FAIL_HASH_MISMATCH.
-8. test_missing_or_mismatched_qa_record_fails: Missing or tampered QA record strictly exits with code 1.
-9. test_genuine_artifacts_inventory_passes: Genuine repository passes with exit code 0 and verdict PASS_ALL_ARTIFACTS_VERIFIED.
-10. test_cli_execution_fail_closed: CLI executions on empty dir vs genuine repo.
+6. test_missing_provenance_file_fails: Missing figure_provenance.json strictly exits with code 1 and FAIL_MISSING_REQUIRED_ARTIFACTS.
+7. test_missing_docx_fails: Missing canonical_populated_report.docx strictly exits with code 1 and FAIL_MISSING_REQUIRED_ARTIFACTS.
+8. test_required_png_replaced_with_plain_text_fails: Fake text PNG strictly exits with code 1 and FAIL_STRUCTURE_CHECK.
+9. test_docx_with_unrendered_template_tags_fails: DOCX containing {{...}} strictly exits with code 1 and FAIL_STRUCTURE_CHECK.
+10. test_missing_expected_digest_fails: Deleting expected digest for required figure strictly exits with code 1 and FAIL_MISSING_EXPECTED_DIGEST.
+11. test_figure_tampered_bytes_fails: Modified figure bytes strictly exits with code 1 and FAIL_HASH_MISMATCH.
+12. test_wrong_bundle_binding_fails: Tampered bundle_sha256 in figure_provenance strictly exits with code 1 and FAIL_BUNDLE_BINDING_MISMATCH.
+13. test_missing_or_mismatched_qa_record_fails: Missing or tampered QA record strictly exits with code 1.
+14. test_genuine_artifacts_inventory_passes: Genuine repository passes with exit code 0 and verdict PASS_ALL_ARTIFACTS_VERIFIED.
+15. test_cli_execution_fail_closed: CLI executions on empty dir vs genuine repo.
 """
 
 from __future__ import annotations
@@ -19,6 +24,7 @@ import json
 import shutil
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 from typing import List
 
@@ -34,6 +40,7 @@ REQUIRED_ARTIFACT_REL_PATHS = [
     "artifacts/public_package_staging/public_package_manifest.json",
     "reports/evidence/canonical_populated_report.md",
     "reports/evidence/canonical_populated_report.docx",
+    "reports/evidence/canonical_populated_report.pdf",
     "reports/evidence/populated_report_slots_canonical.json",
     "reports/evidence/research_report_scaffold.md",
     "docs/presentation/slides.pptx",
@@ -149,6 +156,30 @@ def test_missing_one_required_figure_fails(tmp_path: Path) -> None:
     )
 
 
+def test_missing_provenance_file_fails(tmp_path: Path) -> None:
+    """Verify that missing figure_provenance.json triggers FAIL_MISSING_REQUIRED_ARTIFACTS."""
+    target_rel = "reports/evidence/figures/figure_provenance.json"
+    setup_mock_repo(tmp_path, omit_paths=[target_rel])
+
+    inventory, code = generate_inventory(repo_root=tmp_path)
+
+    assert code == 1, "Expected exit code 1 when figure_provenance.json is missing"
+    assert inventory["verdict"] == "FAIL_MISSING_REQUIRED_ARTIFACTS"
+    assert target_rel in inventory["validation_summary"]["missing_required_artifacts"]
+
+
+def test_missing_docx_fails(tmp_path: Path) -> None:
+    """Verify that missing canonical_populated_report.docx triggers FAIL_MISSING_REQUIRED_ARTIFACTS."""
+    target_rel = "reports/evidence/canonical_populated_report.docx"
+    setup_mock_repo(tmp_path, omit_paths=[target_rel])
+
+    inventory, code = generate_inventory(repo_root=tmp_path)
+
+    assert code == 1, "Expected exit code 1 when DOCX is missing"
+    assert inventory["verdict"] == "FAIL_MISSING_REQUIRED_ARTIFACTS"
+    assert target_rel in inventory["validation_summary"]["missing_required_artifacts"]
+
+
 def test_required_png_replaced_with_plain_text_fails(tmp_path: Path) -> None:
     """Verify that replacing a required .png with plain text triggers FAIL_STRUCTURE_CHECK."""
     setup_mock_repo(tmp_path)
@@ -168,6 +199,66 @@ def test_required_png_replaced_with_plain_text_fails(tmp_path: Path) -> None:
             "lifecycle_states"
         ]["STRUCTURE_CHECKED"]
         is False
+    )
+
+
+def test_docx_with_unrendered_template_tags_fails(tmp_path: Path) -> None:
+    """Verify that a DOCX containing {{...}} triggers FAIL_STRUCTURE_CHECK."""
+    setup_mock_repo(tmp_path)
+    docx_path = tmp_path / "reports/evidence/canonical_populated_report.docx"
+
+    temp_dir = tmp_path / "docx_unpack"
+    with zipfile.ZipFile(docx_path, "r") as zf:
+        zf.extractall(temp_dir)
+
+    doc_xml_p = temp_dir / "word" / "document.xml"
+    content = doc_xml_p.read_text(encoding="utf-8")
+    content = content.replace("Abstract", "Abstract {{UNRENDERED_SLOT_TAG}}")
+    doc_xml_p.write_text(content, encoding="utf-8")
+
+    docx_path.unlink()
+    with zipfile.ZipFile(docx_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for file_p in temp_dir.rglob("*"):
+            if file_p.is_file():
+                zf.write(file_p, file_p.relative_to(temp_dir))
+
+    inventory, code = generate_inventory(repo_root=tmp_path)
+
+    assert code == 1, "Expected exit code 1 when DOCX has unrendered template tags"
+    assert inventory["verdict"] == "FAIL_STRUCTURE_CHECK"
+    assert (
+        "reports/evidence/canonical_populated_report.docx"
+        in inventory["validation_summary"]["structure_failure_artifacts"]
+    )
+
+
+def test_missing_expected_digest_fails(tmp_path: Path) -> None:
+    """Verify that deleting an expected figure digest from provenance triggers FAIL_MISSING_EXPECTED_DIGEST."""
+    setup_mock_repo(tmp_path)
+    prov_file = tmp_path / "reports/evidence/figures/figure_provenance.json"
+    prov_data = json.loads(prov_file.read_text(encoding="utf-8"))
+    # Delete digest for fig4_retrieval_hit_rate.png while keeping valid PNG on disk
+    del prov_data["generated_figures"]["fig4_retrieval_hit_rate.png"]
+    prov_file.write_text(json.dumps(prov_data, indent=2), encoding="utf-8")
+
+    # In order to test missing expected digest without triggering figure_provenance hash mismatch first,
+    # we update the expected hash for figure_provenance.json to match the modified file
+    import hashlib
+    mod_prov_sha = hashlib.sha256(prov_file.read_bytes()).hexdigest()
+    from unittest.mock import patch
+    import scripts.generate_r9_artifact_inventory as gen_module
+
+    mod_hashes = dict(gen_module.CANONICAL_FIGURE_EXPECTED_HASHES)
+    mod_hashes["figure_provenance.json"] = mod_prov_sha
+
+    with patch.object(gen_module, "CANONICAL_FIGURE_EXPECTED_HASHES", mod_hashes):
+        inventory, code = generate_inventory(repo_root=tmp_path)
+
+    assert code == 1, "Expected exit code 1 when expected digest is missing"
+    assert inventory["verdict"] == "FAIL_MISSING_EXPECTED_DIGEST"
+    assert (
+        "reports/evidence/figures/fig4_retrieval_hit_rate.png"
+        in inventory["validation_summary"]["missing_authority_artifacts"]
     )
 
 
@@ -194,6 +285,30 @@ def test_figure_tampered_bytes_fails(tmp_path: Path) -> None:
         ]["HASH_VERIFIED"]
         is False
     )
+
+
+def test_wrong_bundle_binding_fails(tmp_path: Path) -> None:
+    """Verify that tampered bundle_sha256 in provenance triggers FAIL_BUNDLE_BINDING_MISMATCH."""
+    setup_mock_repo(tmp_path)
+    prov_file = tmp_path / "reports/evidence/figures/figure_provenance.json"
+    prov_data = json.loads(prov_file.read_text(encoding="utf-8"))
+    prov_data["bundle_sha256"] = "0" * 64
+    prov_file.write_text(json.dumps(prov_data, indent=2), encoding="utf-8")
+
+    import hashlib
+    mod_prov_sha = hashlib.sha256(prov_file.read_bytes()).hexdigest()
+    from unittest.mock import patch
+    import scripts.generate_r9_artifact_inventory as gen_module
+
+    mod_hashes = dict(gen_module.CANONICAL_FIGURE_EXPECTED_HASHES)
+    mod_hashes["figure_provenance.json"] = mod_prov_sha
+
+    with patch.object(gen_module, "CANONICAL_FIGURE_EXPECTED_HASHES", mod_hashes):
+        inventory, code = generate_inventory(repo_root=tmp_path)
+
+    assert code == 1, "Expected exit code 1 when bundle binding is invalid"
+    assert inventory["verdict"] == "FAIL_BUNDLE_BINDING_MISMATCH"
+    assert inventory["validation_summary"]["bundle_bound"] is False
 
 
 def test_missing_or_mismatched_qa_record_fails(tmp_path: Path) -> None:
@@ -328,7 +443,6 @@ def test_genuine_artifacts_inventory_passes() -> None:
         assert states["STRUCTURE_CHECKED"] is True
         assert states["NUMERICAL_CHECKED"] is True
         assert states["RENDERED"] is True
-        # VISUALLY_REVIEWED is strictly True only for figures specifically in QA record
         if f_name in ["fig4_retrieval_hit_rate.png", "fig7_cost_and_tokens_vs_k.png"]:
             assert states["VISUALLY_REVIEWED"] is True
         else:
@@ -337,8 +451,10 @@ def test_genuine_artifacts_inventory_passes() -> None:
     # Summary clean
     summary = inventory["validation_summary"]
     assert summary["missing_required_count"] == 0
+    assert summary["missing_authority_count"] == 0
     assert summary["hash_mismatch_count"] == 0
     assert summary["structure_failure_count"] == 0
+    assert summary["bundle_bound"] is True
     assert summary["qa_errors"] == []
 
 

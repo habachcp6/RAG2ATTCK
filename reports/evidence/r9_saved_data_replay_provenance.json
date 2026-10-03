@@ -1,18 +1,29 @@
 {
-  "schema_version": "r9_saved_data_replay_provenance_v1",
+  "schema_version": "r9_saved_data_replay_provenance_v2",
   "timestamp_utc": "2026-10-03T12:57:38Z",
-  "execution_command": "uv run python -m rag2attck.cli replay-eval --bundle artifacts/results/canonical_metric_bundle_v2.json --output-dir .tmp/r9_replay_output",
-  "tested_checkout_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-  "worktree_clean_state": "true, no uncommitted changes",
-  "environment": "Python 3.12, Windows x86_64, uv",
-  "exit_code": 0,
+  "execution_identity": {
+    "execution_command": "uv run python scripts/reproduce_canonical_study.py --bundle-dir .tmp/unpacked_v4/base_public_v3 --output-dir .tmp/r9_replay_output --expected-manifest-sha 32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c --all",
+    "entrypoint_script": "scripts/reproduce_canonical_study.py",
+    "entrypoint_script_sha256": "8b8ba93522cf10e59d64a56e4b0c25b957445937fce2ff4698f3600e0113391e",
+    "tested_checkout_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
+    "worktree_clean_state": true,
+    "environment": "Python 3.13.0, Windows x86_64, uv",
+    "python_runtime": "3.13.0",
+    "os_platform": "Windows x86_64",
+    "package_manager": "uv",
+    "exit_code": 0
+  },
+  "superseded_record_note": "Replaces previous record that erroneously referenced a non-existent CLI wrapper; the actual execution entrypoint is scripts/reproduce_canonical_study.py running under Python 3.13.0.",
   "offline_guard_result": "installed=True attempted_egress=0, live_api_calls=0",
   "offline_guard_details": {
     "installed": true,
     "attempted_egress": 0,
     "live_api_calls": 0,
-    "guard_status": "PASS_ZERO_EGRESS"
+    "status": "PASS_ZERO_EGRESS"
   },
+  "verdict": "PASS_CANONICAL_OFFLINE_VERIFIED",
+  "defects_count": 0,
+  "defects": [],
   "inputs": {
     "canonical_metric_bundle_v2.json": {
       "path": "artifacts/results/canonical_metric_bundle_v2.json",
@@ -54,10 +65,67 @@
       "size_bytes": 7437
     }
   },
+  "dataset_and_ledger_summary": {
+    "total_records": 6400,
+    "provider_attempts": 6401,
+    "detected_retries": 1,
+    "retry_target": "('view_d870d574', 'rag_k1')",
+    "monetary_reserves_created": 6400,
+    "monetary_settlements_executed": 6400,
+    "cumulative_settled_cost_usd": "6.57575890",
+    "uncommitted_available_balance_usd": "13.36160100",
+    "status": "PASS_EXACT_RECONCILIATION"
+  },
   "comparator_result": {
-    "verdict": "PASS_VERIFIED",
+    "verdict": "PASS_CANONICAL_OFFLINE_VERIFIED",
     "defects_count": 0,
     "defects": [],
-    "deep_comparison_status": "MATCH"
+    "deep_comparison_status": "MATCH",
+    "scope_clarification": "The field counts below represent exact leaf/nested metric fields compared by the deep typed comparator across the 6 native analytical outputs and RQ analysis output, NOT top-level dataset records (which total 6,400 across 5 conditions).",
+    "compared_field_counts": {
+      "overall_metrics.json": {
+        "field_count": 120,
+        "float_tolerance": "1e-12",
+        "monetary_comparison": "exact Decimal",
+        "status": "MATCH"
+      },
+      "per_condition_metrics.json": {
+        "field_count": 276,
+        "float_tolerance": "1e-12",
+        "monetary_comparison": "exact Decimal",
+        "status": "MATCH"
+      },
+      "per_technique_metrics.json": {
+        "field_count": 35566,
+        "float_tolerance": "1e-12",
+        "monetary_comparison": "exact Decimal",
+        "status": "MATCH"
+      },
+      "retrieval_conditional_metrics.json": {
+        "field_count": 81,
+        "float_tolerance": "1e-12",
+        "monetary_comparison": "exact Decimal",
+        "status": "MATCH"
+      },
+      "failure_decomposition.json": {
+        "field_count": 147,
+        "float_tolerance": "1e-12",
+        "monetary_comparison": "exact Decimal",
+        "status": "MATCH"
+      },
+      "run_provenance.json": {
+        "field_count": 142,
+        "float_tolerance": "1e-12",
+        "monetary_comparison": "exact Decimal",
+        "status": "MATCH"
+      },
+      "rq_analysis.json": {
+        "field_count": 2000,
+        "bootstrap_iterations": 1000,
+        "bootstrap_seed": 42,
+        "scientific_fields_status": "MATCH",
+        "status": "MATCH"
+      }
+    }
   }
 }

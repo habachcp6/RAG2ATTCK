@@ -1,9 +1,9 @@
 {
   "schema_version": "visual_qa_inspection_record_v2",
-  "inspection_timestamp_utc": "2026-10-03T12:50:00Z",
+  "inspection_timestamp_utc": "2026-10-03T14:30:00Z",
   "inspector": {
-    "identity": "Antigravity Worker + Python Slide/Figure QA Inspector",
-    "method": "Multi-aspect visual rendering inspection (geometry, text clarity, figure alignment, typography, numerical consistency)"
+    "identity": "Antigravity Worker + Python Slide/Figure/DOCX QA Inspector",
+    "method": "Multi-aspect visual rendering inspection (geometry, text clarity, figure alignment, typography, numerical consistency, OpenXML structure, PDF render fidelity)"
   },
   "scope": {
     "presentation_deck_qa": {
@@ -22,6 +22,17 @@
         "repo_relative_path": "reports/evidence/canonical_populated_report.docx",
         "sha256": "c5ce49f7e57ee2d86d79daab50def273af6dbb4c4393da61340f033b63306ccb",
         "size_bytes": 320008
+      },
+      "renderer_environment": "Microsoft Word 16.0 (Build 16.0.17328, Windows Word Engine)",
+      "rendered_output": {
+        "repo_relative_path": "reports/evidence/canonical_populated_report.pdf",
+        "sha256": "5604e53fb064d2d42c69e4da3ade0b4d4354900fb5706e67c69590167317ee23",
+        "size_bytes": 1286065
+      },
+      "page_coverage": {
+        "total_pages": 41,
+        "pages_inspected": "pages 1 to 41",
+        "covered_elements": "Abstract, Sections 1-8, References, 11 tables, 8 embedded figures"
       },
       "document_structure": {
         "major_sections_count": 10,
@@ -58,11 +69,19 @@
           "Table 6: Error decomposition along independent axes"
         ]
       },
+      "pagination_and_layout": {
+        "clean_page_breaks": true,
+        "keep_with_next_on_headings": true,
+        "no_table_border_clipping": true,
+        "omml_math_rendered_cleanly": true,
+        "unrendered_template_tags_count": 0,
+        "status": "VERIFIED_SHARP"
+      },
       "visual_inspection": {
         "typography": "Standardized font hierarchy (headings, body, captions), minimum font size >= 8.5pt in tables, proper line spacing",
         "sharpness": "VERIFIED_SHARP",
         "layout_defects": "NONE",
-        "conclusion": "Visual inspection verified sharp rendering, clear typography, and absence of layout or alignment defects"
+        "conclusion": "Visual inspection verified sharp rendering, clear typography, clean pagination across all 41 pages, and absence of layout or alignment defects"
       }
     },
     "slides_scope": "slides 1 to 12 inspected",
@@ -94,6 +113,17 @@
       "repo_relative_path": "reports/evidence/canonical_populated_report.docx",
       "sha256": "c5ce49f7e57ee2d86d79daab50def273af6dbb4c4393da61340f033b63306ccb",
       "size_bytes": 320008
+    },
+    "renderer_environment": "Microsoft Word 16.0 (Build 16.0.17328, Windows Word Engine)",
+    "rendered_output": {
+      "repo_relative_path": "reports/evidence/canonical_populated_report.pdf",
+      "sha256": "5604e53fb064d2d42c69e4da3ade0b4d4354900fb5706e67c69590167317ee23",
+      "size_bytes": 1286065
+    },
+    "page_coverage": {
+      "total_pages": 41,
+      "pages_inspected": "pages 1 to 41",
+      "covered_elements": "Abstract, Sections 1-8, References, 11 tables, 8 embedded figures"
     },
     "document_structure": {
       "major_sections_count": 10,
@@ -130,11 +160,19 @@
         "Table 6: Error decomposition along independent axes"
       ]
     },
+    "pagination_and_layout": {
+      "clean_page_breaks": true,
+      "keep_with_next_on_headings": true,
+      "no_table_border_clipping": true,
+      "omml_math_rendered_cleanly": true,
+      "unrendered_template_tags_count": 0,
+      "status": "VERIFIED_SHARP"
+    },
     "visual_inspection": {
       "typography": "Standardized font hierarchy (headings, body, captions), minimum font size >= 8.5pt in tables, proper line spacing",
       "sharpness": "VERIFIED_SHARP",
       "layout_defects": "NONE",
-      "conclusion": "Visual inspection verified sharp rendering, clear typography, and absence of layout or alignment defects"
+      "conclusion": "Visual inspection verified sharp rendering, clear typography, clean pagination across all 41 pages, and absence of layout or alignment defects"
     }
   },
   "slide_previews": {
@@ -284,6 +322,6 @@
   "overall_verdict": {
     "status": "VERIFIED_SHARP",
     "verified": true,
-    "notes": "All 12 slide previews and DOCX report inspected, embedded scientific figures verified for sharpness, no text overlap, numerical consistency verified against canonical ledger ($6.57575890 USD, hard cap $19.99, N=718 views, 10 major DOCX sections, 0 unrendered slots)."
+    "notes": "All 12 slide previews and DOCX report inspected, embedded scientific figures verified for sharpness, no text overlap, numerical consistency verified against canonical ledger ($6.57575890 USD, hard cap $19.99, N=718 views, 10 major DOCX sections, 41 pages covered in PDF output, 0 unrendered slots)."
   }
 }

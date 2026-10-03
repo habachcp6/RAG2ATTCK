@@ -707,7 +707,7 @@
         "repo_relative_path": "reports/evidence/figures/figure_provenance.json",
         "size_bytes": 2969,
         "sha256": "88983822c84a7bb78247b17a5620f183dce3b4a96cf5ddf94a409aea5ecf388d",
-        "expected_sha256": null,
+        "expected_sha256": "88983822c84a7bb78247b17a5620f183dce3b4a96cf5ddf94a409aea5ecf388d",
         "verified": true,
         "lifecycle_states": {
           "FILE_PRESENT": true,
@@ -936,8 +936,8 @@
     "qa_record_file": {
       "exists": true,
       "repo_relative_path": "reports/evidence/qa/visual_qa_inspection_record.json",
-      "size_bytes": 13954,
-      "sha256": "f1cf1f9dd8320e38ca0f70923015a988062f14f6075214a0bfe5b4203871edfd",
+      "size_bytes": 15697,
+      "sha256": "dd3e5d5a0e61bf7aef233376f52256ec7c06a2cbea266963d154146acbae8da5",
       "expected_sha256": null,
       "verified": true,
       "lifecycle_states": {
@@ -971,10 +971,13 @@
   "validation_summary": {
     "missing_required_count": 0,
     "missing_required_artifacts": [],
-    "hash_mismatch_count": 0,
-    "hash_mismatch_artifacts": [],
     "structure_failure_count": 0,
     "structure_failure_artifacts": [],
+    "missing_authority_count": 0,
+    "missing_authority_artifacts": [],
+    "hash_mismatch_count": 0,
+    "hash_mismatch_artifacts": [],
+    "bundle_bound": true,
     "qa_record_verified": true,
     "qa_errors": []
   },

@@ -47,6 +47,7 @@ CANONICAL_FIGURE_EXPECTED_HASHES = {
     "canonical_rq2_retrieval.pdf": "43d496abcaabe3fb4966438845f10596b7cc771455ca1e2bf8a8e985e2ad0a51",
     "canonical_rq3_cost_and_latency.png": "5b9c31be2b37cad34f76624171b9f7fdc8a4686d3c13e452dc8ca8369e472941",
     "canonical_rq3_cost_and_latency.pdf": "51cf74ed24bfea090f53aede762cf6a3529aa8be8b286d6770fb05eb4083d9eb",
+    "figure_provenance.json": "88983822c84a7bb78247b17a5620f183dce3b4a96cf5ddf94a409aea5ecf388d",
     "plot_data.json": "965452e7d84e6522f1c0a673ae6e1cd9e92e765a89b222fab2213c8ffbe7f4ac",
 }
 
@@ -377,6 +378,36 @@ def verify_qa_inspection_record(
         if vis_insp.get("sharpness") != "VERIFIED_SHARP":
             errors.append(f"DOCX QA visual sharpness not VERIFIED_SHARP: {vis_insp}")
 
+        # Rendered PDF check
+        rendered_out = docx_qa.get("rendered_output", {})
+        if rendered_out:
+            pdf_rel = rendered_out.get("repo_relative_path")
+            pdf_exp_sha = rendered_out.get("sha256")
+            if pdf_rel:
+                pdf_p = repo_root / pdf_rel
+                if not pdf_p.is_file():
+                    errors.append(f"DOCX QA rendered PDF missing on disk: {pdf_rel}")
+                elif pdf_exp_sha:
+                    pdf_actual_sha = hashlib.sha256(pdf_p.read_bytes()).hexdigest()
+                    if pdf_actual_sha != pdf_exp_sha:
+                        errors.append(
+                            f"DOCX QA rendered PDF SHA256 mismatch: expected {pdf_exp_sha}, disk {pdf_actual_sha}"
+                        )
+
+        # Page coverage check
+        page_cov = docx_qa.get("page_coverage", {})
+        if page_cov and page_cov.get("total_pages") != 41:
+            errors.append(
+                f"DOCX QA page_coverage expected 41 pages, got {page_cov.get('total_pages')}"
+            )
+
+        # Pagination & layout check
+        pag_layout = docx_qa.get("pagination_and_layout", {})
+        if pag_layout and pag_layout.get("status") != "VERIFIED_SHARP":
+            errors.append(
+                f"DOCX QA pagination_and_layout status not VERIFIED_SHARP: {pag_layout.get('status')}"
+            )
+
     # 4. All 12 preview files in QA record
     previews = data.get("slide_previews", {})
     if len(previews) != 12:
@@ -442,6 +473,7 @@ def generate_inventory(
     missing_required: List[str] = []
     hash_mismatches: List[str] = []
     structure_failures: List[str] = []
+    missing_authority: List[str] = []
 
     # Trust Anchors definitions
     anchor_specs = {
@@ -704,10 +736,8 @@ def generate_inventory(
         for ext in FIGURE_EXTENSIONS:
             expected_figure_filenames.append(f"{base}{ext}")
     for fname in CANONICAL_FIGURE_EXPECTED_HASHES:
-        if fname != "plot_data.json":
+        if fname not in expected_figure_filenames:
             expected_figure_filenames.append(fname)
-    expected_figure_filenames.append("figure_provenance.json")
-    expected_figure_filenames.append("plot_data.json")
 
     provenance_path = figures_dir / "figure_provenance.json"
     prov_data: Dict[str, Any] = {}
@@ -720,6 +750,8 @@ def generate_inventory(
             )
         except Exception:
             bundle_bound = False
+    else:
+        bundle_bound = False
 
     prov_figures: Dict[str, str] = prov_data.get("generated_figures", {})
 
@@ -765,7 +797,11 @@ def generate_inventory(
             raw = p.read_bytes()
             computed_sha = hashlib.sha256(raw).hexdigest()
             hash_verified = False
-            if expected_sha:
+
+            if expected_sha is None:
+                missing_authority.append(rel_path)
+                hash_verified = False
+            else:
                 if computed_sha == expected_sha:
                     hash_verified = True
                 elif p.suffix in [".svg", ".json"]:
@@ -775,11 +811,9 @@ def generate_inventory(
                     if crlf_sha == expected_sha:
                         hash_verified = True
                         computed_sha = crlf_sha
-            else:
-                hash_verified = True
 
-            if not hash_verified:
-                hash_mismatches.append(rel_path)
+                if not hash_verified:
+                    hash_mismatches.append(rel_path)
 
             valid_struct = False
             if p.suffix == ".png":
@@ -826,8 +860,14 @@ def generate_inventory(
     elif structure_failures:
         verdict = "FAIL_STRUCTURE_CHECK"
         exit_code = 1
+    elif missing_authority:
+        verdict = "FAIL_MISSING_EXPECTED_DIGEST"
+        exit_code = 1
     elif hash_mismatches:
         verdict = "FAIL_HASH_MISMATCH"
+        exit_code = 1
+    elif not bundle_bound:
+        verdict = "FAIL_BUNDLE_BINDING_MISMATCH"
         exit_code = 1
     elif not qa_record_valid:
         verdict = "FAIL_QA_VERIFICATION_MISMATCH"
@@ -882,10 +922,13 @@ def generate_inventory(
         "validation_summary": {
             "missing_required_count": len(missing_required),
             "missing_required_artifacts": missing_required,
-            "hash_mismatch_count": len(hash_mismatches),
-            "hash_mismatch_artifacts": hash_mismatches,
             "structure_failure_count": len(structure_failures),
             "structure_failure_artifacts": structure_failures,
+            "missing_authority_count": len(missing_authority),
+            "missing_authority_artifacts": missing_authority,
+            "hash_mismatch_count": len(hash_mismatches),
+            "hash_mismatch_artifacts": hash_mismatches,
+            "bundle_bound": bundle_bound,
             "qa_record_verified": qa_record_valid,
             "qa_errors": qa_errors,
         },

@@ -104,7 +104,7 @@
         "clean": true
       },
       "reports/evidence/r9_saved_data_replay_provenance.json": {
-        "size_bytes": 2459,
+        "size_bytes": 5158,
         "violations": [],
         "clean": true
       }

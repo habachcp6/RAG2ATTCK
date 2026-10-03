@@ -840,8 +840,8 @@ def update_matrix_r10(
             "POLICY_RULE",
             ".github/workflows/ci.yml",
             None,
-            "PARTIAL",
-            "CI enforces ruff check on critical code paths. Full-repo ruff format --check is deferred post-merge to avoid churn across frozen historical code.",
+            "NEEDS_OWNER_DECISION",
+            "CI enforces ruff check on critical code paths (exit code 0). Full-repo ruff format --check is classified as NEEDS_OWNER_DECISION because applying ruff format across all 46 historical/frozen files would alter cryptographically locked scripts (e.g. scripts/verify_public_v4_package.py) whose SHA-256 digests are pinned in the immutable accepted candidate ZIP manifest (32f520c0...) and core lock (8b1b3ea4...). Scope waiver / formatting deferral is formally referred to the Human Maintainer / Repository Owner post-merge.",
         ),
         (
             "V.03-OFFLINE_UNIT",

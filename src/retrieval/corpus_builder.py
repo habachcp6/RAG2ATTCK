@@ -7,17 +7,16 @@ from Enterprise ATT&CK v19.2 STIX reference data.
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
 import hashlib
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from src.attack_loader import (
-    ATTACK_VERSION,
     ATTACK_V19_2_COMMIT,
+    ATTACK_VERSION,
     EXPECTED_ATTACK_SHA256,
-    AttackTechnique,
     parse_attack_bundle,
 )
 
@@ -28,17 +27,19 @@ DEFAULT_MANIFEST_PATH = Path("attack/corpus/enterprise-windows-v19.2.manifest.js
 
 SCHEMA_VERSION = "1.0.0"
 
-PROHIBITED_METADATA_KEYS = frozenset({
-    "ground_truth",
-    "technique_label",
-    "expected_technique",
-    "attack_label",
-    "label",
-    "gt",
-    "target",
-    "y_true",
-    "y_pred",
-})
+PROHIBITED_METADATA_KEYS = frozenset(
+    {
+        "ground_truth",
+        "technique_label",
+        "expected_technique",
+        "attack_label",
+        "label",
+        "gt",
+        "target",
+        "y_true",
+        "y_pred",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -141,7 +142,8 @@ def build_windows_corpus(
     tid_to_stix = extract_stix_ids(stix_path)
 
     win_active = [
-        t for t in techniques.values()
+        t
+        for t in techniques.values()
         if "Windows" in t.platforms and not t.revoked and not t.deprecated
     ]
     if len(win_active) != 474:
@@ -228,7 +230,9 @@ def build_windows_corpus(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Build deterministic Windows ATT&CK retrieval corpus.")
+    parser = argparse.ArgumentParser(
+        description="Build deterministic Windows ATT&CK retrieval corpus."
+    )
     parser.add_argument("--stix-path", type=Path, default=DEFAULT_STIX_PATH)
     parser.add_argument("--scope-path", type=Path, default=DEFAULT_SCOPE_PATH)
     parser.add_argument("--corpus-path", type=Path, default=DEFAULT_CORPUS_PATH)

@@ -13,8 +13,9 @@ Correct usage:
 
 import os
 import sys
-import pytest
 from pathlib import Path
+
+import pytest
 
 # ---------------------------------------------------------------------------
 # Derive repo root from this file's location — never from cwd.

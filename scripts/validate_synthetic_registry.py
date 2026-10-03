@@ -6,13 +6,13 @@ import json
 import sys
 from pathlib import Path
 
+from src.synthetic_validator import validate_template_registry
+
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY = ROOT / "config" / "synthetic_templates.json"
 STIX = ROOT / "attack" / "raw" / "enterprise-v19.2" / "enterprise-attack-19.2.json"
 
 sys.path.insert(0, str(ROOT))
-
-from src.synthetic_validator import validate_template_registry
 
 
 def main() -> int:

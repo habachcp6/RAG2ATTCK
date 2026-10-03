@@ -202,7 +202,9 @@ def test_filename_only_fake_prerequisite_cannot_bypass_gate(tmp_path):
         validate_stage_prerequisites(tmp_path, "acquire-dataset")
 
     # Write a file that has schema_version but not PASS status
-    (meta_dir / "preflight.json").write_text('{"schema_version": "1.0.0", "task": "T0_PREFLIGHT"}', encoding="utf-8")
+    (meta_dir / "preflight.json").write_text(
+        '{"schema_version": "1.0.0", "task": "T0_PREFLIGHT"}', encoding="utf-8"
+    )
     with pytest.raises(ArtifactValidationError):
         validate_stage_prerequisites(tmp_path, "acquire-dataset")
 
@@ -224,4 +226,3 @@ def test_task4_stop_blocks_downstream_tasks(tmp_path):
 
     with pytest.raises(ArtifactValidationError, match="TASK_4_INDEPENDENT_GROUND_TRUTH"):
         validate_stage_prerequisites(tmp_path, "t6")
-

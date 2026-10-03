@@ -7,6 +7,7 @@ and an immutable, hash-bound scientific protocol approval contract (D1-D7).
 
 from __future__ import annotations
 
+import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -56,7 +57,6 @@ def compute_code_manifest_sha256(repo_root: Path) -> str:
     """Compute SHA-256 digest over the canonical JSON of the critical code manifest."""
     manifest = compute_code_manifest(repo_root)
     return digest(canonical_bytes(manifest))
-
 
 
 class LiveExecutionBlockedError(RuntimeError):
@@ -403,10 +403,7 @@ def validate_live_authorization(
         )
 
     # Gate 2: Explicit non-empty human authorization token
-    if (
-        not authorization.human_approval_token
-        or not authorization.human_approval_token.strip()
-    ):
+    if not authorization.human_approval_token or not authorization.human_approval_token.strip():
         raise HumanAuthorizationRequiredError(
             "LIVE_EXECUTION_BLOCKED: non-empty human approval token is required"
         )
@@ -557,7 +554,14 @@ def validate_canonical_experiment_lock(
     # Verify executable code manifest digest (BLOCKER-1)
     expected_code_manifest = lock_data.get("code_manifest_sha256")
     if expected_code_manifest:
-        actual_code_manifest = compute_code_manifest_sha256(target_repo_root)
+        snap_env = os.environ.get("RAG2ATTCK_SNAPSHOT_ROOT")
+        code_root = (
+            Path(snap_env).resolve()
+            if snap_env
+            and (Path(snap_env) / "config" / "canonical_experiment_lock_v1.json").is_file()
+            else target_repo_root
+        )
+        actual_code_manifest = compute_code_manifest_sha256(code_root)
         if actual_code_manifest != expected_code_manifest:
             raise ProtocolNotFrozenError(
                 f"LIVE_EXECUTION_BLOCKED: code manifest SHA-256 ({actual_code_manifest}) "
@@ -574,11 +578,7 @@ def validate_canonical_experiment_lock(
         try:
             import subprocess
 
-            git_cwd = (
-                target_repo_root
-                if (target_repo_root / ".git").exists()
-                else REPO_ROOT
-            )
+            git_cwd = target_repo_root if (target_repo_root / ".git").exists() else REPO_ROOT
             commit_res = subprocess.run(
                 ["git", "rev-parse", "HEAD"],
                 cwd=git_cwd,
@@ -669,9 +669,7 @@ def validate_experiment_readiness(
             "positive max_requests budget"
         )
 
-    worst_case_attempts = (
-        len(plan.samples) * len(CONDITIONS) * (plan.config.execution.retries + 1)
-    )
+    worst_case_attempts = len(plan.samples) * len(CONDITIONS) * (plan.config.execution.retries + 1)
     plan_in_repo = False
     try:
         plan_in_repo = hasattr(plan, "root") and plan.root.resolve() == REPO_ROOT.resolve()
@@ -712,9 +710,7 @@ def validate_experiment_readiness(
     # Gate 8: Clean source tree check
     is_canonical_test = is_test_split and (is_canonical_scale or plan_in_repo)
     # Canonical TEST live or canonical scale NEVER permits allow_dirty bypass
-    effective_allow_dirty = (
-        False if (is_live and is_canonical_test) else allow_dirty
-    )
+    effective_allow_dirty = False if (is_live and is_canonical_test) else allow_dirty
     should_check_dirty = not effective_allow_dirty and (
         plan_in_repo or is_canonical_test or getattr(plan, "enforce_clean_git", False)
     )

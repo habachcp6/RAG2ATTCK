@@ -3,25 +3,23 @@ RAG2ATTCK - Dataset Acquisition & Provenance Module (Task 2)
 Downloads, verifies, and establishes immutable provenance for Windows-APT 2025 v3.
 """
 
-from dataclasses import dataclass, asdict
-from datetime import datetime, timezone
 import hashlib
 import json
-import os
-from pathlib import Path
 import shutil
 import urllib.request
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List
 
 
 class DatasetAcquisitionError(RuntimeError):
     """Raised when dataset acquisition or hash verification fails."""
+
     pass
 
 
 def acquire_windows_apt_dataset(
-    workspace_root: Path,
-    chunk_size: int = 1024 * 1024
+    workspace_root: Path, chunk_size: int = 1024 * 1024
 ) -> Dict[str, Any]:
     """
     Acquires all 21 files of Windows-APT 2025 v3 (Mendeley b8fmtzvpy8.3).
@@ -61,7 +59,10 @@ def acquire_windows_apt_dataset(
         # Determine file role
         if filename == "combined.csv":
             role = "reconciliation_combined_csv"
-        elif filename.endswith(".csv") and filename not in ("scenario_manifest.csv", "validation_summary.csv"):
+        elif filename.endswith(".csv") and filename not in (
+            "scenario_manifest.csv",
+            "validation_summary.csv",
+        ):
             role = "ingest_period_csv"
         else:
             role = "metadata_manifest"
@@ -71,17 +72,19 @@ def acquire_windows_apt_dataset(
             computed_hash = hashlib.sha256(target_file.read_bytes()).hexdigest()
             if computed_hash == expected_hash:
                 print(f"  [=] Already verified: {filename} ({expected_size} bytes)")
-                manifest_files.append({
-                    "filename": filename,
-                    "provider_file_id": provider_file_id,
-                    "download_url": download_url,
-                    "size_bytes": expected_size,
-                    "sha256": computed_hash,
-                    "expected_sha256": expected_hash,
-                    "last_modified_date": last_modified,
-                    "role": role,
-                    "verified": True
-                })
+                manifest_files.append(
+                    {
+                        "filename": filename,
+                        "provider_file_id": provider_file_id,
+                        "download_url": download_url,
+                        "size_bytes": expected_size,
+                        "sha256": computed_hash,
+                        "expected_sha256": expected_hash,
+                        "last_modified_date": last_modified,
+                        "role": role,
+                        "verified": True,
+                    }
+                )
                 total_bytes += expected_size
                 continue
 
@@ -92,28 +95,35 @@ def acquire_windows_apt_dataset(
             if pre_hash == expected_hash:
                 shutil.copy2(str(pre_saved), str(target_file))
                 print(f"  [+] Reused pre-saved metadata: {filename}")
-                manifest_files.append({
-                    "filename": filename,
-                    "provider_file_id": provider_file_id,
-                    "download_url": download_url,
-                    "size_bytes": expected_size,
-                    "sha256": pre_hash,
-                    "expected_sha256": expected_hash,
-                    "last_modified_date": last_modified,
-                    "role": role,
-                    "verified": True
-                })
+                manifest_files.append(
+                    {
+                        "filename": filename,
+                        "provider_file_id": provider_file_id,
+                        "download_url": download_url,
+                        "size_bytes": expected_size,
+                        "sha256": pre_hash,
+                        "expected_sha256": expected_hash,
+                        "last_modified_date": last_modified,
+                        "role": role,
+                        "verified": True,
+                    }
+                )
                 total_bytes += expected_size
                 continue
 
         # Download to staging
         print(f"  [v] Downloading {filename} ({expected_size / (1024**2):.2f} MiB)...")
-        req = urllib.request.Request(download_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+        req = urllib.request.Request(
+            download_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        )
         hasher = hashlib.sha256()
         dl_bytes = 0
 
         try:
-            with urllib.request.urlopen(req, timeout=120) as resp, open(staging_file, "wb") as out_f:
+            with (
+                urllib.request.urlopen(req, timeout=120) as resp,
+                open(staging_file, "wb") as out_f,
+            ):
                 while True:
                     chunk = resp.read(chunk_size)
                     if not chunk:
@@ -149,23 +159,28 @@ def acquire_windows_apt_dataset(
         shutil.move(str(staging_file), str(target_file))
         print(f"  [+] Verified & Stored: {filename} (SHA-256 match)")
 
-        manifest_files.append({
-            "filename": filename,
-            "provider_file_id": provider_file_id,
-            "download_url": download_url,
-            "size_bytes": dl_bytes,
-            "sha256": computed_hash,
-            "expected_sha256": expected_hash,
-            "last_modified_date": last_modified,
-            "role": role,
-            "verified": True
-        })
+        manifest_files.append(
+            {
+                "filename": filename,
+                "provider_file_id": provider_file_id,
+                "download_url": download_url,
+                "size_bytes": dl_bytes,
+                "sha256": computed_hash,
+                "expected_sha256": expected_hash,
+                "last_modified_date": last_modified,
+                "role": role,
+                "verified": True,
+            }
+        )
         total_bytes += dl_bytes
 
     # Create dataset_manifest.json
     manifest_doc = {
         "schema_version": "1.0.0",
-        "dataset_name": "Windows-APT 2025: A Dataset of Attack Scenarios Inspired by Advanced Persistent Threats on Windows Systems",
+        "dataset_name": (
+            "Windows-APT 2025: A Dataset of Attack Scenarios Inspired by "
+            "Advanced Persistent Threats on Windows Systems"
+        ),
         "dataset_id": "b8fmtzvpy8",
         "dataset_version": "3",
         "dataset_doi": "10.17632/b8fmtzvpy8.3",
@@ -175,7 +190,7 @@ def acquire_windows_apt_dataset(
         "acquisition_timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "total_files": len(manifest_files),
         "total_bytes": total_bytes,
-        "files": manifest_files
+        "files": manifest_files,
     }
 
     meta_dir = ws / "data" / "metadata"

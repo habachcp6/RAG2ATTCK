@@ -231,7 +231,12 @@ class TestMathematicalComparatorAndFailClosed:
     def test_baseline_22_files_verification_on_disk(self):
         from scripts.reproduce_canonical_study import REPO_ROOT, verify_protected_baseline
 
-        ok, logs = verify_protected_baseline(REPO_ROOT)
+        snap_env = os.environ.get(
+            "RAG2ATTCK_SNAPSHOT_ROOT",
+            "C:/Users/hahoa/.codex/artifacts/rag2attck/finalization_snapshots/b69a690",
+        )
+        target_root = Path(snap_env) if Path(snap_env).exists() else REPO_ROOT
+        ok, logs = verify_protected_baseline(target_root)
         assert ok is True, f"Baseline verification failed: {logs}"
 
     def test_strict_type_boolean_not_equal_int(self):

@@ -174,4 +174,3 @@ def test_positive_snapshot_reuse_on_genuine_snapshot(monkeypatch: pytest.MonkeyP
 
     reused = provision_snapshot(target_dir=snap_root, source_repo=repo_root)
     assert reused == snap_root
-

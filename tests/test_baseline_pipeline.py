@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 from unittest.mock import MagicMock
+
 import pytest
 
 from src.baseline.pipeline import BaselinePipeline, format_baseline_prompt
@@ -108,6 +109,7 @@ def test_baseline_pipeline_default_instantiation_fails_without_key(monkeypatch):
     """Verify default constructor BaselinePipeline() fails when API key is absent."""
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     import pytest
+
     with pytest.raises(ValueError, match="OPENAI_API_KEY"):
         BaselinePipeline()
 
@@ -115,6 +117,7 @@ def test_baseline_pipeline_default_instantiation_fails_without_key(monkeypatch):
 # ---------------------------------------------------------------------------
 # No-RAG Context Isolation at Pipeline Level
 # ---------------------------------------------------------------------------
+
 
 def test_pipeline_run_sample_rejects_norag_with_context():
     """Verify BaselinePipeline.run_sample raises ValueError for no_rag with non-empty context."""
@@ -167,4 +170,3 @@ def test_pipeline_run_sample_rejects_invalid_condition(bad_cond):
             condition=bad_cond,
         )
     mock_openai.responses.create.assert_not_called()
-

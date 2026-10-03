@@ -322,6 +322,7 @@ def _handle_evaluate(args: argparse.Namespace) -> int:
         )
         return 1
 
+
 def _inspect_historical_counts(output_dir: Path | str | None) -> tuple[int, int]:
     """Inspect output directory journal to extract historical provider calls and writes.
 
@@ -716,9 +717,7 @@ def main(argv=None, *, provider_factory=None) -> int:
         "--protocol-file", type=Path, help="Path to JSON file with frozen D1-D7 protocol"
     )
     live_parser.add_argument("--auth-token", type=str, help="Human authorization approval token")
-    live_parser.add_argument(
-        "--max-attempts", type=int, help="Authorized max provider attempts"
-    )
+    live_parser.add_argument("--max-attempts", type=int, help="Authorized max provider attempts")
     live_parser.add_argument(
         "--allow-live-dispatch",
         action="store_true",
@@ -765,9 +764,7 @@ def main(argv=None, *, provider_factory=None) -> int:
         action="store_true",
         help="Explicit live dispatch permission",
     )
-    resume_parser.add_argument(
-        "--max-attempts", type=int, help="Authorized max provider attempts"
-    )
+    resume_parser.add_argument("--max-attempts", type=int, help="Authorized max provider attempts")
     resume_parser.add_argument(
         "--protocol-file", type=Path, help="Optional path to verify frozen D1-D7 protocol"
     )

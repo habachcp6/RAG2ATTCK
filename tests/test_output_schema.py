@@ -23,21 +23,22 @@ Verifies:
 from __future__ import annotations
 
 import json
+
 import pytest
 from pydantic import ValidationError
 
+from src.llm.logging import format_execution_summary
 from src.llm.schemas import (
     ExecutionRecord,
     ParseStatus,
     TechniquePrediction,
     validate_technique_id,
 )
-from src.llm.logging import format_execution_summary
-
 
 # ---------------------------------------------------------------------------
 # 1. TechniquePrediction Schema Validation
 # ---------------------------------------------------------------------------
+
 
 def test_technique_prediction_valid_parsing():
     """Verify that TechniquePrediction correctly parses standard ATT&CK ID payloads."""
@@ -59,10 +60,9 @@ def test_technique_prediction_missing_technique_id_raises():
 def test_technique_prediction_extra_fields_forbidden():
     """Unexpected extra fields must be rejected by strict schema validation."""
     with pytest.raises(ValidationError):
-        TechniquePrediction.model_validate({
-            "technique_id": "T1059",
-            "extra_explanation": "Adversary used PowerShell"
-        })
+        TechniquePrediction.model_validate(
+            {"technique_id": "T1059", "extra_explanation": "Adversary used PowerShell"}
+        )
 
 
 def test_technique_prediction_non_string_type_raises():
@@ -77,6 +77,7 @@ def test_technique_prediction_non_string_type_raises():
 # ---------------------------------------------------------------------------
 # 2. Parse Status Taxonomy (7 Mutually Exclusive Statuses)
 # ---------------------------------------------------------------------------
+
 
 def test_parse_status_taxonomy_exact_members():
     """Verify exact membership and mutually exclusive values of ParseStatus enum."""
@@ -98,6 +99,7 @@ def test_parse_status_taxonomy_exact_members():
 # 3. Specific Error Scenarios and Taxonomical Routing
 # ---------------------------------------------------------------------------
 
+
 def test_scenario_valid_id_in_registry():
     """Valid syntax and present in registry must evaluate to VALID."""
     is_valid, status, reason = validate_technique_id("T1059", registry_ids={"T1059", "T1059.001"})
@@ -105,7 +107,9 @@ def test_scenario_valid_id_in_registry():
     assert status == ParseStatus.VALID
     assert reason is None
 
-    is_valid_sub, status_sub, reason_sub = validate_technique_id("T1059.001", registry_ids={"T1059", "T1059.001"})
+    is_valid_sub, status_sub, reason_sub = validate_technique_id(
+        "T1059.001", registry_ids={"T1059", "T1059.001"}
+    )
     assert is_valid_sub is True
     assert status_sub == ParseStatus.VALID
     assert reason_sub is None
@@ -115,17 +119,17 @@ def test_scenario_syntactically_invalid_id():
     """Syntactically invalid technique_id string must evaluate to INVALID_ID."""
     invalid_syntaxes = [
         "INVALID_STRING",
-        "T105",        # Too short
-        "T10590",      # Too long
-        "T1059.01",    # Subtechnique must have 3 digits
+        "T105",  # Too short
+        "T10590",  # Too long
+        "T1059.01",  # Subtechnique must have 3 digits
         "T1059.0001",  # Too many digits in subtechnique
-        "t1059",       # Lowercase
-        "1059",        # Missing 'T' prefix
-        "T1059.",      # Dangling dot
-        "T1059.abc",   # Non-numeric subtechnique
-        " T1059",      # Leading space
-        "T1059 ",      # Trailing space
-        "",            # Empty
+        "t1059",  # Lowercase
+        "1059",  # Missing 'T' prefix
+        "T1059.",  # Dangling dot
+        "T1059.abc",  # Non-numeric subtechnique
+        " T1059",  # Leading space
+        "T1059 ",  # Trailing space
+        "",  # Empty
     ]
     mock_registry = {"T1059", "T1059.001"}
     for tid in invalid_syntaxes:
@@ -188,6 +192,7 @@ def test_scenario_missing_technique_id_classification():
 # ---------------------------------------------------------------------------
 # 4. ExecutionRecord Schema and Serialization
 # ---------------------------------------------------------------------------
+
 
 def test_execution_record_instantiation_and_properties():
     """Verify that ExecutionRecord validates all required fields and serialization."""

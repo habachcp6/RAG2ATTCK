@@ -24,7 +24,9 @@ def validate_benchmark_batch(samples: Iterable[Mapping[str, Any]]) -> list[tuple
             raise ValueError(f"Duplicate sample_id {sample_id!r} at batch index {position}")
         seen.add(sample_id)
         evidence = sample.get("endpoint_evidence", sample.get("evidence"))
-        if not isinstance(evidence, str) or not any(c.isprintable() and not c.isspace() for c in evidence):
+        if not isinstance(evidence, str) or not any(
+            c.isprintable() and not c.isspace() for c in evidence
+        ):
             raise ValueError(
                 f"{prefix} (sample_id={sample_id!r}): missing or invalid endpoint_evidence; "
                 "expected a non-empty string containing visible evidence"

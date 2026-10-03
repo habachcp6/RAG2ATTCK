@@ -1,7 +1,8 @@
 """
 RAG2ATTCK - LLM Execution Logging and Serialization Module (Milestone M2)
 Handles:
-- WallClockTimer: Precision wall-clock timer covering full request lifecycle including retries and backoff
+- WallClockTimer: Precision wall-clock timer covering full request lifecycle
+  including retries and backoff
 - Serialization of ExecutionRecord to dict, JSON, and CSV formats
 - Batch record writing and audit logging
 """
@@ -10,8 +11,8 @@ from __future__ import annotations
 
 import csv
 import logging
-from pathlib import Path
 import time
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
 from src.llm.schemas import ExecutionRecord
@@ -23,10 +24,11 @@ logger = logging.getLogger("rag2attck.llm")
 # 1. Wall-Clock Duration Timer
 # ---------------------------------------------------------------------------
 
+
 class WallClockTimer:
     """
     Context manager measuring total wall-clock duration in milliseconds.
-    
+
     Latency semantics:
     Measures duration from the initial API request attempt until the final
     returned status, strictly including all retry attempts and backoff sleeps.
@@ -73,10 +75,7 @@ def serialize_record(record: ExecutionRecord) -> Dict[str, Any]:
     return record.to_dict()
 
 
-def log_execution(
-    record: ExecutionRecord,
-    custom_logger: Optional[logging.Logger] = None
-) -> None:
+def log_execution(record: ExecutionRecord, custom_logger: Optional[logging.Logger] = None) -> None:
     """Log an execution record event at INFO level."""
     log = custom_logger or logger
     log.info(

@@ -205,6 +205,10 @@ def _assert_ci(workflow):
     expected_snap_root = "${{ runner.temp }}/rag2attck_snapshot_b69a690"
     assert prov_step.get("env", {}).get("RAG2ATTCK_SNAPSHOT_ROOT") == expected_snap_root
     assert (
+        _step(steps, "Run experiment preflight gate").get("env", {}).get("RAG2ATTCK_SNAPSHOT_ROOT")
+        == expected_snap_root
+    )
+    assert (
         _step(steps, "Run Full Test Suite").get("env", {}).get("RAG2ATTCK_SNAPSHOT_ROOT")
         == expected_snap_root
     )
@@ -212,9 +216,9 @@ def _assert_ci(workflow):
     names = [step.get("name") for step in steps]
     idx_attack = names.index("Acquire ATT&CK v19.2 reference")
     idx_snap = names.index("Provision portable historical b69 snapshot")
+    idx_preflight = names.index("Run experiment preflight gate")
     idx_tests = names.index("Run Full Test Suite")
-    assert idx_attack < idx_snap < idx_tests
-    assert names.index("Run experiment preflight gate") < idx_tests
+    assert idx_attack < idx_snap < idx_preflight < idx_tests
 
 
 def _assert_integration(workflow):
@@ -241,9 +245,10 @@ def _assert_integration(workflow):
         assert names.index(acquisition) < names.index(test_name)
     assert names.index("Run experiment preflight gate") < names.index(test_name)
     assert shlex.split(_step(steps, "Acquire ATT&CK v19.2 reference")["run"]) == ACQUIRE_ATTACK
-    assert shlex.split(
-        _step(steps, "Acquire pinned embedding model before offline checks")["run"]
-    ) == ACQUIRE_MODEL
+    assert (
+        shlex.split(_step(steps, "Acquire pinned embedding model before offline checks")["run"])
+        == ACQUIRE_MODEL
+    )
 
 
 def test_combined_ci_keeps_lint_guard_and_acquisition_contracts():
@@ -500,4 +505,3 @@ def test_missing_snapshot_root_env_on_provisioning_is_detected():
     del _step(steps, "Provision portable historical b69 snapshot")["env"]["RAG2ATTCK_SNAPSHOT_ROOT"]
     with pytest.raises(AssertionError):
         _assert_ci(workflow)
-

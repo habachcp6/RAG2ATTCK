@@ -3,19 +3,21 @@ RAG2ATTCK - RAG Pipeline with Controlled-Comparison Invariant (Task T19)
 Implements deterministic retrieval-augmented generation for ATT&CK threat attribution:
 - Enforces controlled comparison: identical prompt template, model, reasoning effort, and schemas.
 - Injects formatted ATT&CK candidates strictly into {RETRIEVED_CONTEXT}.
-- Enforces pipeline-level input-field isolation: query retriever and prompt using ONLY endpoint_evidence.
-- Preserves No-RAG isolation: baseline condition="no_rag" remains structurally incapable of consuming context.
+- Enforces pipeline-level input-field isolation: query retriever and prompt
+  using ONLY endpoint_evidence.
+- Preserves No-RAG isolation: baseline condition="no_rag" remains structurally
+  incapable of consuming context.
 - Wraps execution and retrieval metadata via composition without mutating baseline schemas.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Set, Union
+from typing import Any, Dict, Iterable, List, Optional
 
 from src.llm.client import LLMClient
 from src.llm.inputs import validate_benchmark_batch
-from src.llm.schemas import ExecutionRecord, get_workspace_root, validate_condition
+from src.llm.schemas import ExecutionRecord, get_workspace_root
 from src.rag.schemas import RAGExecutionRecord, RetrievalMetadata
 from src.retrieval.retriever import Embedder, FAISSRetriever, RetrievalResult
 
@@ -40,10 +42,8 @@ def format_rag_prompt(
         prompt_template = p_path.read_text(encoding="utf-8")
 
     ctx_str = retrieved_context if retrieved_context is not None else ""
-    return (
-        prompt_template
-        .replace("{RETRIEVED_CONTEXT}", ctx_str)
-        .replace("{ENDPOINT_EVIDENCE}", endpoint_evidence)
+    return prompt_template.replace("{RETRIEVED_CONTEXT}", ctx_str).replace(
+        "{ENDPOINT_EVIDENCE}", endpoint_evidence
     )
 
 
@@ -87,7 +87,11 @@ class RAGPipeline:
             return
 
         # Load frozen prompt template
-        p_path = Path(prompt_path) if prompt_path else (self.ws_root / "prompts" / f"{prompt_version}.txt")
+        p_path = (
+            Path(prompt_path)
+            if prompt_path
+            else (self.ws_root / "prompts" / f"{prompt_version}.txt")
+        )
         if not p_path.exists():
             raise FileNotFoundError(f"Prompt template not found at {p_path}")
         self.prompt_template = p_path.read_text(encoding="utf-8")
@@ -121,13 +125,14 @@ class RAGPipeline:
         5. Dispatches prediction via LLMClient with condition='rag'.
         6. Returns composite RAGExecutionRecord.
         """
-        [(sample_id, endpoint_evidence)] = validate_benchmark_batch([
-            {"sample_id": sample_id, "endpoint_evidence": endpoint_evidence}
-        ])
+        [(sample_id, endpoint_evidence)] = validate_benchmark_batch(
+            [{"sample_id": sample_id, "endpoint_evidence": endpoint_evidence}]
+        )
         retrieval_k = k if k is not None else self.default_k
         if retrieval_k not in SUPPORTED_K:
             raise ValueError(
-                f"Unsupported retrieval depth k={retrieval_k}. Supported values: {sorted(SUPPORTED_K)}"
+                f"Unsupported retrieval depth k={retrieval_k}. "
+                f"Supported values: {sorted(SUPPORTED_K)}"
             )
 
         # 1. Retrieve candidates using ONLY endpoint_evidence

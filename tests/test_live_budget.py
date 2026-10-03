@@ -6,15 +6,22 @@ import httpx
 import openai
 import pytest
 
-from src.llm.client import GLOBAL_LIVE_BUDGET, LLMClient, LiveBudget
+from src.llm.client import GLOBAL_LIVE_BUDGET, LiveBudget, LLMClient
 from tests.test_llm_client import create_mock_responses_api_response
 
 
 def client_with_budget(budget=None, live=True):
     mock = MagicMock()
-    mock.responses.create.return_value = create_mock_responses_api_response('{"technique_id":"T1059.001"}')
-    return LLMClient(openai_client=mock, live_budget=budget, is_live=live,
-                     registry_ids={"T1059.001"}, sleep_fn=lambda _: None)
+    mock.responses.create.return_value = create_mock_responses_api_response(
+        '{"technique_id":"T1059.001"}'
+    )
+    return LLMClient(
+        openai_client=mock,
+        live_budget=budget,
+        is_live=live,
+        registry_ids={"T1059.001"},
+        sleep_fn=lambda _: None,
+    )
 
 
 def test_default_smoke_budget_is_shared_and_bounded():
@@ -54,7 +61,10 @@ def test_invalid_budget_cannot_be_unlimited(cap):
 def test_mock_mode_uses_zero_budget_even_with_retries():
     budget = LiveBudget(0)
     client = client_with_budget(budget, live=False)
-    client.client.responses.create.side_effect = [TimeoutError(), create_mock_responses_api_response('{"technique_id":"T1059.001"}')]
+    client.client.responses.create.side_effect = [
+        TimeoutError(),
+        create_mock_responses_api_response('{"technique_id":"T1059.001"}'),
+    ]
     assert client.predict("s1", "log").is_valid
     assert client.client.responses.create.call_count == 2
     assert budget.count == 0
@@ -72,12 +82,17 @@ def test_sdk_retries_are_budgeted_via_outer_loop(monkeypatch):
     # Exercise the actual SDK over an in-memory HTTP transport returning 503.
     calls = []
     real_openai = openai.OpenAI
+
     def respond(request):
         calls.append(request)
         return httpx.Response(503, json={"error": {"message": "unavailable"}})
+
     def factory(**kwargs):
         assert kwargs["max_retries"] == 0
-        return real_openai(**kwargs, http_client=httpx.Client(transport=httpx.MockTransport(respond)))
+        return real_openai(
+            **kwargs, http_client=httpx.Client(transport=httpx.MockTransport(respond))
+        )
+
     monkeypatch.setattr("src.llm.client.openai.OpenAI", factory)
     budget = LiveBudget(2)
     client = LLMClient(api_key="test-only", live_budget=budget, sleep_fn=lambda _: None)

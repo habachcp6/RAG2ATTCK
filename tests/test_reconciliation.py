@@ -4,10 +4,9 @@ Tests deterministic canonical row representation, row fingerprinting,
 exact multiset equality, divergent multiset detection, and production audit log.
 """
 
-from collections import Counter
 import json
+from collections import Counter
 from pathlib import Path
-import pytest
 
 from src.reconcile import canonicalize_row, compute_row_fingerprint
 

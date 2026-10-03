@@ -80,7 +80,44 @@ def run_live_experiment(*args, **kwargs):
         kwargs["embedder"] = StubEmbedder(d_val)
     return _prod_run_live_experiment(*args, **kwargs)
 
+
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def require_genuine_snapshot(monkeypatch=None) -> Path:
+    """Acquire verified snapshot root for historical positive preflight gates."""
+    env_root = os.environ.get("RAG2ATTCK_SNAPSHOT_ROOT")
+    if env_root and env_root.strip():
+        snap_path = Path(env_root.strip()).resolve()
+        if not snap_path.is_dir():
+            pytest.fail(
+                f"Configured RAG2ATTCK_SNAPSHOT_ROOT '{snap_path}' does not exist! "
+                "Snapshot provisioning is mandatory when RAG2ATTCK_SNAPSHOT_ROOT is configured."
+            )
+        venv_dir = snap_path / ".venv"
+        if not venv_dir.is_dir() or not (venv_dir / "pyvenv.cfg").is_file():
+            pytest.fail(
+                f"Configured RAG2ATTCK_SNAPSHOT_ROOT '{snap_path}' is missing a valid dedicated "
+                ".venv with pyvenv.cfg!"
+            )
+        if monkeypatch is not None:
+            monkeypatch.setenv("RAG2ATTCK_SNAPSHOT_ROOT", str(snap_path))
+        return snap_path
+
+    # Unconfigured local runner fallback
+    default_path = Path("C:/Users/hahoa/.codex/artifacts/rag2attck/finalization_snapshots/b69a690")
+    if default_path.is_dir() and (default_path / ".venv" / "pyvenv.cfg").is_file():
+        if monkeypatch is not None:
+            monkeypatch.setenv("RAG2ATTCK_SNAPSHOT_ROOT", str(default_path))
+        return default_path
+
+    pytest.skip("Local test skipped: RAG2ATTCK_SNAPSHOT_ROOT not configured")
+
+
+@pytest.fixture
+def snapshot_env(monkeypatch):
+    """Provide verified RAG2ATTCK_SNAPSHOT_ROOT in environment for historical positive tests."""
+    return require_genuine_snapshot(monkeypatch)
 
 
 @pytest.fixture
@@ -1845,8 +1882,7 @@ def test_resume_does_not_persist_raw_authorization_token(bundle, tmp_path):
     manifest_data = parse_json(manifest_bytes)
     assert "human_authorization_token" not in manifest_data
     assert (
-        manifest_data["human_authorization_reference"]
-        == digest(secret_token.encode("utf-8"))[:16]
+        manifest_data["human_authorization_reference"] == digest(secret_token.encode("utf-8"))[:16]
     )
 
 
@@ -1951,9 +1987,7 @@ def test_d5_worst_case_budget_policy_enforced(bundle, tmp_path):
 def test_d6_prerequisite_policy_requires_verifiable_prerequisite(bundle):
     """PREREQUISITE_PILOT_SATISFIED fails closed when pilot proof is not available."""
     plan = load_plan(bundle[1])
-    proto = create_test_protocol_approval(
-        d6_t15_prerequisite_policy="PREREQUISITE_PILOT_SATISFIED"
-    )
+    proto = create_test_protocol_approval(d6_t15_prerequisite_policy="PREREQUISITE_PILOT_SATISFIED")
     with pytest.raises(
         ProtocolNotFrozenError, match="T15 prerequisite pilot proof is not available"
     ):
@@ -2084,10 +2118,7 @@ def test_reserved_crash_recovery_remains_resumable_after_completion(bundle, tmp_
     journal_file = output / "request_journal.jsonl"
     with journal_file.open("ab") as stream:
         stream.write(
-            canonical_bytes(
-                {"event": "transition", "key": next_key, "state": "RESERVED"}
-            )
-            + b"\n"
+            canonical_bytes({"event": "transition", "key": next_key, "state": "RESERVED"}) + b"\n"
         )
 
     # 3. Resume and finish complete matrix
@@ -2161,10 +2192,7 @@ def test_reservation_abandonment_does_not_consume_budget(bundle, tmp_path):
     journal_file = output / "request_journal.jsonl"
     with journal_file.open("ab") as stream:
         stream.write(
-            canonical_bytes(
-                {"event": "transition", "key": next_key, "state": "RESERVED"}
-            )
-            + b"\n"
+            canonical_bytes({"event": "transition", "key": next_key, "state": "RESERVED"}) + b"\n"
         )
 
     # Resume with exact budget 10: if abandonment consumed budget, it would fail
@@ -2208,23 +2236,13 @@ def test_dispatched_reservation_cannot_be_abandoned(bundle, tmp_path):
     journal_file = output / "request_journal.jsonl"
     with journal_file.open("ab") as stream:
         stream.write(
-            canonical_bytes(
-                {"event": "transition", "key": next_key, "state": "RESERVED"}
-            )
-            + b"\n"
+            canonical_bytes({"event": "transition", "key": next_key, "state": "RESERVED"}) + b"\n"
         )
         stream.write(
-            canonical_bytes(
-                {"event": "transition", "key": next_key, "state": "DISPATCH_STARTED"}
-            )
+            canonical_bytes({"event": "transition", "key": next_key, "state": "DISPATCH_STARTED"})
             + b"\n"
         )
-        stream.write(
-            canonical_bytes(
-                {"event": "reservation_abandoned", "key": next_key}
-            )
-            + b"\n"
-        )
+        stream.write(canonical_bytes({"event": "reservation_abandoned", "key": next_key}) + b"\n")
 
     # Resume must fail closed because dispatched state cannot be abandoned
     with pytest.raises(ValueError, match="Cannot abandon reservation in state DISPATCH_STARTED"):
@@ -2264,9 +2282,7 @@ def test_live_journal_rejects_reserved_to_response_received(bundle, tmp_path):
             canonical_bytes({"event": "transition", "key": next_key, "state": "RESERVED"}) + b"\n"
         )
         stream.write(
-            canonical_bytes(
-                {"event": "transition", "key": next_key, "state": "RESPONSE_RECEIVED"}
-            )
+            canonical_bytes({"event": "transition", "key": next_key, "state": "RESPONSE_RECEIVED"})
             + b"\n"
         )
 
@@ -2347,9 +2363,7 @@ def test_live_journal_rejects_dispatch_started_to_parsed(bundle, tmp_path):
             canonical_bytes({"event": "transition", "key": next_key, "state": "RESERVED"}) + b"\n"
         )
         stream.write(
-            canonical_bytes(
-                {"event": "transition", "key": next_key, "state": "DISPATCH_STARTED"}
-            )
+            canonical_bytes({"event": "transition", "key": next_key, "state": "DISPATCH_STARTED"})
             + b"\n"
         )
         stream.write(
@@ -2393,24 +2407,16 @@ def test_live_journal_rejects_response_received_to_complete(bundle, tmp_path):
             canonical_bytes({"event": "transition", "key": next_key, "state": "RESERVED"}) + b"\n"
         )
         stream.write(
-            canonical_bytes(
-                {"event": "transition", "key": next_key, "state": "DISPATCH_STARTED"}
-            )
+            canonical_bytes({"event": "transition", "key": next_key, "state": "DISPATCH_STARTED"})
+            + b"\n"
+        )
+        stream.write(canonical_bytes({"event": "attempt", "key": next_key, "ordinal": 2}) + b"\n")
+        stream.write(
+            canonical_bytes({"event": "transition", "key": next_key, "state": "RESPONSE_RECEIVED"})
             + b"\n"
         )
         stream.write(
-            canonical_bytes({"event": "attempt", "key": next_key, "ordinal": 2}) + b"\n"
-        )
-        stream.write(
-            canonical_bytes(
-                {"event": "transition", "key": next_key, "state": "RESPONSE_RECEIVED"}
-            )
-            + b"\n"
-        )
-        stream.write(
-            canonical_bytes(
-                {"event": "complete", "key": next_key, "record_sha256": "fake_hash"}
-            )
+            canonical_bytes({"event": "complete", "key": next_key, "record_sha256": "fake_hash"})
             + b"\n"
         )
 
@@ -2450,9 +2456,7 @@ def test_live_journal_rejects_attempt_before_dispatch_started(bundle, tmp_path):
         stream.write(
             canonical_bytes({"event": "transition", "key": next_key, "state": "RESERVED"}) + b"\n"
         )
-        stream.write(
-            canonical_bytes({"event": "attempt", "key": next_key, "ordinal": 2}) + b"\n"
-        )
+        stream.write(canonical_bytes({"event": "attempt", "key": next_key, "ordinal": 2}) + b"\n")
 
     with pytest.raises(ValueError, match="Attempt event not allowed in state RESERVED"):
         run_live_experiment(
@@ -2491,23 +2495,15 @@ def test_live_journal_rejects_attempt_after_response_received(bundle, tmp_path):
             canonical_bytes({"event": "transition", "key": next_key, "state": "RESERVED"}) + b"\n"
         )
         stream.write(
-            canonical_bytes(
-                {"event": "transition", "key": next_key, "state": "DISPATCH_STARTED"}
-            )
+            canonical_bytes({"event": "transition", "key": next_key, "state": "DISPATCH_STARTED"})
             + b"\n"
         )
+        stream.write(canonical_bytes({"event": "attempt", "key": next_key, "ordinal": 2}) + b"\n")
         stream.write(
-            canonical_bytes({"event": "attempt", "key": next_key, "ordinal": 2}) + b"\n"
-        )
-        stream.write(
-            canonical_bytes(
-                {"event": "transition", "key": next_key, "state": "RESPONSE_RECEIVED"}
-            )
+            canonical_bytes({"event": "transition", "key": next_key, "state": "RESPONSE_RECEIVED"})
             + b"\n"
         )
-        stream.write(
-            canonical_bytes({"event": "attempt", "key": next_key, "ordinal": 3}) + b"\n"
-        )
+        stream.write(canonical_bytes({"event": "attempt", "key": next_key, "ordinal": 3}) + b"\n")
 
     with pytest.raises(ValueError, match="Attempt event not allowed in state RESPONSE_RECEIVED"):
         run_live_experiment(
@@ -2546,16 +2542,12 @@ def test_live_journal_requires_at_least_one_attempt_before_response_received(bun
             canonical_bytes({"event": "transition", "key": next_key, "state": "RESERVED"}) + b"\n"
         )
         stream.write(
-            canonical_bytes(
-                {"event": "transition", "key": next_key, "state": "DISPATCH_STARTED"}
-            )
+            canonical_bytes({"event": "transition", "key": next_key, "state": "DISPATCH_STARTED"})
             + b"\n"
         )
         # No attempt!
         stream.write(
-            canonical_bytes(
-                {"event": "transition", "key": next_key, "state": "RESPONSE_RECEIVED"}
-            )
+            canonical_bytes({"event": "transition", "key": next_key, "state": "RESPONSE_RECEIVED"})
             + b"\n"
         )
 
@@ -2803,7 +2795,7 @@ def test_frozen_protocol_v1_integrity_and_validation():
 # ===========================================================================
 
 
-def test_cli_preflight_ready(capsys):
+def test_cli_preflight_ready(snapshot_env, capsys):
     """CLI preflight succeeds when run with --allow-dirty and outputs EXPERIMENT_PREFLIGHT_READY."""
     ret = main(["preflight", "--allow-dirty"])
     assert ret == 0
@@ -2819,7 +2811,19 @@ def test_cli_preflight_ready(capsys):
     assert data["worst_case_attempts"] == 25600
 
 
-def test_cli_preflight_dirty_source_blocks(capsys, monkeypatch):
+def test_cli_preflight_fails_closed_when_modern_code_drifted_without_snapshot(monkeypatch, capsys):
+    """Current live preflight must fail-closed when modern bytes drift from 8b
+    and snapshot root is unset.
+    """
+    monkeypatch.delenv("RAG2ATTCK_SNAPSHOT_ROOT", raising=False)
+    ret = main(["preflight", "--allow-dirty"])
+    assert ret == 1
+    err = capsys.readouterr().err
+    assert "LIVE_EXECUTION_BLOCKED" in err
+    assert "code drift detected" in err
+
+
+def test_cli_preflight_dirty_source_blocks(snapshot_env, capsys, monkeypatch):
     """CLI preflight detects uncommitted/dirty changes and fails closed."""
     import subprocess
 
@@ -2861,7 +2865,7 @@ def test_cli_preflight_tampered_protocol_hash_blocks(capsys, tmp_path):
     assert "protocol SHA-256 hash mismatch" in err
 
 
-def test_cli_preflight_insufficient_max_attempts_blocks(capsys):
+def test_cli_preflight_insufficient_max_attempts_blocks(snapshot_env, capsys):
     """CLI preflight rejects max-attempts smaller than worst-case requirement."""
     ret = main(["preflight", "--allow-dirty", "--max-attempts", "100"])
     assert ret == 1
@@ -2941,9 +2945,7 @@ def _make_dev_bundle(tmp_path):
         }
         truth.extend([t_single, t_contextual])
 
-        inference.append(
-            {"sample_id": s_single, "endpoint_evidence": f"evidence for {s_single}"}
-        )
+        inference.append({"sample_id": s_single, "endpoint_evidence": f"evidence for {s_single}"})
         inference.append(
             {"sample_id": s_contextual, "endpoint_evidence": f"evidence for {s_contextual}"}
         )
@@ -3006,9 +3008,7 @@ def _make_dev_bundle(tmp_path):
     index = faiss.IndexFlatIP(4)
     vectors = np.eye(4, dtype=np.float32)[np.arange(12) % 4]
     index.add(vectors)
-    config["attack"]["index"] = store(
-        "index.bin", faiss.serialize_index(index).tobytes(), raw=True
-    )
+    config["attack"]["index"] = store("index.bin", faiss.serialize_index(index).tobytes(), raw=True)
     retrieval = json.loads((ROOT / "config" / "retrieval.json").read_bytes())
     retrieval.update(
         corpus_path="corpus.jsonl",
@@ -3038,9 +3038,7 @@ def _make_dev_bundle(tmp_path):
         document_mapping_sha256=config["attack"]["document_mapping"]["sha256"],
         document_count=12,
     )
-    config["attack"]["retrieval_manifest"] = store(
-        "retrieval_manifest.json", retrieval_manifest
-    )
+    config["attack"]["retrieval_manifest"] = store("retrieval_manifest.json", retrieval_manifest)
     config["generation"]["config"] = store(
         "model.json", (ROOT / "config" / "model.json").read_bytes(), raw=True
     )
@@ -3163,9 +3161,7 @@ def test_dev_smoke_evaluator_produces_all_six_artifacts(tmp_path):
     )
 
     paths = {c: output / f"{c}_predictions.jsonl" for c in CONDITIONS}
-    eval_inputs = load_evaluation_inputs(
-        output / "manifest.json", paths, repository_root=root
-    )
+    eval_inputs = load_evaluation_inputs(output / "manifest.json", paths, repository_root=root)
     assert len(eval_inputs.records) == 50
     assert len(eval_inputs.sample_ids) == 10
 
@@ -3455,7 +3451,7 @@ def test_no_rag_vs_rag_execution_contract(tmp_path):
             assert "Candidate 1:" in prompt_text
 
 
-def test_preflight_validates_output_path_and_evaluator_contract(tmp_path):
+def test_preflight_validates_output_path_and_evaluator_contract(snapshot_env, tmp_path):
     """Preflight CLI checks output path safety, evaluator contract, and test authorization."""
     from src.experiment.__main__ import main
 
@@ -3569,14 +3565,16 @@ def test_preflight_rejects_concurrency_not_one(tmp_path, capsys):
     )
     proto_path = tmp_path / "protocol.json"
     proto_path.write_bytes(canonical_bytes(protocol_to_dict(proto)))
-    rc = main([
-        "preflight",
-        "--allow-dirty",
-        "--config",
-        str(config_path),
-        "--protocol",
-        str(proto_path),
-    ])
+    rc = main(
+        [
+            "preflight",
+            "--allow-dirty",
+            "--config",
+            str(config_path),
+            "--protocol",
+            str(proto_path),
+        ]
+    )
     assert rc == 1
     err = capsys.readouterr().err
     assert "LIVE_EXECUTION_BLOCKED" in err
@@ -3596,21 +3594,23 @@ def test_preflight_rejects_missing_or_zero_budget(tmp_path, capsys):
     )
     proto_path = tmp_path / "protocol.json"
     proto_path.write_bytes(canonical_bytes(protocol_to_dict(proto)))
-    rc = main([
-        "preflight",
-        "--allow-dirty",
-        "--config",
-        str(config_path),
-        "--protocol",
-        str(proto_path),
-    ])
+    rc = main(
+        [
+            "preflight",
+            "--allow-dirty",
+            "--config",
+            str(config_path),
+            "--protocol",
+            str(proto_path),
+        ]
+    )
     assert rc == 1
     err = capsys.readouterr().err
     assert "LIVE_EXECUTION_BLOCKED" in err
     assert "positive max_requests budget" in err
 
 
-def test_preflight_rejects_empty_test_authorization_token(capsys):
+def test_preflight_rejects_empty_test_authorization_token(snapshot_env, capsys):
     """Preflight rejects empty or whitespace-only test authorization token."""
     rc = main(["preflight", "--allow-dirty", "--test-authorization-token", "   "])
     assert rc == 1
@@ -3619,7 +3619,7 @@ def test_preflight_rejects_empty_test_authorization_token(capsys):
     assert "empty or whitespace" in err
 
 
-def test_preflight_reports_concurrency_and_provider_calls_zero(capsys):
+def test_preflight_reports_concurrency_and_provider_calls_zero(snapshot_env, capsys):
     """Preflight outputs concurrency from plan and provider_calls_during_preflight: 0."""
     rc = main(["preflight", "--allow-dirty"])
     assert rc == 0
@@ -3985,9 +3985,7 @@ def test_full_artifact_sentinel_leakage_scan(bundle, tmp_path, monkeypatch, caps
         f"Simulated error with {bearer_sentinel} and key {openai_key_sentinel} "
         f"and env {env_sentinel} and auth {human_auth_sentinel}"
     )
-    fake_provider = MockProvider(
-        outcomes={("s1", "no_rag"): [ConnectionError(err_msg)]}
-    )
+    fake_provider = MockProvider(outcomes={("s1", "no_rag"): [ConnectionError(err_msg)]})
 
     run_live_experiment(
         plan,
@@ -4199,7 +4197,7 @@ def test_preflight_cli_rejects_alternate_config(capsys):
             cfg_path.unlink()
 
 
-def test_preflight_cli_rejects_invalid_test_authorization_contract(capsys):
+def test_preflight_cli_rejects_invalid_test_authorization_contract(snapshot_env, capsys):
     """Preflight CLI rejects test authorization token that is not a valid scoped contract."""
     rc = main(
         ["preflight", "--allow-dirty", "--test-authorization-token", "not_a_valid_json_contract"]
@@ -4210,7 +4208,9 @@ def test_preflight_cli_rejects_invalid_test_authorization_contract(capsys):
     assert "Scoped test authorization token must be a valid JSON contract" in err
 
 
-def test_preflight_cli_accepts_valid_scoped_test_authorization_contract(tmp_path, capsys):
+def test_preflight_cli_accepts_valid_scoped_test_authorization_contract(
+    snapshot_env, tmp_path, capsys
+):
     """Preflight CLI accepts valid scoped ExecutionAuthorization contract and marks AUTHORIZED."""
     contract = {
         "human_approval_token": "HUMAN_CANONICAL_TOKEN_OK",
@@ -4374,7 +4374,7 @@ def test_live_rejects_dirty_experiment_source_before_provider_construction(
     assert len(provider.calls) == 0
 
 
-def test_resume_rejects_dirty_source(monkeypatch, tmp_path, capsys):
+def test_resume_rejects_dirty_source(snapshot_env, monkeypatch, tmp_path, capsys):
     """Resume execution rejects dirty git status with 0 provider calls."""
     import subprocess
     from types import SimpleNamespace
@@ -4414,7 +4414,7 @@ def test_resume_rejects_dirty_source(monkeypatch, tmp_path, capsys):
         )
 
 
-def test_live_runs_same_readiness_contract_as_preflight(monkeypatch, capsys):
+def test_live_runs_same_readiness_contract_as_preflight(snapshot_env, monkeypatch, capsys):
     """CLI live and preflight both invoke the shared validate_experiment_readiness validator."""
     import src.experiment.__main__ as main_mod
 
@@ -5323,6 +5323,7 @@ def test_live_runner_rejects_arbitrary_embedder_override_in_production(tmp_path,
         raise AssertionError("OpenAISDKClient constructor tripwire triggered!")
 
     from openai import OpenAI
+
     monkeypatch.setattr(OpenAI, "__init__", tripwire)
 
     class CustomPseudoEmbedder:
@@ -5561,6 +5562,7 @@ def test_live_runner_faiss_dimension_mismatch_zero_provider_construction(tmp_pat
 
     # Corrupt index in plan snapshots to have dimension 2 instead of 4
     import faiss
+
     idx = faiss.IndexFlatIP(2)
     idx.add(np.eye(2, dtype=np.float32))
     serialized_idx = faiss.serialize_index(idx).tobytes()
@@ -5706,4 +5708,3 @@ def test_production_runner_enforces_retry_exponential_backoff(bundle, tmp_path, 
     assert fast_provider.attempt == 2
     assert mock_delays == [], "Mock seam must not call time.sleep (remains fast)"
     assert fast_summary["consumed_provider_attempts"] == 2
-

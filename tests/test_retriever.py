@@ -5,12 +5,12 @@ Separates fast, 100% offline tests from live-model integration tests.
 
 from __future__ import annotations
 
-import hashlib
 import json
-from pathlib import Path
 import re
-import pytest
+from pathlib import Path
+
 import numpy as np
+import pytest
 
 from src.retrieval.retriever import (
     FAISSRetriever,
@@ -55,7 +55,10 @@ class TestFAISSRetrieverOffline:
         assert cfg["similarity_metric"] == "cosine"
         assert cfg["faiss_index_type"] == "IndexFlatIP"
         assert cfg["supported_k"] == [1, 3, 5, 10]
-        assert cfg["corpus_sha256"] == "b219341154ddf2f12e97d622158a04ab7d57641df6a865559258d365852c3c75"
+        assert (
+            cfg["corpus_sha256"]
+            == "b219341154ddf2f12e97d622158a04ab7d57641df6a865559258d365852c3c75"
+        )
 
         revision = cfg["embedding_model_revision"]
         assert re.match(r"^[0-9a-f]{40}$", revision), f"Revision must be 40-char hex: {revision}"
@@ -63,7 +66,14 @@ class TestFAISSRetrieverOffline:
 
         # Test revision validator function
         validate_model_revision(revision)
-        for bad_rev in ["main", "master", "1110a24", "not-a-hash", "", "1110a243fdf4706b3f48f1d95db1a4f5529b4d4z"]:
+        for bad_rev in [
+            "main",
+            "master",
+            "1110a24",
+            "not-a-hash",
+            "",
+            "1110a243fdf4706b3f48f1d95db1a4f5529b4d4z",
+        ]:
             with pytest.raises(ValueError):
                 validate_model_revision(bad_rev)
 
@@ -120,11 +130,14 @@ class TestFAISSRetrieverOffline:
             {"technique_id": "T1136.001", "name": "Local Account", "retrieval_text": "text C"},
         ]
         index = faiss.IndexFlatIP(4)
-        identical_v = np.array([
-            [1.0, 0.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0, 0.0],
-        ], dtype=np.float32)
+        identical_v = np.array(
+            [
+                [1.0, 0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0, 0.0],
+            ],
+            dtype=np.float32,
+        )
         index.add(identical_v)
 
         class FixedEmbedder:
@@ -175,7 +188,9 @@ class TestFAISSRetrieverOffline:
 
     def test_k_bounds_and_validation(self):
         docs = [{"technique_id": "T1001", "name": "A", "retrieval_text": "Sample text"}]
-        retriever = FAISSRetriever(index=None, document_mapping=docs, config={}, embedder=StubEmbedder(4))
+        retriever = FAISSRetriever(
+            index=None, document_mapping=docs, config={}, embedder=StubEmbedder(4)
+        )
 
         with pytest.raises(ValueError, match="k must be >= 1"):
             retriever.retrieve("query", k=0)
@@ -187,8 +202,16 @@ class TestFAISSRetrieverOffline:
         import faiss
 
         docs = [
-            {"technique_id": "T1059.001", "name": "PowerShell", "retrieval_text": "PowerShell execution"},
-            {"technique_id": "T1053.005", "name": "Scheduled Task", "retrieval_text": "Task scheduler"},
+            {
+                "technique_id": "T1059.001",
+                "name": "PowerShell",
+                "retrieval_text": "PowerShell execution",
+            },
+            {
+                "technique_id": "T1053.005",
+                "name": "Scheduled Task",
+                "retrieval_text": "Task scheduler",
+            },
         ]
         embedder = StubEmbedder(dimension=8)
         vecs = normalize_l2(embedder.encode([d["retrieval_text"] for d in docs]))
@@ -201,7 +224,9 @@ class TestFAISSRetrieverOffline:
             "embedding_model_id": "stub-model",
             "embedding_model_revision": "0000000000000000000000000000000000000000",
         }
-        retriever = FAISSRetriever(index=index, document_mapping=docs, config=config, embedder=embedder)
+        retriever = FAISSRetriever(
+            index=index, document_mapping=docs, config=config, embedder=embedder
+        )
 
         idx_p = tmp_path / "test.index"
         dmap_p = tmp_path / "test.docmap.json"
@@ -282,7 +307,10 @@ class TestFAISSRetrieverOffline:
         doc = {
             "technique_id": "T1059.001",
             "name": "PowerShell",
-            "retrieval_text": "Technique ID: T1059.001\nName: PowerShell\nDescription: Adversaries execute PowerShell commands.",
+            "retrieval_text": (
+                "Technique ID: T1059.001\nName: PowerShell\n"
+                "Description: Adversaries execute PowerShell commands."
+            ),
         }
         res = [RetrievalResult(technique_id="T1059.001", score=0.8872, document=doc, rank=1)]
         retriever = FAISSRetriever(index=None, document_mapping=[doc], config={})
@@ -333,6 +361,7 @@ class TestFAISSRetrieverIntegration:
         # provenance; model generation remains mocked and incurs no API charge.
         from src.rag.pipeline import RAGPipeline
         from tests.test_rag_pipeline import _create_mock_client
+
         client = _create_mock_client()
         pipeline = RAGPipeline(retriever=retriever, client=client)
         record = pipeline.run_sample("real-retrieval", "powershell.exe -enc SQBFAFgA", k=3)
@@ -349,22 +378,34 @@ class TestFAISSRetrieverIntegration:
         # Query 1: PowerShell command invocation
         res_ps = retriever.retrieve("powershell.exe -ExecutionPolicy Bypass -enc SQBFAFgA", k=5)
         top_ids_ps = [r.technique_id for r in res_ps]
-        assert "T1059.001" in top_ids_ps, f"T1059.001 should be in top-5 for PowerShell, got: {top_ids_ps}"
+        assert "T1059.001" in top_ids_ps, (
+            f"T1059.001 should be in top-5 for PowerShell, got: {top_ids_ps}"
+        )
 
         # Query 2: Scheduled task creation
-        res_sch = retriever.retrieve("schtasks.exe /create /tn MyTask /tr C:\\evil.exe /sc onlogon", k=5)
+        res_sch = retriever.retrieve(
+            "schtasks.exe /create /tn MyTask /tr C:\\evil.exe /sc onlogon", k=5
+        )
         top_ids_sch = [r.technique_id for r in res_sch]
-        assert "T1053.005" in top_ids_sch, f"T1053.005 should be in top-5 for schtasks, got: {top_ids_sch}"
+        assert "T1053.005" in top_ids_sch, (
+            f"T1053.005 should be in top-5 for schtasks, got: {top_ids_sch}"
+        )
 
         # Query 3: Account creation
         res_user = retriever.retrieve("net user /add create a local user account", k=5)
         top_ids_user = [r.technique_id for r in res_user]
-        assert "T1136.001" in top_ids_user, f"T1136.001 should be in top-5 for net user, got: {top_ids_user}"
+        assert "T1136.001" in top_ids_user, (
+            f"T1136.001 should be in top-5 for net user, got: {top_ids_user}"
+        )
 
         # Query 4: Ingress tool transfer
-        res_dl = retriever.retrieve("download tool from remote server ingress tool transfer certutil", k=5)
+        res_dl = retriever.retrieve(
+            "download tool from remote server ingress tool transfer certutil", k=5
+        )
         top_ids_dl = [r.technique_id for r in res_dl]
-        assert "T1105" in top_ids_dl, f"T1105 should be in top-5 for certutil download, got: {top_ids_dl}"
+        assert "T1105" in top_ids_dl, (
+            f"T1105 should be in top-5 for certutil download, got: {top_ids_dl}"
+        )
 
     def test_supported_k_depths_on_real_index(self):
         retriever = FAISSRetriever.from_saved()
@@ -487,11 +528,7 @@ class TestFAISSRetrieverIntegration:
         for k in (1, 3, 5, 10):
             cond_file = out_dir / f"rag_k{k}_predictions.jsonl"
             assert cond_file.exists(), f"Missing predictions file: {cond_file}"
-            records = [
-                json.loads(line)
-                for line in cond_file.read_bytes().splitlines()
-                if line
-            ]
+            records = [json.loads(line) for line in cond_file.read_bytes().splitlines() if line]
             assert len(records) == 1
             rec = records[0]
 
@@ -504,9 +541,7 @@ class TestFAISSRetrieverIntegration:
                 r.technique_id for r in expected_results
             ]
             # Verify ranks exactly match
-            assert [c["rank"] for c in retrieved_candidates] == [
-                r.rank for r in expected_results
-            ]
+            assert [c["rank"] for c in retrieved_candidates] == [r.rank for r in expected_results]
             # Verify similarity scores match within numerical precision
             for c, exp in zip(retrieved_candidates, expected_results, strict=True):
                 assert c["score"] == pytest.approx(exp.score, abs=1e-5)
@@ -517,4 +552,3 @@ class TestFAISSRetrieverIntegration:
                 call[1]["input"] for call in captured_calls if call[0] == target_key
             )
             assert sample.endpoint_evidence.strip() in prompt_input
-

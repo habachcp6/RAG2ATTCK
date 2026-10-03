@@ -392,8 +392,7 @@ def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_i
         elif kind == "begin" and set(event) == {"event", "key"}:
             if is_live:
                 raise ValueError(
-                    "legacy begin event is forbidden in live journal; "
-                    "expected RESERVED transition"
+                    "legacy begin event is forbidden in live journal; expected RESERVED transition"
                 )
             if active is not None or key in completed:
                 raise ValueError("duplicate or overlapping journal begin")
@@ -427,9 +426,7 @@ def _resume_state(directory, manifest, manifest_sha, cap, registry_ids, corpus_i
             if is_live:
                 if active != key:
                     raise ValueError("invalid attempt journal")
-                validate_attempt_event(
-                    active_state, active, key, event["ordinal"], consumed + 1
-                )
+                validate_attempt_event(active_state, active, key, event["ordinal"], consumed + 1)
             else:
                 if (
                     active != key
@@ -856,10 +853,7 @@ def run_live_experiment(
     except Exception:
         plan_in_repo = False
     is_test = plan.manifest.get("split") == "test"
-    is_canonical = is_test and (
-        len(getattr(plan, "samples", [])) == 1280
-        or plan_in_repo
-    )
+    is_canonical = is_test and (len(getattr(plan, "samples", [])) == 1280 or plan_in_repo)
     effective_allow_dirty = False if is_canonical else allow_dirty
 
     from src.experiment.authorization import validate_experiment_readiness
@@ -1527,8 +1521,7 @@ def run_live_experiment(
 
         summary = {
             "complete": (
-                (len(records) == len(plan.samples) * len(CONDITIONS))
-                and (stopped_reason is None)
+                (len(records) == len(plan.samples) * len(CONDITIONS)) and (stopped_reason is None)
             ),
             "record_count": len(records),
             "requests_consumed": budget.count,

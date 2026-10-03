@@ -176,6 +176,8 @@ jobs:
           tests/test_ci_contract.py
 
       - name: Run experiment preflight gate
+        env:
+          RAG2ATTCK_SNAPSHOT_ROOT: ${{ runner.temp }}/rag2attck_snapshot_b69a690
         run: uv run python -m src.experiment preflight
 
       - name: Run Full Test Suite

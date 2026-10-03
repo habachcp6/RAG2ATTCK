@@ -2,7 +2,8 @@
   "schema_version": "r9_saved_data_replay_provenance_v2",
   "timestamp_utc": "2026-10-03T12:57:38Z",
   "execution_identity": {
-    "execution_command": "uv run python scripts/reproduce_canonical_study.py --bundle-dir .tmp/unpacked_v4/base_public_v3 --output-dir .tmp/r9_replay_output --expected-manifest-sha 32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c --all",
+    "execution_command": "uv run python scripts/reproduce_canonical_study.py --bundle-dir .tmp/unpacked_v4/base_public_v3 --output-dir .tmp/r9_replay_output --verify-hashes --audit-costs --replay-evaluation",
+    "command_scope_note": "The saved-data reproduction workflow authenticates bundle hashes, validates ledgers and journals, and re-evaluates the canonical dataset without running the protected baseline code verifier (which audits historical commit 80dbeb3f).",
     "entrypoint_script": "scripts/reproduce_canonical_study.py",
     "entrypoint_script_sha256": "8b8ba93522cf10e59d64a56e4b0c25b957445937fce2ff4698f3600e0113391e",
     "tested_checkout_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",

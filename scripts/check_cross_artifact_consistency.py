@@ -611,6 +611,33 @@ def check_figure_provenance(
                     xml_errors.append(f"{f_name}: Missing canonical visible conditional accuracy (91.3%)")
                 if not any("70.0%" in t for t in visible_texts) and not any("70.03%" in t for t in visible_texts):
                     xml_errors.append(f"{f_name}: Missing canonical visible conditional accuracy (70.0%)")
+
+                # Subgroup sample size & denominator validation
+                succ_n = 321
+                fail_n = 397
+                succ_corr = 293
+                fail_corr = 278
+                if bundle_data is not None:
+                    cond_acc = (
+                        bundle_data.get("conditions", {})
+                        .get("rag_k10", {})
+                        .get("rq2_retrieval_and_error", {})
+                        .get("generation_conditional_accuracy", {})
+                    )
+                    succ_n = cond_acc.get("retrieval_success_sample_count", 321)
+                    fail_n = cond_acc.get("retrieval_failure_sample_count", 397)
+                    succ_corr = cond_acc.get("correct_given_retrieval_success_count", 293)
+                    fail_corr = cond_acc.get("correct_given_retrieval_failure_count", 278)
+
+                if not any(f"N={succ_n}" in t for t in visible_texts):
+                    xml_errors.append(f"{f_name}: Missing canonical visible retrieval success sample count ('N={succ_n}')")
+                if not any(f"N={fail_n}" in t for t in visible_texts):
+                    xml_errors.append(f"{f_name}: Missing canonical visible retrieval failure sample count ('N={fail_n}')")
+                if not any(f"{succ_corr}/{succ_n}" in t for t in visible_texts):
+                    xml_errors.append(f"{f_name}: Missing canonical visible retrieval success fraction ('{succ_corr}/{succ_n}')")
+                if not any(f"{fail_corr}/{fail_n}" in t for t in visible_texts):
+                    xml_errors.append(f"{f_name}: Missing canonical visible retrieval failure fraction ('{fail_corr}/{fail_n}')")
+
                 valid_fig5_accs = {
                     "100", "100.0", "50", "60", "70", "70.0", "70.03", "73.0", "73.1", "74.8", "75.6", "76.1", "76.12", "76.5",
                     "80", "89.0", "90", "90.3", "91.28", "91.3", "97.1", "97.5"
@@ -620,6 +647,14 @@ def check_figure_provenance(
                         v_str = m.group(1)
                         if v_str not in valid_fig5_accs:
                             xml_errors.append(f"{f_name}: Contains unauthorized visible conditional accuracy: {v_str}%")
+                    for m in re.finditer(r"\bN=(\d+)\b", t):
+                        n_val = int(m.group(1))
+                        if n_val not in [succ_n, fail_n]:
+                            xml_errors.append(f"{f_name}: Contains unauthorized subgroup sample size 'N={n_val}' in: '{t}'")
+                    for m in re.finditer(r"\b(\d+)/(\d+)\b", t):
+                        den_val = int(m.group(2))
+                        if den_val not in [succ_n, fail_n]:
+                            xml_errors.append(f"{f_name}: Contains unauthorized subgroup fraction denominator '{den_val}' in: '{t}'")
 
             elif f_name == "fig6_latency_vs_k.svg":
                 if not any("Figure 6" in t for t in visible_texts):
@@ -740,10 +775,11 @@ def check_table_provenance(
 
         elif t_name == "table3_rq1_attribution_performance.md":
             if not fixture_only:
-                t3_errors = validate_table3_structure_and_bindings(content)
+                t3_errors = validate_table3_structure_and_bindings(content, bundle=bundle_data)
                 semantic_errors.extend(t3_errors)
             else:
                 found_conds: Dict[str, Dict[str, str]] = {}
+                cond_counts: Dict[str, int] = {k: 0 for k in CANONICAL_TABLE3_CONDITIONS}
                 for line in lines:
                     if "|" in line:
                         parts = [p.strip() for p in line.split("|")]
@@ -751,10 +787,14 @@ def check_table_provenance(
                             cond_col = parts[1]
                             for c_key, c_info in CANONICAL_TABLE3_CONDITIONS.items():
                                 if c_info["label"] in cond_col:
+                                    cond_counts[c_key] += 1
                                     found_conds[c_key] = {"acc": parts[2], "f1": parts[3], "delta": parts[4], "ci": parts[5], "p": parts[6]}
                 for c_key, c_info in CANONICAL_TABLE3_CONDITIONS.items():
-                    if c_key not in found_conds:
+                    cnt = cond_counts[c_key]
+                    if cnt == 0:
                         semantic_errors.append(f"Table 3 missing required condition row: '{c_info['label']}'")
+                    elif cnt > 1:
+                        semantic_errors.append(f"Table 3 contains duplicate condition row: '{c_info['label']}' ({cnt} occurrences)")
                     elif c_key == "rag_k10":
                         row = found_conds[c_key]
                         if row["acc"] != "79.53%":
@@ -764,7 +804,7 @@ def check_table_provenance(
 
         elif t_name == "table5_rq3_resources_and_cost.md":
             if not fixture_only:
-                t5_errors = validate_table5_structure_and_bindings(content)
+                t5_errors = validate_table5_structure_and_bindings(content, bundle=bundle_data)
                 semantic_errors.extend(t5_errors)
             first_100_lines = "\n".join(lines[:100])
             if "718" in first_100_lines:
@@ -787,7 +827,7 @@ def check_table_provenance(
     }
 
 
-def check_docx_binary(docx_path: Path, fig_dir: Optional[Path] = None) -> List[str]:
+def check_docx_binary(docx_path: Path, fig_dir: Optional[Path] = None, bundle_data: Optional[Dict[str, Any]] = None) -> List[str]:
     """Inspect DOCX internal OpenXML document and embedded media authenticity against declared figures."""
     errors = []
     if not docx_path.is_file():
@@ -819,9 +859,9 @@ def check_docx_binary(docx_path: Path, fig_dir: Optional[Path] = None) -> List[s
                         t_texts = [n.text for n in p.iter() if (n.tag.endswith("}t") or n.tag == "t") and n.text]
                         if t_texts:
                             p_text = "".join(t_texts)
-                            errors.extend(validate_narrative_metric_bindings(p_text, "scientific_report.docx"))
+                            errors.extend(validate_narrative_metric_bindings(p_text, "scientific_report.docx", bundle=bundle_data))
             except Exception:
-                errors.extend(validate_narrative_metric_bindings(doc_xml, "scientific_report.docx"))
+                errors.extend(validate_narrative_metric_bindings(doc_xml, "scientific_report.docx", bundle=bundle_data))
 
             # 4. Role / structural completeness check
             if len(doc_xml) < 400 or doc_xml.count("<w:p") < 3:
@@ -870,7 +910,7 @@ def check_docx_binary(docx_path: Path, fig_dir: Optional[Path] = None) -> List[s
     return errors
 
 
-def check_pptx_binary(pptx_path: Path) -> List[str]:
+def check_pptx_binary(pptx_path: Path, bundle_data: Optional[Dict[str, Any]] = None) -> List[str]:
     """Inspect PPTX slides for placeholders, wrong text, split runs, and tiny fonts."""
     errors = []
     if not pptx_path.is_file():
@@ -901,7 +941,7 @@ def check_pptx_binary(pptx_path: Path) -> List[str]:
                 full_slide_text = "\n".join(assembled_texts) if assembled_texts else re.sub(r"<[^>]+>", "", slide_xml)
 
                 # 3. Check for unauthorized / tampered metrics via structured binding contract
-                errors.extend(validate_narrative_metric_bindings(full_slide_text, f"slides.pptx ({s_name})"))
+                errors.extend(validate_narrative_metric_bindings(full_slide_text, f"slides.pptx ({s_name})", bundle=bundle_data))
 
                 # 4. Check font sizes: OpenXML pptx font size is in 100ths of a point (1100 = 11pt, 1800 = 18pt)
                 for sz_match in re.finditer(r'sz="(\d+)"', slide_xml):
@@ -1024,16 +1064,16 @@ def run_consistency_audit(
         docx_file = repo_root / "docs" / "report" / "scientific_report.docx"
         pptx_file = repo_root / "docs" / "presentation" / "slides.pptx"
         if docx_file.is_file():
-            binary_errors.extend(check_docx_binary(docx_file, fig_dir=fig_dir))
+            binary_errors.extend(check_docx_binary(docx_file, fig_dir=fig_dir, bundle_data=b_data))
         if pptx_file.is_file():
-            binary_errors.extend(check_pptx_binary(pptx_file))
+            binary_errors.extend(check_pptx_binary(pptx_file, bundle_data=b_data))
 
     # 7. Markdown narrative publication documents scan via MetricBinding Contract
     narrative_files = [p for p in publication_files if p.parent != table_dir]
     for p in narrative_files:
         if p.is_file() and p.suffix == ".md":
             raw_text = p.read_text(encoding="utf-8", errors="ignore")
-            binding_errs = validate_narrative_metric_bindings(raw_text, p.name)
+            binding_errs = validate_narrative_metric_bindings(raw_text, p.name, bundle=b_data)
             numerical_mismatches.extend(binding_errs)
 
     if numerical_mismatches:

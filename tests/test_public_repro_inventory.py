@@ -209,6 +209,7 @@ class TestPublicReproInventory:
         assert manifest_sha in {
             "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4",
             "ff4f4a89edf889a072f71021dc2c5a6ee89254c9b053156db0c17b9d9010af67",
+            "3ec03883062c2b117a1352c78199857a6ae2927a777ae5799daefbc817332dd6",
         }
         assert inventory["summary"]["code_manifest_files_count"] == 53
         assert inventory["summary"]["code_manifest_sha256"] == manifest_sha

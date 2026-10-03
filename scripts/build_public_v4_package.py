@@ -641,8 +641,16 @@ def build_candidate_package(
             "verdict": "PASS_INVENTORY_AND_GENERATED_PLAN_SCOPE",
         },
         "candidate_package": {
-            "output_directory": str(output_dir.as_posix()),
-            "output_zip": str(output_zip.as_posix()),
+            "output_directory": (
+                output_dir.relative_to(REPO_ROOT).as_posix()
+                if output_dir.is_relative_to(REPO_ROOT)
+                else f"artifacts/packages/{output_dir.name}"
+            ),
+            "output_zip": (
+                output_zip.relative_to(REPO_ROOT).as_posix()
+                if output_zip.is_relative_to(REPO_ROOT)
+                else f"artifacts/packages/{output_zip.name}"
+            ),
             "zip_sha256": zip_sha,
             "zip_size_bytes": zip_len,
             "manifest_file": "package_manifest_v4.json",

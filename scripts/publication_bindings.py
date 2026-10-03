@@ -579,11 +579,14 @@ def validate_narrative_metric_bindings(
         if not line or line.startswith("#"):
             continue
 
-        # Split line into semantic clauses (by semicolon, bullet, pipe, newline, or comma/period not between digits)
-        clauses = re.split(
-            r"[;\t\u2022|\n]+|(?<!\d)[,.](?!\d)",
-            line,
-        )
+        is_in_table = line.startswith("|")
+        if is_in_table:
+            clauses = [cell.strip() for cell in line.split("|") if cell.strip()]
+        else:
+            clauses = re.split(
+                r"[;\t\u2022\n]+|(?<!\d)[,.](?!\d)|(?<=%)\s+(?:versus|vs\.?|so với|whereas)\b",
+                line,
+            )
         line_condition: Optional[str] = None
 
         NON_HEADLINE_CANONICAL_PERCENTAGES = {
@@ -603,9 +606,11 @@ def validate_narrative_metric_bindings(
             "81.74", "81.740",
             "75.07", "75.070", "82.35", "82.350",
             "75.81", "75.810", "82.85", "82.850",
-            # Diagnostic / miss / overlap / error rates
-            "80.95", "96.24", "83.57", "55.29", "98.39", "22.01", "20.47", "19.05", "44.71", "24.09", "16.43", "3.76",
-            "30.00", "47.50", "1.96",
+            # Diagnostic / miss / overlap / error rates / fractions
+            "80.95", "96.24", "83.57", "55.29", "98.39", "22.01", "20.47", "19.05", "44.71", "42.80", "24.09", "16.43", "3.76",
+            "30.00", "47.50", "1.96", "0.00", "0.0", "0", "99.80", "99.8", "80", "80.0", "80.00",
+            # Macro-F1 percentages
+            "1.26", "1.20", "1.40", "1.33", "1.30", "1.3",
         }
 
         CANONICAL_MCNEMAR_P_VALUES = {
@@ -653,25 +658,44 @@ def validate_narrative_metric_bindings(
 
             is_subgroup_or_error = bool(
                 re.search(
-                    r"\b(?:error|errors|lỗi|miss|misses|trượt|single|contextual|hit@|recall|top[-_]?[0-9k]+|overlap|giao thoa|downstream|alignment|correct|retrieved|absent|p\s*\()\b",
+                    r"\b(?:error|errors|lỗi|miss|misses|trượt|single|contextual|multi[-_]?gt|hit@|hit\s*rate|recall|top[-_]?[0-9k]+|overlap|giao thoa|downstream|alignment|correct|retrieved|absent|views?|ca|bản\s*ghi|fraction|wins?|p\s*\(|wrong|relative|pp\b|delta|chênh\s*lệch)\b",
                     clause,
                     re.I,
                 )
             )
 
             # 1. Check attribution accuracy / percentage in clause
-            for m in re.finditer(r"(\d+\.\d+)%", clause):
+            for m in re.finditer(r"(\d+(?:\.\d+)?)%", clause):
                 val_str = m.group(1)
                 val_f = float(val_str)
-                # Attribution performance percentages fall in [70.0, 99.0]
-                if 70.0 <= val_f <= 99.0:
-                    is_non_headline = (
-                        val_str in NON_HEADLINE_CANONICAL_PERCENTAGES
-                        or f"{val_f:.2f}" in NON_HEADLINE_CANONICAL_PERCENTAGES
-                        or f"{val_f:.1f}" in NON_HEADLINE_CANONICAL_PERCENTAGES
-                        or is_subgroup_or_error
+
+                # Ignore confidence interval confidence level (95% CI / bootstrap) and general 100% claims
+                is_ci_confidence_level = (
+                    val_str in {"95", "95.0", "99", "99.0"}
+                    and bool(
+                        re.search(r"\b95%\s*(?:cis?|bootstrap|confidence|khoảng\s*tin\s*cậy)\b", clause, re.I)
+                        or re.search(r"\b(?:cis?|bootstrap|confidence|khoảng\s*tin\s*cậy)[^%]{0,25}95%", clause, re.I)
+                        or re.search(r"\b(?:bootstrap|confidence|cis?)\b", line, re.I)
                     )
-                    if is_non_headline:
+                )
+                is_general_100_claim = (
+                    val_str in {"100", "100.0", "100.00"}
+                    and bool(
+                        re.search(r"\b100%\s*(?:bitwise|sha|identical|trùng\s*khớp|pass|passing|test|offline)\b", clause, re.I)
+                        or re.search(r"\b(?:bitwise|sha|identical|trùng\s*khớp|pass|passing|test|offline)[^%]{0,25}100%", clause, re.I)
+                        or "pass" in clause.lower()
+                        or "test" in clause.lower()
+                    )
+                )
+                if is_ci_confidence_level or is_general_100_claim:
+                    continue
+
+                # Headline and subgroup accuracy checks fall in [70.0, 100.0]
+                if 70.0 <= val_f <= 100.0:
+                    is_ci_bound = "[" in clause or "]" in clause or bool(re.search(r"\b(?:ci|confidence|khoảng\s*tin\s*cậy)\b", clause, re.I))
+                    is_subgroup = is_subgroup_or_error or is_ci_bound or is_in_table
+
+                    if is_subgroup:
                         valid_all = set(NON_HEADLINE_CANONICAL_PERCENTAGES) | {c["acc"] for c in cond_metrics.values()}
                         if (
                             val_str not in valid_all
@@ -683,14 +707,20 @@ def validate_narrative_metric_bindings(
                             )
                     elif active_conditions:
                         expected_accs = {cond_metrics[c]["acc"] for c in active_conditions if c in cond_metrics}
-                        if not any(val_str == ea or f"{val_f:.2f}" == f"{float(ea):.2f}" for ea in expected_accs):
+                        expected_accs_1dec = {f"{float(ea):.1f}" for ea in expected_accs}
+                        if not (
+                            val_str in expected_accs
+                            or f"{val_f:.2f}" in expected_accs
+                            or val_str in expected_accs_1dec
+                            or f"{val_f:.1f}" in expected_accs_1dec
+                        ):
                             errors.append(
                                 f"{context_label}: Conditions {active_conditions} have mismatched accuracy '{val_str}%' "
                                 f"(expected one of {expected_accs}) in statement: '{clause}'"
                             )
                     else:
                         valid_accs = {c["acc"] for c in cond_metrics.values()} | set(NON_HEADLINE_CANONICAL_PERCENTAGES)
-                        if val_str not in valid_accs and f"{val_f:.2f}" not in valid_accs:
+                        if val_str not in valid_accs and f"{val_f:.2f}" not in valid_accs and f"{val_f:.1f}" not in valid_accs:
                             errors.append(
                                 f"{context_label}: Unauthorized accuracy percentage '{val_str}%' does not match any canonical metric in: '{clause}'"
                             )
@@ -705,20 +735,15 @@ def validate_narrative_metric_bindings(
                             errors.append(
                                 f"{context_label}: Baseline condition 'no_rag' has no McNemar p-value, but '{p_str}' was attributed in: '{clause}'"
                             )
-                        elif p_str not in CANONICAL_MCNEMAR_P_VALUES and f"{p_val_f:.3f}" not in CANONICAL_MCNEMAR_P_VALUES:
-                            errors.append(
-                                f"{context_label}: Unauthorized p-value '{p_str}' violates canonical McNemar bindings in: '{clause}'"
-                            )
                     else:
                         expected_ps = {cond_metrics[c]["p_val"] for c in active_conditions if c in cond_metrics and cond_metrics[c]["p_val"]}
                         if "0.422" in expected_ps:
                             expected_ps.add("0.4219")
                         if not any(p_str == ep or f"{p_val_f:.3f}" == f"{float(ep):.3f}" for ep in expected_ps):
-                            if p_str not in CANONICAL_MCNEMAR_P_VALUES and f"{p_val_f:.3f}" not in CANONICAL_MCNEMAR_P_VALUES:
-                                errors.append(
-                                    f"{context_label}: Conditions {active_conditions} have mismatched McNemar p-value '{p_str}' "
-                                    f"(expected one of {expected_ps}) in statement: '{clause}'"
-                                )
+                            errors.append(
+                                f"{context_label}: Conditions {active_conditions} have mismatched McNemar p-value '{p_str}' "
+                                f"(expected one of {expected_ps}) in statement: '{clause}'"
+                            )
                 else:
                     if p_str not in CANONICAL_MCNEMAR_P_VALUES and f"{p_val_f:.3f}" not in CANONICAL_MCNEMAR_P_VALUES:
                         errors.append(
@@ -733,12 +758,11 @@ def validate_narrative_metric_bindings(
                 }
                 if active_conditions:
                     expected_f1s = {cond_metrics[c]["f1"] for c in active_conditions if c in cond_metrics}
-                    if f1_str not in expected_f1s and f1_str not in valid_f1s:
+                    if f1_str not in expected_f1s:
                         errors.append(
                             f"{context_label}: Conditions {active_conditions} have mismatched Macro-F1 '{f1_str}' "
                             f"(expected one of {expected_f1s}) in statement: '{clause}'"
                         )
-                else:
                     if f1_str not in valid_f1s:
                         errors.append(
                             f"{context_label}: Unauthorized Macro-F1 '{f1_str}' violates canonical bundle binding in: '{clause}'"

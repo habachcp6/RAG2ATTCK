@@ -77,7 +77,7 @@ The following hypotheses served as working assumptions for experimental validati
 * **H2:** Higher retrieval $\text{Recall}@k$ is positively associated with higher end-to-end mapping accuracy.
   - *Empirical Finding:* Increasing candidate depth from $k=1$ to $k=10$ improves Hit@k from 3.76% to 44.71%. Conditional accuracy shows $P(\text{Correct} \mid \text{GT Retrieved in Top-}10) = 91.28\%$ (293/321) versus $P(\text{Correct} \mid \text{GT Absent from Top-}10) = 70.03\%$ (278/397). Missing retrieval context does not preclude correct classification from parametric memory; no causal self-correction is assumed.
 * **H3:** Increasing $k$ initially improves mapping performance, but excessive retrieved context introduces distractors (noise) and increases token/latency cost.
-  - *Empirical Finding:* Confirmed: expanding $k$ from 0 to 10 increases average prompt tokens from 674.3 to 5114.3 (~7.6x) and per-query logical cost from $0.000365 to $0.001679 USD (~4.6x), while median latency increases from 2.30s to 2.67s (mean 2.90s to 4.37s).
+  - *Empirical Finding:* Partially supported regarding resource overhead: expanding $k$ from 0 to 10 increases average prompt tokens from 674.3 to 5114.3 (~7.6x) and per-query logical cost from $0.000365 to $0.001679 USD (~4.6x), while median latency increases from 2.30s to 2.67s (mean 2.90s to 4.37s). However, empirical attribution accuracy does not show statistically significant distractor/noise degradation on this benchmark ($k=10$ accuracy was 79.53% vs 77.99% No-RAG, delta CI $[-2.355, +5.300]$ pp contains 0, McNemar exploratory $p = 0.4219$).
 
 ---
 

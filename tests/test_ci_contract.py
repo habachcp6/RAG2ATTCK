@@ -199,7 +199,20 @@ def _assert_ci(workflow):
         "${{ runner.temp }}/snapshot_controller_attestation.json",
     ]
     drift_step = _step(steps, "Verify current tree code drift is denied fail-closed")
-    assert "src.experiment" in drift_step["run"] and "preflight" in drift_step["run"]
+    drift_cmd = drift_step["run"]
+    assert "uv run python -c" in drift_cmd
+    assert "src.experiment" in drift_cmd and "preflight" in drift_cmd
+    assert "RAG2ATTCK_SNAPSHOT_ROOT" in drift_cmd
+    assert (
+        ".pop('RAG2ATTCK_SNAPSHOT_ROOT'" in drift_cmd
+        or '.pop("RAG2ATTCK_SNAPSHOT_ROOT"' in drift_cmd
+    )
+    assert "r1.returncode != 0" in drift_cmd and "r2.returncode != 0" in drift_cmd
+    assert "'code drift detected' in o1" in drift_cmd and "'code drift detected' in o2" in drift_cmd
+    assert (
+        "'LIVE_EXECUTION_BLOCKED' in o1" in drift_cmd
+        and "'LIVE_EXECUTION_BLOCKED' in o2" in drift_cmd
+    )
     assert shlex.split(
         _step(steps, "Verify frozen synthetic benchmark and same-seed reproduction")["run"]
     ) == GUARDED_PYTHON + ["src.data_ground_truth", "verify-synthetic"]
@@ -574,3 +587,51 @@ def test_missing_snapshot_root_env_on_integration_tests_is_detected():
     del test_step["env"]["RAG2ATTCK_SNAPSHOT_ROOT"]
     with pytest.raises(AssertionError):
         _assert_integration(workflow)
+
+
+def test_drift_step_without_real_command_is_detected():
+    workflow = deepcopy(_workflow("ci.yml"))
+    _step(
+        workflow["jobs"]["full-test-suite"]["steps"],
+        "Verify current tree code drift is denied fail-closed",
+    )["run"] = "echo skipped"
+    with pytest.raises(AssertionError):
+        _assert_ci(workflow)
+
+
+def test_drift_step_single_branch_only_is_detected():
+    workflow = deepcopy(_workflow("ci.yml"))
+    _step(
+        workflow["jobs"]["full-test-suite"]["steps"],
+        "Verify current tree code drift is denied fail-closed",
+    )["run"] = (
+        'uv run python -c "import subprocess, sys; '
+        'r = subprocess.run([sys.executable, \'-m\', \'src.experiment\', \'preflight\']); '
+        'assert r.returncode != 0"'
+    )
+    with pytest.raises(AssertionError):
+        _assert_ci(workflow)
+
+
+@pytest.mark.parametrize(
+    "tampered_snippet",
+    [
+        "'code drift detected' in o1",
+        "'code drift detected' in o2",
+        "'LIVE_EXECUTION_BLOCKED' in o1",
+        "'LIVE_EXECUTION_BLOCKED' in o2",
+        "r1.returncode != 0",
+        "r2.returncode != 0",
+        ".pop('RAG2ATTCK_SNAPSHOT_ROOT'",
+    ],
+)
+def test_drift_step_missing_assertions_is_detected(tampered_snippet):
+    workflow = deepcopy(_workflow("ci.yml"))
+    step = _step(
+        workflow["jobs"]["full-test-suite"]["steps"],
+        "Verify current tree code drift is denied fail-closed",
+    )
+    step["run"] = step["run"].replace(tampered_snippet, "True")
+    with pytest.raises(AssertionError):
+        _assert_ci(workflow)
+

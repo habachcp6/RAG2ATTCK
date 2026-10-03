@@ -7,17 +7,26 @@ import argparse
 import sys
 from pathlib import Path
 
-from src.acquisition import acquire_windows_apt_dataset
-from src.artifacts import ArtifactValidationError, validate_stage_prerequisites
-from src.attack_loader import (
+# Direct-file execution bootstrap: ensure repository root is in sys.path
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+from src.acquisition import acquire_windows_apt_dataset  # noqa: E402
+from src.artifacts import ArtifactValidationError, validate_stage_prerequisites  # noqa: E402
+from src.attack_loader import (  # noqa: E402
     download_attack_reference,
     generate_attack_manifest,
     parse_attack_bundle,
 )
-from src.dataset import PreflightGateBlocked, get_default_workspace_root, run_preflight_check
-from src.ground_truth import verify_ground_truth_provenance
-from src.profiler import profile_dataset_schemas
-from src.reconcile import run_multiset_reconciliation
+from src.dataset import (  # noqa: E402
+    PreflightGateBlocked,
+    get_default_workspace_root,
+    run_preflight_check,
+)
+from src.ground_truth import verify_ground_truth_provenance  # noqa: E402
+from src.profiler import profile_dataset_schemas  # noqa: E402
+from src.reconcile import run_multiset_reconciliation  # noqa: E402
 
 
 def _validate_or_exit(ws: Path, stage_name: str) -> None:

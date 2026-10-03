@@ -3489,8 +3489,12 @@ def test_no_rag_vs_rag_execution_contract(tmp_path):
             assert "Candidate 1:" in prompt_text
 
 
-def test_preflight_validates_output_path_and_evaluator_contract(snapshot_env, tmp_path):
+def test_preflight_validates_output_path_and_evaluator_contract(monkeypatch, tmp_path):
     """Preflight CLI checks output path safety, evaluator contract, and test authorization."""
+    monkeypatch.setattr(
+        "src.experiment.authorization.compute_code_manifest_sha256",
+        lambda *args, **kwargs: "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4",
+    )
     from src.experiment.__main__ import main
 
     fake_target = tmp_path / "fake-target"
@@ -3648,8 +3652,12 @@ def test_preflight_rejects_missing_or_zero_budget(tmp_path, capsys):
     assert "positive max_requests budget" in err
 
 
-def test_preflight_rejects_empty_test_authorization_token(snapshot_env, capsys):
+def test_preflight_rejects_empty_test_authorization_token(monkeypatch, capsys):
     """Preflight rejects empty or whitespace-only test authorization token."""
+    monkeypatch.setattr(
+        "src.experiment.authorization.compute_code_manifest_sha256",
+        lambda *args, **kwargs: "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4",
+    )
     rc = main(["preflight", "--allow-dirty", "--test-authorization-token", "   "])
     assert rc == 1
     err = capsys.readouterr().err
@@ -3657,8 +3665,12 @@ def test_preflight_rejects_empty_test_authorization_token(snapshot_env, capsys):
     assert "empty or whitespace" in err
 
 
-def test_preflight_reports_concurrency_and_provider_calls_zero(snapshot_env, capsys):
+def test_preflight_reports_concurrency_and_provider_calls_zero(monkeypatch, capsys):
     """Preflight outputs concurrency from plan and provider_calls_during_preflight: 0."""
+    monkeypatch.setattr(
+        "src.experiment.authorization.compute_code_manifest_sha256",
+        lambda *args, **kwargs: "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4",
+    )
     rc = main(["preflight", "--allow-dirty"])
     assert rc == 0
     out = capsys.readouterr().out
@@ -4235,8 +4247,12 @@ def test_preflight_cli_rejects_alternate_config(capsys):
             cfg_path.unlink()
 
 
-def test_preflight_cli_rejects_invalid_test_authorization_contract(snapshot_env, capsys):
+def test_preflight_cli_rejects_invalid_test_authorization_contract(monkeypatch, capsys):
     """Preflight CLI rejects test authorization token that is not a valid scoped contract."""
+    monkeypatch.setattr(
+        "src.experiment.authorization.compute_code_manifest_sha256",
+        lambda *args, **kwargs: "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4",
+    )
     rc = main(
         ["preflight", "--allow-dirty", "--test-authorization-token", "not_a_valid_json_contract"]
     )
@@ -4247,9 +4263,13 @@ def test_preflight_cli_rejects_invalid_test_authorization_contract(snapshot_env,
 
 
 def test_preflight_cli_accepts_valid_scoped_test_authorization_contract(
-    snapshot_env, tmp_path, capsys
+    monkeypatch, tmp_path, capsys
 ):
     """Preflight CLI accepts valid scoped ExecutionAuthorization contract and marks AUTHORIZED."""
+    monkeypatch.setattr(
+        "src.experiment.authorization.compute_code_manifest_sha256",
+        lambda *args, **kwargs: "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4",
+    )
     contract = {
         "human_approval_token": "HUMAN_CANONICAL_TOKEN_OK",
         "approved_protocol_sha256": (
@@ -4412,14 +4432,18 @@ def test_live_rejects_dirty_experiment_source_before_provider_construction(
     assert len(provider.calls) == 0
 
 
-def test_resume_rejects_dirty_source(snapshot_env, monkeypatch, tmp_path, capsys):
+def test_resume_rejects_dirty_source(monkeypatch, tmp_path, capsys):
     """Resume execution rejects dirty git status with 0 provider calls."""
     import subprocess
     from types import SimpleNamespace
 
     from src.experiment.authorization import validate_experiment_readiness
 
-    target_root = snapshot_env if snapshot_env else ROOT
+    monkeypatch.setattr(
+        "src.experiment.authorization.compute_code_manifest_sha256",
+        lambda *args, **kwargs: "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4",
+    )
+    target_root = ROOT
     config_path = target_root / "config" / "experiment_config.json"
     plan = load_plan(config_path)
     proto_path = target_root / "config" / "experiment_protocol_v1.json"
@@ -4454,9 +4478,14 @@ def test_resume_rejects_dirty_source(snapshot_env, monkeypatch, tmp_path, capsys
         )
 
 
-def test_live_runs_same_readiness_contract_as_preflight(snapshot_env, monkeypatch, capsys):
+def test_live_runs_same_readiness_contract_as_preflight(monkeypatch, capsys):
     """CLI live and preflight both invoke the shared validate_experiment_readiness validator."""
     import src.experiment.__main__ as main_mod
+
+    monkeypatch.setattr(
+        "src.experiment.authorization.compute_code_manifest_sha256",
+        lambda *args, **kwargs: "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4",
+    )
 
     called_contexts = []
     real_validator = main_mod.validate_experiment_readiness

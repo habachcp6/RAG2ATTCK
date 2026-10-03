@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
+import unittest.mock
 import zipfile
 from pathlib import Path
 
@@ -29,7 +31,12 @@ from scripts.build_public_v4_package import (
     run_privacy_scan,
     sanitize_rq_v2_packet,
 )
-from scripts.verify_public_v4_package import verify_package
+from scripts.verify_canonical_package_acceptance import run_acceptance_verification
+from scripts.verify_public_v4_package import (
+    check_safe_relative_path,
+    validate_contained_file,
+    verify_package,
+)
 
 
 class TestPublicV4PackageUnit:
@@ -141,21 +148,210 @@ class TestPublicV4PackageUnit:
             "role_index": {},
             "base_package": {"items": {}},
             "supplemental_envelope": {"items": {}},
+            "verification_tools": {"verify_public_v4_package.py": {"sha256": "0" * 64, "size_bytes": 1}},
         }
         fake_manifest.write_text(json.dumps(bad_manifest), encoding="utf-8")
         with pytest.raises(ValueError, match="Base package items must contain at least 23 declared items"):
             verify_package(pkg_dir)
 
         # 7. Unsafe path traversal in manifest fails closed
-        from scripts.verify_public_v4_package import check_safe_relative_path
-        with pytest.raises(ValueError, match="Unsafe path traversal"):
+        with pytest.raises(ValueError, match="Unsafe path component"):
             check_safe_relative_path("../outside_file.json")
         with pytest.raises(ValueError, match="Unsafe absolute path"):
             check_safe_relative_path("/etc/passwd")
 
+    def test_safe_relative_path_strict_rejection(self) -> None:
+        """Verify check_safe_relative_path rejects backslashes, leading slashes, drive letters, empty components, and traversals."""
+        # Backslash rejection
+        with pytest.raises(ValueError, match="Unsafe backslash"):
+            check_safe_relative_path("base_public_v3\\inputs\\data.json")
+
+        # Leading slash rejection
+        with pytest.raises(ValueError, match="Unsafe absolute path"):
+            check_safe_relative_path("/etc/shadow")
+
+        # Drive letter rejection
+        with pytest.raises(ValueError, match="Unsafe path with drive letter"):
+            check_safe_relative_path("C:secret.txt")
+        with pytest.raises(ValueError, match="Unsafe path with drive letter"):
+            check_safe_relative_path("D:/repo/file.txt")
+
+        # Empty or dot components
+        with pytest.raises(ValueError, match="Unsafe path component"):
+            check_safe_relative_path("base//file.json")
+        with pytest.raises(ValueError, match="Unsafe path component"):
+            check_safe_relative_path("./base/file.json")
+        with pytest.raises(ValueError, match="Unsafe path component"):
+            check_safe_relative_path("base/./file.json")
+        with pytest.raises(ValueError, match="Unsafe path component"):
+            check_safe_relative_path("base/../file.json")
+        with pytest.raises(ValueError, match="Empty path"):
+            check_safe_relative_path("")
+
+    def test_validate_contained_file_symlink_and_containment(self, tmp_path: Path) -> None:
+        """Verify validate_contained_file rejects symlinks and directory containment escapes."""
+        pkg_dir = tmp_path / "pkg"
+        pkg_dir.mkdir()
+        real_file = pkg_dir / "valid.txt"
+        real_file.write_text("ok")
+
+        # Valid relative file passes
+        assert validate_contained_file(pkg_dir, "valid.txt") == real_file
+
+        # Symlink rejection
+        symlink_target = tmp_path / "outside.txt"
+        symlink_target.write_text("outside")
+        symlink_file = pkg_dir / "symlink.txt"
+        try:
+            symlink_file.symlink_to(symlink_target)
+            with pytest.raises(ValueError, match="Symlinks are disallowed"):
+                validate_contained_file(pkg_dir, "symlink.txt")
+        except (OSError, NotImplementedError):
+            with unittest.mock.patch.object(Path, "is_symlink", return_value=True):
+                with pytest.raises(ValueError, match="Symlinks are disallowed"):
+                    validate_contained_file(pkg_dir, "valid.txt")
+
+        # Containment escape rejection
+        with unittest.mock.patch.object(Path, "is_relative_to", return_value=False):
+            with pytest.raises(ValueError, match="Path escapes package root containment"):
+                validate_contained_file(pkg_dir, "valid.txt")
+
+    def test_base_descriptor_runtime_assets_and_set_equality_fails_closed(self, tmp_path: Path) -> None:
+        """Verify verify_package strictly enforces set equality between base descriptor (including runtime_assets) and base_items."""
+        if not OUTPUT_V4_DEFAULT_DIR.is_dir():
+            pytest.skip("Requires staged package")
+        clone = tmp_path / "pkg_clone"
+        shutil.copytree(OUTPUT_V4_DEFAULT_DIR, clone)
+        manifest_p = clone / "package_manifest_v4.json"
+        raw = json.loads(manifest_p.read_text(encoding="utf-8"))
+
+        # Case A: Omit runtime_asset from base_items (replaced by dummy so count >= 23) -> fails closed
+        runtime_key = "base_public_v3/runtime/runtime_recovery_wrapper.py"
+        assert runtime_key in raw["base_package"]["items"]
+        del raw["base_package"]["items"][runtime_key]
+        raw["base_package"]["items"]["base_public_v3/dummy_unmatched.bin"] = {"sha256": "0" * 64, "size_bytes": 10}
+        manifest_p.write_text(json.dumps(raw, indent=2), encoding="utf-8")
+
+        with pytest.raises(ValueError, match="Base descriptor and base_items set mismatch"):
+            verify_package(clone)
+
+        # Case B: Add extra undeclared item in base_items -> fails closed
+        raw["base_package"]["items"][runtime_key] = {"sha256": "0" * 64, "size_bytes": 10}
+        raw["base_package"]["items"]["base_public_v3/undeclared_bonus.json"] = {"sha256": "1" * 64, "size_bytes": 10}
+        manifest_p.write_text(json.dumps(raw, indent=2), encoding="utf-8")
+
+        with pytest.raises(ValueError, match="In package base items but undeclared in descriptor"):
+            verify_package(clone)
+
+    def test_verification_tools_validation_fails_closed(self, tmp_path: Path) -> None:
+        """Verify that missing verification_tools, missing verify_public_v4_package.py, or corrupted tool bytes fail closed."""
+        if not OUTPUT_V4_DEFAULT_DIR.is_dir():
+            pytest.skip("Requires staged package")
+        clone = tmp_path / "pkg_clone"
+        shutil.copytree(OUTPUT_V4_DEFAULT_DIR, clone)
+        manifest_p = clone / "package_manifest_v4.json"
+        raw = json.loads(manifest_p.read_text(encoding="utf-8"))
+
+        # Case A: Missing section
+        raw_missing = dict(raw)
+        del raw_missing["verification_tools"]
+        manifest_p.write_text(json.dumps(raw_missing, indent=2), encoding="utf-8")
+        with pytest.raises(KeyError, match="verification_tools"):
+            verify_package(clone)
+
+        # Case B: Missing required tool name
+        raw_empty_tools = dict(raw)
+        raw_empty_tools["verification_tools"] = {"other_tool.py": {"sha256": "0" * 64, "size_bytes": 1}}
+        manifest_p.write_text(json.dumps(raw_empty_tools, indent=2), encoding="utf-8")
+        with pytest.raises(ValueError, match="must include 'verify_public_v4_package.py'"):
+            verify_package(clone)
+
+        # Case C: Byte tampering on disk
+        manifest_p.write_text(json.dumps(raw, indent=2), encoding="utf-8")
+        tool_f = clone / "verify_public_v4_package.py"
+        tool_f.write_text(tool_f.read_text(encoding="utf-8") + "\n# corrupted byte\n", encoding="utf-8")
+        with pytest.raises(ValueError, match="Verification tool SHA mismatch for verify_public_v4_package.py"):
+            verify_package(clone)
+
+    def test_acceptance_runner_duplicate_zip_entry_fails_closed(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+        """Verify acceptance runner strictly rejects duplicate entries in candidate ZIP archive."""
+        if not OUTPUT_V4_DEFAULT_DIR.is_dir():
+            pytest.skip("Requires staged package")
+        zip_p = tmp_path / "duplicate_entry.zip"
+        with zipfile.ZipFile(zip_p, "w") as zf:
+            for f in sorted(OUTPUT_V4_DEFAULT_DIR.rglob("*")):
+                if f.is_file():
+                    zf.write(f, f.relative_to(OUTPUT_V4_DEFAULT_DIR).as_posix())
+            zf.writestr("README.md", b"# duplicate entry content\n")
+
+        with pytest.raises(SystemExit) as exc_info:
+            run_acceptance_verification(candidate_dir=OUTPUT_V4_DEFAULT_DIR, candidate_zip=zip_p)
+        assert exc_info.value.code == 1
+        captured = capsys.readouterr()
+        assert "Duplicate entry in ZIP archive" in captured.err
+
+    def test_acceptance_runner_undeclared_member_in_zip_fails_closed(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+        """Verify acceptance runner strictly rejects undeclared members in candidate ZIP archive."""
+        if not OUTPUT_V4_DEFAULT_DIR.is_dir():
+            pytest.skip("Requires staged package")
+        zip_p = tmp_path / "undeclared_member.zip"
+        with zipfile.ZipFile(zip_p, "w") as zf:
+            for f in sorted(OUTPUT_V4_DEFAULT_DIR.rglob("*")):
+                if f.is_file():
+                    zf.write(f, f.relative_to(OUTPUT_V4_DEFAULT_DIR).as_posix())
+            zf.writestr("malicious_extra_payload.sh", b"echo hacked\n")
+
+        with pytest.raises(SystemExit) as exc_info:
+            run_acceptance_verification(candidate_dir=OUTPUT_V4_DEFAULT_DIR, candidate_zip=zip_p)
+        assert exc_info.value.code == 1
+        captured = capsys.readouterr()
+        assert "Undeclared member 'malicious_extra_payload.sh' in candidate ZIP archive" in captured.err
+
+    def test_acceptance_runner_tampered_verification_tool_in_zip_fails_closed(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+        """Verify acceptance runner strictly rejects tampered verification tool member stream in candidate ZIP archive."""
+        if not OUTPUT_V4_DEFAULT_DIR.is_dir():
+            pytest.skip("Requires staged package")
+        zip_p = tmp_path / "tampered_tool.zip"
+        with zipfile.ZipFile(zip_p, "w") as zf:
+            for f in sorted(OUTPUT_V4_DEFAULT_DIR.rglob("*")):
+                if f.is_file():
+                    rel = f.relative_to(OUTPUT_V4_DEFAULT_DIR).as_posix()
+                    if rel == "verify_public_v4_package.py":
+                        zf.writestr(rel, b"# modified verifier stream content\n")
+                    else:
+                        zf.write(f, rel)
+
+        with pytest.raises(SystemExit) as exc_info:
+            run_acceptance_verification(candidate_dir=OUTPUT_V4_DEFAULT_DIR, candidate_zip=zip_p)
+        assert exc_info.value.code == 1
+        captured = capsys.readouterr()
+        assert "ZIP member stream SHA mismatch for 'verify_public_v4_package.py'" in captured.err
+
+    def test_acceptance_runner_privacy_violation_in_zip_fails_closed(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+        """Verify acceptance runner detects and rejects private workstation paths directly in ZIP member streams."""
+        if not OUTPUT_V4_DEFAULT_DIR.is_dir():
+            pytest.skip("Requires staged package")
+        clone = tmp_path / "pkg_clean"
+        shutil.copytree(OUTPUT_V4_DEFAULT_DIR, clone)
+
+        zip_p = tmp_path / "privacy_leak.zip"
+        with zipfile.ZipFile(zip_p, "w") as zf:
+            for f in sorted(clone.rglob("*")):
+                if f.is_file():
+                    rel = f.relative_to(clone).as_posix()
+                    if rel == "README.md":
+                        zf.writestr(rel, b"# Leaked info\nPath: C:/Users/hahoa/secret\n")
+                    else:
+                        zf.write(f, rel)
+
+        with pytest.raises(SystemExit) as exc_info:
+            run_acceptance_verification(candidate_dir=clone, candidate_zip=zip_p)
+        assert exc_info.value.code == 1
+        captured = capsys.readouterr()
+        assert "Privacy violation in ZIP member 'README.md'" in captured.err
+
     def test_acceptance_runner_fails_closed_on_missing_zip(self, tmp_path: Path) -> None:
         """Verify acceptance runner strictly exits with code 1 if --candidate-zip does not exist."""
-        from scripts.verify_canonical_package_acceptance import run_acceptance_verification
         fake_dir = tmp_path / "candidate_dir"
         fake_dir.mkdir()
         non_existent_zip = tmp_path / "does_not_exist.zip"

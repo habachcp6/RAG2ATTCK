@@ -30,6 +30,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import sys
@@ -45,13 +46,69 @@ if str(REPO_ROOT) not in sys.path:
 
 # Constants & Anchors
 BASE_V3_DESCRIPTOR_SHA256 = "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c"
-BASE_V3_DEFAULT_DIR = Path("C:/Users/hahoa/.codex/artifacts/rag2attck/final_handover_package_v3_20261002/03_public_canonical_package")
-OUTPUT_V4_DEFAULT_DIR = Path("C:/Users/hahoa/.codex/artifacts/rag2attck/public_v4_candidate_20261003")
-OUTPUT_V4_DEFAULT_ZIP = Path("C:/Users/hahoa/.codex/artifacts/rag2attck/public_v4_candidate_20261003.zip")
+
+
+def _resolve_base_v3_dir() -> Path:
+    if "BASE_V3_DIR" in os.environ and os.environ["BASE_V3_DIR"]:
+        return Path(os.environ["BASE_V3_DIR"])
+    repo_staging = REPO_ROOT / "artifacts/public_package_staging/03_public_canonical_package"
+    if repo_staging.is_dir():
+        return repo_staging
+    legacy_path = Path("C:/Users/hahoa/.codex/artifacts/rag2attck/final_handover_package_v3_20261002/03_public_canonical_package")
+    if legacy_path.is_dir():
+        return legacy_path
+    return repo_staging
+
+
+def _resolve_root_track_a_path() -> Path:
+    if "ROOT_TRACK_A_PATH" in os.environ and os.environ["ROOT_TRACK_A_PATH"]:
+        return Path(os.environ["ROOT_TRACK_A_PATH"])
+    repo_path = REPO_ROOT / "reports/evidence/root_track_a_acceptance_b69a690.json"
+    if repo_path.is_file():
+        return repo_path
+    legacy_path = Path("C:/Users/hahoa/.codex/artifacts/rag2attck/finalization_20261003/root_track_a_acceptance_b69a690.json")
+    if legacy_path.is_file():
+        return legacy_path
+    return repo_path
+
+
+def _resolve_original_rq_v2_packet_path() -> Path:
+    if "ORIGINAL_RQ_V2_PACKET_PATH" in os.environ and os.environ["ORIGINAL_RQ_V2_PACKET_PATH"]:
+        return Path(os.environ["ORIGINAL_RQ_V2_PACKET_PATH"])
+    repo_path = REPO_ROOT / "artifacts/orchestration/s2_rq_v2_execute_exact_20261002.md"
+    if repo_path.is_file():
+        return repo_path
+    alt_path = Path("D:/RAG2ATT&CK/artifacts/orchestration/s2_rq_v2_execute_exact_20261002.md")
+    if alt_path.is_file():
+        return alt_path
+    return repo_path
+
+
+def _resolve_output_v4_dir() -> Path:
+    if "OUTPUT_V4_DIR" in os.environ and os.environ["OUTPUT_V4_DIR"]:
+        return Path(os.environ["OUTPUT_V4_DIR"])
+    legacy_path = Path("C:/Users/hahoa/.codex/artifacts/rag2attck/public_v4_candidate_20261003")
+    if legacy_path.parent.is_dir():
+        return legacy_path
+    return REPO_ROOT / "artifacts/packages/public_v4_candidate_20261003"
+
+
+def _resolve_output_v4_zip() -> Path:
+    if "OUTPUT_V4_ZIP" in os.environ and os.environ["OUTPUT_V4_ZIP"]:
+        return Path(os.environ["OUTPUT_V4_ZIP"])
+    legacy_path = Path("C:/Users/hahoa/.codex/artifacts/rag2attck/public_v4_candidate_20261003.zip")
+    if legacy_path.parent.is_dir():
+        return legacy_path
+    return REPO_ROOT / "artifacts/packages/public_v4_candidate_20261003.zip"
+
+
+BASE_V3_DEFAULT_DIR = _resolve_base_v3_dir()
+OUTPUT_V4_DEFAULT_DIR = _resolve_output_v4_dir()
+OUTPUT_V4_DEFAULT_ZIP = _resolve_output_v4_zip()
 
 ROOT_ACCEPTANCE_30B_PATH = REPO_ROOT / "reports/evidence/root_public_inventory_acceptance_30b9834.json"
-ROOT_TRACK_A_PATH = Path("C:/Users/hahoa/.codex/artifacts/rag2attck/finalization_20261003/root_track_a_acceptance_b69a690.json")
-ORIGINAL_RQ_V2_PACKET_PATH = Path("D:/RAG2ATT&CK/artifacts/orchestration/s2_rq_v2_execute_exact_20261002.md")
+ROOT_TRACK_A_PATH = _resolve_root_track_a_path()
+ORIGINAL_RQ_V2_PACKET_PATH = _resolve_original_rq_v2_packet_path()
 
 REQUIRED_ROLES = [
     "base_manifest_descriptor",

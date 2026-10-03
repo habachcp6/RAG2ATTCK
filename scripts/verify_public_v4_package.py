@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 PACKAGE_ROOT = Path(__file__).resolve().parent
 
 VALID_SCHEMA_VERSIONS = {"public_v4_candidate_package_v1", "rag2attck-public-package-v4", "4.0.0"}
-REQUIRED_SECTIONS = ["schema_version", "role_index", "base_package", "supplemental_envelope"]
+REQUIRED_SECTIONS = ["schema_version", "role_index", "base_package", "supplemental_envelope", "verification_tools"]
 MIN_BASE_ITEMS = 23
 MIN_SUPPLEMENTAL_ITEMS = 5
 
@@ -79,18 +79,38 @@ def read_verified_buffer(path: Path) -> Tuple[bytes, str, int]:
 
 
 def check_safe_relative_path(rel_path_str: str) -> Path:
-    """Validate that path is a safe relative path without escaping, drive letters, or absolute root."""
-    if rel_path_str.startswith("/") or rel_path_str.startswith("\\"):
-        raise ValueError(f"Unsafe absolute path in package manifest: '{rel_path_str}'")
-    p = Path(rel_path_str)
-    if p.is_absolute():
-        raise ValueError(f"Unsafe absolute path in package manifest: '{rel_path_str}'")
-    if p.drive:
+    """Validate that path is a safe relative POSIX path without escaping, drive letters, backslashes, or absolute root."""
+    if not rel_path_str:
+        raise ValueError("Empty path in package manifest")
+    if "\\" in rel_path_str:
+        raise ValueError(f"Unsafe backslash in package manifest path: '{rel_path_str}'")
+    if rel_path_str.startswith("/"):
+        raise ValueError(f"Unsafe absolute path starting with '/' in package manifest: '{rel_path_str}'")
+    if re.match(r"^[a-zA-Z]:", rel_path_str):
         raise ValueError(f"Unsafe path with drive letter in package manifest: '{rel_path_str}'")
-    parts = p.parts
-    if ".." in parts:
-        raise ValueError(f"Unsafe path traversal ('..') in package manifest: '{rel_path_str}'")
+    parts = rel_path_str.split("/")
+    for part in parts:
+        if part in ("", ".", ".."):
+            raise ValueError(f"Unsafe path component '{part}' in package manifest: '{rel_path_str}'")
+    p = Path(rel_path_str)
+    if p.is_absolute() or p.drive:
+        raise ValueError(f"Unsafe absolute or drive path in package manifest: '{rel_path_str}'")
     return p
+
+
+def validate_contained_file(package_dir: Path, rel_path_str: str) -> Path:
+    """Validate safe relative path, absence of symlinks, and containment within package_dir."""
+    check_safe_relative_path(rel_path_str)
+    target_f = package_dir / rel_path_str
+    if target_f.is_symlink():
+        raise ValueError(f"Symlinks are disallowed in package: '{rel_path_str}'")
+    resolved_pkg = package_dir.resolve()
+    resolved_f = target_f.resolve()
+    if not resolved_f.is_relative_to(resolved_pkg):
+        raise ValueError(f"Path escapes package root containment: '{rel_path_str}' -> '{resolved_f}'")
+    if not target_f.is_file():
+        raise FileNotFoundError(f"Missing required file in package: '{rel_path_str}' at {target_f}")
+    return target_f
 
 
 def run_privacy_scan(package_dir: Path) -> List[str]:
@@ -100,7 +120,7 @@ def run_privacy_scan(package_dir: Path) -> List[str]:
         re.compile(r"D:[\\/](?:RAG2ATTCK|Users|worktrees)[\\/a-zA-Z0-9_.-]*", re.IGNORECASE),
     ]
     for f in package_dir.rglob("*"):
-        if not f.is_file() or f.suffix in {".zip", ".pyc"}:
+        if f.is_symlink() or not f.is_file() or f.suffix in {".zip", ".pyc"}:
             continue
         try:
             content = f.read_text(encoding="utf-8")
@@ -156,8 +176,7 @@ def verify_package(package_dir: Path, expected_manifest_sha256: Optional[str] = 
         )
 
     base_manifest_rel = base_pkg.get("manifest_path", "base_public_v3/canonical_bundle_manifest.json")
-    check_safe_relative_path(base_manifest_rel)
-    base_man_file = package_dir / base_manifest_rel
+    base_man_file = validate_contained_file(package_dir, base_manifest_rel)
     raw_base_man, actual_base_man_sha, _ = read_verified_buffer(base_man_file)
     expected_base_man_sha = base_pkg.get("manifest_sha256")
     if not expected_base_man_sha or actual_base_man_sha != expected_base_man_sha:
@@ -165,30 +184,46 @@ def verify_package(package_dir: Path, expected_manifest_sha256: Optional[str] = 
 
     # Parse base descriptor content and verify that all items declared in descriptor exist in base_items
     base_descriptor_data = json.loads(raw_base_man.decode("utf-8"))
-    descriptor_declared_files: Dict[str, Dict[str, Any]] = {}
-    for section_key in [
+    if not isinstance(base_descriptor_data, dict):
+        raise ValueError("Base descriptor root must be a JSON object")
+
+    required_descriptor_sections = [
         "byte_preserved_files",
         "sanitized_transformed_files",
         "sanitized_provenance_assets",
-        "runtime_evidence_logs",
-    ]:
-        sec_dict = base_descriptor_data.get(section_key, {})
-        if isinstance(sec_dict, dict):
-            for rel_k, spec in sec_dict.items():
-                expected_item_sha = spec.get("sanitized_sha256") or spec.get("sha256")
-                expected_item_size = spec.get("size_bytes")
-                full_rel_path = f"base_public_v3/{rel_k}"
-                descriptor_declared_files[full_rel_path] = {
-                    "sha256": expected_item_sha,
-                    "size_bytes": expected_item_size,
-                    "section": section_key,
-                }
+        "runtime_assets",
+    ]
+    for sec_key in required_descriptor_sections:
+        if sec_key not in base_descriptor_data or not isinstance(base_descriptor_data[sec_key], dict):
+            raise ValueError(f"Base descriptor missing required section or not a dict: '{sec_key}'")
+
+    descriptor_declared_files: Dict[str, Dict[str, Any]] = {}
+    for section_key in required_descriptor_sections:
+        sec_dict = base_descriptor_data[section_key]
+        for rel_k, spec in sec_dict.items():
+            expected_item_sha = spec.get("sanitized_sha256") or spec.get("sha256")
+            expected_item_size = spec.get("size_bytes")
+            full_rel_path = f"base_public_v3/{rel_k}"
+            descriptor_declared_files[full_rel_path] = {
+                "sha256": expected_item_sha,
+                "size_bytes": expected_item_size,
+                "section": section_key,
+            }
+
+    # Set identity check between base_items and descriptor_declared_files
+    base_items_keys = set(base_items.keys())
+    desc_keys = set(descriptor_declared_files.keys())
+    if base_items_keys != desc_keys:
+        missing_in_pkg = desc_keys - base_items_keys
+        undeclared_in_desc = base_items_keys - desc_keys
+        err_parts = []
+        if missing_in_pkg:
+            err_parts.append(f"Declared in descriptor but missing in package base items: {sorted(missing_in_pkg)}")
+        if undeclared_in_desc:
+            err_parts.append(f"In package base items but undeclared in descriptor: {sorted(undeclared_in_desc)}")
+        raise ValueError("Base descriptor and base_items set mismatch: " + "; ".join(err_parts))
 
     for full_rel, desc_spec in descriptor_declared_files.items():
-        if full_rel not in base_items:
-            raise ValueError(
-                f"Base descriptor declared item missing from package base items inventory: '{full_rel}'"
-            )
         pkg_spec = base_items[full_rel]
         if pkg_spec["sha256"] != desc_spec["sha256"]:
             raise ValueError(
@@ -204,8 +239,7 @@ def verify_package(package_dir: Path, expected_manifest_sha256: Optional[str] = 
 
     verified_base_items = 0
     for rel_path, spec in base_items.items():
-        check_safe_relative_path(rel_path)
-        target_f = package_dir / rel_path
+        target_f = validate_contained_file(package_dir, rel_path)
         _, item_sha, item_len = read_verified_buffer(target_f)
         if item_sha != spec["sha256"]:
             raise ValueError(f"Base item SHA mismatch for {rel_path}: actual {item_sha} != expected {spec['sha256']}")
@@ -216,8 +250,7 @@ def verify_package(package_dir: Path, expected_manifest_sha256: Optional[str] = 
 
     verified_supp_items = 0
     for rel_path, spec in supp_items.items():
-        check_safe_relative_path(rel_path)
-        target_f = package_dir / rel_path
+        target_f = validate_contained_file(package_dir, rel_path)
         _, item_sha, item_len = read_verified_buffer(target_f)
         if item_sha != spec["sha256"]:
             raise ValueError(f"Supplemental item SHA mismatch for {rel_path}: actual {item_sha} != expected {spec['sha256']}")
@@ -225,6 +258,24 @@ def verify_package(package_dir: Path, expected_manifest_sha256: Optional[str] = 
             raise ValueError(f"Supplemental item size mismatch for {rel_path}: actual {item_len} != expected {spec['size_bytes']}")
         verified_inventory[rel_path] = (item_sha, item_len)
         verified_supp_items += 1
+
+    # Verification Tools Verification
+    verification_tools = manifest_data.get("verification_tools")
+    if not isinstance(verification_tools, dict) or not verification_tools:
+        raise ValueError("Package manifest missing required 'verification_tools' section or it is empty")
+    if "verify_public_v4_package.py" not in verification_tools:
+        raise ValueError("Package manifest 'verification_tools' must include 'verify_public_v4_package.py'")
+
+    verified_tools = 0
+    for tool_name, spec in verification_tools.items():
+        target_f = validate_contained_file(package_dir, tool_name)
+        _, tool_sha, tool_len = read_verified_buffer(target_f)
+        if tool_sha != spec["sha256"]:
+            raise ValueError(f"Verification tool SHA mismatch for {tool_name}: actual {tool_sha} != expected {spec['sha256']}")
+        if tool_len != spec["size_bytes"]:
+            raise ValueError(f"Verification tool size mismatch for {tool_name}: actual {tool_len} != expected {spec['size_bytes']}")
+        verified_inventory[tool_name] = (tool_sha, tool_len)
+        verified_tools += 1
 
     # 4. Role Index Semantic Validation & Collapse Prevention
     role_index = manifest_data["role_index"]
@@ -234,10 +285,7 @@ def verify_package(package_dir: Path, expected_manifest_sha256: Optional[str] = 
         if role not in role_index:
             raise KeyError(f"Required semantic role missing from role index: {role}")
         rel_path = role_index[role]
-        check_safe_relative_path(rel_path)
-        file_path = package_dir / rel_path
-        if not file_path.is_file():
-            raise FileNotFoundError(f"File for role '{role}' not found at: {file_path}")
+        file_path = validate_contained_file(package_dir, rel_path)
 
         # The role target must be part of the verified inventory or verified base descriptor
         if rel_path != base_manifest_rel and rel_path not in verified_inventory:
@@ -282,6 +330,7 @@ def verify_package(package_dir: Path, expected_manifest_sha256: Optional[str] = 
         "base_manifest_sha256": actual_base_man_sha,
         "verified_base_items": verified_base_items,
         "verified_supplemental_items": verified_supp_items,
+        "verified_tools_count": verified_tools,
         "verified_roles_count": len(role_index),
         "privacy_violations_count": len(privacy_violations),
     }

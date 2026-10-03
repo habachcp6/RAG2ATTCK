@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 import zipfile
 from pathlib import Path
@@ -59,7 +60,7 @@ def run_acceptance_verification(
 
     # 3. Verify manifest contents and role index targets
     manifest_file = candidate_dir / "package_manifest_v4.json"
-    raw_m, m_sha, _ = read_verified_buffer(manifest_file)
+    raw_m, m_sha, m_len = read_verified_buffer(manifest_file)
     manifest = json.loads(raw_m.decode("utf-8"))
 
     role_index = manifest.get("role_index", {})
@@ -104,42 +105,135 @@ def run_acceptance_verification(
                     print(f"FAIL / BLOCKED: Candidate ZIP corrupted at entry: {corrupt_file}", file=sys.stderr)
                     sys.exit(1)
 
-                zip_info_map = {zi.filename: zi for zi in zf.infolist()}
+                seen_filenames = set()
+                zip_info_map = {}
+                for zi in zf.infolist():
+                    if zi.filename in seen_filenames:
+                        print(f"FAIL / BLOCKED: Duplicate entry in ZIP archive: '{zi.filename}'", file=sys.stderr)
+                        sys.exit(1)
+                    seen_filenames.add(zi.filename)
+                    zip_info_map[zi.filename] = zi
 
-                # Check safe paths within archive (no traversal, no absolute paths)
-                for entry_name in zip_info_map:
+                # Check safe paths within archive (no traversal, no backslashes, no absolute paths)
+                for entry_name in seen_filenames:
+                    if "\\" in entry_name or entry_name.startswith("/"):
+                        print(f"FAIL / BLOCKED: Unsafe path in ZIP archive entry: {entry_name}", file=sys.stderr)
+                        sys.exit(1)
                     p = Path(entry_name)
                     if p.is_absolute() or ".." in p.parts or p.drive:
                         print(f"FAIL / BLOCKED: Unsafe path in ZIP archive entry: {entry_name}", file=sys.stderr)
                         sys.exit(1)
 
-                # Verify package_manifest_v4.json member stream
-                if "package_manifest_v4.json" not in zip_info_map:
-                    print("FAIL / BLOCKED: 'package_manifest_v4.json' missing from ZIP archive", file=sys.stderr)
+                # Strict ZIP Membership Validation
+                base_items_dict = base_pkg.get("items", {})
+                supp_items_dict = manifest.get("supplemental_envelope", {}).get("items", {})
+                tools_dict = manifest.get("verification_tools", {})
+                base_man_rel = base_pkg.get("manifest_path", "base_public_v3/canonical_bundle_manifest.json")
+
+                allowed_membership = (
+                    set(base_items_dict.keys())
+                    | set(supp_items_dict.keys())
+                    | set(tools_dict.keys())
+                    | {
+                        base_man_rel,
+                        "package_manifest_v4.json",
+                        "README.md",
+                    }
+                )
+
+                # In-stream Privacy Scan on non-binary members
+                private_path_patterns = [
+                    re.compile(r"C:[\\/]Users[\\/][a-zA-Z0-9_.-]+", re.IGNORECASE),
+                    re.compile(r"D:[\\/](?:RAG2ATTCK|Users|worktrees)[\\/a-zA-Z0-9_.-]*", re.IGNORECASE),
+                    re.compile(r"/home/[a-zA-Z0-9_.-]+", re.IGNORECASE),
+                ]
+                credential_patterns = [
+                    re.compile(r"sk-[a-zA-Z0-9]{20,}"),
+                    re.compile(r"ghp_[a-zA-Z0-9]{20,}"),
+                    re.compile(r"Bearer\s+[a-zA-Z0-9_.=-]{30,}", re.IGNORECASE),
+                ]
+                email_pattern = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b")
+                binary_exts = {".zip", ".pyc", ".png", ".jpg", ".parquet"}
+
+                for entry_name in sorted(seen_filenames):
+                    if Path(entry_name).suffix in binary_exts:
+                        continue
+                    raw_bytes = zf.read(entry_name)
+                    try:
+                        content = raw_bytes.decode("utf-8")
+                    except UnicodeDecodeError:
+                        continue
+
+                    for pat in private_path_patterns:
+                        matches = pat.findall(content)
+                        if matches:
+                            print(
+                                f"FAIL / BLOCKED: Privacy violation in ZIP member '{entry_name}': Private path '{matches[0]}'",
+                                file=sys.stderr,
+                            )
+                            sys.exit(1)
+
+                    for pat in credential_patterns:
+                        matches = pat.findall(content)
+                        if matches:
+                            print(
+                                f"FAIL / BLOCKED: Privacy violation in ZIP member '{entry_name}': Credential pattern detected",
+                                file=sys.stderr,
+                            )
+                            sys.exit(1)
+
+                    for e in email_pattern.findall(content):
+                        if not e.endswith("example.com") and not e.endswith("schema.org"):
+                            print(
+                                f"FAIL / BLOCKED: Privacy violation in ZIP member '{entry_name}': Email address '{e}'",
+                                file=sys.stderr,
+                            )
+                            sys.exit(1)
+
+                # Reject any undeclared member
+                undeclared_members = seen_filenames - allowed_membership
+                if undeclared_members:
+                    print(
+                        f"FAIL / BLOCKED: Undeclared member '{sorted(undeclared_members)[0]}' in candidate ZIP archive",
+                        file=sys.stderr,
+                    )
                     sys.exit(1)
-                man_bytes = zf.read("package_manifest_v4.json")
-                if hashlib.sha256(man_bytes).hexdigest() != m_sha:
-                    print("FAIL / BLOCKED: 'package_manifest_v4.json' in ZIP does not match candidate manifest SHA", file=sys.stderr)
+
+                # Reject if any declared / required member is missing
+                missing_members = allowed_membership - seen_filenames
+                if missing_members:
+                    print(
+                        f"FAIL / BLOCKED: Declared item '{sorted(missing_members)[0]}' missing from candidate ZIP archive",
+                        file=sys.stderr,
+                    )
                     sys.exit(1)
 
                 # Build full inventory to verify against archive member streams
                 expected_inventory: Dict[str, Dict[str, Any]] = {}
-                for rel_p, spec in base_pkg.get("items", {}).items():
+                for rel_p, spec in base_items_dict.items():
                     expected_inventory[rel_p] = spec
-                for rel_p, spec in manifest.get("supplemental_envelope", {}).get("items", {}).items():
+                for rel_p, spec in supp_items_dict.items():
                     expected_inventory[rel_p] = spec
-                base_man_rel = base_pkg.get("manifest_path", "base_public_v3/canonical_bundle_manifest.json")
-                if base_man_rel not in expected_inventory:
-                    expected_inventory[base_man_rel] = {
-                        "sha256": base_pkg.get("manifest_sha256"),
-                        "size_bytes": (candidate_dir / base_man_rel).stat().st_size if (candidate_dir / base_man_rel).is_file() else 0,
+                for rel_p, spec in tools_dict.items():
+                    expected_inventory[rel_p] = spec
+
+                expected_inventory[base_man_rel] = {
+                    "sha256": base_pkg.get("manifest_sha256"),
+                    "size_bytes": (candidate_dir / base_man_rel).stat().st_size if (candidate_dir / base_man_rel).is_file() else 0,
+                }
+                expected_inventory["package_manifest_v4.json"] = {
+                    "sha256": m_sha,
+                    "size_bytes": m_len,
+                }
+                readme_target = candidate_dir / "README.md"
+                if readme_target.is_file():
+                    _, r_sha, r_len = read_verified_buffer(readme_target)
+                    expected_inventory["README.md"] = {
+                        "sha256": r_sha,
+                        "size_bytes": r_len,
                     }
 
                 for item_rel, spec in expected_inventory.items():
-                    if item_rel not in zip_info_map:
-                        print(f"FAIL / BLOCKED: Declared item '{item_rel}' missing from candidate ZIP archive", file=sys.stderr)
-                        sys.exit(1)
-
                     # Stream hashing directly from ZIP member stream
                     member_bytes = zf.read(item_rel)
                     member_sha = hashlib.sha256(member_bytes).hexdigest()

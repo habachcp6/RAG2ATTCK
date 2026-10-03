@@ -1,8 +1,8 @@
 # RAG2ATTCK: Comprehensive Requirements Traceability Matrix v3
 
-**Generated:** `2026-10-03T14:42:11.114924+00:00`  
+**Generated:** `2026-10-03T15:43:12.010881+00:00`  
 **Candidate Base SHA:** `c309e497c104cac10f43317c2bd6b8872fa6443a`  
-**Tested CI Head SHA:** `1cd0a5569d75116126dd2fc86717b9a0cf997fda` (Run: [37130822265](https://github.com/habachcp6/RAG2ATTCK/actions/runs/37130822265))  
+**Tested CI Head SHA:** `c1b8803707f15de3e132dcb56681c901c18c3dcc` (Run: [37132814789](https://github.com/habachcp6/RAG2ATTCK/actions/runs/37132814789))  
 **Historical Track A Baseline SHA:** `b69a6909acda4c7588744acc7e1d6c20bfce2612` (Run: [37126021603](https://github.com/habachcp6/RAG2ATTCK/actions/runs/37126021603))  
 **Total Tracked Requirements & Gates:** `170`  
 
@@ -10,7 +10,8 @@
 
 - **`PARTIAL`:** 7
 - **`POLICY_ENFORCED`:** 23
-- **`VERIFIED`:** 140
+- **`VERIFIED`:** 139
+- **`WAIVED_BY_OWNER`:** 1
 
 ---
 
@@ -146,11 +147,11 @@
 | `T.01-PR_CLASSIFICATION_AND_ANCESTRY` | Classification and Ancestry Audit of PRs #8, #24–#29 | `PR_AUDIT` | `SOURCE_VERIFICATION` | `docs/audit/pr_ancestry_audit.json` | `c309e497c1` | **`VERIFIED`** | PR ancestry verified and documented in pr_ancestry_audit.json. |
 | `U.01-DIFF_AUDIT` | Full Diff Audit against Protected Baseline | `DIFF_AUDIT` | `SOURCE_VERIFICATION` | `docs/audit/baseline_diff_audit.json` | `c309e497c1` | **`VERIFIED`** | Baseline diff verified: 22 protected files match 100%. |
 | `V.01-RUFF_CHECK` | Suite 1: ruff check | `TEST_SUITE` | `CI_WORKFLOW` | `https://github.com/habachcp6/RAG2ATTCK/actions/runs/37128644279` | `15bf4ce448` | **`VERIFIED`** | Ruff linter green in CI run 37128644279 (critical paths and pre-experiment infrastructure checked). |
-| `V.02-RUFF_FORMAT` | Suite 2: ruff format --check | `TEST_SUITE` | `POLICY_RULE` | `reports/evidence/owner_format_scope_decision.json` | `15bf4ce448` | **`VERIFIED`** | Owner Scope Waiver formally approved by Repository Owner Hà Hoàng Bách via DECISION-20261003-RUFF-FORMAT-SCOPE-WAIVER, exempting 46 frozen/historical files to protect cryptographically pinned verification scripts while fully enforcing ruff check (exit code 0) across all active paths in CI. |
+| `V.02-RUFF_FORMAT` | Suite 2: ruff format --check | `TEST_SUITE` | `POLICY_RULE` | `reports/evidence/owner_format_scope_decision.json` | `15bf4ce448` | **`WAIVED_BY_OWNER`** | Formal Scope Waiver authorized by Repository Owner Hà Hoàng Bách on PR #30 discussion (https://github.com/habachcp6/RAG2ATTCK/pull/30#issuecomment-5970679159) and permanently sealed in reports/evidence/owner_format_scope_decision.json, exempting 46 historical/frozen paths to protect cryptographically pinned verification scripts while active ruff check linting passes in CI. |
 | `V.03-OFFLINE_UNIT` | Suite 3: Offline unit test suite | `TEST_SUITE` | `CI_WORKFLOW` | `https://github.com/habachcp6/RAG2ATTCK/actions/runs/37128644279` | `15bf4ce448` | **`VERIFIED`** | Offline unit tests green in CI run 37128644279. |
 | `V.04-INTEGRATION_SUITE` | Suite 4: Integration test suite (no provider) | `TEST_SUITE` | `CI_WORKFLOW` | `https://github.com/habachcp6/RAG2ATTCK/actions/runs/37128644279` | `15bf4ce448` | **`VERIFIED`** | Integration suite (offline) green in CI run 37128644279. |
 | `V.05-SYNTHETIC_DATA` | Suite 5: Synthetic data verification | `TEST_SUITE` | `CI_WORKFLOW` | `https://github.com/habachcp6/RAG2ATTCK/actions/runs/37128644279` | `15bf4ce448` | **`VERIFIED`** | Synthetic data verification green in CI run 37128644279. |
-| `V.06-CANONICAL_REPLAY` | Suite 6: Canonical replay test | `TEST_SUITE` | `REPLAY_EXECUTION` | `reports/evidence/r9_saved_data_reproduction_report.json` | `c309e497c1` | **`VERIFIED`** | Executed reproduce_canonical_study.py against candidate package; verified all 10 inputs, 8 outputs, financial ledger, and regenerated evaluation outputs with 0 defects. Provenance recorded in r9_saved_data_replay_provenance.json. |
+| `V.06-CANONICAL_REPLAY` | Suite 6: Canonical replay test | `TEST_SUITE` | `REPLAY_EXECUTION` | `reports/evidence/r9_saved_data_reproduction_report.json` | `c309e497c1` | **`VERIFIED`** | Executed reproduce_canonical_study.py against candidate package with 4 verification flags (--verify-hashes --audit-costs --replay-evaluation --demo); verified 10 inputs, 8 outputs, financial reconciliation, and demo cases with 0 defects. Sealed in r9_saved_data_replay_provenance.json. |
 | `V.07-CANONICAL_MANIFEST` | Suite 7: Canonical manifest verification | `TEST_SUITE` | `CI_WORKFLOW` | `https://github.com/habachcp6/RAG2ATTCK/actions/runs/37128644279` | `15bf4ce448` | **`VERIFIED`** | Canonical package verifier verified in CI run 37128644279 and scripts/verify_public_v4_package.py. |
 | `V.08-RQ_KNOWN_ANSWER` | Suite 8: RQ analysis known-answer tests | `TEST_SUITE` | `CI_WORKFLOW` | `https://github.com/habachcp6/RAG2ATTCK/actions/runs/37128644279` | `15bf4ce448` | **`VERIFIED`** | RQ analysis known-answer test green in CI run 37128644279. |
 | `V.09-REPORT_METADATA` | Suite 9: Report metadata verification | `TEST_SUITE` | `CI_WORKFLOW` | `https://github.com/habachcp6/RAG2ATTCK/actions/runs/37128644279` | `15bf4ce448` | **`VERIFIED`** | Report metadata verification green in CI run 37128644279. |

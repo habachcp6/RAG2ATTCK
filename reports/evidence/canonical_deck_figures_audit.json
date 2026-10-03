@@ -1,7 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "timestamp_utc": "2026-10-03T00:27:21.206984+00:00",
+  "timestamp_utc": "2026-10-03T01:09:58.659438+00:00",
   "deck_file": "docs/presentation/slides.pptx",
+  "actual_embedded_media_count": 2,
   "embedded_figures": {
     "slide_6_rq2_hit_rate": {
       "file": "docs/presentation/figures/canonical_rq2_retrieval_hit_rate.png",

@@ -32,6 +32,8 @@ from tests.test_presentation_renderer import (
     test_slide_notes_provenance_hashes,
     test_strict_absence_of_historical_error_strings,
     test_visible_canonical_candidate_banner_without_false_final_approval,
+    test_filesystem_disappearance_after_capture_still_embeds_captured_bytes,
+    test_canonical_mode_fails_closed_when_images_missing,
 )
 
 __all__ = [
@@ -62,4 +64,6 @@ __all__ = [
     "test_slide_8_all_5_conditions_table",
     "test_slide_9_token_limit_and_protocol_sha_distinction",
     "test_absence_of_unsupported_claims_and_causal_statements",
+    "test_filesystem_disappearance_after_capture_still_embeds_captured_bytes",
+    "test_canonical_mode_fails_closed_when_images_missing",
 ]

@@ -795,4 +795,85 @@ def test_genuine_output_media_parity_across_archive() -> None:
         assert found_shas[rq3_sha] == verified_rq3.raw_bytes
 
 
+def test_filesystem_disappearance_after_capture_still_embeds_captured_bytes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regression: verifies that if an asset file disappears from disk after in-memory capture,
+
+    the renderer uses the verified in-memory stream directly and does not skip embedding.
+    """
+    import copy
+    import scripts.generate_slides as gs
+
+    genuine_file = PINNED_MEDIA_DIGESTS["rq2_retrieval_hit_rate"]["primary_file"]
+    temp_fig = tmp_path / "temp_rq2.png"
+    temp_fig.write_bytes(genuine_file.read_bytes())
+
+    mock_digests = copy.deepcopy(PINNED_MEDIA_DIGESTS)
+    mock_digests["rq2_retrieval_hit_rate"]["primary_file"] = temp_fig
+    mock_digests["rq2_retrieval_hit_rate"]["alias_file"] = temp_fig
+    monkeypatch.setattr(gs, "PINNED_MEDIA_DIGESTS", mock_digests)
+
+    # 1. Resolve and capture figure into memory
+    fig_asset = gs.resolve_and_verify_presentation_figure("rq2_retrieval_hit_rate", canonical_mode=True)
+    assert fig_asset is not None
+    assert len(fig_asset.raw_bytes) == PINNED_MEDIA_DIGESTS["rq2_retrieval_hit_rate"]["byte_size"]
+
+    # 2. Simulate filesystem disappearance AFTER capture
+    temp_fig.unlink()
+    assert not temp_fig.exists()
+    assert not fig_asset.path.exists()
+    monkeypatch.setattr(gs, "resolve_and_verify_presentation_figure", lambda role, canonical_mode: fig_asset)
+
+    # 3. Build slide 6 and assert picture shape is added using in-memory stream
+    prs = gs.create_deck()
+    ctx = gs.DeckContext(
+        canonical_mode=True,
+        banner_text="CANONICAL",
+        metrics=gs.extract_bundle_metrics(
+            gs.load_and_verify_metric_bundle(gs.DEFAULT_CANONICAL_BUNDLE_PATH, TRUSTED_CANONICAL_BUNDLE_SHA256)
+        ),
+        bundle_data={},
+        provenance={},
+    )
+    gs.build_slide_6_rq2_diagnostics(prs, ctx)
+    slide6 = prs.slides[-1]
+    picture_shapes = [s for s in slide6.shapes if hasattr(s, "image")]
+    assert len(picture_shapes) >= 1, "Expected picture shape to be embedded despite filesystem disappearance"
+
+
+def test_canonical_mode_fails_closed_when_images_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verifies that canonical deck generation strictly fails closed and prohibits canonical success if images are missing."""
+    import scripts.generate_slides as gs
+
+    prs = gs.create_deck()
+    ctx = gs.DeckContext(
+        canonical_mode=True,
+        banner_text="CANONICAL",
+        metrics=gs.extract_bundle_metrics(
+            gs.load_and_verify_metric_bundle(gs.DEFAULT_CANONICAL_BUNDLE_PATH, TRUSTED_CANONICAL_BUNDLE_SHA256)
+        ),
+        bundle_data={},
+        provenance={},
+    )
+
+    # Force resolver to return None
+    monkeypatch.setattr(gs, "resolve_and_verify_presentation_figure", lambda role, canonical_mode: None)
+
+    with pytest.raises(RuntimeError, match=r"\[FAIL_CLOSED\] Required figure 'rq2_retrieval_hit_rate' missing in canonical mode"):
+        gs.build_slide_6_rq2_diagnostics(prs, ctx)
+
+    with pytest.raises(RuntimeError, match=r"\[FAIL_CLOSED\] Required figure 'rq3_resource_consumption' missing in canonical mode"):
+        gs.build_slide_9_rq3_cost(prs, ctx)
+
+    # Post-export assertion test: saving an empty deck in canonical mode fails
+    test_deck_path = tmp_path / "empty_deck.pptx"
+    prs.save(str(test_deck_path))
+    with pytest.raises(RuntimeError, match=r"\[FAIL_CLOSED\] Post-export assertion failed"):
+        gs.write_deck_figures_audit({}, test_deck_path, canonical_mode=True)
+
+
+
 

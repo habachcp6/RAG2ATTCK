@@ -28,6 +28,7 @@ import hashlib
 import io
 import json
 import sys
+import zipfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -1262,7 +1263,7 @@ def build_slide_6_rq2_diagnostics(prs: Presentation, ctx: DeckContext) -> None:
         canonical_mode=ctx.canonical_mode,
     )
 
-    if fig_asset is not None and fig_asset.exists():
+    if fig_asset is not None:
         slide.shapes.add_picture(fig_asset.get_stream(), Inches(6.833), Inches(1.35), width=Inches(5.7))
         add_card(
             slide,
@@ -1285,6 +1286,8 @@ def build_slide_6_rq2_diagnostics(prs: Presentation, ctx: DeckContext) -> None:
             item_spacing=2.5,
         )
     else:
+        if ctx.canonical_mode:
+            raise RuntimeError("[FAIL_CLOSED] Required figure 'rq2_retrieval_hit_rate' missing in canonical mode")
         add_card(
             slide,
             6.833,
@@ -1644,7 +1647,7 @@ def build_slide_9_rq3_cost(prs: Presentation, ctx: DeckContext) -> None:
         canonical_mode=ctx.canonical_mode,
     )
 
-    if fig_asset is not None and fig_asset.exists():
+    if fig_asset is not None:
         slide.shapes.add_picture(fig_asset.get_stream(), Inches(6.833), Inches(1.35), width=Inches(5.7))
         add_card(
             slide,
@@ -1663,6 +1666,8 @@ def build_slide_9_rq3_cost(prs: Presentation, ctx: DeckContext) -> None:
             item_spacing=2.2,
         )
     else:
+        if ctx.canonical_mode:
+            raise RuntimeError("[FAIL_CLOSED] Required figure 'rq3_resource_consumption' missing in canonical mode")
         add_card(
             slide,
             6.833,
@@ -2031,6 +2036,7 @@ def run_slide_qa(prs: Presentation) -> bool:
 def write_deck_figures_audit(
     provenance: dict[str, str],
     output_path: Path,
+    canonical_mode: bool = False,
 ) -> dict[str, Any]:
     """Audit and record SHA-256 digests of embedded figures in presentation deck."""
     try:
@@ -2040,22 +2046,68 @@ def write_deck_figures_audit(
         deck_file_rel = str(output_path).replace("\\", "/")
         is_repo_deck = False
 
+    # Extract actual embedded media directly from output PPTX archive
+    embedded_media: dict[str, dict[str, Any]] = {}
+    if output_path.is_file():
+        try:
+            with zipfile.ZipFile(output_path, "r") as zf:
+                media_names = [n for n in zf.namelist() if n.startswith("ppt/media/")]
+                for m_name in media_names:
+                    m_bytes = zf.read(m_name)
+                    embedded_media[m_name] = {
+                        "sha256": hashlib.sha256(m_bytes).hexdigest(),
+                        "byte_size": len(m_bytes),
+                    }
+        except Exception as exc:
+            if canonical_mode:
+                raise RuntimeError(f"[FAIL_CLOSED] Failed to read media from generated PPTX archive: {exc}") from exc
+
+    # In canonical mode: post-export assert that both required figures are genuinely embedded
+    if canonical_mode:
+        rq2_spec = PINNED_MEDIA_DIGESTS["rq2_retrieval_hit_rate"]
+        rq3_spec = PINNED_MEDIA_DIGESTS["rq3_resource_consumption"]
+        shas_found = {info["sha256"]: name for name, info in embedded_media.items()}
+        if rq2_spec["sha256"] not in shas_found:
+            raise RuntimeError(
+                f"[FAIL_CLOSED] Post-export assertion failed: PPTX archive missing embedded RQ2 media: {rq2_spec['sha256']}"
+            )
+        if rq3_spec["sha256"] not in shas_found:
+            raise RuntimeError(
+                f"[FAIL_CLOSED] Post-export assertion failed: PPTX archive missing embedded RQ3 media: {rq3_spec['sha256']}"
+            )
+        if len(embedded_media) < 2:
+            raise RuntimeError(
+                f"[FAIL_CLOSED] Post-export assertion failed: PPTX archive must contain at least 2 media files, found {len(embedded_media)}"
+            )
+
+    actual_rq2_sha = None
+    actual_rq3_sha = None
+    for name, info in embedded_media.items():
+        if info["sha256"] == PINNED_MEDIA_DIGESTS["rq2_retrieval_hit_rate"]["sha256"]:
+            actual_rq2_sha = info["sha256"]
+        elif info["sha256"] == PINNED_MEDIA_DIGESTS["rq3_resource_consumption"]["sha256"]:
+            actual_rq3_sha = info["sha256"]
+
+    rq2_final_sha = actual_rq2_sha or provenance.get("fig_rq2_sha", "f8287936d2b5fc24e89584349028f393b801b6bebe668f8bea449c6b67f2128f")
+    rq3_final_sha = actual_rq3_sha or provenance.get("fig_rq3_sha", "ca296165b38b499432f851618e3d6a512964c461e59dc3b646e647ddcb70bfb1")
+
     audit_data = {
         "schema_version": "1.0.0",
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "deck_file": deck_file_rel,
+        "actual_embedded_media_count": len(embedded_media),
         "embedded_figures": {
             "slide_6_rq2_hit_rate": {
                 "file": "docs/presentation/figures/canonical_rq2_retrieval_hit_rate.png",
                 "canonical_name": "fig4_retrieval_hit_rate.png",
-                "sha256": provenance.get("fig_rq2_sha", "f8287936d2b5fc24e89584349028f393b801b6bebe668f8bea449c6b67f2128f"),
+                "sha256": rq2_final_sha,
                 "cohort": "TEST 718 scorable views",
                 "metric_hit10": "44.71% (321 / 718)",
             },
             "slide_9_rq3_resource_consumption": {
                 "file": "docs/presentation/figures/canonical_rq3_resource_consumption.png",
                 "canonical_name": "fig7_cost_and_tokens_vs_k.png",
-                "sha256": provenance.get("fig_rq3_sha", "ca296165b38b499432f851618e3d6a512964c461e59dc3b646e647ddcb70bfb1"),
+                "sha256": rq3_final_sha,
                 "cohort": "TEST 1,280 views cohort (6,400 logical requests)",
                 "k10_prompt_tokens_mean": 5114.3,
                 "k1_to_k10_prompt_ratio": 4.103,
@@ -2503,7 +2555,7 @@ def generate_deck(
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     prs.save(str(output_path))
-    write_deck_figures_audit(provenance, output_path)
+    write_deck_figures_audit(provenance, output_path, canonical_mode=ctx.canonical_mode)
 
     if output_path.resolve() == OUTPUT_PATH.resolve():
         export_slides_markdown(ctx, REPO_ROOT / "docs" / "presentation" / "slides.md")

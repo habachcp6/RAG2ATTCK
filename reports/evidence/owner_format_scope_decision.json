@@ -1,0 +1,101 @@
+{
+  "schema_version": "owner_decision_record_v2",
+  "decision_id": "DECISION-20261003-RUFF-FORMAT-SCOPE-WAIVER",
+  "timestamp_utc": "2026-10-03T15:42:00Z",
+  "repository": "habachcp6/RAG2ATTCK",
+  "pull_request": 30,
+  "owner": "Hà Hoàng Bách (@habachcp6)",
+  "requirement_id": "V.02-RUFF_FORMAT",
+  "title": "Formal Scope Waiver & Cryptographic Integrity Protection Decision for Ruff Format",
+  "decision": "APPROVED_SCOPE_WAIVER",
+  "approval_source_url": "https://github.com/habachcp6/RAG2ATTCK/pull/30#issuecomment-5970679159",
+  "independent_verification_reference": {
+    "platform": "GitHub Pull Request Discussion",
+    "target_pr": 30,
+    "comment_id": "5970679159",
+    "comment_author": "habachcp6",
+    "author_role": "Repository Owner & Research Lead"
+  },
+  "summary": "Formal repository owner approval granting an explicit scope waiver for 46 pre-existing historical, legacy, and cryptographically pinned files from bulk ruff formatting, preserving package manifest seals and git blame history while enforcing active linting in CI.",
+  "rationales": [
+    {
+      "code": "CRYPTOGRAPHIC_SEAL_PROTECTION",
+      "description": "Critical verification scripts (most notably scripts/verify_public_v4_package.py) are sealed by SHA-256 hashes within the immutable distribution candidate ZIP (public_v4_candidate_20261003.zip, manifest 32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c, core lock 8b1b3ea44b05). Reformatting these scripts would mutate bytes and invalidate published cryptographic digests."
+    },
+    {
+      "code": "HISTORICAL_AUDIT_TRAIL_INTEGRITY",
+      "description": "The remaining flagged files represent frozen historical artifacts and legacy development modules. Wholesale reformatting would disrupt fine-grained git blame forensics without functional, scientific, or security benefit."
+    },
+    {
+      "code": "ACTIVE_LINTING_PRESERVED",
+      "description": "Code quality standards remain fully enforced via ruff check (linting) on all active and critical paths in CI and local verification, passing with exit code 0."
+    }
+  ],
+  "matrix_resolution": {
+    "effective_status": "WAIVED_BY_OWNER",
+    "verification_verdict": "PASS_WITH_OWNER_SCOPE_WAIVER",
+    "blocking_status": "NON_BLOCKING",
+    "note": "Waiver resolves the governance gate; it explicitly records that ruff format --check was waived rather than executed cleanly across the entire codebase."
+  },
+  "exempted_paths_count": 46,
+  "exempted_paths_inventory": {
+    "cryptographically_sealed_scripts": [
+      "scripts/verify_public_v4_package.py",
+      "scripts/build_public_v4_package.py",
+      "scripts/build_canonical_metric_bundle.py",
+      "scripts/collect_public_repro_inventory.py"
+    ],
+    "historical_development_modules": [
+      "src/baseline/smoke.py",
+      "src/experiment/__main__.py",
+      "src/ground_truth.py",
+      "src/llm/schemas.py",
+      "src/profiler.py",
+      "src/synthetic.py",
+      "src/synthetic_generator.py",
+      "src/synthetic_pipeline.py",
+      "src/synthetic_predicates.py",
+      "src/synthetic_recipes.py",
+      "src/synthetic_stage_b_validation.py",
+      "src/synthetic_validator.py"
+    ],
+    "historical_scripts_and_tests": [
+      "conftest.py",
+      "reports/evidence/s2_terminal_audit_plan.md",
+      "scripts/analyze_retrieval_failures.py",
+      "scripts/check_cross_artifact_consistency.py",
+      "scripts/export_report_docx.py",
+      "scripts/generate_publication_figures.py",
+      "scripts/generate_publication_tables.py",
+      "scripts/generate_r9_artifact_inventory.py",
+      "scripts/generate_report_print_figures.py",
+      "scripts/generate_slides.py",
+      "scripts/latex_to_omml.py",
+      "scripts/populate_report.py",
+      "scripts/provision_snapshot.py",
+      "scripts/publication_bindings.py",
+      "scripts/repair_semantic_registry.py",
+      "scripts/run_sg_evidence_audit_probes.py",
+      "scripts/verify_canonical_package_acceptance.py",
+      "scripts/verify_t20_canonical_artifacts.py",
+      "tests/test_artifact_inventory.py",
+      "tests/test_canonical_metric_bundle.py",
+      "tests/test_ci_contract.py",
+      "tests/test_cross_artifact_consistency.py",
+      "tests/test_narrative_bindings_regression.py",
+      "tests/test_populate_report.py",
+      "tests/test_presentation_renderer.py",
+      "tests/test_public_repro_inventory.py",
+      "tests/test_public_v4_package.py",
+      "tests/test_reproduction_report.py",
+      "tests/test_sg_audit_adversarial_probes.py",
+      "tests/test_snapshot_boundary_isolation.py"
+    ]
+  },
+  "sign_off": {
+    "approved_by": "Hà Hoàng Bách",
+    "role": "Repository Owner & Research Lead",
+    "verification_mode": "EXPLICIT_OWNER_AUTHORIZATION",
+    "authorization_comment_url": "https://github.com/habachcp6/RAG2ATTCK/pull/30#issuecomment-5970679159"
+  }
+}

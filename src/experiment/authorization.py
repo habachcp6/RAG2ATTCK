@@ -58,7 +58,6 @@ def compute_code_manifest_sha256(repo_root: Path) -> str:
     return digest(canonical_bytes(manifest))
 
 
-
 class LiveExecutionBlockedError(RuntimeError):
     """Raised whenever live execution is blocked by safety or protocol gates."""
 
@@ -403,10 +402,7 @@ def validate_live_authorization(
         )
 
     # Gate 2: Explicit non-empty human authorization token
-    if (
-        not authorization.human_approval_token
-        or not authorization.human_approval_token.strip()
-    ):
+    if not authorization.human_approval_token or not authorization.human_approval_token.strip():
         raise HumanAuthorizationRequiredError(
             "LIVE_EXECUTION_BLOCKED: non-empty human approval token is required"
         )
@@ -574,11 +570,7 @@ def validate_canonical_experiment_lock(
         try:
             import subprocess
 
-            git_cwd = (
-                target_repo_root
-                if (target_repo_root / ".git").exists()
-                else REPO_ROOT
-            )
+            git_cwd = target_repo_root if (target_repo_root / ".git").exists() else REPO_ROOT
             commit_res = subprocess.run(
                 ["git", "rev-parse", "HEAD"],
                 cwd=git_cwd,
@@ -669,9 +661,7 @@ def validate_experiment_readiness(
             "positive max_requests budget"
         )
 
-    worst_case_attempts = (
-        len(plan.samples) * len(CONDITIONS) * (plan.config.execution.retries + 1)
-    )
+    worst_case_attempts = len(plan.samples) * len(CONDITIONS) * (plan.config.execution.retries + 1)
     plan_in_repo = False
     try:
         plan_in_repo = hasattr(plan, "root") and plan.root.resolve() == REPO_ROOT.resolve()
@@ -712,9 +702,7 @@ def validate_experiment_readiness(
     # Gate 8: Clean source tree check
     is_canonical_test = is_test_split and (is_canonical_scale or plan_in_repo)
     # Canonical TEST live or canonical scale NEVER permits allow_dirty bypass
-    effective_allow_dirty = (
-        False if (is_live and is_canonical_test) else allow_dirty
-    )
+    effective_allow_dirty = False if (is_live and is_canonical_test) else allow_dirty
     should_check_dirty = not effective_allow_dirty and (
         plan_in_repo or is_canonical_test or getattr(plan, "enforce_clean_git", False)
     )

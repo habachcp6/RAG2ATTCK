@@ -5,23 +5,24 @@ rejection of corrupted artifacts, and attack manifest accuracy.
 """
 
 import json
-from pathlib import Path
 import subprocess
+from pathlib import Path
+
 import pytest
 
 from src.attack_loader import (
-    ATTACK_VERSION,
     ATTACK_V19_2_COMMIT,
     ATTACK_V19_2_URL,
-    EXPECTED_ATTACK_SIZE,
+    ATTACK_VERSION,
     EXPECTED_ATTACK_SHA256,
+    EXPECTED_ATTACK_SIZE,
     download_attack_reference,
     parse_attack_bundle,
 )
 from src.llm.schemas import (
+    ParseStatus,
     load_attack_registry,
     validate_technique_id,
-    ParseStatus,
 )
 
 
@@ -33,7 +34,9 @@ def test_attack_immutable_pinning():
     assert "main" not in ATTACK_V19_2_URL
     assert ATTACK_V19_2_COMMIT in ATTACK_V19_2_URL
     assert EXPECTED_ATTACK_SIZE == 53835637
-    assert EXPECTED_ATTACK_SHA256 == "dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4"
+    assert (
+        EXPECTED_ATTACK_SHA256 == "dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4"
+    )
 
 
 def test_corrupted_attack_rejection(tmp_path):

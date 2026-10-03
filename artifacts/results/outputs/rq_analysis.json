@@ -1,0 +1,1206 @@
+{
+  "analysis_run_parameters": {
+    "actual_test_gt_technique_ids": [
+      "T1053.005",
+      "T1059.001",
+      "T1059.003",
+      "T1105",
+      "T1136.001",
+      "T1543.003",
+      "T1547.001",
+      "T1685.005"
+    ],
+    "actual_test_gt_technique_support_count": 8,
+    "analysis_source_file": "scripts/analysis/evaluate_rqs.py",
+    "analysis_source_sha256": "f85d7f7373e825dcc7171ce4491fd15c6fb755955da245041783fe317bc80351",
+    "bootstrap_alpha": 0.05,
+    "bootstrap_cluster_unit": "pair_id",
+    "bootstrap_method": "percentile_ci",
+    "bootstrap_samples_count": 1000,
+    "bootstrap_seed": 42,
+    "eligible_clusters_count": 440,
+    "frozen_benchmark_macro_universe": 474,
+    "secondary_scope_authorization_packet": "provenance/s2_evaluation_execute_public.md",
+    "secondary_scope_authorization_sha256": "d515f70426435e9edb79cdc415e91c23b16e189fd171d4db4b04074c9b580aa1",
+    "total_gt_support_instances": 768,
+    "unsupported_macro_classes_count": 466
+  },
+  "analysis_timestamp": "2026-10-02T04:32:51.956332+00:00",
+  "analysis_tool_version": "2.0.0",
+  "analysis_version": "2.0.0",
+  "dataset_split": "test",
+  "execution_mode": "live",
+  "experiment_id": "synthetic-paired-test-1",
+  "fixture_only": false,
+  "manifest_sha256": "2f81076c4cfc3d3bd88b6bfe4b6e39775b8ed398a5623eaa603691cb277a9178",
+  "new_proposed_producer_stratified_gt_complexity": {
+    "by_condition": {
+      "no_rag": {
+        "complexity_accuracy_delta": 0.10066371681415931,
+        "complexity_macro_f1_delta": -0.005977475433984386,
+        "condition": "no_rag",
+        "multi_gt_accuracy_e2e": 0.875,
+        "multi_gt_correct_count": 35,
+        "multi_gt_macro_f1": 0.007032348804500703,
+        "multi_gt_sample_count": 40,
+        "overall_macro_f1_reference": 0.012608366023907785,
+        "overall_scorable_accuracy_e2e": 0.7799442896935933,
+        "overall_scorable_sample_count": 718,
+        "single_gt_accuracy_e2e": 0.7743362831858407,
+        "single_gt_correct_count": 525,
+        "single_gt_macro_f1": 0.013009824238485089,
+        "single_gt_sample_count": 678
+      },
+      "rag_k1": {
+        "complexity_accuracy_delta": 0.24336283185840712,
+        "complexity_macro_f1_delta": -0.004692982618807351,
+        "condition": "rag_k1",
+        "multi_gt_accuracy_e2e": 1.0,
+        "multi_gt_correct_count": 40,
+        "multi_gt_macro_f1": 0.008280674836304416,
+        "multi_gt_sample_count": 40,
+        "overall_macro_f1_reference": 0.012667935610765985,
+        "overall_scorable_accuracy_e2e": 0.7701949860724234,
+        "overall_scorable_sample_count": 718,
+        "single_gt_accuracy_e2e": 0.7566371681415929,
+        "single_gt_correct_count": 513,
+        "single_gt_macro_f1": 0.012973657455111767,
+        "single_gt_sample_count": 678
+      },
+      "rag_k10": {
+        "complexity_accuracy_delta": 0.2168141592920354,
+        "complexity_macro_f1_delta": -0.005888574943230881,
+        "condition": "rag_k10",
+        "multi_gt_accuracy_e2e": 1.0,
+        "multi_gt_correct_count": 40,
+        "multi_gt_macro_f1": 0.008510439889520504,
+        "multi_gt_sample_count": 40,
+        "overall_macro_f1_reference": 0.014023799884737108,
+        "overall_scorable_accuracy_e2e": 0.7952646239554317,
+        "overall_scorable_sample_count": 718,
+        "single_gt_accuracy_e2e": 0.7831858407079646,
+        "single_gt_correct_count": 531,
+        "single_gt_macro_f1": 0.014399014832751385,
+        "single_gt_sample_count": 678
+      },
+      "rag_k3": {
+        "complexity_accuracy_delta": 0.2271386430678466,
+        "complexity_macro_f1_delta": -0.005430179559176396,
+        "condition": "rag_k3",
+        "multi_gt_accuracy_e2e": 1.0,
+        "multi_gt_correct_count": 40,
+        "multi_gt_macro_f1": 0.008609538276035122,
+        "multi_gt_sample_count": 40,
+        "overall_macro_f1_reference": 0.013642695462066637,
+        "overall_scorable_accuracy_e2e": 0.7855153203342619,
+        "overall_scorable_sample_count": 718,
+        "single_gt_accuracy_e2e": 0.7728613569321534,
+        "single_gt_correct_count": 524,
+        "single_gt_macro_f1": 0.014039717835211518,
+        "single_gt_sample_count": 678
+      },
+      "rag_k5": {
+        "complexity_accuracy_delta": 0.22418879056047203,
+        "complexity_macro_f1_delta": -0.005337660258483302,
+        "condition": "rag_k5",
+        "multi_gt_accuracy_e2e": 1.0,
+        "multi_gt_correct_count": 40,
+        "multi_gt_macro_f1": 0.008941129194293752,
+        "multi_gt_sample_count": 40,
+        "overall_macro_f1_reference": 0.01389077974323129,
+        "overall_scorable_accuracy_e2e": 0.7883008356545961,
+        "overall_scorable_sample_count": 718,
+        "single_gt_accuracy_e2e": 0.775811209439528,
+        "single_gt_correct_count": 526,
+        "single_gt_macro_f1": 0.014278789452777054,
+        "single_gt_sample_count": 678
+      }
+    },
+    "frozen_benchmark_universe_size": 474,
+    "multi_gt_semantics": "ANY_MATCH",
+    "producer_label": "NEW PROPOSED PRODUCER: Stratified Ground Truth Complexity & Subset Analysis",
+    "protocol_approval_required": true
+  },
+  "protocol_sha256": "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c",
+  "protocol_version": "experiment-protocol-v1.1",
+  "provenance_status": "canonical_study",
+  "rq1": {
+    "baseline_condition": "no_rag",
+    "best_rag_accuracy_delta": 0.01532033426183843,
+    "best_rag_condition": "rag_k10",
+    "best_rag_macro_f1_delta": 0.0014154338608293234,
+    "by_condition": {
+      "no_rag": {
+        "accuracy_e2e_ci_95": [
+          0.7464432837582625,
+          0.8088098670586635
+        ],
+        "accuracy_end_to_end": 0.7799442896935933,
+        "accuracy_valid_outputs": 0.7799442896935933,
+        "cluster_count": 440,
+        "condition": "no_rag",
+        "correct_count": 560,
+        "delta_vs_baseline": null,
+        "is_baseline": true,
+        "macro_f1": 0.012608366023907785,
+        "resampling_method": "pair_cluster_bootstrap",
+        "scorable_sample_count": 718
+      },
+      "rag_k1": {
+        "accuracy_e2e_ci_95": [
+          0.7350325884543762,
+          0.8016815680358997
+        ],
+        "accuracy_end_to_end": 0.7701949860724234,
+        "accuracy_valid_outputs": 0.7701949860724234,
+        "cluster_count": 440,
+        "condition": "rag_k1",
+        "correct_count": 553,
+        "delta_vs_baseline": {
+          "delta_accuracy_e2e_ci_95": [
+            -0.0318592786225868,
+            0.01124077046548959
+          ],
+          "delta_accuracy_end_to_end": -0.00974930362116988,
+          "delta_accuracy_valid_outputs": -0.00974930362116988,
+          "delta_macro_f1": 5.9569586858199824e-05,
+          "delta_macro_f1_ci_95": [
+            -0.00024163546410092251,
+            0.0003625938524802172
+          ],
+          "exploratory_diagnostics": {
+            "cluster_count": 440,
+            "note": "Secondary exploratory diagnostics: pair-clustered bootstrap resampling preserves intra-pair correlation between single-view and contextual-view samples sharing pair_id; does not alter frozen headline metrics.",
+            "resampling_method": "pair_cluster_bootstrap"
+          },
+          "mcnemar_test": {
+            "chi2_statistic": 0.6101694915254238,
+            "contingency_table": {
+              "baseline_win_c": 33,
+              "both_correct_a": 527,
+              "both_incorrect_d": 132,
+              "total_discordant": 59,
+              "total_pairs": 718,
+              "treatment_win_b": 26
+            },
+            "p_value_asymptotic": 0.43472400072864303,
+            "p_value_exact": 0.4349928051221534,
+            "significant_at_01": false,
+            "significant_at_05": false
+          },
+          "relative_gain_accuracy_e2e_pct": -1.2499999999999953,
+          "relative_gain_macro_f1_pct": 0.4724607990063495
+        },
+        "is_baseline": false,
+        "macro_f1": 0.012667935610765985,
+        "resampling_method": "pair_cluster_bootstrap",
+        "scorable_sample_count": 718
+      },
+      "rag_k10": {
+        "accuracy_e2e_ci_95": [
+          0.7581211364272121,
+          0.8284683107785503
+        ],
+        "accuracy_end_to_end": 0.7952646239554317,
+        "accuracy_valid_outputs": 0.7952646239554317,
+        "cluster_count": 440,
+        "condition": "rag_k10",
+        "correct_count": 571,
+        "delta_vs_baseline": {
+          "delta_accuracy_e2e_ci_95": [
+            -0.023547341489689132,
+            0.05300045580982214
+          ],
+          "delta_accuracy_end_to_end": 0.01532033426183843,
+          "delta_accuracy_valid_outputs": 0.01532033426183843,
+          "delta_macro_f1": 0.0014154338608293234,
+          "delta_macro_f1_ci_95": [
+            0.001011070631618413,
+            0.0017915845085527975
+          ],
+          "exploratory_diagnostics": {
+            "cluster_count": 440,
+            "note": "Secondary exploratory diagnostics: pair-clustered bootstrap resampling preserves intra-pair correlation between single-view and contextual-view samples sharing pair_id; does not alter frozen headline metrics.",
+            "resampling_method": "pair_cluster_bootstrap"
+          },
+          "mcnemar_test": {
+            "chi2_statistic": 0.6451612903225806,
+            "contingency_table": {
+              "baseline_win_c": 72,
+              "both_correct_a": 488,
+              "both_incorrect_d": 75,
+              "total_discordant": 155,
+              "total_pairs": 718,
+              "treatment_win_b": 83
+            },
+            "p_value_asymptotic": 0.42184797545336294,
+            "p_value_exact": 0.4219388330129739,
+            "significant_at_01": false,
+            "significant_at_05": false
+          },
+          "relative_gain_accuracy_e2e_pct": 1.9642857142857133,
+          "relative_gain_macro_f1_pct": 11.226148242725504
+        },
+        "is_baseline": false,
+        "macro_f1": 0.014023799884737108,
+        "resampling_method": "pair_cluster_bootstrap",
+        "scorable_sample_count": 718
+      },
+      "rag_k3": {
+        "accuracy_e2e_ci_95": [
+          0.7499912587412587,
+          0.8174190557416043
+        ],
+        "accuracy_end_to_end": 0.7855153203342619,
+        "accuracy_valid_outputs": 0.7855153203342619,
+        "cluster_count": 440,
+        "condition": "rag_k3",
+        "correct_count": 564,
+        "delta_vs_baseline": {
+          "delta_accuracy_e2e_ci_95": [
+            -0.02786003664534873,
+            0.039335604430632005
+          ],
+          "delta_accuracy_end_to_end": 0.005571030640668551,
+          "delta_accuracy_valid_outputs": 0.005571030640668551,
+          "delta_macro_f1": 0.0010343294381588517,
+          "delta_macro_f1_ci_95": [
+            0.0006322908128427815,
+            0.00142420162533903
+          ],
+          "exploratory_diagnostics": {
+            "cluster_count": 440,
+            "note": "Secondary exploratory diagnostics: pair-clustered bootstrap resampling preserves intra-pair correlation between single-view and contextual-view samples sharing pair_id; does not alter frozen headline metrics.",
+            "resampling_method": "pair_cluster_bootstrap"
+          },
+          "mcnemar_test": {
+            "chi2_statistic": 0.08035714285714286,
+            "contingency_table": {
+              "baseline_win_c": 54,
+              "both_correct_a": 506,
+              "both_incorrect_d": 100,
+              "total_discordant": 112,
+              "total_pairs": 718,
+              "treatment_win_b": 58
+            },
+            "p_value_asymptotic": 0.776814004155482,
+            "p_value_exact": 0.7769647513696725,
+            "significant_at_01": false,
+            "significant_at_05": false
+          },
+          "relative_gain_accuracy_e2e_pct": 0.7142857142857177,
+          "relative_gain_macro_f1_pct": 8.203516904550302
+        },
+        "is_baseline": false,
+        "macro_f1": 0.013642695462066637,
+        "resampling_method": "pair_cluster_bootstrap",
+        "scorable_sample_count": 718
+      },
+      "rag_k5": {
+        "accuracy_e2e_ci_95": [
+          0.7506840229889549,
+          0.8234503042596348
+        ],
+        "accuracy_end_to_end": 0.7883008356545961,
+        "accuracy_valid_outputs": 0.7883008356545961,
+        "cluster_count": 440,
+        "condition": "rag_k5",
+        "correct_count": 566,
+        "delta_vs_baseline": {
+          "delta_accuracy_e2e_ci_95": [
+            -0.029336848263743918,
+            0.046026711624319164
+          ],
+          "delta_accuracy_end_to_end": 0.00835654596100277,
+          "delta_accuracy_valid_outputs": 0.00835654596100277,
+          "delta_macro_f1": 0.0012824137193235049,
+          "delta_macro_f1_ci_95": [
+            0.0008600910722936464,
+            0.0016789915996377486
+          ],
+          "exploratory_diagnostics": {
+            "cluster_count": 440,
+            "note": "Secondary exploratory diagnostics: pair-clustered bootstrap resampling preserves intra-pair correlation between single-view and contextual-view samples sharing pair_id; does not alter frozen headline metrics.",
+            "resampling_method": "pair_cluster_bootstrap"
+          },
+          "mcnemar_test": {
+            "chi2_statistic": 0.1736111111111111,
+            "contingency_table": {
+              "baseline_win_c": 69,
+              "both_correct_a": 491,
+              "both_incorrect_d": 83,
+              "total_discordant": 144,
+              "total_pairs": 718,
+              "treatment_win_b": 75
+            },
+            "p_value_asymptotic": 0.6769222390213794,
+            "p_value_exact": 0.6770697943668329,
+            "significant_at_01": false,
+            "significant_at_05": false
+          },
+          "relative_gain_accuracy_e2e_pct": 1.0714285714285696,
+          "relative_gain_macro_f1_pct": 10.171133332358945
+        },
+        "is_baseline": false,
+        "macro_f1": 0.01389077974323129,
+        "resampling_method": "pair_cluster_bootstrap",
+        "scorable_sample_count": 718
+      }
+    },
+    "research_question": "RQ1: Controlled comparison of No-RAG vs RAG on exact technique attribution",
+    "schema_version": "1.0.0"
+  },
+  "rq2": {
+    "by_condition": {
+      "no_rag": {
+        "condition": "no_rag",
+        "error_decomposition": {
+          "generation_misattribution_count": 158,
+          "generation_misattribution_fraction_of_failures": 1.0,
+          "overlap_retrieval_miss_and_failures": null,
+          "overlap_retrieval_miss_and_wrong_classification": null,
+          "retrieval_miss_error_count": null,
+          "retrieval_miss_fraction_of_failures": null,
+          "system_or_parse_error_count": 0,
+          "system_or_parse_fraction_of_failures": 0.0
+        },
+        "generation_conditional_accuracy": {
+          "P_correct_given_retrieval_failure": null,
+          "P_correct_given_retrieval_success": null,
+          "applicable": false,
+          "note": "Retrieval-conditioned metrics not applicable to No-RAG baseline (k=0).",
+          "p_correct_given_retrieval_failure": null,
+          "p_correct_given_retrieval_success": null,
+          "retrieval_failure_count": null,
+          "retrieval_failure_sample_count": null,
+          "retrieval_success_count": null,
+          "retrieval_success_sample_count": null
+        },
+        "independent_failure_axes": {
+          "canonical_d2i_policy_note": "Per Decision D2i, failure axes are evaluated independently without forced mutual exclusion. Retrieval miss does not establish cause of provider or parse failure.",
+          "invalid_attack_id_count": 0,
+          "invalid_attack_id_rate": 0.0,
+          "overlap_retrieval_miss_and_failures": null,
+          "overlap_retrieval_miss_and_invalid_id": null,
+          "overlap_retrieval_miss_and_parse_failure": null,
+          "overlap_retrieval_miss_and_provider_failure": null,
+          "overlap_retrieval_miss_and_wrong_classification": null,
+          "parse_failure_count": 0,
+          "parse_failure_rate": 0.0,
+          "provider_failure_count": 0,
+          "provider_failure_rate": 0.0,
+          "rates_among_failures": {
+            "invalid_attack_id": 0.0,
+            "parse_failure": 0.0,
+            "provider_failure": 0.0,
+            "retrieval_miss": null,
+            "valid_but_wrong_classification": 1.0
+          },
+          "retrieval_miss_count": null,
+          "retrieval_miss_rate": null,
+          "valid_but_wrong_classification_count": 158,
+          "valid_but_wrong_classification_rate": 0.2200557103064067
+        },
+        "retrieval_k": 0,
+        "retrieval_metrics": {
+          "applicable": false,
+          "macro_recall": null,
+          "note": "Retrieval metrics not applicable to No-RAG baseline (k=0).",
+          "retrieval_hit_rate": null,
+          "retrieved_positive_count": null,
+          "total_positive_sample_count": null
+        },
+        "total_failures": 158,
+        "total_scorable_samples": 718
+      },
+      "rag_k1": {
+        "condition": "rag_k1",
+        "error_decomposition": {
+          "generation_misattribution_count": 165,
+          "generation_misattribution_fraction_of_failures": 1.0,
+          "overlap_retrieval_miss_and_failures": 165,
+          "overlap_retrieval_miss_and_wrong_classification": 165,
+          "retrieval_miss_error_count": 691,
+          "retrieval_miss_fraction_of_failures": 1.0,
+          "system_or_parse_error_count": 0,
+          "system_or_parse_fraction_of_failures": 0.0
+        },
+        "generation_conditional_accuracy": {
+          "P_correct_given_retrieval_failure": 0.7612156295224313,
+          "P_correct_given_retrieval_success": 1.0,
+          "applicable": true,
+          "p_correct_given_retrieval_failure": 0.7612156295224313,
+          "p_correct_given_retrieval_success": 1.0,
+          "retrieval_failure_count": 691,
+          "retrieval_failure_sample_count": 691,
+          "retrieval_success_count": 27,
+          "retrieval_success_sample_count": 27
+        },
+        "independent_failure_axes": {
+          "canonical_d2i_policy_note": "Per Decision D2i, failure axes are evaluated independently without forced mutual exclusion. Retrieval miss does not establish cause of provider or parse failure.",
+          "invalid_attack_id_count": 0,
+          "invalid_attack_id_rate": 0.0,
+          "overlap_retrieval_miss_and_failures": 165,
+          "overlap_retrieval_miss_and_invalid_id": 0,
+          "overlap_retrieval_miss_and_parse_failure": 0,
+          "overlap_retrieval_miss_and_provider_failure": 0,
+          "overlap_retrieval_miss_and_wrong_classification": 165,
+          "parse_failure_count": 0,
+          "parse_failure_rate": 0.0,
+          "provider_failure_count": 0,
+          "provider_failure_rate": 0.0,
+          "rates_among_failures": {
+            "invalid_attack_id": 0.0,
+            "parse_failure": 0.0,
+            "provider_failure": 0.0,
+            "retrieval_miss": 1.0,
+            "valid_but_wrong_classification": 1.0
+          },
+          "retrieval_miss_count": 691,
+          "retrieval_miss_rate": 0.9623955431754875,
+          "valid_but_wrong_classification_count": 165,
+          "valid_but_wrong_classification_rate": 0.2298050139275766
+        },
+        "retrieval_k": 1,
+        "retrieval_metrics": {
+          "applicable": true,
+          "macro_recall": 0.02948003714020427,
+          "retrieval_hit_rate": 0.037604456824512536,
+          "retrieved_positive_count": 27,
+          "total_positive_sample_count": 718
+        },
+        "total_failures": 165,
+        "total_scorable_samples": 718
+      },
+      "rag_k10": {
+        "condition": "rag_k10",
+        "error_decomposition": {
+          "generation_misattribution_count": 147,
+          "generation_misattribution_fraction_of_failures": 1.0,
+          "overlap_retrieval_miss_and_failures": 119,
+          "overlap_retrieval_miss_and_wrong_classification": 119,
+          "retrieval_miss_error_count": 397,
+          "retrieval_miss_fraction_of_failures": 0.8095238095238095,
+          "system_or_parse_error_count": 0,
+          "system_or_parse_fraction_of_failures": 0.0
+        },
+        "generation_conditional_accuracy": {
+          "P_correct_given_retrieval_failure": 0.7002518891687658,
+          "P_correct_given_retrieval_success": 0.9127725856697819,
+          "applicable": true,
+          "p_correct_given_retrieval_failure": 0.7002518891687658,
+          "p_correct_given_retrieval_success": 0.9127725856697819,
+          "retrieval_failure_count": 397,
+          "retrieval_failure_sample_count": 397,
+          "retrieval_success_count": 321,
+          "retrieval_success_sample_count": 321
+        },
+        "independent_failure_axes": {
+          "canonical_d2i_policy_note": "Per Decision D2i, failure axes are evaluated independently without forced mutual exclusion. Retrieval miss does not establish cause of provider or parse failure.",
+          "invalid_attack_id_count": 0,
+          "invalid_attack_id_rate": 0.0,
+          "overlap_retrieval_miss_and_failures": 119,
+          "overlap_retrieval_miss_and_invalid_id": 0,
+          "overlap_retrieval_miss_and_parse_failure": 0,
+          "overlap_retrieval_miss_and_provider_failure": 0,
+          "overlap_retrieval_miss_and_wrong_classification": 119,
+          "parse_failure_count": 0,
+          "parse_failure_rate": 0.0,
+          "provider_failure_count": 0,
+          "provider_failure_rate": 0.0,
+          "rates_among_failures": {
+            "invalid_attack_id": 0.0,
+            "parse_failure": 0.0,
+            "provider_failure": 0.0,
+            "retrieval_miss": 0.8095238095238095,
+            "valid_but_wrong_classification": 1.0
+          },
+          "retrieval_miss_count": 397,
+          "retrieval_miss_rate": 0.552924791086351,
+          "valid_but_wrong_classification_count": 147,
+          "valid_but_wrong_classification_rate": 0.20473537604456823
+        },
+        "retrieval_k": 10,
+        "retrieval_metrics": {
+          "applicable": true,
+          "macro_recall": 0.4280408542246983,
+          "retrieval_hit_rate": 0.44707520891364905,
+          "retrieved_positive_count": 321,
+          "total_positive_sample_count": 718
+        },
+        "total_failures": 147,
+        "total_scorable_samples": 718
+      },
+      "rag_k3": {
+        "condition": "rag_k3",
+        "error_decomposition": {
+          "generation_misattribution_count": 154,
+          "generation_misattribution_fraction_of_failures": 1.0,
+          "overlap_retrieval_miss_and_failures": 151,
+          "overlap_retrieval_miss_and_wrong_classification": 151,
+          "retrieval_miss_error_count": 600,
+          "retrieval_miss_fraction_of_failures": 0.9805194805194806,
+          "system_or_parse_error_count": 0,
+          "system_or_parse_fraction_of_failures": 0.0
+        },
+        "generation_conditional_accuracy": {
+          "P_correct_given_retrieval_failure": 0.7483333333333333,
+          "P_correct_given_retrieval_success": 0.9745762711864406,
+          "applicable": true,
+          "p_correct_given_retrieval_failure": 0.7483333333333333,
+          "p_correct_given_retrieval_success": 0.9745762711864406,
+          "retrieval_failure_count": 600,
+          "retrieval_failure_sample_count": 600,
+          "retrieval_success_count": 118,
+          "retrieval_success_sample_count": 118
+        },
+        "independent_failure_axes": {
+          "canonical_d2i_policy_note": "Per Decision D2i, failure axes are evaluated independently without forced mutual exclusion. Retrieval miss does not establish cause of provider or parse failure.",
+          "invalid_attack_id_count": 0,
+          "invalid_attack_id_rate": 0.0,
+          "overlap_retrieval_miss_and_failures": 151,
+          "overlap_retrieval_miss_and_invalid_id": 0,
+          "overlap_retrieval_miss_and_parse_failure": 0,
+          "overlap_retrieval_miss_and_provider_failure": 0,
+          "overlap_retrieval_miss_and_wrong_classification": 151,
+          "parse_failure_count": 0,
+          "parse_failure_rate": 0.0,
+          "provider_failure_count": 0,
+          "provider_failure_rate": 0.0,
+          "rates_among_failures": {
+            "invalid_attack_id": 0.0,
+            "parse_failure": 0.0,
+            "provider_failure": 0.0,
+            "retrieval_miss": 0.9805194805194806,
+            "valid_but_wrong_classification": 1.0
+          },
+          "retrieval_miss_count": 600,
+          "retrieval_miss_rate": 0.8356545961002786,
+          "valid_but_wrong_classification_count": 154,
+          "valid_but_wrong_classification_rate": 0.21448467966573817
+        },
+        "retrieval_k": 3,
+        "retrieval_metrics": {
+          "applicable": true,
+          "macro_recall": 0.15482822655524606,
+          "retrieval_hit_rate": 0.16434540389972144,
+          "retrieved_positive_count": 118,
+          "total_positive_sample_count": 718
+        },
+        "total_failures": 154,
+        "total_scorable_samples": 718
+      },
+      "rag_k5": {
+        "condition": "rag_k5",
+        "error_decomposition": {
+          "generation_misattribution_count": 152,
+          "generation_misattribution_fraction_of_failures": 1.0,
+          "overlap_retrieval_miss_and_failures": 147,
+          "overlap_retrieval_miss_and_wrong_classification": 147,
+          "retrieval_miss_error_count": 545,
+          "retrieval_miss_fraction_of_failures": 0.9671052631578947,
+          "system_or_parse_error_count": 0,
+          "system_or_parse_fraction_of_failures": 0.0
+        },
+        "generation_conditional_accuracy": {
+          "P_correct_given_retrieval_failure": 0.7302752293577982,
+          "P_correct_given_retrieval_success": 0.9710982658959537,
+          "applicable": true,
+          "p_correct_given_retrieval_failure": 0.7302752293577982,
+          "p_correct_given_retrieval_success": 0.9710982658959537,
+          "retrieval_failure_count": 545,
+          "retrieval_failure_sample_count": 545,
+          "retrieval_success_count": 173,
+          "retrieval_success_sample_count": 173
+        },
+        "independent_failure_axes": {
+          "canonical_d2i_policy_note": "Per Decision D2i, failure axes are evaluated independently without forced mutual exclusion. Retrieval miss does not establish cause of provider or parse failure.",
+          "invalid_attack_id_count": 0,
+          "invalid_attack_id_rate": 0.0,
+          "overlap_retrieval_miss_and_failures": 147,
+          "overlap_retrieval_miss_and_invalid_id": 0,
+          "overlap_retrieval_miss_and_parse_failure": 0,
+          "overlap_retrieval_miss_and_provider_failure": 0,
+          "overlap_retrieval_miss_and_wrong_classification": 147,
+          "parse_failure_count": 0,
+          "parse_failure_rate": 0.0,
+          "provider_failure_count": 0,
+          "provider_failure_rate": 0.0,
+          "rates_among_failures": {
+            "invalid_attack_id": 0.0,
+            "parse_failure": 0.0,
+            "provider_failure": 0.0,
+            "retrieval_miss": 0.9671052631578947,
+            "valid_but_wrong_classification": 1.0
+          },
+          "retrieval_miss_count": 545,
+          "retrieval_miss_rate": 0.7590529247910863,
+          "valid_but_wrong_classification_count": 152,
+          "valid_but_wrong_classification_rate": 0.2116991643454039
+        },
+        "retrieval_k": 5,
+        "retrieval_metrics": {
+          "applicable": true,
+          "macro_recall": 0.22957288765088205,
+          "retrieval_hit_rate": 0.24094707520891365,
+          "retrieved_positive_count": 173,
+          "total_positive_sample_count": 718
+        },
+        "total_failures": 152,
+        "total_scorable_samples": 718
+      }
+    },
+    "research_question": "RQ2: Retrieval vs. Generation error decomposition",
+    "schema_version": "1.0.0"
+  },
+  "rq3": {
+    "research_question": "RQ3: Retrieval depth & efficiency ablation and view diagnostics",
+    "schema_version": "1.0.0",
+    "tradeoffs_by_condition": {
+      "no_rag": {
+        "accuracy_end_to_end": 0.7799442896935933,
+        "accuracy_valid_outputs": 0.7799442896935933,
+        "condition": "no_rag",
+        "financial_cost_usd": {
+          "affected_logical_records_count": 0,
+          "cost_of_all_excluded_views_usd": 0.19006095,
+          "cost_of_excluded_ambiguous_views_usd": 0.0977322,
+          "cost_of_excluded_unmapped_views_usd": 0.09232875,
+          "cost_per_correct_attribution_usd": 0.000834185625,
+          "cost_per_logical_request_usd": 0.0003649562109375,
+          "cost_per_scorable_query_usd": 0.0006506183147632312,
+          "excluded_views_financial_disclosure": "Costs of excluded ambiguous (311) and unmapped (251) views remain real monetary expenditure incurred during inference and are fully included in condition and study totals.",
+          "ledger_settled_cost_usd": 0.46714395,
+          "marginal_cost_vs_baseline_usd": 0.0,
+          "missing_usage_attempt_receipts_count": 0,
+          "missing_usage_attempt_worst_charge_usd": 0.0,
+          "missing_usage_records_count": 0,
+          "missing_usage_terminal_records_count": 0,
+          "missing_usage_worst_charge_usd": 0.0,
+          "receipts_reconciled_cost_usd": 0.46714395,
+          "retried_attempts_count": 0,
+          "token_usage_estimated_cost_usd": 0.46714395,
+          "total_cost_usd": 0.46714395
+        },
+        "latency_ms": {
+          "mean": 2904.4541815625507,
+          "median": 2302.815000002738,
+          "p95": 5965.557770004671,
+          "sum": 3717701.352400065
+        },
+        "macro_f1": 0.012608366023907785,
+        "retrieval_k": 0,
+        "tokens": {
+          "mean_completion_tokens": 163.6453125,
+          "mean_prompt_tokens": 674.32734375,
+          "mean_total_tokens": 837.97265625,
+          "sum_completion_tokens": 209466,
+          "sum_prompt_tokens": 863139,
+          "sum_total_tokens": 1072605
+        }
+      },
+      "rag_k1": {
+        "accuracy_end_to_end": 0.7701949860724234,
+        "accuracy_valid_outputs": 0.7701949860724234,
+        "condition": "rag_k1",
+        "financial_cost_usd": {
+          "affected_logical_records_count": 1,
+          "cost_of_all_excluded_views_usd": 0.340632,
+          "cost_of_excluded_ambiguous_views_usd": 0.17228295,
+          "cost_of_excluded_unmapped_views_usd": 0.16834905,
+          "cost_per_correct_attribution_usd": 0.0023458110307414104,
+          "cost_per_logical_request_usd": 0.001013463671875,
+          "cost_per_scorable_query_usd": 0.0018067318941504178,
+          "excluded_views_financial_disclosure": "Costs of excluded ambiguous (311) and unmapped (251) views remain real monetary expenditure incurred during inference and are fully included in condition and study totals.",
+          "ledger_settled_cost_usd": 1.2972335,
+          "marginal_cost_vs_baseline_usd": 0.83008955,
+          "missing_usage_attempt_receipts_count": 1,
+          "missing_usage_attempt_worst_charge_usd": 0.5397456,
+          "missing_usage_records_count": 0,
+          "missing_usage_terminal_records_count": 0,
+          "missing_usage_worst_charge_usd": 0.5397456,
+          "receipts_reconciled_cost_usd": 1.2972335,
+          "retried_attempts_count": 1,
+          "token_usage_estimated_cost_usd": 0.7578421,
+          "total_cost_usd": 1.2972335
+        },
+        "latency_ms": {
+          "mean": 3514.2666282031087,
+          "median": 2617.13934999716,
+          "p95": 7064.188809994083,
+          "sum": 4498261.284099979
+        },
+        "macro_f1": 0.012667935610765985,
+        "retrieval_k": 1,
+        "tokens": {
+          "mean_completion_tokens": 233.69375,
+          "mean_prompt_tokens": 1246.5265625,
+          "mean_total_tokens": 1480.2203125,
+          "sum_completion_tokens": 299128,
+          "sum_prompt_tokens": 1595554,
+          "sum_total_tokens": 1894682
+        }
+      },
+      "rag_k10": {
+        "accuracy_end_to_end": 0.7952646239554317,
+        "accuracy_valid_outputs": 0.7952646239554317,
+        "condition": "rag_k10",
+        "financial_cost_usd": {
+          "affected_logical_records_count": 0,
+          "cost_of_all_excluded_views_usd": 0.9646329,
+          "cost_of_excluded_ambiguous_views_usd": 0.46568825,
+          "cost_of_excluded_unmapped_views_usd": 0.49894465,
+          "cost_per_correct_attribution_usd": 0.0037642446584938705,
+          "cost_per_logical_request_usd": 0.001679206015625,
+          "cost_per_scorable_query_usd": 0.0029935706128133704,
+          "excluded_views_financial_disclosure": "Costs of excluded ambiguous (311) and unmapped (251) views remain real monetary expenditure incurred during inference and are fully included in condition and study totals.",
+          "ledger_settled_cost_usd": 2.1493837,
+          "marginal_cost_vs_baseline_usd": 1.68223975,
+          "missing_usage_attempt_receipts_count": 0,
+          "missing_usage_attempt_worst_charge_usd": 0.0,
+          "missing_usage_records_count": 0,
+          "missing_usage_terminal_records_count": 0,
+          "missing_usage_worst_charge_usd": 0.0,
+          "receipts_reconciled_cost_usd": 2.1493837,
+          "retried_attempts_count": 0,
+          "token_usage_estimated_cost_usd": 2.1493837,
+          "total_cost_usd": 2.1493837
+        },
+        "latency_ms": {
+          "mean": 4370.711563358918,
+          "median": 2667.00299999502,
+          "p95": 10996.658779990685,
+          "sum": 5594510.801099415
+        },
+        "macro_f1": 0.014023799884737108,
+        "retrieval_k": 10,
+        "tokens": {
+          "mean_completion_tokens": 333.8640625,
+          "mean_prompt_tokens": 5114.2765625,
+          "mean_total_tokens": 5448.140625,
+          "sum_completion_tokens": 427346,
+          "sum_prompt_tokens": 6546274,
+          "sum_total_tokens": 6973620
+        }
+      },
+      "rag_k3": {
+        "accuracy_end_to_end": 0.7855153203342619,
+        "accuracy_valid_outputs": 0.7855153203342619,
+        "condition": "rag_k3",
+        "financial_cost_usd": {
+          "affected_logical_records_count": 0,
+          "cost_of_all_excluded_views_usd": 0.5756992,
+          "cost_of_excluded_ambiguous_views_usd": 0.25608165,
+          "cost_of_excluded_unmapped_views_usd": 0.31961755,
+          "cost_per_correct_attribution_usd": 0.0020902127659574465,
+          "cost_per_logical_request_usd": 0.0009209999999999999,
+          "cost_per_scorable_query_usd": 0.0016418941504178271,
+          "excluded_views_financial_disclosure": "Costs of excluded ambiguous (311) and unmapped (251) views remain real monetary expenditure incurred during inference and are fully included in condition and study totals.",
+          "ledger_settled_cost_usd": 1.17888,
+          "marginal_cost_vs_baseline_usd": 0.71173605,
+          "missing_usage_attempt_receipts_count": 0,
+          "missing_usage_attempt_worst_charge_usd": 0.0,
+          "missing_usage_records_count": 0,
+          "missing_usage_terminal_records_count": 0,
+          "missing_usage_worst_charge_usd": 0.0,
+          "receipts_reconciled_cost_usd": 1.17888,
+          "retried_attempts_count": 0,
+          "token_usage_estimated_cost_usd": 1.17888,
+          "total_cost_usd": 1.17888
+        },
+        "latency_ms": {
+          "mean": 4215.878584452662,
+          "median": 2743.170950008789,
+          "p95": 8560.192249983076,
+          "sum": 5396324.588099407
+        },
+        "macro_f1": 0.013642695462066637,
+        "retrieval_k": 3,
+        "tokens": {
+          "mean_completion_tokens": 314.921875,
+          "mean_prompt_tokens": 2172.375,
+          "mean_total_tokens": 2487.296875,
+          "sum_completion_tokens": 403100,
+          "sum_prompt_tokens": 2780640,
+          "sum_total_tokens": 3183740
+        }
+      },
+      "rag_k5": {
+        "accuracy_end_to_end": 0.7883008356545961,
+        "accuracy_valid_outputs": 0.7883008356545961,
+        "condition": "rag_k5",
+        "financial_cost_usd": {
+          "affected_logical_records_count": 0,
+          "cost_of_all_excluded_views_usd": 0.67083665,
+          "cost_of_excluded_ambiguous_views_usd": 0.31095465,
+          "cost_of_excluded_unmapped_views_usd": 0.359882,
+          "cost_per_correct_attribution_usd": 0.0026203493816254414,
+          "cost_per_logical_request_usd": 0.0011586857421874998,
+          "cost_per_scorable_query_usd": 0.0020656236072423397,
+          "excluded_views_financial_disclosure": "Costs of excluded ambiguous (311) and unmapped (251) views remain real monetary expenditure incurred during inference and are fully included in condition and study totals.",
+          "ledger_settled_cost_usd": 1.48311775,
+          "marginal_cost_vs_baseline_usd": 1.0159737999999998,
+          "missing_usage_attempt_receipts_count": 0,
+          "missing_usage_attempt_worst_charge_usd": 0.0,
+          "missing_usage_records_count": 0,
+          "missing_usage_terminal_records_count": 0,
+          "missing_usage_worst_charge_usd": 0.0,
+          "receipts_reconciled_cost_usd": 1.48311775,
+          "retried_attempts_count": 0,
+          "token_usage_estimated_cost_usd": 1.48311775,
+          "total_cost_usd": 1.48311775
+        },
+        "latency_ms": {
+          "mean": 4327.256228515944,
+          "median": 2873.740850001923,
+          "p95": 10044.334655003331,
+          "sum": 5538887.972500408
+        },
+        "macro_f1": 0.01389077974323129,
+        "retrieval_k": 5,
+        "tokens": {
+          "mean_completion_tokens": 328.03125,
+          "mean_prompt_tokens": 3060.19296875,
+          "mean_total_tokens": 3388.22421875,
+          "sum_completion_tokens": 419880,
+          "sum_prompt_tokens": 3917047,
+          "sum_total_tokens": 4336927
+        }
+      }
+    },
+    "view_diagnostics": {
+      "no_rag": {
+        "condition": "no_rag",
+        "contextual_paired_accuracy": 0.9244604316546763,
+        "contextual_view_accuracy_e2e": 0.7227272727272728,
+        "contextual_view_macro_f1": 0.012012858668072012,
+        "contextual_view_scorable_count": 440,
+        "gt_concordance_decomposition": {
+          "divergent_gt_pairs": {
+            "both_correct_count": 18,
+            "both_incorrect_count": 0,
+            "contextual_only_correct_count": 17,
+            "contextual_paired_accuracy": 0.875,
+            "pair_count": 40,
+            "paired_delta": 0.3,
+            "single_only_correct_count": 5,
+            "single_paired_accuracy": 0.575
+          },
+          "identical_gt_pairs": {
+            "both_correct_count": 210,
+            "both_incorrect_count": 7,
+            "contextual_only_correct_count": 12,
+            "contextual_paired_accuracy": 0.9327731092436975,
+            "pair_count": 238,
+            "paired_delta": 0.012605042016806723,
+            "single_only_correct_count": 9,
+            "single_paired_accuracy": 0.9201680672268907
+          }
+        },
+        "mcnemar_test_views_exploratory": {
+          "chi2_statistic": 4.558139534883721,
+          "contingency_table": {
+            "baseline_win_c": 14,
+            "both_correct_a": 228,
+            "both_incorrect_d": 7,
+            "total_discordant": 43,
+            "total_pairs": 278,
+            "treatment_win_b": 29
+          },
+          "p_value_asymptotic": 0.03276264507885981,
+          "p_value_exact": 0.03153949735315109,
+          "significant_at_01": false,
+          "significant_at_05": true
+        },
+        "pair_concordance": {
+          "both_correct_count": 228,
+          "both_correct_pct": 82.01438848920863,
+          "both_incorrect_count": 7,
+          "both_incorrect_pct": 2.5179856115107913,
+          "contextual_only_correct_count": 29,
+          "contextual_only_correct_pct": 10.431654676258994,
+          "single_only_correct_count": 14,
+          "single_only_correct_pct": 5.0359712230215825
+        },
+        "paired_complete_pairs_count": 278,
+        "paired_delta": 0.0539568345323741,
+        "single_paired_accuracy": 0.8705035971223022,
+        "single_view_accuracy_e2e": 0.8705035971223022,
+        "single_view_macro_f1": 0.013250345528826543,
+        "single_view_scorable_count": 278,
+        "view_accuracy_delta": -0.1477763243950294,
+        "view_macro_f1_delta": -0.0012374868607545313,
+        "view_split_notes": "Empirical TEST scorable views: 278 single views and 440 contextual views (718 total), reflecting mapped ground truth rather than an assumed 50/50 balance."
+      },
+      "rag_k1": {
+        "condition": "rag_k1",
+        "contextual_paired_accuracy": 0.9244604316546763,
+        "contextual_view_accuracy_e2e": 0.7159090909090909,
+        "contextual_view_macro_f1": 0.012084988489433918,
+        "contextual_view_scorable_count": 440,
+        "gt_concordance_decomposition": {
+          "divergent_gt_pairs": {
+            "both_correct_count": 21,
+            "both_incorrect_count": 0,
+            "contextual_only_correct_count": 19,
+            "contextual_paired_accuracy": 1.0,
+            "pair_count": 40,
+            "paired_delta": 0.475,
+            "single_only_correct_count": 0,
+            "single_paired_accuracy": 0.525
+          },
+          "identical_gt_pairs": {
+            "both_correct_count": 208,
+            "both_incorrect_count": 12,
+            "contextual_only_correct_count": 9,
+            "contextual_paired_accuracy": 0.9117647058823529,
+            "pair_count": 238,
+            "paired_delta": 0.0,
+            "single_only_correct_count": 9,
+            "single_paired_accuracy": 0.9117647058823529
+          }
+        },
+        "mcnemar_test_views_exploratory": {
+          "chi2_statistic": 8.756756756756756,
+          "contingency_table": {
+            "baseline_win_c": 9,
+            "both_correct_a": 229,
+            "both_incorrect_d": 12,
+            "total_discordant": 37,
+            "total_pairs": 278,
+            "treatment_win_b": 28
+          },
+          "p_value_asymptotic": 0.0030845709899566098,
+          "p_value_exact": 0.0025632079923525453,
+          "significant_at_01": true,
+          "significant_at_05": true
+        },
+        "pair_concordance": {
+          "both_correct_count": 229,
+          "both_correct_pct": 82.37410071942446,
+          "both_incorrect_count": 12,
+          "both_incorrect_pct": 4.316546762589928,
+          "contextual_only_correct_count": 28,
+          "contextual_only_correct_pct": 10.071942446043165,
+          "single_only_correct_count": 9,
+          "single_only_correct_pct": 3.237410071942446
+        },
+        "paired_complete_pairs_count": 278,
+        "paired_delta": 0.0683453237410072,
+        "single_paired_accuracy": 0.8561151079136691,
+        "single_view_accuracy_e2e": 0.8561151079136691,
+        "single_view_macro_f1": 0.013111300493164786,
+        "single_view_scorable_count": 278,
+        "view_accuracy_delta": -0.14020601700457813,
+        "view_macro_f1_delta": -0.0010263120037308678,
+        "view_split_notes": "Empirical TEST scorable views: 278 single views and 440 contextual views (718 total), reflecting mapped ground truth rather than an assumed 50/50 balance."
+      },
+      "rag_k10": {
+        "condition": "rag_k10",
+        "contextual_paired_accuracy": 0.8381294964028777,
+        "contextual_view_accuracy_e2e": 0.7681818181818182,
+        "contextual_view_macro_f1": 0.013171274710188662,
+        "contextual_view_scorable_count": 440,
+        "gt_concordance_decomposition": {
+          "divergent_gt_pairs": {
+            "both_correct_count": 29,
+            "both_incorrect_count": 0,
+            "contextual_only_correct_count": 11,
+            "contextual_paired_accuracy": 1.0,
+            "pair_count": 40,
+            "paired_delta": 0.275,
+            "single_only_correct_count": 0,
+            "single_paired_accuracy": 0.725
+          },
+          "identical_gt_pairs": {
+            "both_correct_count": 187,
+            "both_incorrect_count": 28,
+            "contextual_only_correct_count": 6,
+            "contextual_paired_accuracy": 0.8109243697478992,
+            "pair_count": 238,
+            "paired_delta": -0.046218487394957986,
+            "single_only_correct_count": 17,
+            "single_paired_accuracy": 0.8571428571428571
+          }
+        },
+        "mcnemar_test_views_exploratory": {
+          "chi2_statistic": 0.0,
+          "contingency_table": {
+            "baseline_win_c": 17,
+            "both_correct_a": 216,
+            "both_incorrect_d": 28,
+            "total_discordant": 34,
+            "total_pairs": 278,
+            "treatment_win_b": 17
+          },
+          "p_value_asymptotic": 1.0,
+          "p_value_exact": 1.0,
+          "significant_at_01": false,
+          "significant_at_05": false
+        },
+        "pair_concordance": {
+          "both_correct_count": 216,
+          "both_correct_pct": 77.6978417266187,
+          "both_incorrect_count": 28,
+          "both_incorrect_pct": 10.071942446043165,
+          "contextual_only_correct_count": 17,
+          "contextual_only_correct_pct": 6.115107913669065,
+          "single_only_correct_count": 17,
+          "single_only_correct_pct": 6.115107913669065
+        },
+        "paired_complete_pairs_count": 278,
+        "paired_delta": 0.0,
+        "single_paired_accuracy": 0.8381294964028777,
+        "single_view_accuracy_e2e": 0.8381294964028777,
+        "single_view_macro_f1": 0.012889086652310526,
+        "single_view_scorable_count": 278,
+        "view_accuracy_delta": -0.06994767822105952,
+        "view_macro_f1_delta": 0.0002821880578781355,
+        "view_split_notes": "Empirical TEST scorable views: 278 single views and 440 contextual views (718 total), reflecting mapped ground truth rather than an assumed 50/50 balance."
+      },
+      "rag_k3": {
+        "condition": "rag_k3",
+        "contextual_paired_accuracy": 0.8884892086330936,
+        "contextual_view_accuracy_e2e": 0.75,
+        "contextual_view_macro_f1": 0.012986058552673877,
+        "contextual_view_scorable_count": 440,
+        "gt_concordance_decomposition": {
+          "divergent_gt_pairs": {
+            "both_correct_count": 22,
+            "both_incorrect_count": 0,
+            "contextual_only_correct_count": 18,
+            "contextual_paired_accuracy": 1.0,
+            "pair_count": 40,
+            "paired_delta": 0.45,
+            "single_only_correct_count": 0,
+            "single_paired_accuracy": 0.55
+          },
+          "identical_gt_pairs": {
+            "both_correct_count": 203,
+            "both_incorrect_count": 22,
+            "contextual_only_correct_count": 4,
+            "contextual_paired_accuracy": 0.8697478991596639,
+            "pair_count": 238,
+            "paired_delta": -0.02100840336134454,
+            "single_only_correct_count": 9,
+            "single_paired_accuracy": 0.8907563025210085
+          }
+        },
+        "mcnemar_test_views_exploratory": {
+          "chi2_statistic": 4.645161290322581,
+          "contingency_table": {
+            "baseline_win_c": 9,
+            "both_correct_a": 225,
+            "both_incorrect_d": 22,
+            "total_discordant": 31,
+            "total_pairs": 278,
+            "treatment_win_b": 22
+          },
+          "p_value_asymptotic": 0.03114121059579674,
+          "p_value_exact": 0.029449373483657837,
+          "significant_at_01": false,
+          "significant_at_05": true
+        },
+        "pair_concordance": {
+          "both_correct_count": 225,
+          "both_correct_pct": 80.93525179856115,
+          "both_incorrect_count": 22,
+          "both_incorrect_pct": 7.913669064748201,
+          "contextual_only_correct_count": 22,
+          "contextual_only_correct_pct": 7.913669064748201,
+          "single_only_correct_count": 9,
+          "single_only_correct_pct": 3.237410071942446
+        },
+        "paired_complete_pairs_count": 278,
+        "paired_delta": 0.046762589928057555,
+        "single_paired_accuracy": 0.841726618705036,
+        "single_view_accuracy_e2e": 0.841726618705036,
+        "single_view_macro_f1": 0.012896703660941793,
+        "single_view_scorable_count": 278,
+        "view_accuracy_delta": -0.09172661870503596,
+        "view_macro_f1_delta": 8.935489173208383e-05,
+        "view_split_notes": "Empirical TEST scorable views: 278 single views and 440 contextual views (718 total), reflecting mapped ground truth rather than an assumed 50/50 balance."
+      },
+      "rag_k5": {
+        "condition": "rag_k5",
+        "contextual_paired_accuracy": 0.8525179856115108,
+        "contextual_view_accuracy_e2e": 0.759090909090909,
+        "contextual_view_macro_f1": 0.013107034849480326,
+        "contextual_view_scorable_count": 440,
+        "gt_concordance_decomposition": {
+          "divergent_gt_pairs": {
+            "both_correct_count": 29,
+            "both_incorrect_count": 0,
+            "contextual_only_correct_count": 11,
+            "contextual_paired_accuracy": 1.0,
+            "pair_count": 40,
+            "paired_delta": 0.275,
+            "single_only_correct_count": 0,
+            "single_paired_accuracy": 0.725
+          },
+          "identical_gt_pairs": {
+            "both_correct_count": 192,
+            "both_incorrect_count": 30,
+            "contextual_only_correct_count": 5,
+            "contextual_paired_accuracy": 0.8277310924369747,
+            "pair_count": 238,
+            "paired_delta": -0.025210084033613446,
+            "single_only_correct_count": 11,
+            "single_paired_accuracy": 0.8529411764705882
+          }
+        },
+        "mcnemar_test_views_exploratory": {
+          "chi2_statistic": 0.5925925925925926,
+          "contingency_table": {
+            "baseline_win_c": 11,
+            "both_correct_a": 221,
+            "both_incorrect_d": 30,
+            "total_discordant": 27,
+            "total_pairs": 278,
+            "treatment_win_b": 16
+          },
+          "p_value_asymptotic": 0.4414183267820536,
+          "p_value_exact": 0.44206833839416504,
+          "significant_at_01": false,
+          "significant_at_05": false
+        },
+        "pair_concordance": {
+          "both_correct_count": 221,
+          "both_correct_pct": 79.49640287769785,
+          "both_incorrect_count": 30,
+          "both_incorrect_pct": 10.79136690647482,
+          "contextual_only_correct_count": 16,
+          "contextual_only_correct_pct": 5.755395683453238,
+          "single_only_correct_count": 11,
+          "single_only_correct_pct": 3.9568345323741005
+        },
+        "paired_complete_pairs_count": 278,
+        "paired_delta": 0.017985611510791366,
+        "single_paired_accuracy": 0.8345323741007195,
+        "single_view_accuracy_e2e": 0.8345323741007195,
+        "single_view_macro_f1": 0.012882021201340828,
+        "single_view_scorable_count": 278,
+        "view_accuracy_delta": -0.07544146500981042,
+        "view_macro_f1_delta": 0.00022501364813949827,
+        "view_split_notes": "Empirical TEST scorable views: 278 single views and 440 contextual views (718 total), reflecting mapped ground truth rather than an assumed 50/50 balance."
+      }
+    },
+    "whole_study_financial_accounting": {
+      "accounting_policy_disclosure": "Prior pilot provisional hold ($0.05264010) is accounted exclusively at the whole-study level and is never allocated to individual canonical conditions. Spending on excluded ambiguous and unmapped views is fully accounted as real monetary spend.",
+      "active_reservations_usd": 0.0,
+      "canonical_conditions_total_usd": 6.5757589,
+      "net_remaining_uncommitted_budget_usd": 13.361601,
+      "orphan_reservations_usd": 0.0,
+      "prior_pilot_provisional_hold_usd": 0.0526401,
+      "study_wide_missing_usage_attempt_charged_usd": 0.5397456,
+      "study_wide_missing_usage_attempt_receipts_count": 1,
+      "study_wide_missing_usage_charged_usd": 0.5397456,
+      "study_wide_missing_usage_records_count": 0,
+      "study_wide_missing_usage_terminal_records_count": 0,
+      "study_wide_retried_attempts_count": 1,
+      "total_study_budget_usd": 19.99,
+      "total_study_committed_spend_usd": 6.628399
+    }
+  },
+  "schema_version": "1.0.0"
+}

@@ -1,0 +1,41 @@
+{
+  "bundle_sha256": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+  "figures_count": 8,
+  "figures_formats": [
+    "vector_svg",
+    "raster_png",
+    "print_pdf"
+  ],
+  "fixture_only": false,
+  "generated_figures": {
+    "fig1_system_architecture.pdf": "dcbc6ebe9b9c7c453db663a44bfabca4a081fc3de2b30c79cf4536d45eac0125",
+    "fig1_system_architecture.png": "b8e9e070c7c027882f97ff64b090f57e50b51ebac43480a61c3f2bf67fcc16c2",
+    "fig1_system_architecture.svg": "7623e1c20792b1c90c97064387bdef99014f11e6d91635bce272a89fa06c97b1",
+    "fig2_accuracy_vs_k.pdf": "b67da7af9b349ecae28b10d07e449a5f316c23b1d9d8e6aefe5a79093ba5f065",
+    "fig2_accuracy_vs_k.png": "303c0e0c2255f5c5dfb828bdde0073a7a7d06c8eb61d3c06d889e4ccb4518965",
+    "fig2_accuracy_vs_k.svg": "1bddfd900b4e5bb20d90b2a68064cb5e2aa0a58066a14641e5f128958ecaa2b4",
+    "fig3_macro_f1_vs_k.pdf": "85ea00d1c1e5a3a66d018f86d321b2b58d79a722144934dabff1442daa823c99",
+    "fig3_macro_f1_vs_k.png": "22f0ebdaa565d2c1b576aa9b0a74470459cda94f051ff879c9e123b258dc99d6",
+    "fig3_macro_f1_vs_k.svg": "aff69a0bd3cfb37948a73e4ead5d885670f426e3e0132d3a1f13f536bf7acd28",
+    "fig4_retrieval_hit_rate.pdf": "c4ff87165f65d153ac0f9e4405d985c7c604b8be62c692c5430c0fff045ae41c",
+    "fig4_retrieval_hit_rate.png": "f8287936d2b5fc24e89584349028f393b801b6bebe668f8bea449c6b67f2128f",
+    "fig4_retrieval_hit_rate.svg": "c01c563727549f73a48d3c4a9c24dc391e023d4ea5a930958f4ffb736e8c937f",
+    "fig5_conditional_accuracy.pdf": "f3255e581c88794349661da958bcf541fb5365e591fbfbb325074ce6fee14fda",
+    "fig5_conditional_accuracy.png": "8a896be3eccf13bb67a953d6bf70656e06aa6e2c35cb393c24fd2d03e21a91a9",
+    "fig5_conditional_accuracy.svg": "1d7497283ae0537c52e88a5e00803d0381e1b62ec5e44471e75ed5090bdb14a9",
+    "fig6_latency_vs_k.pdf": "75396a879074353f25a40d213cde9f2e6aefed6fb07bbf59a6695fa99964e9e4",
+    "fig6_latency_vs_k.png": "48011a5a586947a11c88fb0bc67f6e5801069837e2e5df655af5d5b554328b03",
+    "fig6_latency_vs_k.svg": "a1b192768437b61fa2a0a0eea82c19011a75a8005639000fae77019e1a281b2a",
+    "fig7_cost_and_tokens_vs_k.pdf": "be134699796ca11f296507928c025540f32f92b62a47cb451112c1adde484b24",
+    "fig7_cost_and_tokens_vs_k.png": "ca296165b38b499432f851618e3d6a512964c461e59dc3b646e647ddcb70bfb1",
+    "fig7_cost_and_tokens_vs_k.svg": "38349b81e25574b8bd8424e5e7a251b7c2d1a5c0344a6ed2b8cced98a50d8431",
+    "fig8_failure_decomposition.pdf": "73849ed757cac685d60a38c0bedcdf10ae8f19574c51187f1084c69874526d19",
+    "fig8_failure_decomposition.png": "ed26f381337e7608445a6dcbfd028d161cc7a053d31cc373951a31a7cf9d77bb",
+    "fig8_failure_decomposition.svg": "2cd89e99326650fa9ab069d2f83c13ef23dedbcaea0e75c5360a5e0082c65ba5"
+  },
+  "p95_latency_status": "NOT REPORTED \u2014 approval evidence not established",
+  "plot_data_sha256": "483202e066e0afa7c73eb4739bc8e3235d20481e7f0b1009353dd0d3c0bd7e11",
+  "run_id": "live-66b94b1676bf46a9",
+  "schema_version": "2.0.0",
+  "workstation_paths_sanitized": true
+}

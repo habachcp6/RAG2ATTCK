@@ -1,0 +1,89 @@
+{
+  "verdict": "PASS",
+  "strict": true,
+  "mode": "strict",
+  "scope": "all",
+  "repo_root": ".",
+  "expected_bundle_sha256": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+  "bundle_error": null,
+  "missing_required_files": [],
+  "role_coverage_errors": [],
+  "binary_errors": [],
+  "fixture_in_all_scope": false,
+  "leak_audit": {
+    "status": "PASS",
+    "leak_count": 0,
+    "findings": []
+  },
+  "path_leaks": {
+    "status": "PASS",
+    "findings": []
+  },
+  "placeholder_audit": {
+    "status": "PASS",
+    "placeholder_count": 0,
+    "findings": []
+  },
+  "placeholders": {
+    "status": "PASS",
+    "findings": []
+  },
+  "figures_provenance": {
+    "status": "PASS",
+    "fixture_only": false,
+    "figures_count": 8,
+    "missing_figures": [],
+    "hash_mismatches": [],
+    "xml_errors": [],
+    "format_errors": [],
+    "semantic_errors": [],
+    "provenance_sha256": "9538fb40dd018934f0720b2279f4b587f4f16828d1528864d52e47b18ee35d80"
+  },
+  "figure_provenance": {
+    "status": "PASS",
+    "fixture_only": false,
+    "figures_count": 8,
+    "missing_figures": [],
+    "hash_mismatches": [],
+    "xml_errors": [],
+    "format_errors": [],
+    "semantic_errors": [],
+    "provenance_sha256": "9538fb40dd018934f0720b2279f4b587f4f16828d1528864d52e47b18ee35d80"
+  },
+  "tables_provenance": {
+    "status": "PASS",
+    "fixture_only": false,
+    "tables_count": 6,
+    "missing_tables": [],
+    "hash_mismatches": [],
+    "semantic_errors": [],
+    "provenance_sha256": "4556ed537e5b16c2be6b847e13133de395ac48080c8ab9dfdf688c4083657352"
+  },
+  "table_provenance": {
+    "status": "PASS",
+    "fixture_only": false,
+    "tables_count": 6,
+    "missing_tables": [],
+    "hash_mismatches": [],
+    "semantic_errors": [],
+    "provenance_sha256": "4556ed537e5b16c2be6b847e13133de395ac48080c8ab9dfdf688c4083657352"
+  },
+  "numerical_consistency": {
+    "status": "PASS",
+    "bundle_error": null,
+    "mismatches": []
+  },
+  "bundle_validation": {
+    "status": "PASS",
+    "bundle_error": null,
+    "mismatches": []
+  },
+  "binary_openxml_audit": {
+    "status": "PASS",
+    "errors": []
+  },
+  "role_coverage_audit": {
+    "status": "PASS",
+    "errors": []
+  }
+}

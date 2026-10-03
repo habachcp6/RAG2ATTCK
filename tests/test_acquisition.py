@@ -6,9 +6,10 @@ and error handling.
 
 import json
 from pathlib import Path
+
 import pytest
 
-from src.acquisition import acquire_windows_apt_dataset, DatasetAcquisitionError
+from src.acquisition import DatasetAcquisitionError, acquire_windows_apt_dataset
 
 
 def test_mendeley_catalog_existence(tmp_path):
@@ -48,7 +49,12 @@ def test_dataset_manifest_contents():
     metadata_files = [f for f in files if f["role"] == "metadata_manifest"]
     assert len(metadata_files) == 4
     meta_names = {f["filename"] for f in metadata_files}
-    assert meta_names == {"checksums.sha256", "README.md", "scenario_manifest.csv", "validation_summary.csv"}
+    assert meta_names == {
+        "checksums.sha256",
+        "README.md",
+        "scenario_manifest.csv",
+        "validation_summary.csv",
+    }
 
     # All files must have verified == True
     for f in files:

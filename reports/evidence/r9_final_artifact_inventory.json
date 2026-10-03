@@ -1,0 +1,985 @@
+{
+  "schema_version": "r9_final_artifact_inventory_v1",
+  "timestamp_utc": "2026-10-03T12:55:00Z",
+  "lifecycle_state_definitions": {
+    "FILE_PRESENT": "File exists on disk at expected repo-relative path",
+    "HASH_VERIFIED": "SHA-256 computed from disk matches cryptographic ground truth",
+    "STRUCTURE_CHECKED": "Internal format/schema validated (XML, JSON, ZIP, PNG, Markdown)",
+    "NUMERICAL_CHECKED": "Numerical metrics and values match canonical frozen experimental ledger",
+    "RENDERED": "Artifact is synthesized into its final presentation or delivery form",
+    "VISUALLY_REVIEWED": "Inspected for visual sharpness, typography, and absence of layout defect"
+  },
+  "immutable_trust_anchors": {
+    "canonical_metric_bundle_v2": {
+      "exists": true,
+      "repo_relative_path": "artifacts/results/canonical_metric_bundle_v2.json",
+      "size_bytes": 49465,
+      "sha256": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "expected_sha256": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "verified": true,
+      "lifecycle_states": {
+        "FILE_PRESENT": true,
+        "HASH_VERIFIED": true,
+        "STRUCTURE_CHECKED": true,
+        "NUMERICAL_CHECKED": true,
+        "RENDERED": true,
+        "VISUALLY_REVIEWED": true
+      }
+    },
+    "canonical_run_seal_v1": {
+      "exists": true,
+      "repo_relative_path": "reports/evidence/canonical_run_seal_v1.json",
+      "size_bytes": 3046,
+      "sha256": "ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701",
+      "expected_sha256": "ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701",
+      "verified": true,
+      "lifecycle_states": {
+        "FILE_PRESENT": true,
+        "HASH_VERIFIED": true,
+        "STRUCTURE_CHECKED": true,
+        "NUMERICAL_CHECKED": true,
+        "RENDERED": true,
+        "VISUALLY_REVIEWED": true
+      }
+    },
+    "base_v3_descriptor": {
+      "exists": true,
+      "repo_relative_path": "artifacts/public_package_staging/public_package_manifest.json",
+      "size_bytes": 11193,
+      "sha256": "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c",
+      "expected_sha256": "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c",
+      "verified": true,
+      "lifecycle_states": {
+        "FILE_PRESENT": true,
+        "HASH_VERIFIED": true,
+        "STRUCTURE_CHECKED": true,
+        "NUMERICAL_CHECKED": true,
+        "RENDERED": true,
+        "VISUALLY_REVIEWED": true
+      }
+    }
+  },
+  "candidate_delivery_asset": {
+    "release_tag": "v4-candidate-package-r7",
+    "release_url": "https://github.com/habachcp6/RAG2ATTCK/releases/tag/untagged-4ed2f6c54faf905aba18",
+    "file": {
+      "asset_filename": "public_v4_candidate_20261003.zip",
+      "size_bytes": 2343105,
+      "sha256": "1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1"
+    },
+    "total_package_members": 34,
+    "expected_manifest_sha256": "dbc2e133e8de30d6afa8345dcfa8b82890b13367a2bb24775278cc814a83dee2"
+  },
+  "scientific_reports": {
+    "canonical_populated_report_md": {
+      "exists": true,
+      "repo_relative_path": "reports/evidence/canonical_populated_report.md",
+      "size_bytes": 105354,
+      "sha256": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "expected_sha256": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "verified": true,
+      "lifecycle_states": {
+        "FILE_PRESENT": true,
+        "HASH_VERIFIED": true,
+        "STRUCTURE_CHECKED": true,
+        "NUMERICAL_CHECKED": true,
+        "RENDERED": true,
+        "VISUALLY_REVIEWED": false
+      }
+    },
+    "canonical_populated_report_docx": {
+      "exists": true,
+      "repo_relative_path": "reports/evidence/canonical_populated_report.docx",
+      "size_bytes": 320008,
+      "sha256": "c5ce49f7e57ee2d86d79daab50def273af6dbb4c4393da61340f033b63306ccb",
+      "expected_sha256": "c5ce49f7e57ee2d86d79daab50def273af6dbb4c4393da61340f033b63306ccb",
+      "verified": true,
+      "lifecycle_states": {
+        "FILE_PRESENT": true,
+        "HASH_VERIFIED": true,
+        "STRUCTURE_CHECKED": true,
+        "NUMERICAL_CHECKED": true,
+        "RENDERED": true,
+        "VISUALLY_REVIEWED": true
+      }
+    },
+    "populated_report_slots_canonical": {
+      "exists": true,
+      "repo_relative_path": "reports/evidence/populated_report_slots_canonical.json",
+      "size_bytes": 15010,
+      "sha256": "7c5a37f2659035108a70b7f161114f5d35e6c903a5e77df1d395164fbb75e77e",
+      "expected_sha256": "7c5a37f2659035108a70b7f161114f5d35e6c903a5e77df1d395164fbb75e77e",
+      "verified": true,
+      "lifecycle_states": {
+        "FILE_PRESENT": true,
+        "HASH_VERIFIED": true,
+        "STRUCTURE_CHECKED": true,
+        "NUMERICAL_CHECKED": true,
+        "RENDERED": true,
+        "VISUALLY_REVIEWED": false
+      }
+    },
+    "research_report_scaffold": {
+      "exists": true,
+      "repo_relative_path": "reports/evidence/research_report_scaffold.md",
+      "size_bytes": 21469,
+      "sha256": "858c251224542e00332d555255e0a552cb5238db2dc1b206cde6517edeab07ef",
+      "expected_sha256": "858c251224542e00332d555255e0a552cb5238db2dc1b206cde6517edeab07ef",
+      "verified": true,
+      "lifecycle_states": {
+        "FILE_PRESENT": true,
+        "HASH_VERIFIED": true,
+        "STRUCTURE_CHECKED": true,
+        "NUMERICAL_CHECKED": true,
+        "RENDERED": true,
+        "VISUALLY_REVIEWED": false
+      }
+    }
+  },
+  "presentation_and_defense_deck": {
+    "slides_pptx": {
+      "exists": true,
+      "repo_relative_path": "docs/presentation/slides.pptx",
+      "size_bytes": 129492,
+      "sha256": "cab59053baf22f4afb04029369cb8e5045103fb468a9896dde491f900d34b95a",
+      "expected_sha256": "cab59053baf22f4afb04029369cb8e5045103fb468a9896dde491f900d34b95a",
+      "verified": true,
+      "lifecycle_states": {
+        "FILE_PRESENT": true,
+        "HASH_VERIFIED": true,
+        "STRUCTURE_CHECKED": true,
+        "NUMERICAL_CHECKED": true,
+        "RENDERED": true,
+        "VISUALLY_REVIEWED": true
+      }
+    },
+    "slides_md_with_speaker_notes": {
+      "exists": true,
+      "repo_relative_path": "docs/presentation/slides.md",
+      "size_bytes": 44232,
+      "sha256": "36b3ebc1329bba170241e0e788e1dc7aec8309ad2a448844aa9b1d91d0e4adc2",
+      "expected_sha256": "36b3ebc1329bba170241e0e788e1dc7aec8309ad2a448844aa9b1d91d0e4adc2",
+      "verified": true,
+      "lifecycle_states": {
+        "FILE_PRESENT": true,
+        "HASH_VERIFIED": true,
+        "STRUCTURE_CHECKED": true,
+        "NUMERICAL_CHECKED": true,
+        "RENDERED": true,
+        "VISUALLY_REVIEWED": false
+      }
+    },
+    "deck_figures_audit": {
+      "exists": true,
+      "repo_relative_path": "docs/presentation/deck_figures_audit.json",
+      "size_bytes": 1531,
+      "sha256": "086505aac50347e4d1acbb2eb8d0a10dabbc34fc60d6c2a355286f028dc19fc3",
+      "expected_sha256": "086505aac50347e4d1acbb2eb8d0a10dabbc34fc60d6c2a355286f028dc19fc3",
+      "verified": true,
+      "lifecycle_states": {
+        "FILE_PRESENT": true,
+        "HASH_VERIFIED": true,
+        "STRUCTURE_CHECKED": true,
+        "NUMERICAL_CHECKED": true,
+        "RENDERED": true,
+        "VISUALLY_REVIEWED": false
+      }
+    },
+    "canonical_deck_figures_audit": {
+      "exists": true,
+      "repo_relative_path": "reports/evidence/canonical_deck_figures_audit.json",
+      "size_bytes": 1531,
+      "sha256": "086505aac50347e4d1acbb2eb8d0a10dabbc34fc60d6c2a355286f028dc19fc3",
+      "expected_sha256": "086505aac50347e4d1acbb2eb8d0a10dabbc34fc60d6c2a355286f028dc19fc3",
+      "verified": true,
+      "lifecycle_states": {
+        "FILE_PRESENT": true,
+        "HASH_VERIFIED": true,
+        "STRUCTURE_CHECKED": true,
+        "NUMERICAL_CHECKED": true,
+        "RENDERED": true,
+        "VISUALLY_REVIEWED": false
+      }
+    },
+    "total_slides": 12,
+    "aspect_ratio": "16:9 widescreen",
+    "speaker_notes_present_all_slides": true,
+    "pptx_dynamic_inspection": {
+      "valid": true,
+      "slide_count": 12,
+      "notes_count": 12,
+      "speaker_notes_all_present": true,
+      "inspector_engine": "python-pptx",
+      "error": null
+    },
+    "slides_md_dynamic_inspection": {
+      "valid": true,
+      "heading_count": 12,
+      "notes_block_count": 12,
+      "error": null
+    }
+  },
+  "scientific_figures_inventory": {
+    "total_figures": 32,
+    "files": {
+      "fig1_system_architecture.pdf": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig1_system_architecture.pdf",
+        "size_bytes": 113908,
+        "sha256": "b2bf23b9b1fad06cff7298b712de67a6e8d60a13309d3150c12678df3f06ce61",
+        "expected_sha256": "b2bf23b9b1fad06cff7298b712de67a6e8d60a13309d3150c12678df3f06ce61",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig1_system_architecture.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig1_system_architecture.png",
+        "size_bytes": 57211,
+        "sha256": "b8e9e070c7c027882f97ff64b090f57e50b51ebac43480a61c3f2bf67fcc16c2",
+        "expected_sha256": "b8e9e070c7c027882f97ff64b090f57e50b51ebac43480a61c3f2bf67fcc16c2",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig1_system_architecture.svg": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig1_system_architecture.svg",
+        "size_bytes": 7784,
+        "sha256": "390a20d82453ece92e29ac30bf8ddd24409831745125a5c8ee76a0e91770eeb2",
+        "expected_sha256": "390a20d82453ece92e29ac30bf8ddd24409831745125a5c8ee76a0e91770eeb2",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig2_accuracy_vs_k.pdf": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig2_accuracy_vs_k.pdf",
+        "size_bytes": 87734,
+        "sha256": "227f71b66c15505a09e0c2036e229b8e7f059f67de5517f23a5c373591cfa054",
+        "expected_sha256": "227f71b66c15505a09e0c2036e229b8e7f059f67de5517f23a5c373591cfa054",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig2_accuracy_vs_k.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig2_accuracy_vs_k.png",
+        "size_bytes": 23976,
+        "sha256": "303c0e0c2255f5c5dfb828bdde0073a7a7d06c8eb61d3c06d889e4ccb4518965",
+        "expected_sha256": "303c0e0c2255f5c5dfb828bdde0073a7a7d06c8eb61d3c06d889e4ccb4518965",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig2_accuracy_vs_k.svg": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig2_accuracy_vs_k.svg",
+        "size_bytes": 6560,
+        "sha256": "f6c6358497d9cb074de1ec2da3363332b3f53f93fc90a56d7f3efa9306e6f721",
+        "expected_sha256": "f6c6358497d9cb074de1ec2da3363332b3f53f93fc90a56d7f3efa9306e6f721",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig3_macro_f1_vs_k.pdf": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig3_macro_f1_vs_k.pdf",
+        "size_bytes": 47302,
+        "sha256": "e889d3cbd51fa9683d69eb3006e98a5a5a8667f0cd0b1bd5228070456f44f44c",
+        "expected_sha256": "e889d3cbd51fa9683d69eb3006e98a5a5a8667f0cd0b1bd5228070456f44f44c",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig3_macro_f1_vs_k.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig3_macro_f1_vs_k.png",
+        "size_bytes": 19490,
+        "sha256": "22f0ebdaa565d2c1b576aa9b0a74470459cda94f051ff879c9e123b258dc99d6",
+        "expected_sha256": "22f0ebdaa565d2c1b576aa9b0a74470459cda94f051ff879c9e123b258dc99d6",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig3_macro_f1_vs_k.svg": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig3_macro_f1_vs_k.svg",
+        "size_bytes": 4056,
+        "sha256": "3250dd2c52f108d9717d5d4607eb07e4052b11135e53a6e6731380df9c5de42e",
+        "expected_sha256": "3250dd2c52f108d9717d5d4607eb07e4052b11135e53a6e6731380df9c5de42e",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig4_retrieval_hit_rate.pdf": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig4_retrieval_hit_rate.pdf",
+        "size_bytes": 72836,
+        "sha256": "cfa4ba05c3f88d87439c1674a4a3f61e92c83f40e5c2c25255f0467dda890082",
+        "expected_sha256": "cfa4ba05c3f88d87439c1674a4a3f61e92c83f40e5c2c25255f0467dda890082",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig4_retrieval_hit_rate.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig4_retrieval_hit_rate.png",
+        "size_bytes": 20165,
+        "sha256": "f8287936d2b5fc24e89584349028f393b801b6bebe668f8bea449c6b67f2128f",
+        "expected_sha256": "f8287936d2b5fc24e89584349028f393b801b6bebe668f8bea449c6b67f2128f",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": true
+        }
+      },
+      "fig4_retrieval_hit_rate.svg": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig4_retrieval_hit_rate.svg",
+        "size_bytes": 4074,
+        "sha256": "2c7bacf2d80753bceb9b863c59dad89011902811662ddbab3512bac9956ee7cf",
+        "expected_sha256": "2c7bacf2d80753bceb9b863c59dad89011902811662ddbab3512bac9956ee7cf",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig5_conditional_accuracy.pdf": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig5_conditional_accuracy.pdf",
+        "size_bytes": 94425,
+        "sha256": "f545f0460ae9cb2940c1c5537a5f1c365ec8bbdfd0c018b2695d704717dfee81",
+        "expected_sha256": "f545f0460ae9cb2940c1c5537a5f1c365ec8bbdfd0c018b2695d704717dfee81",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig5_conditional_accuracy.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig5_conditional_accuracy.png",
+        "size_bytes": 26219,
+        "sha256": "8a896be3eccf13bb67a953d6bf70656e06aa6e2c35cb393c24fd2d03e21a91a9",
+        "expected_sha256": "8a896be3eccf13bb67a953d6bf70656e06aa6e2c35cb393c24fd2d03e21a91a9",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig5_conditional_accuracy.svg": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig5_conditional_accuracy.svg",
+        "size_bytes": 5733,
+        "sha256": "80090de1cd54b04c0758bb3eeabfc0114b5b485421d851e4aa711efe3b31050f",
+        "expected_sha256": "80090de1cd54b04c0758bb3eeabfc0114b5b485421d851e4aa711efe3b31050f",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig6_latency_vs_k.pdf": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig6_latency_vs_k.pdf",
+        "size_bytes": 79513,
+        "sha256": "33499a51bbf6feef3ace8c353f222fa406ef6e8993181310d7266b384ec66586",
+        "expected_sha256": "33499a51bbf6feef3ace8c353f222fa406ef6e8993181310d7266b384ec66586",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig6_latency_vs_k.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig6_latency_vs_k.png",
+        "size_bytes": 19731,
+        "sha256": "48011a5a586947a11c88fb0bc67f6e5801069837e2e5df655af5d5b554328b03",
+        "expected_sha256": "48011a5a586947a11c88fb0bc67f6e5801069837e2e5df655af5d5b554328b03",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig6_latency_vs_k.svg": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig6_latency_vs_k.svg",
+        "size_bytes": 5892,
+        "sha256": "451180e694aaec17b263da35894ef3bc577aed6da44ac1628ce70ab0580b00c5",
+        "expected_sha256": "451180e694aaec17b263da35894ef3bc577aed6da44ac1628ce70ab0580b00c5",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig7_cost_and_tokens_vs_k.pdf": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig7_cost_and_tokens_vs_k.pdf",
+        "size_bytes": 91841,
+        "sha256": "10365d0a30c119e6ad9914cb4f0631cfcebf0e630d4dd7774e74133c251c2e4d",
+        "expected_sha256": "10365d0a30c119e6ad9914cb4f0631cfcebf0e630d4dd7774e74133c251c2e4d",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig7_cost_and_tokens_vs_k.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig7_cost_and_tokens_vs_k.png",
+        "size_bytes": 27984,
+        "sha256": "ca296165b38b499432f851618e3d6a512964c461e59dc3b646e647ddcb70bfb1",
+        "expected_sha256": "ca296165b38b499432f851618e3d6a512964c461e59dc3b646e647ddcb70bfb1",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": true
+        }
+      },
+      "fig7_cost_and_tokens_vs_k.svg": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig7_cost_and_tokens_vs_k.svg",
+        "size_bytes": 6734,
+        "sha256": "b0194313704b0672ebb8c664192bb7f85d2dedefd7fc04c9dca06dab2c687255",
+        "expected_sha256": "b0194313704b0672ebb8c664192bb7f85d2dedefd7fc04c9dca06dab2c687255",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig8_failure_decomposition.pdf": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig8_failure_decomposition.pdf",
+        "size_bytes": 112101,
+        "sha256": "ac6e7e6fb26252ace23aa84d59d0033e0c23decd0dabb9e6eea13d63ab922f09",
+        "expected_sha256": "ac6e7e6fb26252ace23aa84d59d0033e0c23decd0dabb9e6eea13d63ab922f09",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig8_failure_decomposition.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig8_failure_decomposition.png",
+        "size_bytes": 31839,
+        "sha256": "ed26f381337e7608445a6dcbfd028d161cc7a053d31cc373951a31a7cf9d77bb",
+        "expected_sha256": "ed26f381337e7608445a6dcbfd028d161cc7a053d31cc373951a31a7cf9d77bb",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "fig8_failure_decomposition.svg": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/fig8_failure_decomposition.svg",
+        "size_bytes": 3824,
+        "sha256": "b90d61d4fcd806c3affb1ef017dcf7aacad1c09a4b4e4a5dbf7421b6306f4e6c",
+        "expected_sha256": "b90d61d4fcd806c3affb1ef017dcf7aacad1c09a4b4e4a5dbf7421b6306f4e6c",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "canonical_rq1_accuracy_and_macro.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/canonical_rq1_accuracy_and_macro.png",
+        "size_bytes": 136851,
+        "sha256": "fbeb37c324360cf31081f802b523999c2ca59a999c353c7ccbb6ad122f77dc19",
+        "expected_sha256": "fbeb37c324360cf31081f802b523999c2ca59a999c353c7ccbb6ad122f77dc19",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "canonical_rq1_accuracy_and_macro.pdf": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/canonical_rq1_accuracy_and_macro.pdf",
+        "size_bytes": 31562,
+        "sha256": "798b7e3c7ead2a701bc2045e548e0554ee8d495bc2157ea33b6025da722010a3",
+        "expected_sha256": "798b7e3c7ead2a701bc2045e548e0554ee8d495bc2157ea33b6025da722010a3",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "canonical_rq2_retrieval.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/canonical_rq2_retrieval.png",
+        "size_bytes": 93401,
+        "sha256": "7c15f5d04db785c2f211cbb6bfd0f8c0a45a48229a2723fa36ae11b79e3de513",
+        "expected_sha256": "7c15f5d04db785c2f211cbb6bfd0f8c0a45a48229a2723fa36ae11b79e3de513",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "canonical_rq2_retrieval.pdf": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/canonical_rq2_retrieval.pdf",
+        "size_bytes": 28088,
+        "sha256": "43d496abcaabe3fb4966438845f10596b7cc771455ca1e2bf8a8e985e2ad0a51",
+        "expected_sha256": "43d496abcaabe3fb4966438845f10596b7cc771455ca1e2bf8a8e985e2ad0a51",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "canonical_rq3_cost_and_latency.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/canonical_rq3_cost_and_latency.png",
+        "size_bytes": 129904,
+        "sha256": "5b9c31be2b37cad34f76624171b9f7fdc8a4686d3c13e452dc8ca8369e472941",
+        "expected_sha256": "5b9c31be2b37cad34f76624171b9f7fdc8a4686d3c13e452dc8ca8369e472941",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "canonical_rq3_cost_and_latency.pdf": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/canonical_rq3_cost_and_latency.pdf",
+        "size_bytes": 32606,
+        "sha256": "51cf74ed24bfea090f53aede762cf6a3529aa8be8b286d6770fb05eb4083d9eb",
+        "expected_sha256": "51cf74ed24bfea090f53aede762cf6a3529aa8be8b286d6770fb05eb4083d9eb",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "figure_provenance.json": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/figure_provenance.json",
+        "size_bytes": 2969,
+        "sha256": "88983822c84a7bb78247b17a5620f183dce3b4a96cf5ddf94a409aea5ecf388d",
+        "expected_sha256": "88983822c84a7bb78247b17a5620f183dce3b4a96cf5ddf94a409aea5ecf388d",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      },
+      "plot_data.json": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/figures/plot_data.json",
+        "size_bytes": 3760,
+        "sha256": "965452e7d84e6522f1c0a673ae6e1cd9e92e765a89b222fab2213c8ffbe7f4ac",
+        "expected_sha256": "965452e7d84e6522f1c0a673ae6e1cd9e92e765a89b222fab2213c8ffbe7f4ac",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": false
+        }
+      }
+    }
+  },
+  "visual_qa_mapping": {
+    "total_preview_slides": 12,
+    "format": "PNG (16:9 rendered previews, 1280x720)",
+    "slides": {
+      "slide-1.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-1.png",
+        "size_bytes": 52955,
+        "sha256": "b92501d4f3671a1382d3310e200f3fb784ad39803cef8131aa5d647b73d2f53d",
+        "expected_sha256": "b92501d4f3671a1382d3310e200f3fb784ad39803cef8131aa5d647b73d2f53d",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": true
+        }
+      },
+      "slide-2.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-2.png",
+        "size_bytes": 116079,
+        "sha256": "3e21ce72a334356a4092386554fcaceb7afe7d5cb1a0a10b5bf23bf43f45a739",
+        "expected_sha256": "3e21ce72a334356a4092386554fcaceb7afe7d5cb1a0a10b5bf23bf43f45a739",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": true
+        }
+      },
+      "slide-3.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-3.png",
+        "size_bytes": 98456,
+        "sha256": "002f3919158e4628bc8b215b42976b79c0c40301d70c69e959077f1fd9e6f028",
+        "expected_sha256": "002f3919158e4628bc8b215b42976b79c0c40301d70c69e959077f1fd9e6f028",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": true
+        }
+      },
+      "slide-4.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-4.png",
+        "size_bytes": 106504,
+        "sha256": "518d37af3490942a3a109bd52a52376d98244c9a16c147abe952ad6c533066cc",
+        "expected_sha256": "518d37af3490942a3a109bd52a52376d98244c9a16c147abe952ad6c533066cc",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": true
+        }
+      },
+      "slide-5.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-5.png",
+        "size_bytes": 141990,
+        "sha256": "876b1d0333a4fbce285d40ae6c9309798b6e21e17a507810b9f039ca61589d4e",
+        "expected_sha256": "876b1d0333a4fbce285d40ae6c9309798b6e21e17a507810b9f039ca61589d4e",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": true
+        }
+      },
+      "slide-6.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-6.png",
+        "size_bytes": 145564,
+        "sha256": "13be9d33d8761703d64461d5ebf957b0ee63b50f8f6d963c0d6a39a699301484",
+        "expected_sha256": "13be9d33d8761703d64461d5ebf957b0ee63b50f8f6d963c0d6a39a699301484",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": true
+        }
+      },
+      "slide-7.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-7.png",
+        "size_bytes": 164838,
+        "sha256": "cee35d391687beee8a44b9b8e258fb63b6196eac6f96c6c98be16a7e78846662",
+        "expected_sha256": "cee35d391687beee8a44b9b8e258fb63b6196eac6f96c6c98be16a7e78846662",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": true
+        }
+      },
+      "slide-8.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-8.png",
+        "size_bytes": 167115,
+        "sha256": "e79c9d42e59de5ace831bcf001728972efe48cee80f7c72e51c56c6dfe9681e5",
+        "expected_sha256": "e79c9d42e59de5ace831bcf001728972efe48cee80f7c72e51c56c6dfe9681e5",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": true
+        }
+      },
+      "slide-9.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-9.png",
+        "size_bytes": 160448,
+        "sha256": "a4cecb34123d7f6cea0870edca2eb0462ee4c659afe358b44838169100e9c94a",
+        "expected_sha256": "a4cecb34123d7f6cea0870edca2eb0462ee4c659afe358b44838169100e9c94a",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": true
+        }
+      },
+      "slide-10.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-10.png",
+        "size_bytes": 102162,
+        "sha256": "ad0033bc1c42fa4ddb41e91f628647f4a602728f31254704baccbead6e71ab48",
+        "expected_sha256": "ad0033bc1c42fa4ddb41e91f628647f4a602728f31254704baccbead6e71ab48",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": true
+        }
+      },
+      "slide-11.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-11.png",
+        "size_bytes": 112874,
+        "sha256": "ac3b600debc1a9d3fcb6d2260bfd7dd7c898d05ddb94816257d084978dfbef24",
+        "expected_sha256": "ac3b600debc1a9d3fcb6d2260bfd7dd7c898d05ddb94816257d084978dfbef24",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": true
+        }
+      },
+      "slide-12.png": {
+        "exists": true,
+        "repo_relative_path": "reports/evidence/qa/fixture_slides/slide-12.png",
+        "size_bytes": 88647,
+        "sha256": "35236a569937c08bb04b79120842e07ac705c4e5a7bed8b6244f184078d27548",
+        "expected_sha256": "35236a569937c08bb04b79120842e07ac705c4e5a7bed8b6244f184078d27548",
+        "verified": true,
+        "lifecycle_states": {
+          "FILE_PRESENT": true,
+          "HASH_VERIFIED": true,
+          "STRUCTURE_CHECKED": true,
+          "NUMERICAL_CHECKED": true,
+          "RENDERED": true,
+          "VISUALLY_REVIEWED": true
+        }
+      }
+    },
+    "qa_record_file": {
+      "exists": true,
+      "repo_relative_path": "reports/evidence/qa/visual_qa_inspection_record.json",
+      "size_bytes": 15697,
+      "sha256": "dd3e5d5a0e61bf7aef233376f52256ec7c06a2cbea266963d154146acbae8da5",
+      "expected_sha256": null,
+      "verified": true,
+      "lifecycle_states": {
+        "FILE_PRESENT": true,
+        "HASH_VERIFIED": true,
+        "STRUCTURE_CHECKED": true,
+        "NUMERICAL_CHECKED": true,
+        "RENDERED": true,
+        "VISUALLY_REVIEWED": true
+      }
+    },
+    "qa_record_verified": true,
+    "qa_validation_errors": [],
+    "embedded_figures_checked": [
+      {
+        "slide": 6,
+        "target": "canonical_rq2_retrieval_hit_rate.png / fig4_retrieval_hit_rate.png",
+        "preview": "reports/evidence/qa/fixture_slides/slide-6.png",
+        "observation": "Figure 4 (Dense Retrieval Hit Rate across RAG Conditions, hit@1 to hit@10) - s\u1eafc n\u00e9t, text r\u00f5 r\u00e0ng, kh\u00f4ng overlap, ph\u00e2n bi\u1ec7t r\u00f5 N=718 scorable test views.",
+        "status": "VERIFIED_SHARP"
+      },
+      {
+        "slide": 9,
+        "target": "canonical_rq3_resource_consumption.png / fig7_cost_and_tokens_vs_k.png",
+        "preview": "reports/evidence/qa/fixture_slides/slide-9.png",
+        "observation": "Figure 7 (Resource Consumption & Financial Cost Scaling vs k) - s\u1eafc n\u00e9t, dual-axis \u0111\u00fang \u0111\u01a1n v\u1ecb USD v\u00e0 token, chi ph\u00ed kh\u1edbp settled ledger ($6.57575890 USD, hard cap $19.99).",
+        "status": "VERIFIED_SHARP"
+      }
+    ]
+  },
+  "validation_summary": {
+    "missing_required_count": 0,
+    "missing_required_artifacts": [],
+    "structure_failure_count": 0,
+    "structure_failure_artifacts": [],
+    "missing_authority_count": 0,
+    "missing_authority_artifacts": [],
+    "hash_mismatch_count": 0,
+    "hash_mismatch_artifacts": [],
+    "bundle_bound": true,
+    "qa_record_verified": true,
+    "qa_errors": []
+  },
+  "verdict": "PASS_ALL_ARTIFACTS_VERIFIED"
+}

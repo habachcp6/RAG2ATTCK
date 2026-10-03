@@ -589,8 +589,7 @@ class StudyBudgetLedger:
         rec_count = self._data.get("settlement_records_count")
         if type(rec_count) is not int or isinstance(rec_count, bool) or rec_count < 0:
             raise ValueError(
-                f"settlement_records_count must be non-negative int, "
-                f"got {type(rec_count).__name__}"
+                f"settlement_records_count must be non-negative int, got {type(rec_count).__name__}"
             )
 
         active_reservations = self._data.get("active_reservations")
@@ -1215,9 +1214,7 @@ def calculate_request_cost_from_receipts(
                 if rec_model:
                     if not recpt_model:
                         breach = True
-                        breach_reasons.append(
-                            f"Missing receipt model for record '{rec_model}'"
-                        )
+                        breach_reasons.append(f"Missing receipt model for record '{rec_model}'")
                     elif rec_model != recpt_model:
                         breach = True
                         breach_reasons.append(
@@ -1257,9 +1254,7 @@ def calculate_request_cost_from_receipts(
             r_model = r.get("model")
             if not r_model:
                 breach = True
-                breach_reasons.append(
-                    f"Attempt {i} missing model; expected '{expected_model}'"
-                )
+                breach_reasons.append(f"Attempt {i} missing model; expected '{expected_model}'")
                 total_cost += attempt_worst
                 continue
             elif r_model != expected_model:

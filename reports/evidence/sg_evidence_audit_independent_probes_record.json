@@ -1,0 +1,115 @@
+{
+  "timestamp": "2026-10-03T13:58:00Z",
+  "repo_root": "<REPO_ROOT>",
+  "section_1_reproduction_report": {
+    "probe_1_1_empty_dir": {
+      "passed": true,
+      "exit_code": 1,
+      "verdict": "FAIL_MISSING_CANDIDATE_ZIP",
+      "defects_count": 9
+    },
+    "probe_1_2_bundle_v2_mismatch": {
+      "passed": true,
+      "exit_code": 1,
+      "sha_match": false,
+      "verdict": "FAIL_BUNDLE_HASH_MISMATCH"
+    },
+    "probe_1_3_metric_discrepancy": {
+      "passed": true,
+      "exit_code": 1,
+      "metric_status": "MISMATCH",
+      "verdict": "FAIL_REPLAY_METRIC_MISMATCH"
+    },
+    "probe_1_4_real_data": {
+      "passed": true,
+      "exit_code": 0,
+      "verdict": "PASS_CANONICAL_OFFLINE_VERIFIED",
+      "defects_count": 0
+    }
+  },
+  "section_2_artifact_inventory": {
+    "probe_2_1_empty_dir": {
+      "passed": true,
+      "exit_code": 1,
+      "verdict": "FAIL_MISSING_REQUIRED_ARTIFACTS"
+    },
+    "probe_2_2_missing_pptx_or_preview": {
+      "passed": true,
+      "missing_pptx_exit": 1,
+      "missing_preview_exit": 1
+    },
+    "probe_2_3_qa_hash_mismatch": {
+      "passed": true,
+      "exit_code": 1,
+      "verdict": "FAIL_QA_VERIFICATION_MISMATCH"
+    },
+    "probe_2_4_real_data": {
+      "passed": true,
+      "exit_code": 0,
+      "verdict": "PASS_ALL_ARTIFACTS_VERIFIED",
+      "total_slides": 12,
+      "notes_count": 12,
+      "slide_6_quality": "VERIFIED_SHARP",
+      "slide_9_quality": "VERIFIED_SHARP"
+    }
+  },
+  "section_3_pytest_suite": {
+    "passed": true,
+    "exit_code": 0,
+    "passed_count": 45,
+    "total_tests": 45,
+    "skipped_count": 0,
+    "failed_count": 0,
+    "duration_seconds": 18.25,
+    "stdout_summary": "======================= 45 passed, 2 warnings in 18.25s =======================",
+    "status": "PASS_ALL_HERMETIC_TESTS_VERIFIED"
+  },
+  "section_4_security_privacy": {
+    "passed": true,
+    "files_audited": 6,
+    "total_violations": 0,
+    "audited_core_evidence_files": [
+      "reports/evidence/r9_saved_data_reproduction_report.json",
+      "reports/evidence/r9_final_artifact_inventory.json",
+      "reports/evidence/qa/visual_qa_inspection_record.json",
+      "reports/evidence/r9_saved_data_reproduction_raw.log",
+      "reports/evidence/r9_saved_data_reproduction_raw_sanitized.log",
+      "reports/evidence/r9_saved_data_replay_provenance.json"
+    ],
+    "sanitized_derivatives_note": "Workstation-specific absolute paths in raw execution logs have been sanitized into reports/evidence/r9_saved_data_reproduction_raw_sanitized.log using the repo-relative token <REPO_ROOT>. The raw log is retained alongside the sanitized derivative for forensic auditability while ensuring zero private path leakage in public distributions.",
+    "file_details": {
+      "reports/evidence/r9_saved_data_reproduction_report.json": {
+        "size_bytes": 6456,
+        "violations": [],
+        "clean": true
+      },
+      "reports/evidence/r9_final_artifact_inventory.json": {
+        "size_bytes": 37190,
+        "violations": [],
+        "clean": true
+      },
+      "reports/evidence/qa/visual_qa_inspection_record.json": {
+        "size_bytes": 9059,
+        "violations": [],
+        "clean": true
+      },
+      "reports/evidence/r9_saved_data_reproduction_raw.log": {
+        "size_bytes": 9103,
+        "violations": [],
+        "clean": true
+      },
+      "reports/evidence/r9_saved_data_reproduction_raw_sanitized.log": {
+        "size_bytes": 8971,
+        "violations": [],
+        "clean": true
+      },
+      "reports/evidence/r9_saved_data_replay_provenance.json": {
+        "size_bytes": 5158,
+        "violations": [],
+        "clean": true
+      }
+    }
+  },
+  "overall_verdict": "AUDIT_PASS_ALL_PROBES_VERIFIED",
+  "auditor": "SG-EVIDENCE-AUDIT"
+}

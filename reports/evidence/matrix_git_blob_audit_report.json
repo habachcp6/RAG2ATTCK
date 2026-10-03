@@ -1,0 +1,1648 @@
+{
+  "schema_version": "matrix_git_blob_audit_report_v1",
+  "timestamp_utc": "2026-10-03T15:56:40.886523+00:00",
+  "audited_matrix_path": "reports/evidence/finalization_requirements_matrix.json",
+  "audit_engine": "Python 3.13.0, git CLI subprocess, hashlib sha256",
+  "summary": {
+    "total_requirements_tracked": 170,
+    "valid_git_blob_bindings": 135,
+    "missing_git_blobs": 0,
+    "hash_mismatches": 0,
+    "non_git_assets_and_urls": 35,
+    "audit_verdict": "PASS_ALL_BINDINGS_VERIFIED"
+  },
+  "git_blob_bindings": [
+    {
+      "requirement_id": "A.01-RUN_ID",
+      "title": "Canonical Run ID live-66b94b1676bf46a9",
+      "evidence_locator": "reports/evidence/canonical_run_seal_v1.json",
+      "evidence_commit_sha": "b69a6909acda4c7588744acc7e1d6c20bfce2612",
+      "declared_hash": "ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701",
+      "git_blob_hash": "ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701",
+      "blob_size_bytes": 3046,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "A.02-RECORD_COUNT",
+      "title": "TEST Matrix 6,400 Records",
+      "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
+      "evidence_commit_sha": "d80035e12443f4c7833e25fb268b0419c7194982",
+      "declared_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "git_blob_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "blob_size_bytes": 6316,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "A.03-ATTEMPT_COUNT",
+      "title": "6,401 Provider Attempts with Exactly 1 Retry",
+      "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
+      "evidence_commit_sha": "d80035e12443f4c7833e25fb268b0419c7194982",
+      "declared_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "git_blob_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "blob_size_bytes": 6316,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "A.04-STATUS_TAXONOMY",
+      "title": "Terminal Status Taxonomy: 6,387 VALID and 13 INCOMPLETE",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "A.05-SETTLED_COST",
+      "title": "Canonical Settled Accounting $6.57575890 USD",
+      "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
+      "evidence_commit_sha": "d80035e12443f4c7833e25fb268b0419c7194982",
+      "declared_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "git_blob_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "blob_size_bytes": 6316,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "A.06-TOTAL_ACCOUNTED",
+      "title": "Total Accounted $6.62839900 USD <= $19.99000000 Ceiling",
+      "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
+      "evidence_commit_sha": "d80035e12443f4c7833e25fb268b0419c7194982",
+      "declared_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "git_blob_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "blob_size_bytes": 6316,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "A.07-HEADLINE_STATS",
+      "title": "Headline Attribution Accuracies & Comparative Statistics",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "A.08-CLAIM_BOUNDARIES",
+      "title": "Scientific Non-Claim Discipline",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "B.02-FAIL_CLOSED_VERDICT",
+      "title": "Fail-Closed Verdict Policy",
+      "evidence_locator": "tests/test_sg_audit_adversarial_probes.py",
+      "evidence_commit_sha": "41c62631ede88ae859d40878909c5f2d7bb1ade0",
+      "declared_hash": "fc427c052046862cd8b1fc02033b33b8bc5857a74b722662f3e351036cbbd1a1",
+      "git_blob_hash": "fc427c052046862cd8b1fc02033b33b8bc5857a74b722662f3e351036cbbd1a1",
+      "blob_size_bytes": 24684,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "C.01-NO_LIVE_EXPERIMENTS",
+      "title": "Prohibition of Live Provider Experiments",
+      "evidence_locator": "src/experiment/authorization.py",
+      "evidence_commit_sha": "079f04da32ee8c8d9843fb7c31d877bc6efff0c1",
+      "declared_hash": "8a9601e7d4803b7c853b10ffb9db9edd62d379132a2906526c3431b0b6eb3e40",
+      "git_blob_hash": "8a9601e7d4803b7c853b10ffb9db9edd62d379132a2906526c3431b0b6eb3e40",
+      "blob_size_bytes": 34749,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "C.02-IMMUTABLE_FROZEN_DATA",
+      "title": "Immutable Frozen Data, Protocol, and 13 INCOMPLETEs",
+      "evidence_locator": "reports/evidence/canonical_run_seal_v1.json",
+      "evidence_commit_sha": "b69a6909acda4c7588744acc7e1d6c20bfce2612",
+      "declared_hash": "ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701",
+      "git_blob_hash": "ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701",
+      "blob_size_bytes": 3046,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "D.01-TRACK_A",
+      "title": "TRACK A — Canonical Evidence & Terminal Audit",
+      "evidence_locator": "reports/evidence/root_track_a_acceptance_b69a690.json",
+      "evidence_commit_sha": "41c62631ede88ae859d40878909c5f2d7bb1ade0",
+      "declared_hash": "70032a7726c47585a68d547cb7a69444b92f83d2a52ec0f31ae78a2b8b02b6a6",
+      "git_blob_hash": "70032a7726c47585a68d547cb7a69444b92f83d2a52ec0f31ae78a2b8b02b6a6",
+      "blob_size_bytes": 5399,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "D.02-TRACK_B",
+      "title": "TRACK B — Scientific Evaluation / RQ1–RQ3",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "D.03-TRACK_C",
+      "title": "TRACK C — Scientific Report",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "D.04-TRACK_D",
+      "title": "TRACK D — Figures / Tables / Statistical QA",
+      "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
+      "evidence_commit_sha": "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+      "declared_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "git_blob_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "blob_size_bytes": 38323,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "D.05-TRACK_E",
+      "title": "TRACK E — Presentation / Reproducibility",
+      "evidence_locator": "docs/presentation/slides.pptx",
+      "evidence_commit_sha": "9789c0807b497a10d5f875a246eb585590e1ff12",
+      "declared_hash": "cab59053baf22f4afb04029369cb8e5045103fb468a9896dde491f900d34b95a",
+      "git_blob_hash": "cab59053baf22f4afb04029369cb8e5045103fb468a9896dde491f900d34b95a",
+      "blob_size_bytes": 129492,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "E.01-REMOTE_SNAPSHOT",
+      "title": "GitHub Remote State & Open PR Lineage Audit",
+      "evidence_locator": "reports/evidence/finalization_preflight.json",
+      "evidence_commit_sha": "0a518f083554b68ed4a8e890c09e2be88338c846",
+      "declared_hash": "9dbd1f79fe03827d70c81670dfcf32fb38d35c54c76a2dc5cdba44864b602a90",
+      "git_blob_hash": "9dbd1f79fe03827d70c81670dfcf32fb38d35c54c76a2dc5cdba44864b602a90",
+      "blob_size_bytes": 38490,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "E.02-PREFLIGHT_ARTIFACT",
+      "title": "Creation of finalization_preflight.json",
+      "evidence_locator": "reports/evidence/finalization_preflight.json",
+      "evidence_commit_sha": "0a518f083554b68ed4a8e890c09e2be88338c846",
+      "declared_hash": "9dbd1f79fe03827d70c81670dfcf32fb38d35c54c76a2dc5cdba44864b602a90",
+      "git_blob_hash": "9dbd1f79fe03827d70c81670dfcf32fb38d35c54c76a2dc5cdba44864b602a90",
+      "blob_size_bytes": 38490,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "F.01-TERMINAL_RUN",
+      "title": "F1. Terminal Run Verification",
+      "evidence_locator": "reports/evidence/canonical_run_seal_v1.json",
+      "evidence_commit_sha": "b69a6909acda4c7588744acc7e1d6c20bfce2612",
+      "declared_hash": "ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701",
+      "git_blob_hash": "ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701",
+      "blob_size_bytes": 3046,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "F.02-PREDICTION_INVENTORY",
+      "title": "F2. Prediction Inventory (5 Conditions, 6,400 Records)",
+      "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
+      "evidence_commit_sha": "d80035e12443f4c7833e25fb268b0419c7194982",
+      "declared_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "git_blob_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "blob_size_bytes": 6316,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "F.03-ATTEMPT_ACCOUNTING",
+      "title": "F3. Attempt Accounting (6,401 Attempts)",
+      "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
+      "evidence_commit_sha": "d80035e12443f4c7833e25fb268b0419c7194982",
+      "declared_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "git_blob_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "blob_size_bytes": 6316,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "F.04-OUTCOME_TAXONOMY",
+      "title": "F4. Terminal Outcome Taxonomy (6,387 VALID, 13 INCOMPLETE)",
+      "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
+      "evidence_commit_sha": "d80035e12443f4c7833e25fb268b0419c7194982",
+      "declared_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "git_blob_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "blob_size_bytes": 6316,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "F.05-LEDGER_RECONCILIATION",
+      "title": "F5. Full Multi-Entity Ledger Reconciliation",
+      "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
+      "evidence_commit_sha": "d80035e12443f4c7833e25fb268b0419c7194982",
+      "declared_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "git_blob_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "blob_size_bytes": 6316,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "F.06-VALIDATOR_DEFECT_CODEX",
+      "title": "F6-DEFECT: audit_terminal_process_proof Fails Open on 4 Negative Controls",
+      "evidence_locator": "reports/evidence/root_track_a_acceptance_b69a690.json",
+      "evidence_commit_sha": "41c62631ede88ae859d40878909c5f2d7bb1ade0",
+      "declared_hash": "70032a7726c47585a68d547cb7a69444b92f83d2a52ec0f31ae78a2b8b02b6a6",
+      "git_blob_hash": "70032a7726c47585a68d547cb7a69444b92f83d2a52ec0f31ae78a2b8b02b6a6",
+      "blob_size_bytes": 5399,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "F.07-VALIDATOR_EXECUTION",
+      "title": "F6. Patched Independent Validator Execution & Production Seal",
+      "evidence_locator": "reports/evidence/canonical_run_seal_v1.json",
+      "evidence_commit_sha": "b69a6909acda4c7588744acc7e1d6c20bfce2612",
+      "declared_hash": "ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701",
+      "git_blob_hash": "ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701",
+      "blob_size_bytes": 3046,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "F.08-RAW_ARTIFACT_TRANSPARENCY",
+      "title": "Raw Artifact Provenance & Sanitized Derivation Map",
+      "evidence_locator": "artifacts/public_package_staging/public_package_manifest.json",
+      "evidence_commit_sha": "22a189b82544cd85a8c1614a7e2216428ab36fbc",
+      "declared_hash": "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c",
+      "git_blob_hash": "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c",
+      "blob_size_bytes": 11193,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "G.01-COHORTS_AND_DENOMINATORS",
+      "title": "Formal Cohort Definitions & Denominator Isolation",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "G.02-CANONICAL_METRIC_BUNDLE",
+      "title": "Immutable Canonical Metric Bundle Generation (v2)",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "H.01-RQ1_CONDITION_SWEEP",
+      "title": "RQ1 Condition Sweep (k=0,1,3,5,10)",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "H.02-RQ1_MACRO_F1_474",
+      "title": "RQ1 Macro-F1 across Frozen 474 Universe",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "H.03-RQ1_BOOTSTRAP_CI",
+      "title": "RQ1 Pair-Cluster Bootstrap 95% CI [-2.355, +5.300] pp",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "H.04-RQ1_MCNEMAR",
+      "title": "RQ1 McNemar Statistical Test p=0.422",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "I.01-PROTOCOL_D2I_AXES",
+      "title": "Protocol D2i 3-Axis Decomposition",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "I.02-RQ2_EMPIRICAL_K10",
+      "title": "RQ2 Empirical Verification at k=10",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "I.03-RQ2_NON_CAUSAL_WORDING",
+      "title": "Non-Causal Associational Wording Standards",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "J.01-RQ3_TRADE_OFF_TABLE",
+      "title": "Comprehensive Trade-Off Metrics across k=0,1,3,5,10",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "J.02-RQ3_COST_WORDING",
+      "title": "Tariff-Derived Accounted Cost Wording Standard",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "K.01-PROVIDER_FAILURE_RETRY",
+      "title": "Transient Provider Failure Accounting",
+      "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
+      "evidence_commit_sha": "d80035e12443f4c7833e25fb268b0419c7194982",
+      "declared_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "git_blob_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "blob_size_bytes": 6316,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "K.02-INCOMPLETE_CEILING_ANALYSIS",
+      "title": "13 INCOMPLETEs at 8,192 Token Ceiling Analysis",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "K.03-INCOMPLETE_MAPPED_COHORT_EXCLUSION",
+      "title": "0/13 INCOMPLETEs Belong to Mapped Headline Cohort",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-01",
+      "title": "Report Section 1: Title",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-02",
+      "title": "Report Section 2: Abstract",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-03",
+      "title": "Report Section 3: Introduction",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-04",
+      "title": "Report Section 4: Problem statement",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-05",
+      "title": "Report Section 5: Research questions",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-06",
+      "title": "Report Section 6: Related work",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-07",
+      "title": "Report Section 7: Background (ATT&CK, RAG, technique attribution)",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-08",
+      "title": "Report Section 8: Dataset",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-09",
+      "title": "Report Section 9: Synthetic data methodology",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-10",
+      "title": "Report Section 10: Ground-truth construction",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-11",
+      "title": "Report Section 11: Experimental design",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-12",
+      "title": "Report Section 12: No-RAG baseline",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-13",
+      "title": "Report Section 13: RAG architecture",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-14",
+      "title": "Report Section 14: Frozen protocol",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-15",
+      "title": "Report Section 15: Model/provider configuration",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-16",
+      "title": "Report Section 16: Retrieval setup",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-17",
+      "title": "Report Section 17: Evaluation metrics",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-18",
+      "title": "Report Section 18: RQ1 results",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-19",
+      "title": "Report Section 19: RQ2 results",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-20",
+      "title": "Report Section 20: RQ3 results",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-21",
+      "title": "Report Section 21: Statistical analysis",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-22",
+      "title": "Report Section 22: Failure analysis",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-23",
+      "title": "Report Section 23: Cost/resource analysis",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-24",
+      "title": "Report Section 24: Discussion",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-25",
+      "title": "Report Section 25: Threats to validity",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-26",
+      "title": "Report Section 26: Limitations",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-27",
+      "title": "Report Section 27: Reproducibility",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-28",
+      "title": "Report Section 28: Conclusion",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-29",
+      "title": "Report Section 29: References",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.SEC-30",
+      "title": "Report Section 30: Appendix / artifact hashes",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "L.DOCX_DELIVERY",
+      "title": "Dual Delivery of Markdown and Pristine DOCX",
+      "evidence_locator": "reports/evidence/canonical_populated_report.docx",
+      "evidence_commit_sha": "a7f70fe84b9312df6b9fb06fef42e75c4d2a159c",
+      "declared_hash": "c5ce49f7e57ee2d86d79daab50def273af6dbb4c4393da61340f033b63306ccb",
+      "git_blob_hash": "c5ce49f7e57ee2d86d79daab50def273af6dbb4c4393da61340f033b63306ccb",
+      "blob_size_bytes": 320008,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "M.01-SYNTHETIC_VS_LIVE",
+      "title": "Distinguish Synthetic Inputs vs Real Provider Outputs",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "M.02-DENOMINATOR_DISCIPLINE",
+      "title": "Explicit Denominator & Universe Reporting",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "M.03-NON_CAUSAL_DISCIPLINE",
+      "title": "Non-Causal Associational Claims Rule",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "M.04-NON_PRODUCTION_DISCIPLINE",
+      "title": "No Enterprise SOC / Production Telemetry Generalization Claims",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "N.01-PRIMARY_LITERATURE",
+      "title": "Primary Literature Verification (Yang & Hsu, H-TechniqueRAG, ATT&CK v19.2)",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "O.FIG-01",
+      "title": "Figure 1: Experimental Architecture",
+      "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
+      "evidence_commit_sha": "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+      "declared_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "git_blob_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "blob_size_bytes": 38323,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "O.FIG-02",
+      "title": "Figure 2: Accuracy across k",
+      "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
+      "evidence_commit_sha": "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+      "declared_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "git_blob_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "blob_size_bytes": 38323,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "O.FIG-03",
+      "title": "Figure 3: Macro-F1 across k",
+      "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
+      "evidence_commit_sha": "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+      "declared_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "git_blob_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "blob_size_bytes": 38323,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "O.FIG-04",
+      "title": "Figure 4: Retrieval Hit@k",
+      "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
+      "evidence_commit_sha": "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+      "declared_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "git_blob_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "blob_size_bytes": 38323,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "O.FIG-05",
+      "title": "Figure 5: Conditional Accuracy retrieved vs missed",
+      "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
+      "evidence_commit_sha": "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+      "declared_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "git_blob_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "blob_size_bytes": 38323,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "O.FIG-06",
+      "title": "Figure 6: Latency vs k",
+      "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
+      "evidence_commit_sha": "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+      "declared_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "git_blob_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "blob_size_bytes": 38323,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "O.FIG-07",
+      "title": "Figure 7: Cost / token usage vs k",
+      "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
+      "evidence_commit_sha": "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+      "declared_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "git_blob_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "blob_size_bytes": 38323,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "O.FIG-08",
+      "title": "Figure 8: Failure Decomposition",
+      "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
+      "evidence_commit_sha": "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+      "declared_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "git_blob_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "blob_size_bytes": 38323,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "O.TAB-01",
+      "title": "Table 1: Dataset / split",
+      "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
+      "evidence_commit_sha": "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+      "declared_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "git_blob_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "blob_size_bytes": 38323,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "O.TAB-02",
+      "title": "Table 2: Experimental conditions",
+      "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
+      "evidence_commit_sha": "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+      "declared_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "git_blob_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "blob_size_bytes": 38323,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "O.TAB-03",
+      "title": "Table 3: RQ1 metrics",
+      "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
+      "evidence_commit_sha": "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+      "declared_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "git_blob_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "blob_size_bytes": 38323,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "O.TAB-04",
+      "title": "Table 4: RQ2 retrieval analysis",
+      "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
+      "evidence_commit_sha": "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+      "declared_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "git_blob_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "blob_size_bytes": 38323,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "O.TAB-05",
+      "title": "Table 5: RQ3 cost / latency",
+      "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
+      "evidence_commit_sha": "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+      "declared_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "git_blob_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "blob_size_bytes": 38323,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "O.TAB-06",
+      "title": "Table 6: Provenance / hash / evidence",
+      "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
+      "evidence_commit_sha": "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+      "declared_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "git_blob_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "blob_size_bytes": 38323,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "O.GEN-01",
+      "title": "100% Machine-Generated Figures and Tables",
+      "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
+      "evidence_commit_sha": "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+      "declared_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "git_blob_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "blob_size_bytes": 38323,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "P.VAL-77.99",
+      "title": "Consistency Value: 77.99 (No-RAG accuracy percentage)",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "P.VAL-79.53",
+      "title": "Consistency Value: 79.53 (RAG k=10 accuracy percentage)",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "P.VAL-pos_1.532",
+      "title": "Consistency Value: +1.532 (Observed accuracy percentage point delta)",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "P.VAL-neg_2.355_pos_5.300",
+      "title": "Consistency Value: [-2.355, +5.300] (Pair-cluster bootstrap 95% CI pp)",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "P.VAL-0.422",
+      "title": "Consistency Value: 0.422 (McNemar test p-value)",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "P.VAL-6400",
+      "title": "Consistency Value: 6,400 (Total TEST matrix completed records)",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "P.VAL-6401",
+      "title": "Consistency Value: 6,401 (Total consumed provider attempts)",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "P.VAL-6387",
+      "title": "Consistency Value: 6,387 (Terminal VALID outcomes count)",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "P.VAL-13",
+      "title": "Consistency Value: 13 (Terminal INCOMPLETE outcomes count)",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "P.VAL-6.57575890",
+      "title": "Consistency Value: 6.57575890 (Canonical settled expenditure USD)",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "P.VAL-6.62839900",
+      "title": "Consistency Value: 6.62839900 (Total accounted study expenditure USD)",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "P.VAL-19.99000000",
+      "title": "Consistency Value: 19.99000000 (Total study budget ceiling USD)",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "P.VAL-718",
+      "title": "Consistency Value: 718 (Mapped/scorable evaluation views cohort)",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "P.VAL-311",
+      "title": "Consistency Value: 311 (Ambiguous views cohort)",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "P.VAL-251",
+      "title": "Consistency Value: 251 (Unmapped views cohort)",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "P.VAL-474",
+      "title": "Consistency Value: 474 (Frozen ATT&CK v19.2 technique benchmark universe)",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "Q.01-VIETNAMESE_DECK",
+      "title": "Vietnamese Presentation Deck (12 Slides & 12 Speaker Notes)",
+      "evidence_locator": "docs/presentation/slides.pptx",
+      "evidence_commit_sha": "9789c0807b497a10d5f875a246eb585590e1ff12",
+      "declared_hash": "cab59053baf22f4afb04029369cb8e5045103fb468a9896dde491f900d34b95a",
+      "git_blob_hash": "cab59053baf22f4afb04029369cb8e5045103fb468a9896dde491f900d34b95a",
+      "blob_size_bytes": 129492,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "Q.02-TYPOGRAPHY_AND_LAYOUT_QA",
+      "title": "Presentation Layout, Font Sizing (>=18pt), and Overflow QA",
+      "evidence_locator": "reports/evidence/qa/visual_qa_inspection_record.json",
+      "evidence_commit_sha": "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+      "declared_hash": "dd3e5d5a0e61bf7aef233376f52256ec7c06a2cbea266963d154146acbae8da5",
+      "git_blob_hash": "dd3e5d5a0e61bf7aef233376f52256ec7c06a2cbea266963d154146acbae8da5",
+      "blob_size_bytes": 15697,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "R.01-CLEAN_CLONE_REPRO",
+      "title": "Clean-Clone Offline Reproduction Workflow",
+      "evidence_locator": "reports/evidence/r9_saved_data_reproduction_raw.log",
+      "evidence_commit_sha": "d39384895cb0c66ca2eeba9b456fd0e55d672e8c",
+      "declared_hash": "9be949bb82d5a8b00652138627030a609d63c79e7e2a20871d281bd57b6b632a",
+      "git_blob_hash": "9be949bb82d5a8b00652138627030a609d63c79e7e2a20871d281bd57b6b632a",
+      "blob_size_bytes": 8975,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "R.02-REPRO_VERDICT_ASSERTION",
+      "title": "Replay Verdict PASS_CANONICAL_OFFLINE_VERIFIED & attempted_egress=0",
+      "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
+      "evidence_commit_sha": "d80035e12443f4c7833e25fb268b0419c7194982",
+      "declared_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "git_blob_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "blob_size_bytes": 6316,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "S.01-SECRETS_AND_PATHS_SCAN",
+      "title": "Comprehensive Scanner: Zero Secrets, Zero Private Paths, Zero Bytecode",
+      "evidence_locator": "scripts/verify_canonical_package_acceptance.py",
+      "evidence_commit_sha": "41c62631ede88ae859d40878909c5f2d7bb1ade0",
+      "declared_hash": "1064b19e8b88a9a92e9bc9200e29090febbc405626fa0a5b62490e267abae574",
+      "git_blob_hash": "1064b19e8b88a9a92e9bc9200e29090febbc405626fa0a5b62490e267abae574",
+      "blob_size_bytes": 15411,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "V.02-RUFF_FORMAT",
+      "title": "Suite 2: ruff format --check",
+      "evidence_locator": "reports/evidence/owner_format_scope_decision.json",
+      "evidence_commit_sha": "d39384895cb0c66ca2eeba9b456fd0e55d672e8c",
+      "declared_hash": "d9663cbaef9ab29c84693ef42def3ff42605ac4b889f10ab55358f7917faf06f",
+      "git_blob_hash": "d9663cbaef9ab29c84693ef42def3ff42605ac4b889f10ab55358f7917faf06f",
+      "blob_size_bytes": 4831,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "V.06-CANONICAL_REPLAY",
+      "title": "Suite 6: Canonical replay test",
+      "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
+      "evidence_commit_sha": "d80035e12443f4c7833e25fb268b0419c7194982",
+      "declared_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "git_blob_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "blob_size_bytes": 6316,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "V.10-PRESENTATION_REGRESSION",
+      "title": "Suite 10: Presentation regression tests",
+      "evidence_locator": "tests/test_artifact_inventory.py",
+      "evidence_commit_sha": "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+      "declared_hash": "41a0f1faff963ad47844a9d5d522dd360fa1e80f17a447ca18f6863f9a859d77",
+      "git_blob_hash": "41a0f1faff963ad47844a9d5d522dd360fa1e80f17a447ca18f6863f9a859d77",
+      "blob_size_bytes": 21396,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "V.11-PATH_SECRET_SCANNER",
+      "title": "Suite 11: Path and secret scanner",
+      "evidence_locator": "scripts/verify_canonical_package_acceptance.py",
+      "evidence_commit_sha": "41c62631ede88ae859d40878909c5f2d7bb1ade0",
+      "declared_hash": "1064b19e8b88a9a92e9bc9200e29090febbc405626fa0a5b62490e267abae574",
+      "git_blob_hash": "1064b19e8b88a9a92e9bc9200e29090febbc405626fa0a5b62490e267abae574",
+      "blob_size_bytes": 15411,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "V.13-TERMINAL_VALIDATOR",
+      "title": "Suite 13: Independent terminal validator suite",
+      "evidence_locator": "tests/test_terminal_audit.py",
+      "evidence_commit_sha": "2e6037a43ec0003c297a164bdd52f4c6d42b6330",
+      "declared_hash": "1f04f23ef7b057fa81af88b920b872dbd9fcb0744099a80e903bfd1fd9c735f5",
+      "git_blob_hash": "1f04f23ef7b057fa81af88b920b872dbd9fcb0744099a80e903bfd1fd9c735f5",
+      "blob_size_bytes": 69671,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "DOD-01",
+      "title": "DoD #01: canonical 6400/6400 verified",
+      "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
+      "evidence_commit_sha": "d80035e12443f4c7833e25fb268b0419c7194982",
+      "declared_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "git_blob_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "blob_size_bytes": 6316,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "DOD-02",
+      "title": "DoD #02: 6401 attempts reconciled",
+      "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
+      "evidence_commit_sha": "d80035e12443f4c7833e25fb268b0419c7194982",
+      "declared_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "git_blob_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "blob_size_bytes": 6316,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "DOD-03",
+      "title": "DoD #03: terminal evidence verified",
+      "evidence_locator": "reports/evidence/canonical_run_seal_v1.json",
+      "evidence_commit_sha": "b69a6909acda4c7588744acc7e1d6c20bfce2612",
+      "declared_hash": "ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701",
+      "git_blob_hash": "ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701",
+      "blob_size_bytes": 3046,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "DOD-04",
+      "title": "DoD #04: ledger reconciled",
+      "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
+      "evidence_commit_sha": "d80035e12443f4c7833e25fb268b0419c7194982",
+      "declared_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "git_blob_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "blob_size_bytes": 6316,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "DOD-05",
+      "title": "DoD #05: budget safe",
+      "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
+      "evidence_commit_sha": "d80035e12443f4c7833e25fb268b0419c7194982",
+      "declared_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "git_blob_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "blob_size_bytes": 6316,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "DOD-06",
+      "title": "DoD #06: canonical metric bundle frozen",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "DOD-07",
+      "title": "DoD #07: RQ1 verified",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "DOD-08",
+      "title": "DoD #08: RQ2 verified",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "DOD-09",
+      "title": "DoD #09: RQ3 verified",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "DOD-10",
+      "title": "DoD #10: report final",
+      "evidence_locator": "reports/evidence/canonical_populated_report.md",
+      "evidence_commit_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "declared_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "git_blob_hash": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "blob_size_bytes": 105354,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "DOD-11",
+      "title": "DoD #11: DOCX final",
+      "evidence_locator": "reports/evidence/canonical_populated_report.docx",
+      "evidence_commit_sha": "a7f70fe84b9312df6b9fb06fef42e75c4d2a159c",
+      "declared_hash": "c5ce49f7e57ee2d86d79daab50def273af6dbb4c4393da61340f033b63306ccb",
+      "git_blob_hash": "c5ce49f7e57ee2d86d79daab50def273af6dbb4c4393da61340f033b63306ccb",
+      "blob_size_bytes": 320008,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "DOD-12",
+      "title": "DoD #12: figures final",
+      "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
+      "evidence_commit_sha": "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+      "declared_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "git_blob_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "blob_size_bytes": 38323,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "DOD-13",
+      "title": "DoD #13: tables final",
+      "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
+      "evidence_commit_sha": "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+      "declared_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "git_blob_hash": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "blob_size_bytes": 38323,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "DOD-14",
+      "title": "DoD #14: slides final",
+      "evidence_locator": "docs/presentation/slides.pptx",
+      "evidence_commit_sha": "9789c0807b497a10d5f875a246eb585590e1ff12",
+      "declared_hash": "cab59053baf22f4afb04029369cb8e5045103fb468a9896dde491f900d34b95a",
+      "git_blob_hash": "cab59053baf22f4afb04029369cb8e5045103fb468a9896dde491f900d34b95a",
+      "blob_size_bytes": 129492,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "DOD-15",
+      "title": "DoD #15: reproduction works from clean clone",
+      "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
+      "evidence_commit_sha": "d80035e12443f4c7833e25fb268b0419c7194982",
+      "declared_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "git_blob_hash": "41f306c42d935d6269f433aac468e1db26c5bc3a5b2c1b92140b25e60e63a7ed",
+      "blob_size_bytes": 6316,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "DOD-16",
+      "title": "DoD #16: zero provider calls during reproduction",
+      "evidence_locator": "src/experiment/authorization.py",
+      "evidence_commit_sha": "079f04da32ee8c8d9843fb7c31d877bc6efff0c1",
+      "declared_hash": "8a9601e7d4803b7c853b10ffb9db9edd62d379132a2906526c3431b0b6eb3e40",
+      "git_blob_hash": "8a9601e7d4803b7c853b10ffb9db9edd62d379132a2906526c3431b0b6eb3e40",
+      "blob_size_bytes": 34749,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "DOD-17",
+      "title": "DoD #17: no secrets/private paths",
+      "evidence_locator": "scripts/verify_canonical_package_acceptance.py",
+      "evidence_commit_sha": "41c62631ede88ae859d40878909c5f2d7bb1ade0",
+      "declared_hash": "1064b19e8b88a9a92e9bc9200e29090febbc405626fa0a5b62490e267abae574",
+      "git_blob_hash": "1064b19e8b88a9a92e9bc9200e29090febbc405626fa0a5b62490e267abae574",
+      "blob_size_bytes": 15411,
+      "status": "MATCH"
+    },
+    {
+      "requirement_id": "DOD-18",
+      "title": "DoD #18: cross-artifact numbers match",
+      "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
+      "evidence_commit_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "declared_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "git_blob_hash": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "blob_size_bytes": 49465,
+      "status": "MATCH"
+    }
+  ],
+  "non_git_assets": [
+    {
+      "requirement_id": "B.01-GITHUB_EVIDENCE",
+      "title": "Mandatory GitHub Evidence Binding",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
+      "evidence_storage": "git_tracked",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "C.03-HUMAN_MERGE_AUTH",
+      "title": "Human Authorization Gate for Main Merge",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
+      "evidence_storage": "not_applicable",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "D.06-TRACK_F",
+      "title": "TRACK F — Integration / GitHub / Release QA",
+      "evidence_locator": "artifacts/packages/public_v4_candidate_20261003.zip",
+      "evidence_storage": "release_asset",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": "1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1"
+    },
+    {
+      "requirement_id": "T.01-PR_CLASSIFICATION_AND_ANCESTRY",
+      "title": "Classification and Ancestry Audit of PRs #8, #24–#29",
+      "evidence_locator": "docs/audit/pr_ancestry_audit.json",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "U.01-DIFF_AUDIT",
+      "title": "Full Diff Audit against Protected Baseline",
+      "evidence_locator": "docs/audit/baseline_diff_audit.json",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "V.01-RUFF_CHECK",
+      "title": "Suite 1: ruff check",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37128644279",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "V.03-OFFLINE_UNIT",
+      "title": "Suite 3: Offline unit test suite",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37128644279",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "V.04-INTEGRATION_SUITE",
+      "title": "Suite 4: Integration test suite (no provider)",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37128644279",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "V.05-SYNTHETIC_DATA",
+      "title": "Suite 5: Synthetic data verification",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37128644279",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "V.07-CANONICAL_MANIFEST",
+      "title": "Suite 7: Canonical manifest verification",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37128644279",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "V.08-RQ_KNOWN_ANSWER",
+      "title": "Suite 8: RQ analysis known-answer tests",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37128644279",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "V.09-REPORT_METADATA",
+      "title": "Suite 9: Report metadata verification",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37128644279",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "V.12-CROSS_ARTIFACT_TEST",
+      "title": "Suite 12: Cross-artifact consistency test",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37128644279",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "W.01-GITHUB_CI_GREEN",
+      "title": "All GitHub Actions CI Workflows Pass on Final SHA",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37128644279",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "X.01-REPO_STATE",
+      "title": "Repository State Section",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "X.02-CANONICAL_EXP",
+      "title": "Canonical Experiment Section",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "X.03-SCIENTIFIC_RES",
+      "title": "Scientific Results Section",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "X.04-ARTIFACTS",
+      "title": "Artifacts Section",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "X.05-VERIFICATION",
+      "title": "Verification Section",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "X.06-LIMITATIONS",
+      "title": "Remaining Known Limitations Section",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "X.07-MERGE_RECOMMENDATION",
+      "title": "Merge Recommendation Section",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "Y.01-READY_FOR_MERGE_GATE",
+      "title": "READY_FOR_HUMAN_FINAL_MERGE Gate",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
+      "evidence_storage": "not_applicable",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "Z.01-POST_MERGE_CLEANUP",
+      "title": "Post-Merge PR Closure and Stale Marker Cleanup",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pulls",
+      "evidence_storage": "not_applicable",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "AA.01-RELEASE_TAG",
+      "title": "Official Release Tagging v1.0.0-rag2attck-study",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/releases",
+      "evidence_storage": "release_asset",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "DOD-19",
+      "title": "DoD #19: all tests pass",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37128644279",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "DOD-20",
+      "title": "DoD #20: CI pass at final exact SHA",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37128644279",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "DOD-21",
+      "title": "DoD #21: PR integration resolved",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "DOD-22",
+      "title": "DoD #22: main contains final state",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "DOD-23",
+      "title": "DoD #23: superseded PRs cleaned",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pulls",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "DOD-24",
+      "title": "DoD #24: final evidence package committed",
+      "evidence_locator": "artifacts/packages/public_v4_candidate_20261003.zip",
+      "evidence_storage": "release_asset",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": "1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1"
+    },
+    {
+      "requirement_id": "DOD-25",
+      "title": "DoD #25: release/tag completed or explicitly deferred by human",
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/releases",
+      "evidence_storage": "local_pending",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "AC.01-SELF_CORRECTION",
+      "title": "Systematic Diagnosis & Repair Protocol",
+      "evidence_locator": "AGENTS.md",
+      "evidence_storage": "not_applicable",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "AD.01-REVIEWER_ESCALATION",
+      "title": "Evidence-Backed Escalation Protocol",
+      "evidence_locator": "AGENTS.md",
+      "evidence_storage": "not_applicable",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "AE.01-RESPONSE_FORMAT",
+      "title": "Structured Response Template Compliance",
+      "evidence_locator": "AGENTS.md",
+      "evidence_storage": "not_applicable",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    },
+    {
+      "requirement_id": "AF.01-PRIORITY_ORDER",
+      "title": "P0 through P7 Hierarchy Enforcement",
+      "evidence_locator": "AGENTS.md",
+      "evidence_storage": "not_applicable",
+      "classification": "URL_OR_STANDALONE_RELEASE_ASSET",
+      "declared_hash": null
+    }
+  ]
+}

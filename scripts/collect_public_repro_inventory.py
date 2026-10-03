@@ -666,10 +666,24 @@ def update_plan_markdown(plan_path: Path, inventory: Dict[str, Any]) -> None:
     pairs_art = find_art("pairs.jsonl")
     split_art = find_art("split_manifest.json")
     lock_art = find_art("uv.lock")
+    rq_art = find_art("evaluate_rqs.py")
+    rq_bytes = rq_art["file_bytes"]
+    rq_sha = rq_art["sha256"]
+    rq_path = rq_art["repository_path"]
 
     census = inventory["ground_truth_census"]
 
-    # 1. Update header constants
+    # 1. Update header constants & status/revision
+    content = re.sub(
+        r"> \*\*Status:\*\*.*",
+        "> **Status:** Inventory-only implementation and validation completed; additive public package and scientific replay NOT STARTED — HOLD pending Root EXECUTE.",
+        content,
+    )
+    content = re.sub(
+        r"> \*\*Revision:\*\*.*",
+        "> **Revision:** R2 (Current Producer & Input Authority Inventory Completed; Public Package & Replay Scope Held Pending Root EXECUTE)",
+        content,
+    )
     content = re.sub(
         r"> \*\*Accepted Metric Bundle v2 SHA-256:\*\* `[a-f0-9]+`.*",
         f"> **Accepted Metric Bundle v2 SHA-256:** `{bundle_sha}` ({bundle_bytes:,} bytes)",
@@ -681,12 +695,29 @@ def update_plan_markdown(plan_path: Path, inventory: Dict[str, Any]) -> None:
         content,
     )
 
-    # 2. Section 2A: Execution Log Reality
+    # 2. Section 1: Executive Summary & Protocol Scope
+    sec1_block = (
+        "## 1. Executive Summary & Protocol Scope\n\n"
+        "The collector, tests and factual inventory were created under INVENTORY_ONLY authorization. "
+        "No provider call, statistical scoring/bootstrap recomputation, archive build, public-v3 modification "
+        "or scientific replay was performed. Future package construction and replay remain separate Root-authorized phases.\n\n"
+        f"Preserve public-v3 descriptor/input/output bytes and frozen metric bundle. Scientific replay uses "
+        f"actual frozen b69 modules and the exact RQ source recorded in the inventory (`{rq_path}`: `{rq_sha}`), "
+        f"in a fresh attested child with its own locked runtime. Adapter verification uses accepted B95 code and "
+        f"Root freeze metadata; modern engineering source is a separate provenance domain."
+    )
+    content = re.sub(
+        r"## 1\. Executive Summary & Protocol Scope[\s\S]*?(?=---\s*\n\n## 2\.)",
+        sec1_block + "\n\n",
+        content,
+    )
+
+    # 3. Section 2A: Execution Log Reality
     sec2a_block = (
         f"### A. Execution Log Reality (`{log_path}`): {log_bytes:,} Bytes, Not >250MB\n"
         f"- **Correction:** The actual execution terminal log `{log_path}` is **{log_bytes:,} bytes** (SHA-256: `{log_sha}`).\n"
         f"- **Clarification:** The previously cited hash `05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa` belongs to the native launcher script `launch_canonical_resume.py`, not the log file.\n"
-        f"- **Resolution:** The claim of multi-gigabyte or >250MB log omission is completely retracted. The genuine {log_bytes:,}-byte log can either be included directly in the public envelope (following privacy sanitization review) or attested via a verified public derivative with explicit observer boundary disclosures."
+        f"- **Resolution:** The claim of multi-gigabyte or >250MB log omission is completely retracted. The task-1264 digest `{log_sha}` is the ORIGINAL raw log SHA. Include original bytes only after privacy review, or record actual original-to-sanitized byte/hash transformation; do not label a changed derivative with the original digest."
     )
     content = re.sub(
         r"### A\. Execution Log Reality[\s\S]*?(?=### B\.)",
@@ -694,7 +725,7 @@ def update_plan_markdown(plan_path: Path, inventory: Dict[str, Any]) -> None:
         content,
     )
 
-    # 3. Section 2B: Tracked Status of Canonical Run Seal
+    # 4. Section 2B: Tracked Status of Canonical Run Seal
     sec2b_block = (
         f"### B. Tracked Status of Canonical Run Seal (`{seal_path}`)\n"
         f"- **Correction:** The run seal is **{seal_bytes:,} bytes** with exact SHA-256 `{seal_sha}`.\n"
@@ -707,7 +738,7 @@ def update_plan_markdown(plan_path: Path, inventory: Dict[str, Any]) -> None:
         content,
     )
 
-    # 4. Section 2C: Raw File Hashes vs. Semantic Mapping Digests
+    # 5. Section 2C: Raw File Hashes vs. Semantic Mapping Digests
     sec2c_block = (
         "### C. Distinction Between Raw File Hashes vs. Semantic Mapping Digests\n"
         f"- **Protocol Configuration (`config/experiment_protocol_v1.json`):**\n"
@@ -727,7 +758,7 @@ def update_plan_markdown(plan_path: Path, inventory: Dict[str, Any]) -> None:
         content,
     )
 
-    # 5. Section 2D: Ground Truth Census & Dataset Partitioning
+    # 6. Section 2D: Ground Truth Census & Dataset Partitioning
     sec2d_block = (
         "### D. Ground Truth Census & Dataset Partitioning\n"
         f"- **Total Benchmark Census:** {census['total_views']:,} views / {census['total_pairs']:,} pairs total, partitioned by `split_manifest.json` into:\n"
@@ -746,7 +777,7 @@ def update_plan_markdown(plan_path: Path, inventory: Dict[str, Any]) -> None:
         content,
     )
 
-    # 6. Section 2E: Locked Toolchain & NumPy Specification
+    # 7. Section 2E: Locked Toolchain & NumPy Specification
     sec2e_block = (
         "### E. Locked Toolchain & NumPy Specification\n"
         f"- Lockfile (`uv.lock`): {lock_art['file_bytes']:,} bytes, SHA-256: `{lock_art['sha256']}`.\n"
@@ -758,7 +789,7 @@ def update_plan_markdown(plan_path: Path, inventory: Dict[str, Any]) -> None:
         content,
     )
 
-    # 7. Section 3: Calibrated Master Evidence Inventory Table
+    # 8. Section 3: Calibrated Master Evidence Inventory Table
     sec3_pattern = re.compile(
         r"(## 3\. Calibrated Master Evidence Inventory\s*\n\n)(?:\|[^\n]+\n)+",
         re.MULTILINE,
@@ -782,18 +813,18 @@ def update_plan_markdown(plan_path: Path, inventory: Dict[str, Any]) -> None:
             new_content = content
     content = new_content
 
-    # 8. Section 4: Proposed Structure of Additive public_v4 Envelope
+    # 9. Section 4: Proposed Structure of Additive public_v4 Envelope
     sec4_block = (
         "## 4. Proposed Structure of the Additive `public_v4` Envelope\n\n"
-        "When Root issues the `EXECUTE` directive, the additive package will be constructed without altering `public_v3`:\n\n"
-        f"1. **Inclusion of Tracked Seal:**\n"
-        f"   - Package `{seal_path}` (`{seal_sha[:8]}...`) into `v4/evidence/`.\n"
-        f"2. **Inclusion of Execution Log:**\n"
-        f"   - Package sanitized `{log_path}` (`{log_sha[:8]}...`) accompanied by a privacy attestation manifest.\n"
-        f"3. **Reproducibility Verification Adapter:**\n"
-        f"   - Provide an offline verification script consuming public inputs (`inputs/` predictions and `run_summary.json`), joining with ground truth, and verifying the computed canonical metric bundle v2 file hashes byte-for-byte to `{bundle_sha[:8]}...` ({bundle_bytes:,} bytes whole-bundle file digest, not isolated metric dictionary).\n"
-        f"4. **Validation Receipt:**\n"
-        f"   - Package `{freeze_path}` certifying Root acceptance."
+        f"Proposed package-only phase adds the existing Git-tracked seal (`{seal_path}`: `{seal_sha[:8]}...`) "
+        f"and trusted Root acceptance/lineage receipts (`{freeze_path}`: `{freeze_sha[:8]}...`), without modifying base public-v3. "
+        f"The task-1264 digest (`{log_sha}`) is ORIGINAL raw log SHA. Include original bytes only after privacy review, "
+        f"or record actual original-to-sanitized byte/hash transformation; do not label a changed derivative with the original digest.\n\n"
+        f"No new scorer or metric-dictionary hash is defined. Later reproduction runs the existing frozen scientific functions "
+        f"in b69/{rq_sha[:8]} and separately the accepted B95 adapter with declared exact source/build timestamp/Root validation inputs. "
+        f"Equality to the entire frozen B442 file requires its full metadata and source closure ({bundle_bytes:,} bytes, `{bundle_sha}`); "
+        f"this is not equality of a narrowed metric dictionary, nor package construction evidence. "
+        f"Package-only tests cover trusted inventory/derivation completeness and protected bytes; actual scientific replay is a later explicitly executed gate."
     )
     content = re.sub(
         r"## 4\. Proposed Structure of the Additive `public_v4` Envelope[\s\S]*?(?=## 5\.)",
@@ -801,13 +832,11 @@ def update_plan_markdown(plan_path: Path, inventory: Dict[str, Any]) -> None:
         content,
     )
 
-    # 9. Section 5: Affirmation & Hold Status
+    # 10. Section 5: Affirmation & Hold Status
     sec5_block = (
         "## 5. Affirmation & Hold Status\n\n"
-        "Coordinator and Owner B explicitly affirm:\n"
-        "- **Current Inventory Phase Completed:** The authoritative reproduction inventory collection tool (`scripts/collect_public_repro_inventory.py`), test suite (`tests/test_public_repro_inventory.py`), and machine-readable evidence inventory manifest (`reports/evidence/public_repro_inventory_v1.json`) are completed, verified offline, and contractually consistent with trusted Root freeze envelope `e284344e` and canonical metric bundle v2 `442b5933`.\n"
-        "- **Future Scope Strictly Held Pending EXECUTE:** Construction of the additive `public_v4` distribution package, generation of derivative verification adapters, and public replay execution remain held in pending status awaiting explicit Root `EXECUTE` authorization.\n"
-        "- **Zero Egress & Non-Interference:** All operations remain strictly offline (egress = 0) with zero unauthorized file mutations."
+        "Inventory implementation and validation completed. Public package construction/archive and scientific replay remain NOT STARTED/HOLD. "
+        "No scientific or PROJECT_FINAL status is inferred from inventory completion."
     )
     content = re.sub(
         r"## 5\. Affirmation & Hold Status[\s\S]*$",

@@ -1,8 +1,8 @@
 # Public Reproduction Derivation Plan (Additive v4 Envelope Protocol)
 
-> **Status:** ACK READ-ONLY — STRICT HOLD PENDING ROOT REVIEW  
+> **Status:** Inventory-only implementation and validation completed; additive public package and scientific replay NOT STARTED — HOLD pending Root EXECUTE.
 > **Document Identifier:** `reports/evidence/public_repro_derivation_plan_20261003.md`  
-> **Revision:** R1 (Factual Inventory Calibration based on `supervisor_public_repro_plan_review_20261003`)  
+> **Revision:** R2 (Current Producer & Input Authority Inventory Completed; Public Package & Replay Scope Held Pending Root EXECUTE)
 > **Target Subagent / Owner:** `eeafba1b` (`eeafba1b-8596-40b9-af66-73abb6c2ea59`, Worker Track B `native-bundle`)  
 > **Worktree:** `C:/Users/hahoa/.codex/artifacts/rag2attck/finalization_worktrees_20261003/native-bundle`  
 > **Branch:** `codex/finalization-bundle-v2` (Accepted at `95c02338d146bfb060accc5efbc63bfab89a686d`)  
@@ -13,13 +13,9 @@
 
 ## 1. Executive Summary & Protocol Scope
 
-This revised document supersedes the preliminary draft and incorporates the factual findings from the independent metrics review (`supervisor_public_repro_plan_review_20261003`).
+The collector, tests and factual inventory were created under INVENTORY_ONLY authorization. No provider call, statistical scoring/bootstrap recomputation, archive build, public-v3 modification or scientific replay was performed. Future package construction and replay remain separate Root-authorized phases.
 
-### Core Operating Invariants:
-1. **STRICT HOLD (No Execution):** No code generation, no live provider calls (`OPENAI_API_KEY` blocked), no scoring/bootstrap recomputations, and no public-package modifications will be performed until Root explicitly issues the `EXECUTE` command.
-2. **ZERO Egress Guard:** All future derivation checks must run strictly under `scripts/run_offline_tests.py` with `attempted_egress = 0`.
-3. **No Redundant Scorer:** The derivation relies on the existing accepted Builder B (`95c0233`) and frozen scientific logic (`b69a690` / `f85764b8...`), under the locked toolchain (`uv.lock` with NumPy `2.5.3`). No novel mathematical engine or ad-hoc calculation will be introduced.
-4. **Additive v4 Package Model:** The public release package `public_v3` (descriptor `32f...`) and accepted metric bundle `442b5933...` remain completely unmodified. The delivery will be structured as an additive **`public_v4` envelope** packaging missing tracked Git artifacts, explicit hash domain mapping, and a Git-anchored Root validation receipt.
+Preserve public-v3 descriptor/input/output bytes and frozen metric bundle. Scientific replay uses actual frozen b69 modules and the exact RQ source recorded in the inventory (`scripts/analysis/evaluate_rqs.py`: `f85d7f7373e825dcc7171ce4491fd15c6fb755955da245041783fe317bc80351`), in a fresh attested child with its own locked runtime. Adapter verification uses accepted B95 code and Root freeze metadata; modern engineering source is a separate provenance domain.
 
 ---
 
@@ -30,7 +26,7 @@ Independent review of the actual Git objects, disk contents, and `public_v3` pac
 ### A. Execution Log Reality (`logs/task-1264.log`): 1,141 Bytes, Not >250MB
 - **Correction:** The actual execution terminal log `logs/task-1264.log` is **1,141 bytes** (SHA-256: `fcacacf67d72797b8f1781d4998ed77bbf6d3e59e3e4d2e26fd0a9a7cca29b44`).
 - **Clarification:** The previously cited hash `05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa` belongs to the native launcher script `launch_canonical_resume.py`, not the log file.
-- **Resolution:** The claim of multi-gigabyte or >250MB log omission is completely retracted. The genuine 1,141-byte log can either be included directly in the public envelope (following privacy sanitization review) or attested via a verified public derivative with explicit observer boundary disclosures.
+- **Resolution:** The claim of multi-gigabyte or >250MB log omission is completely retracted. The task-1264 digest `fcacacf67d72797b8f1781d4998ed77bbf6d3e59e3e4d2e26fd0a9a7cca29b44` is the ORIGINAL raw log SHA. Include original bytes only after privacy review, or record actual original-to-sanitized byte/hash transformation; do not label a changed derivative with the original digest.
 
 ### B. Tracked Status of Canonical Run Seal (`reports/evidence/canonical_run_seal_v1.json`)
 - **Correction:** The run seal is **3,046 bytes** with exact SHA-256 `ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701`.
@@ -94,20 +90,10 @@ Independent review of the actual Git objects, disk contents, and `public_v3` pac
 
 ## 4. Proposed Structure of the Additive `public_v4` Envelope
 
-When Root issues the `EXECUTE` directive, the additive package will be constructed without altering `public_v3`:
+Proposed package-only phase adds the existing Git-tracked seal (`reports/evidence/canonical_run_seal_v1.json`: `ae7a9ada...`) and trusted Root acceptance/lineage receipts (`reports/evidence/root_metric_bundle_v2_freeze_95c0233.json`: `e284344e...`), without modifying base public-v3. The task-1264 digest (`fcacacf67d72797b8f1781d4998ed77bbf6d3e59e3e4d2e26fd0a9a7cca29b44`) is ORIGINAL raw log SHA. Include original bytes only after privacy review, or record actual original-to-sanitized byte/hash transformation; do not label a changed derivative with the original digest.
 
-1. **Inclusion of Tracked Seal:**
-   - Package `reports/evidence/canonical_run_seal_v1.json` (`ae7a9ada...`) into `v4/evidence/`.
-2. **Inclusion of Execution Log:**
-   - Package sanitized `logs/task-1264.log` (`fcacacf6...`) accompanied by a privacy attestation manifest.
-3. **Reproducibility Verification Adapter:**
-   - Provide an offline verification script consuming public inputs (`inputs/` predictions and `run_summary.json`), joining with ground truth, and verifying the computed canonical metric bundle v2 file hashes byte-for-byte to `442b5933...` (49,465 bytes whole-bundle file digest, not isolated metric dictionary).
-4. **Validation Receipt:**
-   - Package `reports/evidence/root_metric_bundle_v2_freeze_95c0233.json` certifying Root acceptance.
+No new scorer or metric-dictionary hash is defined. Later reproduction runs the existing frozen scientific functions in b69/f85d7f73 and separately the accepted B95 adapter with declared exact source/build timestamp/Root validation inputs. Equality to the entire frozen B442 file requires its full metadata and source closure (49,465 bytes, `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`); this is not equality of a narrowed metric dictionary, nor package construction evidence. Package-only tests cover trusted inventory/derivation completeness and protected bytes; actual scientific replay is a later explicitly executed gate.
 
 ## 5. Affirmation & Hold Status
 
-Coordinator and Owner B explicitly affirm:
-- **Current Inventory Phase Completed:** The authoritative reproduction inventory collection tool (`scripts/collect_public_repro_inventory.py`), test suite (`tests/test_public_repro_inventory.py`), and machine-readable evidence inventory manifest (`reports/evidence/public_repro_inventory_v1.json`) are completed, verified offline, and contractually consistent with trusted Root freeze envelope `e284344e` and canonical metric bundle v2 `442b5933`.
-- **Future Scope Strictly Held Pending EXECUTE:** Construction of the additive `public_v4` distribution package, generation of derivative verification adapters, and public replay execution remain held in pending status awaiting explicit Root `EXECUTE` authorization.
-- **Zero Egress & Non-Interference:** All operations remain strictly offline (egress = 0) with zero unauthorized file mutations.
+Inventory implementation and validation completed. Public package construction/archive and scientific replay remain NOT STARTED/HOLD. No scientific or PROJECT_FINAL status is inferred from inventory completion.

@@ -7,7 +7,6 @@ and an immutable, hash-bound scientific protocol approval contract (D1-D7).
 
 from __future__ import annotations
 
-import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any

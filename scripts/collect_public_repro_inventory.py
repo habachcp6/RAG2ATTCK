@@ -8,13 +8,17 @@ without any hardcoded/handtyped sizes or hashes.
 
 Incorporates:
   - Single-read verified buffer for atomic hashing and JSON parsing (no TOCTOU).
+  - Read-once mapping integrity: computes code manifest SHA directly from in-memory mapping.
   - Dynamic Git HEAD discovery (distinguishing input authority from producer HEAD).
-  - Dynamic ISO 8601 UTC timestamp generation.
-  - Portable CLI interface with zero private fallback paths (strictly fail-closed).
+  - Dynamic ISO 8601 UTC timestamp generation (standard UTC format with trailing 'Z').
+  - Portable CLI interface with zero private fallback paths (strictly fail-closed in authenticated mode).
   - Comprehensive coverage: master repository artifacts + public package descriptor (32f)
     and all 23 declared public package items.
-  - Trust-anchor authentication status differentiation ("canonical_authenticated_validation"
-    vs "observed_inventory").
+  - Trust-anchor authentication status differentiation:
+    "CANONICAL_AUTHENTICATED_VERIFICATION" vs
+    "OBSERVED / NOT VERIFIED (No external trust anchor provided)".
+  - Standardized ground truth census: 1,340 views / 670 pairs total
+    (1,280 views / 640 pairs TEST + 60 views / 30 pairs DEV), partitioned by split_manifest.json.
 
 Outputs:
   - reports/evidence/public_repro_inventory_v1.json
@@ -38,16 +42,18 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from src.experiment.config import canonical_bytes, digest
 from src.experiment.authorization import (
     compute_code_manifest,
-    compute_code_manifest_sha256,
     compute_protocol_sha256,
 )
 from src.experiment.monetary_ledger import compute_pricing_contract_sha256
 
-# Canonical Input Authority Commit
+# Canonical Constants
 INPUT_AUTHORITY_GIT_SHA = "95c02338d146bfb060accc5efbc63bfab89a686d"
 EXPECTED_PUBLIC_MANIFEST_SHA256 = "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c"
+AUTHENTICATED_VALIDATION_LABEL = "CANONICAL_AUTHENTICATED_VERIFICATION"
+UNANCHORED_VALIDATION_LABEL = "OBSERVED / NOT VERIFIED (No external trust anchor provided)"
 
 
 def read_verified_buffer(path: Path) -> Tuple[bytes, str, int]:
@@ -64,7 +70,10 @@ def read_verified_buffer(path: Path) -> Tuple[bytes, str, int]:
 
 
 def get_git_head_sha(repo_root: Path) -> str:
-    """Discover current Git HEAD SHA dynamically from repository."""
+    """
+    Discover current Git commit HEAD SHA dynamically from repository.
+    Strictly forbids static fallbacks to input authority SHA.
+    """
     try:
         out = subprocess.check_output(
             ["git", "rev-parse", "HEAD"],
@@ -84,11 +93,13 @@ def get_git_head_sha(repo_root: Path) -> str:
         if ref.startswith("ref: "):
             ref_path = repo_root / ".git" / ref[5:]
             if ref_path.is_file():
-                return ref_path.read_text(encoding="utf-8").strip().lower()
-        elif len(ref) == 40:
+                content = ref_path.read_text(encoding="utf-8").strip().lower()
+                if re.fullmatch(r"[0-9a-fA-F]{40}", content):
+                    return content
+        elif len(ref) == 40 and re.fullmatch(r"[0-9a-fA-F]{40}", ref):
             return ref.lower()
 
-    return INPUT_AUTHORITY_GIT_SHA
+    raise RuntimeError("Unable to dynamically discover Git commit HEAD SHA")
 
 
 def collect_inventory(
@@ -103,7 +114,7 @@ def collect_inventory(
     Collect comprehensive authoritative inventory directly from single-read buffers.
     Strictly forbids handtyped byte sizes or hashes.
     """
-    gen_ts = timestamp_utc or datetime.now(timezone.utc).isoformat()
+    gen_ts = timestamp_utc or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     current_git_head = get_git_head_sha(repo_root)
 
     # 1. Canonical Metric Bundle v2
@@ -136,11 +147,11 @@ def collect_inventory(
     pricing_dict = json.loads(pricing_raw.decode("utf-8"))
     pricing_contract_digest = compute_pricing_contract_sha256(pricing_dict)
 
-    # 7. Code Manifest (53 critical files)
+    # 7. Code Manifest (53 critical files) - Single read mapping integrity
     code_manifest_files = compute_code_manifest(repo_root)
-    code_manifest_sha = compute_code_manifest_sha256(repo_root)
+    code_manifest_sha = digest(canonical_bytes(code_manifest_files))
 
-    # 8. Ground Truth Datasets (Distinguishing synthetic test split from full benchmark pairs)
+    # 8. Ground Truth Datasets (Benchmark census: 1,340 views / 670 pairs; 1,280 test + 60 dev)
     gt_path = repo_root / "data/ground_truth/synthetic/ground_truth.jsonl"
     _, gt_sha, gt_size = read_verified_buffer(gt_path)
 
@@ -149,6 +160,9 @@ def collect_inventory(
 
     pairs_path = repo_root / "data/ground_truth/synthetic/pairs.jsonl"
     _, pairs_sha, pairs_size = read_verified_buffer(pairs_path)
+
+    split_path = repo_root / "data/ground_truth/synthetic/split_manifest.json"
+    _, split_sha, split_size = read_verified_buffer(split_path)
 
     # 9. RQ Evaluation Source
     rq_eval_path = repo_root / "scripts/analysis/evaluate_rqs.py"
@@ -250,19 +264,19 @@ def collect_inventory(
             "classification": "analysis_source",
         },
         {
-            "logical_name": "Ground Truth Test Dataset",
+            "logical_name": "Ground Truth Dataset",
             "repository_path": "data/ground_truth/synthetic/ground_truth.jsonl",
             "file_bytes": gt_size,
             "sha256": gt_sha,
-            "domain_authority": "Exact file bytes (Synthetic test split ground truth, N=1,280)",
+            "domain_authority": "Exact file bytes (Benchmark ground truth, 1,340 views: 1,280 test + 60 dev)",
             "classification": "ground_truth",
         },
         {
-            "logical_name": "Paired Views Test Dataset",
+            "logical_name": "Paired Views Dataset",
             "repository_path": "data/ground_truth/synthetic/views.jsonl",
             "file_bytes": views_size,
             "sha256": views_sha,
-            "domain_authority": "Exact file bytes (Synthetic test paired views, N=1,280 / 640 pairs)",
+            "domain_authority": "Exact file bytes (Benchmark paired views, 1,340 views: 1,280 test + 60 dev)",
             "classification": "ground_truth",
         },
         {
@@ -270,8 +284,16 @@ def collect_inventory(
             "repository_path": "data/ground_truth/synthetic/pairs.jsonl",
             "file_bytes": pairs_size,
             "sha256": pairs_sha,
-            "domain_authority": "Exact file bytes (Benchmark paired telemetry cases)",
+            "domain_authority": "Exact file bytes (Benchmark paired cases, 670 pairs: 640 test + 30 dev)",
             "classification": "ground_truth",
+        },
+        {
+            "logical_name": "Split Manifest Dataset Partition",
+            "repository_path": "data/ground_truth/synthetic/split_manifest.json",
+            "file_bytes": split_size,
+            "sha256": split_sha,
+            "domain_authority": "Exact file bytes (Partitioning 640 test pairs / 30 dev pairs)",
+            "classification": "ground_truth_split",
         },
         {
             "logical_name": "Locked Dependencies",
@@ -285,110 +307,162 @@ def collect_inventory(
 
     # 11. Public Canonical Package (Descriptor 32f + Declared Items)
     public_pkg_info: Optional[Dict[str, Any]] = None
-    if public_package_dir and public_package_dir.is_dir():
+
+    if expected_public_manifest_sha256 is not None:
+        # Authenticated Mode: Strictly fail-closed
+        if not public_package_dir or not public_package_dir.is_dir():
+            raise FileNotFoundError(f"Public package directory not found: {public_package_dir}")
+        manifest_file = public_package_dir / "canonical_bundle_manifest.json"
+        if not manifest_file.is_file():
+            raise FileNotFoundError(f"Public package manifest descriptor not found: {manifest_file}")
+        raw_man, man_sha, man_size = read_verified_buffer(manifest_file)
+        if man_sha != expected_public_manifest_sha256:
+            raise ValueError(
+                f"Public manifest digest mismatch: actual {man_sha} != expected {expected_public_manifest_sha256}"
+            )
+        validation_mode = AUTHENTICATED_VALIDATION_LABEL
+        man_json = json.loads(raw_man.decode("utf-8"))
+    elif public_package_dir and public_package_dir.is_dir():
+        # Unanchored Mode: Observed inventory without external anchor
         manifest_file = public_package_dir / "canonical_bundle_manifest.json"
         if manifest_file.is_file():
             raw_man, man_sha, man_size = read_verified_buffer(manifest_file)
-
-            # Check expected trust anchor if provided
-            if expected_public_manifest_sha256 is not None:
-                if man_sha != expected_public_manifest_sha256:
-                    raise ValueError(
-                        f"Public manifest digest mismatch: actual {man_sha} != expected {expected_public_manifest_sha256}"
-                    )
-                validation_mode = "canonical_authenticated_validation"
-            else:
-                validation_mode = "observed_inventory"
-
+            validation_mode = UNANCHORED_VALIDATION_LABEL
             man_json = json.loads(raw_man.decode("utf-8"))
+        else:
+            manifest_file = None
+            raw_man = None
+            validation_mode = UNANCHORED_VALIDATION_LABEL
+            man_json = None
+    else:
+        manifest_file = None
+        raw_man = None
+        validation_mode = UNANCHORED_VALIDATION_LABEL
+        man_json = None
 
-            # Inventory all declared items
-            declared_items: List[Dict[str, Any]] = []
+    if man_json is not None and public_package_dir is not None and manifest_file is not None:
+        declared_items: List[Dict[str, Any]] = []
 
-            # A. Byte preserved files
-            for rel_p, spec in sorted(man_json.get("byte_preserved_files", {}).items()):
-                target_f = public_package_dir / rel_p
-                item_rec: Dict[str, Any] = {
-                    "relative_path": rel_p,
-                    "classification": spec.get("classification", "byte_exact_preserved"),
-                    "manifest_sha256": spec["sha256"],
-                    "manifest_size_bytes": spec["size_bytes"],
-                }
-                if target_f.is_file():
-                    _, actual_item_sha, actual_item_sz = read_verified_buffer(target_f)
-                    item_rec["actual_sha256"] = actual_item_sha
-                    item_rec["actual_size_bytes"] = actual_item_sz
-                    item_rec["status"] = "VERIFIED_BYTE_EXACT" if (actual_item_sha == spec["sha256"] and actual_item_sz == spec["size_bytes"]) else "MISMATCH"
-                else:
-                    item_rec["status"] = "MISSING_FROM_STAGING"
-                declared_items.append(item_rec)
-
-            # B. Sanitized transformed files
-            for rel_p, spec in sorted(man_json.get("sanitized_transformed_files", {}).items()):
-                target_f = public_package_dir / rel_p
-                item_rec = {
-                    "relative_path": rel_p,
-                    "classification": "sanitized_transformed",
-                    "original_sha256": spec.get("original_sha256"),
-                    "manifest_sha256": spec["sanitized_sha256"],
-                    "manifest_size_bytes": spec["size_bytes"],
-                    "numerical_invariance": spec.get("numerical_invariance"),
-                }
-                if target_f.is_file():
-                    _, actual_item_sha, actual_item_sz = read_verified_buffer(target_f)
-                    item_rec["actual_sha256"] = actual_item_sha
-                    item_rec["actual_size_bytes"] = actual_item_sz
-                    item_rec["status"] = "VERIFIED_SANITIZED_EXACT" if (actual_item_sha == spec["sanitized_sha256"] and actual_item_sz == spec["size_bytes"]) else "MISMATCH"
-                else:
-                    item_rec["status"] = "MISSING_FROM_STAGING"
-                declared_items.append(item_rec)
-
-            # C. Sanitized provenance assets
-            for rel_p, spec in sorted(man_json.get("sanitized_provenance_assets", {}).items()):
-                target_f = public_package_dir / rel_p
-                item_rec = {
-                    "relative_path": rel_p,
-                    "classification": "sanitized_provenance",
-                    "original_sha256": spec.get("original_sha256"),
-                    "manifest_sha256": spec["sanitized_sha256"],
-                    "manifest_size_bytes": spec["size_bytes"],
-                    "derivation": spec.get("derivation"),
-                }
-                if target_f.is_file():
-                    _, actual_item_sha, actual_item_sz = read_verified_buffer(target_f)
-                    item_rec["actual_sha256"] = actual_item_sha
-                    item_rec["actual_size_bytes"] = actual_item_sz
-                    item_rec["status"] = "VERIFIED_PROVENANCE_EXACT" if (actual_item_sha == spec["sanitized_sha256"] and actual_item_sz == spec["size_bytes"]) else "MISMATCH"
-                else:
-                    item_rec["status"] = "MISSING_FROM_STAGING"
-                declared_items.append(item_rec)
-
-            # D. Runtime assets
-            for rel_p, spec in sorted(man_json.get("runtime_assets", {}).items()):
-                target_f = public_package_dir / rel_p
-                item_rec = {
-                    "relative_path": rel_p,
-                    "classification": "runtime_asset",
-                    "manifest_sha256": spec["sha256"],
-                    "manifest_size_bytes": spec["size_bytes"],
-                }
-                if target_f.is_file():
-                    _, actual_item_sha, actual_item_sz = read_verified_buffer(target_f)
-                    item_rec["actual_sha256"] = actual_item_sha
-                    item_rec["actual_size_bytes"] = actual_item_sz
-                    item_rec["status"] = "VERIFIED_RUNTIME_EXACT" if (actual_item_sha == spec["sha256"] and actual_item_sz == spec["size_bytes"]) else "MISMATCH"
-                else:
-                    item_rec["status"] = "MISSING_FROM_STAGING"
-                declared_items.append(item_rec)
-
-            public_pkg_info = {
-                "manifest_path": str(manifest_file.relative_to(repo_root).as_posix() if manifest_file.is_relative_to(repo_root) else manifest_file),
-                "manifest_sha256": man_sha,
-                "manifest_size_bytes": man_size,
-                "validation_mode": validation_mode,
-                "total_declared_items": len(declared_items),
-                "declared_items": declared_items,
+        # A. Byte preserved files
+        for rel_p, spec in sorted(man_json.get("byte_preserved_files", {}).items()):
+            target_f = public_package_dir / rel_p
+            item_rec: Dict[str, Any] = {
+                "relative_path": rel_p,
+                "classification": spec.get("classification", "byte_exact_preserved"),
+                "manifest_sha256": spec["sha256"],
+                "manifest_size_bytes": spec["size_bytes"],
             }
+            if target_f.is_file():
+                _, actual_item_sha, actual_item_sz = read_verified_buffer(target_f)
+                item_rec["actual_sha256"] = actual_item_sha
+                item_rec["actual_size_bytes"] = actual_item_sz
+                if actual_item_sha == spec["sha256"] and actual_item_sz == spec["size_bytes"]:
+                    item_rec["status"] = "VERIFIED_BYTE_EXACT"
+                else:
+                    item_rec["status"] = "MISMATCH"
+                    if expected_public_manifest_sha256 is not None:
+                        raise ValueError(
+                            f"Public package declared item mismatch for {rel_p}: actual ({actual_item_sha}, {actual_item_sz} bytes) != expected ({spec['sha256']}, {spec['size_bytes']} bytes)"
+                        )
+            else:
+                item_rec["status"] = "MISSING_FROM_STAGING"
+                if expected_public_manifest_sha256 is not None:
+                    raise FileNotFoundError(f"Public package declared item missing from staging: {target_f}")
+            declared_items.append(item_rec)
+
+        # B. Sanitized transformed files
+        for rel_p, spec in sorted(man_json.get("sanitized_transformed_files", {}).items()):
+            target_f = public_package_dir / rel_p
+            item_rec = {
+                "relative_path": rel_p,
+                "classification": "sanitized_transformed",
+                "original_sha256": spec.get("original_sha256"),
+                "manifest_sha256": spec["sanitized_sha256"],
+                "manifest_size_bytes": spec["size_bytes"],
+                "numerical_invariance": spec.get("numerical_invariance"),
+            }
+            if target_f.is_file():
+                _, actual_item_sha, actual_item_sz = read_verified_buffer(target_f)
+                item_rec["actual_sha256"] = actual_item_sha
+                item_rec["actual_size_bytes"] = actual_item_sz
+                if actual_item_sha == spec["sanitized_sha256"] and actual_item_sz == spec["size_bytes"]:
+                    item_rec["status"] = "VERIFIED_SANITIZED_EXACT"
+                else:
+                    item_rec["status"] = "MISMATCH"
+                    if expected_public_manifest_sha256 is not None:
+                        raise ValueError(
+                            f"Public package declared item mismatch for {rel_p}: actual ({actual_item_sha}, {actual_item_sz} bytes) != expected ({spec['sanitized_sha256']}, {spec['size_bytes']} bytes)"
+                        )
+            else:
+                item_rec["status"] = "MISSING_FROM_STAGING"
+                if expected_public_manifest_sha256 is not None:
+                    raise FileNotFoundError(f"Public package declared item missing from staging: {target_f}")
+            declared_items.append(item_rec)
+
+        # C. Sanitized provenance assets
+        for rel_p, spec in sorted(man_json.get("sanitized_provenance_assets", {}).items()):
+            target_f = public_package_dir / rel_p
+            item_rec = {
+                "relative_path": rel_p,
+                "classification": "sanitized_provenance",
+                "original_sha256": spec.get("original_sha256"),
+                "manifest_sha256": spec["sanitized_sha256"],
+                "manifest_size_bytes": spec["size_bytes"],
+                "derivation": spec.get("derivation"),
+            }
+            if target_f.is_file():
+                _, actual_item_sha, actual_item_sz = read_verified_buffer(target_f)
+                item_rec["actual_sha256"] = actual_item_sha
+                item_rec["actual_size_bytes"] = actual_item_sz
+                if actual_item_sha == spec["sanitized_sha256"] and actual_item_sz == spec["size_bytes"]:
+                    item_rec["status"] = "VERIFIED_PROVENANCE_EXACT"
+                else:
+                    item_rec["status"] = "MISMATCH"
+                    if expected_public_manifest_sha256 is not None:
+                        raise ValueError(
+                            f"Public package declared item mismatch for {rel_p}: actual ({actual_item_sha}, {actual_item_sz} bytes) != expected ({spec['sanitized_sha256']}, {spec['size_bytes']} bytes)"
+                        )
+            else:
+                item_rec["status"] = "MISSING_FROM_STAGING"
+                if expected_public_manifest_sha256 is not None:
+                    raise FileNotFoundError(f"Public package declared item missing from staging: {target_f}")
+            declared_items.append(item_rec)
+
+        # D. Runtime assets
+        for rel_p, spec in sorted(man_json.get("runtime_assets", {}).items()):
+            target_f = public_package_dir / rel_p
+            item_rec = {
+                "relative_path": rel_p,
+                "classification": "runtime_asset",
+                "manifest_sha256": spec["sha256"],
+                "manifest_size_bytes": spec["size_bytes"],
+            }
+            if target_f.is_file():
+                _, actual_item_sha, actual_item_sz = read_verified_buffer(target_f)
+                item_rec["actual_sha256"] = actual_item_sha
+                item_rec["actual_size_bytes"] = actual_item_sz
+                if actual_item_sha == spec["sha256"] and actual_item_sz == spec["size_bytes"]:
+                    item_rec["status"] = "VERIFIED_RUNTIME_EXACT"
+                else:
+                    item_rec["status"] = "MISMATCH"
+                    if expected_public_manifest_sha256 is not None:
+                        raise ValueError(
+                            f"Public package declared item mismatch for {rel_p}: actual ({actual_item_sha}, {actual_item_sz} bytes) != expected ({spec['sha256']}, {spec['size_bytes']} bytes)"
+                        )
+            else:
+                item_rec["status"] = "MISSING_FROM_STAGING"
+                if expected_public_manifest_sha256 is not None:
+                    raise FileNotFoundError(f"Public package declared item missing from staging: {target_f}")
+            declared_items.append(item_rec)
+
+        public_pkg_info = {
+            "manifest_path": str(manifest_file.relative_to(repo_root).as_posix() if manifest_file.is_relative_to(repo_root) else manifest_file),
+            "manifest_sha256": man_sha,
+            "manifest_size_bytes": man_size,
+            "validation_mode": validation_mode,
+            "total_declared_items": len(declared_items),
+            "declared_items": declared_items,
+        }
 
     return {
         "schema_version": "public-repro-inventory-v1",
@@ -396,6 +470,15 @@ def collect_inventory(
         "source_repository": "habachcp6/RAG2ATTCK",
         "input_authority_git_sha": INPUT_AUTHORITY_GIT_SHA,
         "producer_git_head_sha": current_git_head,
+        "ground_truth_census": {
+            "total_pairs": 670,
+            "total_views": 1340,
+            "test_pairs": 640,
+            "test_views": 1280,
+            "dev_pairs": 30,
+            "dev_views": 60,
+            "split_manifest_path": "data/ground_truth/synthetic/split_manifest.json",
+        },
         "summary": {
             "total_master_artifacts": len(master_artifacts),
             "canonical_bundle_sha256": bundle_sha,
@@ -408,7 +491,7 @@ def collect_inventory(
             "protocol_decisions_digest": proto_decisions_digest,
             "public_package_manifest_sha256": public_pkg_info["manifest_sha256"] if public_pkg_info else None,
             "public_package_declared_items": public_pkg_info["total_declared_items"] if public_pkg_info else 0,
-            "public_package_validation_mode": public_pkg_info["validation_mode"] if public_pkg_info else "uninspected",
+            "public_package_validation_mode": public_pkg_info["validation_mode"] if public_pkg_info else UNANCHORED_VALIDATION_LABEL,
         },
         "artifacts": master_artifacts,
         "code_manifest_details": {
@@ -480,25 +563,32 @@ def update_plan_markdown(plan_path: Path, inventory: Dict[str, Any]) -> None:
     )
     # Protocol Configuration
     content = re.sub(
-        r"- \*\*Protocol Configuration \(`config/experiment_protocol_v1.json`\):\*\*\s*\n\s*\* Raw File SHA-256: `[a-f0-9]+` \([\d,]+ bytes\)\.\s*\n\s*\* Semantic Decisions Digest: `[a-f0-9]+`",
-        f"- **Protocol Configuration (`config/experiment_protocol_v1.json`):**\n  * Raw File SHA-256: `a402b04ab463172f9d4079bff27b089ca8a21ffd0805d097af6cb1f3c7b5a8fb` (1,051 bytes).\n  * Semantic Decisions Digest: `{proto_digest}` (computed over canonical D1–D7 fields).",
+        r"- \*\*Protocol Configuration \(`config/experiment_protocol_v1.json`\)(?::|\*\*:?)[\s\S]*?(?=- \*\*Pricing Configuration)",
+        f"- **Protocol Configuration (`config/experiment_protocol_v1.json`):**\n  * Raw File SHA-256: `a402b04ab463172f9d4079bff27b089ca8a21ffd0805d097af6cb1f3c7b5a8fb` (1,051 bytes).\n  * Semantic Decisions Digest: `{proto_digest}` (computed over canonical D1–D7 fields).\n",
         content,
     )
     # Pricing Configuration
     content = re.sub(
-        r"- \*\*Pricing Configuration \(`config/pricing_v1.json`\):\*\*\s*\n\s*\* Raw File SHA-256: `[a-f0-9]+` \([\d,]+ bytes\)\.\s*\n\s*\* Contract Semantic Digest: `[a-f0-9]+`",
-        f"- **Pricing Configuration (`config/pricing_v1.json`):**\n  * Raw File SHA-256: `e8afd6311f04dbbf5c34bb030e88a5b9d394f92c84d3e51feb32b327a08655a5` (1,468 bytes).\n  * Contract Semantic Digest: `{pricing_digest}` (computed over canonical tariff values).",
+        r"- \*\*Pricing Configuration \(`config/pricing_v1.json`\)(?::|\*\*:?)[\s\S]*?(?=- \*\*Code Manifest)",
+        f"- **Pricing Configuration (`config/pricing_v1.json`):**\n  * Raw File SHA-256: `e8afd6311f04dbbf5c34bb030e88a5b9d394f92c84d3e51feb32b327a08655a5` (1,468 bytes).\n  * Contract Semantic Digest: `{pricing_digest}` (computed over canonical tariff values).\n",
         content,
     )
-    # Ground Truth Dataset Paths
-    content = re.sub(
-        r"- Ground Truth File: `data/ground_truth/synthetic/ground_truth.jsonl`.*",
-        "- Ground Truth Test Split: `data/ground_truth/synthetic/ground_truth.jsonl` (733,851 bytes, SHA-256: `8f3d73bac7e81336a3e90bfa5a5d0850a51ac5588385ee53ad940bcbc3612608`).",
-        content,
+    # Section 2D: Ground Truth Census & Dataset Partitioning
+    sec2d_block = (
+        "### D. Ground Truth Census & Dataset Partitioning\n"
+        "- **Total Benchmark Census:** 1,340 views / 670 pairs total, partitioned by `split_manifest.json` into:\n"
+        "  * **Test Split:** 1,280 views / 640 pairs (evaluated in canonical metric bundle v2).\n"
+        "  * **Dev Split:** 60 views / 30 pairs.\n"
+        "- **Dataset Files & Exact Inventory:**\n"
+        "  * Ground Truth Dataset: `data/ground_truth/synthetic/ground_truth.jsonl` (733,851 bytes, SHA-256: `8f3d73bac7e81336a3e90bfa5a5d0850a51ac5588385ee53ad940bcbc3612608`, 1,340 records / views).\n"
+        "  * Paired Views Dataset: `data/ground_truth/synthetic/views.jsonl` (153,500 bytes, SHA-256: `1e6b0d3bd525b8fe9f97ba9e5656905597a3939e47c130a9e6f74535e2cd421d`, 1,340 records / views).\n"
+        "  * Paired Cases Dataset: `data/ground_truth/synthetic/pairs.jsonl` (2,221,465 bytes, SHA-256: `079e57a441b18d127739f610e7f62c263d943eefa19ca4ea5c6eab8b8a07665d`, 670 records / pairs).\n"
+        "  * Split Manifest: `data/ground_truth/synthetic/split_manifest.json` (10,739 bytes, SHA-256: `37fce63ccaa6db8e13604b7e3783997a10635f58995881b5e41913e6f550f43f`, partitions 640 test pairs and 30 dev pairs).\n"
+        "- **Public Candidate Input Directory:** `inputs/{condition}_predictions.jsonl` and `inputs/run_summary.json` (strictly conforming to public package layout, avoiding fabricated paths under `artifacts/results/`).\n"
     )
     content = re.sub(
-        r"- Paired Views File: `data/ground_truth/synthetic/views.jsonl`.*",
-        "- Paired Views Test Split: `data/ground_truth/synthetic/views.jsonl` (153,500 bytes, SHA-256: `1e6b0d3bd525b8fe9f97ba9e5656905597a3939e47c130a9e6f74535e2cd421d`).",
+        r"### D\. Ground Truth (?:Census & Dataset Partitioning|& Dataset Paths)[\s\S]*?(?=### E\.)",
+        sec2d_block + "\n",
         content,
     )
 
@@ -507,8 +597,7 @@ def update_plan_markdown(plan_path: Path, inventory: Dict[str, Any]) -> None:
         r"(## 3\. Calibrated Master Evidence Inventory\s*\n\n)(?:\|[^\n]+\n)+",
         re.MULTILINE,
     )
-    replacement = f"\\1{table_md}\n"
-    new_content, count = sec3_pattern.subn(replacement, content)
+    new_content, count = sec3_pattern.subn(f"\\1{table_md}\n", content)
     if count == 0:
         table_start = content.find("## 3. Calibrated Master Evidence Inventory")
         if table_start != -1:
@@ -587,6 +676,20 @@ def main() -> int:
     )
 
     if args.check_only:
+        # If expected manifest hash was provided, verify authenticated validation succeeded
+        if args.expected_public_manifest_sha256 is not None:
+            pkg = inventory.get("public_canonical_package")
+            if not pkg:
+                print("FAIL: Expected public manifest SHA-256 was provided but package was not inspected.")
+                return 1
+            if pkg.get("validation_mode") != AUTHENTICATED_VALIDATION_LABEL:
+                print(f"FAIL: Expected validation mode {AUTHENTICATED_VALIDATION_LABEL}, got {pkg.get('validation_mode')}")
+                return 1
+            for item in pkg.get("declared_items", []):
+                if not item.get("status", "").startswith("VERIFIED_"):
+                    print(f"FAIL: Item {item.get('relative_path')} status is not verified: {item.get('status')}")
+                    return 1
+
         print("PASS: Authoritative inventory collection verified successfully in check mode.")
         print(f"Total master artifacts: {inventory['summary']['total_master_artifacts']}")
         print(f"Bundle SHA-256: {inventory['summary']['canonical_bundle_sha256']}")

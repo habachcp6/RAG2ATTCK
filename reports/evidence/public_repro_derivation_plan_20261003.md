@@ -40,19 +40,25 @@ Independent review of the actual Git objects, disk contents, and `public_v3` pac
 ### C. Distinction Between Raw File Hashes vs. Semantic Mapping Digests
 - **Protocol Configuration (`config/experiment_protocol_v1.json`):**
   * Raw File SHA-256: `a402b04ab463172f9d4079bff27b089ca8a21ffd0805d097af6cb1f3c7b5a8fb` (1,051 bytes).
-  * Semantic Decisions Digest: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c` (computed over canonical D1–D7 fields). (computed over canonical D1–D7 fields). (computed over canonical D1–D7 fields).
+  * Semantic Decisions Digest: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c` (computed over canonical D1–D7 fields).
 - **Pricing Configuration (`config/pricing_v1.json`):**
   * Raw File SHA-256: `e8afd6311f04dbbf5c34bb030e88a5b9d394f92c84d3e51feb32b327a08655a5` (1,468 bytes).
-  * Contract Semantic Digest: `4adfe8a0630bc1703a92e233133ea55eeff21ef5312dc3102369c267767c9565` (computed over canonical tariff values). (computed over canonical tariff values). (computed over tariff values).
+  * Contract Semantic Digest: `4adfe8a0630bc1703a92e233133ea55eeff21ef5312dc3102369c267767c9565` (computed over canonical tariff values).
 - **Code Manifest:**
   * Digest `8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4` represents the **semantic code manifest hash** across the 53 frozen core files, computed dynamically by `compute_code_manifest_sha256()`. There is no separate physical file named `code_manifest`.
 - **Root Freeze Envelope:**
   * Located at `reports/evidence/root_metric_bundle_v2_freeze_95c0233.json` (SHA-256: `e284344e8d571a61e40aa03dd6fbf529dc1e097378f2532c07d596936c10fad2`). Created following B `95c0233` during integration `17ae696`.
 
-### D. Ground Truth & Dataset Paths
-- Ground Truth Test Split: `data/ground_truth/synthetic/ground_truth.jsonl` (733,851 bytes, SHA-256: `8f3d73bac7e81336a3e90bfa5a5d0850a51ac5588385ee53ad940bcbc3612608`).
-- Paired Views Test Split: `data/ground_truth/synthetic/views.jsonl` (153,500 bytes, SHA-256: `1e6b0d3bd525b8fe9f97ba9e5656905597a3939e47c130a9e6f74535e2cd421d`).
-- Public Candidate Input Directory: `inputs/{condition}_predictions.jsonl` and `inputs/run_summary.json` (strictly conforming to public package layout, avoiding fabricated paths under `artifacts/results/`).
+### D. Ground Truth Census & Dataset Partitioning
+- **Total Benchmark Census:** 1,340 views / 670 pairs total, partitioned by `split_manifest.json` into:
+  * **Test Split:** 1,280 views / 640 pairs (evaluated in canonical metric bundle v2).
+  * **Dev Split:** 60 views / 30 pairs.
+- **Dataset Files & Exact Inventory:**
+  * Ground Truth Dataset: `data/ground_truth/synthetic/ground_truth.jsonl` (733,851 bytes, SHA-256: `8f3d73bac7e81336a3e90bfa5a5d0850a51ac5588385ee53ad940bcbc3612608`, 1,340 records / views).
+  * Paired Views Dataset: `data/ground_truth/synthetic/views.jsonl` (153,500 bytes, SHA-256: `1e6b0d3bd525b8fe9f97ba9e5656905597a3939e47c130a9e6f74535e2cd421d`, 1,340 records / views).
+  * Paired Cases Dataset: `data/ground_truth/synthetic/pairs.jsonl` (2,221,465 bytes, SHA-256: `079e57a441b18d127739f610e7f62c263d943eefa19ca4ea5c6eab8b8a07665d`, 670 records / pairs).
+  * Split Manifest: `data/ground_truth/synthetic/split_manifest.json` (10,739 bytes, SHA-256: `37fce63ccaa6db8e13604b7e3783997a10635f58995881b5e41913e6f550f43f`, partitions 640 test pairs and 30 dev pairs).
+- **Public Candidate Input Directory:** `inputs/{condition}_predictions.jsonl` and `inputs/run_summary.json` (strictly conforming to public package layout, avoiding fabricated paths under `artifacts/results/`).
 
 ### E. Locked Toolchain & NumPy Specification
 - Lockfile (`uv.lock`): 355,010 bytes, SHA-256: `77cd432fddf200a53671e6496cf1e046441823444cb490b9ead021944f4174a7`.
@@ -78,9 +84,10 @@ Independent review of the actual Git objects, disk contents, and `public_v3` pac
 | **Pricing Contract (Semantic)** | `config/pricing_v1.json` | — | `4adfe8a0630bc1703a92e233133ea55eeff21ef5312dc3102369c267767c9565` | Canonical JSON tariff digest |
 | **Code Manifest (53 Core Files)** | `src/, config/, prompts/, pyproject.toml, .python-version` | — | `8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4` | Canonical JSON digest of path->file-hash mapping (not AST) |
 | **RQ Evaluation Source Script** | `scripts/analysis/evaluate_rqs.py` | 126,249 | `f85d7f7373e825dcc7171ce4491fd15c6fb755955da245041783fe317bc80351` | Exact file bytes (Frozen S2 Evaluator) |
-| **Ground Truth Test Dataset** | `data/ground_truth/synthetic/ground_truth.jsonl` | 733,851 | `8f3d73bac7e81336a3e90bfa5a5d0850a51ac5588385ee53ad940bcbc3612608` | Exact file bytes (Synthetic test split ground truth, N=1,280) |
-| **Paired Views Test Dataset** | `data/ground_truth/synthetic/views.jsonl` | 153,500 | `1e6b0d3bd525b8fe9f97ba9e5656905597a3939e47c130a9e6f74535e2cd421d` | Exact file bytes (Synthetic test paired views, N=1,280 / 640 pairs) |
-| **Paired Cases Dataset** | `data/ground_truth/synthetic/pairs.jsonl` | 2,221,465 | `079e57a441b18d127739f610e7f62c263d943eefa19ca4ea5c6eab8b8a07665d` | Exact file bytes (Benchmark paired telemetry cases) |
+| **Ground Truth Dataset** | `data/ground_truth/synthetic/ground_truth.jsonl` | 733,851 | `8f3d73bac7e81336a3e90bfa5a5d0850a51ac5588385ee53ad940bcbc3612608` | Exact file bytes (Benchmark ground truth, 1,340 views: 1,280 test + 60 dev) |
+| **Paired Views Dataset** | `data/ground_truth/synthetic/views.jsonl` | 153,500 | `1e6b0d3bd525b8fe9f97ba9e5656905597a3939e47c130a9e6f74535e2cd421d` | Exact file bytes (Benchmark paired views, 1,340 views: 1,280 test + 60 dev) |
+| **Paired Cases Dataset** | `data/ground_truth/synthetic/pairs.jsonl` | 2,221,465 | `079e57a441b18d127739f610e7f62c263d943eefa19ca4ea5c6eab8b8a07665d` | Exact file bytes (Benchmark paired cases, 670 pairs: 640 test + 30 dev) |
+| **Split Manifest Dataset Partition** | `data/ground_truth/synthetic/split_manifest.json` | 10,739 | `37fce63ccaa6db8e13604b7e3783997a10635f58995881b5e41913e6f550f43f` | Exact file bytes (Partitioning 640 test pairs / 30 dev pairs) |
 | **Locked Dependencies** | `uv.lock` | 355,010 | `77cd432fddf200a53671e6496cf1e046441823444cb490b9ead021944f4174a7` | Exact file bytes (NumPy 2.5.3 frozen environment) |
 
 ---

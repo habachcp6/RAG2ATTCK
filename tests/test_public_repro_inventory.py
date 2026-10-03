@@ -3,7 +3,8 @@ tests/test_public_repro_inventory.py
 
 Unit and integration tests for public reproduction inventory collector.
 Verifies all file sizes, SHA-256 digests, and semantic mappings directly against disk
-to ensure 100% factual accuracy and zero divergence.
+to ensure 100% factual accuracy, read-once mapping integrity, fail-closed CLI checks,
+and census synchronization.
 """
 
 from __future__ import annotations
@@ -12,18 +13,23 @@ import hashlib
 import json
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 from scripts.collect_public_repro_inventory import (
+    AUTHENTICATED_VALIDATION_LABEL,
     EXPECTED_PUBLIC_MANIFEST_SHA256,
     INPUT_AUTHORITY_GIT_SHA,
     REPO_ROOT,
+    UNANCHORED_VALIDATION_LABEL,
     collect_inventory,
     generate_master_markdown_table,
+    get_git_head_sha,
     read_verified_buffer,
     update_plan_markdown,
 )
+from src.experiment.config import canonical_bytes, digest
 from src.experiment.authorization import compute_code_manifest, compute_code_manifest_sha256
 
 
@@ -52,14 +58,26 @@ class TestPublicReproInventory:
         # Verify dynamic git head discovery
         assert "producer_git_head_sha" in inventory
         assert len(inventory["producer_git_head_sha"]) == 40
+        assert inventory["producer_git_head_sha"] == get_git_head_sha(REPO_ROOT)
 
-        # Verify ISO 8601 UTC timestamp format
+        # Verify ISO 8601 UTC timestamp format with trailing 'Z'
         ts = inventory["generated_timestamp_utc"]
-        parsed = datetime.fromisoformat(ts)
+        assert ts.endswith("Z")
+        parsed = datetime.fromisoformat(ts.replace("Z", "+00:00"))
         assert parsed is not None
 
+        # Verify ground truth census
+        assert "ground_truth_census" in inventory
+        census = inventory["ground_truth_census"]
+        assert census["total_pairs"] == 670
+        assert census["total_views"] == 1340
+        assert census["test_pairs"] == 640
+        assert census["test_views"] == 1280
+        assert census["dev_pairs"] == 30
+        assert census["dev_views"] == 60
+
         assert "artifacts" in inventory
-        assert len(inventory["artifacts"]) >= 15
+        assert len(inventory["artifacts"]) >= 16
         assert inventory["summary"]["total_master_artifacts"] == len(inventory["artifacts"])
 
     def test_single_read_verified_buffer_contract(self) -> None:
@@ -73,6 +91,23 @@ class TestPublicReproInventory:
         # Fail closed on non-existent path
         with pytest.raises(FileNotFoundError):
             read_verified_buffer(REPO_ROOT / "non_existent_file_xyz.json")
+
+    def test_read_once_mapping_integrity(self) -> None:
+        """Verify that code manifest files are read exactly once without duplicate disk access."""
+        with patch("scripts.collect_public_repro_inventory.compute_code_manifest") as mock_manifest:
+            mock_manifest.return_value = {"src/test.py": "abc123hash"}
+            freeze_path = REPO_ROOT / "reports/evidence/root_metric_bundle_v2_freeze_95c0233.json"
+            log_path = REPO_ROOT / "logs/task-1264.log"
+            inv = collect_inventory(
+                repo_root=REPO_ROOT,
+                freeze_envelope_path=freeze_path,
+                terminal_log_path=log_path,
+            )
+            # Verify compute_code_manifest was called exactly once
+            assert mock_manifest.call_count == 1
+            # Verify code manifest SHA was computed directly from the returned dictionary
+            expected_sha = digest(canonical_bytes({"src/test.py": "abc123hash"}))
+            assert inv["summary"]["code_manifest_sha256"] == expected_sha
 
     def test_actual_disk_file_bytes_and_hashes(self, inventory: dict) -> None:
         """Verify that every recorded master file exists on disk and matches exact byte length and SHA-256."""
@@ -134,12 +169,12 @@ class TestPublicReproInventory:
         assert pricing_sem["sha256"] == "4adfe8a0630bc1703a92e233133ea55eeff21ef5312dc3102369c267767c9565"
 
     def test_exact_ground_truth_and_views_sizes(self, inventory: dict) -> None:
-        """Verify synthetic benchmark dataset sizes and hashes distinguishing test split from full pairs."""
-        gt_art = next(a for a in inventory["artifacts"] if a["logical_name"] == "Ground Truth Test Dataset")
+        """Verify benchmark dataset sizes and hashes with census synchronization (1,340 views / 670 pairs)."""
+        gt_art = next(a for a in inventory["artifacts"] if a["logical_name"] == "Ground Truth Dataset")
         assert gt_art["file_bytes"] == 733851
         assert gt_art["sha256"] == "8f3d73bac7e81336a3e90bfa5a5d0850a51ac5588385ee53ad940bcbc3612608"
 
-        views_art = next(a for a in inventory["artifacts"] if a["logical_name"] == "Paired Views Test Dataset")
+        views_art = next(a for a in inventory["artifacts"] if a["logical_name"] == "Paired Views Dataset")
         assert views_art["file_bytes"] == 153500
         assert views_art["sha256"] == "1e6b0d3bd525b8fe9f97ba9e5656905597a3939e47c130a9e6f74535e2cd421d"
 
@@ -147,8 +182,12 @@ class TestPublicReproInventory:
         assert pairs_art["file_bytes"] == 2221465
         assert pairs_art["sha256"] == "079e57a441b18d127739f610e7f62c263d943eefa19ca4ea5c6eab8b8a07665d"
 
+        split_art = next(a for a in inventory["artifacts"] if a["logical_name"] == "Split Manifest Dataset Partition")
+        assert split_art["file_bytes"] == 10739
+        assert split_art["sha256"] == "37fce63ccaa6db8e13604b7e3783997a10635f58995881b5e41913e6f550f43f"
+
     def test_exact_execution_log_and_canonical_seal(self, inventory: dict) -> None:
-        """Verify execution terminal log and run seal constants."""
+        """Verify execution terminal log (1,141 bytes) and run seal constants."""
         log_art = next(a for a in inventory["artifacts"] if a["classification"] == "terminal_log")
         assert log_art["file_bytes"] == 1141
         assert log_art["sha256"] == "fcacacf67d72797b8f1781d4998ed77bbf6d3e59e3e4d2e26fd0a9a7cca29b44"
@@ -173,12 +212,12 @@ class TestPublicReproInventory:
         assert rq_art["file_bytes"] == 126249
 
     def test_public_package_comprehensive_coverage(self, inventory: dict) -> None:
-        """Verify descriptor 32f and all 23 declared public package items."""
+        """Verify descriptor 32f and all 23 declared public package items in authenticated mode."""
         pkg = inventory.get("public_canonical_package")
         assert pkg is not None
         assert pkg["manifest_sha256"] == EXPECTED_PUBLIC_MANIFEST_SHA256
         assert pkg["manifest_size_bytes"] == 11193
-        assert pkg["validation_mode"] == "canonical_authenticated_validation"
+        assert pkg["validation_mode"] == AUTHENTICATED_VALIDATION_LABEL
         assert pkg["total_declared_items"] == 23
 
         # Verify all declared items in staging matched
@@ -190,23 +229,99 @@ class TestPublicReproInventory:
                 "VERIFIED_RUNTIME_EXACT",
             }
 
-    def test_public_package_trust_anchor_mismatch_fails_closed(self) -> None:
-        """Verify that supplying an incorrect expected anchor fails closed."""
+    def test_unanchored_mode_validation_label(self) -> None:
+        """Verify that omitting external trust anchor labels validation mode as unanchored."""
         freeze_path = REPO_ROOT / "reports/evidence/root_metric_bundle_v2_freeze_95c0233.json"
         log_path = REPO_ROOT / "logs/task-1264.log"
         pkg_dir = REPO_ROOT / "artifacts/public_package_staging/03_public_canonical_package"
 
+        inv = collect_inventory(
+            repo_root=REPO_ROOT,
+            freeze_envelope_path=freeze_path,
+            terminal_log_path=log_path,
+            public_package_dir=pkg_dir,
+            expected_public_manifest_sha256=None,
+        )
+        assert inv["summary"]["public_package_validation_mode"] == UNANCHORED_VALIDATION_LABEL
+        assert inv["public_canonical_package"]["validation_mode"] == UNANCHORED_VALIDATION_LABEL
+
+    def test_authenticated_mode_fail_closed_checks(self, tmp_path: Path) -> None:
+        """Verify fail-closed behavior when expected trust anchor is supplied."""
+        freeze_path = REPO_ROOT / "reports/evidence/root_metric_bundle_v2_freeze_95c0233.json"
+        log_path = REPO_ROOT / "logs/task-1264.log"
+
+        # 1. Non-existent package directory fails closed
+        with pytest.raises(FileNotFoundError, match="Public package directory not found"):
+            collect_inventory(
+                repo_root=REPO_ROOT,
+                freeze_envelope_path=freeze_path,
+                terminal_log_path=log_path,
+                public_package_dir=tmp_path / "does_not_exist",
+                expected_public_manifest_sha256=EXPECTED_PUBLIC_MANIFEST_SHA256,
+            )
+
+        # 2. Missing manifest descriptor fails closed
+        empty_dir = tmp_path / "empty_pkg"
+        empty_dir.mkdir()
+        with pytest.raises(FileNotFoundError, match="Public package manifest descriptor not found"):
+            collect_inventory(
+                repo_root=REPO_ROOT,
+                freeze_envelope_path=freeze_path,
+                terminal_log_path=log_path,
+                public_package_dir=empty_dir,
+                expected_public_manifest_sha256=EXPECTED_PUBLIC_MANIFEST_SHA256,
+            )
+
+        # 3. Descriptor hash mismatch fails closed
+        fake_manifest = empty_dir / "canonical_bundle_manifest.json"
+        fake_manifest.write_text("{}", encoding="utf-8")
         with pytest.raises(ValueError, match="Public manifest digest mismatch"):
             collect_inventory(
                 repo_root=REPO_ROOT,
                 freeze_envelope_path=freeze_path,
                 terminal_log_path=log_path,
-                public_package_dir=pkg_dir,
-                expected_public_manifest_sha256="0000000000000000000000000000000000000000000000000000000000000000",
+                public_package_dir=empty_dir,
+                expected_public_manifest_sha256=EXPECTED_PUBLIC_MANIFEST_SHA256,
+            )
+
+        # 4. Declared item missing from staging fails closed
+        mock_manifest_dict = {
+            "schema_version": "2.0.0",
+            "byte_preserved_files": {
+                "inputs/missing_item.json": {
+                    "sha256": "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+                    "size_bytes": 100,
+                }
+            },
+        }
+        mock_bytes = json.dumps(mock_manifest_dict).encode("utf-8")
+        mock_sha = hashlib.sha256(mock_bytes).hexdigest()
+        fake_manifest.write_bytes(mock_bytes)
+
+        with pytest.raises(FileNotFoundError, match="declared item missing from staging"):
+            collect_inventory(
+                repo_root=REPO_ROOT,
+                freeze_envelope_path=freeze_path,
+                terminal_log_path=log_path,
+                public_package_dir=empty_dir,
+                expected_public_manifest_sha256=mock_sha,
+            )
+
+        # 5. Declared item content mismatch fails closed
+        bad_item = empty_dir / "inputs/missing_item.json"
+        bad_item.parent.mkdir(parents=True, exist_ok=True)
+        bad_item.write_bytes(b"corrupted content")
+        with pytest.raises(ValueError, match="declared item mismatch"):
+            collect_inventory(
+                repo_root=REPO_ROOT,
+                freeze_envelope_path=freeze_path,
+                terminal_log_path=log_path,
+                public_package_dir=empty_dir,
+                expected_public_manifest_sha256=mock_sha,
             )
 
     def test_markdown_plan_table_sync(self, inventory: dict) -> None:
-        """Verify that markdown derivation plan contains the dynamically generated table."""
+        """Verify that markdown derivation plan contains the dynamically generated table and clean census."""
         plan_path = REPO_ROOT / "reports/evidence/public_repro_derivation_plan_20261003.md"
         assert plan_path.is_file()
         content = plan_path.read_text(encoding="utf-8")
@@ -219,11 +334,18 @@ class TestPublicReproInventory:
         assert "1,468" in content
         assert "733,851" in content
         assert "153,500" in content
+        assert "2,221,465" in content
+        assert "10,739" in content
         assert "3,046" in content
 
         # Must mention canonical digests
         assert "4adfe8a0630bc1703a92e233133ea55eeff21ef5312dc3102369c267767c9565" in content
         assert "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c" in content
+
+        # Must mention census breakdown
+        assert "1,340 views / 670 pairs total" in content
+        assert "1,280 views / 640 pairs" in content
+        assert "60 views / 30 pairs" in content
 
         # Ensure outdated 4adfe864 hash is completely gone
         assert "4adfe864" not in content

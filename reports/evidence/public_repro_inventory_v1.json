@@ -91,27 +91,35 @@
     },
     {
       "classification": "ground_truth",
-      "domain_authority": "Exact file bytes (Synthetic test split ground truth, N=1,280)",
+      "domain_authority": "Exact file bytes (Benchmark ground truth, 1,340 views: 1,280 test + 60 dev)",
       "file_bytes": 733851,
-      "logical_name": "Ground Truth Test Dataset",
+      "logical_name": "Ground Truth Dataset",
       "repository_path": "data/ground_truth/synthetic/ground_truth.jsonl",
       "sha256": "8f3d73bac7e81336a3e90bfa5a5d0850a51ac5588385ee53ad940bcbc3612608"
     },
     {
       "classification": "ground_truth",
-      "domain_authority": "Exact file bytes (Synthetic test paired views, N=1,280 / 640 pairs)",
+      "domain_authority": "Exact file bytes (Benchmark paired views, 1,340 views: 1,280 test + 60 dev)",
       "file_bytes": 153500,
-      "logical_name": "Paired Views Test Dataset",
+      "logical_name": "Paired Views Dataset",
       "repository_path": "data/ground_truth/synthetic/views.jsonl",
       "sha256": "1e6b0d3bd525b8fe9f97ba9e5656905597a3939e47c130a9e6f74535e2cd421d"
     },
     {
       "classification": "ground_truth",
-      "domain_authority": "Exact file bytes (Benchmark paired telemetry cases)",
+      "domain_authority": "Exact file bytes (Benchmark paired cases, 670 pairs: 640 test + 30 dev)",
       "file_bytes": 2221465,
       "logical_name": "Paired Cases Dataset",
       "repository_path": "data/ground_truth/synthetic/pairs.jsonl",
       "sha256": "079e57a441b18d127739f610e7f62c263d943eefa19ca4ea5c6eab8b8a07665d"
+    },
+    {
+      "classification": "ground_truth_split",
+      "domain_authority": "Exact file bytes (Partitioning 640 test pairs / 30 dev pairs)",
+      "file_bytes": 10739,
+      "logical_name": "Split Manifest Dataset Partition",
+      "repository_path": "data/ground_truth/synthetic/split_manifest.json",
+      "sha256": "37fce63ccaa6db8e13604b7e3783997a10635f58995881b5e41913e6f550f43f"
     },
     {
       "classification": "dependency_lock",
@@ -182,9 +190,18 @@
       "uv.lock": "77cd432fddf200a53671e6496cf1e046441823444cb490b9ead021944f4174a7"
     }
   },
-  "generated_timestamp_utc": "2026-10-03T00:22:24.395386+00:00",
+  "generated_timestamp_utc": "2026-10-03T01:24:55Z",
+  "ground_truth_census": {
+    "dev_pairs": 30,
+    "dev_views": 60,
+    "split_manifest_path": "data/ground_truth/synthetic/split_manifest.json",
+    "test_pairs": 640,
+    "test_views": 1280,
+    "total_pairs": 670,
+    "total_views": 1340
+  },
   "input_authority_git_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
-  "producer_git_head_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+  "producer_git_head_sha": "19bcfc22bf8d38ece0d50ce148d197bfd4908513",
   "public_canonical_package": {
     "declared_items": [
       {
@@ -411,7 +428,7 @@
     "manifest_sha256": "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c",
     "manifest_size_bytes": 11193,
     "total_declared_items": 23,
-    "validation_mode": "canonical_authenticated_validation"
+    "validation_mode": "CANONICAL_AUTHENTICATED_VERIFICATION"
   },
   "schema_version": "public-repro-inventory-v1",
   "source_repository": "habachcp6/RAG2ATTCK",
@@ -426,7 +443,7 @@
     "protocol_decisions_digest": "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c",
     "public_package_declared_items": 23,
     "public_package_manifest_sha256": "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c",
-    "public_package_validation_mode": "canonical_authenticated_validation",
-    "total_master_artifacts": 15
+    "public_package_validation_mode": "CANONICAL_AUTHENTICATED_VERIFICATION",
+    "total_master_artifacts": 16
   }
 }

@@ -2,8 +2,8 @@
   "schema_version": "r9_saved_data_replay_provenance_v2",
   "timestamp_utc": "2026-10-03T12:57:38Z",
   "execution_identity": {
-    "execution_command": "uv run python scripts/reproduce_canonical_study.py --bundle-dir .tmp/unpacked_v4/base_public_v3 --output-dir .tmp/r9_replay_output --verify-hashes --audit-costs --replay-evaluation",
-    "command_scope_note": "The saved-data reproduction workflow authenticates bundle hashes, validates ledgers and journals, and re-evaluates the canonical dataset without running the protected baseline code verifier (which audits historical commit 80dbeb3f).",
+    "execution_command": "uv run python scripts/reproduce_canonical_study.py --bundle-dir .tmp/unpacked_v4/base_public_v3 --output-dir .tmp/r9_replay_output --verify-hashes --audit-costs --replay-evaluation --demo",
+    "command_scope_note": "The saved-data reproduction workflow authenticates bundle hashes, validates ledgers and journals, re-evaluates the canonical dataset, and executes the demo inspection cases, producing the exact line-for-line output captured in r9_saved_data_reproduction_raw.log without running the protected baseline code verifier (which audits historical commit 80dbeb3f).",
     "entrypoint_script": "scripts/reproduce_canonical_study.py",
     "entrypoint_script_sha256": "8b8ba93522cf10e59d64a56e4b0c25b957445937fce2ff4698f3600e0113391e",
     "tested_checkout_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
@@ -14,7 +14,7 @@
     "package_manager": "uv",
     "exit_code": 0
   },
-  "superseded_record_note": "Replaces previous record that erroneously referenced a non-existent CLI wrapper; the actual execution entrypoint is scripts/reproduce_canonical_study.py running under Python 3.13.0.",
+  "superseded_record_note": "Aligned in R13 to record the exact 4 execution flags (--verify-hashes --audit-costs --replay-evaluation --demo) matching the full transcript including demo inspection cases, verified via direct subprocess execution and capture.",
   "offline_guard_result": "installed=True attempted_egress=0, live_api_calls=0",
   "offline_guard_details": {
     "installed": true,

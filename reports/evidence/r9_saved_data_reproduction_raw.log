@@ -72,8 +72,8 @@ Executing Saved-Data Replay Evaluation -> D:\RAG2ATTCK-worktrees\finalization-20
   [PASS] RQ analysis source SHA-256 verified: f85d7f7373e825dcc7171ce4491fd15c6fb755955da245041783fe317bc80351
   Executing run_rq_analysis (RQ1, RQ2, RQ3, bootstrap=1000, seed=42)...
   RQ analysis execution completed successfully.
-  [PASS] rq_analysis.json                    MATCH (2000 scientific fields, sha256=a9eb7ad4d5ca7164...)
-  [INFO] rq_analysis_summary.md regenerated (sha256=f5bea8343bfede7b...)
+  [PASS] rq_analysis.json                    MATCH (2000 scientific fields, sha256=02698b3c040bc3c2...)
+  [INFO] rq_analysis_summary.md regenerated (sha256=586c87f1ab0f62bb...)
 
 --------------------------------------------------------------------------------
 ================================================================================

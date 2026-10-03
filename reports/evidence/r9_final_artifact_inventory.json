@@ -44,7 +44,7 @@
     },
     "base_v3_descriptor": {
       "exists": true,
-      "repo_relative_path": "artifacts/public_package_staging/03_public_canonical_package/canonical_bundle_manifest.json",
+      "repo_relative_path": "artifacts/public_package_staging/public_package_manifest.json",
       "size_bytes": 11193,
       "sha256": "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c",
       "expected_sha256": "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c",

@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 import shutil
 import sys
-from pathlib import Path
+
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -20,6 +22,12 @@ REAL_BUNDLE = REPO_ROOT / ".tmp/unpacked_v4/base_public_v3"
 REAL_CANDIDATE_ZIP = REPO_ROOT / ".tmp/downloaded_candidate/public_v4_candidate_20261003.zip"
 REAL_BUNDLE_V2 = REPO_ROOT / "artifacts/results/canonical_metric_bundle_v2.json"
 REAL_REPLAY_OUT = REPO_ROOT / ".tmp/r9_replay_output"
+
+HAS_REPLAY_FIXTURES = (
+    REAL_BUNDLE.is_dir()
+    and REAL_CANDIDATE_ZIP.is_file()
+    and REAL_REPLAY_OUT.is_dir()
+)
 
 
 def test_missing_candidate_zip_fails(tmp_path: Path):
@@ -85,6 +93,10 @@ def test_invalid_zip_fails(tmp_path: Path):
     assert any("FAIL_INVALID_ZIP" in d for d in report["defects"])
 
 
+@pytest.mark.skipif(
+    not HAS_REPLAY_FIXTURES,
+    reason="Requires locally staged candidate zip, bundle, and replay outputs",
+)
 def test_corrupt_bundle_hash_fails(tmp_path: Path):
     """Ensure bundle v2 hash mismatch fails closed with exit code 1 and sha_match=False."""
     corrupt_v2 = tmp_path / "canonical_metric_bundle_v2.json"
@@ -109,6 +121,10 @@ def test_corrupt_bundle_hash_fails(tmp_path: Path):
     assert any("FAIL_BUNDLE_HASH_MISMATCH" in d for d in report["defects"])
 
 
+@pytest.mark.skipif(
+    not HAS_REPLAY_FIXTURES,
+    reason="Requires locally staged candidate zip, bundle, and replay outputs",
+)
 def test_missing_replay_outputs_fails(tmp_path: Path):
     """Ensure missing replay outputs fails closed with exit code 1."""
     empty_replay_out = tmp_path / "empty_replay_output"
@@ -131,6 +147,10 @@ def test_missing_replay_outputs_fails(tmp_path: Path):
     assert any("FAIL_MISSING_REPLAY_OUTPUTS" in d for d in report["defects"])
 
 
+@pytest.mark.skipif(
+    not HAS_REPLAY_FIXTURES,
+    reason="Requires locally staged candidate zip, bundle, and replay outputs",
+)
 def test_comparator_mismatch_fails(tmp_path: Path):
     """Ensure comparator detects metric mismatch, sets status MISMATCH, and fails with exit 1."""
     tampered_replay = tmp_path / "tampered_replay_output"
@@ -173,6 +193,10 @@ def test_comparator_mismatch_fails(tmp_path: Path):
     assert any("FAIL_REPLAY_METRIC_MISMATCH" in d for d in report["defects"])
 
 
+@pytest.mark.skipif(
+    not HAS_REPLAY_FIXTURES,
+    reason="Requires locally staged candidate zip, bundle, and replay outputs",
+)
 def test_positive_control_on_valid_fixtures(tmp_path: Path):
     """Positive control: valid candidate zip, bundle, and replay outputs pass cleanly with exit 0."""
     out_report = tmp_path / "positive_report.json"

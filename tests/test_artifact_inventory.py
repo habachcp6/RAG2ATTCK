@@ -27,7 +27,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_ARTIFACT_REL_PATHS = [
     "artifacts/results/canonical_metric_bundle_v2.json",
     "reports/evidence/canonical_run_seal_v1.json",
-    "artifacts/public_package_staging/03_public_canonical_package/canonical_bundle_manifest.json",
+    "artifacts/public_package_staging/public_package_manifest.json",
     "reports/evidence/canonical_populated_report.md",
     "reports/evidence/canonical_populated_report.docx",
     "reports/evidence/populated_report_slots_canonical.json",

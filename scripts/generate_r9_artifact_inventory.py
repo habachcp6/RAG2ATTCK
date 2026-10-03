@@ -337,7 +337,11 @@ def generate_inventory(
             "expected_sha256": "ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701",
         },
         "base_v3_descriptor": {
-            "rel_path": "artifacts/public_package_staging/03_public_canonical_package/canonical_bundle_manifest.json",
+            "rel_path": (
+                "artifacts/public_package_staging/public_package_manifest.json"
+                if (repo_root / "artifacts/public_package_staging/public_package_manifest.json").is_file()
+                else "artifacts/public_package_staging/03_public_canonical_package/canonical_bundle_manifest.json"
+            ),
             "expected_sha256": "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c",
         },
     }

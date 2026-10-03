@@ -523,6 +523,16 @@ def run_all_probes() -> List[AuditProbeResult]:
 
 # Pytest Test Integration
 class TestSGAuditAdversarialProbes:
+    @pytest.fixture(autouse=True)
+    def check_candidate_staged(self, request: pytest.FixtureRequest) -> None:
+        if request.node.name in {"test_probe_7_check_safe_relative_path", "test_probe_8_symlink_and_containment_escape"}:
+            return
+        if not OUTPUT_V4_DEFAULT_DIR.is_dir() or not OUTPUT_V4_DEFAULT_ZIP.is_file():
+            pytest.skip(
+                f"Candidate public v4 package directory not present at {OUTPUT_V4_DEFAULT_DIR}; "
+                "required for staged candidate package probes"
+            )
+
     def test_probe_1_tool_disk_byte_tampering(self, tmp_path: Path) -> None:
         res = execute_probe_1(tmp_path)
         assert res.passed, f"Probe 1 failed: {res.observed_error}"

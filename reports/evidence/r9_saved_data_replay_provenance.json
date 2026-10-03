@@ -1,6 +1,6 @@
 {
   "schema_version": "r9_saved_data_replay_provenance_v2",
-  "timestamp_utc": "2026-10-03T12:57:38Z",
+  "timestamp_utc": "2026-10-03T15:41:40Z",
   "execution_identity": {
     "execution_command": "uv run python scripts/reproduce_canonical_study.py --bundle-dir .tmp/unpacked_v4/base_public_v3 --output-dir .tmp/r9_replay_output --verify-hashes --audit-costs --replay-evaluation --demo",
     "command_scope_note": "The saved-data reproduction workflow authenticates bundle hashes, validates ledgers and journals, re-evaluates the canonical dataset, and executes the demo inspection cases, producing the exact line-for-line output captured in r9_saved_data_reproduction_raw.log without running the protected baseline code verifier (which audits historical commit 80dbeb3f).",
@@ -54,15 +54,15 @@
       "size_bytes": 1541
     },
     "regenerated_native_6/run_provenance.json": {
-      "sha256": "d44842b816af992ba0e0042bd34e96ac4af447f4e0b2075ef24ab520c7f7e8c2",
+      "sha256": "9ca47bb367a6f250df59ab1efb62a63da7d9e4c8611e4e59dd2874e0236d7204",
       "size_bytes": 2929
     },
     "regenerated_rq/rq_analysis.json": {
-      "sha256": "a9eb7ad4d5ca7164223d7a0de473786498b00729d7e39a9493417f2a34e049a8",
+      "sha256": "02698b3c040bc3c20779568566d66e48aa2d3990b12205eebb98a708ac739870",
       "size_bytes": 38586
     },
     "regenerated_rq/rq_analysis_summary.md": {
-      "sha256": "f5bea8343bfede7b03265116fd5615562a63520328acc7a40088dac653fefc11",
+      "sha256": "586c87f1ab0f62bb358e3d8511f65acbfda33ac738da622c4f0ec641e1b135e5",
       "size_bytes": 7437
     }
   },

@@ -51,13 +51,7 @@ def _handle_dry_run(args: argparse.Namespace) -> int:
 
 
 def _handle_preflight(args: argparse.Namespace) -> int:
-    import os
-
-    snap_env = os.environ.get("RAG2ATTCK_SNAPSHOT_ROOT")
-    if snap_env and (Path(snap_env) / "config" / "canonical_experiment_lock_v1.json").is_file():
-        repo_root = Path(snap_env).resolve()
-    else:
-        repo_root = Path(__file__).resolve().parents[2]
+    repo_root = Path(__file__).resolve().parents[2]
 
     # Protocol file check
     protocol_path = (

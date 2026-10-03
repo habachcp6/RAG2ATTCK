@@ -1,9 +1,9 @@
 {
   "_metadata": {
     "fixture_only": true,
-    "disclaimer": "DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS",
-    "timestamp_utc": "2026-10-02T04:39:05.840002+00:00",
-    "source_fixture_dir": "D:\\RAG2ATTCK-worktrees\\report-s1\\tests\\fixtures\\report_fixtures"
+    "disclaimer": "[FIXTURE — PRE-CANONICAL RENDER TEST] DIAGNOSTIC TEST FIXTURE ONLY - NOT CANONICAL NUMERICAL RESULTS",
+    "timestamp_utc": "2026-10-03T03:56:36.058287+00:00",
+    "source_fixture_dir": "C:\\Users\\hahoa\\.codex\\artifacts\\rag2attck\\finalization_worktrees_20261003\\native-report\\tests\\fixtures\\report_fixtures"
   },
   "table_2a": {
     "no_rag": {
@@ -364,6 +364,10 @@
     "TOTAL_COMMITTED_SPEND_USD": "8.55264010",
     "NET_REMAINING_BUDGET_USD": "11.43735990",
     "UNDER_BUDGET_PERCENT": "57.22%",
+    "CACHE_TOKENS_AGGREGATE": "0",
+    "RAG_K1_CACHE_TOKENS_MEAN": "0.0",
+    "TOTAL_TERMINAL_RECORDS": "40",
+    "UNKNOWN_PHYSICAL_ATTEMPTS": "0",
     "RAG_K1_CI95": "[-3.892\\text{ pp}, +2.812\\text{ pp}]",
     "RQ1_K1_CI95": "[-3.892\\text{ pp}, +2.812\\text{ pp}]",
     "RQ1_RAG_K1_CI95": "[-3.892\\text{ pp}, +2.812\\text{ pp}]",

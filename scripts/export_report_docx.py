@@ -2,13 +2,16 @@
 
 Incorporates publication-quality typography, professional table formatting with
 OpenXML pagination rules (<w:tblHeader/>, <w:cantSplit/>), column width optimization,
-Unicode mathematical typesetting, callout styling, and rigorous QA verification.
+native OpenXML mathematical typesetting (OMML), callout styling, figure embedding with
+SDT locators and keep_with_next pagination, and rigorous QA verification.
 """
 
 from __future__ import annotations
 
 import argparse
+import html
 import re
+import sys
 import zipfile
 from pathlib import Path
 
@@ -18,6 +21,12 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import nsdecls, qn
 from docx.shared import Inches, Pt, RGBColor
+
+try:
+    from scripts.latex_to_omml import LatexToOmml
+except ImportError:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from scripts.latex_to_omml import LatexToOmml
 
 
 def extract_braced(s: str, start_brace_idx: int) -> tuple[str, int]:
@@ -64,25 +73,19 @@ def replace_fractions(text: str) -> str:
 
 
 def latex_to_unicode(text: str) -> str:
-    """Convert LaTeX mathematical notation to clean, structured Unicode math text."""
+    """Convert LaTeX mathematical notation to clean, structured Unicode math text (fallback)."""
     s = text.strip()
 
-    # Preserve conditioning before unwrapping text: otherwise \mid\text{Hit}
-    # becomes \midHit and is erased as an unknown command below.
+    # Preserve conditioning before unwrapping text
     s = re.sub(r"\\mid(?![a-zA-Z])", " | ", s)
-
-    # Replace escaped percent and currency amounts
     s = s.replace(r"\%", "%")
     s = re.sub(r"\\\$([0-9.]+)", r"$\1", s)
 
-    # Strip $$ delimiters if present
     if s.startswith("$$") and s.endswith("$$"):
         s = s[2:-2].strip()
 
-    # Replace fractions with balanced braces first
     s = replace_fractions(s)
 
-    # Strip text/formatting wrappers
     for tag in (r"\\text", r"\\mathrm", r"\\mathbf", r"\\mathit"):
         while re.search(tag + r"\{", s):
             m = re.search(tag + r"\{", s)
@@ -90,11 +93,9 @@ def latex_to_unicode(text: str) -> str:
             content, end = extract_braced(s, m.end() - 1)
             s = s[:start] + content + s[end:]
 
-    # Blackboard bold / Calligraphic
     s = re.sub(r"\\mathbb\{I\}", "I", s)
     s = re.sub(r"\\mathcal\{C\}", "C", s)
 
-    # Greek, set, logic, and relational symbols
     replacements = [
         (r"\\Delta", "Δ"),
         (r"\\to", "→"),
@@ -140,29 +141,28 @@ def latex_to_unicode(text: str) -> str:
     for pattern, rep in replacements:
         s = re.sub(pattern, rep, s)
 
-    # Summations
     s = re.sub(r"\\sum_\{([^}]+)\}\^\{([^}]+)\}", r"∑_{(\1)}^\2", s)
     s = re.sub(r"\\sum_\{([^}]+)\}", r"∑_{(\1)}", s)
     s = re.sub(r"\\sum", "∑", s)
 
-    # Cases environment
     s = re.sub(r"\\begin\{cases\}", "", s)
     s = re.sub(r"\\end\{cases\}", "", s)
     s = re.sub(r"\\\\", "; ", s)
     s = re.sub(r"\\&", " ", s)
     s = re.sub(r"&", " ", s)
 
-    # Subscripts and superscripts cleanup
     s = re.sub(r"_\{([^}]+)\}", r"_\1", s)
     s = re.sub(r"\^\{([^}]+)\}", r"^\1", s)
 
-    # Strip any remaining backslash command tokens
     s = re.sub(r"\\[a-zA-Z]+", "", s)
     s = re.sub(r"\s+", " ", s).strip()
     return s
 
 
-def set_cell_margins(cell, top=80, bottom=80, left=100, right=100):
+# Note: LatexToOmml is imported from scripts.latex_to_omml
+
+
+def set_cell_margins(cell, top=60, bottom=60, left=50, right=50):
     """Set inner padding for table cells (in twips: 1/20 of a pt)."""
     tcPr = cell._tc.get_or_add_tcPr()
     tcMar = OxmlElement("w:tcMar")
@@ -197,10 +197,11 @@ def set_cell_border(cell, **kwargs):
     tcPr.append(tcBorders)
 
 
-def apply_table_pagination_rules(table):
+def apply_table_pagination_rules(table, table_id: str | None = None):
     """Ensure repeat header on page break (<w:tblHeader/>) and
-    prevent row splitting (<w:cantSplit/>).
+    prevent row splitting (<w:cantSplit/>), with orphan row and table tearing prevention.
     """
+    total_rows = len(table.rows)
     for r_idx, row in enumerate(table.rows):
         trPr = row._tr.get_or_add_trPr()
         cantSplit = parse_xml(f"<w:cantSplit {nsdecls('w')}/>")
@@ -208,6 +209,24 @@ def apply_table_pagination_rules(table):
         if r_idx == 0:
             tblHeader = parse_xml(f"<w:tblHeader {nsdecls('w')}/>")
             trPr.append(tblHeader)
+            # Set keep_with_next on header cell paragraphs to prevent orphan header rows
+            for cell in row.cells:
+                for p in cell.paragraphs:
+                    p.paragraph_format.keep_with_next = True
+        else:
+            # Compact tables (Table 2a, 2b, 3, 3b, 4, 5 or <= 8 rows): keep entirely intact on 1 page
+            # by setting keep_with_next on all rows before the last row
+            if table_id in ("table_2a", "table_2b", "table_3", "table_3b", "table_4", "table_5") or total_rows <= 8:
+                if r_idx < total_rows - 1:
+                    for cell in row.cells:
+                        for p in cell.paragraphs:
+                            p.paragraph_format.keep_with_next = True
+            elif table_id == "table_6" or total_rows > 8:
+                # Large tables: prevent orphan rows at start and end of page break
+                if r_idx <= 2 or r_idx == total_rows - 2:
+                    for cell in row.cells:
+                        for p in cell.paragraphs:
+                            p.paragraph_format.keep_with_next = True
 
 
 def assign_table_column_widths(table, num_cols: int, header_texts: list[str]) -> list[float]:
@@ -236,15 +255,9 @@ def assign_table_column_widths(table, num_cols: int, header_texts: list[str]) ->
             widths = [1.25, 1.05, 1.05, 1.05, 1.05, 1.05]
         else:
             # Table 2b: Attribution Diagnostics (6 cols)
-            # Condition, Scorable Views, Completed Outputs, Parse Failures,
-            # Invalid ATT&CK IDs, Invalid ID Rate (%)
             widths = [1.10, 1.00, 1.15, 1.10, 1.10, 1.05]
     elif num_cols == 5:
-        if "yang & hsu" in hdr_joined:
-            # Table 1a: Comparators 1-4 (5 cols)
-            widths = [1.30, 1.30, 1.30, 1.30, 1.30]
-        else:
-            widths = [1.30, 1.30, 1.30, 1.30, 1.30]
+        widths = [1.30, 1.30, 1.30, 1.30, 1.30]
     elif num_cols == 4:
         # Table 6: Cryptographic Reproducibility Manifest
         widths = [1.60, 1.80, 0.90, 2.20]
@@ -336,7 +349,7 @@ def format_inline_runs(
         elif part.startswith("`") and part.endswith("`"):
             run = paragraph.add_run(part[1:-1])
             run.font.name = "Consolas"
-            code_size = Pt(font_size.pt * 0.9) if font_size else Pt(9.5)
+            code_size = max(font_size, Pt(8.5)) if font_size else Pt(9.5)
             run.font.size = code_size
             run.font.color.rgb = RGBColor(0x8A, 0x1F, 0x11)
         elif part.startswith("[") and "]" in part and part.endswith(")"):
@@ -362,16 +375,39 @@ def format_inline_runs(
                     run.italic = True
         elif part.startswith("$") and part.endswith("$"):
             math_content = part[1:-1]
-            converted = latex_to_unicode(math_content)
-            run = paragraph.add_run(converted)
-            run.font.name = "Cambria Math"
-            run.italic = True
-            if font_size:
-                run.font.size = font_size
-            if default_bold:
-                run.bold = True
-            if default_color:
-                run.font.color.rgb = default_color
+            try:
+                omml_xml = LatexToOmml.convert_to_omml(math_content, is_display=False)
+                elem = parse_xml(omml_xml)
+                color_hex = (
+                    f"{default_color[0]:02X}{default_color[1]:02X}{default_color[2]:02X}"
+                    if default_color is not None
+                    else None
+                )
+                sz_val = str(int(round(font_size.pt * 2))) if font_size is not None else None
+                if color_hex or sz_val or default_bold:
+                    for r_node in elem.iter("{http://schemas.openxmlformats.org/officeDocument/2006/math}r"):
+                        rPr_parts = []
+                        if color_hex:
+                            rPr_parts.append(f'<w:color w:val="{color_hex}"/>')
+                        if sz_val:
+                            rPr_parts.append(f'<w:sz w:val="{sz_val}"/>')
+                        if default_bold:
+                            rPr_parts.append('<w:b/>')
+                        if rPr_parts:
+                            wrPr = parse_xml(f'<w:rPr {nsdecls("w")}>{"".join(rPr_parts)}</w:rPr>')
+                            r_node.insert(0, wrPr)
+                paragraph._element.append(elem)
+            except Exception:
+                converted = latex_to_unicode(math_content)
+                run = paragraph.add_run(converted)
+                run.font.name = "Cambria Math"
+                run.italic = True
+                if font_size:
+                    run.font.size = font_size
+                if default_bold:
+                    run.bold = True
+                if default_color:
+                    run.font.color.rgb = default_color
         else:
             run = paragraph.add_run(part)
             if font_size:
@@ -385,20 +421,14 @@ def format_inline_runs(
 
 
 def add_display_math(doc, math_text: str):
-    """Render display math block as an indented, styled formula paragraph."""
+    """Render display math block as an indented, styled formula paragraph with native OMML."""
     p = doc.add_paragraph()
     p.paragraph_format.left_indent = Inches(0.4)
     p.paragraph_format.right_indent = Inches(0.4)
     p.paragraph_format.space_before = Pt(6)
     p.paragraph_format.space_after = Pt(6)
     p.paragraph_format.line_spacing = 1.15
-
-    converted = latex_to_unicode(math_text)
-    run = p.add_run(converted)
-    run.font.name = "Cambria Math"
-    run.font.size = Pt(10.5)
-    run.italic = True
-    run.font.color.rgb = RGBColor(0x0A, 0x25, 0x40)
+    p.paragraph_format.keep_together = True
 
     pPr = p._element.get_or_add_pPr()
     shd = parse_xml(f'<w:shd {nsdecls("w")} w:fill="F8FAFC"/>')
@@ -410,6 +440,23 @@ def add_display_math(doc, math_text: str):
     )
     pPr.append(pBdr)
 
+    try:
+        omml_xml = LatexToOmml.convert_to_omml(math_text, is_display=True)
+        elem = parse_xml(omml_xml)
+        sz_val = "21"  # 10.5 pt * 2
+        color_hex = "0A2540"
+        for r_node in elem.iter("{http://schemas.openxmlformats.org/officeDocument/2006/math}r"):
+            wrPr = parse_xml(f'<w:rPr {nsdecls("w")}><w:color w:val="{color_hex}"/><w:sz w:val="{sz_val}"/></w:rPr>')
+            r_node.insert(0, wrPr)
+        p._element.append(elem)
+    except Exception:
+        converted = latex_to_unicode(math_text)
+        run = p.add_run(converted)
+        run.font.name = "Cambria Math"
+        run.font.size = Pt(10.5)
+        run.italic = True
+        run.font.color.rgb = RGBColor(0x0A, 0x25, 0x40)
+
 
 def build_docx_from_markdown(
     md_path: Path, output_docx_path: Path, figures_dir: Path | None = None
@@ -417,12 +464,43 @@ def build_docx_from_markdown(
     """Convert scientific_report.md into a high-quality Word document."""
     doc = docx.Document()
 
-    # Configure page margins (1.0 inch all around)
+    # Configure page margins (1.0 inch all around) and footer page numbering
     for section in doc.sections:
         section.top_margin = Inches(1.0)
         section.bottom_margin = Inches(1.0)
         section.left_margin = Inches(1.0)
         section.right_margin = Inches(1.0)
+
+        footer = section.footer
+        p_footer = footer.paragraphs[0]
+        p_footer.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        p_footer.text = ""
+        p_footer.paragraph_format.space_before = Pt(0)
+        p_footer.paragraph_format.space_after = Pt(0)
+
+        run_ft_left = p_footer.add_run("RAG2ATTCK Replication-and-Extension Study   |   Page ")
+        run_ft_left.font.name = "Calibri"
+        run_ft_left.font.size = Pt(9.0)
+        run_ft_left.font.color.rgb = RGBColor(0x6E, 0x77, 0x81)
+
+        fld_page = parse_xml(
+            f'<w:fldSimple {nsdecls("w")} w:instr="PAGE">'
+            f'<w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="18"/><w:color w:val="6E7781"/></w:rPr><w:t>1</w:t></w:r>'
+            f'</w:fldSimple>'
+        )
+        p_footer._element.append(fld_page)
+
+        run_ft_mid = p_footer.add_run(" of ")
+        run_ft_mid.font.name = "Calibri"
+        run_ft_mid.font.size = Pt(9.0)
+        run_ft_mid.font.color.rgb = RGBColor(0x6E, 0x77, 0x81)
+
+        fld_numpages = parse_xml(
+            f'<w:fldSimple {nsdecls("w")} w:instr="NUMPAGES">'
+            f'<w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="18"/><w:color w:val="6E7781"/></w:rPr><w:t>1</w:t></w:r>'
+            f'</w:fldSimple>'
+        )
+        p_footer._element.append(fld_numpages)
 
     # Base Normal style
     style_normal = doc.styles["Normal"]
@@ -448,20 +526,21 @@ def build_docx_from_markdown(
     in_table = False
     table_lines = []
     in_references = False
+    last_caption_text: str | None = None
+    table_seq_idx: int = 0
+    figure_seq_idx: int = 1
 
     def flush_table():
-        nonlocal in_table, table_lines
+        nonlocal in_table, table_lines, last_caption_text, table_seq_idx
         if not table_lines:
             in_table = False
             return
 
-        # Parse rows
         raw_rows = []
         for tline in table_lines:
             cells = [c.strip() for c in tline.split("|")]
             if len(cells) >= 3 and cells[0] == "" and cells[-1] == "":
                 cells = cells[1:-1]
-            # Ignore separator row |---|---|
             if cells and all(re.match(r"^:?-+:?$", c) for c in cells if c):
                 continue
             raw_rows.append(cells)
@@ -476,23 +555,57 @@ def build_docx_from_markdown(
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
         table.autofit = False
 
-        # Select font size and margins based on column count
         hdr_str = " ".join(raw_rows[0]).lower() if raw_rows else ""
-        if num_cols >= 9:
-            cell_font_size = Pt(7.5)
-            pad_top, pad_bot, pad_left, pad_right = 60, 60, 60, 60
-        elif num_cols >= 7:
-            cell_font_size = Pt(8.0)
-            pad_top, pad_bot, pad_left, pad_right = 70, 70, 70, 70
-        elif num_cols == 6:
-            cell_font_size = Pt(8.0) if "h-techniquerag" in hdr_str else Pt(8.5)
-            pad_top, pad_bot, pad_left, pad_right = 70, 70, 70, 70
-        elif num_cols == 5:
-            cell_font_size = Pt(8.0) if "yang & hsu" in hdr_str else Pt(8.5)
-            pad_top, pad_bot, pad_left, pad_right = 70, 70, 70, 70
+        caption_str = last_caption_text or ""
+
+        if "table 1a" in caption_str.lower() or "comparators 1-4" in hdr_str or "yang & hsu" in hdr_str:
+            table_id = "table_1a"
+            table_caption = "Table 1a: Multi-Dimensional Comparator Matrix (Part 1)"
+        elif "table 1b" in caption_str.lower() or "comparators 5-8" in hdr_str or "h-techniquerag" in hdr_str:
+            table_id = "table_1b"
+            table_caption = "Table 1b: Multi-Dimensional Comparator Matrix (Part 2)"
+        elif "table 2a" in caption_str.lower() or ("complexity" in hdr_str and "headline" in hdr_str):
+            table_id = "table_2a"
+            table_caption = "Table 2a: Primary Attribution Performance and Ground-Truth Complexity"
+        elif "table 2b" in caption_str.lower() or "completed outputs" in hdr_str:
+            table_id = "table_2b"
+            table_caption = "Table 2b: Attribution Diagnostic Metrics"
+        elif "table 3b" in caption_str.lower() or "complete pairs" in hdr_str:
+            table_id = "table_3b"
+            table_caption = "Table 3b: Paired Scorable Representation Concordance"
+        elif "table 3" in caption_str.lower() or "single-event" in hdr_str:
+            table_id = "table_3"
+            table_caption = "Table 3: Representation Stratification (Single vs Contextual)"
+        elif "table 4" in caption_str.lower() or "downstream selection failure" in hdr_str or "upstream retrieval miss" in hdr_str:
+            table_id = "table_4"
+            table_caption = "Table 4: Decoupled Failure Decomposition Matrix"
+        elif "table 5b" in caption_str.lower() or "financial ledger" in hdr_str or "accounting dimension" in hdr_str:
+            table_id = "table_5b"
+            table_caption = "Table 5b: Whole-Study Financial Ledger and Budget Reconciliation"
+        elif "table 5" in caption_str.lower() or "total input tokens" in hdr_str:
+            table_id = "table_5"
+            table_caption = "Table 5: Resource Consumption and Latency Scaling"
+        elif "table 6" in caption_str.lower() or "cryptographic reproducibility" in hdr_str or "asset description" in hdr_str:
+            table_id = "table_6"
+            table_caption = "Table 6: Cryptographic Reproducibility Manifest"
+        else:
+            table_seq_idx += 1
+            table_id = f"table_{table_seq_idx}"
+            table_caption = caption_str or f"Table {table_seq_idx}"
+
+        tblPr = table._element.tblPr
+        tblCaption_elem = parse_xml(f'<w:tblCaption {nsdecls("w")} w:val="{table_caption}"/>')
+        tblDesc_elem = parse_xml(f'<w:tblDescription {nsdecls("w")} w:val="{table_id}"/>')
+        tblPr.append(tblCaption_elem)
+        tblPr.append(tblDesc_elem)
+
+        # Standardize table cell font sizes: >= 8.5 pt (eliminating 6.5pt font)
+        if num_cols >= 8:
+            cell_font_size = Pt(8.5)
+            pad_top, pad_bot, pad_left, pad_right = 60, 60, 50, 50
         else:
             cell_font_size = Pt(9.0)
-            pad_top, pad_bot, pad_left, pad_right = 100, 100, 100, 100
+            pad_top, pad_bot, pad_left, pad_right = 70, 70, 60, 60
 
         for r_idx, row_data in enumerate(raw_rows):
             is_header = r_idx == 0
@@ -506,6 +619,9 @@ def build_docx_from_markdown(
 
                 if is_header:
                     set_cell_background(cell, "092C4C")  # Dark Navy Header
+                    pPr = p._element.get_or_add_pPr()
+                    pPr_rPr = parse_xml(f'<w:rPr {nsdecls("w")}><w:color w:val="FFFFFF"/><w:b/></w:rPr>')
+                    pPr.append(pPr_rPr)
                     format_inline_runs(
                         p,
                         cell_text,
@@ -535,13 +651,33 @@ def build_docx_from_markdown(
                     right={"sz": 2, "val": "single", "color": "E1E4E8"},
                 )
 
-        # Apply OpenXML pagination rules (<w:tblHeader/>, <w:cantSplit/>)
-        apply_table_pagination_rules(table)
-        # Apply explicit column widths
+                if table_id != "table_6":
+                    tag_val = f"{table_id}_r{r_idx}_c{c_idx}"
+                    alias_val = f"{table_id} Row {r_idx} Col {c_idx}"
+                    sdt_elem = parse_xml(
+                        f'<w:sdt {nsdecls("w")}>'
+                        f'  <w:sdtPr>'
+                        f'    <w:tag w:val="{tag_val}"/>'
+                        f'    <w:alias w:val="{alias_val}"/>'
+                        f'  </w:sdtPr>'
+                        f'  <w:sdtContent/>'
+                        f'</w:sdt>'
+                    )
+                    sdt_content = sdt_elem.find(qn("w:sdtContent"))
+                    runs_to_wrap = [
+                        child for child in list(p._element)
+                        if child.tag in (qn("w:r"), qn("m:oMath"))
+                    ]
+                    for r_elem in runs_to_wrap:
+                        sdt_content.append(r_elem)
+                    p._element.append(sdt_elem)
+
+        apply_table_pagination_rules(table, table_id=table_id)
         header_texts = raw_rows[0] if raw_rows else []
         assign_table_column_widths(table, num_cols, header_texts)
 
-        # Spacing after table
+        last_caption_text = None
+
         post_p = doc.add_paragraph()
         post_p.paragraph_format.space_after = Pt(6)
         table_lines = []
@@ -559,6 +695,7 @@ def build_docx_from_markdown(
         p.paragraph_format.space_before = Pt(4)
         p.paragraph_format.space_after = Pt(6)
         p.paragraph_format.line_spacing = 1.0
+        p.paragraph_format.keep_together = True
 
         run = p.add_run(code_text)
         run.font.name = "Consolas"
@@ -589,6 +726,11 @@ def build_docx_from_markdown(
 
         if in_code_block:
             code_lines.append(line)
+            i += 1
+            continue
+
+        # Skip HTML comments (e.g. <!-- FIXTURE_ONLY: true -->)
+        if line.strip().startswith("<!--") and line.strip().endswith("-->"):
             i += 1
             continue
 
@@ -630,19 +772,19 @@ def build_docx_from_markdown(
         elif in_table:
             flush_table()
 
-        # Handle Headings
+        # Handle Headings with keep_with_next to prevent orphan section titles
         if line.startswith("# "):
-            # Standard academic title formatting: pure black text, NO blue borders or rules
             p = doc.add_paragraph()
             p.paragraph_format.space_before = Pt(12)
             p.paragraph_format.space_after = Pt(8)
-            run = p.add_run(line[2:].strip())
+            p.paragraph_format.keep_with_next = True
+            run = p.add_run(line[2:].replace("`", "").strip())
             run.font.name = "Georgia"
             run.font.size = Pt(20)
             run.font.bold = True
             run.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
         elif line.startswith("## "):
-            sec_title = line[3:].strip()
+            sec_title = line[3:].replace("`", "").strip()
             if sec_title.lower().startswith("references"):
                 in_references = True
             else:
@@ -650,6 +792,7 @@ def build_docx_from_markdown(
             h = doc.add_heading(level=1)
             h.paragraph_format.space_before = Pt(14)
             h.paragraph_format.space_after = Pt(6)
+            h.paragraph_format.keep_with_next = True
             run = h.add_run(sec_title)
             run.font.name = "Georgia"
             run.font.size = Pt(14)
@@ -659,7 +802,8 @@ def build_docx_from_markdown(
             h = doc.add_heading(level=2)
             h.paragraph_format.space_before = Pt(10)
             h.paragraph_format.space_after = Pt(4)
-            run = h.add_run(line[4:].strip())
+            h.paragraph_format.keep_with_next = True
+            run = h.add_run(line[4:].replace("`", "").strip())
             run.font.name = "Calibri"
             run.font.size = Pt(12)
             run.font.bold = True
@@ -668,7 +812,8 @@ def build_docx_from_markdown(
             h = doc.add_heading(level=3)
             h.paragraph_format.space_before = Pt(8)
             h.paragraph_format.space_after = Pt(2)
-            run = h.add_run(line[5:].strip())
+            h.paragraph_format.keep_with_next = True
+            run = h.add_run(line[5:].replace("`", "").strip())
             run.font.name = "Calibri"
             run.font.size = Pt(11)
             run.font.bold = True
@@ -685,23 +830,72 @@ def build_docx_from_markdown(
                 "</w:pBdr>"
             )
             pPr.append(pBdr)
-        elif line.startswith("> "):
-            quote_text = line[2:].strip()
-            p = doc.add_paragraph()
-            p.paragraph_format.left_indent = Inches(0.3)
-            p.paragraph_format.right_indent = Inches(0.2)
-            p.paragraph_format.space_before = Pt(4)
-            p.paragraph_format.space_after = Pt(6)
-            format_inline_runs(p, quote_text)
-            pPr = p._element.get_or_add_pPr()
-            pBdr = parse_xml(
-                f"<w:pBdr {nsdecls('w')}>"
-                '<w:left w:val="single" w:sz="24" w:space="8" w:color="0969DA"/>'
-                "</w:pBdr>"
-            )
-            pPr.append(pBdr)
-            shd = parse_xml(f'<w:shd {nsdecls("w")} w:fill="F6F8FA"/>')
-            pPr.append(shd)
+        elif line.startswith(">"):
+            # Gather all contiguous quote lines into a unified callout block
+            quote_lines = []
+            while i < len(lines) and lines[i].startswith(">"):
+                q_l = lines[i][1:].strip()
+                quote_lines.append(q_l)
+                i += 1
+
+            border_color = "0969DA"  # Default blue
+            bg_color = "F0F4F8"      # Default soft blue
+            filtered_lines = []
+
+            for ql in quote_lines:
+                m_callout = re.match(
+                    r"^\[!(NOTE|WARNING|IMPORTANT|TIP|CAUTION)\]$", ql.strip(), re.IGNORECASE
+                )
+                if m_callout:
+                    callout_type = m_callout.group(1).upper()
+                    if callout_type == "WARNING":
+                        border_color = "D97706"  # Amber
+                        bg_color = "FFFBEB"      # Light amber
+                    elif callout_type == "IMPORTANT":
+                        border_color = "8250DF"  # Purple
+                        bg_color = "FBEFFF"
+                    elif callout_type == "CAUTION":
+                        border_color = "CF222E"  # Red
+                        bg_color = "FFEBE9"
+                    elif callout_type == "TIP":
+                        border_color = "1A7F37"  # Green
+                        bg_color = "F0FDF4"
+                    else:
+                        border_color = "0969DA"  # Blue
+                        bg_color = "F0F4F8"
+                else:
+                    filtered_lines.append(ql)
+
+            for q_idx, q_text in enumerate(filtered_lines):
+                if not q_text:
+                    continue
+                p = doc.add_paragraph()
+                p.paragraph_format.left_indent = Inches(0.3)
+                p.paragraph_format.right_indent = Inches(0.2)
+                p.paragraph_format.space_before = Pt(4 if q_idx == 0 else 0)
+                p.paragraph_format.space_after = Pt(4 if q_idx == len(filtered_lines) - 1 else 2)
+                p.paragraph_format.line_spacing = 1.15
+                p.paragraph_format.keep_together = True
+
+                pPr = p._element.get_or_add_pPr()
+                pBdr = parse_xml(
+                    f"<w:pBdr {nsdecls('w')}>"
+                    f'<w:left w:val="single" w:sz="24" w:space="8" w:color="{border_color}"/>'
+                    f"</w:pBdr>"
+                )
+                pPr.append(pBdr)
+                shd = parse_xml(f'<w:shd {nsdecls("w")} w:fill="{bg_color}"/>')
+                pPr.append(shd)
+
+                if q_text.startswith("- ") or q_text.startswith("* "):
+                    bullet_run = p.add_run("•  ")
+                    bullet_run.bold = True
+                    bullet_run.font.name = "Calibri"
+                    bullet_run.font.size = Pt(10)
+                    format_inline_runs(p, q_text[2:].strip(), font_size=Pt(10))
+                else:
+                    format_inline_runs(p, q_text, font_size=Pt(10))
+            continue
         elif line.strip().startswith("- ") or line.strip().startswith("* "):
             p = doc.add_paragraph(style="List Bullet")
             p.paragraph_format.space_after = Pt(2)
@@ -718,6 +912,7 @@ def build_docx_from_markdown(
                 p.paragraph_format.first_line_indent = Inches(-0.35)
                 p.paragraph_format.space_after = Pt(4)
                 p.paragraph_format.line_spacing = 1.15
+                p.paragraph_format.keep_together = True  # Prevent splitting across page break
                 num_run = p.add_run(f"[{num_str}] ")
                 num_run.bold = True
                 num_run.font.name = "Calibri"
@@ -725,11 +920,16 @@ def build_docx_from_markdown(
                 num_run.font.color.rgb = RGBColor(0x24, 0x29, 0x2F)
                 format_inline_runs(p, content, font_size=Pt(10))
             else:
-                # Static numbered items to prevent Word global list counter bleeding
                 p.paragraph_format.left_indent = Inches(0.30)
                 p.paragraph_format.first_line_indent = Inches(-0.20)
                 p.paragraph_format.space_after = Pt(2)
                 p.paragraph_format.line_spacing = 1.15
+                stripped_content = content.strip()
+                if (
+                    stripped_content.startswith("**")
+                    and (stripped_content.endswith(":**") or stripped_content.endswith(":"))
+                ) or stripped_content.endswith(":"):
+                    p.paragraph_format.keep_with_next = True
                 num_run = p.add_run(f"{num_str}. ")
                 num_run.bold = True
                 num_run.font.name = "Calibri"
@@ -743,7 +943,6 @@ def build_docx_from_markdown(
             m_img = re.match(r"^!\[(.*?)\]\((.*?)\)", line.strip())
             alt_text, img_rel_path = m_img.groups()
 
-            # Robust candidate paths for image resolution
             img_filename = Path(img_rel_path).name
             candidates: list[Path] = []
             if figures_dir is not None:
@@ -773,12 +972,38 @@ def build_docx_from_markdown(
                     break
 
             if resolved_img:
+                fig_m = re.search(
+                    r"fig(?:ure)?[-_]?(\d+)",
+                    alt_text.lower() + " " + resolved_img.name.lower(),
+                )
+                fig_num = fig_m.group(1) if fig_m else str(figure_seq_idx)
+                figure_seq_idx += 1
+
                 p_img = doc.add_paragraph()
                 p_img.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 p_img.paragraph_format.space_before = Pt(10)
-                p_img.paragraph_format.space_after = Pt(4)
+                p_img.paragraph_format.space_after = Pt(3)
+                p_img.paragraph_format.keep_with_next = True
+
                 run_img = p_img.add_run()
-                run_img.add_picture(str(resolved_img), width=Inches(6.25))
+                run_img.add_picture(str(resolved_img), width=Inches(6.50))
+
+                tag_val = f"fig_{fig_num}"
+                alias_val = f"Figure {fig_num}"
+                sdt_elem = parse_xml(
+                    f'<w:sdt {nsdecls("w")}>'
+                    f'  <w:sdtPr>'
+                    f'    <w:tag w:val="{tag_val}"/>'
+                    f'    <w:alias w:val="{alias_val}"/>'
+                    f'  </w:sdtPr>'
+                    f'  <w:sdtContent/>'
+                    f'</w:sdt>'
+                )
+                sdt_content = sdt_elem.find(qn("w:sdtContent"))
+                runs_to_wrap = [child for child in list(p_img._element) if child.tag == qn("w:r")]
+                for r_elem in runs_to_wrap:
+                    sdt_content.append(r_elem)
+                p_img._element.append(sdt_elem)
             else:
                 raise FileNotFoundError(
                     f"[FAIL_CLOSED] Figure image file not found for: {img_rel_path}"
@@ -794,6 +1019,20 @@ def build_docx_from_markdown(
                 font_size=Pt(9.5),
                 default_italic=True,
                 default_color=RGBColor(0x57, 0x60, 0x6A),
+            )
+        elif line.strip().startswith("*Table "):
+            last_caption_text = line.strip().strip("*").rstrip(".*")
+            p = doc.add_paragraph()
+            p.paragraph_format.space_before = Pt(8)
+            p.paragraph_format.space_after = Pt(3)
+            p.paragraph_format.keep_with_next = True
+            format_inline_runs(
+                p,
+                line.strip(),
+                font_size=Pt(10),
+                default_italic=True,
+                default_bold=False,
+                default_color=RGBColor(0x1F, 0x23, 0x28),
             )
         elif line.strip():
             p = doc.add_paragraph()
@@ -873,8 +1112,11 @@ def audit_docx_quality(doc_path: Path):
     t1b_found = False
     t2b_found = False
 
+    def _cell_text(cell) -> str:
+        return "".join(cell._element.xpath(".//w:t/text()"))
+
     for t_idx, table in enumerate(doc.tables):
-        row0_text = " ".join(c.text.strip() for c in table.rows[0].cells).lower()
+        row0_text = " ".join(_cell_text(c).strip() for c in table.rows[0].cells).lower()
         if "yang & hsu" in row0_text:
             t1a_found = True
             if len(table.columns) != 5:
@@ -902,7 +1144,7 @@ def audit_docx_quality(doc_path: Path):
         # Cell content check
         for r_idx, row in enumerate(table.rows):
             for c_idx, cell in enumerate(row.cells):
-                cell_text = cell.text
+                cell_text = _cell_text(cell)
                 matches = tex_pattern.findall(cell_text)
                 if matches:
                     errors.append(
@@ -917,20 +1159,60 @@ def audit_docx_quality(doc_path: Path):
                 f"Table {t_idx} width {col_widths_sum:.2f}in exceeds printable limit of 6.50in"
             )
 
+        # Audit table run font sizes (>= 8.5 pt)
+        for r_idx, row in enumerate(table.rows):
+            for c_idx, cell in enumerate(row.cells):
+                for cp in cell.paragraphs:
+                    for crun in cp.runs:
+                        if crun.text.strip() and crun.font.size and crun.font.size < Pt(8.5):
+                            errors.append(
+                                f"Table {t_idx} row {r_idx} col {c_idx} run '{crun.text[:30]}' "
+                                f"has font size {crun.font.size.pt}pt < 8.5pt"
+                            )
+
     if not t1a_found:
         errors.append("Table 1a (Comparators 1-4) not found in DOCX tables")
     if not t1b_found:
         errors.append("Table 1b (Comparators 5-8 + RAG2ATTCK) not found in DOCX tables")
     if not t2b_found:
         errors.append("Table 2b (Attribution Diagnostics) not found in DOCX tables")
-    # 5. Audit embedded images in word/media package
+
+    # 5. Audit OpenXML SDT locator tags on tables and verify non-empty visible text in sdtContent
+    has_sdt = any("w:tag" in t._element.xml for t in doc.tables)
+    if not has_sdt:
+        errors.append("DOCX tables are missing OpenXML SDT / locator tags (<w:tag/>)")
+    has_sdt_text = any(len(t._element.xpath(".//w:sdt/w:sdtContent//w:t")) > 0 for t in doc.tables)
+    if not has_sdt_text:
+        errors.append("DOCX tables have empty OpenXML SDT tags (<w:sdtContent/> has no visible text)")
+
+    # 6. Audit footer dynamic page numbering (PAGE and NUMPAGES fields)
+    has_page_field = False
+    has_numpages_field = False
+    for section in doc.sections:
+        footer_xml = section.footer._element.xml
+        if 'w:instr="PAGE"' in footer_xml:
+            has_page_field = True
+        if 'w:instr="NUMPAGES"' in footer_xml:
+            has_numpages_field = True
+    if not has_page_field:
+        errors.append("DOCX footer is missing dynamic page number field (<w:fldSimple w:instr=\"PAGE\"/>)")
+    if not has_numpages_field:
+        errors.append("DOCX footer is missing dynamic total pages field (<w:fldSimple w:instr=\"NUMPAGES\"/>)")
+
+    # 7. Audit embedded images in word/media package (All 8 canonical figures)
+    PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
     with zipfile.ZipFile(doc_path) as z:
         media_files = [f for f in z.namelist() if f.startswith("word/media/")]
-        if len(media_files) < 3:
+        if len(media_files) < 8:
             errors.append(
-                "DOCX QA: Expected at least 3 embedded figures in word/media/, "
+                f"DOCX QA: Expected at least 8 embedded figures in word/media/, "
                 f"found {len(media_files)}: {media_files}"
             )
+        for mf in media_files:
+            if mf.endswith(".png"):
+                m_data = z.read(mf)
+                if not m_data.startswith(PNG_MAGIC):
+                    errors.append(f"Embedded image {mf} is not a valid PNG file (bad magic bytes)")
 
     if errors:
         error_msg = f"DOCX QA Audit FAILED with {len(errors)} error(s):\n" + "\n".join(errors)
@@ -940,7 +1222,7 @@ def audit_docx_quality(doc_path: Path):
         f"DOCX QA Audit PASSED: 0 raw TeX tokens across {len(doc.paragraphs)} paragraphs and "
         f"{len(doc.tables)} tables ({sum(len(t.rows) for t in doc.tables)} rows). "
         "Title is pure black with no borders. References [1]..[13] statically numbered. "
-        "Table 1a and Table 1b verified. All tables have cantSplit on all rows, "
+        "All 8 figures embedded with SDT locators. All tables have cantSplit on all rows, "
         "tblHeader on row 0, and width <= 6.50 inches."
     )
 

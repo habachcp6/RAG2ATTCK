@@ -164,3 +164,38 @@ class TestNarrativeBindingsRegression:
         text = "No-RAG accuracy = 95.55%."
         errors = validate_narrative_metric_bindings(text, "test")
         assert len(errors) > 0, f"Expected error for 95.55%, got none in: {text}"
+
+    def test_rag_k5_wrong_p_value_0_0315_rejected(self):
+        """Reviewer R5 Finding: RAG k=5 with p=0.0315 must be REJECTED fail-closed."""
+        text = "RAG k=5 versus No-RAG exact McNemar p = 0.0315."
+        errors = validate_narrative_metric_bindings(text, "test")
+        assert len(errors) > 0, f"Expected rejection for p=0.0315 attributed to rag_k5, got: {errors}"
+        assert any("rag_k5" in e or "mismatched McNemar p-value" in e for e in errors)
+
+    def test_rag_k5_positive_control_p_value_0_677(self):
+        """Reviewer R5 Finding: RAG k=5 versus No-RAG exact McNemar p = 0.677 must PASS."""
+        text = "RAG k=5 versus No-RAG exact McNemar p = 0.677."
+        errors = validate_narrative_metric_bindings(text, "test")
+        assert errors == [], f"Expected pass for p=0.677, got errors: {errors}"
+
+    def test_table_subgroup_in_headline_accuracy_cell_rejected(self):
+        """Reviewer R5 Finding: Table with 'Accuracy' header must REJECT subgroup value 87.05% for No-RAG."""
+        table_text = (
+            "| Condition | Accuracy |\n"
+            "|---|---|\n"
+            "| No-RAG | 87.05% |\n"
+        )
+        errors = validate_narrative_metric_bindings(table_text, "test")
+        assert len(errors) > 0, f"Expected rejection for subgroup 87.05% in headline accuracy column, got: {errors}"
+        assert any("mismatched headline accuracy" in e for e in errors)
+
+    def test_table_positive_control_with_header(self):
+        """Reviewer R5 Finding: Table with 'Accuracy' header and true headline accuracy 77.99% must PASS."""
+        table_text = (
+            "| Condition | Accuracy |\n"
+            "|---|---|\n"
+            "| No-RAG | 77.99% |\n"
+            "| RAG (k=10) | 79.53% |\n"
+        )
+        errors = validate_narrative_metric_bindings(table_text, "test")
+        assert errors == [], f"Expected pass for correct table headline accuracy, got errors: {errors}"

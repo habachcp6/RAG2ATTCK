@@ -624,29 +624,64 @@ def validate_narrative_metric_bindings(
     clean_text = re.sub(r"https?://[^\s)\]]+", "", clean_text)
     clean_text = re.sub(r"\]\([^)]+\)", "]", clean_text)
 
-    for line in clean_text.splitlines():
-        line = line.strip()
+    lines = clean_text.splitlines()
+    line_idx = 0
+    while line_idx < len(lines):
+        line = lines[line_idx].strip()
         if not line or line.startswith("#"):
+            line_idx += 1
             continue
 
-        is_in_table = line.startswith("|")
-        ci_pairs = re.findall(r"\[\s*(\d+(?:\.\d+)?)%?\s*,\s*(\d+(?:\.\d+)?)%?\s*\]", line)
-        line_ci_numbers = {low for low, high in ci_pairs} | {high for low, high in ci_pairs}
-        line_conds = _extract_conds(line)
+        if line.startswith("|"):
+            table_lines: List[str] = []
+            while line_idx < len(lines) and lines[line_idx].strip().startswith("|"):
+                table_lines.append(lines[line_idx].strip())
+                line_idx += 1
 
-        if is_in_table:
-            if re.match(r"^\|[\s\-:|]+\|$", line):
-                continue
-            cells = [cell.strip() for cell in line.split("|")[1:-1]]
-            row_conds: Set[str] = set()
-            for cell in cells:
-                row_conds.update(_extract_conds(cell))
-            row_cond = next(iter(row_conds)) if len(row_conds) == 1 else None
+            # Detect separator row
+            sep_idx = -1
+            for idx, t_line in enumerate(table_lines):
+                if re.match(r"^\|[\s\-:|]+\|$", t_line):
+                    sep_idx = idx
+                    break
 
-            for cell in cells:
-                cell_conds = _extract_conds(cell) or ({row_cond} if row_cond else set())
-                _check_item(cell, line, cell_conds, line_conds, errors, context_label, is_in_table=True, line_ci_numbers=line_ci_numbers)
+            headers: Optional[List[str]] = None
+            if sep_idx > 0:
+                headers = [c.strip().lower() for c in table_lines[sep_idx - 1].split("|")[1:-1]]
+
+            for row_idx, t_line in enumerate(table_lines):
+                if row_idx == sep_idx or (sep_idx > 0 and row_idx == sep_idx - 1):
+                    # Skip header and separator rows from metric verification
+                    continue
+
+                ci_pairs = re.findall(r"\[\s*(\d+(?:\.\d+)?)%?\s*,\s*(\d+(?:\.\d+)?)%?\s*\]", t_line)
+                line_ci_numbers = {low for low, high in ci_pairs} | {high for low, high in ci_pairs}
+                line_conds = _extract_conds(t_line)
+
+                cells = [cell.strip() for cell in t_line.split("|")[1:-1]]
+                row_conds: Set[str] = set()
+                for cell in cells:
+                    row_conds.update(_extract_conds(cell))
+                row_cond = next(iter(row_conds)) if len(row_conds) == 1 else None
+
+                for col_i, cell in enumerate(cells):
+                    col_header = headers[col_i] if (headers and col_i < len(headers)) else ""
+                    cell_conds = _extract_conds(cell) or ({row_cond} if row_cond else set())
+                    _check_item(
+                        cell,
+                        t_line,
+                        cell_conds,
+                        line_conds,
+                        errors,
+                        context_label,
+                        is_in_table=True,
+                        line_ci_numbers=line_ci_numbers,
+                        col_header=col_header,
+                    )
         else:
+            ci_pairs = re.findall(r"\[\s*(\d+(?:\.\d+)?)%?\s*,\s*(\d+(?:\.\d+)?)%?\s*\]", line)
+            line_ci_numbers = {low for low, high in ci_pairs} | {high for low, high in ci_pairs}
+            line_conds = _extract_conds(line)
             clauses = re.split(
                 r"[;\t\u2022\n]+|(?<!\d)[,.](?!\d)|(?<=%)\s+(?:versus|vs\.?|so với|whereas)\b",
                 line,
@@ -656,7 +691,18 @@ def validate_narrative_metric_bindings(
                 if not clause:
                     continue
                 active_conds = _extract_conds(clause)
-                _check_item(clause, line, active_conds, line_conds, errors, context_label, is_in_table=False, line_ci_numbers=line_ci_numbers)
+                _check_item(
+                    clause,
+                    line,
+                    active_conds,
+                    line_conds,
+                    errors,
+                    context_label,
+                    is_in_table=False,
+                    line_ci_numbers=line_ci_numbers,
+                    col_header="",
+                )
+            line_idx += 1
 
     return errors
 
@@ -670,6 +716,7 @@ def _check_item(
     context_label: str,
     is_in_table: bool,
     line_ci_numbers: Set[str],
+    col_header: str = "",
 ) -> None:
     # 1. McNemar p-value checks
     for m in re.finditer(r"(?:exact\s*p|p[- ]value|mcnemar\s*(?:p|test)|mcnemar[^\d]{0,10}p|\bp)\s*=\s*(\d+\.\d+)", clause, re.I):
@@ -693,9 +740,6 @@ def _check_item(
             }
             if "0.4219" in expected_ps:
                 expected_ps.add("0.422")
-            if "0.677" in expected_ps:
-                expected_ps.add("0.0315")
-                expected_ps.add("0.032")
             if not any(p_str == ep or f"{p_val_f:.3f}" == f"{float(ep):.3f}" for ep in expected_ps if ep):
                 errors.append(
                     f"{context_label}: Conditions {rag_effective} have mismatched McNemar p-value '{p_str}' "
@@ -704,7 +748,7 @@ def _check_item(
         else:
             CANONICAL_MCNEMAR_P_VALUES = {
                 "0.05", "0.01", "0.4219", "0.422", "0.435", "0.777", "0.677",
-                "0.0315", "0.032", "0.0026", "0.003", "0.0294", "0.029", "0.4421", "0.442", "1.000", "1.0000", "1.0"
+                "0.0026", "0.003", "0.0294", "0.029", "0.4421", "0.442", "1.000", "1.0000", "1.0"
             }
             if p_str not in CANONICAL_MCNEMAR_P_VALUES and f"{p_val_f:.3f}" not in CANONICAL_MCNEMAR_P_VALUES:
                 errors.append(
@@ -788,12 +832,21 @@ def _check_item(
             continue
 
         if is_in_table:
+            # Check if column header indicates headline accuracy
+            is_col_headline_acc = bool(
+                re.search(r"\b(?:accuracy|độ\s*chính\s*xác|end[- ]to[- ]end\s*acc)\b", col_header, re.I)
+            ) and not bool(
+                re.search(r"\b(?:subgroup|single|multi|overlap|miss|error|giao\s*thoa|delta|gain)\b", col_header, re.I)
+            )
+            is_headline_acc = is_col_headline_acc or bool(re.search(r"\baccuracy\b", clause, re.I)) or bool(re.search(r"\baccuracy\b", line, re.I))
+
             if active_conditions:
-                if "accuracy" in clause.lower():
+                if is_headline_acc:
                     expected_accs = {cond_acc_map[c] for c in active_conditions if c in cond_acc_map}
                     if not any(val_str == ea or f"{val_f:.2f}" == ea for ea in expected_accs):
                         errors.append(
-                            f"{context_label}: Condition {active_conditions} mismatched headline accuracy '{val_str}%' in table cell '{clause}'"
+                            f"{context_label}: Condition {active_conditions} mismatched headline accuracy '{val_str}%' "
+                            f"(expected {expected_accs}) in table cell '{clause}'"
                         )
                 else:
                     valid_for_cond = set()

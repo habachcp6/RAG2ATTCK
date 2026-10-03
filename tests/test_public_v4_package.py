@@ -123,11 +123,45 @@ class TestPublicV4PackageUnit:
         with pytest.raises(ValueError, match="Package manifest SHA mismatch"):
             verify_package(pkg_dir, expected_manifest_sha256="0" * 64)
 
-        # 4. Missing required role fails closed
-        bad_manifest = {"schema_version": "v1", "role_index": {}}
+        # 4. Invalid schema version fails closed
+        bad_manifest = {"schema_version": "invalid_schema_v99", "role_index": {}}
         fake_manifest.write_text(json.dumps(bad_manifest), encoding="utf-8")
-        with pytest.raises(KeyError, match="Required semantic role missing"):
+        with pytest.raises(ValueError, match="Invalid package manifest schema_version"):
             verify_package(pkg_dir)
+
+        # 5. Missing required sections fails closed
+        bad_manifest = {"schema_version": "public_v4_candidate_package_v1"}
+        fake_manifest.write_text(json.dumps(bad_manifest), encoding="utf-8")
+        with pytest.raises(KeyError, match="Missing required manifest section"):
+            verify_package(pkg_dir)
+
+        # 6. Empty / truncated inventory fails closed
+        bad_manifest = {
+            "schema_version": "public_v4_candidate_package_v1",
+            "role_index": {},
+            "base_package": {"items": {}},
+            "supplemental_envelope": {"items": {}},
+        }
+        fake_manifest.write_text(json.dumps(bad_manifest), encoding="utf-8")
+        with pytest.raises(ValueError, match="Base package items must contain at least 23 declared items"):
+            verify_package(pkg_dir)
+
+        # 7. Unsafe path traversal in manifest fails closed
+        from scripts.verify_public_v4_package import check_safe_relative_path
+        with pytest.raises(ValueError, match="Unsafe path traversal"):
+            check_safe_relative_path("../outside_file.json")
+        with pytest.raises(ValueError, match="Unsafe absolute path"):
+            check_safe_relative_path("/etc/passwd")
+
+    def test_acceptance_runner_fails_closed_on_missing_zip(self, tmp_path: Path) -> None:
+        """Verify acceptance runner strictly exits with code 1 if --candidate-zip does not exist."""
+        from scripts.verify_canonical_package_acceptance import run_acceptance_verification
+        fake_dir = tmp_path / "candidate_dir"
+        fake_dir.mkdir()
+        non_existent_zip = tmp_path / "does_not_exist.zip"
+        with pytest.raises(SystemExit) as exc_info:
+            run_acceptance_verification(candidate_dir=fake_dir, candidate_zip=non_existent_zip)
+        assert exc_info.value.code == 1
 
 
 class TestPublicV4PackageCanonicalAcceptance:

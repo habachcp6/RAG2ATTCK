@@ -163,7 +163,7 @@ flowchart TD
      - `historical_size_bytes_lf`: `105354`
      - `historical_sha256_lf`: `"5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d"`
      - `historical_size_bytes_crlf`: `106090`
-     - `historical_sha256_crlf`: `"0cc9a5b971f383c49736b13fb28612f3dc7e7e8f55be9cd47b78dc9b2e87eb0f"`
+     - `historical_sha256_crlf`: `"0cc9a5b971f383c4afef2f2117a6812d6d35d00963304698e9959f868acbc30a"`
    - `docs_scientific_report_docx`:
      - `historical_size_bytes`: `320049` (thay cho `320899`)
      - `historical_sha256`: `"43297b17b2a505fdad96e94ac88fdc868e412bc493682be5e1bdc048bc0bb2dd"`
@@ -200,7 +200,7 @@ flowchart TD
 
 #### [MODIFY] [update_requirements_matrix_r9.py](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/scripts/update_requirements_matrix_r9.py)
 - Tại dòng 639–644 (`K.01-PROVIDER_FAILURE_RETRY`):
-  - Đọc trực tiếp `request_journal_sha = seal_data["sealed_artifact_digests"]["request_journal.jsonl"]` từ `reports/evidence/canonical_run_seal_v1.json` (và assert bằng `"f36e0f3099ef704e6ed5e0bc0097affbe98932e1620563a6db22e631ae114f31"`), thay thế hoàn toàn chuỗi sai `f36e0f3099ef704e05a21d0839cf3158268fb36b647d8c229bc9f8cf8fd4149a`.
+  - Đọc trực tiếp `request_journal_sha = seal_data["sealed_artifact_digests"]["request_journal.jsonl"]` từ `reports/evidence/canonical_run_seal_v1.json` (và assert bằng `"f36e0f3099ef704e6ed5e0bc0097affbe98932e1620563a6db22e631ae114f31"`), thay thế hoàn toàn chuỗi hash hỏng cũ (`<stale_corrupted_journal_hash>`).
   - Bổ sung tham chiếu `rag_k1_predictions.jsonl` (`sha256=745cb883a90b4d1bac7c76c4007b143893834530a843e153fc24277aae5da7ac`, 1-based physical line `1078`, `record_sha256=e9146fe74aa5769faa5dc7df70205e62924fcf8c0e3a53946c50f96ddb2f8086`) vào `closure_step` của `K.01`.
   - Tái sinh đồng bộ cả 3 tệp ma trận:
     - `reports/evidence/finalization_requirements_matrix.json`
@@ -216,7 +216,7 @@ flowchart TD
 ### Tầng 1 — Bộ Test Đối Kháng & Hồi Quy Cho Verifier Ma Trận (`tests/test_requirements_matrix_audit.py`)
 Cập nhật [`tests/test_requirements_matrix_audit.py`](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/tests/test_requirements_matrix_audit.py) để kiểm tra **toàn bộ 14 kịch bản dương tính & âm tính trên Git thật (`check_git_index=True`)**:
 1. **`test_real_requirements_matrix_passes_with_zero_local_exceptions`**: Kiểm tra ma trận thật đạt `PASS_ALL_BINDINGS_VERIFIED` (`exit_code == 0`, `170` requirements, `141` git blob bindings tới `21` tệp duy nhất, `29` non-git assets, `0` lỗi).
-2. **`test_k01_retry_locator_matches_canonical_run_seal`**: Đọc `reports/evidence/canonical_run_seal_v1.json`, lấy đủ 64 ký tự của `sealed_artifact_digests["request_journal.jsonl"]` (`f36e0f3099ef704e6ed5e0bc0097affbe98932e1620563a6db22e631ae114f31`) và `sealed_artifact_digests["rag_k1_predictions.jsonl"]` (`745cb883...`), assert cả hai mã băm 64 ký tự và `line 1078` + `48479-48482` xuất hiện chính xác trong `K.01["closure_step"]`, đồng thời assert chuỗi hash hỏng cũ (`...05a21d08...`) **không tồn tại ở bất kỳ đâu** trong ma trận hay `PLAN`.
+2. **`test_k01_retry_locator_matches_canonical_run_seal`**: Đọc `reports/evidence/canonical_run_seal_v1.json`, lấy đủ 64 ký tự của `sealed_artifact_digests["request_journal.jsonl"]` (`f36e0f3099ef704e6ed5e0bc0097affbe98932e1620563a6db22e631ae114f31`) và `sealed_artifact_digests["rag_k1_predictions.jsonl"]` (`745cb883...`), assert cả hai mã băm 64 ký tự và `line 1078` + `48479-48482` xuất hiện chính xác trong `K.01["closure_step"]`, đồng thời assert chuỗi hash hỏng cũ (`<stale_corrupted_journal_hash>`) **không tồn tại ở bất kỳ đâu** trong ma trận hay `PLAN`.
 3. **`test_zero_commit_sha_fails_closed` (Ca thử âm tính #1 của Kiểm toán viên)**: Gán `evidence_commit_sha = "0" * 40` $\rightarrow$ bắt buộc `exit_code == 1` và `audit_verdict != "PASS_ALL_BINDINGS_VERIFIED"`.
 4. **`test_non_existent_deadbeef_commit_sha_fails_closed` (Ca thử âm tính #2 của Kiểm toán viên)**: Gán `evidence_commit_sha = "deadbeef" * 5` $\rightarrow$ bắt buộc `exit_code == 1`.
 5. **`test_missing_or_empty_commit_sha_fails_closed` (Ca thử âm tính #3 của Kiểm toán viên)**: Xóa `evidence_commit_sha` (`None` và `""`) trên cả `git_tracked` lẫn `policy_code_reference` $\rightarrow$ bắt buộc `exit_code == 1`.

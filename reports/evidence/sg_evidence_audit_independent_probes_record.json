@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-19T21:44:29Z",
+  "timestamp": "2026-10-19T23:01:38Z",
   "repo_root": "<REPO_ROOT>",
   "section_1_reproduction_report": {
     "probe_1_1_empty_dir": {
@@ -56,9 +56,9 @@
   "section_3_pytest_suite": {
     "passed": true,
     "exit_code": 0,
-    "passed_count": 56,
-    "duration_seconds": 26.69428539276123,
-    "stdout_summary": "======================= 56 passed, 2 warnings in 25.04s ======================="
+    "passed_count": 57,
+    "duration_seconds": 25.068540334701538,
+    "stdout_summary": "======================= 57 passed, 2 warnings in 24.49s ======================="
   },
   "section_4_security_privacy": {
     "passed": true,
@@ -76,7 +76,7 @@
         "clean": true
       },
       "reports/evidence/qa/visual_qa_inspection_record.json": {
-        "size_bytes": 18600,
+        "size_bytes": 18603,
         "violations": [],
         "clean": true
       },
@@ -91,17 +91,17 @@
         "clean": true
       },
       "reports/evidence/t33_lade_claim_verification_record.json": {
-        "size_bytes": 6826,
+        "size_bytes": 8939,
         "violations": [],
         "clean": true
       },
       "reports/evidence/report_revision_errata_record.json": {
-        "size_bytes": 8748,
+        "size_bytes": 9062,
         "violations": [],
         "clean": true
       },
       "reports/evidence/report_revision_errata_record.md": {
-        "size_bytes": 4949,
+        "size_bytes": 5267,
         "violations": [],
         "clean": true
       },
@@ -141,7 +141,7 @@
         "clean": true
       },
       "docs/PLAN-rag2attck-closeout.md": {
-        "size_bytes": 31100,
+        "size_bytes": 31096,
         "violations": [],
         "clean": true
       }

@@ -481,45 +481,130 @@ def test_cli_execution_fail_closed(tmp_path: Path) -> None:
     assert "PASS_ALL_ARTIFACTS_VERIFIED" in proc_pass.stdout
 
 
-def test_inventory_size_and_sha256_match_raw_disk_bytes_for_every_entry() -> None:
-    """Verify every file entry in the generated inventory has size_bytes and sha256 matching raw bytes on disk."""
+def test_all_inventory_entries_match_raw_disk_and_git_bytes_exact() -> None:
+    """Verify every file entry in generated and committed inventories matches raw disk bytes and dual LF/CRLF figure hashes."""
     import hashlib
+    from scripts.generate_r9_artifact_inventory import (
+        CANONICAL_TEXT_FIGURE_CRLF_PROVENANCE_HASHES,
+        CANONICAL_TEXT_FIGURE_LF_HASHES,
+    )
 
     inventory, code = generate_inventory(repo_root=REPO_ROOT)
     assert code == 0
 
-    checked_count = 0
+    inv_files = [
+        inventory,
+        json.loads(
+            (REPO_ROOT / "reports/evidence/r9_final_artifact_inventory.json").read_text(
+                encoding="utf-8"
+            )
+        ),
+        json.loads(
+            (REPO_ROOT / "reports/evidence/closeout_rc_artifact_inventory.json").read_text(
+                encoding="utf-8"
+            )
+        ),
+    ]
 
-    def _walk(node: object) -> None:
-        nonlocal checked_count
-        if isinstance(node, dict):
-            if (
-                "repo_relative_path" in node
-                and "sha256" in node
-                and "size_bytes" in node
-                and node.get("exists") is True
-            ):
-                rel = node["repo_relative_path"]
-                p = REPO_ROOT / rel
-                assert p.is_file(), f"Missing file on disk: {rel}"
-                raw = p.read_bytes()
-                assert node["size_bytes"] == len(raw), f"size_bytes mismatch for {rel}"
-                assert node["sha256"] == hashlib.sha256(raw).hexdigest(), (
-                    f"sha256 mismatch against raw disk bytes for {rel}"
-                )
-                if node.get("expected_sha256") is not None:
-                    assert node["expected_sha256"] == node["sha256"], (
-                        f"expected_sha256 != sha256 for {rel}"
+    for inv_obj in inv_files:
+        checked_count = 0
+
+        def _walk(node: object) -> None:
+            nonlocal checked_count
+            if isinstance(node, dict):
+                if (
+                    "repo_relative_path" in node
+                    and "sha256" in node
+                    and "size_bytes" in node
+                    and node.get("exists") is True
+                ):
+                    rel = node["repo_relative_path"]
+                    p = REPO_ROOT / rel
+                    assert p.is_file(), f"Missing file on disk: {rel}"
+                    raw = p.read_bytes()
+                    assert node["size_bytes"] == len(raw), f"size_bytes mismatch for {rel}"
+                    assert node["sha256"] == hashlib.sha256(raw).hexdigest(), (
+                        f"sha256 mismatch against raw disk bytes for {rel}"
                     )
-                checked_count += 1
-            for v in node.values():
-                _walk(v)
-        elif isinstance(node, list):
-            for item in node:
-                _walk(item)
+                    if node.get("expected_sha256") is not None:
+                        assert node["expected_sha256"] == node["sha256"], (
+                            f"expected_sha256 != sha256 for {rel}"
+                        )
+                    checked_count += 1
+                for v in node.values():
+                    _walk(v)
+            elif isinstance(node, list):
+                for item in node:
+                    _walk(item)
 
-    _walk(inventory)
-    assert checked_count >= 50
+        _walk(inv_obj)
+        assert checked_count == 59, f"Expected 59 file objects in inventory, got {checked_count}"
+
+        figs = inv_obj["scientific_figures_inventory"]["files"]
+        for fname, expected_lf_sha in CANONICAL_TEXT_FIGURE_LF_HASHES.items():
+            fentry = figs[fname]
+            raw_bytes = (REPO_ROOT / f"reports/evidence/figures/{fname}").read_bytes()
+            assert b"\r\n" not in raw_bytes, f"{fname} must have LF line endings on disk"
+            assert fentry["sha256"] == expected_lf_sha
+            assert fentry["expected_sha256"] == expected_lf_sha
+            assert fentry["size_bytes"] == len(raw_bytes)
+            crlf_bytes = raw_bytes.replace(b"\n", b"\r\n")
+            expected_crlf_sha = CANONICAL_TEXT_FIGURE_CRLF_PROVENANCE_HASHES[fname]
+            assert hashlib.sha256(crlf_bytes).hexdigest() == expected_crlf_sha
+            assert fentry.get("provenance_crlf_sha256") == expected_crlf_sha
+
+
+def test_errata_historical_and_new_hashes_match_git_blobs() -> None:
+    """Verify every entry in report_revision_errata_record.json matches git show 5eb6bd6f:<path> and current disk bytes."""
+    import hashlib
+
+    errata_path = REPO_ROOT / "reports/evidence/report_revision_errata_record.json"
+    errata = json.loads(errata_path.read_text(encoding="utf-8"))
+    transitions = errata["artifact_hash_transitions"]
+    assert len(transitions) == 5
+
+    for key, entry in transitions.items():
+        rel_path = entry["repo_relative_path"]
+        hist_commit = entry["historical_commit_sha"]
+        assert hist_commit == "5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383"
+
+        proc = subprocess.run(
+            ["git", "show", f"{hist_commit}:{rel_path}"],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            check=True,
+        )
+        hist_blob = proc.stdout
+        hist_sha = hashlib.sha256(hist_blob).hexdigest()
+
+        if "historical_sha256_lf" in entry:
+            assert entry["historical_sha256_lf"] == hist_sha, f"Historical LF sha mismatch for {key}"
+            assert entry["historical_size_bytes_lf"] == len(hist_blob), (
+                f"Historical LF size mismatch for {key}"
+            )
+            hist_crlf = hist_blob.replace(b"\n", b"\r\n")
+            assert entry["historical_sha256_crlf"] == hashlib.sha256(hist_crlf).hexdigest(), (
+                f"Historical CRLF sha mismatch for {key}"
+            )
+            assert entry["historical_size_bytes_crlf"] == len(hist_crlf), (
+                f"Historical CRLF size mismatch for {key}"
+            )
+        else:
+            assert entry["historical_sha256"] == hist_sha, f"Historical sha mismatch for {key}"
+            assert entry["historical_size_bytes"] == len(hist_blob), (
+                f"Historical size mismatch for {key}"
+            )
+
+        curr_bytes = (REPO_ROOT / rel_path).read_bytes()
+        assert entry["new_sha256"] == hashlib.sha256(curr_bytes).hexdigest(), (
+            f"New sha256 mismatch for {key}"
+        )
+        assert entry["new_size_bytes"] == len(curr_bytes), f"New size_bytes mismatch for {key}"
+        if "new_sha256_crlf" in entry:
+            curr_crlf = curr_bytes.replace(b"\n", b"\r\n")
+            assert entry["new_sha256_crlf"] == hashlib.sha256(curr_crlf).hexdigest(), (
+                f"New CRLF sha256 mismatch for {key}"
+            )
 
 
 def test_svg_or_json_crlf_mutation_on_disk_fails_closed(tmp_path: Path) -> None:

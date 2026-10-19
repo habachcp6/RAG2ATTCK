@@ -485,6 +485,7 @@ def verify_qa_inspection_record(
 def generate_inventory(
     repo_root: Optional[Path] = None,
     output_path: Optional[Path] = None,
+    rc_output_path: Optional[Path] = None,
 ) -> Tuple[Dict[str, Any], int]:
     """Generate and strictly verify R9 artifact inventory.
 
@@ -560,17 +561,17 @@ def generate_inventory(
     report_specs: Dict[str, Dict[str, str]] = {
         "canonical_populated_report_md": {
             "rel_path": "reports/evidence/canonical_populated_report.md",
-            "expected_sha256": "3b5f4e0c49188a26df861de9b4ff4bead35c358134051304283af6c177255bd2",
+            "expected_sha256": "e3800226e5ba44af273765132b18a771839fca211bbc2426903bf1f343fbcbed",
             "type": "markdown",
         },
         "canonical_populated_report_docx": {
             "rel_path": "reports/evidence/canonical_populated_report.docx",
-            "expected_sha256": "393586ca01d84cac20918f49e19345e5da5961d41c849ea1defe7b49f8c364d3",
+            "expected_sha256": "d7970749c43c8dc422a170220c48fafc8955be7500eb8dfa8cf743286f9f0032",
             "type": "docx",
         },
         "canonical_populated_report_pdf": {
             "rel_path": "reports/evidence/canonical_populated_report.pdf",
-            "expected_sha256": "cc89d12bf009b3f489f9f007efb223d0e454e2c5675f16d5dbef43707cc70a76",
+            "expected_sha256": "5d01169187c9bb56164efde4acff97e87f0d47deb15dba81139e64b49de635ad",
             "type": "pdf",
         },
         "populated_report_slots_canonical": {
@@ -587,12 +588,12 @@ def generate_inventory(
     if (repo_root / "docs/report").is_dir():
         report_specs["docs_scientific_report_md"] = {
             "rel_path": "docs/report/scientific_report.md",
-            "expected_sha256": "3b5f4e0c49188a26df861de9b4ff4bead35c358134051304283af6c177255bd2",
+            "expected_sha256": "e3800226e5ba44af273765132b18a771839fca211bbc2426903bf1f343fbcbed",
             "type": "markdown",
         }
         report_specs["docs_scientific_report_docx"] = {
             "rel_path": "docs/report/scientific_report.docx",
-            "expected_sha256": "393586ca01d84cac20918f49e19345e5da5961d41c849ea1defe7b49f8c364d3",
+            "expected_sha256": "d7970749c43c8dc422a170220c48fafc8955be7500eb8dfa8cf743286f9f0032",
             "type": "docx",
         }
 
@@ -1033,7 +1034,10 @@ def generate_inventory(
     serialized = json.dumps(inventory, indent=2)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(serialized, encoding="utf-8", newline="\n")
-    if is_default_out:
+    if rc_output_path is not None:
+        rc_output_path.parent.mkdir(parents=True, exist_ok=True)
+        rc_output_path.write_text(serialized, encoding="utf-8", newline="\n")
+    elif is_default_out:
         rc_out = repo_root / "reports/evidence/closeout_rc_artifact_inventory.json"
         rc_out.parent.mkdir(parents=True, exist_ok=True)
         rc_out.write_text(serialized, encoding="utf-8", newline="\n")
@@ -1045,9 +1049,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Compile and verify R9 Final Artifact Inventory.")
     parser.add_argument("--repo-root", type=Path, default=None, help="Root path of repository")
     parser.add_argument("--output", type=Path, default=None, help="Output JSON path")
+    parser.add_argument("--rc-output", type=Path, default=None, help="Closeout RC Output JSON path")
     args = parser.parse_args()
 
-    inventory, code = generate_inventory(repo_root=args.repo_root, output_path=args.output)
+    inventory, code = generate_inventory(
+        repo_root=args.repo_root,
+        output_path=args.output,
+        rc_output_path=args.rc_output,
+    )
     verdict = inventory.get("verdict")
     print(f"R9 Artifact Inventory Execution Complete. Verdict: {verdict} (exit code: {code})")
     if code != 0:

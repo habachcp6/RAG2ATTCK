@@ -50,7 +50,7 @@
       "errata_id": "ERR-02",
       "requirement_id": "AD.01",
       "title": "LADE (Gwak et al., 2026/2027) [12] T33 Full-Text Verification Remediation",
-      "summary": "Verified the 28-page LADE author manuscript PDF (SHA-256: 6e8384569254bc4cf82dd4d0191746907ff40fa76016275946651cf47d6f4985), updating Section 2.1 to Full-Text Content Audited (6/8) and Partial / Metadata-Only / Access-Blocked (2/8), updating Table 1b Rows 8/12/14/16 (4 evaluated models: gpt-oss-120B, Llama-3.3-70B, Mistral-Small-3.2-24B, Gemini-2.5-Pro; AVIATOR 35/32 seqs and Caldera-derived 33 APT seqs [20 profile + 5 lateral + 8 multi-stage] per 2:1 & 10:1 setting + 33 benign seqs; output cutoff k in {3,10} rather than dynamic retriever depth), and updating Reference 12 to [FULL TEXT VERIFIED]."
+      "summary": "Verified the 28-page LADE author manuscript PDF (SHA-256: 6e8384569254bc4cf82dd4d0191746907ff40fa76016275946651cf47d6f4985), updating Section 2.1 to Full-Text Content Audited (6/8) and Partial / Metadata-Only / Access-Blocked (2/8), updating Table 1b Rows 8/12/14/16 (4 evaluated models: gpt-oss-120B, Llama-3.3-70B, Mistral-Small-3.2-24B, Gemini-2.5-Pro; AVIATOR 35/32 seqs and Caldera-derived 33 APT seqs per 2:1 & 10:1 setting [including 20 profile, 5 lateral, 8 multi-stage] + 33 benign; output cutoff k in {3,10} rather than dynamic retriever depth), and updating Reference 12 to [FULL TEXT VERIFIED]."
     },
     {
       "errata_id": "ERR-03",
@@ -95,20 +95,25 @@
       "repo_relative_path": "reports/evidence/canonical_populated_report.md",
       "historical_commit_sha": "5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383",
       "historical_sha256_lf": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
-      "historical_sha256_crlf": "0cc9a5b971f383c49736b13fb28612f3dc7e7e8f55be9cd47b78dc9b2e87eb0f",
+      "historical_sha256_crlf": "0cc9a5b971f383c4afef2f2117a6812d6d35d00963304698e9959f868acbc30a",
       "historical_size_bytes_lf": 105354,
       "historical_size_bytes_crlf": 106090,
-      "new_sha256": "3b5f4e0c49188a26df861de9b4ff4bead35c358134051304283af6c177255bd2",
-      "new_sha256_crlf": "6d08bffde253da95a0dcf78c35a080d56a556556875e02d1213d4f2601f50b42",
-      "new_size_bytes": 105552
+      "new_sha256": "e3800226e5ba44af273765132b18a771839fca211bbc2426903bf1f343fbcbed",
+      "new_sha256_crlf": "a9efbdc5f8a53954286f679f0799dd50dbca011e7df1a4883d4a0b88fd33532e",
+      "new_size_bytes": 105575,
+      "new_size_bytes_crlf": 106311
     },
     "docs_scientific_report_md": {
       "repo_relative_path": "docs/report/scientific_report.md",
       "historical_commit_sha": "5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383",
-      "historical_sha256_lf": "083fd1be204f9bb2e149c1e16ce427481fd71e67c94bf925d9a4a32bc4f1273f",
-      "historical_size_bytes_lf": 105499,
-      "new_sha256": "3b5f4e0c49188a26df861de9b4ff4bead35c358134051304283af6c177255bd2",
-      "new_size_bytes": 105552,
+      "historical_sha256_lf": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "historical_sha256_crlf": "0cc9a5b971f383c4afef2f2117a6812d6d35d00963304698e9959f868acbc30a",
+      "historical_size_bytes_lf": 105354,
+      "historical_size_bytes_crlf": 106090,
+      "new_sha256": "e3800226e5ba44af273765132b18a771839fca211bbc2426903bf1f343fbcbed",
+      "new_sha256_crlf": "a9efbdc5f8a53954286f679f0799dd50dbca011e7df1a4883d4a0b88fd33532e",
+      "new_size_bytes": 105575,
+      "new_size_bytes_crlf": 106311,
       "byte_identical_to_canonical_populated_report_md": true
     },
     "canonical_populated_report_docx": {
@@ -116,16 +121,16 @@
       "historical_commit_sha": "5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383",
       "historical_sha256": "c5ce49f7e57ee2d86d79daab50def273af6dbb4c4393da61340f033b63306ccb",
       "historical_size_bytes": 320008,
-      "new_sha256": "393586ca01d84cac20918f49e19345e5da5961d41c849ea1defe7b49f8c364d3",
-      "new_size_bytes": 320386
+      "new_sha256": "d7970749c43c8dc422a170220c48fafc8955be7500eb8dfa8cf743286f9f0032",
+      "new_size_bytes": 320401
     },
     "docs_scientific_report_docx": {
       "repo_relative_path": "docs/report/scientific_report.docx",
       "historical_commit_sha": "5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383",
       "historical_sha256": "43297b17b2a505fdad96e94ac88fdc868e412bc493682be5e1bdc048bc0bb2dd",
       "historical_size_bytes": 320049,
-      "new_sha256": "393586ca01d84cac20918f49e19345e5da5961d41c849ea1defe7b49f8c364d3",
-      "new_size_bytes": 320386,
+      "new_sha256": "d7970749c43c8dc422a170220c48fafc8955be7500eb8dfa8cf743286f9f0032",
+      "new_size_bytes": 320401,
       "byte_identical_to_canonical_populated_report_docx": true
     },
     "canonical_populated_report_pdf": {
@@ -133,8 +138,8 @@
       "historical_commit_sha": "5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383",
       "historical_sha256": "5604e53fb064d2d42c69e4da3ade0b4d4354900fb5706e67c69590167317ee23",
       "historical_size_bytes": 1286065,
-      "new_sha256": "cc89d12bf009b3f489f9f007efb223d0e454e2c5675f16d5dbef43707cc70a76",
-      "new_size_bytes": 1291857,
+      "new_sha256": "5d01169187c9bb56164efde4acff97e87f0d47deb15dba81139e64b49de635ad",
+      "new_size_bytes": 1292377,
       "total_pages": 41
     }
   }

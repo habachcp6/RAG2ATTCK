@@ -92,9 +92,9 @@
     "canonical_populated_report_md": {
       "exists": true,
       "repo_relative_path": "reports/evidence/canonical_populated_report.md",
-      "size_bytes": 105552,
-      "sha256": "3b5f4e0c49188a26df861de9b4ff4bead35c358134051304283af6c177255bd2",
-      "expected_sha256": "3b5f4e0c49188a26df861de9b4ff4bead35c358134051304283af6c177255bd2",
+      "size_bytes": 105575,
+      "sha256": "e3800226e5ba44af273765132b18a771839fca211bbc2426903bf1f343fbcbed",
+      "expected_sha256": "e3800226e5ba44af273765132b18a771839fca211bbc2426903bf1f343fbcbed",
       "verified": true,
       "lifecycle_states": {
         "FILE_PRESENT": true,
@@ -108,9 +108,9 @@
     "canonical_populated_report_docx": {
       "exists": true,
       "repo_relative_path": "reports/evidence/canonical_populated_report.docx",
-      "size_bytes": 320386,
-      "sha256": "393586ca01d84cac20918f49e19345e5da5961d41c849ea1defe7b49f8c364d3",
-      "expected_sha256": "393586ca01d84cac20918f49e19345e5da5961d41c849ea1defe7b49f8c364d3",
+      "size_bytes": 320401,
+      "sha256": "d7970749c43c8dc422a170220c48fafc8955be7500eb8dfa8cf743286f9f0032",
+      "expected_sha256": "d7970749c43c8dc422a170220c48fafc8955be7500eb8dfa8cf743286f9f0032",
       "verified": true,
       "lifecycle_states": {
         "FILE_PRESENT": true,
@@ -124,9 +124,9 @@
     "canonical_populated_report_pdf": {
       "exists": true,
       "repo_relative_path": "reports/evidence/canonical_populated_report.pdf",
-      "size_bytes": 1291857,
-      "sha256": "cc89d12bf009b3f489f9f007efb223d0e454e2c5675f16d5dbef43707cc70a76",
-      "expected_sha256": "cc89d12bf009b3f489f9f007efb223d0e454e2c5675f16d5dbef43707cc70a76",
+      "size_bytes": 1292377,
+      "sha256": "5d01169187c9bb56164efde4acff97e87f0d47deb15dba81139e64b49de635ad",
+      "expected_sha256": "5d01169187c9bb56164efde4acff97e87f0d47deb15dba81139e64b49de635ad",
       "verified": true,
       "lifecycle_states": {
         "FILE_PRESENT": true,
@@ -172,9 +172,9 @@
     "docs_scientific_report_md": {
       "exists": true,
       "repo_relative_path": "docs/report/scientific_report.md",
-      "size_bytes": 105552,
-      "sha256": "3b5f4e0c49188a26df861de9b4ff4bead35c358134051304283af6c177255bd2",
-      "expected_sha256": "3b5f4e0c49188a26df861de9b4ff4bead35c358134051304283af6c177255bd2",
+      "size_bytes": 105575,
+      "sha256": "e3800226e5ba44af273765132b18a771839fca211bbc2426903bf1f343fbcbed",
+      "expected_sha256": "e3800226e5ba44af273765132b18a771839fca211bbc2426903bf1f343fbcbed",
       "verified": true,
       "lifecycle_states": {
         "FILE_PRESENT": true,
@@ -188,9 +188,9 @@
     "docs_scientific_report_docx": {
       "exists": true,
       "repo_relative_path": "docs/report/scientific_report.docx",
-      "size_bytes": 320386,
-      "sha256": "393586ca01d84cac20918f49e19345e5da5961d41c849ea1defe7b49f8c364d3",
-      "expected_sha256": "393586ca01d84cac20918f49e19345e5da5961d41c849ea1defe7b49f8c364d3",
+      "size_bytes": 320401,
+      "sha256": "d7970749c43c8dc422a170220c48fafc8955be7500eb8dfa8cf743286f9f0032",
+      "expected_sha256": "d7970749c43c8dc422a170220c48fafc8955be7500eb8dfa8cf743286f9f0032",
       "verified": true,
       "lifecycle_states": {
         "FILE_PRESENT": true,
@@ -1038,8 +1038,8 @@
     "qa_record_file": {
       "exists": true,
       "repo_relative_path": "reports/evidence/qa/visual_qa_inspection_record.json",
-      "size_bytes": 18600,
-      "sha256": "03bbb94c0249e175c2647e3d549572513367b6e004c2e3fa67d215bf917d55db",
+      "size_bytes": 18603,
+      "sha256": "c694662793fbb3735516721ca06bb23ddb43c3a3f79ae1909a40024c75c91818",
       "expected_sha256": null,
       "verified": true,
       "lifecycle_states": {

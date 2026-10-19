@@ -45,7 +45,7 @@
     },
     "primary_dataset": {
       "legacy_partial_value": "AVIATOR (35 attack / 32 benign sequences)",
-      "verified_value": "AVIATOR (35 attack / 32 benign sequences) & Caldera-derived dataset (33 APT sequences per setting [20 adversary-profile + 5 lateral-movement + 8 multi-stage] across 2:1 and 10:1 benign-to-APT ratio settings, plus 33 benign sequences)",
+      "verified_value": "AVIATOR (35 attack / 32 benign sequences) & Caldera-derived dataset (two sets of 33 APT sequences for 2:1 and 10:1 benign-to-APT ratio settings, each comprising 20 adversary-profile sequences and 13 MITRE emulation-plan sequences [including 5 lateral-movement and 8 multi-stage attack sequences], plus 33 benign sequences)",
       "source_locations": [
         "Section 5.1 (Dataset), pages 12-14",
         "Table 2, page 12",
@@ -78,34 +78,48 @@
       ]
     },
     "context_window_and_segmentation": {
-      "verified_value": "Iterative sequence segmentation (sub-sequences of 400 code snippets; 300 for Mistral-Small-3.2-24B) with summary propagation for sequences exceeding LLM context windows (Section 4.1 page 7, Section 5.2 page 13); full raw MITRE ATT&CK knowledge base exceeds practical context limits without LLM summarization or RAG (Section 2.2 page 3, Section 5.4 page 16, Section 7 page 20).",
+      "verified_value": "Section 4.1 (Context Building, page 8): each segment is capped at up to 70% of the model's context window, using iterative sequence segmentation (sub-sequences of 400 code snippets; 300 for Mistral-Small-3.2-24B) with summary propagation for sequences exceeding LLM context windows. Section 5.2 (APT Detection, page 14): gpt-oss-120B, Llama-3.3-70B, and Mistral-Small-3.2-24B use a 128k token context window with an effective 70% segment limit of ~89,600 tokens (Gemini-2.5-Pro uses a 1M token context window without segmentation). Section 5.2 (page 15): 13.8% on page 15 is the 4-1 majority voting consensus rate across 5 runs (76.3% 5-0 consensus, 13.8% 4-1 consensus, 10% 3-2 split), not a token count. Full raw MITRE ATT&CK knowledge base exceeds practical context limits without LLM summarization or RAG (Section 2.2 page 3, Section 5.4 page 16, Section 7 page 20).",
       "source_locations": [
         "Section 2.2 (Challenges in Applying LLMs to APT Detection), page 3",
-        "Section 4.1 (APT Detection), page 7",
-        "Section 5.2 (APT Detection), page 13",
+        "Section 4.1 (Context Building), page 8",
+        "Section 5.2 (APT Detection), pages 14-15",
         "Section 5.4 (TTP Mapping), page 16",
         "Section 7 (Conclusion), page 20"
-      ]
+      ],
+      "context_window_parameters": {
+        "segment_cap_fraction_of_context_window": "70%",
+        "gpt_oss_120b_llama_3_3_70b_mistral_small_3_2_24b_context_window_tokens": "128k",
+        "effective_70_percent_segment_limit_tokens": "~89,600",
+        "gemini_2_5_pro_context_window_tokens": "1M (no segmentation required)",
+        "default_snippets_per_segment": 400,
+        "mistral_small_3_2_24b_snippets_per_segment": 300,
+        "majority_voting_5_run_consensus_rates_page_15": {
+          "5_0_unanimous": "76.3%",
+          "4_1_majority": "13.8%",
+          "3_2_split": "10%"
+        }
+      }
     }
   },
   "verification_timeline": [
     {
       "stage": 1,
-      "date": "2026-10-02",
-      "event": "Initial PR #8 comparator matrix & notes commit",
+      "date": "2026-09-22",
+      "event": "PR #8 related-work audit commit (reports/T33_related_work.md at 6783f20971cbff91f105d0280ddd07cb0925aab0 recorded 'Full-text content checks: 6/8' and marked LADE [https://www3.cs.stonybrook.edu/~stoller/papers/LADE-2026.pdf, Sections 4, 5.1-5.4; pp. 12-16] as FULL TEXT CHECKED on the unmerged PR #8 branch, while explicitly warning that older T02 notes were historical leads only)",
       "commit_sha": "6783f20971cbff91f105d0280ddd07cb0925aab0",
-      "status": "PRELIMINARY_NOTES_WITHOUT_AUTHENTICATED_PDF_HASH_BINDING"
+      "status": "PR8_UNMERGED_BRANCH_FULL_TEXT_CHECKED_6_OF_8_WITH_HISTORICAL_T02_LEADS_WARNING"
     },
     {
       "stage": 2,
       "date": "2026-10-03",
-      "event": "Supervisor bibliography verification pass (reports/evidence/supervisor_bibliography_review_20261003.md at commit 5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383)",
+      "event": "Independent bibliography re-verification pass on codex/finalization-20261003 (reports/evidence/supervisor_bibliography_review_20261003.md at commit 5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383): Stony Brook server experienced a transient HTTP timeout when fetching LADE-2026.pdf, temporarily falling back to conservative 5/8 and retaining preliminary T02 model/dataset notes",
+      "commit_sha": "5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383",
       "status": "PUBLISHER_METADATA_ONLY_AUTHOR_PDF_TIMED_OUT"
     },
     {
       "stage": 3,
       "date": "2026-10-19",
-      "event": "Closeout full-text verification of 28-page author manuscript PDF (LADE-2026.pdf)",
+      "event": "Closeout Verification Pass: re-retrieved and cryptographically pinned the 28-page author manuscript PDF (LADE-2026.pdf, 3,819,792 bytes, SHA-256: 6e8384569254bc4cf82dd4d0191746907ff40fa76016275946651cf47d6f4985), reconciling every row of Table 1b (Primary Models, Primary Dataset, Retrieval Settings, Key Difference) and synchronizing all evidence records",
       "artifact_sha256": "6e8384569254bc4cf82dd4d0191746907ff40fa76016275946651cf47d6f4985",
       "status": "FULL_TEXT_VERIFIED_ALL_CLAIMS_RECONCILED"
     }

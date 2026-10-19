@@ -1,6 +1,6 @@
 {
   "schema_version": "finalization-requirements-matrix-v3",
-  "timestamp_utc": "2026-10-19T05:30:33.333133+00:00",
+  "timestamp_utc": "2026-10-19T05:43:19.540289+00:00",
   "candidate_base_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
   "total_requirements_tracked": 170,
   "status_summary": {
@@ -38,7 +38,7 @@
       "evidence_type": "CANONICAL_SEAL",
       "evidence_locator": "reports/evidence/canonical_run_seal_v1.json",
       "tested_code_sha": "b69a6909acda4c7588744acc7e1d6c20bfce2612",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "A.02-RECORD_COUNT",
@@ -60,8 +60,8 @@
       "acceptance_criterion": "Canonical matrix must contain exactly 6,400 completed records across 5 conditions.",
       "evidence_type": "REPLAY_EXECUTION",
       "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "A.03-ATTEMPT_COUNT",
@@ -83,8 +83,8 @@
       "acceptance_criterion": "Operational accounting must reflect exactly 6,401 provider attempts with strictly 1 retry on view_d870d574:rag_k1.",
       "evidence_type": "REPLAY_EXECUTION",
       "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "A.04-STATUS_TAXONOMY",
@@ -107,7 +107,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "A.05-SETTLED_COST",
@@ -129,8 +129,8 @@
       "acceptance_criterion": "Canonical cumulative settled study cost exactly $6.57575890 USD.",
       "evidence_type": "REPLAY_EXECUTION",
       "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "A.06-TOTAL_ACCOUNTED",
@@ -152,8 +152,8 @@
       "acceptance_criterion": "Total accounted spend $6.62839900 USD strictly under $19.99000000 budget cap.",
       "evidence_type": "REPLAY_EXECUTION",
       "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "A.07-HEADLINE_STATS",
@@ -176,7 +176,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "A.08-CLAIM_BOUNDARIES",
@@ -188,7 +188,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "VERIFIED",
@@ -198,8 +198,8 @@
       "acceptance_criterion": "Strict adherence to non-causal associational framing across all reporting and documentation.",
       "evidence_type": "POLICY_RULE",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "B.01-GITHUB_EVIDENCE",
@@ -211,7 +211,7 @@
       "owner": "Track F (Integration / GitHub / Release QA)",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
       "evidence_hash": null,
       "historical_verification_status": "VERIFIED",
@@ -221,8 +221,8 @@
       "acceptance_criterion": "All verification evidence committed to branch, release assets pinned, CI run links public.",
       "evidence_type": "POLICY_RULE",
       "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "B.02-FAIL_CLOSED_VERDICT",
@@ -244,8 +244,8 @@
       "acceptance_criterion": "Any defect or missing evidence must result in non-zero exit code and rejection.",
       "evidence_type": "POLICY_RULE",
       "evidence_locator": "tests/test_sg_audit_adversarial_probes.py",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "C.01-NO_LIVE_EXPERIMENTS",
@@ -268,7 +268,7 @@
       "evidence_type": "POLICY_RULE",
       "evidence_locator": "src/experiment/authorization.py",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "C.02-IMMUTABLE_FROZEN_DATA",
@@ -291,7 +291,7 @@
       "evidence_type": "CANONICAL_SEAL",
       "evidence_locator": "reports/evidence/canonical_run_seal_v1.json",
       "tested_code_sha": "b69a6909acda4c7588744acc7e1d6c20bfce2612",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "C.03-HUMAN_MERGE_AUTH",
@@ -303,7 +303,7 @@
       "owner": "Antigravity Lead & User",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
       "evidence_hash": null,
       "historical_verification_status": "NOT_APPLICABLE",
@@ -313,8 +313,8 @@
       "acceptance_criterion": "Final merge into main requires explicit human authorization and review sign-off.",
       "evidence_type": "HUMAN_ACTION_GATE",
       "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "D.01-TRACK_A",
@@ -337,7 +337,7 @@
       "evidence_type": "SOURCE_VERIFICATION",
       "evidence_locator": "reports/evidence/root_track_a_acceptance_b69a690.json",
       "tested_code_sha": "b69a6909acda4c7588744acc7e1d6c20bfce2612",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "D.02-TRACK_B",
@@ -360,7 +360,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "D.03-TRACK_C",
@@ -372,7 +372,7 @@
       "owner": "TRACK C",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "NOT_APPLICABLE",
@@ -382,8 +382,8 @@
       "acceptance_criterion": "Track C scientific report completed with 30 sections populated.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "D.04-TRACK_D",
@@ -395,9 +395,9 @@
       "owner": "TRACK D",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/r9_final_artifact_inventory.json",
-      "evidence_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "evidence_hash": "d65f318a10bc73d43ddb9ac0667e36e58047daa526ff7bd367fcf2db31dee4d0",
       "historical_verification_status": "NOT_APPLICABLE",
       "historical_verification_note": "Structural track organization.",
       "final_candidate_status": "POLICY_ENFORCED",
@@ -405,8 +405,8 @@
       "acceptance_criterion": "Track D figures, tables, and statistical QA completed.",
       "evidence_type": "FIGURE_ARTIFACT",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "D.05-TRACK_E",
@@ -429,7 +429,7 @@
       "evidence_type": "PRESENTATION_DECK",
       "evidence_locator": "docs/presentation/slides.pptx",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "D.06-TRACK_F",
@@ -452,7 +452,7 @@
       "evidence_type": "RELEASE_PACKAGE",
       "evidence_locator": "artifacts/packages/public_v4_candidate_20261003.zip",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "E.01-REMOTE_SNAPSHOT",
@@ -475,7 +475,7 @@
       "evidence_type": "SOURCE_VERIFICATION",
       "evidence_locator": "reports/evidence/finalization_preflight.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "E.02-PREFLIGHT_ARTIFACT",
@@ -498,7 +498,7 @@
       "evidence_type": "SOURCE_VERIFICATION",
       "evidence_locator": "reports/evidence/finalization_preflight.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "F.01-TERMINAL_RUN",
@@ -521,7 +521,7 @@
       "evidence_type": "CANONICAL_SEAL",
       "evidence_locator": "reports/evidence/canonical_run_seal_v1.json",
       "tested_code_sha": "b69a6909acda4c7588744acc7e1d6c20bfce2612",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "F.02-PREDICTION_INVENTORY",
@@ -543,8 +543,8 @@
       "acceptance_criterion": "All 5 prediction files present with exact SHA-256 matching canonical manifest.",
       "evidence_type": "REPLAY_EXECUTION",
       "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "F.03-ATTEMPT_ACCOUNTING",
@@ -566,8 +566,8 @@
       "acceptance_criterion": "Exactly 6,401 provider attempts accounted dynamically.",
       "evidence_type": "REPLAY_EXECUTION",
       "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "F.04-OUTCOME_TAXONOMY",
@@ -589,8 +589,8 @@
       "acceptance_criterion": "6,387 VALID and 13 INCOMPLETE completions accounted dynamically.",
       "evidence_type": "REPLAY_EXECUTION",
       "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "F.05-LEDGER_RECONCILIATION",
@@ -612,8 +612,8 @@
       "acceptance_criterion": "Full multi-entity ledger reconciliation with zero arithmetic discrepancies.",
       "evidence_type": "REPLAY_EXECUTION",
       "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "F.06-VALIDATOR_DEFECT_CODEX",
@@ -636,7 +636,7 @@
       "evidence_type": "SOURCE_VERIFICATION",
       "evidence_locator": "reports/evidence/root_track_a_acceptance_b69a690.json",
       "tested_code_sha": "b69a6909acda4c7588744acc7e1d6c20bfce2612",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "F.07-VALIDATOR_EXECUTION",
@@ -659,7 +659,7 @@
       "evidence_type": "CANONICAL_SEAL",
       "evidence_locator": "reports/evidence/canonical_run_seal_v1.json",
       "tested_code_sha": "b69a6909acda4c7588744acc7e1d6c20bfce2612",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "F.08-RAW_ARTIFACT_TRANSPARENCY",
@@ -682,7 +682,7 @@
       "evidence_type": "RELEASE_PACKAGE",
       "evidence_locator": "artifacts/public_package_staging/public_package_manifest.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "G.01-COHORTS_AND_DENOMINATORS",
@@ -705,7 +705,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "G.02-CANONICAL_METRIC_BUNDLE",
@@ -728,7 +728,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "H.01-RQ1_CONDITION_SWEEP",
@@ -751,7 +751,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "H.02-RQ1_MACRO_F1_474",
@@ -774,7 +774,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "H.03-RQ1_BOOTSTRAP_CI",
@@ -797,7 +797,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "H.04-RQ1_MCNEMAR",
@@ -820,7 +820,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "I.01-PROTOCOL_D2I_AXES",
@@ -843,7 +843,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "I.02-RQ2_EMPIRICAL_K10",
@@ -866,7 +866,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "I.03-RQ2_NON_CAUSAL_WORDING",
@@ -878,7 +878,7 @@
       "owner": "Track B (Scientific Evaluation / RQ1\u2013RQ3)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "VERIFIED",
@@ -888,8 +888,8 @@
       "acceptance_criterion": "Strict adherence to non-causal associational wording standards in retrieval discussion.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "J.01-RQ3_TRADE_OFF_TABLE",
@@ -912,7 +912,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "J.02-RQ3_COST_WORDING",
@@ -924,7 +924,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "VERIFIED",
@@ -934,8 +934,8 @@
       "acceptance_criterion": "Tariff-derived accounted cost wording standard enforced.",
       "evidence_type": "POLICY_RULE",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "K.01-PROVIDER_FAILURE_RETRY",
@@ -957,8 +957,8 @@
       "acceptance_criterion": "Accounting for single transient provider failure retry on ('view_d870d574', 'rag_k1').",
       "evidence_type": "REPLAY_EXECUTION",
       "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "K.02-INCOMPLETE_CEILING_ANALYSIS",
@@ -981,7 +981,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "K.03-INCOMPLETE_MAPPED_COHORT_EXCLUSION",
@@ -1004,7 +1004,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-01",
@@ -1016,7 +1016,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1026,8 +1026,8 @@
       "acceptance_criterion": "Report Section 1 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-02",
@@ -1039,7 +1039,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1049,8 +1049,8 @@
       "acceptance_criterion": "Report Section 2 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-03",
@@ -1062,7 +1062,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1072,8 +1072,8 @@
       "acceptance_criterion": "Report Section 3 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-04",
@@ -1085,7 +1085,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1095,8 +1095,8 @@
       "acceptance_criterion": "Report Section 4 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-05",
@@ -1108,7 +1108,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1118,8 +1118,8 @@
       "acceptance_criterion": "Report Section 5 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-06",
@@ -1131,7 +1131,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1141,8 +1141,8 @@
       "acceptance_criterion": "Report Section 6 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-07",
@@ -1154,7 +1154,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1164,8 +1164,8 @@
       "acceptance_criterion": "Report Section 7 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-08",
@@ -1177,7 +1177,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1187,8 +1187,8 @@
       "acceptance_criterion": "Report Section 8 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-09",
@@ -1200,7 +1200,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1210,8 +1210,8 @@
       "acceptance_criterion": "Report Section 9 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-10",
@@ -1223,7 +1223,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1233,8 +1233,8 @@
       "acceptance_criterion": "Report Section 10 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-11",
@@ -1246,7 +1246,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1256,8 +1256,8 @@
       "acceptance_criterion": "Report Section 11 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-12",
@@ -1269,7 +1269,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1279,8 +1279,8 @@
       "acceptance_criterion": "Report Section 12 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-13",
@@ -1292,7 +1292,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1302,8 +1302,8 @@
       "acceptance_criterion": "Report Section 13 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-14",
@@ -1315,7 +1315,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1325,8 +1325,8 @@
       "acceptance_criterion": "Report Section 14 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-15",
@@ -1338,7 +1338,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1348,8 +1348,8 @@
       "acceptance_criterion": "Report Section 15 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-16",
@@ -1361,7 +1361,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1371,8 +1371,8 @@
       "acceptance_criterion": "Report Section 16 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-17",
@@ -1384,7 +1384,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1394,8 +1394,8 @@
       "acceptance_criterion": "Report Section 17 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-18",
@@ -1407,7 +1407,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1417,8 +1417,8 @@
       "acceptance_criterion": "Report Section 18 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-19",
@@ -1430,7 +1430,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1440,8 +1440,8 @@
       "acceptance_criterion": "Report Section 19 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-20",
@@ -1453,7 +1453,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1463,8 +1463,8 @@
       "acceptance_criterion": "Report Section 20 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-21",
@@ -1476,7 +1476,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1486,8 +1486,8 @@
       "acceptance_criterion": "Report Section 21 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-22",
@@ -1499,7 +1499,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1509,8 +1509,8 @@
       "acceptance_criterion": "Report Section 22 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-23",
@@ -1522,7 +1522,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1532,8 +1532,8 @@
       "acceptance_criterion": "Report Section 23 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-24",
@@ -1545,7 +1545,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1555,8 +1555,8 @@
       "acceptance_criterion": "Report Section 24 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-25",
@@ -1568,7 +1568,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1578,8 +1578,8 @@
       "acceptance_criterion": "Report Section 25 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-26",
@@ -1591,7 +1591,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1601,8 +1601,8 @@
       "acceptance_criterion": "Report Section 26 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-27",
@@ -1614,7 +1614,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1624,8 +1624,8 @@
       "acceptance_criterion": "Report Section 27 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-28",
@@ -1637,7 +1637,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1647,8 +1647,8 @@
       "acceptance_criterion": "Report Section 28 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-29",
@@ -1660,7 +1660,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1670,8 +1670,8 @@
       "acceptance_criterion": "Report Section 29 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.SEC-30",
@@ -1683,7 +1683,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1693,8 +1693,8 @@
       "acceptance_criterion": "Report Section 30 fully authored, populated, and reviewed.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "L.DOCX_DELIVERY",
@@ -1706,7 +1706,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.docx",
       "evidence_hash": "25fbed2e7227456345fba407fed1b1ed476dd484a0841f805718fc78acdf783a",
       "historical_verification_status": "VERIFIED",
@@ -1716,8 +1716,8 @@
       "acceptance_criterion": "Dual delivery of Markdown report and pristine canonical DOCX document.",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.docx",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "M.01-SYNTHETIC_VS_LIVE",
@@ -1729,7 +1729,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "VERIFIED",
@@ -1739,8 +1739,8 @@
       "acceptance_criterion": "Enforce disciplinary rule: Distinguish Synthetic Inputs vs Real Provider Outputs.",
       "evidence_type": "POLICY_RULE",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "M.02-DENOMINATOR_DISCIPLINE",
@@ -1752,7 +1752,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "VERIFIED",
@@ -1762,8 +1762,8 @@
       "acceptance_criterion": "Enforce disciplinary rule: Explicit Denominator & Universe Reporting.",
       "evidence_type": "POLICY_RULE",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "M.03-NON_CAUSAL_DISCIPLINE",
@@ -1775,7 +1775,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "VERIFIED",
@@ -1785,8 +1785,8 @@
       "acceptance_criterion": "Enforce disciplinary rule: Non-Causal Associational Claims Rule.",
       "evidence_type": "POLICY_RULE",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "M.04-NON_PRODUCTION_DISCIPLINE",
@@ -1798,7 +1798,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "VERIFIED",
@@ -1808,8 +1808,8 @@
       "acceptance_criterion": "Enforce disciplinary rule: No Enterprise SOC / Production Telemetry Generalization.",
       "evidence_type": "POLICY_RULE",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "N.01-PRIMARY_LITERATURE",
@@ -1821,7 +1821,7 @@
       "owner": "Track C (Scientific Report)",
       "evidence_storage": "git_tracked",
       "source_sha": "6783f20971cbff91f105d0280ddd07cb0925aab0",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "PARTIAL",
@@ -1831,8 +1831,8 @@
       "acceptance_criterion": "Primary literature verification (Yang & Hsu 2024, H-Technique attribution, LADE Li et al. 2025).",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "O.FIG-01",
@@ -1844,9 +1844,9 @@
       "owner": "Track D (Figures / Tables / Statistical QA)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/r9_final_artifact_inventory.json",
-      "evidence_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "evidence_hash": "d65f318a10bc73d43ddb9ac0667e36e58047daa526ff7bd367fcf2db31dee4d0",
       "historical_verification_status": "PARTIAL",
       "historical_verification_note": "3 canonical figures exist in v6; full set of 8 distinct figures pending generation.",
       "final_candidate_status": "VERIFIED",
@@ -1854,8 +1854,8 @@
       "acceptance_criterion": "Artifact O.FIG-01 generated, verified on disk, and authenticated in inventory.",
       "evidence_type": "FIGURE_ARTIFACT",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "O.FIG-02",
@@ -1867,9 +1867,9 @@
       "owner": "Track D (Figures / Tables / Statistical QA)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/r9_final_artifact_inventory.json",
-      "evidence_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "evidence_hash": "d65f318a10bc73d43ddb9ac0667e36e58047daa526ff7bd367fcf2db31dee4d0",
       "historical_verification_status": "PARTIAL",
       "historical_verification_note": "3 canonical figures exist in v6; full set of 8 distinct figures pending generation.",
       "final_candidate_status": "VERIFIED",
@@ -1877,8 +1877,8 @@
       "acceptance_criterion": "Artifact O.FIG-02 generated, verified on disk, and authenticated in inventory.",
       "evidence_type": "FIGURE_ARTIFACT",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "O.FIG-03",
@@ -1890,9 +1890,9 @@
       "owner": "Track D (Figures / Tables / Statistical QA)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/r9_final_artifact_inventory.json",
-      "evidence_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "evidence_hash": "d65f318a10bc73d43ddb9ac0667e36e58047daa526ff7bd367fcf2db31dee4d0",
       "historical_verification_status": "PARTIAL",
       "historical_verification_note": "3 canonical figures exist in v6; full set of 8 distinct figures pending generation.",
       "final_candidate_status": "VERIFIED",
@@ -1900,8 +1900,8 @@
       "acceptance_criterion": "Artifact O.FIG-03 generated, verified on disk, and authenticated in inventory.",
       "evidence_type": "FIGURE_ARTIFACT",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "O.FIG-04",
@@ -1913,9 +1913,9 @@
       "owner": "Track D (Figures / Tables / Statistical QA)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/r9_final_artifact_inventory.json",
-      "evidence_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "evidence_hash": "d65f318a10bc73d43ddb9ac0667e36e58047daa526ff7bd367fcf2db31dee4d0",
       "historical_verification_status": "PARTIAL",
       "historical_verification_note": "3 canonical figures exist in v6; full set of 8 distinct figures pending generation.",
       "final_candidate_status": "VERIFIED",
@@ -1923,8 +1923,8 @@
       "acceptance_criterion": "Artifact O.FIG-04 generated, verified on disk, and authenticated in inventory.",
       "evidence_type": "FIGURE_ARTIFACT",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "O.FIG-05",
@@ -1936,9 +1936,9 @@
       "owner": "Track D (Figures / Tables / Statistical QA)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/r9_final_artifact_inventory.json",
-      "evidence_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "evidence_hash": "d65f318a10bc73d43ddb9ac0667e36e58047daa526ff7bd367fcf2db31dee4d0",
       "historical_verification_status": "PARTIAL",
       "historical_verification_note": "3 canonical figures exist in v6; full set of 8 distinct figures pending generation.",
       "final_candidate_status": "VERIFIED",
@@ -1946,8 +1946,8 @@
       "acceptance_criterion": "Artifact O.FIG-05 generated, verified on disk, and authenticated in inventory.",
       "evidence_type": "FIGURE_ARTIFACT",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "O.FIG-06",
@@ -1959,9 +1959,9 @@
       "owner": "Track D (Figures / Tables / Statistical QA)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/r9_final_artifact_inventory.json",
-      "evidence_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "evidence_hash": "d65f318a10bc73d43ddb9ac0667e36e58047daa526ff7bd367fcf2db31dee4d0",
       "historical_verification_status": "PARTIAL",
       "historical_verification_note": "3 canonical figures exist in v6; full set of 8 distinct figures pending generation.",
       "final_candidate_status": "VERIFIED",
@@ -1969,8 +1969,8 @@
       "acceptance_criterion": "Artifact O.FIG-06 generated, verified on disk, and authenticated in inventory.",
       "evidence_type": "FIGURE_ARTIFACT",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "O.FIG-07",
@@ -1982,9 +1982,9 @@
       "owner": "Track D (Figures / Tables / Statistical QA)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/r9_final_artifact_inventory.json",
-      "evidence_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "evidence_hash": "d65f318a10bc73d43ddb9ac0667e36e58047daa526ff7bd367fcf2db31dee4d0",
       "historical_verification_status": "PARTIAL",
       "historical_verification_note": "3 canonical figures exist in v6; full set of 8 distinct figures pending generation.",
       "final_candidate_status": "VERIFIED",
@@ -1992,8 +1992,8 @@
       "acceptance_criterion": "Artifact O.FIG-07 generated, verified on disk, and authenticated in inventory.",
       "evidence_type": "FIGURE_ARTIFACT",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "O.FIG-08",
@@ -2005,9 +2005,9 @@
       "owner": "Track D (Figures / Tables / Statistical QA)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/r9_final_artifact_inventory.json",
-      "evidence_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "evidence_hash": "d65f318a10bc73d43ddb9ac0667e36e58047daa526ff7bd367fcf2db31dee4d0",
       "historical_verification_status": "PARTIAL",
       "historical_verification_note": "3 canonical figures exist in v6; full set of 8 distinct figures pending generation.",
       "final_candidate_status": "VERIFIED",
@@ -2015,8 +2015,8 @@
       "acceptance_criterion": "Artifact O.FIG-08 generated, verified on disk, and authenticated in inventory.",
       "evidence_type": "FIGURE_ARTIFACT",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "O.TAB-01",
@@ -2028,9 +2028,9 @@
       "owner": "Track D (Figures / Tables / Statistical QA)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/r9_final_artifact_inventory.json",
-      "evidence_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "evidence_hash": "d65f318a10bc73d43ddb9ac0667e36e58047daa526ff7bd367fcf2db31dee4d0",
       "historical_verification_status": "VERIFIED",
       "historical_verification_note": "Table 1 machine-generated from frozen canonical bundle v2.",
       "final_candidate_status": "VERIFIED",
@@ -2038,8 +2038,8 @@
       "acceptance_criterion": "Artifact O.TAB-01 generated, verified on disk, and authenticated in inventory.",
       "evidence_type": "FIGURE_ARTIFACT",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "O.TAB-02",
@@ -2051,9 +2051,9 @@
       "owner": "Track D (Figures / Tables / Statistical QA)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/r9_final_artifact_inventory.json",
-      "evidence_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "evidence_hash": "d65f318a10bc73d43ddb9ac0667e36e58047daa526ff7bd367fcf2db31dee4d0",
       "historical_verification_status": "VERIFIED",
       "historical_verification_note": "Table 2 machine-generated from frozen canonical bundle v2.",
       "final_candidate_status": "VERIFIED",
@@ -2061,8 +2061,8 @@
       "acceptance_criterion": "Artifact O.TAB-02 generated, verified on disk, and authenticated in inventory.",
       "evidence_type": "FIGURE_ARTIFACT",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "O.TAB-03",
@@ -2074,9 +2074,9 @@
       "owner": "Track D (Figures / Tables / Statistical QA)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/r9_final_artifact_inventory.json",
-      "evidence_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "evidence_hash": "d65f318a10bc73d43ddb9ac0667e36e58047daa526ff7bd367fcf2db31dee4d0",
       "historical_verification_status": "VERIFIED",
       "historical_verification_note": "Table 3 machine-generated from frozen canonical bundle v2.",
       "final_candidate_status": "VERIFIED",
@@ -2084,8 +2084,8 @@
       "acceptance_criterion": "Artifact O.TAB-03 generated, verified on disk, and authenticated in inventory.",
       "evidence_type": "FIGURE_ARTIFACT",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "O.TAB-04",
@@ -2097,9 +2097,9 @@
       "owner": "Track D (Figures / Tables / Statistical QA)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/r9_final_artifact_inventory.json",
-      "evidence_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "evidence_hash": "d65f318a10bc73d43ddb9ac0667e36e58047daa526ff7bd367fcf2db31dee4d0",
       "historical_verification_status": "VERIFIED",
       "historical_verification_note": "Table 4 machine-generated from frozen canonical bundle v2.",
       "final_candidate_status": "VERIFIED",
@@ -2107,8 +2107,8 @@
       "acceptance_criterion": "Artifact O.TAB-04 generated, verified on disk, and authenticated in inventory.",
       "evidence_type": "FIGURE_ARTIFACT",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "O.TAB-05",
@@ -2120,9 +2120,9 @@
       "owner": "Track D (Figures / Tables / Statistical QA)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/r9_final_artifact_inventory.json",
-      "evidence_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "evidence_hash": "d65f318a10bc73d43ddb9ac0667e36e58047daa526ff7bd367fcf2db31dee4d0",
       "historical_verification_status": "VERIFIED",
       "historical_verification_note": "Table 5 machine-generated from frozen canonical bundle v2.",
       "final_candidate_status": "VERIFIED",
@@ -2130,8 +2130,8 @@
       "acceptance_criterion": "Artifact O.TAB-05 generated, verified on disk, and authenticated in inventory.",
       "evidence_type": "FIGURE_ARTIFACT",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "O.TAB-06",
@@ -2143,9 +2143,9 @@
       "owner": "Track D (Figures / Tables / Statistical QA)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/r9_final_artifact_inventory.json",
-      "evidence_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "evidence_hash": "d65f318a10bc73d43ddb9ac0667e36e58047daa526ff7bd367fcf2db31dee4d0",
       "historical_verification_status": "VERIFIED",
       "historical_verification_note": "Table 6 machine-generated from frozen canonical bundle v2.",
       "final_candidate_status": "VERIFIED",
@@ -2153,8 +2153,8 @@
       "acceptance_criterion": "Artifact O.TAB-06 generated, verified on disk, and authenticated in inventory.",
       "evidence_type": "FIGURE_ARTIFACT",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "O.GEN-01",
@@ -2166,9 +2166,9 @@
       "owner": "Track D (Figures / Tables / Statistical QA)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/r9_final_artifact_inventory.json",
-      "evidence_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "evidence_hash": "d65f318a10bc73d43ddb9ac0667e36e58047daa526ff7bd367fcf2db31dee4d0",
       "historical_verification_status": "NOT_APPLICABLE",
       "historical_verification_note": "Generation invariant.",
       "final_candidate_status": "POLICY_ENFORCED",
@@ -2176,8 +2176,8 @@
       "acceptance_criterion": "100% Machine-generated figures and tables policy.",
       "evidence_type": "POLICY_RULE",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "P.VAL-77.99",
@@ -2200,7 +2200,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "P.VAL-79.53",
@@ -2223,7 +2223,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "P.VAL-pos_1.532",
@@ -2246,7 +2246,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "P.VAL-neg_2.355_pos_5.300",
@@ -2269,7 +2269,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "P.VAL-0.422",
@@ -2292,7 +2292,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "P.VAL-6400",
@@ -2315,7 +2315,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "P.VAL-6401",
@@ -2338,7 +2338,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "P.VAL-6387",
@@ -2361,7 +2361,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "P.VAL-13",
@@ -2384,7 +2384,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "P.VAL-6.57575890",
@@ -2407,7 +2407,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "P.VAL-6.62839900",
@@ -2430,7 +2430,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "P.VAL-19.99000000",
@@ -2453,7 +2453,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "P.VAL-718",
@@ -2476,7 +2476,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "P.VAL-311",
@@ -2499,7 +2499,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "P.VAL-251",
@@ -2522,7 +2522,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "P.VAL-474",
@@ -2545,7 +2545,7 @@
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "Q.01-VIETNAMESE_DECK",
@@ -2568,7 +2568,7 @@
       "evidence_type": "PRESENTATION_DECK",
       "evidence_locator": "docs/presentation/slides.pptx",
       "tested_code_sha": "c309e497c104cac10f43317c2bd6b8872fa6443a",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "Q.02-TYPOGRAPHY_AND_LAYOUT_QA",
@@ -2580,7 +2580,7 @@
       "owner": "Track E (Presentation / Reproducibility)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/qa/visual_qa_inspection_record.json",
       "evidence_hash": "50c3e602b482b3c86b22bac3b0dc8be28fa272098d43b5681ff13ba75ae37885",
       "historical_verification_status": "VERIFIED",
@@ -2590,8 +2590,8 @@
       "acceptance_criterion": "Visual inspection of 12 rendered slide previews; sharpness, font sizes >= 18pt, slide 6 & slide 9 verified.",
       "evidence_type": "VISUAL_QA_RECORD",
       "evidence_locator": "reports/evidence/qa/visual_qa_inspection_record.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "R.01-CLEAN_CLONE_REPRO",
@@ -2613,8 +2613,8 @@
       "acceptance_criterion": "Clean-clone offline reproduction workflow.",
       "evidence_type": "REPLAY_EXECUTION",
       "evidence_locator": "reports/evidence/r9_saved_data_reproduction_raw.log",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "R.02-REPRO_VERDICT_ASSERTION",
@@ -2636,8 +2636,8 @@
       "acceptance_criterion": "Replay verdict PASS_CANONICAL_OFFLINE_VERIFIED with 0 defects.",
       "evidence_type": "REPLAY_EXECUTION",
       "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "S.01-SECRETS_AND_PATHS_SCAN",
@@ -2659,8 +2659,8 @@
       "acceptance_criterion": "Comprehensive scanner: zero secrets, zero private workstation paths.",
       "evidence_type": "SECURITY_AUDIT",
       "evidence_locator": "scripts/verify_canonical_package_acceptance.py",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "T.01-PR_CLASSIFICATION_AND_ANCESTRY",
@@ -2672,7 +2672,7 @@
       "owner": "Track F (Integration / GitHub / Release QA)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "docs/audit/pr_ancestry_audit.json",
       "evidence_hash": "599220c68c7cbb2b4110a6e8f311efb5037a708307860f39872a3a8a1052260c",
       "historical_verification_status": "VERIFIED",
@@ -2682,8 +2682,8 @@
       "acceptance_criterion": "Classification and ancestry audit of PRs #8, #24\u2013#29, and #30.",
       "evidence_type": "SOURCE_VERIFICATION",
       "evidence_locator": "docs/audit/pr_ancestry_audit.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "U.01-DIFF_AUDIT",
@@ -2695,7 +2695,7 @@
       "owner": "Track F (Integration / GitHub / Release QA)",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "docs/audit/baseline_diff_audit.json",
       "evidence_hash": "6ab8025ac4202f4022543bb4394b7044c6502023711e24c557fcd0d3057a7663",
       "historical_verification_status": "VERIFIED",
@@ -2705,8 +2705,8 @@
       "acceptance_criterion": "Full diff audit against protected baseline commit 80dbeb3f.",
       "evidence_type": "SOURCE_VERIFICATION",
       "evidence_locator": "docs/audit/baseline_diff_audit.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "V.01-RUFF_CHECK",
@@ -2718,18 +2718,18 @@
       "owner": "Track F (Integration / GitHub / Release QA)",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
       "evidence_hash": null,
       "historical_verification_status": "PARTIAL",
       "historical_verification_note": "Passed in previous base commit 5754f45; must be re-executed on final candidate.",
       "final_candidate_status": "VERIFIED",
-      "closure_step": "Ruff linter green in CI run 39198549473 (critical paths and pre-experiment infrastructure checked).",
+      "closure_step": "Ruff linter green in CI run 39205192089 (critical paths and pre-experiment infrastructure checked).",
       "acceptance_criterion": "Execution of Suite 1: ruff check.",
       "evidence_type": "CI_WORKFLOW",
-      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "V.02-RUFF_FORMAT",
@@ -2751,8 +2751,8 @@
       "acceptance_criterion": "Execution of Suite 2: ruff format --check.",
       "evidence_type": "POLICY_RULE",
       "evidence_locator": "reports/evidence/owner_format_scope_decision.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "V.03-OFFLINE_UNIT",
@@ -2764,18 +2764,18 @@
       "owner": "Track F (Integration / GitHub / Release QA)",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
       "evidence_hash": null,
       "historical_verification_status": "PARTIAL",
       "historical_verification_note": "Passed in previous base commit 5754f45; must be re-executed on final candidate.",
       "final_candidate_status": "VERIFIED",
-      "closure_step": "Offline unit tests green in CI run 39198549473.",
+      "closure_step": "Offline unit tests green in CI run 39205192089.",
       "acceptance_criterion": "Execution of Suite 3: Offline unit test suite.",
       "evidence_type": "CI_WORKFLOW",
-      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "V.04-INTEGRATION_SUITE",
@@ -2787,18 +2787,18 @@
       "owner": "Track F (Integration / GitHub / Release QA)",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
       "evidence_hash": null,
       "historical_verification_status": "PARTIAL",
       "historical_verification_note": "Passed in previous base commit 5754f45; must be re-executed on final candidate.",
       "final_candidate_status": "VERIFIED",
-      "closure_step": "Integration suite (offline) green in CI run 39198549473.",
+      "closure_step": "Integration suite (offline) green in CI run 39205192089.",
       "acceptance_criterion": "Execution of Suite 4: Integration test suite (no provider).",
       "evidence_type": "CI_WORKFLOW",
-      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "V.05-SYNTHETIC_DATA",
@@ -2810,18 +2810,18 @@
       "owner": "Track F (Integration / GitHub / Release QA)",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
       "evidence_hash": null,
       "historical_verification_status": "PARTIAL",
       "historical_verification_note": "Passed in previous base commit 5754f45; must be re-executed on final candidate.",
       "final_candidate_status": "VERIFIED",
-      "closure_step": "Synthetic data verification green in CI run 39198549473.",
+      "closure_step": "Synthetic data verification green in CI run 39205192089.",
       "acceptance_criterion": "Execution of Suite 5: Synthetic data verification.",
       "evidence_type": "CI_WORKFLOW",
-      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "V.06-CANONICAL_REPLAY",
@@ -2843,8 +2843,8 @@
       "acceptance_criterion": "Execution of Suite 6: Canonical replay test.",
       "evidence_type": "REPLAY_EXECUTION",
       "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "V.07-CANONICAL_MANIFEST",
@@ -2856,18 +2856,18 @@
       "owner": "Track F (Integration / GitHub / Release QA)",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
       "evidence_hash": null,
       "historical_verification_status": "PARTIAL",
       "historical_verification_note": "Passed in previous base commit 5754f45; must be re-executed on final candidate.",
       "final_candidate_status": "VERIFIED",
-      "closure_step": "Canonical package verifier verified in CI run 39198549473 and scripts/verify_public_v4_package.py.",
+      "closure_step": "Canonical package verifier verified in CI run 39205192089 and scripts/verify_public_v4_package.py.",
       "acceptance_criterion": "Execution of Suite 7: Canonical manifest verification.",
       "evidence_type": "CI_WORKFLOW",
-      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "V.08-RQ_KNOWN_ANSWER",
@@ -2879,18 +2879,18 @@
       "owner": "Track F (Integration / GitHub / Release QA)",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
       "evidence_hash": null,
       "historical_verification_status": "NOT_APPLICABLE",
       "historical_verification_note": "Passed in previous base commit 5754f45; must be re-executed on final candidate.",
       "final_candidate_status": "VERIFIED",
-      "closure_step": "RQ analysis known-answer test green in CI run 39198549473.",
+      "closure_step": "RQ analysis known-answer test green in CI run 39205192089.",
       "acceptance_criterion": "Execution of Suite 8: RQ analysis known-answer tests.",
       "evidence_type": "CI_WORKFLOW",
-      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "V.09-REPORT_METADATA",
@@ -2902,18 +2902,18 @@
       "owner": "Track F (Integration / GitHub / Release QA)",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
       "evidence_hash": null,
       "historical_verification_status": "NOT_APPLICABLE",
       "historical_verification_note": "Passed in previous base commit 5754f45; must be re-executed on final candidate.",
       "final_candidate_status": "VERIFIED",
-      "closure_step": "Report metadata verification green in CI run 39198549473.",
+      "closure_step": "Report metadata verification green in CI run 39205192089.",
       "acceptance_criterion": "Execution of Suite 9: Report metadata verification.",
       "evidence_type": "CI_WORKFLOW",
-      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "V.10-PRESENTATION_REGRESSION",
@@ -2935,8 +2935,8 @@
       "acceptance_criterion": "Execution of Suite 10: Presentation regression tests.",
       "evidence_type": "CI_WORKFLOW",
       "evidence_locator": "tests/test_artifact_inventory.py",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "V.11-PATH_SECRET_SCANNER",
@@ -2958,8 +2958,8 @@
       "acceptance_criterion": "Execution of Suite 11: Path and secret scanner.",
       "evidence_type": "SECURITY_AUDIT",
       "evidence_locator": "scripts/verify_canonical_package_acceptance.py",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "V.12-CROSS_ARTIFACT_TEST",
@@ -2971,18 +2971,18 @@
       "owner": "Track F (Integration / GitHub / Release QA)",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
       "evidence_hash": null,
       "historical_verification_status": "NOT_APPLICABLE",
       "historical_verification_note": "Passed in previous base commit 5754f45; must be re-executed on final candidate.",
       "final_candidate_status": "VERIFIED",
-      "closure_step": "Cross-artifact consistency tests green in CI run 39198549473.",
+      "closure_step": "Cross-artifact consistency tests green in CI run 39205192089.",
       "acceptance_criterion": "Execution of Suite 12: Cross-artifact consistency test.",
       "evidence_type": "CI_WORKFLOW",
-      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "V.13-TERMINAL_VALIDATOR",
@@ -3004,8 +3004,8 @@
       "acceptance_criterion": "Execution of Suite 13: Independent terminal validator suite.",
       "evidence_type": "TEST_SUITE",
       "evidence_locator": "tests/test_terminal_audit.py",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "W.01-GITHUB_CI_GREEN",
@@ -3017,18 +3017,18 @@
       "owner": "Track F (Integration / GitHub / Release QA)",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
       "evidence_hash": null,
       "historical_verification_status": "VERIFIED",
       "historical_verification_note": "5/5 checks passed on commit 5754f45 (PR #28).",
       "final_candidate_status": "VERIFIED",
-      "closure_step": "All 4 GitHub Actions matrix jobs (Ubuntu, Windows, Synthetic, Registry) passed on candidate HEAD c8eb9d1.",
+      "closure_step": "All 4 GitHub Actions matrix jobs (Ubuntu, Windows, Synthetic, Registry) passed on candidate HEAD 2cc18f4.",
       "acceptance_criterion": "All GitHub Actions CI workflows pass on candidate SHA.",
       "evidence_type": "CI_WORKFLOW",
-      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "X.01-REPO_STATE",
@@ -3040,7 +3040,7 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
       "evidence_hash": null,
       "historical_verification_status": "NOT_APPLICABLE",
@@ -3050,8 +3050,8 @@
       "acceptance_criterion": "PR finalization submission field X.01-REPO_STATE populated and verified.",
       "evidence_type": "SOURCE_VERIFICATION",
       "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "X.02-CANONICAL_EXP",
@@ -3063,7 +3063,7 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
       "evidence_hash": null,
       "historical_verification_status": "NOT_APPLICABLE",
@@ -3073,8 +3073,8 @@
       "acceptance_criterion": "PR finalization submission field X.02-CANONICAL_EXP populated and verified.",
       "evidence_type": "SOURCE_VERIFICATION",
       "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "X.03-SCIENTIFIC_RES",
@@ -3086,7 +3086,7 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
       "evidence_hash": null,
       "historical_verification_status": "NOT_APPLICABLE",
@@ -3096,8 +3096,8 @@
       "acceptance_criterion": "PR finalization submission field X.03-SCIENTIFIC_RES populated and verified.",
       "evidence_type": "SOURCE_VERIFICATION",
       "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "X.04-ARTIFACTS",
@@ -3109,7 +3109,7 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
       "evidence_hash": null,
       "historical_verification_status": "NOT_APPLICABLE",
@@ -3119,8 +3119,8 @@
       "acceptance_criterion": "PR finalization submission field X.04-ARTIFACTS populated and verified.",
       "evidence_type": "SOURCE_VERIFICATION",
       "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "X.05-VERIFICATION",
@@ -3132,7 +3132,7 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
       "evidence_hash": null,
       "historical_verification_status": "NOT_APPLICABLE",
@@ -3142,8 +3142,8 @@
       "acceptance_criterion": "PR finalization submission field X.05-VERIFICATION populated and verified.",
       "evidence_type": "SOURCE_VERIFICATION",
       "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "X.06-LIMITATIONS",
@@ -3155,7 +3155,7 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
       "evidence_hash": null,
       "historical_verification_status": "NOT_APPLICABLE",
@@ -3165,8 +3165,8 @@
       "acceptance_criterion": "PR finalization submission field X.06-LIMITATIONS populated and verified.",
       "evidence_type": "SOURCE_VERIFICATION",
       "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "X.07-MERGE_RECOMMENDATION",
@@ -3178,7 +3178,7 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
       "evidence_hash": null,
       "historical_verification_status": "NOT_APPLICABLE",
@@ -3188,8 +3188,8 @@
       "acceptance_criterion": "PR finalization submission field X.07-MERGE_RECOMMENDATION populated and verified.",
       "evidence_type": "SOURCE_VERIFICATION",
       "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "Y.01-READY_FOR_MERGE_GATE",
@@ -3201,7 +3201,7 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
       "evidence_hash": null,
       "historical_verification_status": "NOT_APPLICABLE",
@@ -3211,8 +3211,8 @@
       "acceptance_criterion": "READY_FOR_HUMAN_FINAL_MERGE gate.",
       "evidence_type": "POLICY_RULE",
       "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "Z.01-POST_MERGE_CLEANUP",
@@ -3224,7 +3224,7 @@
       "owner": "Track F (Integration / GitHub / Release QA)",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/pulls",
       "evidence_hash": null,
       "historical_verification_status": "NOT_APPLICABLE",
@@ -3234,8 +3234,8 @@
       "acceptance_criterion": "Post-merge PR closure and stale marker cleanup.",
       "evidence_type": "HUMAN_ACTION_GATE",
       "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pulls",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "AA.01-RELEASE_TAG",
@@ -3247,7 +3247,7 @@
       "owner": "Track F (Integration / GitHub / Release QA)",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/releases",
       "evidence_hash": null,
       "historical_verification_status": "PARTIAL",
@@ -3257,8 +3257,8 @@
       "acceptance_criterion": "Official release tagging v1.0.0-rag2attck-study.",
       "evidence_type": "HUMAN_ACTION_GATE",
       "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/releases",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-01",
@@ -3280,8 +3280,8 @@
       "acceptance_criterion": "DoD #01: canonical 6400/6400 verified",
       "evidence_type": "REPLAY_EXECUTION",
       "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-02",
@@ -3303,8 +3303,8 @@
       "acceptance_criterion": "DoD #02: 6401 attempts reconciled",
       "evidence_type": "REPLAY_EXECUTION",
       "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-03",
@@ -3326,8 +3326,8 @@
       "acceptance_criterion": "DoD #03: terminal evidence verified",
       "evidence_type": "CANONICAL_SEAL",
       "evidence_locator": "reports/evidence/canonical_run_seal_v1.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-04",
@@ -3349,8 +3349,8 @@
       "acceptance_criterion": "DoD #04: ledger reconciled",
       "evidence_type": "REPLAY_EXECUTION",
       "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-05",
@@ -3372,8 +3372,8 @@
       "acceptance_criterion": "DoD #05: budget safe",
       "evidence_type": "REPLAY_EXECUTION",
       "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-06",
@@ -3395,8 +3395,8 @@
       "acceptance_criterion": "DoD #06: canonical metric bundle frozen",
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-07",
@@ -3418,8 +3418,8 @@
       "acceptance_criterion": "DoD #07: RQ1 verified",
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-08",
@@ -3441,8 +3441,8 @@
       "acceptance_criterion": "DoD #08: RQ2 verified",
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-09",
@@ -3464,8 +3464,8 @@
       "acceptance_criterion": "DoD #09: RQ3 verified",
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-10",
@@ -3477,7 +3477,7 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.md",
       "evidence_hash": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "historical_verification_status": "NOT_APPLICABLE",
@@ -3487,8 +3487,8 @@
       "acceptance_criterion": "DoD #10: report final",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.md",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-11",
@@ -3500,7 +3500,7 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/canonical_populated_report.docx",
       "evidence_hash": "25fbed2e7227456345fba407fed1b1ed476dd484a0841f805718fc78acdf783a",
       "historical_verification_status": "NOT_APPLICABLE",
@@ -3510,8 +3510,8 @@
       "acceptance_criterion": "DoD #11: DOCX final",
       "evidence_type": "RESEARCH_REPORT",
       "evidence_locator": "reports/evidence/canonical_populated_report.docx",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-12",
@@ -3523,9 +3523,9 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/r9_final_artifact_inventory.json",
-      "evidence_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "evidence_hash": "d65f318a10bc73d43ddb9ac0667e36e58047daa526ff7bd367fcf2db31dee4d0",
       "historical_verification_status": "NOT_APPLICABLE",
       "historical_verification_note": "Historical status noted; candidate gate requires fresh proof.",
       "final_candidate_status": "VERIFIED",
@@ -3533,8 +3533,8 @@
       "acceptance_criterion": "DoD #12: figures final",
       "evidence_type": "FIGURE_ARTIFACT",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-13",
@@ -3546,9 +3546,9 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/r9_final_artifact_inventory.json",
-      "evidence_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "evidence_hash": "d65f318a10bc73d43ddb9ac0667e36e58047daa526ff7bd367fcf2db31dee4d0",
       "historical_verification_status": "NOT_APPLICABLE",
       "historical_verification_note": "Historical status noted; candidate gate requires fresh proof.",
       "final_candidate_status": "VERIFIED",
@@ -3556,8 +3556,8 @@
       "acceptance_criterion": "DoD #13: tables final",
       "evidence_type": "FIGURE_ARTIFACT",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-14",
@@ -3579,8 +3579,8 @@
       "acceptance_criterion": "DoD #14: slides final",
       "evidence_type": "PRESENTATION_DECK",
       "evidence_locator": "docs/presentation/slides.pptx",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-15",
@@ -3602,8 +3602,8 @@
       "acceptance_criterion": "DoD #15: reproduction works from clean clone",
       "evidence_type": "REPLAY_EXECUTION",
       "evidence_locator": "reports/evidence/r9_saved_data_reproduction_report.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-16",
@@ -3625,8 +3625,8 @@
       "acceptance_criterion": "DoD #16: zero provider calls during reproduction",
       "evidence_type": "POLICY_RULE",
       "evidence_locator": "src/experiment/authorization.py",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-17",
@@ -3648,8 +3648,8 @@
       "acceptance_criterion": "DoD #17: no secrets/private paths",
       "evidence_type": "SECURITY_AUDIT",
       "evidence_locator": "scripts/verify_canonical_package_acceptance.py",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-18",
@@ -3671,8 +3671,8 @@
       "acceptance_criterion": "DoD #18: cross-artifact numbers match",
       "evidence_type": "CANONICAL_BUNDLE",
       "evidence_locator": "artifacts/results/canonical_metric_bundle_v2.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-19",
@@ -3684,18 +3684,18 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
       "evidence_hash": null,
       "historical_verification_status": "NOT_APPLICABLE",
       "historical_verification_note": "Historical status noted; candidate gate requires fresh proof.",
       "final_candidate_status": "VERIFIED",
-      "closure_step": "All offline unit, integration, and regression tests pass in GitHub Actions CI run 39198549473.",
+      "closure_step": "All offline unit, integration, and regression tests pass in GitHub Actions CI run 39205192089.",
       "acceptance_criterion": "DoD #19: all tests pass",
       "evidence_type": "CI_WORKFLOW",
-      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-20",
@@ -3707,18 +3707,18 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
       "evidence_hash": null,
       "historical_verification_status": "NOT_APPLICABLE",
       "historical_verification_note": "Historical status noted; candidate gate requires fresh proof.",
       "final_candidate_status": "VERIFIED",
-      "closure_step": "GitHub Actions CI green on candidate HEAD c8eb9d1.",
+      "closure_step": "GitHub Actions CI green on candidate HEAD 2cc18f4.",
       "acceptance_criterion": "DoD #20: CI pass at final exact SHA",
       "evidence_type": "CI_WORKFLOW",
-      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-21",
@@ -3730,7 +3730,7 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
       "evidence_hash": null,
       "historical_verification_status": "NOT_APPLICABLE",
@@ -3740,8 +3740,8 @@
       "acceptance_criterion": "DoD #21: PR integration resolved",
       "evidence_type": "HUMAN_ACTION_GATE",
       "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-22",
@@ -3753,7 +3753,7 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "https://github.com/habachcp6/RAG2ATTCK",
       "evidence_hash": null,
       "historical_verification_status": "NOT_APPLICABLE",
@@ -3763,8 +3763,8 @@
       "acceptance_criterion": "DoD #22: main contains final state",
       "evidence_type": "HUMAN_ACTION_GATE",
       "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-23",
@@ -3776,7 +3776,7 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/pulls",
       "evidence_hash": null,
       "historical_verification_status": "NOT_APPLICABLE",
@@ -3786,8 +3786,8 @@
       "acceptance_criterion": "DoD #23: superseded PRs cleaned",
       "evidence_type": "HUMAN_ACTION_GATE",
       "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/pulls",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-24",
@@ -3809,8 +3809,8 @@
       "acceptance_criterion": "DoD #24: final evidence package committed",
       "evidence_type": "RELEASE_PACKAGE",
       "evidence_locator": "artifacts/packages/public_v4_candidate_20261003.zip",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "DOD-25",
@@ -3822,7 +3822,7 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "not_applicable",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "https://github.com/habachcp6/RAG2ATTCK/releases",
       "evidence_hash": null,
       "historical_verification_status": "NOT_APPLICABLE",
@@ -3832,8 +3832,8 @@
       "acceptance_criterion": "DoD #25: release/tag completed or explicitly deferred",
       "evidence_type": "HUMAN_ACTION_GATE",
       "evidence_locator": "https://github.com/habachcp6/RAG2ATTCK/releases",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "AC.01-SELF_CORRECTION",
@@ -3845,7 +3845,7 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/sg_evidence_audit_independent_probes_record.json",
       "evidence_hash": "6721d667714c6cd6ae227491e57b5f12f0e3f09e850c60839b1e229d9ab0913c",
       "historical_verification_status": "NOT_APPLICABLE",
@@ -3855,8 +3855,8 @@
       "acceptance_criterion": "Adhere strictly to Systematic Diagnosis & Repair Protocol.",
       "evidence_type": "HISTORICAL_PROCESS_RECORD",
       "evidence_locator": "reports/evidence/sg_evidence_audit_independent_probes_record.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "AD.01-REVIEWER_ESCALATION",
@@ -3868,7 +3868,7 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/sg_evidence_audit_independent_probes_record.json",
       "evidence_hash": "6721d667714c6cd6ae227491e57b5f12f0e3f09e850c60839b1e229d9ab0913c",
       "historical_verification_status": "NOT_APPLICABLE",
@@ -3878,8 +3878,8 @@
       "acceptance_criterion": "Adhere strictly to Evidence-Backed Escalation Protocol.",
       "evidence_type": "HISTORICAL_PROCESS_RECORD",
       "evidence_locator": "reports/evidence/sg_evidence_audit_independent_probes_record.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "AE.01-RESPONSE_FORMAT",
@@ -3891,7 +3891,7 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/sg_evidence_audit_independent_probes_record.json",
       "evidence_hash": "6721d667714c6cd6ae227491e57b5f12f0e3f09e850c60839b1e229d9ab0913c",
       "historical_verification_status": "NOT_APPLICABLE",
@@ -3901,8 +3901,8 @@
       "acceptance_criterion": "Adhere strictly to Structured Response Template Compliance.",
       "evidence_type": "HISTORICAL_PROCESS_RECORD",
       "evidence_locator": "reports/evidence/sg_evidence_audit_independent_probes_record.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     },
     {
       "id": "AF.01-PRIORITY_ORDER",
@@ -3914,7 +3914,7 @@
       "owner": "Antigravity Lead",
       "evidence_storage": "git_tracked",
       "source_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
-      "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+      "evidence_commit_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
       "evidence_path": "reports/evidence/sg_evidence_audit_independent_probes_record.json",
       "evidence_hash": "6721d667714c6cd6ae227491e57b5f12f0e3f09e850c60839b1e229d9ab0913c",
       "historical_verification_status": "NOT_APPLICABLE",
@@ -3924,14 +3924,14 @@
       "acceptance_criterion": "Adhere strictly to P0 through P7 Hierarchy Enforcement.",
       "evidence_type": "HISTORICAL_PROCESS_RECORD",
       "evidence_locator": "reports/evidence/sg_evidence_audit_independent_probes_record.json",
-      "tested_code_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944"
+      "tested_code_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+      "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde"
     }
   ],
-  "submission_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-  "ci_head_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-  "ci_run_url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
-  "ci_real_retrieval_run_url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549503",
+  "submission_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+  "ci_head_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+  "ci_run_url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
+  "ci_real_retrieval_run_url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192106",
   "historical_track_a_sha": "b69a6909acda4c7588744acc7e1d6c20bfce2612",
   "historical_track_a_run_url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37052071704",
   "historical_run_seal_sha256": "ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701"

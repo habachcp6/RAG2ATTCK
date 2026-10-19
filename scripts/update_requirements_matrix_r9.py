@@ -34,11 +34,11 @@ def compute_sha256(path: Path) -> str:
 
 def update_matrix_r10(
     candidate_base_sha: str = "c309e497c104cac10f43317c2bd6b8872fa6443a",
-    tested_code_sha: str = "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-    evidence_commit_sha: str = "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-    ci_head_sha: str = "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-    ci_run_url: str = "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
-    ci_real_retrieval_run_url: str = "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549503",
+    tested_code_sha: str = "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+    evidence_commit_sha: str = "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+    ci_head_sha: str = "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+    ci_run_url: str = "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
+    ci_real_retrieval_run_url: str = "https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192106",
     historical_b69_sha: str = "b69a6909acda4c7588744acc7e1d6c20bfce2612",
     historical_ci_url: str = "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37052071704",
     timestamp_utc: str | None = None,
@@ -1558,27 +1558,27 @@ def main() -> int:
     )
     parser.add_argument(
         "--tested-code-sha",
-        default="c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+        default="2cc18f469db2dca4bf7c310abdb6a911c7624cde",
         help="Commit SHA where tests executed",
     )
     parser.add_argument(
         "--evidence-commit-sha",
-        default="c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+        default="2cc18f469db2dca4bf7c310abdb6a911c7624cde",
         help="Commit SHA where evidence is stored in git",
     )
     parser.add_argument(
         "--ci-head-sha",
-        default="c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+        default="2cc18f469db2dca4bf7c310abdb6a911c7624cde",
         help="CI evaluated head SHA",
     )
     parser.add_argument(
         "--ci-run-url",
-        default="https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549473",
+        default="https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192089",
         help="CI run URL",
     )
     parser.add_argument(
         "--ci-real-retrieval-run-url",
-        default="https://github.com/habachcp6/RAG2ATTCK/actions/runs/39198549503",
+        default="https://github.com/habachcp6/RAG2ATTCK/actions/runs/39205192106",
         help="Real retrieval CI run URL",
     )
     parser.add_argument(

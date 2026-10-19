@@ -924,8 +924,8 @@ def generate_inventory(
 
     inventory: Dict[str, Any] = {
         "schema_version": "r9_final_artifact_inventory_v1",
-        "timestamp_utc": "2026-10-19T03:18:00Z",
-        "source_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+        "timestamp_utc": "2026-10-19T05:42:00Z",
+        "source_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
         "supersedes_historical_inventory": "reports/evidence/historical/r9_final_artifact_inventory_20261003.json",
         "historical_lineage": lineage_block,
         "closeout_errata_lineage": lineage_block,

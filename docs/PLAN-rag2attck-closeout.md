@@ -1,226 +1,257 @@
-# Kế Hoạch Đóng Dự Án RAG2ATTCK — Phiên Bản v3.0 (Authoritative Closeout Plan)
+# Kế Hoạch Thực Thi & Kiểm Thử Dứt Điểm Dự Án RAG2ATT&CK (v4.0 — Final Closeout Remediation & Verification Plan)
 
-**Dự án:** `habachcp6/RAG2ATTCK`  
-**Nhánh ứng viên hiện tại:** `codex/finalization-20261003` (PR #30, HEAD ban đầu: `5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383`)  
-**Phương án chủ đạo:** **Phương án A (Hiệu chỉnh) — Hiệu chỉnh báo cáo có quản lý phiên bản và bảo toàn bằng chứng lịch sử** (*Versioned Report Remediation with Historical Evidence Preservation*), kết hợp **Biên bản Đính chính & Truy vết Phiên bản** (vai trò lưu trữ lịch sử của Phương án B).  
-**Ranh giới thực thi hiện tại:** Chỉ thực thi từ **Bước 0 đến Bước 3**, xuất gói bằng chứng tại đúng SHA ứng viên hiệu chỉnh (`corrected release candidate`) và **DỪNG LẠI** chờ phê duyệt cuối cùng trước khi merge PR #30, phát hành Release chính thức, đóng 9 PR cũ hoặc cập nhật Google Sheet Tracker.
+## Mục Tiêu & Phạm Vi (Goal Description)
 
----
-
-## 1. Tóm Tắt Quyết Định Chiến Lược & Các Nguyên Tắc Bất Biến
+Kế hoạch **v4.0** này giải quyết triệt để **100% các phát hiện đã hội tụ** giữa Kiểm toán viên độc lập (vòng 1 & vòng 2) và Kiểm toán pháp y nội bộ trên nhánh `codex/finalization-20261003` ([PR #30](https://github.com/habachcp6/RAG2ATTCK/pull/30)), kèm theo **bộ kiểm thử tự động & kiểm chứng đối kháng toàn diện (Exhaustive Positive & Negative Test Suite)** để đảm bảo dự án đạt chuẩn nghiệm thu **`PASS` tuyệt đối ngay trong hôm nay**.
 
 > [!IMPORTANT]
-> **Nguyên tắc cốt lõi của Phương án A (Hiệu chỉnh):**
-> 1. **Bảo toàn tuyệt đối dữ liệu thực nghiệm và bằng chứng lịch sử:** Giữ nguyên 100% byte đối với `canonical_metric_bundle_v2.json` (`442b5933...`), `canonical_run_seal_v1.json` (`ae7a9ada...`), gói dữ liệu `public_v4_candidate_20261003.zip` (`1d5f9f4b...`), và 22 file hạ tầng được bảo vệ từ baseline `80dbeb3f`.
-> 2. **Sửa sạch sản phẩm khoa học sẽ công bố:** Giải quyết triệt để mâu thuẫn trích dẫn/mô hình của bài LADE (`T33`), đồng bộ hóa 100% nội dung và byte giữa hai đường dẫn DOCX (`reports/evidence/canonical_populated_report.docx` và `docs/report/scientific_report.docx`) cùng bản PDF (`reports/evidence/canonical_populated_report.pdf`), và chuẩn hóa nhãn trạng thái tài liệu theo đúng vòng đời phê duyệt.
-> 3. **Không ngụy tạo chứng nhận cũ cho bản build mới:** Không âm thầm thay mã băm trong `r9_final_artifact_inventory.json` rồi giữ nguyên các cờ nghiệm thu lịch sử (`timestamp_utc: 2026-10-03T12:55:00Z`, `VISUALLY_REVIEWED = true` của bản `c5ce49f7...`). Bản inventory R9 cũ và hồ sơ QA cũ được bảo tồn nguyên vẹn trong lịch sử Git và lưu trữ tường minh tại `reports/evidence/historical/`; bản ứng viên hiệu chỉnh phải trải qua quy trình kiểm định cấu trúc, số học và thị giác mới độc lập kèm biên bản đính chính (`errata record`).
-
-### Bảng Phân Định Xử Lý Theo Thành Phần
-
-| Thành phần | Cách xử lý trong Kế hoạch v3.0 |
-| :--- | :--- |
-| **Dữ liệu thực nghiệm, ground truth, protocol (`config/experiment_protocol_v1.json`) và `canonical_metric_bundle_v2.json`** | Giữ nguyên tuyệt đối (0 byte thay đổi); kiểm tra lại SHA-256 đối chiếu với danh sách 22 file bảo vệ. |
-| **Gói dữ liệu công khai `public_v4_candidate_20261003.zip`** | Giữ nguyên byte (`2,343,105 bytes`, SHA-256 `1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1`); xác thực lại manifest (`dbc2e133...`) và chạy lại kiểm thử replay ngoại tuyến. |
-| **Báo cáo khoa học (`.md`, `.docx`, `.pdf`), Bảng 1b và tài liệu related work (`T02`/`T33`)** | Tạo revision hiệu chỉnh tại commit mới; biên dịch DOCX từ một nguồn Markdown duy nhất, sao chép đồng bộ sang cả hai đường dẫn để khớp byte 100%, và kết xuất lại PDF 41 trang. |
-| **Bản báo cáo cũ (`5cbaa094...`, `c5ce49f7...`, `43297b17...`) và Inventory R9 (`9a69d8c0...`)** | Giữ truy xuất đầy đủ tại commit lịch sử `5eb6bd6f` / `1cd0a556` và lưu bản sao bất biến vào `reports/evidence/historical/r9_final_artifact_inventory_20261003.json` cùng `reports/evidence/historical/visual_qa_inspection_record_20261003.json`. |
-| **Inventory và Visual QA phục vụ bản ứng viên hiệu chỉnh** | Phát hành `reports/evidence/closeout_rc_artifact_inventory.json` và cập nhật `reports/evidence/r9_final_artifact_inventory.json` + `reports/evidence/qa/visual_qa_inspection_record.json` với `timestamp_utc` mới, `source_sha` mới, trường liên kết `supersedes_historical_inventory`, và bằng chứng kiểm định thị giác mới thực tế. |
-| **Biên bản đính chính & truy vết phiên bản (`Errata & Revision Lineage`)** | Tạo `reports/evidence/report_revision_errata_record.json` và `.md` ghi rõ quan hệ giữa revision cũ và revision mới, danh mục từng vị trí sửa, nguyên nhân sửa, và phạm vi dữ liệu thực nghiệm không thay đổi. |
+> **Nguyên tắc bất biến (Zero Experimental Drift):**
+> 1. **Giữ nguyên 100% byte-for-byte** toàn bộ 22 tệp baseline được bảo vệ tại commit `80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315` (21 tệp Git-tracked + 1 tệp STIX `attack/raw/enterprise-v19.2/enterprise-attack-19.2.json` trên máy trạm có SHA-256 `dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4`).
+> 2. **Giữ nguyên 100% byte-for-byte** 4 điểm neo thực nghiệm đã khóa:
+>    - [`artifacts/results/canonical_metric_bundle_v2.json`](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/artifacts/results/canonical_metric_bundle_v2.json) (`49,465` B, SHA-256 `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`)
+>    - [`reports/evidence/canonical_run_seal_v1.json`](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/reports/evidence/canonical_run_seal_v1.json) (`3,046` B, SHA-256 `ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701`)
+>    - [`reports/evidence/populated_report_slots_canonical.json`](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/reports/evidence/populated_report_slots_canonical.json) (`15,010` B, SHA-256 `7c5a37f2659035108a70b7f161114f5d35e6c903a5e77df1d395164fbb75e77e`)
+>    - [`public_v4_candidate_20261003.zip`](file:///<USER_HOME>/.codex/artifacts/rag2attck/public_v4_candidate_20261003.zip) (`2,343,105` B, SHA-256 `1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1`)
+> 3. **Giữ nguyên 100% byte-for-byte** 2 hồ sơ lịch sử R9 đã lưu trữ trong `reports/evidence/historical/`:
+>    - [`r9_final_artifact_inventory_20261003.json`](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/reports/evidence/historical/r9_final_artifact_inventory_20261003.json) (`38,323` B, SHA-256 `a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9`)
+>    - [`visual_qa_inspection_record_20261003.json`](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/reports/evidence/historical/visual_qa_inspection_record_20261003.json) (`15,697` B, SHA-256 `dd3e5d5a0e61bf7aef233376f52256ec7c06a2cbea266963d154146acbae8da5`)
 
 ---
 
-## 2. Kết Quả Kiểm Chứng Thực Chứng Sơ Bộ (Pre-Execution Forensic Verification)
+## User Review Required
 
-Trước khi lập bản kế hoạch v3.0 này, các điểm nghi vấn trong phản biện đã được kiểm tra trực tiếp trên dữ liệu gốc để đảm bảo kế hoạch sửa đúng bản chất kỹ thuật:
-
-### 2.1. Xác minh toàn văn manuscript `LADE-2026.pdf` và giải phẫu mâu thuẫn `T33`
-- **Bản lưu manuscript đã thu thập:** Tải trực tiếp từ `https://www3.cs.stonybrook.edu/~stoller/papers/LADE-2026.pdf`, kích thước `3,819,792 bytes`, 28 trang, SHA-256: `6e8384569254bc4cf82dd4d0191746907ff40fa76016275946651cf47d6f4985` (lưu tại `<USER_HOME>\.gemini\antigravity\brain\78634c79-d8ab-40b0-94f0-6e4db79fc0b0\scratch\LADE-2026.pdf`).
-- **Kết quả đối chiếu từng dòng với báo cáo hiện tại:**
-  1. **Sai lệch mô hình trong Bảng 1b Dòng 12 (`Primary Models`):** Báo cáo hiện tại (`canonical_populated_report.md` dòng 133 và `scientific_report.md`) ghi LADE sử dụng **`GPT-4, Claude-3-Opus, Llama-3-70B`**. Trong khi đó, manuscript `LADE-2026.pdf` tại **Mục `§5`, trang 12, Bảng 2** ghi rõ 4 mô hình thực tế được đánh giá là: **`gpt-oss-120B`, `Llama-3.3-70B`, `Mistral-Small-3.2-24B`, và `Gemini-2.5-Pro`**. Truy vết lịch sử cho thấy `docs/related_work/T02_comparator_notes.md` chỉ ghi chung `"Commercial / open LLM prompting engines"`, và khi điền Bảng 1b ở vòng trước đã xảy ra lỗi suy diễn sai tên mô hình.
-  2. **Thiếu hụt bộ dữ liệu trong Bảng 1b Dòng 14 & Dòng 16 (`Primary Dataset`):** Bảng 1b hiện chỉ ghi `AVIATOR (35 attack / 32 benign sequences)`, bỏ sót bộ dữ liệu thứ hai được đánh giá trong **Mục `§5.1`, trang 12–13**: **`Caldera-derived dataset`** (mỗi tập gồm 33 chuỗi theo tỷ lệ 2:1 benign-to-APT, cộng 5 chuỗi lateral-movement và 8 chuỗi multi-stage attack).
-  3. **Sai lệch trong `docs/related_work/T02_comparator_matrix.md` Dòng 13:** Vẫn ghi nguồn dữ liệu của LADE là `DARPA TC & simulated APT scenarios`, trong khi `LADE-2026.pdf §5.1 (tr. 12)` nêu rõ DARPA TC E3/E5, Linux APT Dataset, DARPA OpTC và ATLAS-v2 là các bộ dữ liệu cũ không phù hợp và bài báo sử dụng **AVIATOR + Caldera-derived emulation plans**.
-- **Kết luận xử lý `T33`:** Thực hiện đối chiếu claim theo phiên bản có lưu hash (`6e838456...`), ngày truy xuất (`2026-10-19`), và vị trí trang/mục (`§4, §5.1–5.5, tr. 7–19`). Sau khi sửa chính xác 3 điểm sai lệch trên dựa trên bản full-text đã lưu, số bài được xác minh toàn văn trong nhóm 8 bài có liên kết bên ngoài là **`6/8`** (chỉ còn 2 bài `[8]` Okuma et al. và `[11]` Gwak et al. là `metadata-only / UNVERIFIED`), đồng thời ghi nhận rõ đây là đợt xác minh bổ sung phục vụ closeout (tách biệt với lần kiểm tra ngày 2026-09-22 ở PR #8 và sự cố timeout ngày 2026-10-03).
-
-### 2.2. Đối chiếu trực tiếp cấu trúc XML giữa 2 file DOCX hiện tại
-- Đã giải nén `word/document.xml` (1.000 đoạn văn `w:p`) của cả hai file DOCX tại HEAD hiện tại:
-  - `reports/evidence/canonical_populated_report.docx` (`320,008 bytes`, SHA-256: `c5ce49f7e57ee2d86d79daab50def273af6dbb4c4393da61340f033b63306ccb`)
-  - `docs/report/scientific_report.docx` (`320,049 bytes`, SHA-256: `43297b17b2a505fdad96e94ac88fdc868e412bc493682be5e1bdc048bc0bb2dd`)
-- **Kết quả `unified_diff`:** Xác nhận hai file DOCX **có khác biệt nội dung văn bản khoa học tại 6 đoạn văn** (không chỉ khác metadata ZIP):
-  - **Đoạn văn thứ 42 (Mục 1.3):** Bản `c5ce49f7...` liệt kê 3 bài (`LADE [6], Okuma et al. [8], Gwak et al. [11]`) là metadata-only, trong khi bản `43297b17...` đã rút xuống còn 2 bài (`Okuma et al. [8], Gwak et al. [11]`).
-  - **5 ô dữ liệu cột `Okuma et al. (2025) [8]` trong Bảng 1b:** Bản `c5ce49f7...` vẫn giữ các giá trị chưa kiểm chứng (`Technique level (Txxxx)`, `N/A`, `No`, `N/A`, `No`), trong khi bản `43297b17...` đã chuyển sang `UNVERIFIED`.
-
-### 2.3. Đối chiếu trực tiếp dòng nhật ký `request_journal.jsonl` (`5124` so với `48479–48482`)
-- Đã kiểm tra trực tiếp file `request_journal.jsonl` (`57,603 dòng`, SHA-256: `f36e0f3099ef704e05a21d0839cf3158268fb36b647d8c229bc9f8cf8fd4149a`) trên cả gói công khai `base_public_v3/inputs/request_journal.jsonl` và bản lưu gốc `sealed-live66-20261002/run/request_journal.jsonl` (hai file khớp byte 100%).
-- Chuỗi sự kiện của yêu cầu duy nhất bị retry `("view_d870d574", "rag_k1")` thuộc `run_id="live-66b94b1676bf46a9"` nằm tại **dòng vật lý `48476–48485`**:
-  - Dòng `48479`: `event="attempt"`, `ordinal=5387`, `timestamp_utc="2026-10-02T17:19:50.119066Z"`
-  - Dòng `48480`: `event="attempt_receipt"`, `attempt_index=0`, `error_type="InternalServerError"`, `status="API_FAILURE"`, `latency_ms=1387.15`
-  - Dòng `48481`: `event="attempt"`, `ordinal=5388`, `timestamp_utc="2026-10-02T17:19:51.999923Z"`
-  - Dòng `48482`: `event="attempt_receipt"`, `attempt_index=1`, `input_tokens=1543`, `cached_tokens=1540`, `output_tokens=104`, `status="SUCCESS"`
-  - Dòng `48485`: `event="complete"`, `record_sha256="e9146fe74aa5769faa5dc7df70205e62924fcf8c0e3a53946c50f96ddb2f8086"`
-- Ghi chú cũ ghi `"line 5124"` là sai lệch chỉ số dòng vật lý (do nhầm giữa thứ tự view/request và dòng trong file JSONL 57.603 dòng ghi ~9 sự kiện cho mỗi request). Bản hiệu chỉnh sẽ ghi nhận đầy đủ cả lịch sử ghi chú cũ lẫn định danh chính xác (`file`, `sha256`, `run_id`, `view_id`, `condition`, `event`, `ordinal`, `physical_lines`).
-
-### 2.4. Giải phẫu lỗ hổng phân loại trong `matrix_git_blob_audit_report.json`
-- Trong `reports/evidence/matrix_git_blob_audit_report.json` hiện tại (`sha: 9f3f6c2b...`), tổng 170 yêu cầu được chia thành `135 git_bindings` và `35 non_git_assets`.
-- Ba nhóm đường dẫn tương đối trong repo bị thiếu trên đĩa (`docs/audit/pr_ancestry_audit.json` ở `T.01`, `docs/audit/baseline_diff_audit.json` ở `U.01`, và `AGENTS.md` ở `AC.01–AF.01`) đã bị đẩy sang danh sách `non_git_assets` với nhãn sai `classification: "URL_OR_STANDALONE_RELEASE_ASSET"`, nhờ đó báo cáo vẫn kết luận `PASS_ALL_BINDINGS_VERIFIED` (`135/135`).
-- Trong Bước 1 dưới đây, quy tắc kiểm toán sẽ bị khóa chặt (fail-closed) và bổ sung kiểm thử hồi quy âm tính (negative regression test).
+> [!WARNING]
+> **Lộ trình hoàn tất dự án trong hôm nay & Quy tắc bất khả xâm phạm đối với Google Sheets:**
+> - **Quy tắc tuyệt đối về Google Sheets:** Agent **CHỈ ĐƯỢC PHÉP ĐỌC** Google Sheets, **TUYỆT ĐỐI KHÔNG ĐƯỢC CHỈNH SỬA / GHI ĐÈ** bất kỳ ô nào trên Google Sheets ở mọi giai đoạn. Mọi cập nhật trên Google Sheets sẽ do chính `dj` duyệt và chỉnh sửa tay (Agent chỉ xuất bảng gợi ý nội dung từng ô trong báo cáo bàn giao để `dj` tham khảo).
+> - **Giai đoạn I (Thực thi ngay — Hoàn tất Bước 0–3 v4.0 trên nhánh ứng viên PR #30):**
+>   Sửa dứt điểm toàn bộ `B1`, `B2`, `B3`, `B4b`, `K.01` (`request_journal.jsonl` hash), `line 1078` (`rag_k1_predictions.jsonl` byte proof), danh sách 9 PR mở (`#8, #24–#29, #36, #37`), chạy bộ test dương tính + âm tính mở rộng, đẩy 2 commit chuẩn lên PR #30 (`codex/finalization-20261003`), đợi 4 lượt GitHub Actions CI xanh, cập nhật mô tả PR #30 và xuất bảng bàn giao 22 tệp khớp 100% SHA-256 tại `HEAD`. Giữ PR #30 ở trạng thái OPEN và 7 cổng `HUMAN_ACTION_GATE` ở trạng thái `PARTIAL`.
+> - **Giai đoạn II (Sau khi Giai đoạn I được nghiệm thu `PASS` — Bước 4):**
+>   Gỡ nhãn candidate sang trạng thái phát hành chính thức, merge PR #30 vào `main`, phát hành GitHub Release `v1.0.0-rag2attck-study` đính kèm `public_v4_candidate_20261003.zip`, và đóng 9 PR lịch sử bị thay thế (`#8, #24–#29, #36, #37`). (Google Sheets vẫn giữ nguyên Read-Only đối với Agent).
 
 ---
 
-## 3. Quy Trình Thực Thi Chi Tiết (Bước 0 Đến Bước 3 — Dừng Trước Khi Merge)
+## Tổng Hợp Các Hạng Mục Sửa Chữa Đã Hội Tụ 100%
 
 ```mermaid
 flowchart TD
-    S0["Bước 0: Preflight, Bảo vệ 22 file Baseline & Xác thực Máy trạm"] --> S1["Bước 1: Đóng lỗ hổng Ma trận Traceability & Sửa Quy tắc Audit"]
-    S1 --> S2["Bước 2: Hiệu chỉnh T33 (LADE), Đồng bộ Báo cáo MD/DOCX/PDF & Nhật ký Retry"]
-    S2 --> S3["Bước 3: Tái kiểm định QA, Tạo Inventory Closeout & Chạy CI trên SHA Ứng viên"]
-    S3 --> GATE{"CỔNG DỪNG PHÊ DUYỆT<br/>(Chờ dj nghiệm thu)"}
-    GATE -->|Sau khi dj duyệt| S4["Bước 4–5 (Tương lai): Gỡ nhãn Candidate, Merge PR #30, Tag Release & Dọn dẹp"]
+    subgraph P1 ["Giai đoạn I: Khắc phục B1-B4 & Kiểm thử Fail-Closed (Trước Merge)"]
+        B1["B1: Khóa chặt verify_requirements_matrix_audit.py<br/>(Bỏ fallback HEAD, bắt buộc .git + 40-hex ancestor SHA + 170 IDs)"]
+        B2["B2: Chuẩn hóa generate_r9_artifact_inventory.py<br/>(Sửa cả compute_file_info & vòng lặp dòng 834-890: size_bytes + sha256 cùng byte LF)"]
+        B3["B3: Đồng bộ T33 / LADE & PLAN v4.0<br/>(33 = 20+5+8 Caldera, bỏ 13.8k-15.6k token, sửa timeline 22/09 PR #8, sửa tên Yang & Hsu [7] + Okuma [9])"]
+        B4["B4 & K.01: Chuẩn hóa Errata & Journal Hash<br/>(Sửa hash lịch sử 5eb6bd6f, sửa K.01 ở 6 vị trí, gắn byte-proof dòng 1078, cập nhật 9 PR mở & PR #30 body)"]
+        T["Bộ Test Tự Động & Đối Kháng Toàn Diện<br/>(14 negative/positive matrix tests + 17 inventory tests + 558 unit/integration tests + 2-Commit CI)"]
+        B1 --> B2 --> B3 --> B4 --> T
+    end
+    T --> GATE{"Cổng xác nhận PASS<br/>(dj / Kiểm toán viên)"}
+    GATE --> P2["Giai đoạn II: Bước 4 trong hôm nay<br/>(Merge PR #30 -> Release v1.0.0 -> Đóng 9 PR; Google Sheets chỉ dj sửa tay)"]
 ```
 
 ---
 
-### Bước 0: Preflight, Kiểm Tra Bảo Vệ Baseline & Chứng Thực Môi Trường Máy Trạm
+## Proposed Changes (Chi Tiết Thay Đổi Theo Từng Thành Phần)
 
-**Mục tiêu:** Đồng bộ trạng thái Git tại repo làm việc chuẩn, xác nhận không một file thực nghiệm đóng băng nào bị chạm tới, và thu thập bằng chứng trực tiếp từ máy trạm (thay vì tin vào lời kể từ phiên trước).
+### Thành Phần 1 — Khắc Phục `B1`: Khóa Chặt Verifier Ma Trận (`Fail-Closed`) & Kiểm Tra Phả Hệ Git
 
-1. **Đồng bộ nhánh ứng viên:**
-   - Tại `<USER_HOME>\.codex\artifacts\rag2attck\finalization_repo_20261003` (hoặc worktree tích hợp), chạy `git fetch origin` và kiểm tra nhánh `codex/finalization-20261003` đang ở đúng commit `5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383`.
-2. **Xác nhận bất biến dữ liệu thực nghiệm & 22 file bảo vệ:**
-   - Kiểm tra `git diff 80dbeb3f..5eb6bd6f` đối với 22 file hạ tầng/ground truth được bảo vệ (0 thay đổi).
-   - Kiểm tra SHA-256 trên đĩa của:
-     - `artifacts/results/canonical_metric_bundle_v2.json` = `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`
-     - `reports/evidence/canonical_run_seal_v1.json` = `ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701`
-     - `public_v4_candidate_20261003.zip` = `1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1`
-3. **Chứng thực trực tiếp môi trường máy trạm (`Workstation Storage Attestation`):**
-   - Chạy script kiểm toán độc lập đối chiếu giữa `<SECONDARY_WORKSPACE_DRIVE>` và các thư mục trong `<USER_HOME>\.codex\artifacts\rag2attck\`:
-     - Ghi nhận số lượng file thực tế (`only_in_d=436`, `same_path_same_hash=134`, `same_path_diff_hash=64`), tổng dung lượng từng thư mục trên `C:` và `D:`, và trạng thái thực tế của `<SECONDARY_WORKSPACE_DRIVE>\.venv\pyvenv.cfg`.
-     - Xuất kết quả ra `reports/evidence/workstation_storage_attestation.json` (tuyệt đối ẩn/chuẩn hóa tên người dùng trong file commit lên Git để không vi phạm cổng quét rò rỉ đường dẫn cá nhân `LEAK_PATTERNS`).
-   - **Quy tắc an toàn:** Không xóa hay ghi đè bất kỳ thư mục nào ở `<SECONDARY_WORKSPACE_DRIVE>` hay `<USER_HOME>\.codex\artifacts\rag2attck\` trong các Bước 0–3.
+#### [MODIFY] [verify_requirements_matrix_audit.py](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/scripts/verify_requirements_matrix_audit.py)
 
----
+1. **Bắt buộc ngữ cảnh Git thật (dòng 43–58, 159–162, 318–321):**
+   - Xóa bỏ nhánh `else: blob_sha256 = disk_sha256` vốn cho phép trả về `PASS_ALL_BINDINGS_VERIFIED` khi không có `.git` hoặc khi truyền `--no-git-index-check`.
+   - Nếu `not (repo_root / ".git").exists()` hoặc `not check_git_index` hoặc `git_tracked_files is None`, verifier lập tức trả về `audit_verdict = "FAIL_GIT_REPOSITORY_REQUIRED"` với `exit_code = 1` (không bao giờ cấp chứng nhận Git blob cho kiểm tra đĩa đơn thuần).
+2. **Kiểm tra nghiêm ngặt cấu trúc và số lượng 170 yêu cầu (dòng 143–146):**
+   - Kiểm tra `isinstance(requirements, list)` và `len(requirements) == 170` (`EXPECTED_REQUIREMENTS_COUNT = 170`), không có ID trùng lặp hoặc rỗng.
+   - Nếu `requirements == []` hoặc `len(requirements) != 170` hoặc thiếu các trường bắt buộc (`id`, `title`, `evidence_locator`, `evidence_storage`, `evidence_type`, `final_candidate_status`), lập tức trả về `audit_verdict = "FAIL_INVALID_MATRIX_SCHEMA_OR_COUNT"` và `exit_code = 1`.
+3. **Xóa bỏ hoàn toàn fallback `"HEAD"` và bắt buộc `evidence_commit_sha` hợp lệ + thuộc phả hệ `HEAD` (dòng 60–74, 294–317):**
+   - Cập nhật hàm `_commit_is_valid_ancestor(repo_root: Path, commit_sha: str, cache: dict[str, bool]) -> bool`:
+     - Bắt buộc `commit_sha` là chuỗi hex 40 ký tự (`re.fullmatch(r"[0-9a-f]{40}", commit_sha)` — từ chối `None`, `""`, `"0"*40`, `"deadbeef"*5`, hoặc SHA rút gọn).
+     - Kiểm tra `git cat-file -e <commit_sha>^{commit}` (returncode `0`) **VÀ** `git merge-base --is-ancestor <commit_sha> HEAD` (returncode `0`).
+   - Tại dòng 294–317 (áp dụng cho **cả** `git_tracked` lẫn `policy_code_reference`):
+     ```python
+     if not commit_sha or not _commit_is_valid_ancestor(repo_root, str(commit_sha), commit_cache):
+         unresolved_local_locators.append(
+             {
+                 "requirement_id": req_id,
+                 "title": title,
+                 "evidence_locator": locator,
+                 "evidence_storage": storage,
+                 "evidence_commit_sha": commit_sha,
+                 "final_candidate_status": status,
+                 "reason": f"Invalid, missing, or non-ancestor evidence_commit_sha: {commit_sha!r}",
+             }
+         )
+         continue
 
-### Bước 1: Tạo Các Tạo Phẩm Kiểm Toán Còn Thiếu & Sửa Quy Tắc Kiểm Toán Ma Trận (`Fail-Closed`)
-
-**Mục tiêu:** Giải quyết triệt để vấn đề của `T.01`, `U.01`, `AC.01–AF.01` và lỗ hổng phân loại `non_git_assets` trong `matrix_git_blob_audit_report.json`.
-
-1. **Tạo và xác thực `docs/audit/pr_ancestry_audit.json` (`T.01`):**
-   - Xuất báo cáo JSON đầy đủ về phả hệ Git (`merge-base`, `head_sha`, trạng thái commit được tích hợp hay bị thay thế, và lý do đóng/giữ) cho toàn bộ các PR `#8`, `#24`, `#25`, `#26`, `#27`, `#28`, `#29`, `#30`, `#31`, `#32`.
-   - Tính SHA-256 thực tế và gắn vào mục `T.01-PR_CLASSIFICATION_AND_ANCESTRY` với `evidence_storage = "git_tracked"`.
-2. **Tạo và xác thực `docs/audit/baseline_diff_audit.json` (`U.01`):**
-   - Xuất báo cáo JSON đối chiếu từng file trong 22 file được bảo vệ tại commit `80dbeb3f` so với HEAD hiện tại (kèm blob SHA và file SHA-256 của cả hai đầu).
-   - Tính SHA-256 thực tế và gắn vào mục `U.01-DIFF_AUDIT` với `evidence_storage = "git_tracked"`.
-3. **Sửa định vị và phân loại cho `AC.01–AF.01` (Không tạo `AGENTS.md` giả lập lịch sử):**
-   - Tuyệt đối **không** tạo một file `AGENTS.md` mới ở thời điểm closeout rồi dùng nó làm bằng chứng rằng quy trình đó đã được tuân thủ trong quá khứ.
-   - Cập nhật `AC.01-SELF_CORRECTION`, `AD.01-REVIEWER_ESCALATION`, `AE.01-RESPONSE_FORMAT`, và `AF.01-PRIORITY_ORDER` trong `scripts/update_requirements_matrix_r9.py` và `reports/evidence/finalization_requirements_matrix.json`:
-     - Trỏ `evidence_locator` tới hồ sơ kiểm toán quy trình lịch sử thực tế đã có trong repo (`reports/evidence/sg_evidence_audit_independent_probes_record.json` kèm SHA-256 thực tế), và ghi rõ `evidence_storage = "git_tracked"`, `evidence_type = "HISTORICAL_PROCESS_RECORD"`, giải thích rõ rằng việc tuân thủ quy trình qua các vòng R1–R10 được chứng thực bởi chuỗi commit/báo cáo kiểm toán lịch sử thay vì một file `AGENTS.md` không tồn tại trong repo.
-4. **Sửa quy tắc kiểm toán trong `scripts/verify_requirements_matrix_audit.py` và cập nhật `reports/evidence/matrix_git_blob_audit_report.json`:**
-   - Thiết lập cơ chế kiểm tra tương ứng với từng loại bằng chứng:
-     - `git_tracked`: Đường dẫn tương đối trong repo $\rightarrow$ bắt buộc tồn tại tại commit đang kiểm tra VÀ khớp `declared_hash` SHA-256 100%.
-     - `release_asset`: Tài sản đóng gói độc lập (`public_v4_candidate_20261003.zip`) $\rightarrow$ kiểm tra định danh và SHA-256 (`1d5f9f4b...`) khớp với manifest/inventory đã ghim.
-     - `github_url_or_ci_run`: Đường dẫn bắt đầu bằng `https://github.com/habachcp6/RAG2ATTCK/` (PR, Actions run, Releases) $\rightarrow$ kiểm tra cú pháp URL hợp lệ, đúng chủ sở hữu/repo, và khớp trạng thái yêu cầu (`HUMAN_ACTION_GATE` chỉ được mang trạng thái `PARTIAL` trước khi merge).
-     - `policy_code_reference`: Đường dẫn tới file code/test trong repo không khai báo hash cố định (ví dụ `src/experiment/authorization.py`) $\rightarrow$ bắt buộc file phải tồn tại dưới dạng git blob hợp lệ trong repo và được ghi nhận hash thực tế tại commit kiểm toán.
-   - **Quy tắc Fail-Closed bắt buộc:** Bất kỳ yêu cầu nào đang ở trạng thái `VERIFIED` hoặc `POLICY_ENFORCED` mà có `evidence_locator` là đường dẫn tương đối nhưng không đọc được trên đĩa/git blob sẽ làm toàn bộ cuộc kiểm toán trả về **`FAIL_UNRESOLVED_LOCAL_LOCATOR`** (exit code `1`), tuyệt đối không được đẩy sang nhóm ngoại lệ `non_git_assets`.
-5. **Bổ sung Regression Test (`tests/test_requirements_matrix_audit.py`):**
-   - Viết bài kiểm thử tự động:
-     1. Kiểm tra ma trận thật đạt `PASS` với `0` đường dẫn local bị đẩy sang `non_git_assets`.
-     2. **Negative regression test (theo yêu cầu của dj):** Cố ý gán một đường dẫn local không tồn tại (`docs/audit/non_existent_artifact.json`) vào một yêu cầu đang mang trạng thái `VERIFIED` (với `evidence_storage = "local_pending"` hoặc `"not_applicable"`) và assert hàm kiểm toán lập tức trả về `FAIL` (exit code `1`).
+     ref_to_read = str(commit_sha)
+     blob_sha256, blob_size = _get_git_blob_sha256_and_size(
+         repo_root, ref_to_read, norm_locator, blob_cache
+     )
+     head_blob_sha256, _ = _get_git_blob_sha256_and_size(
+         repo_root, "HEAD", norm_locator, blob_cache
+     )
+     ```
+   - Không còn bất kỳ trường hợp nào tự động đổi `ref_to_read` sang `"HEAD"`.
 
 ---
 
-### Bước 2: Hiệu Chỉnh `T33` (LADE), Chuẩn Hóa Định Vị Nhật Ký Retry & Đồng Bộ Hóa Báo Cáo (`.md`, `.docx`, `.pdf`)
+### Thành Phần 2 — Khắc Phục `B2`: Đồng Bộ Tuyệt Đối `size_bytes` và `sha256` Theo Byte Thực Tế (LF) Trong Inventory
 
-**Mục tiêu:** Sửa dứt điểm các sai lệch nội dung trong báo cáo và bảng đối chiếu tài liệu tham khảo mà không chạm vào số liệu thực nghiệm RQ1–RQ3.
+#### [MODIFY] [generate_r9_artifact_inventory.py](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/scripts/generate_r9_artifact_inventory.py)
 
-1. **Hiệu chỉnh `T33` (LADE — Li et al., 2025 `[6]`) theo phiên bản manuscript đã xác minh:**
-   - Lưu trữ hồ sơ xác minh claim theo phiên bản tại `reports/evidence/t33_lade_claim_verification_record.json` và cập nhật `reports/evidence/supervisor_bibliography_review_20261003.md` (hoặc bản phụ lục closeout) với đầy đủ thông tin:
-     - **Nguồn truy xuất:** `https://www3.cs.stonybrook.edu/~stoller/papers/LADE-2026.pdf`
-     - **Ngày truy xuất xác minh closeout:** `2026-10-19` (ghi nhận rõ đây là đợt xác minh bổ sung phục vụ closeout, tách biệt với lần kiểm tra ban đầu ngày `2026-09-22` trên PR #8 và sự cố timeout mạng ngày `2026-10-03`).
-     - **Kích thước & Băm của bản PDF lưu:** `3,819,792 bytes`, 28 trang, SHA-256: `6e8384569254bc4cf82dd4d0191746907ff40fa76016275946651cf47d6f4985`.
-     - **Vị trí hỗ trợ từng claim trong bài báo:**
-       - Kiến trúc 3 giai đoạn (Threat Context Builder, Technique Predictor, Verification Analyzer): `§4, tr. 7–11, Figure 1`.
-       - Mô hình đánh giá thực nghiệm (`gpt-oss-120B`, `Llama-3.3-70B`, `Mistral-Small-3.2-24B`, `Gemini-2.5-Pro`): `§5, tr. 12, Table 2`.
-       - Bộ dữ liệu đánh giá (`AVIATOR`: 8 kịch bản APT29/OilRig/Sandworm/Wizard Spider, 35 chuỗi tấn công / 32 chuỗi lành tính; và `Caldera-derived dataset`: 33 chuỗi mỗi cấu hình 2:1 benign-to-APT + 5 lateral-movement + 8 multi-stage attack): `§5.1, tr. 12–13`.
-       - Kết quả hạn chế của RAG đơn thuần và chi phí token (~13.8k–15.6k input tokens/window cho `gpt-oss-120B`): `§2.2 tr. 3` & `§5.2 tr. 14, Table 2`.
-   - **Cập nhật đồng bộ trên các tài liệu trong repo:**
-     - `reports/evidence/canonical_populated_report.md` và `docs/report/scientific_report.md`:
-       - Tại **Bảng 1b Dòng 12 (`Primary Models` — cột `LADE (Li et al., 2025) [6]`):** Sửa từ `GPT-4, Claude-3-Opus, Llama-3-70B` $\rightarrow$ **`gpt-oss-120B, Llama-3.3-70B, Mistral-Small-3.2-24B, Gemini-2.5-Pro`**.
-       - Tại **Bảng 1b Dòng 14 & Dòng 16 (`Primary Dataset` & `Sample / Sequence Size` — cột `LADE`):** Sửa từ `AVIATOR (35 attack / 32 benign sequences)` $\rightarrow$ **`AVIATOR (35 attack / 32 benign sequences) & Caldera-derived dataset (33 sequences per 2:1 setting + 5 lateral-movement + 8 multi-stage)`**.
-       - Tại **Mục 1.3 (dòng 104)** và **Mục 2.1 / chú thích Bảng 1b (dòng 145):** Thống nhất số lượng bài có liên kết ngoài được xác minh toàn văn là **`6/8`** (gồm `[4], [5], [6], [7], [9], [10]`, trong đó `[6]` LADE được xác minh toàn văn trên bản thảo tác giả 28 trang SHA-256 `6e838456...`; chỉ còn **`2/8`** bài là `Okuma et al. [8]` và `Gwak et al. [11]` ở trạng thái `metadata-only / UNVERIFIED`).
-       - Tại **Bảng 1b cột `Okuma et al. (2025) [8]`:** Đảm bảo cả hai file Markdown đều dùng đúng giá trị `UNVERIFIED` cho 5 hàng phương pháp/kết quả (thống nhất với quy tắc chỉ điền thông tin từ nguồn đã xác minh toàn văn).
-     - `docs/related_work/T02_comparator_matrix.md` và `docs/related_work/T02_comparator_notes.md`:
-       - Sửa Dòng 13 của `T02_comparator_matrix.md` từ `DARPA TC & simulated APT scenarios` $\rightarrow$ `AVIATOR & Caldera-derived emulation plans`, và bổ sung danh sách 4 mô hình cụ thể vào `T02_comparator_notes.md`.
-   - Kiểm tra lại `scripts/populate_report.py` và `reports/evidence/populated_report_slots_canonical.json` để đảm bảo nguồn sinh báo cáo cũng khớp 100% với nội dung đã hiệu chỉnh.
-
-2. **Chuẩn hóa định vị sự kiện retry trong `request_journal.jsonl`:**
-   - Trong báo cáo (`.md` / `.docx` / `.pdf`) và trong biên bản đính chính (`reports/evidence/report_revision_errata_record.json`), cập nhật mô tả sự kiện retry duy nhất của `("view_d870d574", "rag_k1")` với định danh đầy đủ:
-     - **File:** `inputs/request_journal.jsonl` (SHA-256: `f36e0f3099ef704e05a21d0839cf3158268fb36b647d8c229bc9f8cf8fd4149a`, khớp byte 100% giữa bản lưu gốc `sealed-live66-20261002` và gói công khai `public_v4_candidate_20261003.zip`).
-     - **Định danh bản ghi:** `run_id = "live-66b94b1676bf46a9"`, `view_id = "view_d870d574"`, `condition = "rag_k1"`.
-     - **Chuỗi sự kiện & Ordinal:**
-       - `ordinal = 5387` (`event = "attempt"`, dòng vật lý `48479`) $\rightarrow$ `attempt_index = 0`, `status = "API_FAILURE"`, `error_type = "InternalServerError"` (`event = "attempt_receipt"`, dòng vật lý `48480`).
-       - `ordinal = 5388` (`event = "attempt"`, dòng vật lý `48481`) $\rightarrow$ `attempt_index = 1`, `status = "SUCCESS"`, `input_tokens = 1543`, `cached_tokens = 1540`, `output_tokens = 104` (`event = "attempt_receipt"`, dòng vật lý `48482`).
-       - Bản ghi hoàn tất (`event = "complete"`, dòng vật lý `48485`, `record_sha256 = "e9146fe74aa5769faa5dc7df70205e62924fcf8c0e3a53946c50f96ddb2f8086"`).
-     - Ghi chú rõ trong biên bản đính chính rằng tham chiếu cũ `"line 5124"` là chỉ số ước lượng theo lượt view cũ, được thay thế có truy vết bằng dòng vật lý `48479–48482` (`ordinal 5387–5388`).
-
-3. **Quản lý nhãn trạng thái báo cáo (`Status Banner`) theo đúng vòng đời:**
-   - Trong các Bước 2–3 (trước khi dj ký duyệt đóng dự án cuối cùng), đặt dòng trạng thái ở phần đầu báo cáo là:  
-     `**Status:** CORRECTED RELEASE CANDIDATE — PENDING OWNER CLOSEOUT SIGN-OFF`
-   - Đảm bảo cả 5 kiểm tra bất biến trong `scripts/verify_report_metadata.py` (Table 6 hashes, Protocol digest, Zero-denominator cases, DOCX formatting invariants, STIX v19.2 census + header `**Project:** RAG2ATT&CK`) và toàn bộ kiểm tra trong `scripts/check_cross_artifact_consistency.py --strict --scope all` đều đạt `PASS`.
-
-4. **Đồng bộ hóa tuyệt đối giữa các định dạng báo cáo (`.md`, `.docx`, `.pdf`):**
-   - Sau khi sửa `docs/report/scientific_report.md`, sao chép nguyên bản sang `reports/evidence/canonical_populated_report.md` để hai file Markdown khớp byte 100%.
-   - Chạy `scripts/export_report_docx.py` để tạo `docs/report/scientific_report.docx`, sau đó sao chép byte-for-byte (`shutil.copyfile`) sang `reports/evidence/canonical_populated_report.docx`.
-   - Kết xuất lại `reports/evidence/canonical_populated_report.pdf` từ đúng file DOCX vừa sinh (đảm bảo đúng 41 trang, bố cục sắc nét).
-   - Kiểm tra tự động:
-     - `SHA-256(docs/report/scientific_report.md) == SHA-256(reports/evidence/canonical_populated_report.md)`
-     - `SHA-256(docs/report/scientific_report.docx) == SHA-256(reports/evidence/canonical_populated_report.docx)`
+1. **Nguyên tắc sửa:**
+   - Giữ nguyên tuyệt đối byte của 8 tệp `.svg`, `plot_data.json` và `reports/evidence/figures/figure_provenance.json` (`88983822c84a7bb78247b17a5620f183dce3b4a96cf5ddf94a409aea5ecf388d`) để không phá vỡ bất kỳ điểm neo lịch sử nào.
+   - Bổ sung bảng ánh xạ minh bạch `CANONICAL_TEXT_FIGURE_LF_HASHES` (lấy từ [`docs/report/figures/figure_provenance.json`](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/docs/report/figures/figure_provenance.json#L10-L38) cho `fig1..fig8.svg` và mã băm LF thực tế cho `plot_data.json`):
+     - `fig1_system_architecture.svg`: LF `7623e1c20792b1c90c97064387bdef99014f11e6d91635bce272a89fa06c97b1` (`7,784` B) | CRLF provenance `390a20d82453ece92e29ac30bf8ddd24409831745125a5c8ee76a0e91770eeb2` (`7,863` B)
+     - `fig2_accuracy_vs_k.svg`: LF `1bddfd900b4e5bb20d90b2a68064cb5e2aa0a58066a14641e5f128958ecaa2b4` (`6,560` B) | CRLF provenance `f6c6358497d9cb074de1ec2da3363332b3f53f93fc90a56d7f3efa9306e6f721` (`6,629` B)
+     - `fig3_macro_f1_vs_k.svg`: LF `aff69a0bd3cfb37948a73e4ead5d885670f426e3e0132d3a1f13f536bf7acd28` (`4,056` B) | CRLF provenance `3250dd2c52f108d9717d5d4607eb07e4052b11135e53a6e6731380df9c5de42e` (`4,104` B)
+     - `fig4_retrieval_hit_rate.svg`: LF `c01c563727549f73a48d3c4a9c24dc391e023d4ea5a930958f4ffb736e8c937f` (`4,074` B) | CRLF provenance `2c7bacf2d80753bceb9b863c59dad89011902811662ddbab3512bac9956ee7cf` (`4,119` B)
+     - `fig5_conditional_accuracy.svg`: LF `1d7497283ae0537c52e88a5e00803d0381e1b62ec5e44471e75ed5090bdb14a9` (`5,733` B) | CRLF provenance `80090de1cd54b04c0758bb3eeabfc0114b5b485421d851e4aa711efe3b31050f` (`5,793` B)
+     - `fig6_latency_vs_k.svg`: LF `a1b192768437b61fa2a0a0eea82c19011a75a8005639000fae77019e1a281b2a` (`5,892` B) | CRLF provenance `451180e694aaec17b263da35894ef3bc577aed6da44ac1628ce70ab0580b00c5` (`5,954` B)
+     - `fig7_cost_and_tokens_vs_k.svg`: LF `38349b81e25574b8bd8424e5e7a251b7c2d1a5c0344a6ed2b8cced98a50d8431` (`6,734` B) | CRLF provenance `b0194313704b0672ebb8c664192bb7f85d2dedefd7fc04c9dca06dab2c687255` (`6,805` B)
+     - `fig8_failure_decomposition.svg`: LF `2cd89e99326650fa9ab069d2f83c13ef23dedbcaea0e75c5360a5e0082c65ba5` (`3,824` B) | CRLF provenance `b90d61d4fcd806c3affb1ef017dcf7aacad1c09a4b4e4a5dbf7421b6306f4e6c` (`3,858` B)
+     - `plot_data.json`: LF `e6515f6ae89f0b98539eceb526a0d8bd0e72558d393c333345248b512912f375` (`3,760` B) | CRLF provenance `965452e7d84e6522f1c0a673ae6e1cd9e92e765a89b222fab2213c8ffbe7f4ac` (`3,891` B)
+2. **Sửa ở CẢ HAI nhánh (`compute_file_info()` tại dòng 76–97 VÀ vòng lặp `scientific_figures_inventory.files` tại dòng 834–890):**
+   - Không bao giờ ghi đè `actual_sha` / `computed_sha` bằng `crlf_sha`.
+   - Trường `"size_bytes": len(raw)`, `"sha256": raw_sha256`, và `"expected_sha256": expected_raw_sha256` luôn biểu diễn **cùng một chuỗi byte thực tế (LF)** trên Git/đĩa.
+   - Khi tệp văn bản (`.svg`, `.json`) có mã băm khai báo trong `reports/evidence/figures/figure_provenance.json` ở dạng CRLF, kiểm tra đồng thời `raw_sha256 == expected_lf_sha256` **và** `crlf_sha256 == provenance_crlf_sha256`, sau đó lưu tách biệt vào các trường phụ:
+     - `"provenance_crlf_sha256": provenance_crlf_sha256`
+     - `"crlf_normalized_sha256": crlf_sha256`
+     - `"crlf_normalized_size_bytes": len(crlf_bytes)`
+     - `"line_ending_normalization": "git_lf_raw_verified_against_windows_crlf_provenance"`
 
 ---
 
-### Bước 3: Bảo Toàn Hồ Sơ R9 Cũ, Thực Hiện Kiểm Định Thị Giác Mới & Chạy Full Verification Trên Đúng SHA Ứng Viên
+### Thành Phần 3 — Khắc Phục `B3`: Đồng Bộ Học Thuật `T33` (LADE), Timeline Lịch Sử & Kế Hoạch `PLAN`
 
-**Mục tiêu:** Tuân thủ nghiêm ngặt yêu cầu của dj về quản lý phiên bản inventory và tái kiểm định thực chất, đồng thời vượt qua toàn bộ 13 bộ test ngoại tuyến và CI.
+#### [MODIFY] [t33_lade_claim_verification_record.json](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/reports/evidence/t33_lade_claim_verification_record.json)
+1. **Sửa `remediated_claims.primary_dataset.verified_value` (dòng 48):**
+   - Thay dấu cộng gây hiểu lầm (`33 sequences per 2:1 setting + 5 lateral-movement + 8 multi-stage`) bằng cấu trúc bao gồm chính xác theo trang 13–14 của `LADE-2026.pdf`:
+     `"AVIATOR (35 attack / 32 benign sequences) & Caldera-derived dataset (two sets of 33 APT sequences for 2:1 and 10:1 benign-to-APT ratio settings, each comprising 20 adversary-profile sequences and 13 MITRE emulation-plan sequences [including 5 lateral-movement and 8 multi-stage attack sequences], plus 33 benign sequences)"`.
+2. **Sửa `remediated_claims.token_overhead` $\rightarrow$ `context_window_and_segmentation` (dòng 80–87):**
+   - Xóa bỏ hoàn toàn con số không có thật `~13.8k-15.6k input tokens per window for gpt-oss-120B (Table 2, page 12)`.
+   - Thay bằng thông số có thật kèm trích dẫn nguyên văn:
+     - `Section 4.1 (Context Building), page 8`: Mỗi phân đoạn (segment) được giới hạn ở tối đa **70% cửa sổ ngữ cảnh** của mô hình.
+     - `Section 5.2 (APT Detection), page 14`: `gpt-oss-120B`, `Llama-3.3-70B`, và `Mistral-Small-3.2-24B` sử dụng cửa sổ `128k` tokens với giới hạn phân đoạn hiệu dụng $\approx 89,600$ tokens (`Gemini-2.5-Pro` sử dụng cửa sổ `1M` tokens không cần phân đoạn).
+     - `Section 5.2, page 15`: Ghi chú rõ con số `13.8%` ở trang 15 là tỷ lệ đồng thuận bỏ phiếu `4–1` qua 5 lượt chạy (`76.3%` đồng thuận `5–0`, `13.8%` đồng thuận `4–1`, `10%` chia rẽ `3–2`), không phải số lượng token.
+3. **Sửa `verification_timeline` (dòng 89–110) khớp 100% với lịch sử Git (`6783f209`):**
+   - `Stage 1 (2026-09-22, PR #8 commit 6783f20971cbff91f105d0280ddd07cb0925aab0)`: Ghi nhận đúng rằng `reports/T33_related_work.md` tại `6783f209` đã ghi `Full-text content checks: 6/8` và đặt `LADE` (`https://www3.cs.stonybrook.edu/~stoller/papers/LADE-2026.pdf`, Sections 4, 5.1–5.4; pp. 12–16) ở trạng thái `FULL TEXT CHECKED` trên nhánh PR #8 (nhưng nhánh này chưa được merge vào `main` và cảnh báo các ghi chú `T02` cũ chỉ là đầu mối lịch sử).
+   - `Stage 2 (2026-10-03, reports/evidence/supervisor_bibliography_review_20261003.md)`: Trong đợt kiểm tra lại độc lập trên nhánh `codex/finalization-20261003`, máy chủ Stony Brook gặp sự cố HTTP timeout tạm thời nên báo cáo lúc đó tạm lùi về mức bảo thủ `5/8` và còn sót thông tin mô hình/dữ liệu sơ bộ từ ghi chú `T02` cũ.
+   - `Stage 3 (2026-10-19/20, Closeout Verification Pass)`: Tải lại thành công bản thảo 28 trang (`3,819,792` B, SHA-256 `6e8384569254bc4cf82dd4d0191746907ff40fa76016275946651cf47d6f4985`), đối chiếu từng dòng Bảng 1b và đồng bộ hóa toàn bộ hồ sơ.
 
-1. **Bảo tồn nguyên vẹn chứng nhận lịch sử R9:**
-   - Sao lưu nguyên trạng hai file chứng nhận của vòng R9 (trước khi cập nhật cho bản ứng viên hiệu chỉnh) vào thư mục lưu trữ lịch sử trong Git:
-     - `reports/evidence/historical/r9_final_artifact_inventory_20261003.json` (bản gốc SHA-256 `9a69d8c0...`, chứng nhận DOCX `c5ce49f7...` tại `2026-10-03T12:55:00Z`).
-     - `reports/evidence/historical/visual_qa_inspection_record_20261003.json` (bản gốc SHA-256 `dd3e5d5a...`).
-2. **Thực hiện kiểm định cấu trúc, số học và thị giác mới thực tế (`Fresh Visual & Structural QA`):**
-   - Kiểm tra cấu trúc OpenXML của bản DOCX mới (`10` major sections, `56` headings, `11` tables, `1,042` paragraphs, `0` unrendered slots, toàn bộ bảng rộng $\le 6.50\text{ in}$).
-   - Kết xuất các trang của `reports/evidence/canonical_populated_report.pdf` (đặc biệt là trang tiêu đề, trang chứa Bảng 1b đã sửa LADE/Okuma, trang chứa Bảng 3–6, và trang tài liệu tham khảo) ra ảnh PNG độ phân giải cao và kiểm tra trực quan bằng công cụ xem ảnh để xác nhận không tràn lề, không vỡ bảng, hiển thị sắc nét (`VERIFIED_SHARP`).
-3. **Tạo Biên bản Đính chính & Truy vết Phiên bản (`reports/evidence/report_revision_errata_record.json` & `.md`):**
-   - Ghi nhận đầy đủ:
-     - Hashes của revision cũ (`canonical_populated_report.md` `5cbaa094...`, `canonical_populated_report.docx` `c5ce49f7...`, `scientific_report.docx` `43297b17...`, `canonical_populated_report.pdf` `678892ee...`).
-     - Hashes của revision hiệu chỉnh mới.
-     - Danh mục từng thay đổi nội dung (Bảng 1b LADE models & datasets, đồng bộ cột Okuma `UNVERIFIED`, thuyết minh `6/8` bài full-text, định vị dòng `48479–48482` / `ordinal 5387–5388` của `request_journal.jsonl`).
-     - Khẳng định phạm vi không thay đổi: Toàn bộ kết quả thực nghiệm RQ1–RQ3, kiểm định thống kê McNemar/bootstrap, sổ cái chi phí `$6.57575890` / `$6.62839900`, và gói dữ liệu `public_v4_candidate_20261003.zip` (`1d5f9f4b...`) giữ nguyên 100%.
-4. **Phát hành Inventory mới có quản lý phiên bản:**
-   - Cập nhật `scripts/generate_r9_artifact_inventory.py` để:
-     - Ghi nhận hashes mới của báo cáo hiệu chỉnh cùng `timestamp_utc` thực tế lúc kiểm định, `source_sha`, và trường `historical_lineage` trỏ tường minh tới `reports/evidence/historical/r9_final_artifact_inventory_20261003.json` và `reports/evidence/report_revision_errata_record.json`.
-     - Xuất đồng thời ra `reports/evidence/closeout_rc_artifact_inventory.json` (inventory định danh riêng cho đợt closeout) và `reports/evidence/r9_final_artifact_inventory.json` (để tương thích với `tests/test_artifact_inventory.py` và `scripts/run_sg_evidence_audit_probes.py` trong CI).
-5. **Chạy toàn bộ các cổng kiểm định ngoại tuyến & đẩy lên nhánh PR #30 để lấy bằng chứng CI xanh trên đúng SHA ứng viên:**
-   - Chạy và xác nhận `exit code = 0` cho toàn bộ các bộ kiểm định:
-     - `python scripts/verify_report_metadata.py`
-     - `python scripts/check_cross_artifact_consistency.py --strict --scope all --metric-bundle artifacts/results/canonical_metric_bundle_v2.json --expected-bundle-sha256 442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`
-     - `python scripts/generate_r9_artifact_inventory.py`
-     - `python scripts/verify_requirements_matrix_audit.py`
-     - `python scripts/run_sg_evidence_audit_probes.py`
-     - `pytest` trên toàn bộ test suites (bao gồm `tests/test_requirements_matrix_audit.py`, `tests/test_artifact_inventory.py`, `tests/test_cross_artifact_consistency.py`, `tests/test_reproduction_report.py`, `tests/test_public_v4_package.py`, `tests/test_sg_audit_adversarial_probes.py`).
-   - Commit và push lên nhánh `codex/finalization-20261003` (PR #30), đợi GitHub Actions CI chạy xong trên đúng commit HEAD ứng viên hiệu chỉnh, sau đó cập nhật `ci_head_sha` và `ci_run_url` trong ma trận truy vết.
+#### [MODIFY] [scientific_report.md](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/docs/report/scientific_report.md), [canonical_populated_report.md](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/reports/evidence/canonical_populated_report.md), [T02_comparator_matrix.md](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/docs/related_work/T02_comparator_matrix.md), [supervisor_bibliography_review_20261003.md](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/reports/evidence/supervisor_bibliography_review_20261003.md)
+- Tại Bảng 1b Dòng 14 (`Primary Dataset` cột `LADE (Gwak et al., 2026/2027) [12]`):
+  Sửa từ `AVIATOR (35/32 seqs) & Caldera-derived (33 seqs per 2:1 setting + 5 lateral + 8 multi-stage)`
+  thành:
+  `AVIATOR (35/32 seqs) & Caldera-derived (33 APT seqs per 2:1 & 10:1 setting [including 20 profile, 5 lateral, 8 multi-stage] + 33 benign)`
+- Tại Bảng 1b Dòng 16 (`Key Difference` cột `LADE`):
+  Sửa thành:
+  `Prompting only (no RAG); AVIATOR (35/32 seqs) & Caldera-derived (33 APT seqs per 2:1 & 10:1 setting, including 5 lateral & 8 multi-stage)`
+- Đồng bộ tương tự trong `docs/related_work/T02_comparator_matrix.md` và `reports/evidence/supervisor_bibliography_review_20261003.md`.
+- Biên dịch lại `docs/report/scientific_report.docx` $\rightarrow$ sao chép byte-identical sang `reports/evidence/canonical_populated_report.docx` $\rightarrow$ kết xuất lại `reports/evidence/canonical_populated_report.pdf` (41 trang) và cập nhật `reports/evidence/qa/visual_qa_inspection_record.json`.
+
+#### [MODIFY] [PLAN-rag2attck-closeout.md](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/docs/PLAN-rag2attck-closeout.md)
+- Đồng bộ toàn văn kế hoạch v4.0 vào `docs/PLAN-rag2attck-closeout.md` trong repo:
+  - Sửa tên và số hiệu 2 bài giới hạn truy cập (`metadata-only / UNVERIFIED`) thành **`Yang & Hsu (2026) [7]`** và **`Okuma et al. (2023) [9]`** (xóa bỏ lỗi gọi LADE là `[6]` và xếp nhầm `Gwak et al. [11]` vào nhóm metadata-only).
+  - Sửa công thức Caldera (`33 = 20 + 5 + 8`), bỏ số liệu `13.8k–15.6k tokens`, sửa mã băm `request_journal.jsonl` thành `f36e0f3099ef704e6ed5e0bc0097affbe98932e1620563a6db22e631ae114f31`, ghi rõ SHA baseline đầy đủ `80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315`, phân biệt `141` bindings tới `21` tệp duy nhất, liệt kê đúng 9 PR mở (`#8, #24–#29, #36, #37`) tách biệt với 2 PR đã merge trước đó (`#31, #32`), và ghi đúng 4 tab Google Sheets (`Overview`, `Roadmap`, `RQ_Experiments`, `Resources`).
 
 ---
 
-## 4. Cổng Dừng Phê Duyệt (Stop Gate Sau Bước 3) & Các Bước Đóng Dự Án Cuối Cùng (Bước 4–5)
+### Thành Phần 4 — Khắc Phục `B4b`, `K.01` Journal Hash & Bằng Chứng Byte Dòng `1078`
 
-> [!WARNING]
-> **CỔNG DỪNG BẮT BUỘC SAU BƯỚC 3:**
-> Sau khi hoàn tất Bước 3, toàn bộ gói bằng chứng của bản `corrected release candidate` (gồm commit SHA, link CI xanh, biên bản đính chính `report_revision_errata_record.md`, báo cáo kiểm toán ma trận `matrix_git_blob_audit_report.json`, và biên bản chứng thực máy trạm `workstation_storage_attestation.json`) sẽ được trình lên để dj kiểm tra và nghiệm thu.
-> **Không thực hiện Bước 4 và Bước 5 khi chưa có lệnh phê duyệt tường minh sau Bước 3.**
+#### [MODIFY] [report_revision_errata_record.json](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/reports/evidence/report_revision_errata_record.json) & [report_revision_errata_record.md](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/reports/evidence/report_revision_errata_record.md)
+1. **Sửa `artifact_hash_transitions` khớp 100% với Git blob tại R14 (`5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383`):**
+   - `canonical_populated_report_md` & `docs_scientific_report_md`:
+     - `historical_commit_sha`: `"5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383"`
+     - `historical_size_bytes_lf`: `105354`
+     - `historical_sha256_lf`: `"5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d"`
+     - `historical_size_bytes_crlf`: `106090`
+     - `historical_sha256_crlf`: `"0cc9a5b971f383c49736b13fb28612f3dc7e7e8f55be9cd47b78dc9b2e87eb0f"`
+   - `docs_scientific_report_docx`:
+     - `historical_size_bytes`: `320049` (thay cho `320899`)
+     - `historical_sha256`: `"43297b17b2a505fdad96e94ac88fdc868e412bc493682be5e1bdc048bc0bb2dd"`
+   - Cập nhật `new_sha256` và `new_size_bytes` khớp với bộ báo cáo `.md`, `.docx`, `.pdf` mới sinh ở Thành phần 3.
+2. **Sửa `ERR-03` (`rag_k1_predictions.jsonl` dòng `1078`) kèm chuỗi chứng thực byte 4 bước:**
+   - Sửa `line 1179` thành **`line 1078` (1-based physical line index)** và bổ sung trường cấu trúc `prediction_record_byte_verification` vào `report_revision_errata_record.json`:
+     ```json
+     "prediction_record_byte_verification": {
+       "package_zip_locator": "artifacts/packages/public_v4_candidate_20261003.zip",
+       "package_zip_size_bytes": 2343105,
+       "package_zip_sha256": "1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1",
+       "member_path": "base_public_v3/inputs/rag_k1_predictions.jsonl",
+       "member_size_bytes": 2292294,
+       "member_total_lines": 1280,
+       "member_sha256": "745cb883a90b4d1bac7c76c4007b143893834530a843e153fc24277aae5da7ac",
+       "matches_canonical_run_seal_v1": true,
+       "physical_line_1based": 1078,
+       "physical_line_0based": 1077,
+       "raw_line_length_bytes_without_lf": 1796,
+       "raw_line_sha256_algorithm": "sha256(raw_line_bytes_without_newline)",
+       "raw_line_sha256": "e9146fe74aa5769faa5dc7df70205e62924fcf8c0e3a53946c50f96ddb2f8086",
+       "matches_request_journal_line_48485_record_sha256": true,
+       "record_identifiers": {
+         "run_id": "live-66b94b1676bf46a9",
+         "sample_id": "view_d870d574",
+         "pair_id": "pair_3598584c",
+         "condition": "rag_k1",
+         "request_attempt_count": 2,
+         "retry_count": 1,
+         "response_id": "resp_0efb218e56a6ecc1006abf0be6419887d0bca3815a8a0b3f0d"
+       }
+     }
+     ```
 
-### Bước 4 (Sau khi dj nghiệm thu bản Corrected Release Candidate): Chuyển Nhãn Final, Merge PR #30 & Phát Hành Release Chính Thức
-1. Chuyển dòng trạng thái báo cáo từ `CORRECTED RELEASE CANDIDATE — PENDING OWNER CLOSEOUT SIGN-OFF` sang `FINAL — CANONICAL EMPIRICAL STUDY REPORT (v1.0.0-rag2attck-study)`, tái xuất `.docx`/`.pdf` và cập nhật inventory/matrix lần cuối.
-2. Merge PR #30 vào nhánh `main` (có xác nhận trước thao tác không thể đảo ngược).
-3. Tạo tag và phát hành GitHub Release chính thức `v1.0.0-rag2attck-study` đính kèm gói `public_v4_candidate_20261003.zip` (`1d5f9f4b...`) và báo cáo/errata chính thức; xử lý bản draft release tạm `untagged-4ed2f6c54faf905aba18`.
-4. Đóng 9 PR lịch sử bị thay thế (`#8, #24, #25, #26, #27, #28, #29, #31, #32`) kèm bình luận ghi rõ commit tích hợp/thay thế dựa trên `docs/audit/pr_ancestry_audit.json`.
+#### [MODIFY] [update_requirements_matrix_r9.py](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/scripts/update_requirements_matrix_r9.py)
+- Tại dòng 639–644 (`K.01-PROVIDER_FAILURE_RETRY`):
+  - Đọc trực tiếp `request_journal_sha = seal_data["sealed_artifact_digests"]["request_journal.jsonl"]` từ `reports/evidence/canonical_run_seal_v1.json` (và assert bằng `"f36e0f3099ef704e6ed5e0bc0097affbe98932e1620563a6db22e631ae114f31"`), thay thế hoàn toàn chuỗi sai `f36e0f3099ef704e05a21d0839cf3158268fb36b647d8c229bc9f8cf8fd4149a`.
+  - Bổ sung tham chiếu `rag_k1_predictions.jsonl` (`sha256=745cb883a90b4d1bac7c76c4007b143893834530a843e153fc24277aae5da7ac`, 1-based physical line `1078`, `record_sha256=e9146fe74aa5769faa5dc7df70205e62924fcf8c0e3a53946c50f96ddb2f8086`) vào `closure_step` của `K.01`.
+  - Tái sinh đồng bộ cả 3 tệp ma trận:
+    - `reports/evidence/finalization_requirements_matrix.json`
+    - `reports/evidence/finalization_requirements_matrix.md`
+    - `docs/audit/requirements_traceability_matrix.md`
 
-### Bước 5 (Sau khi hoàn tất Merge & Release): Đồng Bộ Hóa Google Sheet Tracker & Dọn Dẹp Máy Trạm
-1. Cập nhật các tab trên Google Sheet Tracker lên `100% Completed` với link dẫn tới commit `main` và Release `v1.0.0-rag2attck-study`.
-2. Dọn dẹp hoặc lưu trữ các worktree tạm trên `<USER_HOME>\.codex\artifacts\rag2attck\` và đồng bộ `<SECONDARY_WORKSPACE_DRIVE>` dựa trên biên bản `workstation_storage_attestation.json` (có xác nhận trước mỗi thao tác xóa/ghi đè).
+---
+
+## Verification Plan (Kế Hoạch Kiểm Thử Kỹ Lưỡng Để Đóng Dự Án Trong Hôm Nay)
+
+Để đảm bảo không còn bất kỳ lỗ hổng nào có thể bị bắt lỗi ở vòng nghiệm thu cuối, chúng ta thiết lập **4 tầng kiểm thử tự động & đối kháng (4-Tier Exhaustive Verification Suite)**:
+
+### Tầng 1 — Bộ Test Đối Kháng & Hồi Quy Cho Verifier Ma Trận (`tests/test_requirements_matrix_audit.py`)
+Cập nhật [`tests/test_requirements_matrix_audit.py`](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/tests/test_requirements_matrix_audit.py) để kiểm tra **toàn bộ 14 kịch bản dương tính & âm tính trên Git thật (`check_git_index=True`)**:
+1. **`test_real_requirements_matrix_passes_with_zero_local_exceptions`**: Kiểm tra ma trận thật đạt `PASS_ALL_BINDINGS_VERIFIED` (`exit_code == 0`, `170` requirements, `141` git blob bindings tới `21` tệp duy nhất, `29` non-git assets, `0` lỗi).
+2. **`test_k01_retry_locator_matches_canonical_run_seal`**: Đọc `reports/evidence/canonical_run_seal_v1.json`, lấy đủ 64 ký tự của `sealed_artifact_digests["request_journal.jsonl"]` (`f36e0f3099ef704e6ed5e0bc0097affbe98932e1620563a6db22e631ae114f31`) và `sealed_artifact_digests["rag_k1_predictions.jsonl"]` (`745cb883...`), assert cả hai mã băm 64 ký tự và `line 1078` + `48479-48482` xuất hiện chính xác trong `K.01["closure_step"]`, đồng thời assert chuỗi hash hỏng cũ (`...05a21d08...`) **không tồn tại ở bất kỳ đâu** trong ma trận hay `PLAN`.
+3. **`test_zero_commit_sha_fails_closed` (Ca thử âm tính #1 của Kiểm toán viên)**: Gán `evidence_commit_sha = "0" * 40` $\rightarrow$ bắt buộc `exit_code == 1` và `audit_verdict != "PASS_ALL_BINDINGS_VERIFIED"`.
+4. **`test_non_existent_deadbeef_commit_sha_fails_closed` (Ca thử âm tính #2 của Kiểm toán viên)**: Gán `evidence_commit_sha = "deadbeef" * 5` $\rightarrow$ bắt buộc `exit_code == 1`.
+5. **`test_missing_or_empty_commit_sha_fails_closed` (Ca thử âm tính #3 của Kiểm toán viên)**: Xóa `evidence_commit_sha` (`None` và `""`) trên cả `git_tracked` lẫn `policy_code_reference` $\rightarrow$ bắt buộc `exit_code == 1`.
+6. **`test_short_or_malformed_commit_sha_fails_closed`**: Gán `evidence_commit_sha = "82c586b"` (7 ký tự) hoặc `"zzzz..."` $\rightarrow$ bắt buộc `exit_code == 1`.
+7. **`test_empty_or_incomplete_requirements_list_fails_closed` (Ca thử âm tính #6 của Kiểm toán viên)**: Đặt `requirements = []` hoặc `requirements = requirements[:169]` hoặc trùng lặp ID $\rightarrow$ bắt buộc `exit_code == 1` và `audit_verdict == "FAIL_INVALID_MATRIX_SCHEMA_OR_COUNT"`.
+8. **`test_missing_git_directory_or_disabled_git_index_fails_closed` (Ca thử âm tính #7 của Kiểm toán viên)**: Chạy verifier trên bản sao thư mục không có `.git` hoặc truyền `check_git_index=False` $\rightarrow$ bắt buộc `exit_code == 1` và `audit_verdict == "FAIL_GIT_REPOSITORY_REQUIRED"` (tuyệt đối không trả `PASS_ALL_BINDINGS_VERIFIED`).
+9. **`test_unresolved_local_locator_fails_closed` (Ca thử âm tính #4 của Kiểm toán viên)**: Trỏ tới tệp local không tồn tại (`docs/audit/non_existent_artifact.json`, `AGENTS.md`) trên Git thật (`check_git_index=True`) $\rightarrow$ bắt buộc `exit_code == 1` và `audit_verdict == "FAIL_UNRESOLVED_LOCAL_LOCATOR"`.
+10. **`test_git_blob_hash_mismatch_fails_closed` (Ca thử âm tính #5 của Kiểm toán viên)**: Thay `evidence_hash = "0" * 64` trên Git thật (`check_git_index=True`) $\rightarrow$ bắt buộc `exit_code == 1` và `audit_verdict == "FAIL_GIT_BLOB_HASH_MISMATCH"`.
+11. **`test_premature_human_gate_verified_status_fails_closed`**: Đổi `C.03-HUMAN_MERGE_AUTH` sang `VERIFIED` $\rightarrow$ bắt buộc `exit_code == 1` và `audit_verdict == "FAIL_INVALID_URL_OR_GATE_BINDING"`.
+12. **`test_git_tracked_missing_hash_fails_closed`**: Xóa `evidence_hash = None` trên yêu cầu `git_tracked` $\rightarrow$ bắt buộc `exit_code == 1`.
+13. **`test_git_blob_vs_disk_hash_verification_with_git_index_enabled`**: Giả lập lệch hash giữa Git blob và đĩa $\rightarrow$ bắt buộc `exit_code == 1`.
+
+### Tầng 2 — Bộ Test Kiểm Tra Toàn Vẹn Byte-vs-Hash Cho Inventory (`tests/test_artifact_inventory.py`)
+Bổ sung 2 bài kiểm thử mới vào [`tests/test_artifact_inventory.py`](file:///<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003/tests/test_artifact_inventory.py) (nâng tổng số lên 17 bài test):
+1. **`test_all_inventory_entries_match_raw_disk_and_git_bytes_exact`**: Quét đệ quy toàn bộ 59 đối tượng tệp (238 trường metadata) trong `r9_final_artifact_inventory.json` và `closeout_rc_artifact_inventory.json`:
+   - Assert `entry["size_bytes"] == len(raw_bytes)`
+   - Assert `entry["sha256"] == hashlib.sha256(raw_bytes).hexdigest()`
+   - Assert `entry["expected_sha256"] == hashlib.sha256(raw_bytes).hexdigest()` (nếu `expected_sha256 is not None`)
+   - Đặc biệt kiểm tra cả 9 tệp (`fig1..fig8.svg` và `plot_data.json`) có `sha256 == expected_sha256 == LF_SHA256` và `provenance_crlf_sha256 == CRLF_SHA256`.
+2. **`test_errata_historical_and_new_hashes_match_git_blobs`**: Đối chiếu tự động từng mục trong `artifact_hash_transitions` của `reports/evidence/report_revision_errata_record.json` với `git show 5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383:<path>` (cho các trường `historical_*`) và với tệp hiện hành trên đĩa/Git (cho các trường `new_*`), đảm bảo `0` sai lệch kích thước hay mã băm.
+
+### Tầng 3 — Chạy Toàn Bộ Các Cổng Kiểm Định Độc Lập & Bộ 560+ Pytest Ngoại Tuyến
+Chạy tuần tự các lệnh sau tại `<USER_HOME>\.codex\artifacts\rag2attck\finalization_repo_20261003` và bắt buộc toàn bộ trả về `exit_code == 0`:
+```powershell
+python scripts/verify_report_metadata.py
+python scripts/check_cross_artifact_consistency.py --strict --scope all --metric-bundle artifacts/results/canonical_metric_bundle_v2.json --expected-bundle-sha256 442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34
+python scripts/generate_r9_artifact_inventory.py
+python scripts/run_sg_evidence_audit_probes.py
+python scripts/verify_requirements_matrix_audit.py
+python scripts/run_offline_tests.py -m pytest -q
+```
+
+### Tầng 4 — Giao Thức 2-Commit, Kiểm Tra 4 Lượt GitHub Actions CI & Đồng Bộ Bảng Bàn Giao
+1. **Commit 1 (`<closeout_evidence_sha_v4>`):** Commit toàn bộ code verifier/generator/test, báo cáo `.md`/`.docx`/`.pdf`, `PLAN-rag2attck-closeout.md`, `t33_lade_claim_verification_record.json`, `report_revision_errata_record.{json,md}`, `visual_qa_inspection_record.json`, và `r9_final_artifact_inventory.json` / `closeout_rc_artifact_inventory.json`. Push lên `origin/codex/finalization-20261003` và đợi cả 2 workflow (`CI` và `Real Retrieval Integration`) hoàn tất `success`.
+2. **Commit 2 (`<final_head_sha_v4>`):** Chạy `scripts/update_requirements_matrix_r9.py` và `scripts/verify_requirements_matrix_audit.py` ghim đúng `<closeout_evidence_sha_v4>` và URL CI run của Commit 1; chỉ commit đúng 4 tệp ma trận/audit (`docs/audit/requirements_traceability_matrix.md`, `reports/evidence/finalization_requirements_matrix.json`, `reports/evidence/finalization_requirements_matrix.md`, `reports/evidence/matrix_git_blob_audit_report.json`). Push lên `origin/codex/finalization-20261003` và đợi cả 2 workflow (`CI` và `Real Retrieval Integration`) hoàn tất `success`.
+3. **Cập nhật mô tả PR #30 & Kiểm tra tự động bảng bàn giao 22 tệp:**
+   - Cập nhật PR #30 body phản ánh đúng `<final_head_sha_v4>`, `141` git blob bindings (`21` tệp duy nhất) và 4 lượt CI mới nhất.
+   - Dùng script Python sinh trực tiếp bảng 22 tệp từ `git show HEAD:<path>` để đảm bảo **22/22 kích thước và 22/22 SHA-256 khớp tuyệt đối 100%**.

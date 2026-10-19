@@ -38,6 +38,15 @@ PINNED_RELEASE_ASSET_LOCATOR = "artifacts/packages/public_v4_candidate_20261003.
 PINNED_RELEASE_ASSET_SHA256 = (
     "1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1"
 )
+EXPECTED_REQUIREMENTS_COUNT = 170
+REQUIRED_REQUIREMENT_KEYS = (
+    "id",
+    "title",
+    "evidence_locator",
+    "evidence_storage",
+    "evidence_type",
+    "final_candidate_status",
+)
 
 
 def _get_git_tracked_files(repo_root: Path) -> set[str] | None:
@@ -51,26 +60,36 @@ def _get_git_tracked_files(repo_root: Path) -> set[str] | None:
         text=True,
     )
     if proc.returncode != 0:
-        return set()
+        return None
     return {
         line.strip().replace("\\", "/") for line in proc.stdout.splitlines() if line.strip()
     }
 
 
-def _commit_exists(repo_root: Path, commit_sha: str, cache: dict[str, bool]) -> bool:
-    """Check whether commit_sha exists in the local Git object database."""
-    if not commit_sha or not re.fullmatch(r"[0-9a-fA-F]{7,40}", commit_sha):
+def _commit_is_valid_ancestor(
+    repo_root: Path, commit_sha: str, cache: dict[str, bool]
+) -> bool:
+    """Check whether commit_sha is a full 40-char lowercase hex SHA that exists and is an ancestor of HEAD."""
+    if not commit_sha or not isinstance(commit_sha, str) or not re.fullmatch(r"[0-9a-f]{40}", commit_sha):
         return False
     if commit_sha in cache:
         return cache[commit_sha]
-    proc = subprocess.run(
+    cat_proc = subprocess.run(
         ["git", "cat-file", "-e", f"{commit_sha}^{{commit}}"],
         cwd=str(repo_root),
         capture_output=True,
     )
-    exists = proc.returncode == 0
-    cache[commit_sha] = exists
-    return exists
+    if cat_proc.returncode != 0:
+        cache[commit_sha] = False
+        return False
+    anc_proc = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", commit_sha, "HEAD"],
+        cwd=str(repo_root),
+        capture_output=True,
+    )
+    valid = anc_proc.returncode == 0
+    cache[commit_sha] = valid
+    return valid
 
 
 def _get_git_blob_sha256_and_size(
@@ -96,6 +115,36 @@ def _get_git_blob_sha256_and_size(
     size = len(blob_bytes)
     cache[key] = (digest, size)
     return digest, size
+
+
+def _validate_requirements_schema_and_count(requirements: Any) -> list[str]:
+    """Validate that requirements is a list of exactly 170 well-formed, unique-ID dicts."""
+    errors: list[str] = []
+    if not isinstance(requirements, list):
+        return ["'requirements' field must be a list"]
+    if len(requirements) != EXPECTED_REQUIREMENTS_COUNT:
+        errors.append(
+            f"Expected {EXPECTED_REQUIREMENTS_COUNT} requirements, got {len(requirements)}"
+        )
+    seen_ids: set[str] = set()
+    for idx, item in enumerate(requirements):
+        if not isinstance(item, dict):
+            errors.append(f"Requirement at index {idx} is not a dict")
+            continue
+        missing_keys = [k for k in REQUIRED_REQUIREMENT_KEYS if k not in item]
+        if missing_keys:
+            errors.append(
+                f"Requirement at index {idx} missing required keys: {missing_keys}"
+            )
+        req_id = item.get("id")
+        if not isinstance(req_id, str) or not req_id.strip():
+            errors.append(f"Requirement at index {idx} has empty or non-string id")
+        elif req_id in seen_ids:
+            errors.append(f"Duplicate requirement id: {req_id}")
+        else:
+            seen_ids.add(req_id)
+    return errors
+
 
 def audit_requirements_matrix(
     repo_root: Path | None = None,
@@ -141,7 +190,63 @@ def audit_requirements_matrix(
         return report, 1
 
     matrix_data = json.loads(matrix_path.read_text(encoding="utf-8"))
-    requirements = matrix_data.get("requirements", [])
+    requirements = matrix_data.get("requirements")
+
+    schema_errors = _validate_requirements_schema_and_count(requirements)
+    if schema_errors:
+        report = {
+            "schema_version": "matrix_git_blob_audit_report_v1",
+            "summary": {
+                "total_requirements_tracked": len(requirements) if isinstance(requirements, list) else 0,
+                "valid_git_blob_bindings": 0,
+                "missing_git_blobs": 0,
+                "unresolved_local_locators": 0,
+                "hash_mismatches": 0,
+                "invalid_url_or_gate_bindings": 0,
+                "non_git_assets_and_urls": 0,
+                "local_paths_in_non_git_assets": 0,
+                "audit_verdict": "FAIL_INVALID_MATRIX_SCHEMA_OR_COUNT",
+            },
+            "git_blob_bindings": [],
+            "non_git_assets": [],
+            "defects": schema_errors,
+        }
+        if output_path is not None:
+            out_p = Path(output_path)
+            out_p.parent.mkdir(parents=True, exist_ok=True)
+            out_p.write_text(
+                json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n"
+            )
+        return report, 1
+
+    git_tracked_files = _get_git_tracked_files(repo_root) if check_git_index else None
+    if not check_git_index or not (repo_root / ".git").exists() or git_tracked_files is None:
+        report = {
+            "schema_version": "matrix_git_blob_audit_report_v1",
+            "summary": {
+                "total_requirements_tracked": len(requirements),
+                "valid_git_blob_bindings": 0,
+                "missing_git_blobs": 0,
+                "unresolved_local_locators": 0,
+                "hash_mismatches": 0,
+                "invalid_url_or_gate_bindings": 0,
+                "non_git_assets_and_urls": 0,
+                "local_paths_in_non_git_assets": 0,
+                "audit_verdict": "FAIL_GIT_REPOSITORY_REQUIRED",
+            },
+            "git_blob_bindings": [],
+            "non_git_assets": [],
+            "defects": [
+                "Git index and object-database verification is mandatory; check_git_index=False or missing .git is rejected fail-closed."
+            ],
+        }
+        if output_path is not None:
+            out_p = Path(output_path)
+            out_p.parent.mkdir(parents=True, exist_ok=True)
+            out_p.write_text(
+                json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n"
+            )
+        return report, 1
 
     # Load pinned release asset SHA from inventory if available
     inventory_zip_sha = PINNED_RELEASE_ASSET_SHA256
@@ -156,7 +261,6 @@ def audit_requirements_matrix(
         except Exception:
             inventory_zip_sha = PINNED_RELEASE_ASSET_SHA256
 
-    git_tracked_files = _get_git_tracked_files(repo_root) if check_git_index else None
     commit_cache: dict[str, bool] = {}
     blob_cache: dict[tuple[str, str], tuple[str | None, int | None]] = {}
 
@@ -275,7 +379,7 @@ def audit_requirements_matrix(
             continue
 
         norm_locator = locator.replace("\\", "/")
-        if git_tracked_files is not None and norm_locator not in git_tracked_files:
+        if norm_locator not in git_tracked_files:
             unresolved_local_locators.append(
                 {
                     "requirement_id": req_id,
@@ -288,37 +392,44 @@ def audit_requirements_matrix(
             )
             continue
 
+        if not commit_sha or not _commit_is_valid_ancestor(
+            repo_root, str(commit_sha), commit_cache
+        ):
+            unresolved_local_locators.append(
+                {
+                    "requirement_id": req_id,
+                    "title": title,
+                    "evidence_locator": locator,
+                    "evidence_storage": storage,
+                    "final_candidate_status": status,
+                    "evidence_commit_sha": commit_sha,
+                    "reason": f"Invalid, missing, or non-ancestor evidence_commit_sha: {commit_sha!r}",
+                }
+            )
+            continue
+
         raw_bytes = target_path.read_bytes()
         disk_sha256 = hashlib.sha256(raw_bytes).hexdigest()
 
-        if git_tracked_files is not None:
-            ref_to_read = (
-                str(commit_sha)
-                if (commit_sha and _commit_exists(repo_root, str(commit_sha), commit_cache))
-                else "HEAD"
+        ref_to_read = str(commit_sha)
+        blob_sha256, blob_size = _get_git_blob_sha256_and_size(
+            repo_root, ref_to_read, norm_locator, blob_cache
+        )
+        head_blob_sha256, _ = _get_git_blob_sha256_and_size(
+            repo_root, "HEAD", norm_locator, blob_cache
+        )
+        if blob_sha256 is None or head_blob_sha256 is None:
+            unresolved_local_locators.append(
+                {
+                    "requirement_id": req_id,
+                    "title": title,
+                    "evidence_locator": locator,
+                    "evidence_storage": storage,
+                    "final_candidate_status": status,
+                    "reason": f"Git blob missing from object store at {ref_to_read}:{norm_locator}",
+                }
             )
-            blob_sha256, blob_size = _get_git_blob_sha256_and_size(
-                repo_root, ref_to_read, norm_locator, blob_cache
-            )
-            head_blob_sha256, _ = _get_git_blob_sha256_and_size(
-                repo_root, "HEAD", norm_locator, blob_cache
-            )
-            if blob_sha256 is None or head_blob_sha256 is None:
-                unresolved_local_locators.append(
-                    {
-                        "requirement_id": req_id,
-                        "title": title,
-                        "evidence_locator": locator,
-                        "evidence_storage": storage,
-                        "final_candidate_status": status,
-                        "reason": f"Git blob missing from object store at {ref_to_read}:{norm_locator}",
-                    }
-                )
-                continue
-        else:
-            blob_sha256 = disk_sha256
-            head_blob_sha256 = disk_sha256
-            blob_size = len(raw_bytes)
+            continue
 
         if declared_hash:
             if (

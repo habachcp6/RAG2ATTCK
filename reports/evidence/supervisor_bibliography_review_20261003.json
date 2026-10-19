@@ -165,7 +165,7 @@
         "https://www3.cs.stonybrook.edu/~stoller/papers/LADE-2026.pdf"
       ],
       "access_level": "PRIMARY_PUBLISHER_METADATA_AND_AUTHENTICATED_AUTHOR_MANUSCRIPT_PDF",
-      "observed_metadata_and_supported_claims": "Authors/DOI/LNICST 705/SecureComm 2026/online 20 July 2026/copyright 2027 verified. Full 28-page author manuscript PDF (3,819,792 bytes, SHA-256: 6e8384569254bc4cf82dd4d0191746907ff40fa76016275946651cf47d6f4985) verified: evaluates 4 models (gpt-oss-120B, Llama-3.3-70B, Mistral-Small-3.2-24B, Gemini-2.5-Pro) on AVIATOR (35 attack / 32 benign sequences) and Caldera-derived dataset (33 sequences per 2:1 setting + 5 lateral-movement + 8 multi-stage).",
+      "observed_metadata_and_supported_claims": "Authors/DOI/LNICST 705/SecureComm 2026/online 20 July 2026/copyright 2027 verified. Full 28-page author manuscript PDF (3,819,792 bytes, SHA-256: 6e8384569254bc4cf82dd4d0191746907ff40fa76016275946651cf47d6f4985) verified: evaluates 4 models (gpt-oss-120B, Llama-3.3-70B, Mistral-Small-3.2-24B, Gemini-2.5-Pro) on AVIATOR (35 attack / 32 benign sequences) and Caldera-derived dataset (33 APT sequences per setting [20 adversary-profile + 5 lateral-movement + 8 multi-stage] across 2:1 and 10:1 benign-to-APT ratio settings, plus 33 benign sequences).",
       "source_locations": "Publisher metadata; Author manuscript PDF §4 (pp. 6-11), §5.1-5.5 (pp. 12-19, Tables 2-6), §7 (p. 20)",
       "finding": "FULL_TEXT_VERIFIED_MODELS_AND_DATASETS_REMEDIATED",
       "full_text_not_implied_by_metadata": true

@@ -50,13 +50,38 @@
       "errata_id": "ERR-02",
       "requirement_id": "AD.01",
       "title": "LADE (Gwak et al., 2026/2027) [12] T33 Full-Text Verification Remediation",
-      "summary": "Verified the 28-page LADE author manuscript PDF (SHA-256: 6e8384569254bc4cf82dd4d0191746907ff40fa76016275946651cf47d6f4985), updating Section 2.1 to Full-Text Content Audited (6/8) and Partial / Metadata-Only / Access-Blocked (2/8), updating Table 1b Rows 8/12/14/16 (4 evaluated models: gpt-oss-120B, Llama-3.3-70B, Mistral-Small-3.2-24B, Gemini-2.5-Pro; AVIATOR 35/32 seqs and Caldera-derived 33 seqs per 2:1 setting + 5 lateral + 8 multi-stage; output cutoff k in {3,10} rather than dynamic retriever depth), and updating Reference 12 to [FULL TEXT VERIFIED]."
+      "summary": "Verified the 28-page LADE author manuscript PDF (SHA-256: 6e8384569254bc4cf82dd4d0191746907ff40fa76016275946651cf47d6f4985), updating Section 2.1 to Full-Text Content Audited (6/8) and Partial / Metadata-Only / Access-Blocked (2/8), updating Table 1b Rows 8/12/14/16 (4 evaluated models: gpt-oss-120B, Llama-3.3-70B, Mistral-Small-3.2-24B, Gemini-2.5-Pro; AVIATOR 35/32 seqs and Caldera-derived 33 APT seqs [20 profile + 5 lateral + 8 multi-stage] per 2:1 & 10:1 setting + 33 benign seqs; output cutoff k in {3,10} rather than dynamic retriever depth), and updating Reference 12 to [FULL TEXT VERIFIED]."
     },
     {
       "errata_id": "ERR-03",
       "requirement_id": "AE.01",
       "title": "Section 6.3 Provider Retry Locator Standardization",
-      "summary": "Standardized Section 6.3 Provider Reliability and Financial Reconciliation to explicitly record the single transient retry locator in inputs/request_journal.jsonl: logical key (\"view_d870d574\", \"rag_k1\"), run_id=\"live-66b94b1676bf46a9\", lines 48479-48482 (lifecycle lines 48476-48485), ordinal=5387 attempt_index=0 API_FAILURE/InternalServerError -> ordinal=5388 attempt_index=1 SUCCESS (1,543 input / 1,540 cached / 104 output tokens), settled in inputs/rag_k1_predictions.jsonl line 1179 (record_sha256=\"e9146fe74aa5769faa5dc7df70205e62924fcf8c0e3a53946c50f96ddb2f8086\"). Historical Errata Note: an earlier informal reference to 'line 5124' was an approximate view index from a preliminary inspection and is superseded by the exact physical lines 48479-48482 (ordinal 5387-5388)."
+      "summary": "Standardized Section 6.3 Provider Reliability and Financial Reconciliation to explicitly record the single transient retry locator in inputs/request_journal.jsonl: logical key (\"view_d870d574\", \"rag_k1\"), run_id=\"live-66b94b1676bf46a9\", lines 48479-48482 (lifecycle lines 48476-48485), ordinal=5387 attempt_index=0 API_FAILURE/InternalServerError -> ordinal=5388 attempt_index=1 SUCCESS (1,543 input / 1,540 cached / 104 output tokens), settled in inputs/rag_k1_predictions.jsonl at 1-based physical line 1078 (0-based index 1077; file sha256=\"745cb883a90b4d1bac7c76c4007b143893834530a843e153fc24277aae5da7ac\", record_sha256=\"e9146fe74aa5769faa5dc7df70205e62924fcf8c0e3a53946c50f96ddb2f8086\", raw_line_lf_sha256=\"9056b85dbba694a622acde4743c11803465c6e84ef34a32a3bb6385d12258562\"). Historical Errata Note: an earlier informal reference to 'line 5124' (and a stale draft note referencing 'line 1179') is superseded by the exact physical lines 48479-48482 (ordinal 5387-5388) in inputs/request_journal.jsonl and 1-based physical line 1078 in inputs/rag_k1_predictions.jsonl.",
+      "prediction_record_byte_verification": {
+        "package_zip_locator": "artifacts/packages/public_v4_candidate_20261003.zip",
+        "package_zip_size_bytes": 2343105,
+        "package_zip_sha256": "1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1",
+        "member_path": "base_public_v3/inputs/rag_k1_predictions.jsonl",
+        "member_size_bytes": 2292294,
+        "member_total_lines": 1280,
+        "member_sha256": "745cb883a90b4d1bac7c76c4007b143893834530a843e153fc24277aae5da7ac",
+        "matches_canonical_run_seal_v1": true,
+        "physical_line_1based": 1078,
+        "physical_line_0based": 1077,
+        "raw_line_length_bytes_without_lf": 1796,
+        "raw_line_sha256_algorithm": "sha256(raw_line_bytes_without_newline)",
+        "raw_line_sha256": "e9146fe74aa5769faa5dc7df70205e62924fcf8c0e3a53946c50f96ddb2f8086",
+        "matches_request_journal_line_48485_record_sha256": true,
+        "record_identifiers": {
+          "run_id": "live-66b94b1676bf46a9",
+          "sample_id": "view_d870d574",
+          "pair_id": "pair_3598584c",
+          "condition": "rag_k1",
+          "request_attempt_count": 2,
+          "retry_count": 1,
+          "response_id": "resp_0efb218e56a6ecc1006abf0be6419887d0bca3815a8a0b3f0d"
+        }
+      }
     },
     {
       "errata_id": "ERR-04",
@@ -68,42 +93,48 @@
   "artifact_hash_transitions": {
     "canonical_populated_report_md": {
       "repo_relative_path": "reports/evidence/canonical_populated_report.md",
-      "historical_sha256_lf": "5cbaa094dd6fd717d633de4655221bf953e62f7848ca250b4d11936a4a373fb8",
-      "historical_sha256_crlf": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
-      "historical_size_bytes_lf": 105456,
-      "new_sha256": "5429099e2bb3878fe5d3651cb870a711cf2383f1d641d05e64fd3dd797f3e5c0",
-      "new_sha256_crlf": "84e2af0c7230460cd2c0e2555f9c21c0dc859c0c849a4f0ccfff6b6ab9038ab1",
-      "new_size_bytes": 105483
+      "historical_commit_sha": "5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383",
+      "historical_sha256_lf": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "historical_sha256_crlf": "0cc9a5b971f383c49736b13fb28612f3dc7e7e8f55be9cd47b78dc9b2e87eb0f",
+      "historical_size_bytes_lf": 105354,
+      "historical_size_bytes_crlf": 106090,
+      "new_sha256": "3b5f4e0c49188a26df861de9b4ff4bead35c358134051304283af6c177255bd2",
+      "new_sha256_crlf": "6d08bffde253da95a0dcf78c35a080d56a556556875e02d1213d4f2601f50b42",
+      "new_size_bytes": 105552
     },
     "docs_scientific_report_md": {
       "repo_relative_path": "docs/report/scientific_report.md",
+      "historical_commit_sha": "5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383",
       "historical_sha256_lf": "083fd1be204f9bb2e149c1e16ce427481fd71e67c94bf925d9a4a32bc4f1273f",
       "historical_size_bytes_lf": 105499,
-      "new_sha256": "5429099e2bb3878fe5d3651cb870a711cf2383f1d641d05e64fd3dd797f3e5c0",
-      "new_size_bytes": 105483,
+      "new_sha256": "3b5f4e0c49188a26df861de9b4ff4bead35c358134051304283af6c177255bd2",
+      "new_size_bytes": 105552,
       "byte_identical_to_canonical_populated_report_md": true
     },
     "canonical_populated_report_docx": {
       "repo_relative_path": "reports/evidence/canonical_populated_report.docx",
+      "historical_commit_sha": "5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383",
       "historical_sha256": "c5ce49f7e57ee2d86d79daab50def273af6dbb4c4393da61340f033b63306ccb",
       "historical_size_bytes": 320008,
-      "new_sha256": "39fcbb43c4a3a40e1c22fbec1e4b9bb98cd8d8b51290f23cd706375aaa79d8e2",
-      "new_size_bytes": 320359
+      "new_sha256": "393586ca01d84cac20918f49e19345e5da5961d41c849ea1defe7b49f8c364d3",
+      "new_size_bytes": 320386
     },
     "docs_scientific_report_docx": {
       "repo_relative_path": "docs/report/scientific_report.docx",
+      "historical_commit_sha": "5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383",
       "historical_sha256": "43297b17b2a505fdad96e94ac88fdc868e412bc493682be5e1bdc048bc0bb2dd",
-      "historical_size_bytes": 320899,
-      "new_sha256": "39fcbb43c4a3a40e1c22fbec1e4b9bb98cd8d8b51290f23cd706375aaa79d8e2",
-      "new_size_bytes": 320359,
+      "historical_size_bytes": 320049,
+      "new_sha256": "393586ca01d84cac20918f49e19345e5da5961d41c849ea1defe7b49f8c364d3",
+      "new_size_bytes": 320386,
       "byte_identical_to_canonical_populated_report_docx": true
     },
     "canonical_populated_report_pdf": {
       "repo_relative_path": "reports/evidence/canonical_populated_report.pdf",
+      "historical_commit_sha": "5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383",
       "historical_sha256": "5604e53fb064d2d42c69e4da3ade0b4d4354900fb5706e67c69590167317ee23",
       "historical_size_bytes": 1286065,
-      "new_sha256": "13839fb75fb1427e0edfc42422cbbf775853c5f32cd9e98c70305d5affd615c5",
-      "new_size_bytes": 1299985,
+      "new_sha256": "cc89d12bf009b3f489f9f007efb223d0e454e2c5675f16d5dbef43707cc70a76",
+      "new_size_bytes": 1291857,
       "total_pages": 41
     }
   }

@@ -479,3 +479,62 @@ def test_cli_execution_fail_closed(tmp_path: Path) -> None:
     )
     assert proc_pass.returncode == 0
     assert "PASS_ALL_ARTIFACTS_VERIFIED" in proc_pass.stdout
+
+
+def test_inventory_size_and_sha256_match_raw_disk_bytes_for_every_entry() -> None:
+    """Verify every file entry in the generated inventory has size_bytes and sha256 matching raw bytes on disk."""
+    import hashlib
+
+    inventory, code = generate_inventory(repo_root=REPO_ROOT)
+    assert code == 0
+
+    checked_count = 0
+
+    def _walk(node: object) -> None:
+        nonlocal checked_count
+        if isinstance(node, dict):
+            if (
+                "repo_relative_path" in node
+                and "sha256" in node
+                and "size_bytes" in node
+                and node.get("exists") is True
+            ):
+                rel = node["repo_relative_path"]
+                p = REPO_ROOT / rel
+                assert p.is_file(), f"Missing file on disk: {rel}"
+                raw = p.read_bytes()
+                assert node["size_bytes"] == len(raw), f"size_bytes mismatch for {rel}"
+                assert node["sha256"] == hashlib.sha256(raw).hexdigest(), (
+                    f"sha256 mismatch against raw disk bytes for {rel}"
+                )
+                if node.get("expected_sha256") is not None:
+                    assert node["expected_sha256"] == node["sha256"], (
+                        f"expected_sha256 != sha256 for {rel}"
+                    )
+                checked_count += 1
+            for v in node.values():
+                _walk(v)
+        elif isinstance(node, list):
+            for item in node:
+                _walk(item)
+
+    _walk(inventory)
+    assert checked_count >= 50
+
+
+def test_svg_or_json_crlf_mutation_on_disk_fails_closed(tmp_path: Path) -> None:
+    """Verify that converting an LF-tracked SVG or plot_data.json on disk to CRLF fails closed with FAIL_HASH_MISMATCH."""
+    setup_mock_repo(tmp_path)
+    svg_path = tmp_path / "reports/evidence/figures/fig1_system_architecture.svg"
+    raw_lf = svg_path.read_bytes()
+    assert b"\r\n" not in raw_lf
+    svg_path.write_bytes(raw_lf.replace(b"\n", b"\r\n"))
+
+    inventory, code = generate_inventory(repo_root=tmp_path)
+    assert code == 1
+    assert inventory["verdict"] == "FAIL_HASH_MISMATCH"
+    assert (
+        "reports/evidence/figures/fig1_system_architecture.svg"
+        in inventory["validation_summary"]["hash_mismatch_artifacts"]
+    )
+

@@ -335,6 +335,7 @@ def audit_section_4_security_and_privacy() -> Dict[str, Any]:
         REPO_ROOT / "docs/audit/pr_ancestry_audit.json",
         REPO_ROOT / "docs/audit/baseline_diff_audit.json",
         REPO_ROOT / "docs/audit/requirements_traceability_matrix.md",
+        REPO_ROOT / "docs/PLAN-rag2attck-closeout.md",
     ]
 
     # Regex patterns for leaks

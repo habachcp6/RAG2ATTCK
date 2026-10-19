@@ -76,14 +76,19 @@ def test_real_requirements_matrix_passes_with_zero_local_exceptions() -> None:
 
 
 def test_k01_retry_locator_documented_in_matrix() -> None:
-    """K.01-PROVIDER_FAILURE_RETRY documents exact request_journal.jsonl lines and ordinals."""
+    """K.01-PROVIDER_FAILURE_RETRY documents exact request_journal.jsonl and rag_k1_predictions.jsonl locators."""
     data = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
     k01 = next(r for r in data["requirements"] if r["id"] == "K.01-PROVIDER_FAILURE_RETRY")
     closure = k01["closure_step"]
     assert "48479-48482" in closure
     assert "ordinal=5387" in closure
     assert "ordinal=5388" in closure
-    assert "f36e0f3099ef704e05a21d0839cf3158268fb36b647d8c229bc9f8cf8fd4149a" in closure
+    assert "f36e0f3099ef704e6ed5e0bc0097affbe98932e1620563a6db22e631ae114f31" in closure
+    assert "inputs/rag_k1_predictions.jsonl" in closure
+    assert "745cb883a90b4d1bac7c76c4007b143893834530a843e153fc24277aae5da7ac" in closure
+    assert "1078" in closure
+    assert "e9146fe74aa5769faa5dc7df70205e62924fcf8c0e3a53946c50f96ddb2f8086" in closure
+    assert "9056b85dbba694a622acde4743c11803465c6e84ef34a32a3bb6385d12258562" in closure
 
 
 @pytest.mark.parametrize(
@@ -113,7 +118,7 @@ def test_unresolved_local_locator_fails_closed(
     report, exit_code = audit_requirements_matrix(
         repo_root=REPO_ROOT,
         matrix_path=tampered_matrix,
-        check_git_index=False,
+        check_git_index=True,
     )
 
     assert exit_code == 1
@@ -121,6 +126,111 @@ def test_unresolved_local_locator_fails_closed(
     assert report["summary"]["unresolved_local_locators"] == 1
     non_git_locs = {item["evidence_locator"] for item in report["non_git_assets"]}
     assert bad_locator not in non_git_locs
+
+
+def test_untracked_file_on_disk_fails_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Negative test: file exists on disk but is not in git ls-files fails closed."""
+    import scripts.verify_requirements_matrix_audit as vrma
+
+    orig_tracked = vrma._get_git_tracked_files(REPO_ROOT)
+    assert orig_tracked is not None
+    filtered_tracked = {p for p in orig_tracked if p != "docs/audit/pr_ancestry_audit.json"}
+    monkeypatch.setattr(vrma, "_get_git_tracked_files", lambda _root: filtered_tracked)
+
+    report, exit_code = audit_requirements_matrix(
+        repo_root=REPO_ROOT,
+        matrix_path=MATRIX_PATH,
+        check_git_index=True,
+    )
+
+    assert exit_code == 1
+    assert report["summary"]["audit_verdict"] == "FAIL_UNRESOLVED_LOCAL_LOCATOR"
+    assert report["summary"]["unresolved_local_locators"] >= 1
+
+
+def test_disabled_git_index_or_missing_git_dir_fails_closed(tmp_path: Path) -> None:
+    """Negative test: check_git_index=False or missing .git directory fails closed."""
+    report_no_idx, exit_no_idx = audit_requirements_matrix(
+        repo_root=REPO_ROOT,
+        matrix_path=MATRIX_PATH,
+        check_git_index=False,
+    )
+    assert exit_no_idx == 1
+    assert report_no_idx["summary"]["audit_verdict"] == "FAIL_GIT_REPOSITORY_REQUIRED"
+
+    # Also test a repo_root without .git
+    fake_repo = tmp_path / "no_git_repo"
+    fake_repo.mkdir()
+    report_no_git, exit_no_git = audit_requirements_matrix(
+        repo_root=fake_repo,
+        matrix_path=MATRIX_PATH,
+        check_git_index=True,
+    )
+    assert exit_no_git == 1
+    assert report_no_git["summary"]["audit_verdict"] == "FAIL_GIT_REPOSITORY_REQUIRED"
+
+
+@pytest.mark.parametrize(
+    "bad_commit_sha",
+    [
+        "deadbeef" * 5,
+        None,
+        "",
+        "shortsha",
+    ],
+)
+def test_bogus_or_missing_evidence_commit_sha_fails_closed(
+    tmp_path: Path, bad_commit_sha: str | None
+) -> None:
+    """Negative test: bogus, missing, or non-40-hex evidence_commit_sha fails closed."""
+    data = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
+    for req in data["requirements"]:
+        if req["id"] == "A.01-RUN_ID":
+            req["evidence_commit_sha"] = bad_commit_sha
+            break
+
+    tampered_matrix = tmp_path / "tampered_commit_sha_matrix.json"
+    tampered_matrix.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    report, exit_code = audit_requirements_matrix(
+        repo_root=REPO_ROOT,
+        matrix_path=tampered_matrix,
+        check_git_index=True,
+    )
+
+    assert exit_code == 1
+    assert report["summary"]["audit_verdict"] == "FAIL_UNRESOLVED_LOCAL_LOCATOR"
+    assert report["summary"]["unresolved_local_locators"] == 1
+
+
+@pytest.mark.parametrize("tamper_mode", ["empty", "truncated", "duplicate_id", "missing_key"])
+def test_invalid_matrix_schema_or_count_fails_closed(
+    tmp_path: Path, tamper_mode: str
+) -> None:
+    """Negative test: empty, truncated, duplicate-ID, or malformed requirement fails closed."""
+    data = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
+    if tamper_mode == "empty":
+        data["requirements"] = []
+    elif tamper_mode == "truncated":
+        data["requirements"] = data["requirements"][:-1]
+    elif tamper_mode == "duplicate_id":
+        data["requirements"][1]["id"] = data["requirements"][0]["id"]
+    elif tamper_mode == "missing_key":
+        del data["requirements"][0]["evidence_storage"]
+
+    tampered_matrix = tmp_path / f"tampered_schema_{tamper_mode}.json"
+    tampered_matrix.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    report, exit_code = audit_requirements_matrix(
+        repo_root=REPO_ROOT,
+        matrix_path=tampered_matrix,
+        check_git_index=True,
+    )
+
+    assert exit_code == 1
+    assert report["summary"]["audit_verdict"] == "FAIL_INVALID_MATRIX_SCHEMA_OR_COUNT"
 
 
 def test_git_blob_hash_mismatch_fails_closed(tmp_path: Path) -> None:
@@ -137,7 +247,29 @@ def test_git_blob_hash_mismatch_fails_closed(tmp_path: Path) -> None:
     report, exit_code = audit_requirements_matrix(
         repo_root=REPO_ROOT,
         matrix_path=tampered_matrix,
-        check_git_index=False,
+        check_git_index=True,
+    )
+
+    assert exit_code == 1
+    assert report["summary"]["audit_verdict"] == "FAIL_GIT_BLOB_HASH_MISMATCH"
+    assert report["summary"]["hash_mismatches"] == 1
+
+
+def test_release_package_hash_mismatch_fails_closed(tmp_path: Path) -> None:
+    """Negative test: tampered declared_hash on RELEASE_PACKAGE fails closed."""
+    data = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
+    for req in data["requirements"]:
+        if req.get("evidence_type") == "RELEASE_PACKAGE":
+            req["evidence_hash"] = "a" * 64
+            break
+
+    tampered_matrix = tmp_path / "tampered_release_pkg_matrix.json"
+    tampered_matrix.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    report, exit_code = audit_requirements_matrix(
+        repo_root=REPO_ROOT,
+        matrix_path=tampered_matrix,
+        check_git_index=True,
     )
 
     assert exit_code == 1
@@ -159,7 +291,29 @@ def test_premature_human_gate_verified_status_fails_closed(tmp_path: Path) -> No
     report, exit_code = audit_requirements_matrix(
         repo_root=REPO_ROOT,
         matrix_path=tampered_matrix,
-        check_git_index=False,
+        check_git_index=True,
+    )
+
+    assert exit_code == 1
+    assert report["summary"]["audit_verdict"] == "FAIL_INVALID_URL_OR_GATE_BINDING"
+    assert report["summary"]["invalid_url_or_gate_bindings"] == 1
+
+
+def test_invalid_github_url_fails_closed(tmp_path: Path) -> None:
+    """Negative test: invalid GitHub URL domain/path fails closed."""
+    data = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
+    for req in data["requirements"]:
+        if req["id"] == "C.03-HUMAN_MERGE_AUTH":
+            req["evidence_locator"] = "https://example.com/not-a-valid-github-url"
+            break
+
+    tampered_matrix = tmp_path / "tampered_url_matrix.json"
+    tampered_matrix.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    report, exit_code = audit_requirements_matrix(
+        repo_root=REPO_ROOT,
+        matrix_path=tampered_matrix,
+        check_git_index=True,
     )
 
     assert exit_code == 1
@@ -181,7 +335,7 @@ def test_git_tracked_missing_hash_fails_closed(tmp_path: Path) -> None:
     report, exit_code = audit_requirements_matrix(
         repo_root=REPO_ROOT,
         matrix_path=tampered_matrix,
-        check_git_index=False,
+        check_git_index=True,
     )
 
     assert exit_code == 1
@@ -220,4 +374,5 @@ def test_git_blob_vs_disk_hash_verification_with_git_index_enabled(
     )
     assert mismatch["git_blob_hash"] == "f" * 64
     assert mismatch["disk_hash"] != mismatch["git_blob_hash"]
+
 

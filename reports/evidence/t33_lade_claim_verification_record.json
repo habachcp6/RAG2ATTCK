@@ -45,7 +45,7 @@
     },
     "primary_dataset": {
       "legacy_partial_value": "AVIATOR (35 attack / 32 benign sequences)",
-      "verified_value": "AVIATOR (35 attack / 32 benign sequences) & Caldera-derived dataset (33 sequences per 2:1 setting + 5 lateral-movement + 8 multi-stage)",
+      "verified_value": "AVIATOR (35 attack / 32 benign sequences) & Caldera-derived dataset (33 APT sequences per setting [20 adversary-profile + 5 lateral-movement + 8 multi-stage] across 2:1 and 10:1 benign-to-APT ratio settings, plus 33 benign sequences)",
       "source_locations": [
         "Section 5.1 (Dataset), pages 12-14",
         "Table 2, page 12",
@@ -53,7 +53,7 @@
       ],
       "verbatim_excerpts": [
         "AVIATOR contains logs for both attack and benign activity, from which we derive 35 attack sequences and 32 benign sequences.",
-        "In addition, we generated two sets of APT-labeled sequences derived from Caldera, each containing 33 sequences: a 2 : 1 benign-to-APT ratio setting ... Each set comprises 20 sequences whose APT code snippets are derived from adversary profiles ... Each set also includes 13 sequences derived from MITRE emulation plans, consisting of 5 lateral-movement sequences (each with about 6 APT snippets) and 8 multi-stage attack sequences (each with roughly 25 APT snippets)."
+        "In addition, we generated two sets of APT-labeled sequences derived from Caldera, each containing 33 sequences: a 2 : 1 benign-to-APT ratio setting ... and a 10 : 1 setting ... Each set comprises 20 sequences whose APT code snippets are derived from adversary profiles ... Each set also includes 13 sequences derived from MITRE emulation plans, consisting of 5 lateral-movement sequences (each with about 6 APT snippets) and 8 multi-stage attack sequences (each with roughly 25 APT snippets)."
       ]
     },
     "retrieval_and_architecture": {
@@ -77,11 +77,13 @@
         "Section 5.5 (Evaluation of Tagging Summary), Table 6, pages 17-19"
       ]
     },
-    "token_overhead": {
-      "verified_value": "~13.8k-15.6k input tokens per window for gpt-oss-120B (Table 2, page 12); full raw MITRE ATT&CK knowledge base exceeds practical context limits without summarization or RAG (Section 2.2 page 3, Section 5.2 page 14, Section 7 page 20).",
+    "context_window_and_segmentation": {
+      "verified_value": "Iterative sequence segmentation (sub-sequences of 400 code snippets; 300 for Mistral-Small-3.2-24B) with summary propagation for sequences exceeding LLM context windows (Section 4.1 page 7, Section 5.2 page 13); full raw MITRE ATT&CK knowledge base exceeds practical context limits without LLM summarization or RAG (Section 2.2 page 3, Section 5.4 page 16, Section 7 page 20).",
       "source_locations": [
         "Section 2.2 (Challenges in Applying LLMs to APT Detection), page 3",
-        "Section 5.2 (APT Detection), Table 2, pages 12-14",
+        "Section 4.1 (APT Detection), page 7",
+        "Section 5.2 (APT Detection), page 13",
+        "Section 5.4 (TTP Mapping), page 16",
         "Section 7 (Conclusion), page 20"
       ]
     }
@@ -89,16 +91,16 @@
   "verification_timeline": [
     {
       "stage": 1,
-      "date": "2026-09-22",
-      "event": "Initial PR #8 comparator check",
+      "date": "2026-10-02",
+      "event": "Initial PR #8 comparator matrix & notes commit",
       "commit_sha": "6783f20971cbff91f105d0280ddd07cb0925aab0",
-      "status": "METADATA_AND_ABSTRACT_ONLY_DUE_TO_SPRINGER_PAYWALL"
+      "status": "PRELIMINARY_NOTES_WITHOUT_AUTHENTICATED_PDF_HASH_BINDING"
     },
     {
       "stage": 2,
       "date": "2026-10-03",
-      "event": "Supervisor bibliography verification pass (reports/evidence/supervisor_bibliography_review_20261003.md)",
-      "status": "TRANSIENT_HTTP_TIMEOUT_ON_STONY_BROOK_AUTHOR_HOST"
+      "event": "Supervisor bibliography verification pass (reports/evidence/supervisor_bibliography_review_20261003.md at commit 5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383)",
+      "status": "PUBLISHER_METADATA_ONLY_AUTHOR_PDF_TIMED_OUT"
     },
     {
       "stage": 3,

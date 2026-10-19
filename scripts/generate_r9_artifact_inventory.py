@@ -48,6 +48,30 @@ CANONICAL_FIGURE_EXPECTED_HASHES = {
     "canonical_rq3_cost_and_latency.png": "5b9c31be2b37cad34f76624171b9f7fdc8a4686d3c13e452dc8ca8369e472941",
     "canonical_rq3_cost_and_latency.pdf": "51cf74ed24bfea090f53aede762cf6a3529aa8be8b286d6770fb05eb4083d9eb",
     "figure_provenance.json": "88983822c84a7bb78247b17a5620f183dce3b4a96cf5ddf94a409aea5ecf388d",
+    "plot_data.json": "e6515f6ae89f0b98539eceb526a0d8bd0e72558d393c333345248b512912f375",
+}
+
+CANONICAL_TEXT_FIGURE_LF_HASHES = {
+    "fig1_system_architecture.svg": "7623e1c20792b1c90c97064387bdef99014f11e6d91635bce272a89fa06c97b1",
+    "fig2_accuracy_vs_k.svg": "1bddfd900b4e5bb20d90b2a68064cb5e2aa0a58066a14641e5f128958ecaa2b4",
+    "fig3_macro_f1_vs_k.svg": "aff69a0bd3cfb37948a73e4ead5d885670f426e3e0132d3a1f13f536bf7acd28",
+    "fig4_retrieval_hit_rate.svg": "c01c563727549f73a48d3c4a9c24dc391e023d4ea5a930958f4ffb736e8c937f",
+    "fig5_conditional_accuracy.svg": "1d7497283ae0537c52e88a5e00803d0381e1b62ec5e44471e75ed5090bdb14a9",
+    "fig6_latency_vs_k.svg": "a1b192768437b61fa2a0a0eea82c19011a75a8005639000fae77019e1a281b2a",
+    "fig7_cost_and_tokens_vs_k.svg": "38349b81e25574b8bd8424e5e7a251b7c2d1a5c0344a6ed2b8cced98a50d8431",
+    "fig8_failure_decomposition.svg": "2cd89e99326650fa9ab069d2f83c13ef23dedbcaea0e75c5360a5e0082c65ba5",
+    "plot_data.json": "e6515f6ae89f0b98539eceb526a0d8bd0e72558d393c333345248b512912f375",
+}
+
+CANONICAL_TEXT_FIGURE_CRLF_PROVENANCE_HASHES = {
+    "fig1_system_architecture.svg": "390a20d82453ece92e29ac30bf8ddd24409831745125a5c8ee76a0e91770eeb2",
+    "fig2_accuracy_vs_k.svg": "f6c6358497d9cb074de1ec2da3363332b3f53f93fc90a56d7f3efa9306e6f721",
+    "fig3_macro_f1_vs_k.svg": "3250dd2c52f108d9717d5d4607eb07e4052b11135e53a6e6731380df9c5de42e",
+    "fig4_retrieval_hit_rate.svg": "2c7bacf2d80753bceb9b863c59dad89011902811662ddbab3512bac9956ee7cf",
+    "fig5_conditional_accuracy.svg": "80090de1cd54b04c0758bb3eeabfc0114b5b485421d851e4aa711efe3b31050f",
+    "fig6_latency_vs_k.svg": "451180e694aaec17b263da35894ef3bc577aed6da44ac1628ce70ab0580b00c5",
+    "fig7_cost_and_tokens_vs_k.svg": "b0194313704b0672ebb8c664192bb7f85d2dedefd7fc04c9dca06dab2c687255",
+    "fig8_failure_decomposition.svg": "b90d61d4fcd806c3affb1ef017dcf7aacad1c09a4b4e4a5dbf7421b6306f4e6c",
     "plot_data.json": "965452e7d84e6522f1c0a673ae6e1cd9e92e765a89b222fab2213c8ffbe7f4ac",
 }
 
@@ -57,7 +81,7 @@ def compute_file_info(
     repo_root: Path,
     expected_sha256: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Compute presence, repo-relative path, size, and SHA-256 digest."""
+    """Compute presence, repo-relative path, raw byte size, and raw SHA-256 digest."""
     try:
         rel = path.relative_to(repo_root).as_posix()
     except ValueError:
@@ -76,16 +100,6 @@ def compute_file_info(
     raw = path.read_bytes()
     actual_sha = hashlib.sha256(raw).hexdigest()
     verified = (expected_sha256 is None) or (actual_sha == expected_sha256)
-    if not verified and expected_sha256 and path.suffix in [".svg", ".json", ".md"]:
-        lf_raw = raw.replace(b"\r\n", b"\n")
-        lf_sha = hashlib.sha256(lf_raw).hexdigest()
-        crlf_sha = hashlib.sha256(lf_raw.replace(b"\n", b"\r\n")).hexdigest()
-        if lf_sha == expected_sha256:
-            actual_sha = lf_sha
-            verified = True
-        elif crlf_sha == expected_sha256:
-            actual_sha = crlf_sha
-            verified = True
 
     return {
         "exists": True,
@@ -546,17 +560,17 @@ def generate_inventory(
     report_specs: Dict[str, Dict[str, str]] = {
         "canonical_populated_report_md": {
             "rel_path": "reports/evidence/canonical_populated_report.md",
-            "expected_sha256": "5429099e2bb3878fe5d3651cb870a711cf2383f1d641d05e64fd3dd797f3e5c0",
+            "expected_sha256": "3b5f4e0c49188a26df861de9b4ff4bead35c358134051304283af6c177255bd2",
             "type": "markdown",
         },
         "canonical_populated_report_docx": {
             "rel_path": "reports/evidence/canonical_populated_report.docx",
-            "expected_sha256": "39fcbb43c4a3a40e1c22fbec1e4b9bb98cd8d8b51290f23cd706375aaa79d8e2",
+            "expected_sha256": "393586ca01d84cac20918f49e19345e5da5961d41c849ea1defe7b49f8c364d3",
             "type": "docx",
         },
         "canonical_populated_report_pdf": {
             "rel_path": "reports/evidence/canonical_populated_report.pdf",
-            "expected_sha256": "13839fb75fb1427e0edfc42422cbbf775853c5f32cd9e98c70305d5affd615c5",
+            "expected_sha256": "cc89d12bf009b3f489f9f007efb223d0e454e2c5675f16d5dbef43707cc70a76",
             "type": "pdf",
         },
         "populated_report_slots_canonical": {
@@ -573,12 +587,12 @@ def generate_inventory(
     if (repo_root / "docs/report").is_dir():
         report_specs["docs_scientific_report_md"] = {
             "rel_path": "docs/report/scientific_report.md",
-            "expected_sha256": "5429099e2bb3878fe5d3651cb870a711cf2383f1d641d05e64fd3dd797f3e5c0",
+            "expected_sha256": "3b5f4e0c49188a26df861de9b4ff4bead35c358134051304283af6c177255bd2",
             "type": "markdown",
         }
         report_specs["docs_scientific_report_docx"] = {
             "rel_path": "docs/report/scientific_report.docx",
-            "expected_sha256": "39fcbb43c4a3a40e1c22fbec1e4b9bb98cd8d8b51290f23cd706375aaa79d8e2",
+            "expected_sha256": "393586ca01d84cac20918f49e19345e5da5961d41c849ea1defe7b49f8c364d3",
             "type": "docx",
         }
 
@@ -809,7 +823,10 @@ def generate_inventory(
             if fname in CANONICAL_FIGURE_EXPECTED_HASHES:
                 expected_sha = CANONICAL_FIGURE_EXPECTED_HASHES[fname]
             elif fname in prov_figures:
-                expected_sha = prov_figures[fname]
+                if fname in CANONICAL_TEXT_FIGURE_LF_HASHES:
+                    expected_sha = CANONICAL_TEXT_FIGURE_LF_HASHES[fname]
+                else:
+                    expected_sha = prov_figures[fname]
 
             if not p.is_file():
                 missing_required.append(rel_path)
@@ -834,20 +851,29 @@ def generate_inventory(
             raw = p.read_bytes()
             computed_sha = hashlib.sha256(raw).hexdigest()
             hash_verified = False
+            crlf_bytes: Optional[bytes] = None
+            crlf_sha: Optional[str] = None
 
             if expected_sha is None:
                 missing_authority.append(rel_path)
                 hash_verified = False
             else:
-                if computed_sha == expected_sha:
-                    hash_verified = True
-                elif p.suffix in [".svg", ".json"]:
-                    crlf_sha = hashlib.sha256(
-                        raw.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
-                    ).hexdigest()
-                    if crlf_sha == expected_sha:
-                        hash_verified = True
-                        computed_sha = crlf_sha
+                if fname in CANONICAL_TEXT_FIGURE_LF_HASHES:
+                    crlf_bytes = raw.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+                    crlf_sha = hashlib.sha256(crlf_bytes).hexdigest()
+                    expected_crlf_sha = CANONICAL_TEXT_FIGURE_CRLF_PROVENANCE_HASHES[
+                        fname
+                    ]
+                    prov_crlf_ok = (fname not in prov_figures) or (
+                        prov_figures.get(fname) == expected_crlf_sha
+                    )
+                    hash_verified = (
+                        computed_sha == expected_sha
+                        and crlf_sha == expected_crlf_sha
+                        and prov_crlf_ok
+                    )
+                else:
+                    hash_verified = computed_sha == expected_sha
 
                 if not hash_verified:
                     hash_mismatches.append(rel_path)
@@ -871,22 +897,36 @@ def generate_inventory(
             numerical_checked = bool(bundle_bound and hash_verified)
             visually_reviewed = bool(qa_record_valid and (fname in qa_reviewed_figures))
 
-            figure_files[fname] = {
+            entry_info: Dict[str, Any] = {
                 "exists": True,
                 "repo_relative_path": rel_path,
                 "size_bytes": len(raw),
                 "sha256": computed_sha,
                 "expected_sha256": expected_sha,
                 "verified": hash_verified,
-                "lifecycle_states": make_lifecycle_states(
-                    file_present=True,
-                    hash_verified=hash_verified,
-                    structure_checked=valid_struct,
-                    numerical_checked=numerical_checked,
-                    rendered=is_rendered,
-                    visually_reviewed=visually_reviewed,
-                ),
             }
+            if (
+                fname in CANONICAL_TEXT_FIGURE_LF_HASHES
+                and crlf_bytes is not None
+                and crlf_sha is not None
+            ):
+                entry_info["provenance_crlf_sha256"] = (
+                    CANONICAL_TEXT_FIGURE_CRLF_PROVENANCE_HASHES[fname]
+                )
+                entry_info["crlf_normalized_sha256"] = crlf_sha
+                entry_info["crlf_normalized_size_bytes"] = len(crlf_bytes)
+                entry_info["line_ending_normalization"] = (
+                    "git_lf_raw_verified_against_windows_crlf_provenance"
+                )
+            entry_info["lifecycle_states"] = make_lifecycle_states(
+                file_present=True,
+                hash_verified=hash_verified,
+                structure_checked=valid_struct,
+                numerical_checked=numerical_checked,
+                rendered=is_rendered,
+                visually_reviewed=visually_reviewed,
+            )
+            figure_files[fname] = entry_info
 
     # Determine Verdict Fail-Closed
     verdict: str

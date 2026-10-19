@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-19T14:07:26Z",
+  "timestamp": "2026-10-19T21:44:29Z",
   "repo_root": "<REPO_ROOT>",
   "section_1_reproduction_report": {
     "probe_1_1_empty_dir": {
@@ -56,13 +56,13 @@
   "section_3_pytest_suite": {
     "passed": true,
     "exit_code": 0,
-    "passed_count": 54,
-    "duration_seconds": 27.875802755355835,
-    "stdout_summary": "======================= 54 passed, 2 warnings in 27.14s ======================="
+    "passed_count": 56,
+    "duration_seconds": 26.69428539276123,
+    "stdout_summary": "======================= 56 passed, 2 warnings in 25.04s ======================="
   },
   "section_4_security_privacy": {
     "passed": true,
-    "files_audited": 15,
+    "files_audited": 16,
     "total_violations": 0,
     "file_details": {
       "reports/evidence/r9_saved_data_reproduction_report.json": {
@@ -71,12 +71,12 @@
         "clean": true
       },
       "reports/evidence/r9_final_artifact_inventory.json": {
-        "size_bytes": 41528,
+        "size_bytes": 44588,
         "violations": [],
         "clean": true
       },
       "reports/evidence/qa/visual_qa_inspection_record.json": {
-        "size_bytes": 18505,
+        "size_bytes": 18600,
         "violations": [],
         "clean": true
       },
@@ -91,27 +91,27 @@
         "clean": true
       },
       "reports/evidence/t33_lade_claim_verification_record.json": {
-        "size_bytes": 6396,
+        "size_bytes": 6826,
         "violations": [],
         "clean": true
       },
       "reports/evidence/report_revision_errata_record.json": {
-        "size_bytes": 6711,
+        "size_bytes": 8748,
         "violations": [],
         "clean": true
       },
       "reports/evidence/report_revision_errata_record.md": {
-        "size_bytes": 4592,
+        "size_bytes": 4949,
         "violations": [],
         "clean": true
       },
       "reports/evidence/closeout_rc_artifact_inventory.json": {
-        "size_bytes": 41528,
+        "size_bytes": 44588,
         "violations": [],
         "clean": true
       },
       "reports/evidence/matrix_git_blob_audit_report.json": {
-        "size_bytes": 93392,
+        "size_bytes": 93387,
         "violations": [],
         "clean": true
       },
@@ -136,7 +136,12 @@
         "clean": true
       },
       "docs/audit/requirements_traceability_matrix.md": {
-        "size_bytes": 80707,
+        "size_bytes": 81017,
+        "violations": [],
+        "clean": true
+      },
+      "docs/PLAN-rag2attck-closeout.md": {
+        "size_bytes": 31100,
         "violations": [],
         "clean": true
       }

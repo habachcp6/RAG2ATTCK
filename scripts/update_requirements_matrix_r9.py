@@ -624,6 +624,15 @@ def update_matrix_r10(
         "closure_step": "Enforced in report Section 23: costs explicitly described as tariff-derived accounted spend.",
     }
 
+    # Verify request_journal.jsonl and rag_k1_predictions.jsonl digests from canonical_run_seal_v1.json
+    seal_data = json.loads(
+        (repo_root / "reports/evidence/canonical_run_seal_v1.json").read_text(encoding="utf-8")
+    )
+    req_journal_sha = seal_data["sealed_artifact_digests"]["request_journal.jsonl"]
+    assert req_journal_sha == "f36e0f3099ef704e6ed5e0bc0097affbe98932e1620563a6db22e631ae114f31"
+    rag_k1_pred_sha = seal_data["sealed_artifact_digests"]["rag_k1_predictions.jsonl"]
+    assert rag_k1_pred_sha == "745cb883a90b4d1bac7c76c4007b143893834530a843e153fc24277aae5da7ac"
+
     # Category K: Failure Modes
     explicit_specs["K.01-PROVIDER_FAILURE_RETRY"] = {
         "acceptance_criterion": "Accounting for single transient provider failure retry on ('view_d870d574', 'rag_k1').",
@@ -637,10 +646,13 @@ def update_matrix_r10(
         "final_candidate_status": "VERIFIED",
         "closure_step": (
             "Documented in r9_saved_data_reproduction_report.json and inputs/request_journal.jsonl "
-            "(sha256=f36e0f3099ef704e05a21d0839cf3158268fb36b647d8c229bc9f8cf8fd4149a, "
+            f"(sha256={req_journal_sha}, "
             "run_id='live-66b94b1676bf46a9', view_id='view_d870d574', condition='rag_k1', "
             "physical lines 48479-48482, lifecycle lines 48476-48485: ordinal=5387 attempt_index=0 "
-            "API_FAILURE/InternalServerError -> ordinal=5388 attempt_index=1 SUCCESS -> complete at line 48485)."
+            "API_FAILURE/InternalServerError -> ordinal=5388 attempt_index=1 SUCCESS -> complete at line 48485; "
+            f"settled in inputs/rag_k1_predictions.jsonl sha256={rag_k1_pred_sha} at 1-based physical line 1078, "
+            "record_sha256='e9146fe74aa5769faa5dc7df70205e62924fcf8c0e3a53946c50f96ddb2f8086', "
+            "raw_line_lf_sha256='9056b85dbba694a622acde4743c11803465c6e84ef34a32a3bb6385d12258562')."
         ),
     }
     explicit_specs["K.02-INCOMPLETE_CEILING_ANALYSIS"] = {
@@ -1009,9 +1021,9 @@ def update_matrix_r10(
             "git_tracked",
             "tests/test_artifact_inventory.py",
             artifact_inventory_test_sha,
-            "1cd0a5569d75116126dd2fc86717b9a0cf997fda",
+            evidence_commit_sha,
             "VERIFIED",
-            "Presentation and inventory regression tests verified in tests/test_artifact_inventory.py (15 passed).",
+            "Presentation and inventory regression tests verified in tests/test_artifact_inventory.py (17 passed).",
         ),
         (
             "V.11-PATH_SECRET_SCANNER",

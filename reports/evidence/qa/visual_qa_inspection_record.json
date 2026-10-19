@@ -23,14 +23,14 @@
       "status": "VERIFIED_SHARP",
       "docx_target": {
         "repo_relative_path": "reports/evidence/canonical_populated_report.docx",
-        "sha256": "39fcbb43c4a3a40e1c22fbec1e4b9bb98cd8d8b51290f23cd706375aaa79d8e2",
-        "size_bytes": 320359
+        "sha256": "393586ca01d84cac20918f49e19345e5da5961d41c849ea1defe7b49f8c364d3",
+        "size_bytes": 320386
       },
       "renderer_environment": "Microsoft Word 16.0 (Build 16.0.17328, Windows Word Engine) + pypdfium2 200 DPI PNG Page Rasterizer",
       "rendered_output": {
         "repo_relative_path": "reports/evidence/canonical_populated_report.pdf",
-        "sha256": "13839fb75fb1427e0edfc42422cbbf775853c5f32cd9e98c70305d5affd615c5",
-        "size_bytes": 1299985
+        "sha256": "cc89d12bf009b3f489f9f007efb223d0e454e2c5675f16d5dbef43707cc70a76",
+        "size_bytes": 1291857
       },
       "page_coverage": {
         "total_pages": 41,
@@ -96,8 +96,8 @@
     },
     "docx_target": {
       "repo_relative_path": "reports/evidence/canonical_populated_report.docx",
-      "sha256": "39fcbb43c4a3a40e1c22fbec1e4b9bb98cd8d8b51290f23cd706375aaa79d8e2",
-      "size_bytes": 320359
+      "sha256": "393586ca01d84cac20918f49e19345e5da5961d41c849ea1defe7b49f8c364d3",
+      "size_bytes": 320386
     }
   },
   "presentation_deck_qa": {
@@ -114,14 +114,14 @@
     "status": "VERIFIED_SHARP",
     "docx_target": {
       "repo_relative_path": "reports/evidence/canonical_populated_report.docx",
-      "sha256": "39fcbb43c4a3a40e1c22fbec1e4b9bb98cd8d8b51290f23cd706375aaa79d8e2",
-      "size_bytes": 320359
+      "sha256": "393586ca01d84cac20918f49e19345e5da5961d41c849ea1defe7b49f8c364d3",
+      "size_bytes": 320386
     },
     "renderer_environment": "Microsoft Word 16.0 (Build 16.0.17328, Windows Word Engine) + pypdfium2 200 DPI PNG Page Rasterizer",
     "rendered_output": {
       "repo_relative_path": "reports/evidence/canonical_populated_report.pdf",
-      "sha256": "13839fb75fb1427e0edfc42422cbbf775853c5f32cd9e98c70305d5affd615c5",
-      "size_bytes": 1299985
+      "sha256": "cc89d12bf009b3f489f9f007efb223d0e454e2c5675f16d5dbef43707cc70a76",
+      "size_bytes": 1291857
     },
     "page_coverage": {
       "total_pages": 41,
@@ -328,9 +328,9 @@
       "pages_06_07_08": {
         "sha256_page_06": "d4928f6b5332a04660fe52d1ac6b7a6e19248dfcf14a0740a6cbfc158f32cffe",
         "sha256_page_07": "dd7342db4183d4d12d5109c2617b382b77353988cc8b812cd455c498ec9491d4",
-        "sha256_page_08": "ef066c2c9b1d0651f5d1a37244b5d8aef78a55156203f25efb76dbae0ebd1817",
+        "sha256_page_08": "4320abeba5b580b2d797667e7c95d4dd9b134bb629c2df545d9d0b421c81ce0e",
         "status": "VERIFIED_SHARP",
-        "observation": "Table 1a and Table 1b render with repeated dark navy header row across page breaks, cantSplit row integrity, width <= 6.50 in, Okuma et al. (2023) [9] strictly UNVERIFIED in Row 16, and LADE (Gwak et al., 2026/2027) [12] displaying OMML math k in {3,10}, 4 evaluated models, and AVIATOR/Caldera dataset splits."
+        "observation": "Table 1a and Table 1b render with repeated dark navy header row across page breaks, cantSplit row integrity, width <= 6.50 in, Okuma et al. (2023) [9] strictly UNVERIFIED in Row 16, and LADE (Gwak et al., 2026/2027) [12] displaying OMML math k in {3,10}, 4 evaluated models, and AVIATOR/Caldera dataset splits (33 APT seqs [20 profile + 5 lateral + 8 multi-stage] per 2:1 & 10:1 setting + 33 benign seqs)."
       },
       "page_33": {
         "sha256": "55d4484a4fe1d9f0399af23de0e9d73b0dbf405ac43dd3e667d36eb728dc6186",

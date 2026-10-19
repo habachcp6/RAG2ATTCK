@@ -1,6 +1,6 @@
 {
   "schema_version": "matrix_git_blob_audit_report_v1",
-  "timestamp_utc": "2026-10-19T04:25:31.596663+00:00",
+  "timestamp_utc": "2026-10-19T05:30:33.333133+00:00",
   "audited_matrix_path": "reports/evidence/finalization_requirements_matrix.json",
   "audit_engine": "Python 3.13.0, git CLI subprocess, hashlib sha256 (fail-closed)",
   "summary": {
@@ -162,9 +162,9 @@
       "title": "TRACK D \u2014 Figures / Tables / Statistical QA",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "git_blob_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "blob_size_bytes": 38954,
+      "declared_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "git_blob_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "blob_size_bytes": 41528,
       "status": "MATCH"
     },
     {
@@ -782,9 +782,9 @@
       "title": "Figure 1: Experimental Architecture",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "git_blob_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "blob_size_bytes": 38954,
+      "declared_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "git_blob_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "blob_size_bytes": 41528,
       "status": "MATCH"
     },
     {
@@ -792,9 +792,9 @@
       "title": "Figure 2: Accuracy across k",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "git_blob_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "blob_size_bytes": 38954,
+      "declared_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "git_blob_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "blob_size_bytes": 41528,
       "status": "MATCH"
     },
     {
@@ -802,9 +802,9 @@
       "title": "Figure 3: Macro-F1 across k",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "git_blob_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "blob_size_bytes": 38954,
+      "declared_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "git_blob_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "blob_size_bytes": 41528,
       "status": "MATCH"
     },
     {
@@ -812,9 +812,9 @@
       "title": "Figure 4: Retrieval Hit@k",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "git_blob_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "blob_size_bytes": 38954,
+      "declared_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "git_blob_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "blob_size_bytes": 41528,
       "status": "MATCH"
     },
     {
@@ -822,9 +822,9 @@
       "title": "Figure 5: Conditional Accuracy retrieved vs missed",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "git_blob_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "blob_size_bytes": 38954,
+      "declared_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "git_blob_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "blob_size_bytes": 41528,
       "status": "MATCH"
     },
     {
@@ -832,9 +832,9 @@
       "title": "Figure 6: Latency vs k",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "git_blob_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "blob_size_bytes": 38954,
+      "declared_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "git_blob_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "blob_size_bytes": 41528,
       "status": "MATCH"
     },
     {
@@ -842,9 +842,9 @@
       "title": "Figure 7: Cost / token usage vs k",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "git_blob_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "blob_size_bytes": 38954,
+      "declared_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "git_blob_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "blob_size_bytes": 41528,
       "status": "MATCH"
     },
     {
@@ -852,9 +852,9 @@
       "title": "Figure 8: Failure Decomposition",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "git_blob_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "blob_size_bytes": 38954,
+      "declared_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "git_blob_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "blob_size_bytes": 41528,
       "status": "MATCH"
     },
     {
@@ -862,9 +862,9 @@
       "title": "Table 1: Dataset / split",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "git_blob_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "blob_size_bytes": 38954,
+      "declared_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "git_blob_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "blob_size_bytes": 41528,
       "status": "MATCH"
     },
     {
@@ -872,9 +872,9 @@
       "title": "Table 2: Experimental conditions",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "git_blob_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "blob_size_bytes": 38954,
+      "declared_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "git_blob_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "blob_size_bytes": 41528,
       "status": "MATCH"
     },
     {
@@ -882,9 +882,9 @@
       "title": "Table 3: RQ1 metrics",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "git_blob_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "blob_size_bytes": 38954,
+      "declared_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "git_blob_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "blob_size_bytes": 41528,
       "status": "MATCH"
     },
     {
@@ -892,9 +892,9 @@
       "title": "Table 4: RQ2 retrieval analysis",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "git_blob_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "blob_size_bytes": 38954,
+      "declared_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "git_blob_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "blob_size_bytes": 41528,
       "status": "MATCH"
     },
     {
@@ -902,9 +902,9 @@
       "title": "Table 5: RQ3 cost / latency",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "git_blob_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "blob_size_bytes": 38954,
+      "declared_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "git_blob_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "blob_size_bytes": 41528,
       "status": "MATCH"
     },
     {
@@ -912,9 +912,9 @@
       "title": "Table 6: Provenance / hash / evidence",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "git_blob_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "blob_size_bytes": 38954,
+      "declared_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "git_blob_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "blob_size_bytes": 41528,
       "status": "MATCH"
     },
     {
@@ -922,9 +922,9 @@
       "title": "100% Machine-Generated Figures and Tables",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "git_blob_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "blob_size_bytes": 38954,
+      "declared_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "git_blob_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "blob_size_bytes": 41528,
       "status": "MATCH"
     },
     {
@@ -1142,9 +1142,9 @@
       "title": "Classification and Ancestry Audit of PRs #8, #24\u2013#29",
       "evidence_locator": "docs/audit/pr_ancestry_audit.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "f17f742fb22513f913ef851042f9ed68049609c1a395308cfbf6ccf00b34ae1a",
-      "git_blob_hash": "f17f742fb22513f913ef851042f9ed68049609c1a395308cfbf6ccf00b34ae1a",
-      "blob_size_bytes": 21520,
+      "declared_hash": "599220c68c7cbb2b4110a6e8f311efb5037a708307860f39872a3a8a1052260c",
+      "git_blob_hash": "599220c68c7cbb2b4110a6e8f311efb5037a708307860f39872a3a8a1052260c",
+      "blob_size_bytes": 35486,
       "status": "MATCH"
     },
     {
@@ -1152,9 +1152,9 @@
       "title": "Full Diff Audit against Protected Baseline",
       "evidence_locator": "docs/audit/baseline_diff_audit.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "1f30dd9f90abc2f2c4b571f8a8a5688652b32a40c5470d512d7df781d8f8da44",
-      "git_blob_hash": "1f30dd9f90abc2f2c4b571f8a8a5688652b32a40c5470d512d7df781d8f8da44",
-      "blob_size_bytes": 8176,
+      "declared_hash": "6ab8025ac4202f4022543bb4394b7044c6502023711e24c557fcd0d3057a7663",
+      "git_blob_hash": "6ab8025ac4202f4022543bb4394b7044c6502023711e24c557fcd0d3057a7663",
+      "blob_size_bytes": 11312,
       "status": "MATCH"
     },
     {
@@ -1322,9 +1322,9 @@
       "title": "DoD #12: figures final",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "git_blob_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "blob_size_bytes": 38954,
+      "declared_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "git_blob_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "blob_size_bytes": 41528,
       "status": "MATCH"
     },
     {
@@ -1332,9 +1332,9 @@
       "title": "DoD #13: tables final",
       "evidence_locator": "reports/evidence/r9_final_artifact_inventory.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "git_blob_hash": "450b35509e2cd2d46822edccfaf3bfaa7fa47a01cff8e0c4020b018f71e9725e",
-      "blob_size_bytes": 38954,
+      "declared_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "git_blob_hash": "b4982a556745ec5cb1c18ef07abeba4cd90fbf8832b875a2d9c426d71c438974",
+      "blob_size_bytes": 41528,
       "status": "MATCH"
     },
     {
@@ -1392,9 +1392,9 @@
       "title": "Systematic Diagnosis & Repair Protocol",
       "evidence_locator": "reports/evidence/sg_evidence_audit_independent_probes_record.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "b758426c9536f5d2d0696de8a9b9ba97fded914ead5e2e7d96fc84d056b2b22a",
-      "git_blob_hash": "b758426c9536f5d2d0696de8a9b9ba97fded914ead5e2e7d96fc84d056b2b22a",
-      "blob_size_bytes": 2527,
+      "declared_hash": "6721d667714c6cd6ae227491e57b5f12f0e3f09e850c60839b1e229d9ab0913c",
+      "git_blob_hash": "6721d667714c6cd6ae227491e57b5f12f0e3f09e850c60839b1e229d9ab0913c",
+      "blob_size_bytes": 2526,
       "status": "MATCH"
     },
     {
@@ -1402,9 +1402,9 @@
       "title": "Evidence-Backed Escalation Protocol",
       "evidence_locator": "reports/evidence/sg_evidence_audit_independent_probes_record.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "b758426c9536f5d2d0696de8a9b9ba97fded914ead5e2e7d96fc84d056b2b22a",
-      "git_blob_hash": "b758426c9536f5d2d0696de8a9b9ba97fded914ead5e2e7d96fc84d056b2b22a",
-      "blob_size_bytes": 2527,
+      "declared_hash": "6721d667714c6cd6ae227491e57b5f12f0e3f09e850c60839b1e229d9ab0913c",
+      "git_blob_hash": "6721d667714c6cd6ae227491e57b5f12f0e3f09e850c60839b1e229d9ab0913c",
+      "blob_size_bytes": 2526,
       "status": "MATCH"
     },
     {
@@ -1412,9 +1412,9 @@
       "title": "Structured Response Template Compliance",
       "evidence_locator": "reports/evidence/sg_evidence_audit_independent_probes_record.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "b758426c9536f5d2d0696de8a9b9ba97fded914ead5e2e7d96fc84d056b2b22a",
-      "git_blob_hash": "b758426c9536f5d2d0696de8a9b9ba97fded914ead5e2e7d96fc84d056b2b22a",
-      "blob_size_bytes": 2527,
+      "declared_hash": "6721d667714c6cd6ae227491e57b5f12f0e3f09e850c60839b1e229d9ab0913c",
+      "git_blob_hash": "6721d667714c6cd6ae227491e57b5f12f0e3f09e850c60839b1e229d9ab0913c",
+      "blob_size_bytes": 2526,
       "status": "MATCH"
     },
     {
@@ -1422,9 +1422,9 @@
       "title": "P0 through P7 Hierarchy Enforcement",
       "evidence_locator": "reports/evidence/sg_evidence_audit_independent_probes_record.json",
       "evidence_commit_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
-      "declared_hash": "b758426c9536f5d2d0696de8a9b9ba97fded914ead5e2e7d96fc84d056b2b22a",
-      "git_blob_hash": "b758426c9536f5d2d0696de8a9b9ba97fded914ead5e2e7d96fc84d056b2b22a",
-      "blob_size_bytes": 2527,
+      "declared_hash": "6721d667714c6cd6ae227491e57b5f12f0e3f09e850c60839b1e229d9ab0913c",
+      "git_blob_hash": "6721d667714c6cd6ae227491e57b5f12f0e3f09e850c60839b1e229d9ab0913c",
+      "blob_size_bytes": 2526,
       "status": "MATCH"
     }
   ],

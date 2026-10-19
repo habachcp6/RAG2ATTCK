@@ -396,14 +396,33 @@ async function resolveArtifactToolModule(explicitPath) {
     return await tryImport(process.env.ARTIFACT_TOOL_MODULE);
   }
 
-  const defaultLocalCache =
-    "C:/Users/hahoa/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/@oai/artifact-tool/dist/artifact_tool.mjs";
+  const defaultLocalCache = path.join(
+    os.homedir(),
+    ".cache",
+    "codex-runtimes",
+    "codex-primary-runtime",
+    "dependencies",
+    "node",
+    "node_modules",
+    "@oai",
+    "artifact-tool",
+    "dist",
+    "artifact_tool.mjs"
+  );
   if (fsSync.existsSync(defaultLocalCache)) {
     const localMod = await tryImport(defaultLocalCache);
     if (localMod) return localMod;
   }
 
   return await tryImport("@oai/artifact-tool");
+}
+
+function safeResolve(presentation, id) {
+  try {
+    return presentation.resolve(id);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -610,10 +629,16 @@ async function runArtifactToolDeckUpdater(options = {}) {
 
   // Slide 6: Replace picture with verified native plot in canonical mode
   if (isCanonical) {
-    const verifiedFigDir = "C:/Users/hahoa/.codex/artifacts/rag2attck/verified-native-figures-v1";
+    const verifiedFigDir = path.join(
+      os.homedir(),
+      ".codex",
+      "artifacts",
+      "rag2attck",
+      "verified-native-figures-v1"
+    );
     const fig6Path = path.join(verifiedFigDir, "canonical_rq2_retrieval.png");
     if (fsSync.existsSync(fig6Path)) {
-      const img6 = presentation.resolve("im/7ylcjetk");
+      const img6 = safeResolve(presentation, "im/7ylcjetk");
       if (img6) {
         const fig6Bytes = await fs.readFile(fig6Path);
         img6.replace({ data: new Uint8Array(fig6Bytes), contentType: "image/png" });
@@ -900,93 +925,97 @@ async function runArtifactToolDeckUpdater(options = {}) {
 
   // Slide 9: Replace picture with editable 5-row resource table in canonical mode
   if (isCanonical) {
-    const img9 = presentation.resolve("im/u987u5cf");
+    const img9 = safeResolve(presentation, "im/u987u5cf");
     if (img9) {
       if (img9.delete) img9.delete();
       else presentation.delete("im/u987u5cf");
       console.log(`[+] Deleted Slide 9 picture im/u987u5cf to replace with native editable resource table.`);
     }
 
-    const actualHeaderPlus5Rows = [
-      ["Condition", "Mean Prompt Tok", "Mean Latency (s)", "Total Fee ($ USD)"],
-      ["no_rag", "674.3", "2.90", "$0.46714395"],
-      ["rag_k1", "1,246.5", "3.51", "$1.29723350"],
-      ["rag_k3", "2,172.4", "4.22", "$1.17888000"],
-      ["rag_k5", "3,060.2", "4.33", "$1.48311775"],
-      ["rag_k10", "5,114.3", "4.37", "$2.14938370"],
-    ];
+    const existingTablesCount =
+      slides[8].tables && slides[8].tables.items ? slides[8].tables.items.length : 0;
+    if (img9 || existingTablesCount === 0) {
+      const actualHeaderPlus5Rows = [
+        ["Condition", "Mean Prompt Tok", "Mean Latency (s)", "Total Fee ($ USD)"],
+        ["no_rag", "674.3", "2.90", "$0.46714395"],
+        ["rag_k1", "1,246.5", "3.51", "$1.29723350"],
+        ["rag_k3", "2,172.4", "4.22", "$1.17888000"],
+        ["rag_k5", "3,060.2", "4.33", "$1.48311775"],
+        ["rag_k10", "5,114.3", "4.37", "$2.14938370"],
+      ];
 
-    const table9 = slides[8].tables.add({
-      rows: 6,
-      columns: 4,
-      left: 655.97,
-      top: 129.6,
-      width: 547.2,
-      height: 260,
-      values: actualHeaderPlus5Rows,
-      columnWidths: [120, 135, 130, 162.2],
-    });
+      const table9 = slides[8].tables.add({
+        rows: 6,
+        columns: 4,
+        left: 655.97,
+        top: 129.6,
+        width: 547.2,
+        height: 260,
+        values: actualHeaderPlus5Rows,
+        columnWidths: [120, 135, 130, 162.2],
+      });
 
-    table9.styleOptions = { headerRow: true, bandedRows: true };
-    if (table9.borders && table9.borders.assign) {
-      table9.borders.assign({ style: "solid", fill: "#cbd5e1", width: 1 });
+      table9.styleOptions = { headerRow: true, bandedRows: true };
+      if (table9.borders && table9.borders.assign) {
+        table9.borders.assign({ style: "solid", fill: "#cbd5e1", width: 1 });
+      }
+
+      table9.rows[0].height = 48;
+      for (let r = 1; r <= 5; r++) {
+        table9.rows[r].height = 40;
+      }
+
+      table9.cells.block({ row: 0, column: 0, rowCount: 6, columnCount: 4 }).assign({
+        margins: { top: 2, bottom: 2, left: 6, right: 6 },
+      });
+
+      // Header styling: 26.667px (20pt)
+      table9.cells.block({
+        row: 0,
+        column: 0,
+        rowCount: 1,
+        columnCount: 4,
+      }).assign({
+        fill: "#1e3a8a",
+        textStyle: {
+          fontSize: 26.667,
+          typeface: "Calibri",
+          bold: true,
+          color: "#ffffff",
+        },
+      });
+
+      // Body styling: 24px (18pt)
+      table9.cells.block({
+        row: 1,
+        column: 0,
+        rowCount: 5,
+        columnCount: 4,
+      }).assign({
+        textStyle: {
+          fontSize: 24,
+          typeface: "Calibri",
+          color: "#1e293b",
+        },
+      });
+
+      // First column bold:
+      table9.cells.block({
+        row: 1,
+        column: 0,
+        rowCount: 5,
+        columnCount: 1,
+      }).assign({
+        textStyle: {
+          fontSize: 24,
+          typeface: "Calibri",
+          bold: true,
+          color: "#1e293b",
+        },
+      });
+
+      console.log(`[+] Created native editable 5-row resource table on Slide 9 (header 26.667px, body 24px).`);
     }
-
-    table9.rows[0].height = 48;
-    for (let r = 1; r <= 5; r++) {
-      table9.rows[r].height = 40;
-    }
-
-    table9.cells.block({ row: 0, column: 0, rowCount: 6, columnCount: 4 }).assign({
-      margins: { top: 2, bottom: 2, left: 6, right: 6 },
-    });
-
-    // Header styling: 26.667px (20pt)
-    table9.cells.block({
-      row: 0,
-      column: 0,
-      rowCount: 1,
-      columnCount: 4,
-    }).assign({
-      fill: "#1e3a8a",
-      textStyle: {
-        fontSize: 26.667,
-        typeface: "Calibri",
-        bold: true,
-        color: "#ffffff",
-      },
-    });
-
-    // Body styling: 24px (18pt)
-    table9.cells.block({
-      row: 1,
-      column: 0,
-      rowCount: 5,
-      columnCount: 4,
-    }).assign({
-      textStyle: {
-        fontSize: 24,
-        typeface: "Calibri",
-        color: "#1e293b",
-      },
-    });
-
-    // First column bold:
-    table9.cells.block({
-      row: 1,
-      column: 0,
-      rowCount: 5,
-      columnCount: 1,
-    }).assign({
-      textStyle: {
-        fontSize: 24,
-        typeface: "Calibri",
-        bold: true,
-        color: "#1e293b",
-      },
-    });
-
-    console.log(`[+] Created native editable 5-row resource table on Slide 9 (header 26.667px, body 24px).`);
   }
 
   // Slide 10, 11, 12 shape content updates in canonical mode
@@ -1115,7 +1144,7 @@ async function runArtifactToolDeckUpdater(options = {}) {
         `Chẩn đoán độc lập khâu tìm kiếm (RQ2) trên tập scorable TEST views (N=718) cho thấy Hit@10 đạt ${slots["{{S2_HIT_RATE_AT_K}}"]} (321 / 718), nghĩa là trong ${slots["{{S2_RETRIEVAL_MISS_RATE_K10}}"]} trường hợp (397 / 718), kỹ thuật đúng hoàn toàn vắng bóng trong Top-10 gửi cho LLM. Macro Recall@10 đạt ${slots["{{S2_RECALL_AT_K}}"]}. Điển hình là kỹ thuật T1136.001 với support N=95 trong tập TEST đạt 0/95 lần trúng Top-10 do khoảng cách ngữ nghĩa giữa Event ID 4720 và STIX description.`,
         "Lưu ý về bối cảnh đối chiếu lịch sử: Chỉ số Mean Rank 5.21 khi trúng và tỷ lệ 0/99 của T1136.001 là số liệu thuộc benchmark lịch sử T20 (N=756 views gồm 718 TEST + 38 DEV với 341/756 trúng Top-10, 45.11%); còn DEV Pilot chỉ gồm 20 requests (4 views x 5 điều kiện), tuyệt đối không gộp chung mẫu số với kết quả TEST chính thức.",
         "Về cơ chế embedding: Giả thuyết pha loãng ngữ cảnh vẫn chưa được kiểm chứng sau khi hoàn thành đợt so sánh này, không khẳng định quan hệ nhân quả.",
-        "Bằng chứng dự án: C:/Users/hahoa/.codex/artifacts/rag2attck/verified-native-figures-v1/canonical_rq2_retrieval.png; outputs/reproduction/tables/table_1_retrieval_diagnostics.md; tests/test_retrieval_diagnostics.py.",
+        "Bằng chứng dự án: reports/evidence/figures/canonical_rq2_retrieval.png; outputs/reproduction/tables/table_1_retrieval_diagnostics.md; tests/test_retrieval_diagnostics.py.",
       ].join("\n");
       disclaimerEditsCount++;
     }
@@ -1139,7 +1168,7 @@ async function runArtifactToolDeckUpdater(options = {}) {
         `Về hiệu năng RQ1: No-RAG đạt độ chính xác ${slots["{{S2_ACC_E2E_NO_RAG}}"]} (560/718), trong khi RAG k=10 đạt ${slots["{{S2_ACC_E2E_RAG_K10}}"]} (571/718), tăng ${slots["{{S2_ACC_DELTA_RAG_K10}}"]} (${slots["{{S2_MACRO_F1_DELTA_RAG_K10}}"]} F1). Cần phân biệt rõ: Các khoảng tin cậy liệt kê trên bảng là Absolute Accuracy 95% CIs (ví dụ no_rag là ${slots["{{S2_CI_95_NO_RAG}}"]}, k10 là ${slots["{{S2_CI_95_RAG_K10}}"]}); còn các khoảng tin cậy chênh lệch cặp (paired difference CIs vs No-RAG) đều chứa 0 (khoảng tin cậy delta của RAG k=10 là [-2.355, +5.300] pp, kiểm định McNemar thăm dò p = 0.4223 > 0.05). Do đó việc rag_k10 có độ chính xác quan sát được cao nhất chỉ mang tính mô tả thử nghiệm, không có ý nghĩa thống kê vượt trội.`,
         `Về chẩn đoán có điều kiện RQ2 (RAG k=10): P(Correct | Retrieved) = ${slots["{{S2_P_CORRECT_GIVEN_RETRIEVED}}"]} (293/321) và P(Correct | Absent) = ${slots["{{S2_P_CORRECT_GIVEN_ABSENT}}"]} (278/397; không giả định khả năng tự sửa sai nội tại). Có ${slots["{{S2_OVERLAP_MISS_AND_WRONG_K10}}"]}/147 ca phân loại sai (80.95%) nằm ở nhánh truy xuất trượt.`,
         "Về ranh giới mẫu số: Tỷ lệ provider failure trên 718 scorable records là giá trị quan sát thực nghiệm scorable failure = 0.0000. Trên toàn bộ 6,400 dispatches có 13 INCOMPLETE records được bảo toàn nguyên vẹn.",
-        "Bằng chứng dự án: C:/Users/hahoa/.codex/artifacts/rag2attck/verified-native-figures-v1/canonical_rq1_accuracy_and_macro.png; reports/experiment_protocol_v1.md.",
+        "Bằng chứng dự án: reports/evidence/figures/canonical_rq1_accuracy_and_macro.png; reports/experiment_protocol_v1.md.",
       ].join("\n");
       disclaimerEditsCount++;
     }
@@ -1152,7 +1181,7 @@ async function runArtifactToolDeckUpdater(options = {}) {
         `2. Hiệu quả đánh đổi: Hit rate chuẩn tắc trên tập scorable N=718: No-RAG là N/A (không dùng retriever); RAG k=1 đạt Hit@1 = 3.760% (27/718), tăng lên RAG k=10 đạt Hit@10 = 44.708% (321/718).`,
         `3. Hạch toán tài chính 8 chữ số thập phân chính xác: Chi phí 5 điều kiện chuẩn đã quyết toán là $6.57575890 USD ($${slots["{{S2_CANONICAL_TOTAL_USD}}"]} USD), cộng với khoản giữ chỗ thận trọng pilot $0.05264010 USD ($${slots["{{S2_PRIOR_PILOT_HOLD_USD}}"]} USD), tổng chi phí đã cam kết là $6.62839900 USD ($6.63 USD committed spend). Ngân sách khả dụng còn lại là $13.36160100 USD ($${slots["{{S2_NET_REMAINING_USD}}"]} USD) trên trần đóng băng cứng $19.99000000 USD ($${slots["{{S2_TOTAL_STUDY_BUDGET_USD}}"]} USD). Chi phí được tính toán theo ước tính thận trọng từ bảng giá đóng băng (conservative accounted tariff estimate).`,
         "4. Bối cảnh lịch sử & Ngoại lệ: DEV pilot lịch sử là 20 requests (~$0.0242 USD). Trên toàn bộ 6,400 requests có 13 INCOMPLETE records; 1 attempt API_FAILURE được retry có khoản phí thiếu usage là $0.53974560 USD.",
-        "Bằng chứng dự án: C:/Users/hahoa/.codex/artifacts/rag2attck/verified-native-figures-v1/canonical_rq3_cost_and_latency.png; config/experiment_config.json; tests/test_monetary_guard.py.",
+        "Bằng chứng dự án: reports/evidence/figures/canonical_rq3_cost_and_latency.png; config/experiment_config.json; tests/test_monetary_guard.py.",
       ].join("\n");
       disclaimerEditsCount++;
     }
@@ -1356,6 +1385,13 @@ async function runArtifactToolDeckUpdater(options = {}) {
 
   // 8. Write comprehensive audit report
   await fs.mkdir(path.dirname(auditReportPath), { recursive: true });
+  const toPortablePath = (p) => {
+    const rel = path.relative(REPO_ROOT, p);
+    if (rel && !rel.startsWith("..") && !path.isAbsolute(rel)) {
+      return rel.split(path.sep).join("/");
+    }
+    return p;
+  };
   const auditRecord = {
     fixture_only: isCanonical ? false : true,
     canonical_mode: isCanonical,
@@ -1365,8 +1401,8 @@ async function runArtifactToolDeckUpdater(options = {}) {
       : DISCLAIMER_TEXT,
     timestamp_utc: new Date().toISOString(),
     roundtrip_reimported_verified: true,
-    source_deck_path: sourceDeckPath,
-    candidate_deck_path: candidateDeckPath,
+    source_deck_path: toPortablePath(sourceDeckPath),
+    candidate_deck_path: toPortablePath(candidateDeckPath),
     before_sha256: beforeSha,
     after_sha256: afterSha,
     sha_changed: beforeSha !== afterSha,
@@ -1383,7 +1419,7 @@ async function runArtifactToolDeckUpdater(options = {}) {
     verified_bindings: verifiedBindings,
     verified_bindings_count: verifiedBindings.length,
     rendered_png_slides_count: slides.length,
-    qa_slides_directory: qaOutputDir,
+    qa_slides_directory: toPortablePath(qaOutputDir),
     dry_run: isDryRun,
     artifact_tool_binding: {
       runtime: "bundled_node_module",

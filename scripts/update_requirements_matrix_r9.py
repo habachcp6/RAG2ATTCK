@@ -1485,6 +1485,9 @@ def update_matrix_r10(
     print(f"Updated requirements matrix JSON written to {matrix_json_path}")
     print(f"Status Summary: {status_counts}")
 
+    docs_audit_matrix_md_path = repo_root / "docs/audit/requirements_traceability_matrix.md"
+    docs_audit_matrix_md_path.parent.mkdir(parents=True, exist_ok=True)
+
     # Generate Markdown Table
     lines = [
         "# RAG2ATTCK: Comprehensive Requirements Traceability Matrix v3",
@@ -1517,26 +1520,33 @@ def update_matrix_r10(
             "",
             "## 3. Requirements Traceability Matrix Table",
             "",
-            "| ID | Title | Type | Evidence Type | Evidence Locator | Tested SHA | Status | Closure Step |",
-            "|:---|:---|:---:|:---:|:---|:---:|:---:|:---|",
+            "| ID | Title | Acceptance Criterion | Type | Evidence Type | Evidence Storage | Evidence Locator | Evidence SHA-256 | Tested SHA | Evidence Commit SHA | CI Head SHA | Status | Closure Step |",
+            "|:---|:---|:---|:---:|:---:|:---:|:---|:---|:---:|:---:|:---:|:---:|:---|",
         ]
     )
 
     for req in data["requirements"]:
         req_id = req["id"]
         title = req.get("title", "")
+        acc_crit = req.get("acceptance_criterion", "")
         item_type = req.get("item_type", "")
         ev_type = req.get("evidence_type", "")
+        ev_storage = req.get("evidence_storage", "")
         ev_loc = req.get("evidence_locator", "")
-        tested_sha = (req.get("tested_code_sha") or "")[:10]
+        ev_hash = req.get("evidence_hash") or "N/A"
+        tested_sha = (req.get("tested_code_sha") or "N/A")[:10]
+        ev_commit_sha = (req.get("evidence_commit_sha") or "N/A")[:10]
+        ci_sha = (req.get("ci_head_sha") or "N/A")[:10]
         st = req.get("final_candidate_status", "")
         closure = req.get("closure_step", "")
         lines.append(
-            f"| `{req_id}` | {title} | `{item_type}` | `{ev_type}` | `{ev_loc}` | `{tested_sha}` | **`{st}`** | {closure} |"
+            f"| `{req_id}` | {title} | {acc_crit} | `{item_type}` | `{ev_type}` | `{ev_storage}` | `{ev_loc}` | `{ev_hash}` | `{tested_sha}` | `{ev_commit_sha}` | `{ci_sha}` | **`{st}`** | {closure} |"
         )
 
-    matrix_md_path.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
-    print(f"Updated requirements matrix Markdown written to {matrix_md_path}")
+    md_text = "\n".join(lines) + "\n"
+    matrix_md_path.write_text(md_text, encoding="utf-8", newline="\n")
+    docs_audit_matrix_md_path.write_text(md_text, encoding="utf-8", newline="\n")
+    print(f"Updated requirements matrix Markdown written to {matrix_md_path} and {docs_audit_matrix_md_path}")
 
 
 def main() -> int:

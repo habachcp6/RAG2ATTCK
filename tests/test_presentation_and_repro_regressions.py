@@ -386,14 +386,16 @@ def has_artifact_tool_runtime() -> bool:
     if env_module:
         return env_module != "non_existent" and Path(env_module).exists()
 
-    cached_path = Path(
-        "C:/Users/hahoa/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/@oai/artifact-tool/dist/artifact_tool.mjs"
+    cached_path = (
+        Path.home()
+        / ".cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/@oai/artifact-tool/dist/artifact_tool.mjs"
     )
     if cached_path.is_file():
         return True
 
-    bundled_node = Path(
-        "C:/Users/hahoa/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe"
+    bundled_node = (
+        Path.home()
+        / ".cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe"
     )
     node_exe = str(bundled_node) if bundled_node.is_file() else shutil.which("node")
     if node_exe:
@@ -420,8 +422,9 @@ def has_artifact_tool_runtime() -> bool:
 
 def _find_node_exe() -> str:
     """Locate bundled node.exe or PATH node binary."""
-    bundled_path = Path(
-        "C:/Users/hahoa/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe"
+    bundled_path = (
+        Path.home()
+        / ".cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe"
     )
     if bundled_path.is_file():
         return str(bundled_path)
@@ -530,13 +533,26 @@ def test_js_deck_updater_script_contract() -> None:
     not has_artifact_tool_runtime(),
     reason="Private Codex artifact-tool runtime not present in clean CI environment",
 )
-def test_js_deck_updater_execution_and_artifacts() -> None:
-    """Executes JS deck updater via node.exe and verifies all output artifacts."""
+def test_js_deck_updater_execution_and_artifacts(tmp_path: Path) -> None:
+    """Executes JS deck updater via node.exe in tmp_path and verifies all output artifacts."""
     node_exe = _find_node_exe()
     mjs_script = REPO_ROOT / "scripts" / "artifact_tool_deck_updater.mjs"
 
+    candidate_pptx = tmp_path / "fixture_populated_slides.pptx"
+    audit_file = tmp_path / "deck_updater_fixture_audit.json"
+    qa_dir = tmp_path / "fixture_slides"
+
     proc = subprocess.run(
-        [node_exe, str(mjs_script)],
+        [
+            node_exe,
+            str(mjs_script),
+            "--output-deck",
+            str(candidate_pptx),
+            "--audit-report",
+            str(audit_file),
+            "--output-qa-dir",
+            str(qa_dir),
+        ],
         capture_output=True,
         text=True,
         cwd=str(REPO_ROOT),
@@ -544,7 +560,6 @@ def test_js_deck_updater_execution_and_artifacts() -> None:
     assert proc.returncode == 0, f"JS updater failed: {proc.stderr}\n{proc.stdout}"
 
     # 1. Candidate deck assertions
-    candidate_pptx = REPO_ROOT / "reports" / "evidence" / "fixture_populated_slides.pptx"
     assert candidate_pptx.is_file(), f"Candidate deck missing: {candidate_pptx}"
     pptx_bytes = candidate_pptx.read_bytes()
     assert len(pptx_bytes) > 0, "Candidate deck must not be empty"
@@ -553,7 +568,6 @@ def test_js_deck_updater_execution_and_artifacts() -> None:
     )
 
     # 2. Audit report assertions
-    audit_file = REPO_ROOT / "reports" / "evidence" / "deck_updater_fixture_audit.json"
     assert audit_file.is_file(), f"Audit file missing: {audit_file}"
     audit = json.loads(audit_file.read_text(encoding="utf-8"))
     assert audit.get("fixture_only") is True
@@ -597,7 +611,6 @@ def test_js_deck_updater_execution_and_artifacts() -> None:
         assert expected_shape in modified_shapes
 
     # 3. Slide PNG assertions
-    qa_dir = REPO_ROOT / "reports" / "evidence" / "qa" / "fixture_slides"
     assert qa_dir.is_dir(), f"QA directory missing: {qa_dir}"
     for i in range(1, 13):
         slide_png = qa_dir / f"slide-{i}.png"

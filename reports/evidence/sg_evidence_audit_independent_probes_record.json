@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-19T03:35:04Z",
+  "timestamp": "2026-10-19T05:21:03Z",
   "repo_root": "<REPO_ROOT>",
   "section_1_reproduction_report": {
     "probe_1_1_empty_dir": {
@@ -57,8 +57,8 @@
     "passed": true,
     "exit_code": 0,
     "passed_count": 54,
-    "duration_seconds": 23.097747564315796,
-    "stdout_summary": "======================= 54 passed, 2 warnings in 21.36s ======================="
+    "duration_seconds": 22.45792293548584,
+    "stdout_summary": "======================= 54 passed, 2 warnings in 21.90s ======================="
   },
   "section_4_security_privacy": {
     "passed": true,
@@ -71,7 +71,7 @@
         "clean": true
       },
       "reports/evidence/r9_final_artifact_inventory.json": {
-        "size_bytes": 38954,
+        "size_bytes": 41528,
         "violations": [],
         "clean": true
       },

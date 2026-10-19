@@ -20,7 +20,7 @@
     36,
     37
   ],
-  "verdict": "PASS_ALL_30_PRS_AUDITED_AND_RECONCILED",
+  "verdict": "PASS_ALL_38_PRS_AUDITED_AND_RECONCILED",
   "pull_requests": [
     {
       "pr_number": 1,
@@ -33,7 +33,9 @@
       "merged_at": "2026-09-18T05:41:08Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/1",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "17a768cf8301c4588a55c074a34c76a724ae9983",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 2,
@@ -46,7 +48,9 @@
       "merged_at": "2026-09-18T16:52:04Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/2",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "cf0aa36f09c786824b7f39231505022791f7fee6",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 3,
@@ -59,7 +63,9 @@
       "merged_at": "2026-09-18T18:10:38Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/3",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "c8a1257c1256a223290c8deb1d43a533861e43f6",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 4,
@@ -72,7 +78,9 @@
       "merged_at": "2026-09-19T14:16:31Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/4",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "46b7ce0b69a92941851937985eed0c727098bda3",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 5,
@@ -85,7 +93,9 @@
       "merged_at": "2026-09-19T17:21:37Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/5",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "94104804af7726fc5da3e5d0f6c3a859edd212cb",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 6,
@@ -98,7 +108,9 @@
       "merged_at": "2026-09-20T09:35:00Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/6",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "7a0dbb9e4562bf862fc1204d3439432819ab5ba2",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 7,
@@ -111,7 +123,9 @@
       "merged_at": "2026-09-20T09:42:38Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/7",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "a2be9cb379bf02a76ed64c2196b55c057c7686d2",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 8,
@@ -124,7 +138,9 @@
       "merged_at": null,
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/8",
       "is_ancestor_of_candidate_head": false,
-      "disposition": "SUPERSEDED_TASK_BRANCH_CONTENT_INTEGRATED_IN_PR30"
+      "disposition": "SUPERSEDED_TASK_BRANCH_CONTENT_INTEGRATED_IN_PR30",
+      "merge_base_sha": "cdb19719a179dd43c868a39ca158a662ad3a0eb9",
+      "closure_or_retention_rationale": "Open draft PR (T33 comparator evidence); fully superseded by canonical closeout PR #30 and t33_lade_claim_verification_record.json. Do not merge; close post-merge in Step 4."
     },
     {
       "pr_number": 9,
@@ -137,7 +153,9 @@
       "merged_at": "2026-09-20T08:59:50Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/9",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "b96d61418fe433f495ad6aeefa576102c648334f",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 10,
@@ -150,7 +168,9 @@
       "merged_at": "2026-09-20T08:27:42Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/10",
       "is_ancestor_of_candidate_head": false,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "79e9bbeb725058558e92b0e6cd26d13d0c9ce465",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 11,
@@ -163,7 +183,9 @@
       "merged_at": "2026-09-20T08:27:45Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/11",
       "is_ancestor_of_candidate_head": false,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "79e9bbeb725058558e92b0e6cd26d13d0c9ce465",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 12,
@@ -176,7 +198,9 @@
       "merged_at": "2026-09-20T08:27:48Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/12",
       "is_ancestor_of_candidate_head": false,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "79e9bbeb725058558e92b0e6cd26d13d0c9ce465",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 13,
@@ -189,7 +213,9 @@
       "merged_at": "2026-09-20T16:10:04Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/13",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "8d997be433c36ff43f85ffc03a791fe895a65e23",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 14,
@@ -202,7 +228,9 @@
       "merged_at": "2026-09-30T16:30:54Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/14",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "3f4de8ce413062c8f76b20d03a1c7530f3c74776",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 15,
@@ -215,7 +243,9 @@
       "merged_at": "2026-09-30T16:30:54Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/15",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "3e4806cc91908b991645e9239860ec95632e24f8",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 16,
@@ -228,7 +258,9 @@
       "merged_at": "2026-09-30T16:30:54Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/16",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "96e20daa87a5d17458927b3e85ef6d8d3198d956",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 17,
@@ -241,7 +273,9 @@
       "merged_at": "2026-09-30T16:30:54Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/17",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "ebc134f2ee88abf32f50b3f1ab287c27f137df4d",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 18,
@@ -254,7 +288,9 @@
       "merged_at": "2026-09-30T16:30:54Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/18",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "d5907e2847ab79c856b723bbc4417376357c32b8",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 19,
@@ -267,7 +303,9 @@
       "merged_at": "2026-09-30T16:30:52Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/19",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "9bfa42107a5f439f25a1da30baa87c7ae0940fe6",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 20,
@@ -280,7 +318,9 @@
       "merged_at": "2026-09-30T20:56:24Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/20",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "3dc7db912e4d149ec39d0776ede742d44fa779a7",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 21,
@@ -293,7 +333,9 @@
       "merged_at": "2026-10-01T07:32:11Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/21",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "af71ad20d02f0f5d25567cd8445ad16bb41d6253",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 22,
@@ -306,7 +348,9 @@
       "merged_at": "2026-10-01T07:33:22Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/22",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "b0398a5e25cbf7abd3f3e8ca1854d9571fd903f9",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 23,
@@ -319,7 +363,9 @@
       "merged_at": "2026-10-01T19:01:21Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/23",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "8265feafe169776df744f29855463f6388e266b1",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 24,
@@ -332,7 +378,9 @@
       "merged_at": null,
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/24",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "INTEGRATED_INTO_PR30_SUPERSEDED_BRANCH"
+      "disposition": "INTEGRATED_INTO_PR30_SUPERSEDED_BRANCH",
+      "merge_base_sha": "e896b6fba01feb50fe5db277c9d9ce135b4ba23f",
+      "closure_or_retention_rationale": "Open PR (T22 full 5-condition live benchmark runner); code and tests integrated into PR #30 ancestry. Do not merge separately; close post-merge in Step 4."
     },
     {
       "pr_number": 25,
@@ -345,7 +393,9 @@
       "merged_at": null,
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/25",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "INTEGRATED_INTO_PR30_SUPERSEDED_BRANCH"
+      "disposition": "INTEGRATED_INTO_PR30_SUPERSEDED_BRANCH",
+      "merge_base_sha": "28708013efece823ffc2e076ee5dccee6286f65a",
+      "closure_or_retention_rationale": "Open PR (T32 scientific report draft); superseded by canonical 30-section report in PR #30. Do not merge; close post-merge in Step 4."
     },
     {
       "pr_number": 26,
@@ -358,7 +408,9 @@
       "merged_at": null,
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/26",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "INTEGRATED_INTO_PR30_SUPERSEDED_BRANCH"
+      "disposition": "INTEGRATED_INTO_PR30_SUPERSEDED_BRANCH",
+      "merge_base_sha": "d679746c08fb3df2145c6d3269cd74872de7295f",
+      "closure_or_retention_rationale": "Open PR (T30/T31 evaluation synthesis); superseded by canonical_metric_bundle_v2.json in PR #30. Do not merge; close post-merge in Step 4."
     },
     {
       "pr_number": 27,
@@ -371,7 +423,9 @@
       "merged_at": null,
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/27",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "INTEGRATED_INTO_PR30_SUPERSEDED_BRANCH"
+      "disposition": "INTEGRATED_INTO_PR30_SUPERSEDED_BRANCH",
+      "merge_base_sha": "fe9fd9cbacc9614d24029fe3f751fc6f90b3f027",
+      "closure_or_retention_rationale": "Open PR (T34 figures and tables); superseded by canonical figures/tables in PR #30. Do not merge; close post-merge in Step 4."
     },
     {
       "pr_number": 28,
@@ -384,7 +438,9 @@
       "merged_at": null,
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/28",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "INTEGRATED_INTO_PR30_SUPERSEDED_BRANCH"
+      "disposition": "INTEGRATED_INTO_PR30_SUPERSEDED_BRANCH",
+      "merge_base_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
+      "closure_or_retention_rationale": "Open PR (T35 presentation deck); superseded by 12-slide Vietnamese deck in PR #30. Do not merge; close post-merge in Step 4."
     },
     {
       "pr_number": 29,
@@ -397,7 +453,9 @@
       "merged_at": null,
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/29",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "INTEGRATED_INTO_PR30_SUPERSEDED_BRANCH"
+      "disposition": "INTEGRATED_INTO_PR30_SUPERSEDED_BRANCH",
+      "merge_base_sha": "9c5d6c8ac1e7bc5bb85cef9206f79ef1a43348f7",
+      "closure_or_retention_rationale": "Open PR (T36/T37 reproducibility package); superseded by public_v4_candidate_20261003.zip and PR #30. Do not merge; close post-merge in Step 4."
     },
     {
       "pr_number": 30,
@@ -410,7 +468,9 @@
       "merged_at": null,
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/30",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "ACTIVE_CANDIDATE_INTEGRATION_PR"
+      "disposition": "ACTIVE_CANDIDATE_INTEGRATION_PR",
+      "merge_base_sha": "5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383",
+      "closure_or_retention_rationale": "ACTIVE CANONICAL FINALIZATION CANDIDATE (codex/finalization-20261003). Retain open for human merge authorization."
     },
     {
       "pr_number": 31,
@@ -423,7 +483,9 @@
       "merged_at": "2026-10-02T19:55:10Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/31",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "b69a6909acda4c7588744acc7e1d6c20bfce2612",
+      "closure_or_retention_rationale": "Merged into main ancestry (80dbeb3f); retained in permanent git history."
     },
     {
       "pr_number": 32,
@@ -436,7 +498,9 @@
       "merged_at": "2026-10-02T21:54:08Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/32",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "closure_or_retention_rationale": "Merged into main ancestry (80dbeb3f); retained in permanent git history."
     },
     {
       "pr_number": 33,
@@ -449,7 +513,9 @@
       "merged_at": "2026-10-03T07:45:06Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/33",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "e28fa8c54647a474d370445511b418e4b220ebad",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 34,
@@ -462,7 +528,9 @@
       "merged_at": "2026-10-02T23:56:22Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/34",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "e706fc20b60212a0a821c34ae3f9707aa6395c42",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 35,
@@ -475,7 +543,9 @@
       "merged_at": "2026-10-03T07:45:06Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/35",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "a9a56f8bdba12e733e32cd0473b81b0b45ded71a",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
     },
     {
       "pr_number": 36,
@@ -488,7 +558,9 @@
       "merged_at": null,
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/36",
       "is_ancestor_of_candidate_head": false,
-      "disposition": "SUPERSEDED_TASK_BRANCH_CONTENT_INTEGRATED_IN_PR30"
+      "disposition": "SUPERSEDED_TASK_BRANCH_CONTENT_INTEGRATED_IN_PR30",
+      "merge_base_sha": "4fafdb290dac59070a43de33f7e299bbb25782e3",
+      "closure_or_retention_rationale": "Open PR (intermediate finalization branch); superseded by PR #30. Do not merge; close post-merge in Step 4."
     },
     {
       "pr_number": 37,
@@ -501,7 +573,9 @@
       "merged_at": null,
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/37",
       "is_ancestor_of_candidate_head": false,
-      "disposition": "SUPERSEDED_TASK_BRANCH_CONTENT_INTEGRATED_IN_PR30"
+      "disposition": "SUPERSEDED_TASK_BRANCH_CONTENT_INTEGRATED_IN_PR30",
+      "merge_base_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "closure_or_retention_rationale": "Open PR (intermediate finalization branch); superseded by PR #30. Do not merge; close post-merge in Step 4."
     },
     {
       "pr_number": 38,
@@ -514,7 +588,131 @@
       "merged_at": "2026-10-03T07:45:06Z",
       "url": "https://github.com/habachcp6/RAG2ATTCK/pull/38",
       "is_ancestor_of_candidate_head": true,
-      "disposition": "MERGED_IN_MAIN_ANCESTRY"
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "merge_base_sha": "5e018bddc85036f02af5c67a4b59319c26fdc301",
+      "closure_or_retention_rationale": "Merged into main ancestry prior to baseline 80dbeb3f; retained in git history."
+    }
+  ],
+  "target_closeout_prs": [
+    {
+      "pr_number": 8,
+      "state": "OPEN",
+      "head_ref_name": "docs/t33-related-work",
+      "head_sha": "6783f20971cbff91f105d0280ddd07cb0925aab0",
+      "merge_base_sha": "cdb19719a179dd43c868a39ca158a662ad3a0eb9",
+      "is_ancestor_of_candidate_head": false,
+      "disposition": "SUPERSEDED_TASK_BRANCH_CONTENT_INTEGRATED_IN_PR30",
+      "closure_or_retention_rationale": "Open draft PR (T33 comparator evidence); fully superseded by canonical closeout PR #30 and t33_lade_claim_verification_record.json. Do not merge; close post-merge in Step 4."
+    },
+    {
+      "pr_number": 24,
+      "state": "OPEN",
+      "head_ref_name": "codex/s1-audit-recovery",
+      "head_sha": "e896b6fba01feb50fe5db277c9d9ce135b4ba23f",
+      "merge_base_sha": "e896b6fba01feb50fe5db277c9d9ce135b4ba23f",
+      "is_ancestor_of_candidate_head": true,
+      "disposition": "INTEGRATED_INTO_PR30_SUPERSEDED_BRANCH",
+      "closure_or_retention_rationale": "Open PR (T22 full 5-condition live benchmark runner); code and tests integrated into PR #30 ancestry. Do not merge separately; close post-merge in Step 4."
+    },
+    {
+      "pr_number": 25,
+      "state": "OPEN",
+      "head_ref_name": "codex/s1-report-related-work",
+      "head_sha": "28708013efece823ffc2e076ee5dccee6286f65a",
+      "merge_base_sha": "28708013efece823ffc2e076ee5dccee6286f65a",
+      "is_ancestor_of_candidate_head": true,
+      "disposition": "INTEGRATED_INTO_PR30_SUPERSEDED_BRANCH",
+      "closure_or_retention_rationale": "Open PR (T32 scientific report draft); superseded by canonical 30-section report in PR #30. Do not merge; close post-merge in Step 4."
+    },
+    {
+      "pr_number": 26,
+      "state": "OPEN",
+      "head_ref_name": "codex/s1-reproducibility-presentation",
+      "head_sha": "d679746c08fb3df2145c6d3269cd74872de7295f",
+      "merge_base_sha": "d679746c08fb3df2145c6d3269cd74872de7295f",
+      "is_ancestor_of_candidate_head": true,
+      "disposition": "INTEGRATED_INTO_PR30_SUPERSEDED_BRANCH",
+      "closure_or_retention_rationale": "Open PR (T30/T31 evaluation synthesis); superseded by canonical_metric_bundle_v2.json in PR #30. Do not merge; close post-merge in Step 4."
+    },
+    {
+      "pr_number": 27,
+      "state": "OPEN",
+      "head_ref_name": "codex/s1-evaluator-prep",
+      "head_sha": "fe9fd9cbacc9614d24029fe3f751fc6f90b3f027",
+      "merge_base_sha": "fe9fd9cbacc9614d24029fe3f751fc6f90b3f027",
+      "is_ancestor_of_candidate_head": true,
+      "disposition": "INTEGRATED_INTO_PR30_SUPERSEDED_BRANCH",
+      "closure_or_retention_rationale": "Open PR (T34 figures and tables); superseded by canonical figures/tables in PR #30. Do not merge; close post-merge in Step 4."
+    },
+    {
+      "pr_number": 28,
+      "state": "OPEN",
+      "head_ref_name": "codex/s1-integrated-audit",
+      "head_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
+      "merge_base_sha": "5754f45f4c46794bf1025bf4ee11644eb9289eb6",
+      "is_ancestor_of_candidate_head": true,
+      "disposition": "INTEGRATED_INTO_PR30_SUPERSEDED_BRANCH",
+      "closure_or_retention_rationale": "Open PR (T35 presentation deck); superseded by 12-slide Vietnamese deck in PR #30. Do not merge; close post-merge in Step 4."
+    },
+    {
+      "pr_number": 29,
+      "state": "OPEN",
+      "head_ref_name": "codex/s2-terminal-validator",
+      "head_sha": "9c5d6c8ac1e7bc5bb85cef9206f79ef1a43348f7",
+      "merge_base_sha": "9c5d6c8ac1e7bc5bb85cef9206f79ef1a43348f7",
+      "is_ancestor_of_candidate_head": true,
+      "disposition": "INTEGRATED_INTO_PR30_SUPERSEDED_BRANCH",
+      "closure_or_retention_rationale": "Open PR (T36/T37 reproducibility package); superseded by public_v4_candidate_20261003.zip and PR #30. Do not merge; close post-merge in Step 4."
+    },
+    {
+      "pr_number": 30,
+      "state": "OPEN",
+      "head_ref_name": "codex/finalization-20261003",
+      "head_sha": "5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383",
+      "merge_base_sha": "5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383",
+      "is_ancestor_of_candidate_head": true,
+      "disposition": "ACTIVE_CANDIDATE_INTEGRATION_PR",
+      "closure_or_retention_rationale": "ACTIVE CANONICAL FINALIZATION CANDIDATE (codex/finalization-20261003). Retain open for human merge authorization."
+    },
+    {
+      "pr_number": 31,
+      "state": "MERGED",
+      "head_ref_name": "codex/finalization-track-a-c",
+      "head_sha": "b69a6909acda4c7588744acc7e1d6c20bfce2612",
+      "merge_base_sha": "b69a6909acda4c7588744acc7e1d6c20bfce2612",
+      "is_ancestor_of_candidate_head": true,
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "closure_or_retention_rationale": "Merged into main ancestry (80dbeb3f); retained in permanent git history."
+    },
+    {
+      "pr_number": 32,
+      "state": "MERGED",
+      "head_ref_name": "codex/finalization-bundle-v2",
+      "head_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "merge_base_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "is_ancestor_of_candidate_head": true,
+      "disposition": "MERGED_IN_MAIN_ANCESTRY",
+      "closure_or_retention_rationale": "Merged into main ancestry (80dbeb3f); retained in permanent git history."
+    },
+    {
+      "pr_number": 36,
+      "state": "OPEN",
+      "head_ref_name": "codex/finalization-slide-renderer",
+      "head_sha": "7348f3448d279b2e4e1278c18b984cd3209ad750",
+      "merge_base_sha": "4fafdb290dac59070a43de33f7e299bbb25782e3",
+      "is_ancestor_of_candidate_head": false,
+      "disposition": "SUPERSEDED_TASK_BRANCH_CONTENT_INTEGRATED_IN_PR30",
+      "closure_or_retention_rationale": "Open PR (intermediate finalization branch); superseded by PR #30. Do not merge; close post-merge in Step 4."
+    },
+    {
+      "pr_number": 37,
+      "state": "OPEN",
+      "head_ref_name": "codex/public-v4-package",
+      "head_sha": "46cc7d35e5095d7f656b60fe7e255e8768ff1bac",
+      "merge_base_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+      "is_ancestor_of_candidate_head": false,
+      "disposition": "SUPERSEDED_TASK_BRANCH_CONTENT_INTEGRATED_IN_PR30",
+      "closure_or_retention_rationale": "Open PR (intermediate finalization branch); superseded by PR #30. Do not merge; close post-merge in Step 4."
     }
   ]
 }

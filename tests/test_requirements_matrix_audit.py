@@ -165,3 +165,26 @@ def test_premature_human_gate_verified_status_fails_closed(tmp_path: Path) -> No
     assert exit_code == 1
     assert report["summary"]["audit_verdict"] == "FAIL_INVALID_URL_OR_GATE_BINDING"
     assert report["summary"]["invalid_url_or_gate_bindings"] == 1
+
+
+def test_git_tracked_missing_hash_fails_closed(tmp_path: Path) -> None:
+    """Negative test: git_tracked requirement with missing evidence_hash fails closed."""
+    data = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
+    for req in data["requirements"]:
+        if req["id"] == "A.01-RUN_ID":
+            req["evidence_hash"] = None
+            break
+
+    tampered_matrix = tmp_path / "tampered_missing_hash_matrix.json"
+    tampered_matrix.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    report, exit_code = audit_requirements_matrix(
+        repo_root=REPO_ROOT,
+        matrix_path=tampered_matrix,
+        check_git_index=False,
+    )
+
+    assert exit_code == 1
+    assert report["summary"]["audit_verdict"] == "FAIL_GIT_BLOB_HASH_MISMATCH"
+    assert report["summary"]["hash_mismatches"] == 1
+

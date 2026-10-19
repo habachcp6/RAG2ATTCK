@@ -543,7 +543,7 @@ def generate_inventory(
     }
 
     # Scientific Reports
-    report_specs = {
+    report_specs: Dict[str, Dict[str, str]] = {
         "canonical_populated_report_md": {
             "rel_path": "reports/evidence/canonical_populated_report.md",
             "expected_sha256": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
@@ -553,6 +553,11 @@ def generate_inventory(
             "rel_path": "reports/evidence/canonical_populated_report.docx",
             "expected_sha256": "25fbed2e7227456345fba407fed1b1ed476dd484a0841f805718fc78acdf783a",
             "type": "docx",
+        },
+        "canonical_populated_report_pdf": {
+            "rel_path": "reports/evidence/canonical_populated_report.pdf",
+            "expected_sha256": "e47a8eae2b8f64a878d3b6eb49fc5d6db341dac311bdbd8173d25f610b343514",
+            "type": "pdf",
         },
         "populated_report_slots_canonical": {
             "rel_path": "reports/evidence/populated_report_slots_canonical.json",
@@ -565,6 +570,17 @@ def generate_inventory(
             "type": "markdown",
         },
     }
+    if (repo_root / "docs/report").is_dir():
+        report_specs["docs_scientific_report_md"] = {
+            "rel_path": "docs/report/scientific_report.md",
+            "expected_sha256": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
+            "type": "markdown",
+        }
+        report_specs["docs_scientific_report_docx"] = {
+            "rel_path": "docs/report/scientific_report.docx",
+            "expected_sha256": "25fbed2e7227456345fba407fed1b1ed476dd484a0841f805718fc78acdf783a",
+            "type": "docx",
+        }
 
     scientific_reports: Dict[str, Any] = {}
     for key, spec in report_specs.items():
@@ -581,6 +597,8 @@ def generate_inventory(
                 valid_struct = check_json_structure(p)
             elif spec["type"] == "docx":
                 valid_struct = check_docx_structure(p)
+            elif spec["type"] == "pdf":
+                valid_struct = check_pdf_structure(p)
             elif spec["type"] == "markdown":
                 valid_struct = p.stat().st_size > 100
         if info["exists"] and not valid_struct:
@@ -592,7 +610,7 @@ def generate_inventory(
             structure_checked=valid_struct,
             numerical_checked=info["verified"],
             rendered=True,
-            visually_reviewed=False,  # Updated after QA validation for DOCX
+            visually_reviewed=False,  # Updated after QA validation for DOCX/PDF
         )
         scientific_reports[key] = info
 
@@ -725,6 +743,14 @@ def generate_inventory(
         scientific_reports["canonical_populated_report_docx"]["lifecycle_states"][
             "VISUALLY_REVIEWED"
         ] = True
+        if "canonical_populated_report_pdf" in scientific_reports:
+            scientific_reports["canonical_populated_report_pdf"]["lifecycle_states"][
+                "VISUALLY_REVIEWED"
+            ] = True
+        if "docs_scientific_report_docx" in scientific_reports:
+            scientific_reports["docs_scientific_report_docx"]["lifecycle_states"][
+                "VISUALLY_REVIEWED"
+            ] = True
         presentation_deck["slides_pptx"]["lifecycle_states"]["VISUALLY_REVIEWED"] = True
         for pname in qa_slides:
             qa_slides[pname]["lifecycle_states"]["VISUALLY_REVIEWED"] = True
@@ -887,17 +913,22 @@ def generate_inventory(
         verdict = "PASS_ALL_ARTIFACTS_VERIFIED"
         exit_code = 0
 
+    lineage_block = {
+        "historical_r9_inventory_ref": "reports/evidence/historical/r9_final_artifact_inventory_20261003.json",
+        "historical_r9_inventory_sha256": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+        "historical_visual_qa_record_ref": "reports/evidence/historical/visual_qa_inspection_record_20261003.json",
+        "historical_visual_qa_record_sha256": "dd3e5d5a0e61bf7aef233376f52256ec7c06a2cbea266963d154146acbae8da5",
+        "errata_record_ref": "reports/evidence/report_revision_errata_record.json",
+        "errata_markdown_ref": "reports/evidence/report_revision_errata_record.md",
+    }
+
     inventory: Dict[str, Any] = {
         "schema_version": "r9_final_artifact_inventory_v1",
         "timestamp_utc": "2026-10-19T03:18:00Z",
-        "closeout_errata_lineage": {
-            "historical_r9_inventory_ref": "reports/evidence/historical/r9_final_artifact_inventory_20261003.json",
-            "historical_r9_inventory_sha256": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
-            "historical_visual_qa_record_ref": "reports/evidence/historical/visual_qa_inspection_record_20261003.json",
-            "historical_visual_qa_record_sha256": "dd3e5d5a0e61bf7aef233376f52256ec7c06a2cbea266963d154146acbae8da5",
-            "errata_record_ref": "reports/evidence/report_revision_errata_record.json",
-            "errata_markdown_ref": "reports/evidence/report_revision_errata_record.md",
-        },
+        "source_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+        "supersedes_historical_inventory": "reports/evidence/historical/r9_final_artifact_inventory_20261003.json",
+        "historical_lineage": lineage_block,
+        "closeout_errata_lineage": lineage_block,
         "lifecycle_state_definitions": {
             "FILE_PRESENT": "File exists on disk at expected repo-relative path",
             "HASH_VERIFIED": "SHA-256 computed from disk matches cryptographic ground truth",

@@ -76,6 +76,37 @@
         "Section 5.4 (TTP Mapping), Tables 4-5, pages 16-18",
         "Section 5.5 (Evaluation of Tagging Summary), Table 6, pages 17-19"
       ]
+    },
+    "token_overhead": {
+      "verified_value": "~13.8k-15.6k input tokens per window for gpt-oss-120B (Table 2, page 12); full raw MITRE ATT&CK knowledge base exceeds practical context limits without summarization or RAG (Section 2.2 page 3, Section 5.2 page 14, Section 7 page 20).",
+      "source_locations": [
+        "Section 2.2 (Challenges in Applying LLMs to APT Detection), page 3",
+        "Section 5.2 (APT Detection), Table 2, pages 12-14",
+        "Section 7 (Conclusion), page 20"
+      ]
     }
-  }
+  },
+  "verification_timeline": [
+    {
+      "stage": 1,
+      "date": "2026-09-22",
+      "event": "Initial PR #8 comparator check",
+      "commit_sha": "6783f20971cbff91f105d0280ddd07cb0925aab0",
+      "status": "METADATA_AND_ABSTRACT_ONLY_DUE_TO_SPRINGER_PAYWALL"
+    },
+    {
+      "stage": 2,
+      "date": "2026-10-03",
+      "event": "Supervisor bibliography verification pass (reports/evidence/supervisor_bibliography_review_20261003.md)",
+      "status": "TRANSIENT_HTTP_TIMEOUT_ON_STONY_BROOK_AUTHOR_HOST"
+    },
+    {
+      "stage": 3,
+      "date": "2026-10-19",
+      "event": "Closeout full-text verification of 28-page author manuscript PDF (LADE-2026.pdf)",
+      "artifact_sha256": "6e8384569254bc4cf82dd4d0191746907ff40fa76016275946651cf47d6f4985",
+      "status": "FULL_TEXT_VERIFIED_ALL_CLAIMS_RECONCILED"
+    }
+  ]
 }
+

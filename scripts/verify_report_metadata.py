@@ -24,8 +24,15 @@ from pathlib import Path
 # Ensure repo root is on sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import docx
-from docx.shared import RGBColor
+import xml.etree.ElementTree as ET
+import zipfile
+
+try:
+    import docx
+    from docx.shared import RGBColor
+except ImportError:
+    docx = None  # type: ignore[assignment]
+    RGBColor = None  # type: ignore[assignment]
 
 from src.evaluation.experiment_metrics import (
     EvaluationInputs,
@@ -106,21 +113,54 @@ def verify_markdown_table6(md_path: Path) -> dict[str, str]:
     return verified_hashes
 
 
+W_NS = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+
+
 def verify_docx_table6(docx_path: Path, verified_hashes: dict[tuple[str, str], str]):
     """Verify Table 6 in generated DOCX matches verified hashes."""
     print("--- 2. Verifying DOCX Table 6 Manifest ---")
-    doc = docx.Document(str(docx_path))
-    t6 = None
-    for t in doc.tables:
-        if len(t.columns) == 4 and "Asset Description" in t.rows[0].cells[0].text:
-            t6 = t
+    if docx is not None:
+        doc = docx.Document(str(docx_path))
+        t6 = None
+        for t in doc.tables:
+            if len(t.columns) == 4 and "Asset Description" in t.rows[0].cells[0].text:
+                t6 = t
+                break
+
+        assert t6 is not None, "Table 6 not found in DOCX"
+        for r in t6.rows[1:]:
+            path_cell = r.cells[1].text.strip()
+            type_cell = r.cells[2].text.strip()
+            hash_cell = r.cells[3].text.strip()
+            key = (path_cell, type_cell)
+            if key in verified_hashes:
+                expected = verified_hashes[key]
+                assert expected == hash_cell, (
+                    f"DOCX Table 6 mismatch for {key}: expected {expected}, got {hash_cell}"
+                )
+                print(
+                    f"  [OK] DOCX Table 6 matches: {path_cell} ({type_cell}) -> {hash_cell[:16]}..."
+                )
+        return
+
+    with zipfile.ZipFile(docx_path, "r") as zf:
+        root = ET.fromstring(zf.read("word/document.xml"))
+    t6_rows = None
+    for tbl in root.iter(f"{W_NS}tbl"):
+        rows = list(tbl.findall(f"{W_NS}tr"))
+        if not rows:
+            continue
+        first_cells = ["".join(tc.itertext()).strip() for tc in rows[0].findall(f"{W_NS}tc")]
+        if len(first_cells) == 4 and "Asset Description" in first_cells[0]:
+            t6_rows = rows
             break
 
-    assert t6 is not None, "Table 6 not found in DOCX"
-    for r in t6.rows[1:]:
-        path_cell = r.cells[1].text.strip()
-        type_cell = r.cells[2].text.strip()
-        hash_cell = r.cells[3].text.strip()
+    assert t6_rows is not None, "Table 6 not found in DOCX"
+    for r in t6_rows[1:]:
+        cells = ["".join(tc.itertext()).strip() for tc in r.findall(f"{W_NS}tc")]
+        if len(cells) < 4:
+            continue
+        path_cell, type_cell, hash_cell = cells[1], cells[2], cells[3]
         key = (path_cell, type_cell)
         if key in verified_hashes:
             expected = verified_hashes[key]
@@ -215,32 +255,84 @@ def verify_evaluator_zero_denominator_cases():
 def verify_docx_formatting_invariants(docx_path: Path):
     """Verify DOCX visual formatting, Title color, References numbering, and table widths."""
     print("--- 4. Verifying DOCX Formatting Invariants ---")
-    doc = docx.Document(str(docx_path))
+    if docx is not None:
+        doc = docx.Document(str(docx_path))
 
-    # Title check
-    p0 = doc.paragraphs[0]
-    assert p0.text.startswith("Evaluating MITRE ATT&CK-Grounded RAG"), "P0 is not title"
-    assert "w:pBdr" not in p0._element.xml, "Title paragraph contains w:pBdr"
-    for r in p0.runs:
-        if r.font.color and r.font.color.rgb:
-            assert r.font.color.rgb == RGBColor(0, 0, 0), f"Title run not black: {r.font.color.rgb}"
+        # Title check
+        p0 = doc.paragraphs[0]
+        assert p0.text.startswith("Evaluating MITRE ATT&CK-Grounded RAG"), "P0 is not title"
+        assert "w:pBdr" not in p0._element.xml, "Title paragraph contains w:pBdr"
+        for r in p0.runs:
+            if r.font.color and r.font.color.rgb:
+                assert r.font.color.rgb == RGBColor(0, 0, 0), (
+                    f"Title run not black: {r.font.color.rgb}"
+                )
+        print("  [OK] Title paragraph: pure black, no border")
+
+        # References numbering check
+        ref_paragraphs = [p for p in doc.paragraphs if re.match(r"^\[\d+\]\s+", p.text.strip())]
+        assert len(ref_paragraphs) == 13, f"Expected 13 references, got {len(ref_paragraphs)}"
+        for idx, p in enumerate(ref_paragraphs, 1):
+            assert p.text.strip().startswith(f"[{idx}]"), f"Ref {idx} does not start with [{idx}]"
+            assert p.style.name != "List Number", f"Ref {idx} uses List Number style"
+        print(
+            "  [OK] References: exactly 13 items statically numbered [1]..[13], no List Number style"
+        )
+
+        # Table widths check
+        for idx, table in enumerate(doc.tables):
+            total_w = sum(col.width.inches for col in table.columns if col.width)
+            assert total_w <= 6.55, (
+                f"Table {idx} total width {total_w:.2f}in exceeds printable width 6.50in"
+            )
+        print(f"  [OK] All {len(doc.tables)} tables have width <= 6.50in in portrait mode")
+        return
+
+    with zipfile.ZipFile(docx_path, "r") as zf:
+        root = ET.fromstring(zf.read("word/document.xml"))
+    body = root.find(f"{W_NS}body")
+    assert body is not None, "Missing w:body in DOCX"
+    paragraphs = list(body.findall(f"{W_NS}p"))
+    assert paragraphs, "No paragraphs in DOCX"
+
+    p0 = paragraphs[0]
+    p0_text = "".join(p0.itertext()).strip()
+    assert p0_text.startswith("Evaluating MITRE ATT&CK-Grounded RAG"), "P0 is not title"
+    assert p0.find(f".//{W_NS}pBdr") is None, "Title paragraph contains w:pBdr"
+    for color_el in p0.findall(f".//{W_NS}color"):
+        val = color_el.attrib.get(f"{W_NS}val", "000000").upper()
+        assert val in ("000000", "AUTO"), f"Title run not black: {val}"
     print("  [OK] Title paragraph: pure black, no border")
 
-    # References numbering check
-    ref_paragraphs = [p for p in doc.paragraphs if re.match(r"^\[\d+\]\s+", p.text.strip())]
+    ref_paragraphs = [
+        p for p in paragraphs if re.match(r"^\[\d+\]\s+", "".join(p.itertext()).strip())
+    ]
     assert len(ref_paragraphs) == 13, f"Expected 13 references, got {len(ref_paragraphs)}"
     for idx, p in enumerate(ref_paragraphs, 1):
-        assert p.text.strip().startswith(f"[{idx}]"), f"Ref {idx} does not start with [{idx}]"
-        assert p.style.name != "List Number", f"Ref {idx} uses List Number style"
+        p_txt = "".join(p.itertext()).strip()
+        assert p_txt.startswith(f"[{idx}]"), f"Ref {idx} does not start with [{idx}]"
+        for pstyle in p.findall(f".//{W_NS}pStyle"):
+            assert pstyle.attrib.get(f"{W_NS}val") != "ListNumber", (
+                f"Ref {idx} uses List Number style"
+            )
     print("  [OK] References: exactly 13 items statically numbered [1]..[13], no List Number style")
 
-    # Table widths check
-    for idx, table in enumerate(doc.tables):
-        total_w = sum(col.width.inches for col in table.columns if col.width)
+    tables = list(body.findall(f"{W_NS}tbl"))
+    for idx, tbl in enumerate(tables):
+        grid_cols = tbl.findall(f"./{W_NS}tblGrid/{W_NS}gridCol")
+        if grid_cols:
+            total_twips = sum(int(gc.attrib.get(f"{W_NS}w", "0")) for gc in grid_cols)
+        else:
+            first_tr = tbl.find(f"{W_NS}tr")
+            total_twips = 0
+            if first_tr is not None:
+                for tc_w in first_tr.findall(f"./{W_NS}tc/{W_NS}tcPr/{W_NS}tcW"):
+                    total_twips += int(tc_w.attrib.get(f"{W_NS}w", "0"))
+        total_w = total_twips / 1440.0
         assert total_w <= 6.55, (
             f"Table {idx} total width {total_w:.2f}in exceeds printable width 6.50in"
         )
-    print(f"  [OK] All {len(doc.tables)} tables have width <= 6.50in in portrait mode")
+    print(f"  [OK] All {len(tables)} tables have width <= 6.50in in portrait mode")
 
 
 def verify_stix_v19_2_census(md_path: Path):

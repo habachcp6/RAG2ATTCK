@@ -251,7 +251,7 @@ def audit_requirements_matrix(
         disk_sha256 = hashlib.sha256(raw_bytes).hexdigest()
         blob_sha256 = disk_sha256
 
-        if declared_hash is not None:
+        if declared_hash:
             if declared_hash != disk_sha256 or declared_hash != blob_sha256:
                 hash_mismatches.append(
                     {
@@ -267,9 +267,22 @@ def audit_requirements_matrix(
                 binding_status = "MISMATCH"
             else:
                 binding_status = "MATCH"
-        else:
+        elif storage == "policy_code_reference" or ev_type == "POLICY_CODE_REFERENCE":
             # policy_code_reference without fixed declared_hash: file exists and is git-tracked
             binding_status = "VERIFIED_CODE_REFERENCE"
+        else:
+            hash_mismatches.append(
+                {
+                    "requirement_id": req_id,
+                    "title": title,
+                    "evidence_locator": locator,
+                    "declared_hash": declared_hash,
+                    "git_blob_hash": blob_sha256,
+                    "disk_hash": disk_sha256,
+                    "reason": "git_tracked requirement is missing required evidence_hash (declared_hash is null or empty)",
+                }
+            )
+            binding_status = "MISMATCH"
 
         git_blob_bindings.append(
             {

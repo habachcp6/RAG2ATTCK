@@ -1,6 +1,16 @@
 {
   "schema_version": "r9_final_artifact_inventory_v1",
   "timestamp_utc": "2026-10-19T03:18:00Z",
+  "source_sha": "c8eb9d1634cd96f0d14d7dbd4b6416e21b011944",
+  "supersedes_historical_inventory": "reports/evidence/historical/r9_final_artifact_inventory_20261003.json",
+  "historical_lineage": {
+    "historical_r9_inventory_ref": "reports/evidence/historical/r9_final_artifact_inventory_20261003.json",
+    "historical_r9_inventory_sha256": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+    "historical_visual_qa_record_ref": "reports/evidence/historical/visual_qa_inspection_record_20261003.json",
+    "historical_visual_qa_record_sha256": "dd3e5d5a0e61bf7aef233376f52256ec7c06a2cbea266963d154146acbae8da5",
+    "errata_record_ref": "reports/evidence/report_revision_errata_record.json",
+    "errata_markdown_ref": "reports/evidence/report_revision_errata_record.md"
+  },
   "closeout_errata_lineage": {
     "historical_r9_inventory_ref": "reports/evidence/historical/r9_final_artifact_inventory_20261003.json",
     "historical_r9_inventory_sha256": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
@@ -111,6 +121,22 @@
         "VISUALLY_REVIEWED": true
       }
     },
+    "canonical_populated_report_pdf": {
+      "exists": true,
+      "repo_relative_path": "reports/evidence/canonical_populated_report.pdf",
+      "size_bytes": 1290068,
+      "sha256": "e47a8eae2b8f64a878d3b6eb49fc5d6db341dac311bdbd8173d25f610b343514",
+      "expected_sha256": "e47a8eae2b8f64a878d3b6eb49fc5d6db341dac311bdbd8173d25f610b343514",
+      "verified": true,
+      "lifecycle_states": {
+        "FILE_PRESENT": true,
+        "HASH_VERIFIED": true,
+        "STRUCTURE_CHECKED": true,
+        "NUMERICAL_CHECKED": true,
+        "RENDERED": true,
+        "VISUALLY_REVIEWED": true
+      }
+    },
     "populated_report_slots_canonical": {
       "exists": true,
       "repo_relative_path": "reports/evidence/populated_report_slots_canonical.json",
@@ -141,6 +167,38 @@
         "NUMERICAL_CHECKED": true,
         "RENDERED": true,
         "VISUALLY_REVIEWED": false
+      }
+    },
+    "docs_scientific_report_md": {
+      "exists": true,
+      "repo_relative_path": "docs/report/scientific_report.md",
+      "size_bytes": 105497,
+      "sha256": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
+      "expected_sha256": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
+      "verified": true,
+      "lifecycle_states": {
+        "FILE_PRESENT": true,
+        "HASH_VERIFIED": true,
+        "STRUCTURE_CHECKED": true,
+        "NUMERICAL_CHECKED": true,
+        "RENDERED": true,
+        "VISUALLY_REVIEWED": false
+      }
+    },
+    "docs_scientific_report_docx": {
+      "exists": true,
+      "repo_relative_path": "docs/report/scientific_report.docx",
+      "size_bytes": 320364,
+      "sha256": "25fbed2e7227456345fba407fed1b1ed476dd484a0841f805718fc78acdf783a",
+      "expected_sha256": "25fbed2e7227456345fba407fed1b1ed476dd484a0841f805718fc78acdf783a",
+      "verified": true,
+      "lifecycle_states": {
+        "FILE_PRESENT": true,
+        "HASH_VERIFIED": true,
+        "STRUCTURE_CHECKED": true,
+        "NUMERICAL_CHECKED": true,
+        "RENDERED": true,
+        "VISUALLY_REVIEWED": true
       }
     }
   },

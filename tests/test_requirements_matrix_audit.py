@@ -188,3 +188,36 @@ def test_git_tracked_missing_hash_fails_closed(tmp_path: Path) -> None:
     assert report["summary"]["audit_verdict"] == "FAIL_GIT_BLOB_HASH_MISMATCH"
     assert report["summary"]["hash_mismatches"] == 1
 
+
+def test_git_blob_vs_disk_hash_verification_with_git_index_enabled(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Negative test: when check_git_index=True, a git blob SHA-256 mismatch against disk/declared fails closed."""
+    import scripts.verify_requirements_matrix_audit as vrma
+
+    orig_helper = vrma._get_git_blob_sha256_and_size
+
+    def fake_git_blob(repo_root, ref, norm_locator, cache):
+        if norm_locator == "reports/evidence/canonical_run_seal_v1.json":
+            return "f" * 64, 3046
+        return orig_helper(repo_root, ref, norm_locator, cache)
+
+    monkeypatch.setattr(vrma, "_get_git_blob_sha256_and_size", fake_git_blob)
+
+    report, exit_code = audit_requirements_matrix(
+        repo_root=REPO_ROOT,
+        matrix_path=MATRIX_PATH,
+        check_git_index=True,
+    )
+
+    assert exit_code == 1
+    assert report["summary"]["audit_verdict"] == "FAIL_GIT_BLOB_HASH_MISMATCH"
+    assert report["summary"]["hash_mismatches"] >= 1
+    mismatch = next(
+        m
+        for m in report["hash_mismatches_detail"]
+        if m.get("evidence_locator") == "reports/evidence/canonical_run_seal_v1.json"
+    )
+    assert mismatch["git_blob_hash"] == "f" * 64
+    assert mismatch["disk_hash"] != mismatch["git_blob_hash"]
+

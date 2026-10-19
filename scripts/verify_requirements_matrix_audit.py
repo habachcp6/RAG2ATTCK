@@ -57,6 +57,45 @@ def _get_git_tracked_files(repo_root: Path) -> set[str] | None:
     }
 
 
+def _commit_exists(repo_root: Path, commit_sha: str, cache: dict[str, bool]) -> bool:
+    """Check whether commit_sha exists in the local Git object database."""
+    if not commit_sha or not re.fullmatch(r"[0-9a-fA-F]{7,40}", commit_sha):
+        return False
+    if commit_sha in cache:
+        return cache[commit_sha]
+    proc = subprocess.run(
+        ["git", "cat-file", "-e", f"{commit_sha}^{{commit}}"],
+        cwd=str(repo_root),
+        capture_output=True,
+    )
+    exists = proc.returncode == 0
+    cache[commit_sha] = exists
+    return exists
+
+
+def _get_git_blob_sha256_and_size(
+    repo_root: Path,
+    ref: str,
+    norm_locator: str,
+    cache: dict[tuple[str, str], tuple[str | None, int | None]],
+) -> tuple[str | None, int | None]:
+    """Read actual git blob bytes via `git show <ref>:<norm_locator>` and return (sha256, size)."""
+    key = (ref, norm_locator)
+    if key in cache:
+        return cache[key]
+    proc = subprocess.run(
+        ["git", "show", f"{ref}:{norm_locator}"],
+        cwd=str(repo_root),
+        capture_output=True,
+    )
+    if proc.returncode != 0:
+        cache[key] = (None, None)
+        return None, None
+    blob_bytes = proc.stdout
+    digest = hashlib.sha256(blob_bytes).hexdigest()
+    size = len(blob_bytes)
+    cache[key] = (digest, size)
+    return digest, size
 
 def audit_requirements_matrix(
     repo_root: Path | None = None,
@@ -118,6 +157,8 @@ def audit_requirements_matrix(
             inventory_zip_sha = PINNED_RELEASE_ASSET_SHA256
 
     git_tracked_files = _get_git_tracked_files(repo_root) if check_git_index else None
+    commit_cache: dict[str, bool] = {}
+    blob_cache: dict[tuple[str, str], tuple[str | None, int | None]] = {}
 
     git_blob_bindings: list[dict[str, Any]] = []
     non_git_assets: list[dict[str, Any]] = []
@@ -249,10 +290,43 @@ def audit_requirements_matrix(
 
         raw_bytes = target_path.read_bytes()
         disk_sha256 = hashlib.sha256(raw_bytes).hexdigest()
-        blob_sha256 = disk_sha256
+
+        if git_tracked_files is not None:
+            ref_to_read = (
+                str(commit_sha)
+                if (commit_sha and _commit_exists(repo_root, str(commit_sha), commit_cache))
+                else "HEAD"
+            )
+            blob_sha256, blob_size = _get_git_blob_sha256_and_size(
+                repo_root, ref_to_read, norm_locator, blob_cache
+            )
+            head_blob_sha256, _ = _get_git_blob_sha256_and_size(
+                repo_root, "HEAD", norm_locator, blob_cache
+            )
+            if blob_sha256 is None or head_blob_sha256 is None:
+                unresolved_local_locators.append(
+                    {
+                        "requirement_id": req_id,
+                        "title": title,
+                        "evidence_locator": locator,
+                        "evidence_storage": storage,
+                        "final_candidate_status": status,
+                        "reason": f"Git blob missing from object store at {ref_to_read}:{norm_locator}",
+                    }
+                )
+                continue
+        else:
+            blob_sha256 = disk_sha256
+            head_blob_sha256 = disk_sha256
+            blob_size = len(raw_bytes)
 
         if declared_hash:
-            if declared_hash != disk_sha256 or declared_hash != blob_sha256:
+            if (
+                declared_hash != disk_sha256
+                or declared_hash != blob_sha256
+                or disk_sha256 != blob_sha256
+                or blob_sha256 != head_blob_sha256
+            ):
                 hash_mismatches.append(
                     {
                         "requirement_id": req_id,
@@ -260,16 +334,32 @@ def audit_requirements_matrix(
                         "evidence_locator": locator,
                         "declared_hash": declared_hash,
                         "git_blob_hash": blob_sha256,
+                        "head_git_blob_hash": head_blob_sha256,
                         "disk_hash": disk_sha256,
-                        "reason": "Declared evidence_hash does not match actual file/blob SHA-256",
+                        "reason": "Declared evidence_hash, disk SHA-256, or Git blob SHA-256 mismatch",
                     }
                 )
                 binding_status = "MISMATCH"
             else:
                 binding_status = "MATCH"
         elif storage == "policy_code_reference" or ev_type == "POLICY_CODE_REFERENCE":
-            # policy_code_reference without fixed declared_hash: file exists and is git-tracked
-            binding_status = "VERIFIED_CODE_REFERENCE"
+            # policy_code_reference without fixed declared_hash: file exists, is git-tracked, and disk matches git blob
+            if disk_sha256 != blob_sha256 or blob_sha256 != head_blob_sha256:
+                hash_mismatches.append(
+                    {
+                        "requirement_id": req_id,
+                        "title": title,
+                        "evidence_locator": locator,
+                        "declared_hash": declared_hash,
+                        "git_blob_hash": blob_sha256,
+                        "head_git_blob_hash": head_blob_sha256,
+                        "disk_hash": disk_sha256,
+                        "reason": "policy_code_reference disk SHA-256 does not match committed Git blob SHA-256",
+                    }
+                )
+                binding_status = "MISMATCH"
+            else:
+                binding_status = "VERIFIED_CODE_REFERENCE"
         else:
             hash_mismatches.append(
                 {
@@ -292,7 +382,8 @@ def audit_requirements_matrix(
                 "evidence_commit_sha": commit_sha,
                 "declared_hash": declared_hash,
                 "git_blob_hash": blob_sha256,
-                "blob_size_bytes": len(raw_bytes),
+                "disk_hash": disk_sha256,
+                "blob_size_bytes": blob_size if blob_size is not None else len(raw_bytes),
                 "status": binding_status,
             }
         )

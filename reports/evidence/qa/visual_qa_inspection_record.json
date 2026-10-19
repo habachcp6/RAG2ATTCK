@@ -23,18 +23,18 @@
       "status": "VERIFIED_SHARP",
       "docx_target": {
         "repo_relative_path": "reports/evidence/canonical_populated_report.docx",
-        "sha256": "25fbed2e7227456345fba407fed1b1ed476dd484a0841f805718fc78acdf783a",
-        "size_bytes": 320364
+        "sha256": "39fcbb43c4a3a40e1c22fbec1e4b9bb98cd8d8b51290f23cd706375aaa79d8e2",
+        "size_bytes": 320359
       },
-      "renderer_environment": "Microsoft Word 16.0 (Build 16.0.17328, Windows Word Engine)",
+      "renderer_environment": "Microsoft Word 16.0 (Build 16.0.17328, Windows Word Engine) + pypdfium2 200 DPI PNG Page Rasterizer",
       "rendered_output": {
         "repo_relative_path": "reports/evidence/canonical_populated_report.pdf",
-        "sha256": "e47a8eae2b8f64a878d3b6eb49fc5d6db341dac311bdbd8173d25f610b343514",
-        "size_bytes": 1290068
+        "sha256": "13839fb75fb1427e0edfc42422cbbf775853c5f32cd9e98c70305d5affd615c5",
+        "size_bytes": 1299985
       },
       "page_coverage": {
         "total_pages": 41,
-        "pages_inspected": "pages 1 to 41",
+        "pages_inspected": "pages 1 to 41 (200 DPI rasterized PNG previews inspected for pages 1, 4, 5, 6, 7, 8, 9, 33, 40, 41)",
         "covered_elements": "Abstract, Sections 1-8, References, 11 tables, 8 embedded figures"
       },
       "document_structure": {
@@ -96,8 +96,8 @@
     },
     "docx_target": {
       "repo_relative_path": "reports/evidence/canonical_populated_report.docx",
-      "sha256": "25fbed2e7227456345fba407fed1b1ed476dd484a0841f805718fc78acdf783a",
-      "size_bytes": 320364
+      "sha256": "39fcbb43c4a3a40e1c22fbec1e4b9bb98cd8d8b51290f23cd706375aaa79d8e2",
+      "size_bytes": 320359
     }
   },
   "presentation_deck_qa": {
@@ -114,18 +114,18 @@
     "status": "VERIFIED_SHARP",
     "docx_target": {
       "repo_relative_path": "reports/evidence/canonical_populated_report.docx",
-      "sha256": "25fbed2e7227456345fba407fed1b1ed476dd484a0841f805718fc78acdf783a",
-      "size_bytes": 320364
+      "sha256": "39fcbb43c4a3a40e1c22fbec1e4b9bb98cd8d8b51290f23cd706375aaa79d8e2",
+      "size_bytes": 320359
     },
-    "renderer_environment": "Microsoft Word 16.0 (Build 16.0.17328, Windows Word Engine)",
+    "renderer_environment": "Microsoft Word 16.0 (Build 16.0.17328, Windows Word Engine) + pypdfium2 200 DPI PNG Page Rasterizer",
     "rendered_output": {
       "repo_relative_path": "reports/evidence/canonical_populated_report.pdf",
-      "sha256": "e47a8eae2b8f64a878d3b6eb49fc5d6db341dac311bdbd8173d25f610b343514",
-      "size_bytes": 1290068
+      "sha256": "13839fb75fb1427e0edfc42422cbbf775853c5f32cd9e98c70305d5affd615c5",
+      "size_bytes": 1299985
     },
     "page_coverage": {
       "total_pages": 41,
-      "pages_inspected": "pages 1 to 41",
+      "pages_inspected": "pages 1 to 41 (200 DPI rasterized PNG previews inspected for pages 1, 4, 5, 6, 7, 8, 9, 33, 40, 41)",
       "covered_elements": "Abstract, Sections 1-8, References, 11 tables, 8 embedded figures"
     },
     "document_structure": {
@@ -316,6 +316,34 @@
       "title": "Resource Consumption & Financial Cost Scaling vs k",
       "observation": "Figure 7 (Resource Consumption & Financial Cost Scaling vs k) - sắc nét, dual-axis đúng đơn vị USD và token, chi phí khớp settled ledger ($6.57575890 USD, hard cap $19.99).",
       "visual_quality": "VERIFIED_SHARP"
+    },
+    "pdf_page_previews_inspected": {
+      "rasterizer": "pypdfium2 (200 DPI, 1700x2200 px per page)",
+      "page_01": {
+        "sha256": "da17846a605f280077df0603ca14939ec002bf24e1f1aea5edb6cd54ba444912",
+        "size_bytes": 456946,
+        "status": "VERIFIED_SHARP",
+        "observation": "Page 1 title block (pure black, no border), single-prefix Status line ('Status: CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW (CORRECTED RELEASE CANDIDATE — PENDING OWNER CLOSEOUT SIGN-OFF)'), canonical bundle banner, and Abstract render cleanly with Page 1 of 41 footer."
+      },
+      "pages_06_07_08": {
+        "sha256_page_06": "d4928f6b5332a04660fe52d1ac6b7a6e19248dfcf14a0740a6cbfc158f32cffe",
+        "sha256_page_07": "dd7342db4183d4d12d5109c2617b382b77353988cc8b812cd455c498ec9491d4",
+        "sha256_page_08": "ef066c2c9b1d0651f5d1a37244b5d8aef78a55156203f25efb76dbae0ebd1817",
+        "status": "VERIFIED_SHARP",
+        "observation": "Table 1a and Table 1b render with repeated dark navy header row across page breaks, cantSplit row integrity, width <= 6.50 in, Okuma et al. (2023) [9] strictly UNVERIFIED in Row 16, and LADE (Gwak et al., 2026/2027) [12] displaying OMML math k in {3,10}, 4 evaluated models, and AVIATOR/Caldera dataset splits."
+      },
+      "page_33": {
+        "sha256": "55d4484a4fe1d9f0399af23de0e9d73b0dbf405ac43dd3e667d36eb728dc6186",
+        "size_bytes": 715200,
+        "status": "VERIFIED_SHARP",
+        "observation": "Section 6.3 Provider Reliability and Financial Reconciliation renders the exact request_journal.jsonl retry locator (lines 48479-48482, lifecycle 48476-48485, ordinal=5387 -> ordinal=5388) and Table 5b bullet summary cleanly."
+      },
+      "pages_40_41": {
+        "sha256_page_40": "237d4945ee3bcb417ae467fb0b37bfda409178c30e324ad158554c2f43ccd8e3",
+        "sha256_page_41": "bad52359df8d529490a8004c53dc49b39eb191b846610364237210f7c826fa7f",
+        "status": "VERIFIED_SHARP",
+        "observation": "References [1]..[13] render with static bracketed numbering and hanging indents; [9] displays [ACCESS BLOCKED / BIBLIOGRAPHIC RECORD ONLY / UNVERIFIED] and [12] displays [FULL TEXT VERIFIED] with manuscript SHA-256."
+      }
     }
   },
   "defects_and_limitations": {
@@ -325,6 +353,6 @@
   "overall_verdict": {
     "status": "VERIFIED_SHARP",
     "verified": true,
-    "notes": "All 12 slide previews and DOCX report inspected, embedded scientific figures verified for sharpness, no text overlap, numerical consistency verified against canonical ledger ($6.57575890 USD, hard cap $19.99, N=718 views, 10 major DOCX sections, 41 pages covered in PDF output, 0 unrendered slots)."
+    "notes": "All 12 slide previews, DOCX report, and 200 DPI rasterized PDF page previews (pages 1, 4-9, 33, 40-41) inspected, embedded scientific figures verified for sharpness, no text overlap, numerical consistency verified against canonical ledger ($6.57575890 USD, hard cap $19.99, N=718 views, 10 major DOCX sections, 41 pages covered in PDF output, 0 unrendered slots)."
   }
 }

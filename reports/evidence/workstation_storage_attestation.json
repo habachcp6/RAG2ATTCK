@@ -4,7 +4,7 @@
   "generated_at_utc": "2026-10-19T05:00:00Z",
   "Mandatory_Stop_Gate_Status": "NON_DESTRUCTIVE_RECONCILIATION_ONLY_NO_FILES_DELETED",
   "d_drive_clone_audit": {
-    "sanitized_path": "D:/RAG2ATT&CK",
+    "sanitized_path": "<WORKSTATION_D_DRIVE_CLONE>",
     "head_commit": "80dbeb3f72e7db1ee1fc9ac3ce2daffbeab0c044",
     "branch": "main",
     "classification": "STALE_PRE_FINALIZATION_CLONE_WITH_BROKEN_VENV",
@@ -2488,7 +2488,7 @@
     ],
     "venv_diagnosis": {
       "d_drive_venv_pyvenv_cfg_exists": false,
-      "d_drive_venv_status": "BROKEN_MISSING_PYVENV_CFG (running D:/RAG2ATT&CK/.venv/Scripts/python.exe fails with: failed to locate pyvenv.cfg: The system cannot find the file specified.)",
+      "d_drive_venv_status": "BROKEN_MISSING_PYVENV_CFG (running <WORKSTATION_D_DRIVE_CLONE>/.venv/Scripts/python.exe fails with: failed to locate pyvenv.cfg: The system cannot find the file specified.)",
       "candidate_repo_venv_pyvenv_cfg_exists": true,
       "candidate_repo_venv_status": "HEALTHY_PYTHON_3_13_12 (home = C:/Program Files/Python313, version = 3.13.12, verified with PYTHONNOUSERSITE=1)"
     }

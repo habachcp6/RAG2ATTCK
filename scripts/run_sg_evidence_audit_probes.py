@@ -324,14 +324,26 @@ def audit_section_4_security_and_privacy() -> Dict[str, Any]:
         REPO_ROOT / "reports/evidence/r9_final_artifact_inventory.json",
         REPO_ROOT / "reports/evidence/qa/visual_qa_inspection_record.json",
         REPO_ROOT / "reports/evidence/r9_saved_data_reproduction_raw.log",
+        REPO_ROOT / "reports/evidence/workstation_storage_attestation.json",
+        REPO_ROOT / "reports/evidence/t33_lade_claim_verification_record.json",
+        REPO_ROOT / "reports/evidence/report_revision_errata_record.json",
+        REPO_ROOT / "reports/evidence/report_revision_errata_record.md",
+        REPO_ROOT / "reports/evidence/closeout_rc_artifact_inventory.json",
+        REPO_ROOT / "reports/evidence/matrix_git_blob_audit_report.json",
+        REPO_ROOT / "reports/evidence/historical/r9_final_artifact_inventory_20261003.json",
+        REPO_ROOT / "reports/evidence/historical/visual_qa_inspection_record_20261003.json",
+        REPO_ROOT / "docs/audit/pr_ancestry_audit.json",
+        REPO_ROOT / "docs/audit/baseline_diff_audit.json",
+        REPO_ROOT / "docs/audit/requirements_traceability_matrix.md",
     ]
 
     # Regex patterns for leaks
     # 1. Private workstation path patterns: C:\Users\<name>, D:\<path>, /home/<user>, /Users/<user>
     # Note: canonical specs or standard repo rel paths are allowed
     workstation_path_patterns = [
-        re.compile(r"[C-Zc-z]:\\Users\\[a-zA-Z0-9_\-\.]+", re.IGNORECASE),
+        re.compile(r"[C-Zc-z]:[\\/]Users[\\/][a-zA-Z0-9_\-\.]+", re.IGNORECASE),
         re.compile(r"[C-Zc-z]:\\(?:rag2attck|workspace|projects|documents|desktop|downloads)\\[a-zA-Z0-9_\-\.\\]+", re.IGNORECASE),
+        re.compile(r"[C-Zc-z]:[\\/]RAG2ATT&CK", re.IGNORECASE),
         re.compile(r"/(?:home|Users)/[a-zA-Z0-9_\-\.]+", re.IGNORECASE),
         re.compile(r"hahoa", re.IGNORECASE),
         re.compile(r"DESKTOP-[A-Z0-9]+", re.IGNORECASE),

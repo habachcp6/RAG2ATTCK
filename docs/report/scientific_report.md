@@ -8,7 +8,7 @@
 **Author:** Hà Hoàng Bách  
 **Project:** RAG2ATT&CK  
 **Date:** October 2026  
-**Status:** CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW — **Status:** CORRECTED RELEASE CANDIDATE — PENDING OWNER CLOSEOUT SIGN-OFF  
+**Status:** CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW (CORRECTED RELEASE CANDIDATE — PENDING OWNER CLOSEOUT SIGN-OFF)  
 **Protocol Version:** `experiment-protocol-v1.1` (Canonical Decisions Digest: `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`)  
 **Target Taxonomy:** MITRE ATT&CK Enterprise Matrix v19.2 (Active Windows Corpus: 474 techniques)  
 **Execution Horizon:** 2026  

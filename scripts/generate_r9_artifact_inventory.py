@@ -546,17 +546,17 @@ def generate_inventory(
     report_specs: Dict[str, Dict[str, str]] = {
         "canonical_populated_report_md": {
             "rel_path": "reports/evidence/canonical_populated_report.md",
-            "expected_sha256": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
+            "expected_sha256": "5429099e2bb3878fe5d3651cb870a711cf2383f1d641d05e64fd3dd797f3e5c0",
             "type": "markdown",
         },
         "canonical_populated_report_docx": {
             "rel_path": "reports/evidence/canonical_populated_report.docx",
-            "expected_sha256": "25fbed2e7227456345fba407fed1b1ed476dd484a0841f805718fc78acdf783a",
+            "expected_sha256": "39fcbb43c4a3a40e1c22fbec1e4b9bb98cd8d8b51290f23cd706375aaa79d8e2",
             "type": "docx",
         },
         "canonical_populated_report_pdf": {
             "rel_path": "reports/evidence/canonical_populated_report.pdf",
-            "expected_sha256": "e47a8eae2b8f64a878d3b6eb49fc5d6db341dac311bdbd8173d25f610b343514",
+            "expected_sha256": "13839fb75fb1427e0edfc42422cbbf775853c5f32cd9e98c70305d5affd615c5",
             "type": "pdf",
         },
         "populated_report_slots_canonical": {
@@ -573,12 +573,12 @@ def generate_inventory(
     if (repo_root / "docs/report").is_dir():
         report_specs["docs_scientific_report_md"] = {
             "rel_path": "docs/report/scientific_report.md",
-            "expected_sha256": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
+            "expected_sha256": "5429099e2bb3878fe5d3651cb870a711cf2383f1d641d05e64fd3dd797f3e5c0",
             "type": "markdown",
         }
         report_specs["docs_scientific_report_docx"] = {
             "rel_path": "docs/report/scientific_report.docx",
-            "expected_sha256": "25fbed2e7227456345fba407fed1b1ed476dd484a0841f805718fc78acdf783a",
+            "expected_sha256": "39fcbb43c4a3a40e1c22fbec1e4b9bb98cd8d8b51290f23cd706375aaa79d8e2",
             "type": "docx",
         }
 

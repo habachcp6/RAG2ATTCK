@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-19T05:21:03Z",
+  "timestamp": "2026-10-19T14:07:26Z",
   "repo_root": "<REPO_ROOT>",
   "section_1_reproduction_report": {
     "probe_1_1_empty_dir": {
@@ -57,12 +57,12 @@
     "passed": true,
     "exit_code": 0,
     "passed_count": 54,
-    "duration_seconds": 22.45792293548584,
-    "stdout_summary": "======================= 54 passed, 2 warnings in 21.90s ======================="
+    "duration_seconds": 27.875802755355835,
+    "stdout_summary": "======================= 54 passed, 2 warnings in 27.14s ======================="
   },
   "section_4_security_privacy": {
     "passed": true,
-    "files_audited": 4,
+    "files_audited": 15,
     "total_violations": 0,
     "file_details": {
       "reports/evidence/r9_saved_data_reproduction_report.json": {
@@ -76,12 +76,67 @@
         "clean": true
       },
       "reports/evidence/qa/visual_qa_inspection_record.json": {
-        "size_bytes": 15979,
+        "size_bytes": 18505,
         "violations": [],
         "clean": true
       },
       "reports/evidence/r9_saved_data_reproduction_raw.log": {
         "size_bytes": 8975,
+        "violations": [],
+        "clean": true
+      },
+      "reports/evidence/workstation_storage_attestation.json": {
+        "size_bytes": 155745,
+        "violations": [],
+        "clean": true
+      },
+      "reports/evidence/t33_lade_claim_verification_record.json": {
+        "size_bytes": 6396,
+        "violations": [],
+        "clean": true
+      },
+      "reports/evidence/report_revision_errata_record.json": {
+        "size_bytes": 6711,
+        "violations": [],
+        "clean": true
+      },
+      "reports/evidence/report_revision_errata_record.md": {
+        "size_bytes": 4592,
+        "violations": [],
+        "clean": true
+      },
+      "reports/evidence/closeout_rc_artifact_inventory.json": {
+        "size_bytes": 41528,
+        "violations": [],
+        "clean": true
+      },
+      "reports/evidence/matrix_git_blob_audit_report.json": {
+        "size_bytes": 93392,
+        "violations": [],
+        "clean": true
+      },
+      "reports/evidence/historical/r9_final_artifact_inventory_20261003.json": {
+        "size_bytes": 38323,
+        "violations": [],
+        "clean": true
+      },
+      "reports/evidence/historical/visual_qa_inspection_record_20261003.json": {
+        "size_bytes": 15697,
+        "violations": [],
+        "clean": true
+      },
+      "docs/audit/pr_ancestry_audit.json": {
+        "size_bytes": 35486,
+        "violations": [],
+        "clean": true
+      },
+      "docs/audit/baseline_diff_audit.json": {
+        "size_bytes": 11312,
+        "violations": [],
+        "clean": true
+      },
+      "docs/audit/requirements_traceability_matrix.md": {
+        "size_bytes": 80707,
         "violations": [],
         "clean": true
       }

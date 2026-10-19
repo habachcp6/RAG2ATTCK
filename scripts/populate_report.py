@@ -2658,8 +2658,8 @@ def populate_report_text(
                 continue
             if stripped.startswith("**Status:**"):
                 new_lines.append(
-                    "**Status:** CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW — "
-                    "**Status:** CORRECTED RELEASE CANDIDATE — PENDING OWNER CLOSEOUT SIGN-OFF  "
+                    "**Status:** CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW "
+                    "(CORRECTED RELEASE CANDIDATE — PENDING OWNER CLOSEOUT SIGN-OFF)  "
                 )
                 continue
         elif mode == "fixture" and stripped.startswith("**Status:**"):

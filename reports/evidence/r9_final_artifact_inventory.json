@@ -1,6 +1,14 @@
 {
   "schema_version": "r9_final_artifact_inventory_v1",
-  "timestamp_utc": "2026-10-03T12:55:00Z",
+  "timestamp_utc": "2026-10-19T03:18:00Z",
+  "closeout_errata_lineage": {
+    "historical_r9_inventory_ref": "reports/evidence/historical/r9_final_artifact_inventory_20261003.json",
+    "historical_r9_inventory_sha256": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+    "historical_visual_qa_record_ref": "reports/evidence/historical/visual_qa_inspection_record_20261003.json",
+    "historical_visual_qa_record_sha256": "dd3e5d5a0e61bf7aef233376f52256ec7c06a2cbea266963d154146acbae8da5",
+    "errata_record_ref": "reports/evidence/report_revision_errata_record.json",
+    "errata_markdown_ref": "reports/evidence/report_revision_errata_record.md"
+  },
   "lifecycle_state_definitions": {
     "FILE_PRESENT": "File exists on disk at expected repo-relative path",
     "HASH_VERIFIED": "SHA-256 computed from disk matches cryptographic ground truth",
@@ -74,9 +82,9 @@
     "canonical_populated_report_md": {
       "exists": true,
       "repo_relative_path": "reports/evidence/canonical_populated_report.md",
-      "size_bytes": 105354,
-      "sha256": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
-      "expected_sha256": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "size_bytes": 105497,
+      "sha256": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
+      "expected_sha256": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
       "verified": true,
       "lifecycle_states": {
         "FILE_PRESENT": true,
@@ -90,9 +98,9 @@
     "canonical_populated_report_docx": {
       "exists": true,
       "repo_relative_path": "reports/evidence/canonical_populated_report.docx",
-      "size_bytes": 320008,
-      "sha256": "c5ce49f7e57ee2d86d79daab50def273af6dbb4c4393da61340f033b63306ccb",
-      "expected_sha256": "c5ce49f7e57ee2d86d79daab50def273af6dbb4c4393da61340f033b63306ccb",
+      "size_bytes": 320364,
+      "sha256": "25fbed2e7227456345fba407fed1b1ed476dd484a0841f805718fc78acdf783a",
+      "expected_sha256": "25fbed2e7227456345fba407fed1b1ed476dd484a0841f805718fc78acdf783a",
       "verified": true,
       "lifecycle_states": {
         "FILE_PRESENT": true,
@@ -936,8 +944,8 @@
     "qa_record_file": {
       "exists": true,
       "repo_relative_path": "reports/evidence/qa/visual_qa_inspection_record.json",
-      "size_bytes": 15697,
-      "sha256": "dd3e5d5a0e61bf7aef233376f52256ec7c06a2cbea266963d154146acbae8da5",
+      "size_bytes": 15979,
+      "sha256": "50c3e602b482b3c86b22bac3b0dc8be28fa272098d43b5681ff13ba75ae37885",
       "expected_sha256": null,
       "verified": true,
       "lifecycle_states": {

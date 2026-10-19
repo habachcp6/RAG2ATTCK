@@ -1,6 +1,9 @@
 {
   "schema_version": "visual_qa_inspection_record_v2",
-  "inspection_timestamp_utc": "2026-10-03T14:30:00Z",
+  "inspection_timestamp_utc": "2026-10-19T03:18:00Z",
+  "historical_qa_record_ref": "reports/evidence/historical/visual_qa_inspection_record_20261003.json",
+  "historical_qa_record_sha256": "dd3e5d5a0e61bf7aef233376f52256ec7c06a2cbea266963d154146acbae8da5",
+  "errata_record_ref": "reports/evidence/report_revision_errata_record.json",
   "inspector": {
     "identity": "Antigravity Worker + Python Slide/Figure/DOCX QA Inspector",
     "method": "Multi-aspect visual rendering inspection (geometry, text clarity, figure alignment, typography, numerical consistency, OpenXML structure, PDF render fidelity)"
@@ -20,14 +23,14 @@
       "status": "VERIFIED_SHARP",
       "docx_target": {
         "repo_relative_path": "reports/evidence/canonical_populated_report.docx",
-        "sha256": "c5ce49f7e57ee2d86d79daab50def273af6dbb4c4393da61340f033b63306ccb",
-        "size_bytes": 320008
+        "sha256": "25fbed2e7227456345fba407fed1b1ed476dd484a0841f805718fc78acdf783a",
+        "size_bytes": 320364
       },
       "renderer_environment": "Microsoft Word 16.0 (Build 16.0.17328, Windows Word Engine)",
       "rendered_output": {
         "repo_relative_path": "reports/evidence/canonical_populated_report.pdf",
-        "sha256": "5604e53fb064d2d42c69e4da3ade0b4d4354900fb5706e67c69590167317ee23",
-        "size_bytes": 1286065
+        "sha256": "e47a8eae2b8f64a878d3b6eb49fc5d6db341dac311bdbd8173d25f610b343514",
+        "size_bytes": 1290068
       },
       "page_coverage": {
         "total_pages": 41,
@@ -93,8 +96,8 @@
     },
     "docx_target": {
       "repo_relative_path": "reports/evidence/canonical_populated_report.docx",
-      "sha256": "c5ce49f7e57ee2d86d79daab50def273af6dbb4c4393da61340f033b63306ccb",
-      "size_bytes": 320008
+      "sha256": "25fbed2e7227456345fba407fed1b1ed476dd484a0841f805718fc78acdf783a",
+      "size_bytes": 320364
     }
   },
   "presentation_deck_qa": {
@@ -111,14 +114,14 @@
     "status": "VERIFIED_SHARP",
     "docx_target": {
       "repo_relative_path": "reports/evidence/canonical_populated_report.docx",
-      "sha256": "c5ce49f7e57ee2d86d79daab50def273af6dbb4c4393da61340f033b63306ccb",
-      "size_bytes": 320008
+      "sha256": "25fbed2e7227456345fba407fed1b1ed476dd484a0841f805718fc78acdf783a",
+      "size_bytes": 320364
     },
     "renderer_environment": "Microsoft Word 16.0 (Build 16.0.17328, Windows Word Engine)",
     "rendered_output": {
       "repo_relative_path": "reports/evidence/canonical_populated_report.pdf",
-      "sha256": "5604e53fb064d2d42c69e4da3ade0b4d4354900fb5706e67c69590167317ee23",
-      "size_bytes": 1286065
+      "sha256": "e47a8eae2b8f64a878d3b6eb49fc5d6db341dac311bdbd8173d25f610b343514",
+      "size_bytes": 1290068
     },
     "page_coverage": {
       "total_pages": 41,

@@ -2657,7 +2657,10 @@ def populate_report_text(
                 )
                 continue
             if stripped.startswith("**Status:**"):
-                new_lines.append("**Status:** CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW  ")
+                new_lines.append(
+                    "**Status:** CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW — "
+                    "**Status:** CORRECTED RELEASE CANDIDATE — PENDING OWNER CLOSEOUT SIGN-OFF  "
+                )
                 continue
         elif mode == "fixture" and stripped.startswith("**Status:**"):
             new_lines.append("**Status:** PRE-CANONICAL RENDER TEST (DIAGNOSTIC FIXTURE — NOT CANONICAL OR FINAL)  ")
@@ -3066,11 +3069,18 @@ def run_pipeline(
         else (DEFAULT_CANONICAL_OUTPUT_MD if mode == "canonical" else DEFAULT_OUTPUT_MD)
     )
 
-    target_audit_path = (
-        audit_json_path
-        if audit_json_path is not None
-        else (DEFAULT_CANONICAL_AUDIT_JSON if mode == "canonical" else DEFAULT_AUDIT_JSON)
+    default_audit_for_mode = (
+        DEFAULT_CANONICAL_AUDIT_JSON if mode == "canonical" else DEFAULT_AUDIT_JSON
     )
+    if audit_json_path is not None:
+        target_audit_path = audit_json_path
+    elif (
+        output_path is not None
+        and output_path.resolve().parent != default_audit_for_mode.resolve().parent
+    ):
+        target_audit_path = output_path.parent / default_audit_for_mode.name
+    else:
+        target_audit_path = default_audit_for_mode
 
     if (
         target_output_path.resolve() == DEFAULT_TEMPLATE_PATH.resolve()
@@ -3114,7 +3124,7 @@ def run_pipeline(
 
     # 5. Write output
     target_output_path.parent.mkdir(parents=True, exist_ok=True)
-    target_output_path.write_text(populated_text, encoding="utf-8")
+    target_output_path.write_text(populated_text, encoding="utf-8", newline="\n")
     print(f"[OK] Wrote populated {mode} report to: {target_output_path}")
 
     # 6. Write audit JSON if requested
@@ -3123,6 +3133,7 @@ def run_pipeline(
         target_audit_path.write_text(
             json.dumps(slots, indent=2, ensure_ascii=False) + "\n",
             encoding="utf-8",
+            newline="\n",
         )
         print(f"[OK] Wrote audit slots JSON to: {target_audit_path}")
 

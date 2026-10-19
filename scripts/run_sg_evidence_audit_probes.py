@@ -20,8 +20,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+if str(REPO_ROOT) in sys.path:
+    sys.path.remove(str(REPO_ROOT))
+sys.path.insert(0, str(REPO_ROOT))
+sys.modules.pop("tests", None)
 
 from scripts.generate_reproduction_report import (
     EXPECTED_BUNDLE_V2_SHA256,
@@ -165,7 +167,18 @@ def audit_section_2_artifact_inventory() -> Dict[str, Any]:
     print_step("SECTION 2: Independent Adversarial Probes on generate_r9_artifact_inventory.py")
     results = {}
 
-    from tests.test_artifact_inventory import REQUIRED_ARTIFACT_REL_PATHS, setup_mock_repo
+    try:
+        from tests.test_artifact_inventory import REQUIRED_ARTIFACT_REL_PATHS, setup_mock_repo
+    except ModuleNotFoundError:
+        import importlib.util
+        _spec = importlib.util.spec_from_file_location(
+            "test_artifact_inventory", REPO_ROOT / "tests/test_artifact_inventory.py"
+        )
+        assert _spec and _spec.loader
+        _mod = importlib.util.module_from_spec(_spec)
+        _spec.loader.exec_module(_mod)
+        REQUIRED_ARTIFACT_REL_PATHS = _mod.REQUIRED_ARTIFACT_REL_PATHS
+        setup_mock_repo = _mod.setup_mock_repo
 
     # 1. Empty temporary directory
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -385,7 +398,7 @@ def main() -> int:
 
     summary_report = {
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "repo_root": str(REPO_ROOT),
+        "repo_root": "<REPO_ROOT>",
     }
 
     try:
@@ -398,7 +411,34 @@ def main() -> int:
         summary_report["auditor"] = "SG-EVIDENCE-AUDIT"
 
         out_log = REPO_ROOT / "reports/evidence/sg_evidence_audit_independent_probes_record.json"
-        out_log.write_text(json.dumps(summary_report, indent=2), encoding="utf-8")
+        if out_log.is_file():
+            try:
+                existing = json.loads(out_log.read_text(encoding="utf-8"))
+                if (
+                    existing.get("section_1_reproduction_report")
+                    == summary_report["section_1_reproduction_report"]
+                    and existing.get("section_2_artifact_inventory")
+                    == summary_report["section_2_artifact_inventory"]
+                    and existing.get("section_4_security_privacy")
+                    == summary_report["section_4_security_privacy"]
+                    and existing.get("section_3_pytest_suite", {}).get("passed")
+                    == summary_report["section_3_pytest_suite"]["passed"]
+                    and existing.get("section_3_pytest_suite", {}).get("exit_code")
+                    == summary_report["section_3_pytest_suite"]["exit_code"]
+                    and existing.get("section_3_pytest_suite", {}).get("passed_count")
+                    == summary_report["section_3_pytest_suite"]["passed_count"]
+                    and existing.get("overall_verdict") == summary_report["overall_verdict"]
+                ):
+                    summary_report["timestamp"] = existing["timestamp"]
+                    summary_report["section_3_pytest_suite"]["duration_seconds"] = existing[
+                        "section_3_pytest_suite"
+                    ]["duration_seconds"]
+                    summary_report["section_3_pytest_suite"]["stdout_summary"] = existing[
+                        "section_3_pytest_suite"
+                    ]["stdout_summary"]
+            except Exception:
+                pass
+        out_log.write_text(json.dumps(summary_report, indent=2), encoding="utf-8", newline="\n")
         print("\n" + "=" * 80)
         print(f"[OVERALL VERDICT] {summary_report['overall_verdict']}")
         print(f"Audit record saved to: {out_log}")

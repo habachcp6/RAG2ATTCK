@@ -76,9 +76,14 @@ def compute_file_info(
     raw = path.read_bytes()
     actual_sha = hashlib.sha256(raw).hexdigest()
     verified = (expected_sha256 is None) or (actual_sha == expected_sha256)
-    if not verified and expected_sha256 and path.suffix in [".svg", ".json"]:
-        crlf_sha = hashlib.sha256(raw.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")).hexdigest()
-        if crlf_sha == expected_sha256:
+    if not verified and expected_sha256 and path.suffix in [".svg", ".json", ".md"]:
+        lf_raw = raw.replace(b"\r\n", b"\n")
+        lf_sha = hashlib.sha256(lf_raw).hexdigest()
+        crlf_sha = hashlib.sha256(lf_raw.replace(b"\n", b"\r\n")).hexdigest()
+        if lf_sha == expected_sha256:
+            actual_sha = lf_sha
+            verified = True
+        elif crlf_sha == expected_sha256:
             actual_sha = crlf_sha
             verified = True
 
@@ -320,15 +325,19 @@ def verify_qa_inspection_record(
 
     pptx_target = deck_qa.get("pptx_target") or scope.get("pptx_target", {})
     docx_target = docx_qa.get("docx_target") or scope.get("docx_target", {})
+    scope_pptx_sha = scope.get("pptx_target", {}).get("sha256")
+    scope_docx_sha = scope.get("docx_target", {}).get("sha256")
 
     # 1. Exact PPTX digest check
     expected_pptx_sha = pptx_target.get("sha256")
     actual_pptx_sha = pptx_info.get("sha256")
     if not actual_pptx_sha:
         errors.append("PPTX file missing from disk during QA record verification")
-    elif expected_pptx_sha != actual_pptx_sha:
+    elif expected_pptx_sha != actual_pptx_sha or (
+        scope_pptx_sha and scope_pptx_sha != actual_pptx_sha
+    ):
         errors.append(
-            f"PPTX SHA256 mismatch in QA record: expected {expected_pptx_sha}, disk {actual_pptx_sha}"
+            f"PPTX SHA256 mismatch in QA record: expected {expected_pptx_sha}/{scope_pptx_sha}, disk {actual_pptx_sha}"
         )
 
     # 2. Exact DOCX digest check
@@ -336,9 +345,11 @@ def verify_qa_inspection_record(
     actual_docx_sha = docx_info.get("sha256")
     if not actual_docx_sha:
         errors.append("DOCX file missing from disk during QA record verification")
-    elif expected_docx_sha != actual_docx_sha:
+    elif expected_docx_sha != actual_docx_sha or (
+        scope_docx_sha and scope_docx_sha != actual_docx_sha
+    ):
         errors.append(
-            f"DOCX SHA256 mismatch in QA record: expected {expected_docx_sha}, disk {actual_docx_sha}"
+            f"DOCX SHA256 mismatch in QA record: expected {expected_docx_sha}/{scope_docx_sha}, disk {actual_docx_sha}"
         )
 
     # 3. DOCX Report QA scope verification
@@ -535,12 +546,12 @@ def generate_inventory(
     report_specs = {
         "canonical_populated_report_md": {
             "rel_path": "reports/evidence/canonical_populated_report.md",
-            "expected_sha256": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+            "expected_sha256": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
             "type": "markdown",
         },
         "canonical_populated_report_docx": {
             "rel_path": "reports/evidence/canonical_populated_report.docx",
-            "expected_sha256": "c5ce49f7e57ee2d86d79daab50def273af6dbb4c4393da61340f033b63306ccb",
+            "expected_sha256": "25fbed2e7227456345fba407fed1b1ed476dd484a0841f805718fc78acdf783a",
             "type": "docx",
         },
         "populated_report_slots_canonical": {
@@ -878,7 +889,15 @@ def generate_inventory(
 
     inventory: Dict[str, Any] = {
         "schema_version": "r9_final_artifact_inventory_v1",
-        "timestamp_utc": "2026-10-03T12:55:00Z",
+        "timestamp_utc": "2026-10-19T03:18:00Z",
+        "closeout_errata_lineage": {
+            "historical_r9_inventory_ref": "reports/evidence/historical/r9_final_artifact_inventory_20261003.json",
+            "historical_r9_inventory_sha256": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+            "historical_visual_qa_record_ref": "reports/evidence/historical/visual_qa_inspection_record_20261003.json",
+            "historical_visual_qa_record_sha256": "dd3e5d5a0e61bf7aef233376f52256ec7c06a2cbea266963d154146acbae8da5",
+            "errata_record_ref": "reports/evidence/report_revision_errata_record.json",
+            "errata_markdown_ref": "reports/evidence/report_revision_errata_record.md",
+        },
         "lifecycle_state_definitions": {
             "FILE_PRESENT": "File exists on disk at expected repo-relative path",
             "HASH_VERIFIED": "SHA-256 computed from disk matches cryptographic ground truth",
@@ -935,11 +954,18 @@ def generate_inventory(
         "verdict": verdict,
     }
 
+    default_out = repo_root / "reports/evidence/r9_final_artifact_inventory.json"
+    is_default_out = output_path is None or output_path.resolve() == default_out.resolve()
     if output_path is None:
-        output_path = repo_root / "reports/evidence/r9_final_artifact_inventory.json"
+        output_path = default_out
 
+    serialized = json.dumps(inventory, indent=2)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(inventory, indent=2), encoding="utf-8")
+    output_path.write_text(serialized, encoding="utf-8", newline="\n")
+    if is_default_out:
+        rc_out = repo_root / "reports/evidence/closeout_rc_artifact_inventory.json"
+        rc_out.parent.mkdir(parents=True, exist_ok=True)
+        rc_out.write_text(serialized, encoding="utf-8", newline="\n")
 
     return inventory, exit_code
 

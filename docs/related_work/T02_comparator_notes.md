@@ -292,23 +292,23 @@ This document contains structured analytical extractions for the eight core comp
 - **Unit of Analysis:** Unstructured CTI text segments.
 
 ### D. Output
-- **Granularity:** Two-tier prediction: MITRE ATT&CK Tactic followed by fine-grained Technique / Sub-technique IDs.
+- **Granularity:** Two-tier prediction: MITRE ATT&CK Tactic ($M = 3$ top tactics) followed by Technique IDs (sub-technique modeling is **NOT REPORTED**).
 
 ### E. Ground Truth
 - **Source:** CTI annotation benchmarks derived from public threat intelligence datasets.
 
 ### F. RAG Architecture
-- **Retrieval Corpus:** MITRE ATT&CK Enterprise matrix structured hierarchically (Tactics -> Techniques -> Sub-techniques).
-- **Retriever:** Two-stage hierarchical retriever: Stage 1 retrieves/identifies high-level Tactics; Stage 2 retrieves Techniques strictly constrained within the identified Tactic.
-- **Embedding Model:** Dense semantic sentence encoders.
-- **Top-k & Context Analysis:** Systematically analyzes retrieval depth k and context size; documents context-window pollution when k is excessive in flat RAG.
-- **Reranker:** Tactic-aware re-ranking module.
-- **LLM Evaluated:** Open-weights instruction models.
-- **Independent Retrieval Quality:** YES, evaluates candidate retrieval hit rate and search space reduction percentage (achieving a 77.5% search space pruning).
+- **Retrieval Corpus:** MITRE ATT&CK Enterprise matrix structured hierarchically (Tactics -> Techniques).
+- **Retriever:** Two-stage hierarchical retriever: Stage 1 retrieves/identifies $M = 3$ high-level Tactics; Stage 2 retrieves $K_A = 15$ candidate chunks per tactic.
+- **Embedding Model:** Dense semantic sentence encoders (`e5-large-v2`).
+- **Top-k & Context Analysis:** Evaluates hyperparameter sensitivity across tactic count $M$ (§4.3) while keeping per-tactic quota $K_A = 15$ distinct from flat single-stage retrieval depth $k$; documents context-window pollution when candidate pools are unconstrained in flat RAG.
+- **Reranker:** Tactic-aware filtering and LLM generation (`Llama-3-8B` / `Llama-3-70B`).
+- **LLM Evaluated:** Open-weights instruction models (`Llama-3-8B`, `Llama-3-70B`).
+- **Independent Retrieval Quality:** YES, evaluates Tactic Recall@M and search space reduction percentage (achieving a 77.5% search space pruning).
 
 ### G. Experimental Design
-- **Comparisons:** Flat RAG (TechniqueRAG baseline) vs. Hierarchical RAG (H-TechniqueRAG).
-- **Ablations:** Effect of context depth (k), latency profiling, and LLM call count reduction.
+- **Comparisons:** Direct zero-shot `Llama-3` baseline (§4.1, Tables 1–2), Flat RAG (`TechniqueRAG` baseline), and Hierarchical RAG (`H-TechniqueRAG`).
+- **Ablations:** Effect of tactic count $M$ sensitivity (§4.3), latency profiling, and LLM call count reduction.
 
 ### H. Metrics
 - Macro-F1, Micro-F1, Accuracy
@@ -410,49 +410,45 @@ This document contains structured analytical extractions for the eight core comp
 - **Title:** Automated Mapping Method for Sysmon Logs to ATT&CK Techniques by Leveraging Atomic Red Team
 - **Authors:** Momoka Okuma, Koki Watarai, Satoshi Okada, and Takuho Mitsunaga
 - **Year:** 2023 (presented November 2023)
-- **Venue:** *2023 6th International Conference on Signal Processing and Information Security* (ICSPIS 2023), IEEE.
+- **Venue:** *2023 6th International Conference on Signal Processing and Information Security* (ICSPIS 2023), pp. 104–109, IEEE.
 - **DOI / URL:** [10.1109/ICSPIS60075.2023.10343783](https://doi.org/10.1109/ICSPIS60075.2023.10343783)
-- **Paper Version Used:** Official IEEE Conference Proceedings.
+- **Paper Version Used:** Bibliographic record only (`[ACCESS BLOCKED / BIBLIOGRAPHIC RECORD ONLY]`); primary IEEE full text was access-blocked (HTTP 418 / subscription wall) during independent audit. All internal method, dataset count, and metric cells are strictly bounded as `UNVERIFIED`.
 
 ### B. Research Problem
-- **Primary Task:** Automated rule-based correlation and mapping of Windows Sysmon event logs to MITRE ATT&CK techniques.
-- **Nature:** Pre-LLM / heuristic telemetry attribution designed to accelerate SOC log triage.
+- **Primary Task:** Automated mapping of Windows Sysmon logs to MITRE ATT&CK techniques leveraging Atomic Red Team (as established by the bibliographic title).
+- **Detailed Methodology:** `UNVERIFIED` (primary full text access-blocked).
 
 ### C. Input
-- **Data Source:** Windows Sysmon event logs generated during execution of Atomic Red Team attack simulation tests.
-- **Unit of Analysis:** Sysmon event log streams (Event ID 1 Process Create, etc.).
+- **Data Source:** Windows Sysmon event logs and Atomic Red Team (per bibliographic title; exact Event IDs and sample counts `UNVERIFIED`).
 
 ### D. Output
-- **Granularity:** MITRE ATT&CK Technique identifiers.
+- **Granularity:** `UNVERIFIED` (ATT&CK Techniques referenced in title; sub-technique coverage `UNVERIFIED`).
 
 ### E. Ground Truth
-- **Source:** Atomic Red Team test metadata defining the executed technique.
-- **Independence:** Ground truth is established by the execution framework.
+- **Source:** `UNVERIFIED` (title references Atomic Red Team; exact labeling protocol `UNVERIFIED`).
 
 ### F. RAG Architecture
-- **Uses RAG?:** **NO.** This is a non-LLM, rule/signature-based correlation study developed prior to the widespread application of generative RAG in log analysis.
-- **Retriever / Vector DB / LLM:** NOT APPLICABLE.
+- **Uses RAG?:** `UNVERIFIED` (primary full text access-blocked).
+- **Retriever / Vector DB / LLM:** `UNVERIFIED`.
 
 ### G. Experimental Design
-- Evaluation of rule-matching heuristic precision and coverage against Atomic Red Team execution logs.
+- **Design & Counts:** `UNVERIFIED`.
 
 ### H. Metrics
-- Detection rate, mapping accuracy, false matching frequency.
+- `UNVERIFIED`.
 
 ### I. Main Result Relevant to Us
-- Demonstrates that Windows Sysmon event fields (specifically command lines, process images, parent processes) contain sufficient discriminative signal to map adversary activity to MITRE ATT&CK techniques.
+- Bibliographic record confirms early (2023) investigation of mapping Windows Sysmon telemetry to MITRE ATT&CK techniques using Atomic Red Team; internal quantitative findings remain `UNVERIFIED`.
 
 ### J. Similarities to RAG2ATTCK
-- Shares the identical input telemetry domain: Windows Sysmon event logs.
-- Shares the identical conceptual goal: mapping endpoint log evidence to MITRE ATT&CK technique categories.
+- Shares the domain focus signaled in its title: mapping Windows Sysmon logs to MITRE ATT&CK techniques.
 
 ### K. Differences from RAG2ATTCK
-- Completely lacks generative AI, LLMs, vector search, or RAG architecture.
-- Relies on deterministic rule extraction rather than probabilistic semantic reasoning or retrieval augmentation.
+- Primary full text is access-blocked (`UNVERIFIED`); therefore no unverified architectural or metric claims from Okuma et al. (2023) are relied upon in comparative tables.
 
 ### L. Novelty Implications
-- **RAG2ATTCK MUST NOT claim novelty for:** Proposing that Windows Sysmon logs can be mapped to MITRE ATT&CK techniques, or identifying Sysmon as a viable data source for technique attribution.
-- **Potential remaining setting-specific contribution:** Within the reviewed comparator set, serving as historical technical precedent, establishing the baseline feasibility of Windows Sysmon -> ATT&CK mapping before evaluating modern LLM and RAG paradigms.
+- **RAG2ATTCK MUST NOT claim novelty for:** Proposing that Windows Sysmon logs can be mapped to MITRE ATT&CK techniques using Atomic Red Team.
+- **Potential remaining setting-specific contribution:** Within the reviewed comparator set, providing a fully reproducible, open-evidence RAG evaluation and retrieval-depth ablation on Windows endpoint telemetry.
 
 ---
 
@@ -461,53 +457,59 @@ This document contains structured analytical extractions for the eight core comp
 ### A. Bibliographic Identity
 - **Title:** LADE: LLM-Assisted Advanced Persistent Threat Detection and Explanation
 - **Authors:** Joon-Young Gwak, Aubrey Strier, Zhaohan Xi, Guanhua Yan, Xiaokui Shu, Scott D. Stoller, and Ping Yang
-- **Year:** 2026 conference / 2027 book copyright (presented at SecureComm 2026 in July 2026; electronic proceedings published July 2026; print proceedings copyright 2027)
-- **Venue:** *Security and Privacy in Communication Networks* (SecureComm 2026), Lecture Notes of the Institute for Computer Sciences, Social Informatics and Telecommunications Engineering (LNICST), Springer.
-- **DOI / URL:** [10.1007/978-3-032-32767-3_11](https://doi.org/10.1007/978-3-032-32767-3_11)
-- **Paper Version Used:** Springer conference proceedings chapter.
+- **Year:** 2026 conference / 2027 book copyright (published online 20 July 2026 in SecureComm 2026 proceedings; print copyright 2027)
+- **Venue:** *Security and Privacy in Communication Networks* (SecureComm 2026), Lecture Notes of the Institute for Computer Sciences, Social Informatics and Telecommunications Engineering (LNICST), vol. 705, pp. 245–273, Springer Cham.
+- **DOI / URL:** [10.1007/978-3-032-32767-3_11](https://doi.org/10.1007/978-3-032-32767-3_11); Author manuscript: <https://www3.cs.stonybrook.edu/~stoller/papers/LADE-2026.pdf>
+- **Paper Version Used:** Official Springer metadata + authenticated 28-page author manuscript PDF (`LADE-2026.pdf`, `3,819,792` bytes, SHA-256: `6e8384569254bc4cf82dd4d0191746907ff40fa76016275946651cf47d6f4985`, `[FULL TEXT VERIFIED]`; see `reports/evidence/t33_lade_claim_verification_record.json`).
 
 ### B. Research Problem
-- **Primary Task:** Advanced Persistent Threat (APT) detection, attack sequence reconstruction, ATT&CK mapping, and automated narrative explanation from host-side command executions.
-- **Decomposition:** Three-phase workflow: (1) Anomaly detection / command sequence filtering, (2) ATT&CK technique identification, (3) Natural language explanation generation.
+- **Primary Task:** Advanced Persistent Threat (APT) detection, malicious code-snippet pinpointing (localization), MITRE ATT&CK technique/sub-technique (TTP) mapping, and human-readable explanation generation from chronologically ordered code/command snippet sequences.
+- **Decomposition:** Three-stage LLM prompting workflow: (1) Sequence-level APT detection (with iterative segmentation and summary propagation for sequences exceeding context limits, plus 5-run majority voting), (2) Malicious snippet localization using a domain-expertise rubric (Table 1: Direct Maliciousness, Contextual Link, Benign/Isolated), and (3) TTP mapping and explanation evaluation (comparing `code -> behavior description -> TTP mapping` against `direct code -> TTP mapping`).
 
 ### C. Input
-- **Data Source:** Host-side shell command execution traces and script execution logs (e.g., DARPA Transparent Computing and simulated APT scenarios).
-- **Unit of Analysis:** Sequences of shell commands (evaluated on 35 attack sequences averaging ~990 command snippets, ~4.8 lines per snippet).
+- **Data Source:** Chronologically ordered host-side code and shell command-line snippet sequences.
+- **Datasets Evaluated (Section 5.1, pp. 12–14):**
+  1. **AVIATOR dataset:** Derived from 8 APT scenarios (APT29, OilRig, Sandworm, Wizard Spider), yielding **35 attack sequences and 32 benign sequences** (averaging ~990 snippets per sequence, ~4.8 non-empty lines per snippet, with 42:1 median and 113:1 mean benign-to-APT snippet ratios).
+  2. **Caldera-derived dataset:** Constructed from Caldera adversary profiles and MITRE ATT&CK emulation plans (Carbanak, FIN6, FIN7, Menu Pass) to evaluate controlled native command sequences. Contains **33 APT-labeled sequences per benign-to-APT ratio setting** (including a **2:1 setting** and a higher-noise setting), composed of **20 adversary-profile sequences** (~4 APT snippets each) and **13 MITRE emulation-plan sequences** (**5 lateral-movement sequences** with ~6 APT snippets each + **8 multi-stage attack sequences** with ~25 APT snippets each), paired with **33 length-matched benign sequences** sampled from a pool of 744 benign snippets (~6.1 non-empty lines per snippet).
 
 ### D. Output
-- **Granularity:** Ranked list of candidate MITRE ATT&CK techniques (evaluating Top-1, Top-3, Top-10 output candidates), paired with natural language narrative attack explanations.
+- **Granularity:** Sequence-level binary APT detection; snippet-level malicious localization; ranked **Top-10 and Top-3** MITRE ATT&CK Technique / Sub-technique candidates (`Txxxx` / `Txxxx.yyy`); and natural-language behavior descriptions, extracted KB excerpts, and tagging explanations.
 
 ### E. Ground Truth
-- **Source:** Scenario execution documentation from benchmark datasets (DARPA TC / simulated APT traces).
+- **Source:** Ground-truth labels derived from AVIATOR scenario logs and deterministic Caldera adversary profile / MITRE emulation plan command steps.
+- **Leakage Controls:** Sensitive environment-specific artifacts (e.g., usernames, IP addresses) are replaced with realistic synthetic values during preprocessing; inputs consist of command/code snippets without IDS alert names or detection rule metadata.
 
 ### F. RAG Architecture
-- **Uses RAG?:** **NO.** LADE relies on multi-stage in-context prompting of LLMs without an external vector database or retrieval-augmented generation component.
-- **Retrieval Corpus / Retriever / Vector DB:** NOT APPLICABLE.
-- **LLM Evaluated:** Commercial / open LLM prompting engines.
-- **Top-k Distinction:** LADE reports **model output ranking accuracy** (Top-1, Top-3, Top-10 predictions generated by the LLM), which must **NOT** be confused with retrieval Top-k candidates retrieved from a vector database.
+- **Uses RAG?:** **NO.** LADE uses multi-stage zero-shot prompting and explicitly leaves Retrieval-Augmented Generation (RAG) to future work (Section 7, p. 20).
+- **External Domain Knowledge (DK) Settings (Section 5.4, p. 16):** Evaluates three static prompt-injection settings: (1) **No DK**, (2) **Coarse-grained DK** (descriptions of 203 parent techniques injected in prompt), and (3) **Full (Summarized) DK** (LLM-generated summaries of all 203 techniques and 453 sub-techniques produced via `gpt-oss-120B`).
+- **Retrieval Corpus / Retriever / Vector DB:** NOT APPLICABLE (no dynamic per-query vector retriever).
+- **LLMs Evaluated (Section 5, p. 12; Tables 2–6, pp. 12–19):** Four LLMs: **`gpt-oss-120B`**, **`Llama-3.3-70B`**, **`Mistral-Small-3.2-24B`**, and **`Gemini-2.5-Pro`**.
+- **Top-k Distinction:** LADE's Top-3 and Top-10 metrics refer strictly to **LLM output candidate ranking cutoffs**, NOT retrieved context depth $k$ from a vector index.
 
 ### G. Experimental Design
-- Multi-step prompting pipeline evaluated on 35 attack sequences.
-- Compares rule-based/traditional ML baselines against LLM-assisted multi-stage detection and explanation.
+- Evaluates 4 LLMs (`gpt-oss-120B`, `Llama-3.3-70B`, `Mistral-Small-3.2-24B`, `Gemini-2.5-Pro`) across 5 independent runs per task.
+- Compares three domain-knowledge prompt settings (No DK, Coarse DK, Summarized Full DK) and two tagging modalities (Behavior Description vs. Direct Code) on Top-10 (Table 4) and Top-3 (Table 5) TTP mapping.
 
 ### H. Metrics
-- Precision, Recall, F1-score
-- Top-1, Top-3, Top-10 output ranking accuracy
-- Qualitative explanation fidelity
+- **APT Detection (Table 2, p. 12):** Precision, Recall, F1-score on AVIATOR and 2:1 Caldera-derived datasets.
+- **Malicious Snippet Pinpointing (Table 3, p. 15):** Snippet-level Precision and Recall.
+- **TTP Mapping (Tables 4–5, pp. 17–18):** Mean Reciprocal Rank (**MRR**), Hit Rate (**HR**), and Normalized Discounted Cumulative Gain (**NDCG**) at **Top-10** and **Top-3**.
+- **Tagging Summary Quality (Table 6, p. 19):** **ROUGE-1** precision and **BERTScore** across Excerpt Validity (C.1), Excerpt-Behavior Alignment (C.2), and Explanation Alignment (C.3), plus average task response latency (Section 5.6, pp. 18–19).
 
 ### I. Main Result Relevant to Us
-- Confirms that analyzing host command sequences enables effective identification and explanation of multi-step APT behaviors.
-- Highlights that evaluating ranked candidate outputs (Top-k output accuracy) provides actionable utility for security analysts compared to rigid single-label classification.
+- Incorporating Coarse-grained ATT&CK domain knowledge improves TTP mapping across all four models (e.g., `Gemini-2.5-Pro` reaches Top-10 MRR `0.812`, HR `0.952`, NDCG `0.847` with Direct Code + Coarse DK, and HR `0.961` with Behavior Desc. + Coarse DK).
+- However, injecting **Full (Summarized) DK** (203 techniques + 453 sub-techniques summarized by `gpt-oss-120B`) **degrades performance for all models except `gpt-oss-120B`** (e.g., `Llama-3.3-70B` Top-10 Direct Code MRR drops from `0.509` under Coarse DK to `0.324` under Summarized Full DK) due to summarization information loss and cross-model inductive bias — motivating dynamic RAG over full un-summarized ATT&CK documentation in future work (Section 5.4, p. 16; Section 7, p. 20).
 
 ### J. Similarities to RAG2ATTCK
-- Focuses on host-side command-level execution behavior.
-- Evaluates attribution to MITRE ATT&CK techniques alongside explanation.
+- Evaluates host-side command execution evidence mapped to fine-grained MITRE ATT&CK techniques and sub-techniques.
+- Demonstrates that omitting key command-line indicators (e.g., registry path `\CurrentVersion\Run`) causes misattribution between parent techniques (`T1112`) and specific sub-techniques (`T1547.001`).
 
 ### K. Differences from RAG2ATTCK
-- **No RAG Mechanism:** LADE does not use retrieval augmentation; it is an in-context multi-stage prompting and reasoning pipeline.
-- **Input Scope & Volume:** Evaluated on a limited set of 35 command sequences (~4.7K log lines per scenario), whereas RAG2ATTCK evaluates standardized event-level endpoint telemetry.
-- **Top-k Semantics:** LADE's Top-k refers strictly to the LLM's ranked output predictions, whereas RAG2ATTCK's Top-k refers to retriever candidate depth (k in {1, 3, 5, 10}).
+- **No Dynamic RAG Retriever:** LADE injects static coarse or pre-summarized ATT&CK descriptions into the prompt rather than performing dynamic per-query vector retrieval over full STIX technique/sub-technique records.
+- **Input Modality:** Chronological code/shell snippet sequences from AVIATOR and Caldera adversary profiles vs. native Windows endpoint telemetry (Sysmon / Windows Security Event Logs).
+- **Top-k Semantics:** LADE's Top-3 / Top-10 are output prediction rank cutoffs, whereas RAG2ATTCK's Top-k ($k \in \{1, 3, 5, 10\}$) is retrieval context depth from a vector index.
 
 ### L. Novelty Implications
-- **RAG2ATTCK MUST NOT claim novelty for:** Mapping host command sequences to ranked ATT&CK candidate lists, or utilizing LLMs to interpret execution logs.
-- **Potential remaining setting-specific contribution:** Within the reviewed comparator set, RAG2ATTCK evaluates whether explicit ATT&CK retrieval augmentation (RAG) resolves the knowledge cutoff and hallucination limitations present in pure in-context prompting pipelines like LADE on standardized Windows endpoint logs.
+- **RAG2ATTCK MUST NOT claim novelty for:** Using LLMs to map host command snippets to MITRE ATT&CK techniques/sub-techniques, or showing that injecting ATT&CK domain descriptions into prompts improves mapping accuracy over ungrounded prompting.
+- **Potential remaining setting-specific contribution:** Within the reviewed comparator set, RAG2ATTCK directly executes the dynamic per-event Retrieval-Augmented Generation (RAG) evaluation and retrieval-depth ($k \in \{1, 3, 5, 10\}$) ablation over full un-summarized MITRE ATT&CK v19.2 STIX records that LADE leaves to future work.
+

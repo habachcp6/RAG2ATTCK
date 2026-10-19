@@ -1,0 +1,392 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_type": "workstation_storage_attestation",
+  "generated_utc": "2026-10-19T02:48:57.026832+00:00",
+  "policy": "READ_ONLY_AUDIT_ZERO_DELETION",
+  "deletion_performed": false,
+  "mutation_outside_candidate_repo": false,
+  "path_sanitization_policy": "All workstation-local user home and secondary drive paths are represented via <USER_HOME> and <SECONDARY_WORKSPACE_DRIVE> placeholders to maintain zero path leakage in git-tracked artifacts.",
+  "protected_baseline_verification": {
+    "baseline_commit_sha": "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315",
+    "protected_files_count": 22,
+    "git_diff_line_count": 0,
+    "all_22_sha256_verified": true,
+    "files": {
+      "attack/corpus/enterprise-windows-v19.2.jsonl": {
+        "sha256": "b219341154ddf2f12e97d622158a04ab7d57641df6a865559258d365852c3c75",
+        "verified_from": "candidate_repo_git_tracked"
+      },
+      "attack/corpus/enterprise-windows-v19.2.manifest.json": {
+        "sha256": "6bd769324f6ac9193d7df82e7f54f5a1397a41b9bc72be767da5a72b54b3a47c",
+        "verified_from": "candidate_repo_git_tracked"
+      },
+      "attack/index/enterprise-windows-v19.2.docmap.json": {
+        "sha256": "a7de3dfcf2b6e186e639d2922fcbc27766c160ae58bbafea74b5efc0faf30586",
+        "verified_from": "candidate_repo_git_tracked"
+      },
+      "attack/index/enterprise-windows-v19.2.index": {
+        "sha256": "7e3b9944870860766ebd5ba76f19a420c1bbe57cebd4e4238b06fd31128578e5",
+        "verified_from": "candidate_repo_git_tracked"
+      },
+      "attack/index/enterprise-windows-v19.2.manifest.json": {
+        "sha256": "ad1fc8c8118ef897943597e30c3ab71cf30556f675b38bbeba6772537127ed0a",
+        "verified_from": "candidate_repo_git_tracked"
+      },
+      "attack/raw/enterprise-v19.2/enterprise-attack-19.2.json": {
+        "sha256": "dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4",
+        "verified_from": "secondary_workspace_immutable_untracked"
+      },
+      "config/benchmark_scope.json": {
+        "sha256": "d6aa89831dec75362b4fd48de0fd6e7082290f2be0cb7bd0afc6bc518148db8b",
+        "verified_from": "candidate_repo_git_tracked"
+      },
+      "config/canonical_experiment_lock_v1.json": {
+        "sha256": "d0ce198ad4853f4c41ef2bfbafbe10a395e4927a6c6561b3e72c055c4b887e9f",
+        "verified_from": "candidate_repo_git_tracked"
+      },
+      "config/experiment_config.json": {
+        "sha256": "961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac",
+        "verified_from": "candidate_repo_git_tracked"
+      },
+      "config/experiment_protocol_v1.json": {
+        "sha256": "a402b04ab463172f9d4079bff27b089ca8a21ffd0805d097af6cb1f3c7b5a8fb",
+        "verified_from": "candidate_repo_git_tracked"
+      },
+      "config/model.json": {
+        "sha256": "312c34cedd84106f2004c6070b72aeac1dd84209a464e2993fee3ec87822697f",
+        "verified_from": "candidate_repo_git_tracked"
+      },
+      "config/pricing_v1.json": {
+        "sha256": "e8afd6311f04dbbf5c34bb030e88a5b9d394f92c84d3e51feb32b327a08655a5",
+        "verified_from": "candidate_repo_git_tracked"
+      },
+      "config/retrieval.json": {
+        "sha256": "b33a93913e7f6de36f6f9021f77b2c9dcb1d426929162acb250a3c73ac8e6e25",
+        "verified_from": "candidate_repo_git_tracked"
+      },
+      "data/ground_truth/synthetic/dataset_manifest.json": {
+        "sha256": "4576b793360d02b60d619d199fd34d4555ace33215303ee847715c162a50dcc2",
+        "verified_from": "candidate_repo_git_tracked"
+      },
+      "data/ground_truth/synthetic/ground_truth.jsonl": {
+        "sha256": "8f3d73bac7e81336a3e90bfa5a5d0850a51ac5588385ee53ad940bcbc3612608",
+        "verified_from": "candidate_repo_git_tracked"
+      },
+      "data/ground_truth/synthetic/inference.jsonl": {
+        "sha256": "90d5f59e64f669f95d5ddccd86f1f047e10ee3dc46e4b67a8cd13d1ddf2cd4b8",
+        "verified_from": "candidate_repo_git_tracked"
+      },
+      "data/ground_truth/synthetic/pairs.jsonl": {
+        "sha256": "079e57a441b18d127739f610e7f62c263d943eefa19ca4ea5c6eab8b8a07665d",
+        "verified_from": "candidate_repo_git_tracked"
+      },
+      "data/ground_truth/synthetic/split_manifest.json": {
+        "sha256": "37fce63ccaa6db8e13604b7e3783997a10635f58995881b5e41913e6f550f43f",
+        "verified_from": "candidate_repo_git_tracked"
+      },
+      "data/ground_truth/synthetic/views.jsonl": {
+        "sha256": "1e6b0d3bd525b8fe9f97ba9e5656905597a3939e47c130a9e6f74535e2cd421d",
+        "verified_from": "candidate_repo_git_tracked"
+      },
+      "docs/context/RAG_ATTCK_Project_Tracker_Updated.xlsx": {
+        "sha256": "ed946fa1918af54a0634a317b6bf3d2b4291501219524de691c5da8b15725ef8",
+        "verified_from": "candidate_repo_git_tracked"
+      },
+      "docs/context/RAG_ATTCK_Research_Plan_Updated.docx": {
+        "sha256": "39499aa68188530eed81d1426af4d2f0217e17e10d9d016ddc0b38c0ae7a91af",
+        "verified_from": "candidate_repo_git_tracked"
+      },
+      "prompts/baseline_v1.txt": {
+        "sha256": "b751fde1ee33b03ec0bdc07cbba10267002d2086cf22b91a74bdfd123856f206",
+        "verified_from": "candidate_repo_git_tracked"
+      }
+    },
+    "canonical_metric_bundle_v2_sha256": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+    "canonical_run_seal_v1_sha256": "ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701",
+    "public_v4_candidate_zip_sha256": "1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1"
+  },
+  "workspace_comparison": {
+    "authoritative_candidate_repo": {
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003",
+      "branch": "codex/finalization-20261003",
+      "tracked_file_count": 515,
+      "main_base_commit_sha": "b69a6909acda4c7588744acc7e1d6c20bfce2612",
+      "main_base_tracked_file_count": 309,
+      "role": "AUTHORITATIVE_CLOSEOUT_CANDIDATE_WORKSPACE"
+    },
+    "secondary_historical_workspace": {
+      "sanitized_path": "<SECONDARY_WORKSPACE_DRIVE>",
+      "non_venv_file_count": 532,
+      "role": "HISTORICAL_MAIN_SNAPSHOT_AND_RAW_CONTEXT_ARCHIVE_READ_ONLY",
+      "venv_pyvenv_cfg_sanitized": [],
+      "venv_cross_drive_dependency_note": "The .venv in <SECONDARY_WORKSPACE_DRIVE> binds base python executable under <USER_HOME>/AppData/Local/Programs/Python/Python312; neither workspace is deleted or mutated."
+    },
+    "tracked_files_comparison": {
+      "common_files_with_candidate_count": 197,
+      "common_files_identical_sha256_count": 132,
+      "common_files_updated_in_candidate_count": 65,
+      "common_files_updated_in_candidate": [
+        "artifacts/orchestration/integration_protected_baseline.json",
+        "docs/related_work/T02_comparator_matrix.md",
+        "scripts/generate_template_approval.py",
+        "scripts/run_offline_tests.py",
+        "scripts/validate_synthetic_registry.py",
+        "src/acquisition.py",
+        "src/artifacts.py",
+        "src/attack_loader.py",
+        "src/baseline/pipeline.py",
+        "src/baseline/smoke.py",
+        "src/data_ground_truth.py",
+        "src/dataset.py",
+        "src/evaluation/experiment_metrics.py",
+        "src/evaluation/retrieval_diagnostics.py",
+        "src/experiment/__main__.py",
+        "src/experiment/authorization.py",
+        "src/experiment/monetary_ledger.py",
+        "src/experiment/redaction.py",
+        "src/experiment/runner.py",
+        "src/ground_truth.py",
+        "src/llm/__init__.py",
+        "src/llm/client.py",
+        "src/llm/inputs.py",
+        "src/llm/logging.py",
+        "src/llm/schemas.py",
+        "src/profiler.py",
+        "src/rag/__init__.py",
+        "src/rag/pipeline.py",
+        "src/rag/schemas.py",
+        "src/reconcile.py",
+        "src/retrieval/corpus_builder.py",
+        "src/retrieval/retriever.py",
+        "tests/test_acquisition.py",
+        "tests/test_artifact_gates.py",
+        "tests/test_attack_corpus.py",
+        "tests/test_attack_id_validation.py",
+        "tests/test_attack_loader.py",
+        "tests/test_baseline_pipeline.py",
+        "tests/test_benchmark_inputs.py",
+        "tests/test_ci_contract.py",
+        "tests/test_dataset.py",
+        "tests/test_experiment_evaluation.py",
+        "tests/test_experiment_t22.py",
+        "tests/test_ground_truth.py",
+        "tests/test_live_budget.py",
+        "tests/test_llm_client.py",
+        "tests/test_model_config.py",
+        "tests/test_monetary_guard.py",
+        "tests/test_no_rag_pilot.py",
+        "tests/test_offline_guard.py",
+        "tests/test_output_schema.py",
+        "tests/test_profiler_invariants.py",
+        "tests/test_profiling.py",
+        "tests/test_rag_pipeline.py",
+        "tests/test_reconciliation.py",
+        "tests/test_retrieval_diagnostics.py",
+        "tests/test_retrieval_failure_analysis.py",
+        "tests/test_retrieval_integrity.py",
+        "tests/test_retrieval_metadata.py",
+        "tests/test_retriever.py",
+        "tests/test_smoke_cases.py",
+        "tests/test_synthetic.py",
+        "tests/test_synthetic_freeze.py",
+        "tests/test_synthetic_generation.py",
+        "tests/test_t20_canonical_artifacts.py"
+      ],
+      "files_added_in_candidate_only_count": 318,
+      "untracked_archive_files_in_secondary_count": 335,
+      "conclusion": "The candidate repository on codex/finalization-20261003 is the authoritative git-tracked superset of main (b69a6909acda4c7588744acc7e1d6c20bfce2612), while <SECONDARY_WORKSPACE_DRIVE> preserves read-only historical raw STIX, context workbooks, and virtual environment files."
+    }
+  },
+  "codex_artifacts_directory_inventory": [
+    {
+      "name": "canonical-accepted-bundle-v2",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/canonical-accepted-bundle-v2",
+      "type": "directory"
+    },
+    {
+      "name": "canonical-authoring-candidates-v2",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/canonical-authoring-candidates-v2",
+      "type": "directory"
+    },
+    {
+      "name": "canonical-authoring-final-v4",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/canonical-authoring-final-v4",
+      "type": "directory"
+    },
+    {
+      "name": "canonical-authoring-final-v5",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/canonical-authoring-final-v5",
+      "type": "directory"
+    },
+    {
+      "name": "canonical-authoring-final-v6",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/canonical-authoring-final-v6",
+      "type": "directory"
+    },
+    {
+      "name": "canonical-metrics-208ac00-v1",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/canonical-metrics-208ac00-v1",
+      "type": "directory"
+    },
+    {
+      "name": "canonical-metrics-rq-v2",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/canonical-metrics-rq-v2",
+      "type": "directory"
+    },
+    {
+      "name": "deck-qa-c1561d6a51",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/deck-qa-c1561d6a51",
+      "type": "directory"
+    },
+    {
+      "name": "final_handover_package_20261002",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/final_handover_package_20261002",
+      "type": "directory"
+    },
+    {
+      "name": "final_handover_package_20261002.zip",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/final_handover_package_20261002.zip",
+      "type": "file",
+      "size_bytes": 4776151,
+      "sha256": "6b1f4c0f3d643f22d06e8ef2bb0238d924bc9ff96153254814c7cecc539ab376"
+    },
+    {
+      "name": "final_handover_package_v2_20261002",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/final_handover_package_v2_20261002",
+      "type": "directory"
+    },
+    {
+      "name": "final_handover_package_v2_20261002.zip",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/final_handover_package_v2_20261002.zip",
+      "type": "file",
+      "size_bytes": 4771207,
+      "sha256": "cace048924a15308c813e8ef8b50cacbbc6ae1ebab0e78ce3712c6fc7fba5999"
+    },
+    {
+      "name": "final_handover_package_v3_20261002",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/final_handover_package_v3_20261002",
+      "type": "directory"
+    },
+    {
+      "name": "final_handover_package_v3_20261002.zip",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/final_handover_package_v3_20261002.zip",
+      "type": "file",
+      "size_bytes": 4772892,
+      "sha256": "a12a9c6b8990ae0ffbfd4c55373e776bf3620997b564a59a5950d64abd6c85d0"
+    },
+    {
+      "name": "final_handover_v3_SHA256SUMS.txt",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/final_handover_v3_SHA256SUMS.txt",
+      "type": "file",
+      "size_bytes": 369
+    },
+    {
+      "name": "finalization_20261003",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/finalization_20261003",
+      "type": "directory"
+    },
+    {
+      "name": "finalization_repo_20261003",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003",
+      "type": "directory"
+    },
+    {
+      "name": "finalization_snapshots",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/finalization_snapshots",
+      "type": "directory"
+    },
+    {
+      "name": "finalization_worktrees_20261003",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/finalization_worktrees_20261003",
+      "type": "directory"
+    },
+    {
+      "name": "integration_audit_run_20261002",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/integration_audit_run_20261002",
+      "type": "directory"
+    },
+    {
+      "name": "provisional-audit-replay-91872ae",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/provisional-audit-replay-91872ae",
+      "type": "directory"
+    },
+    {
+      "name": "public_v4_candidate_20261003",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/public_v4_candidate_20261003",
+      "type": "directory"
+    },
+    {
+      "name": "public_v4_candidate_20261003.zip",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/public_v4_candidate_20261003.zip",
+      "type": "file",
+      "size_bytes": 2343105,
+      "sha256": "1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1"
+    },
+    {
+      "name": "report-qa-08a564c4e6",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/report-qa-08a564c4e6",
+      "type": "directory"
+    },
+    {
+      "name": "report-qa-79667279b6",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/report-qa-79667279b6",
+      "type": "directory"
+    },
+    {
+      "name": "report-qa-v4-3ea0f24234",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/report-qa-v4-3ea0f24234",
+      "type": "directory"
+    },
+    {
+      "name": "report-qa-v5-753a632b0d",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/report-qa-v5-753a632b0d",
+      "type": "directory"
+    },
+    {
+      "name": "report-qa-v6-73d402b21f",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/report-qa-v6-73d402b21f",
+      "type": "directory"
+    },
+    {
+      "name": "root_remote_clone_5754_20261002",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/root_remote_clone_5754_20261002",
+      "type": "directory"
+    },
+    {
+      "name": "root_remote_replay_5754_20261002",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/root_remote_replay_5754_20261002",
+      "type": "directory"
+    },
+    {
+      "name": "sealed-live66-20261002",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/sealed-live66-20261002",
+      "type": "directory"
+    },
+    {
+      "name": "snapshot_controller_attestation.json",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/snapshot_controller_attestation.json",
+      "type": "file",
+      "size_bytes": 9112
+    },
+    {
+      "name": "supervisor_boundary_v2_pytest_tmp",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/supervisor_boundary_v2_pytest_tmp",
+      "type": "directory"
+    },
+    {
+      "name": "supervisor_boundary_v3_pytest_tmp",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/supervisor_boundary_v3_pytest_tmp",
+      "type": "directory"
+    },
+    {
+      "name": "supervisor_integration_repo_20261003",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/supervisor_integration_repo_20261003",
+      "type": "directory"
+    },
+    {
+      "name": "verified-native-figures-v1",
+      "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/verified-native-figures-v1",
+      "type": "directory"
+    }
+  ]
+}

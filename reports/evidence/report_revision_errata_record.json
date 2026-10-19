@@ -1,0 +1,104 @@
+{
+  "schema_version": "report_revision_errata_record_v1",
+  "generated_at_utc": "2026-10-19T03:18:00Z",
+  "immutable_trust_anchors_unchanged": {
+    "canonical_metric_bundle_v2": {
+      "repo_relative_path": "artifacts/results/canonical_metric_bundle_v2.json",
+      "sha256": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+      "size_bytes": 19784,
+      "modified": false
+    },
+    "canonical_run_seal_v1": {
+      "repo_relative_path": "reports/evidence/canonical_run_seal_v1.json",
+      "sha256": "ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701",
+      "size_bytes": 3333,
+      "modified": false
+    },
+    "populated_report_slots_canonical": {
+      "repo_relative_path": "reports/evidence/populated_report_slots_canonical.json",
+      "sha256": "7c5a37f2659035108a70b7f161114f5d35e6c903a5e77df1d395164fbb75e77e",
+      "size_bytes": 15010,
+      "modified": false
+    }
+  },
+  "historical_archives": {
+    "r9_final_artifact_inventory_20261003": {
+      "repo_relative_path": "reports/evidence/historical/r9_final_artifact_inventory_20261003.json",
+      "sha256": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+      "size_bytes": 38323
+    },
+    "visual_qa_inspection_record_20261003": {
+      "repo_relative_path": "reports/evidence/historical/visual_qa_inspection_record_20261003.json",
+      "sha256": "dd3e5d5a0e61bf7aef233376f52256ec7c06a2cbea266963d154146acbae8da5",
+      "size_bytes": 15697
+    }
+  },
+  "remediated_defects": [
+    {
+      "errata_id": "ERR-01",
+      "requirement_id": "AC.01",
+      "title": "Okuma et al. (2023) [9] UNVERIFIED Synchronization Across Markdown and DOCX",
+      "summary": "Synchronized docs/report/scientific_report.docx and reports/evidence/canonical_populated_report.docx with the Markdown source so Table 1b Row 16 and Section 2.1 bound Okuma et al. (2023) strictly as UNVERIFIED (eliminating stale 'Prompting only (no RAG)' text in docs/report/scientific_report.docx)."
+    },
+    {
+      "errata_id": "ERR-02",
+      "requirement_id": "AD.01",
+      "title": "LADE (Gwak et al., 2026/2027) [12] T33 Full-Text Verification Remediation",
+      "summary": "Verified the 28-page LADE author manuscript PDF (SHA-256: 6e8384569254bc4cf82dd4d0191746907ff40fa76016275946651cf47d6f4985), updating Section 2.1 to Full-Text Content Audited (6/8) and Partial / Metadata-Only / Access-Blocked (2/8), updating Table 1b Rows 8/12/14/16 (4 evaluated models: gpt-oss-120B, Llama-3.3-70B, Mistral-Small-3.2-24B, Gemini-2.5-Pro; AVIATOR 35/32 seqs and Caldera-derived 33 seqs per 2:1 setting + 5 lateral + 8 multi-stage; output cutoff k in {3,10} rather than dynamic retriever depth), and updating Reference 12 to [FULL TEXT VERIFIED]."
+    },
+    {
+      "errata_id": "ERR-03",
+      "requirement_id": "AE.01",
+      "title": "Section 6.3 Provider Retry Locator Standardization",
+      "summary": "Standardized Section 6.3 Provider Reliability and Financial Reconciliation to explicitly record the single transient retry locator in inputs/request_journal.jsonl: logical key (\"view_d870d574\", \"rag_k1\"), run_id=\"live-66b94b1676bf46a9\", lines 48479-48482 (lifecycle lines 48476-48485), ordinal=5387 attempt_index=0 API_FAILURE/InternalServerError -> ordinal=5388 attempt_index=1 SUCCESS (1,543 input / 1,540 cached / 104 output tokens)."
+    },
+    {
+      "errata_id": "ERR-04",
+      "requirement_id": "AF.01",
+      "title": "Report Status Header Synchronization and Dual-Path Byte Parity",
+      "summary": "Synchronized the report status line to '**Status:** CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW — **Status:** CORRECTED RELEASE CANDIDATE — PENDING OWNER CLOSEOUT SIGN-OFF' and enforced 100% byte-for-byte identity between reports/evidence/canonical_populated_report.{md,docx} and docs/report/scientific_report.{md,docx}."
+    }
+  ],
+  "artifact_hash_transitions": {
+    "canonical_populated_report_md": {
+      "repo_relative_path": "reports/evidence/canonical_populated_report.md",
+      "historical_sha256_lf": "5cbaa094dd6fd717d633de4655221bf953e62f7848ca250b4d11936a4a373fb8",
+      "historical_sha256_crlf": "5cbaa094095adbd163c0ea516a32df799e9a9af9efb35c47b40c04c6fc44858d",
+      "historical_size_bytes_lf": 105456,
+      "new_sha256": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
+      "new_sha256_crlf": "73a14444db44bf1ec0577b387ab3a8deb0dd21d2c0be42d99d10e38071d42483",
+      "new_size_bytes": 105497
+    },
+    "docs_scientific_report_md": {
+      "repo_relative_path": "docs/report/scientific_report.md",
+      "historical_sha256_lf": "083fd1be204f9bb2e149c1e16ce427481fd71e67c94bf925d9a4a32bc4f1273f",
+      "historical_size_bytes_lf": 105499,
+      "new_sha256": "1d1ff1ce709206b2cf1f9cdca713a61f286b8841ca5c8487f76debba8aa9541a",
+      "new_size_bytes": 105497,
+      "byte_identical_to_canonical_populated_report_md": true
+    },
+    "canonical_populated_report_docx": {
+      "repo_relative_path": "reports/evidence/canonical_populated_report.docx",
+      "historical_sha256": "c5ce49f7e57ee2d86d79daab50def273af6dbb4c4393da61340f033b63306ccb",
+      "historical_size_bytes": 320008,
+      "new_sha256": "25fbed2e7227456345fba407fed1b1ed476dd484a0841f805718fc78acdf783a",
+      "new_size_bytes": 320364
+    },
+    "docs_scientific_report_docx": {
+      "repo_relative_path": "docs/report/scientific_report.docx",
+      "historical_sha256": "43297b17b2a505fdad96e94ac88fdc868e412bc493682be5e1bdc048bc0bb2dd",
+      "historical_size_bytes": 320899,
+      "new_sha256": "25fbed2e7227456345fba407fed1b1ed476dd484a0841f805718fc78acdf783a",
+      "new_size_bytes": 320364,
+      "byte_identical_to_canonical_populated_report_docx": true
+    },
+    "canonical_populated_report_pdf": {
+      "repo_relative_path": "reports/evidence/canonical_populated_report.pdf",
+      "historical_sha256": "5604e53fb064d2d42c69e4da3ade0b4d4354900fb5706e67c69590167317ee23",
+      "historical_size_bytes": 1286065,
+      "new_sha256": "e47a8eae2b8f64a878d3b6eb49fc5d6db341dac311bdbd8173d25f610b343514",
+      "new_size_bytes": 1290068,
+      "total_pages": 41
+    }
+  }
+}

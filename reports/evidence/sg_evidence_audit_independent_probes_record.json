@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-19T23:01:38Z",
+  "timestamp": "2026-10-20T05:32:07Z",
   "repo_root": "<REPO_ROOT>",
   "section_1_reproduction_report": {
     "probe_1_1_empty_dir": {
@@ -56,9 +56,9 @@
   "section_3_pytest_suite": {
     "passed": true,
     "exit_code": 0,
-    "passed_count": 57,
-    "duration_seconds": 25.068540334701538,
-    "stdout_summary": "======================= 57 passed, 2 warnings in 24.49s ======================="
+    "passed_count": 58,
+    "duration_seconds": 30.799382209777832,
+    "stdout_summary": "======================= 58 passed, 2 warnings in 29.47s ======================="
   },
   "section_4_security_privacy": {
     "passed": true,
@@ -71,12 +71,12 @@
         "clean": true
       },
       "reports/evidence/r9_final_artifact_inventory.json": {
-        "size_bytes": 44588,
+        "size_bytes": 45132,
         "violations": [],
         "clean": true
       },
       "reports/evidence/qa/visual_qa_inspection_record.json": {
-        "size_bytes": 18603,
+        "size_bytes": 20941,
         "violations": [],
         "clean": true
       },
@@ -91,7 +91,7 @@
         "clean": true
       },
       "reports/evidence/t33_lade_claim_verification_record.json": {
-        "size_bytes": 8939,
+        "size_bytes": 11053,
         "violations": [],
         "clean": true
       },
@@ -106,12 +106,12 @@
         "clean": true
       },
       "reports/evidence/closeout_rc_artifact_inventory.json": {
-        "size_bytes": 44588,
+        "size_bytes": 45132,
         "violations": [],
         "clean": true
       },
       "reports/evidence/matrix_git_blob_audit_report.json": {
-        "size_bytes": 93387,
+        "size_bytes": 93399,
         "violations": [],
         "clean": true
       },
@@ -136,12 +136,12 @@
         "clean": true
       },
       "docs/audit/requirements_traceability_matrix.md": {
-        "size_bytes": 81017,
+        "size_bytes": 81029,
         "violations": [],
         "clean": true
       },
       "docs/PLAN-rag2attck-closeout.md": {
-        "size_bytes": 31096,
+        "size_bytes": 31520,
         "violations": [],
         "clean": true
       }

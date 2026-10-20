@@ -526,10 +526,23 @@ def test_all_inventory_entries_match_raw_disk_and_git_bytes_exact() -> None:
                     assert node["sha256"] == hashlib.sha256(raw).hexdigest(), (
                         f"sha256 mismatch against raw disk bytes for {rel}"
                     )
-                    if node.get("expected_sha256") is not None:
-                        assert node["expected_sha256"] == node["sha256"], (
-                            f"expected_sha256 != sha256 for {rel}"
-                        )
+                    assert node.get("expected_sha256") is not None, (
+                        f"expected_sha256 must not be None for {rel}"
+                    )
+                    assert node["expected_sha256"] == node["sha256"], (
+                        f"expected_sha256 != sha256 for {rel}"
+                    )
+                    src_sha = inv_obj.get("source_sha")
+                    assert src_sha and len(src_sha) == 40
+                    proc_src = subprocess.run(
+                        ["git", "show", f"{src_sha}:{rel}"],
+                        cwd=str(REPO_ROOT),
+                        capture_output=True,
+                        check=True,
+                    )
+                    assert proc_src.stdout == raw, (
+                        f"git show {src_sha}:{rel} differs from disk bytes"
+                    )
                     checked_count += 1
                 for v in node.values():
                     _walk(v)
@@ -622,4 +635,43 @@ def test_svg_or_json_crlf_mutation_on_disk_fails_closed(tmp_path: Path) -> None:
         "reports/evidence/figures/fig1_system_architecture.svg"
         in inventory["validation_summary"]["hash_mismatch_artifacts"]
     )
+
+
+def test_visual_qa_timestamp_chronology_and_pre_pdf_creation_fails_closed(
+    tmp_path: Path,
+) -> None:
+    """Verify QA inspection_timestamp_utc is after PDF /CreationDate and backdating fails closed."""
+    from datetime import datetime, timezone
+
+    qa_rel = "reports/evidence/qa/visual_qa_inspection_record.json"
+    qa_data = json.loads((REPO_ROOT / qa_rel).read_text(encoding="utf-8"))
+    inv_data = json.loads(
+        (REPO_ROOT / "reports/evidence/r9_final_artifact_inventory.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    insp_dt = datetime.fromisoformat(
+        qa_data["inspection_timestamp_utc"].replace("Z", "+00:00")
+    )
+    inv_dt = datetime.fromisoformat(
+        inv_data["timestamp_utc"].replace("Z", "+00:00")
+    )
+    pdf_creation_utc = datetime(2026, 10, 19, 22, 32, 23, tzinfo=timezone.utc)
+    assert insp_dt > pdf_creation_utc
+    assert inv_dt >= insp_dt
+
+    setup_mock_repo(tmp_path)
+    qa_file = tmp_path / qa_rel
+    tampered_qa = json.loads(qa_file.read_text(encoding="utf-8"))
+    tampered_qa["inspection_timestamp_utc"] = "2026-10-19T11:30:00Z"
+    qa_file.write_text(json.dumps(tampered_qa, indent=2), encoding="utf-8")
+
+    inv_fail, code_fail = generate_inventory(repo_root=tmp_path)
+    assert code_fail == 1
+    assert inv_fail["verdict"] == "FAIL_QA_VERIFICATION_MISMATCH"
+    assert any(
+        "precedes rendered PDF /CreationDate" in err
+        for err in inv_fail["visual_qa_mapping"]["qa_validation_errors"]
+    )
+
 

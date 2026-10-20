@@ -1,21 +1,27 @@
 {
   "schema_version": "r9_final_artifact_inventory_v1",
-  "timestamp_utc": "2026-10-19T05:42:00Z",
-  "source_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+  "timestamp_utc": "2026-10-20T05:25:00Z",
+  "source_sha": "02887cc3b1e8f28c0a8189c6132e4ca83923950c",
   "supersedes_historical_inventory": "reports/evidence/historical/r9_final_artifact_inventory_20261003.json",
   "historical_lineage": {
     "historical_r9_inventory_ref": "reports/evidence/historical/r9_final_artifact_inventory_20261003.json",
     "historical_r9_inventory_sha256": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+    "historical_r9_source_sha": "5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383",
     "historical_visual_qa_record_ref": "reports/evidence/historical/visual_qa_inspection_record_20261003.json",
     "historical_visual_qa_record_sha256": "dd3e5d5a0e61bf7aef233376f52256ec7c06a2cbea266963d154146acbae8da5",
+    "closeout_v4_0_evidence_sha": "35dded30eae6fe6766be975ca3eacbcf64eb0030",
+    "closeout_v4_1_artifact_baseline_sha": "02887cc3b1e8f28c0a8189c6132e4ca83923950c",
     "errata_record_ref": "reports/evidence/report_revision_errata_record.json",
     "errata_markdown_ref": "reports/evidence/report_revision_errata_record.md"
   },
   "closeout_errata_lineage": {
     "historical_r9_inventory_ref": "reports/evidence/historical/r9_final_artifact_inventory_20261003.json",
     "historical_r9_inventory_sha256": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+    "historical_r9_source_sha": "5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383",
     "historical_visual_qa_record_ref": "reports/evidence/historical/visual_qa_inspection_record_20261003.json",
     "historical_visual_qa_record_sha256": "dd3e5d5a0e61bf7aef233376f52256ec7c06a2cbea266963d154146acbae8da5",
+    "closeout_v4_0_evidence_sha": "35dded30eae6fe6766be975ca3eacbcf64eb0030",
+    "closeout_v4_1_artifact_baseline_sha": "02887cc3b1e8f28c0a8189c6132e4ca83923950c",
     "errata_record_ref": "reports/evidence/report_revision_errata_record.json",
     "errata_markdown_ref": "reports/evidence/report_revision_errata_record.md"
   },
@@ -1038,9 +1044,9 @@
     "qa_record_file": {
       "exists": true,
       "repo_relative_path": "reports/evidence/qa/visual_qa_inspection_record.json",
-      "size_bytes": 18603,
-      "sha256": "c694662793fbb3735516721ca06bb23ddb43c3a3f79ae1909a40024c75c91818",
-      "expected_sha256": null,
+      "size_bytes": 20941,
+      "sha256": "771d5fff6a37fe4720292bd34ced9c522c2ca9b5ce523e62683841db0d2a355b",
+      "expected_sha256": "771d5fff6a37fe4720292bd34ced9c522c2ca9b5ce523e62683841db0d2a355b",
       "verified": true,
       "lifecycle_states": {
         "FILE_PRESENT": true,

@@ -17,6 +17,7 @@ import re
 import sys
 import xml.etree.ElementTree as ET
 import zipfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -26,6 +27,11 @@ if str(_REPO_ROOT) not in sys.path:
 
 CANONICAL_METRIC_BUNDLE_V2_SHA256 = (
     "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34"
+)
+DEFAULT_SOURCE_SHA = "02887cc3b1e8f28c0a8189c6132e4ca83923950c"
+DEFAULT_TIMESTAMP_UTC = "2026-10-20T05:25:00Z"
+EXPECTED_VISUAL_QA_RECORD_SHA256 = (
+    "771d5fff6a37fe4720292bd34ced9c522c2ca9b5ce523e62683841db0d2a355b"
 )
 
 REQUIRED_FIGURE_NAMES = [
@@ -412,12 +418,48 @@ def verify_qa_inspection_record(
                 pdf_p = repo_root / pdf_rel
                 if not pdf_p.is_file():
                     errors.append(f"DOCX QA rendered PDF missing on disk: {pdf_rel}")
-                elif pdf_exp_sha:
-                    pdf_actual_sha = hashlib.sha256(pdf_p.read_bytes()).hexdigest()
-                    if pdf_actual_sha != pdf_exp_sha:
-                        errors.append(
-                            f"DOCX QA rendered PDF SHA256 mismatch: expected {pdf_exp_sha}, disk {pdf_actual_sha}"
-                        )
+                else:
+                    raw_pdf_bytes = pdf_p.read_bytes()
+                    if pdf_exp_sha:
+                        pdf_actual_sha = hashlib.sha256(raw_pdf_bytes).hexdigest()
+                        if pdf_actual_sha != pdf_exp_sha:
+                            errors.append(
+                                f"DOCX QA rendered PDF SHA256 mismatch: expected {pdf_exp_sha}, disk {pdf_actual_sha}"
+                            )
+                    insp_ts = data.get("inspection_timestamp_utc")
+                    if not insp_ts or not isinstance(insp_ts, str):
+                        errors.append("Missing inspection_timestamp_utc in visual QA record")
+                    else:
+                        try:
+                            insp_dt = datetime.fromisoformat(insp_ts.replace("Z", "+00:00"))
+                            if insp_dt.tzinfo is None:
+                                insp_dt = insp_dt.replace(tzinfo=timezone.utc)
+                            m_cd = re.search(
+                                rb"/CreationDate\s*\(D:(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})([+\-Z])?(?:(\d{2})'(\d{2})')?\)",
+                                raw_pdf_bytes,
+                            )
+                            if m_cd:
+                                yr, mo, dy, hr, mn, sc = (
+                                    int(m_cd.group(i)) for i in range(1, 7)
+                                )
+                                sign_b = m_cd.group(7)
+                                tz = timezone.utc
+                                if sign_b in (b"+", b"-") and m_cd.group(8) and m_cd.group(9):
+                                    off_h = int(m_cd.group(8))
+                                    off_m = int(m_cd.group(9))
+                                    delta = timedelta(hours=off_h, minutes=off_m)
+                                    tz = timezone(delta if sign_b == b"+" else -delta)
+                                pdf_cd_utc = datetime(yr, mo, dy, hr, mn, sc, tzinfo=tz).astimezone(
+                                    timezone.utc
+                                )
+                                if insp_dt < pdf_cd_utc:
+                                    errors.append(
+                                        f"Visual QA inspection_timestamp_utc ({insp_ts}) precedes rendered PDF /CreationDate ({pdf_cd_utc.strftime('%Y-%m-%dT%H:%M:%SZ')})"
+                                    )
+                        except ValueError as exc:
+                            errors.append(
+                                f"Invalid inspection_timestamp_utc in visual QA record: {insp_ts} ({exc})"
+                            )
 
         # Page coverage check
         page_cov = docx_qa.get("page_coverage", {})
@@ -486,6 +528,8 @@ def generate_inventory(
     repo_root: Optional[Path] = None,
     output_path: Optional[Path] = None,
     rc_output_path: Optional[Path] = None,
+    source_sha: str = DEFAULT_SOURCE_SHA,
+    timestamp_utc: str = DEFAULT_TIMESTAMP_UTC,
 ) -> Tuple[Dict[str, Any], int]:
     """Generate and strictly verify R9 artifact inventory.
 
@@ -741,7 +785,9 @@ def generate_inventory(
 
     # Visual QA Inspection Record verification
     qa_record_path = repo_root / "reports/evidence/qa/visual_qa_inspection_record.json"
-    qa_record_info = compute_file_info(qa_record_path, repo_root)
+    qa_record_info = compute_file_info(
+        qa_record_path, repo_root, EXPECTED_VISUAL_QA_RECORD_SHA256
+    )
     if not qa_record_info["exists"]:
         missing_required.append("reports/evidence/qa/visual_qa_inspection_record.json")
 
@@ -752,6 +798,11 @@ def generate_inventory(
         docx_info=scientific_reports["canonical_populated_report_docx"],
         qa_slides=qa_slides,
     )
+    if qa_record_info["exists"] and not qa_record_info["verified"]:
+        qa_record_valid = False
+        qa_errors.append(
+            f"Visual QA record SHA256 mismatch: expected {EXPECTED_VISUAL_QA_RECORD_SHA256}, disk {qa_record_info['sha256']}"
+        )
 
     # If QA record is verified 100%, update VISUALLY_REVIEWED for targets
     if qa_record_valid:
@@ -957,16 +1008,19 @@ def generate_inventory(
     lineage_block = {
         "historical_r9_inventory_ref": "reports/evidence/historical/r9_final_artifact_inventory_20261003.json",
         "historical_r9_inventory_sha256": "a702d98e390635cdb8d9a10ad6cd5911aa1e77cebbc8bc6111e070925ac30fa9",
+        "historical_r9_source_sha": "5eb6bd6f4b45724f0a8fb89a77b42f6000c3d383",
         "historical_visual_qa_record_ref": "reports/evidence/historical/visual_qa_inspection_record_20261003.json",
         "historical_visual_qa_record_sha256": "dd3e5d5a0e61bf7aef233376f52256ec7c06a2cbea266963d154146acbae8da5",
+        "closeout_v4_0_evidence_sha": "35dded30eae6fe6766be975ca3eacbcf64eb0030",
+        "closeout_v4_1_artifact_baseline_sha": source_sha,
         "errata_record_ref": "reports/evidence/report_revision_errata_record.json",
         "errata_markdown_ref": "reports/evidence/report_revision_errata_record.md",
     }
 
     inventory: Dict[str, Any] = {
         "schema_version": "r9_final_artifact_inventory_v1",
-        "timestamp_utc": "2026-10-19T05:42:00Z",
-        "source_sha": "2cc18f469db2dca4bf7c310abdb6a911c7624cde",
+        "timestamp_utc": timestamp_utc,
+        "source_sha": source_sha,
         "supersedes_historical_inventory": "reports/evidence/historical/r9_final_artifact_inventory_20261003.json",
         "historical_lineage": lineage_block,
         "closeout_errata_lineage": lineage_block,
@@ -1050,12 +1104,26 @@ def main() -> int:
     parser.add_argument("--repo-root", type=Path, default=None, help="Root path of repository")
     parser.add_argument("--output", type=Path, default=None, help="Output JSON path")
     parser.add_argument("--rc-output", type=Path, default=None, help="Closeout RC Output JSON path")
+    parser.add_argument(
+        "--source-sha",
+        type=str,
+        default=DEFAULT_SOURCE_SHA,
+        help="Git source commit SHA for inventory",
+    )
+    parser.add_argument(
+        "--timestamp-utc",
+        type=str,
+        default=DEFAULT_TIMESTAMP_UTC,
+        help="ISO-8601 UTC timestamp for inventory",
+    )
     args = parser.parse_args()
 
     inventory, code = generate_inventory(
         repo_root=args.repo_root,
         output_path=args.output,
         rc_output_path=args.rc_output,
+        source_sha=args.source_sha,
+        timestamp_utc=args.timestamp_utc,
     )
     verdict = inventory.get("verdict")
     print(f"R9 Artifact Inventory Execution Complete. Verdict: {verdict} (exit code: {code})")

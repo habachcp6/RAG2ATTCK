@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 490" width="850" height="490">
+  <defs>
+    <style>
+      @page { size: 850px 490px; margin: 0; }
+      .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #111827; text-anchor: middle; }
+      .subtitle { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; fill: #6b7280; text-anchor: middle; }
+      .axis-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; fill: #374151; }
+      .tick-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 10px; fill: #4b5563; text-anchor: middle; }
+      .data-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: bold; fill: #1f2937; text-anchor: middle; }
+      .grid-line { stroke: #e5e7eb; stroke-width: 1; stroke-dasharray: 4,4; }
+      .legend-text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; fill: #374151; }
+      .fixture-banner { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 9px; font-weight: bold; fill: #b91c1c; text-anchor: end; }
+    </style>
+  </defs>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="425" y="32" class="title" text-anchor="middle">Figure 1: RAG2ATTCK Dual-View Attribution Architecture</text>
+  <text x="425" y="52" class="subtitle" text-anchor="middle">Controlled evaluation pipeline across 5 conditions with strict monetary and ledger governance</text>
+  <rect x="40" y="90" width="160" height="120" rx="8" ry="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+  <text x="120" y="114" font-size="13" font-weight="bold" fill="#3b82f6" text-anchor="middle">Telemetry Input</text>
+  <line x1="50" y1="122" x2="190" y2="122" stroke="#3b82f6" stroke-width="1" opacity="0.5"/>
+  <text x="120" y="144" font-size="11" fill="#374151" text-anchor="middle">Single-Event Views</text>
+  <text x="120" y="164" font-size="11" fill="#374151" text-anchor="middle">Contextual Views</text>
+  <text x="120" y="184" font-size="11" fill="#374151" text-anchor="middle">640 Paired Tests (N=1280)</text>
+  <rect x="250" y="90" width="160" height="120" rx="8" ry="8" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="330" y="114" font-size="13" font-weight="bold" fill="#8b5cf6" text-anchor="middle">Dense Retrieval</text>
+  <line x1="260" y1="122" x2="400" y2="122" stroke="#8b5cf6" stroke-width="1" opacity="0.5"/>
+  <text x="330" y="144" font-size="11" fill="#374151" text-anchor="middle">all-MiniLM-L6-v2</text>
+  <text x="330" y="164" font-size="11" fill="#374151" text-anchor="middle">FAISS IndexFlatIP</text>
+  <text x="330" y="184" font-size="11" fill="#374151" text-anchor="middle">k in {1, 3, 5, 10}</text>
+  <rect x="470" y="90" width="160" height="120" rx="8" ry="8" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+  <text x="550" y="114" font-size="13" font-weight="bold" fill="#10b981" text-anchor="middle">LLM Reasoning</text>
+  <line x1="480" y1="122" x2="620" y2="122" stroke="#10b981" stroke-width="1" opacity="0.5"/>
+  <text x="550" y="144" font-size="11" fill="#374151" text-anchor="middle">gpt-5.6-luna</text>
+  <text x="550" y="164" font-size="11" fill="#374151" text-anchor="middle">xhigh reasoning effort</text>
+  <text x="550" y="184" font-size="11" fill="#374151" text-anchor="middle">Strict JSON Schema</text>
+  <rect x="680" y="90" width="140" height="120" rx="8" ry="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="750" y="114" font-size="13" font-weight="bold" fill="#f59e0b" text-anchor="middle">Attribution Output</text>
+  <line x1="690" y1="122" x2="810" y2="122" stroke="#f59e0b" stroke-width="1" opacity="0.5"/>
+  <text x="750" y="144" font-size="11" fill="#374151" text-anchor="middle">ATT&amp;CK Technique ID</text>
+  <text x="750" y="164" font-size="11" fill="#374151" text-anchor="middle">Retired ID support (D2g)</text>
+  <text x="750" y="184" font-size="11" fill="#374151" text-anchor="middle">Evaluation (474 Macro)</text>
+  <line x1="200" y1="150" x2="250" y2="150" stroke="#6b7280" stroke-width="2"/>
+  <polygon points="250,150 244,146 244,154" fill="#6b7280"/>
+  <line x1="410" y1="150" x2="470" y2="150" stroke="#6b7280" stroke-width="2"/>
+  <polygon points="470,150 464,146 464,154" fill="#6b7280"/>
+  <line x1="630" y1="150" x2="680" y2="150" stroke="#6b7280" stroke-width="2"/>
+  <polygon points="680,150 674,146 674,154" fill="#6b7280"/>
+  <path d="M 120 90 L 120 70 L 550 70 L 550 90" fill="none" stroke="#2563eb" stroke-width="2" stroke-dasharray="4,4"/>
+  <polygon points="550,90 546,84 554,84" fill="#2563eb"/>
+  <rect x="290" y="60" width="180" height="20" rx="4" ry="4" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+  <text x="380" y="74" font-size="10" font-weight="bold" fill="#1d4ed8" text-anchor="middle">No-RAG Bypass: Direct Prompt (k=0)</text>
+  <rect x="35" y="240" width="780" height="205" rx="8" ry="8" fill="#f8fafc" stroke="#64748b" stroke-width="1.5" stroke-dasharray="5,5"/>
+  <text x="425" y="265" font-size="13" font-weight="bold" fill="#334155" text-anchor="middle">Protocol &amp; Budget Governance Controls (Decisions D1–D7)</text>
+  <circle cx="61" cy="291" r="3" fill="#2563eb"/>
+  <text x="71" y="295" font-size="11" font-weight="bold" fill="#1e293b">D1: RECORD_ONLY Prompt Policy</text>
+  <text x="71" y="309" font-size="10" fill="#64748b">Original model responses recorded verbatim</text>
+  <text x="71" y="322" font-size="10" fill="#64748b">Zero in-flight prompt alterations or retries</text>
+  <circle cx="61" cy="341" r="3" fill="#2563eb"/>
+  <text x="71" y="345" font-size="11" font-weight="bold" fill="#1e293b">D2: Evaluation &amp; Denominators</text>
+  <text x="71" y="359" font-size="10" fill="#64748b">ANY_MATCH ground truth; 718 mapped views</text>
+  <text x="71" y="372" font-size="10" fill="#64748b">Universe evaluated across 474 frozen classes</text>
+  <circle cx="61" cy="391" r="3" fill="#2563eb"/>
+  <text x="71" y="395" font-size="11" font-weight="bold" fill="#1e293b">D3 &amp; D4: Concurrency &amp; Identity</text>
+  <text x="71" y="409" font-size="10" fill="#64748b">Strict sequential live execution (concurrency=1)</text>
+  <text x="71" y="422" font-size="10" fill="#64748b">Timestamped system fingerprint &amp; response IDs</text>
+  <circle cx="441" cy="291" r="3" fill="#2563eb"/>
+  <text x="451" y="295" font-size="11" font-weight="bold" fill="#1e293b">D5: Study Budget Ledger Guard</text>
+  <text x="451" y="309" font-size="10" fill="#64748b">Strict $19.99 cap; $0.0526 hold per request</text>
+  <text x="451" y="322" font-size="10" fill="#64748b">Atomic dual-lock ledger pre-reservation</text>
+  <circle cx="441" cy="341" r="3" fill="#2563eb"/>
+  <text x="451" y="345" font-size="11" font-weight="bold" fill="#1e293b">D6 &amp; D7: Benchmark Dataset Scope</text>
+  <text x="451" y="359" font-size="10" fill="#64748b">Pair-wise synthetic enterprise telemetry</text>
+  <text x="451" y="372" font-size="10" fill="#64748b">Generalization to live production unsupported</text>
+  <circle cx="441" cy="391" r="3" fill="#2563eb"/>
+  <text x="451" y="395" font-size="11" font-weight="bold" fill="#1e293b">Independent Failure Axes (D2i)</text>
+  <text x="451" y="409" font-size="10" fill="#64748b">Retrieval misses and generation errors</text>
+  <text x="451" y="422" font-size="10" fill="#64748b">Evaluated independently without forced causality</text>
+</svg>

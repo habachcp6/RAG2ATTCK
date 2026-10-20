@@ -399,8 +399,7 @@ def test_complete_producer_matrix_requires_complete_journal(producer_bundle, tmp
     summary = run_mock_experiment(plan, output, MockProvider(), max_requests=10)
     assert summary["complete"] and summary["record_count"] == 10
     paths = {
-        condition: output / f"{condition}_predictions.jsonl"
-        for condition in PRODUCER_CONDITIONS
+        condition: output / f"{condition}_predictions.jsonl" for condition in PRODUCER_CONDITIONS
     }
     inputs = _load_evaluation_inputs(
         output / "manifest.json", paths, repository_root=root, expected_sample_count=2
@@ -441,8 +440,7 @@ def test_producer_journal_corruption_is_rejected(producer_bundle, tmp_path, dama
     output = tmp_path / "producer-journal-corrupt"
     run_mock_experiment(plan, output, MockProvider(), max_requests=10)
     paths = {
-        condition: output / f"{condition}_predictions.jsonl"
-        for condition in PRODUCER_CONDITIONS
+        condition: output / f"{condition}_predictions.jsonl" for condition in PRODUCER_CONDITIONS
     }
     journal_path = output / "request_journal.jsonl"
     events = [json.loads(line) for line in journal_path.read_bytes().splitlines()]
@@ -946,9 +944,7 @@ def test_evaluator_provenance_rejects_missing_logical_sample(tmp_path):
 def test_evaluator_d2a_multi_label_any_match(tmp_path):
     inputs = _load(tmp_path, _fixture(tmp_path))
     proto = _test_protocol()
-    metrics = evaluator_metrics.compute_condition_metrics(
-        inputs.records, inputs, proto, "no_rag"
-    )
+    metrics = evaluator_metrics.compute_condition_metrics(inputs.records, inputs, proto, "no_rag")
     # s2 ground truth is [A, B] and prediction is [B]. Under ANY_MATCH, it is correct.
     assert metrics["correct_count"] == 3  # s0 (A==A), s2 (B in [A,B]), s6 (A==A)
     assert metrics["scorable_sample_count"] == 6
@@ -958,9 +954,7 @@ def test_evaluator_d2a_multi_label_any_match(tmp_path):
 def test_evaluator_d2b_d2c_empty_and_ambiguous_gt_exclusion(tmp_path):
     inputs = _load(tmp_path, _fixture(tmp_path))
     proto = _test_protocol()
-    metrics = evaluator_metrics.compute_condition_metrics(
-        inputs.records, inputs, proto, "no_rag"
-    )
+    metrics = evaluator_metrics.compute_condition_metrics(inputs.records, inputs, proto, "no_rag")
     assert metrics["logical_sample_count"] == 8
     assert metrics["scorable_sample_count"] == 6
     assert metrics["coverage"] == 0.75
@@ -973,9 +967,7 @@ def test_evaluator_d2b_d2c_empty_and_ambiguous_gt_exclusion(tmp_path):
 def test_evaluator_d2f_accuracy_and_failure_rates(tmp_path):
     inputs = _load(tmp_path, _fixture(tmp_path))
     proto = _test_protocol()
-    metrics = evaluator_metrics.compute_condition_metrics(
-        inputs.records, inputs, proto, "no_rag"
-    )
+    metrics = evaluator_metrics.compute_condition_metrics(inputs.records, inputs, proto, "no_rag")
     # Total scorable: 6 (s0, s1, s2, s3, s6, s7)
     # Correct: 3 (s0, s2, s6) -> accuracy_end_to_end = 3/6 = 0.5
     assert metrics["accuracy_end_to_end"] == 0.5
@@ -1108,4 +1100,3 @@ def test_evaluator_end_to_end_contract_delegation(tmp_path):
         evaluate_end_to_end(inputs, protocol=None)
     with pytest.raises(HumanDecisionRequired):
         evaluate_conditional_accuracy(inputs)
-

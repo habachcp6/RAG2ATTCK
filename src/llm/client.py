@@ -45,8 +45,10 @@ logger = logging.getLogger("rag2attck.llm.client")
 # 1. Global Live Request Budget
 # ---------------------------------------------------------------------------
 
+
 class LiveBudgetExceededError(RuntimeError):
     """Raised when the selected live API request budget is exhausted."""
+
     pass
 
 
@@ -142,6 +144,7 @@ def reset_live_budget() -> None:
 # ---------------------------------------------------------------------------
 # 2. Unified LLM Client Implementation
 # ---------------------------------------------------------------------------
+
 
 class LLMClient:
     """
@@ -247,10 +250,15 @@ class LLMClient:
         if isinstance(exc, (openai.APITimeoutError, TimeoutError)):
             return True
 
-        return isinstance(exc, (
-            openai.RateLimitError, openai.InternalServerError,
-            openai.APIConnectionError, ConnectionError,
-        ))
+        return isinstance(
+            exc,
+            (
+                openai.RateLimitError,
+                openai.InternalServerError,
+                openai.APIConnectionError,
+                ConnectionError,
+            ),
+        )
 
     def _call_responses_api(self, prompt: str) -> Any:
         """Execute request using the frozen Responses API interface."""
@@ -322,9 +330,7 @@ class LLMClient:
         if resp_status == "failed":
             err = getattr(response, "error", None)
             reason = (
-                f"Responses API status: failed ({err})"
-                if err
-                else "Responses API status: failed"
+                f"Responses API status: failed ({err})" if err else "Responses API status: failed"
             )
             return None, ParseStatus.API_FAILURE, reason, input_tokens, output_tokens
 
@@ -422,8 +428,7 @@ class LLMClient:
         return raw_text, None, None, input_tokens, output_tokens
 
     def _post_hoc_validate_prediction(
-        self,
-        raw_text: Optional[str]
+        self, raw_text: Optional[str]
     ) -> Tuple[ParseStatus, Optional[str], Optional[str]]:
         """
         Post-hoc parsing and validation of LLM output.
@@ -462,9 +467,7 @@ class LLMClient:
 
         # Step 3: Mandatory Two-Layer Post-Hoc Validation
         is_valid, val_status, val_reason = validate_technique_id(
-            extracted_id,
-            registry_ids=self.registry_ids,
-            stix_path=self.stix_path
+            extracted_id, registry_ids=self.registry_ids, stix_path=self.stix_path
         )
 
         return val_status, extracted_id, val_reason
@@ -515,10 +518,8 @@ class LLMClient:
 
         # Symmetric prompt construction
         context_str = retrieved_context if retrieved_context is not None else ""
-        formatted_prompt = (
-            prompt_template
-            .replace("{RETRIEVED_CONTEXT}", context_str)
-            .replace("{ENDPOINT_EVIDENCE}", endpoint_evidence)
+        formatted_prompt = prompt_template.replace("{RETRIEVED_CONTEXT}", context_str).replace(
+            "{ENDPOINT_EVIDENCE}", endpoint_evidence
         )
 
         retry_count = 0
@@ -574,22 +575,24 @@ class LLMClient:
                                     cached_tok = getattr(prompt_details, "cached_tokens")
                         resp_status = getattr(response_obj, "status", "completed")
                         returned_tier = getattr(response_obj, "service_tier", None)
-                        self.attempt_callback({
-                            "attempt_index": attempt,
-                            "status": (
-                                "SUCCESS"
-                                if resp_status == "completed"
-                                else str(resp_status).upper()
-                            ),
-                            "input_tokens": in_tok,
-                            "output_tokens": out_tok,
-                            "cached_tokens": cached_tok,
-                            "requested_service_tier": self.service_tier,
-                            "service_tier": returned_tier,
-                            "model": getattr(response_obj, "model", None),
-                            "response_id": getattr(response_obj, "id", None),
-                            "error_type": None,
-                        })
+                        self.attempt_callback(
+                            {
+                                "attempt_index": attempt,
+                                "status": (
+                                    "SUCCESS"
+                                    if resp_status == "completed"
+                                    else str(resp_status).upper()
+                                ),
+                                "input_tokens": in_tok,
+                                "output_tokens": out_tok,
+                                "cached_tokens": cached_tok,
+                                "requested_service_tier": self.service_tier,
+                                "service_tier": returned_tier,
+                                "model": getattr(response_obj, "model", None),
+                                "response_id": getattr(response_obj, "id", None),
+                                "error_type": None,
+                            }
+                        )
                     break
 
                 except OPERATIONAL_EXCEPTIONS as exc:
@@ -603,22 +606,24 @@ class LLMClient:
 
                     if self.attempt_callback is not None:
                         is_timeout = isinstance(exc, (openai.APITimeoutError, TimeoutError))
-                        self.attempt_callback({
-                            "attempt_index": attempt,
-                            "status": "TIMEOUT" if is_timeout else "API_FAILURE",
-                            "input_tokens": None,
-                            "output_tokens": None,
-                            "cached_tokens": None,
-                            "requested_service_tier": self.service_tier,
-                            "service_tier": None,
-                            "model": self.model,
-                            "response_id": None,
-                            "error_type": error_type,
-                        })
+                        self.attempt_callback(
+                            {
+                                "attempt_index": attempt,
+                                "status": "TIMEOUT" if is_timeout else "API_FAILURE",
+                                "input_tokens": None,
+                                "output_tokens": None,
+                                "cached_tokens": None,
+                                "requested_service_tier": self.service_tier,
+                                "service_tier": None,
+                                "model": self.model,
+                                "response_id": None,
+                                "error_type": error_type,
+                            }
+                        )
 
                     if self._is_retryable_error(exc) and attempt < self.max_retries:
                         delay = min(
-                            self.retry_initial_delay * (self.retry_backoff_factor ** attempt),
+                            self.retry_initial_delay * (self.retry_backoff_factor**attempt),
                             self.retry_max_delay,
                         )
                         sanitized_exc_str = _sanitize(str(exc), extra_tokens=extra_secrets)

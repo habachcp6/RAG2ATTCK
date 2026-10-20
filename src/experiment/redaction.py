@@ -50,4 +50,3 @@ def sanitize_secrets(text: str | None, *, extra_tokens: Sequence[str] = ()) -> s
         return result
     except Exception:
         return "[REDACTION_FAILED]"
-

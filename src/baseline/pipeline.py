@@ -34,10 +34,8 @@ def format_baseline_prompt(
         prompt_template = p_path.read_text(encoding="utf-8")
 
     ctx_str = retrieved_context if retrieved_context is not None else ""
-    return (
-        prompt_template
-        .replace("{RETRIEVED_CONTEXT}", ctx_str)
-        .replace("{ENDPOINT_EVIDENCE}", endpoint_evidence)
+    return prompt_template.replace("{RETRIEVED_CONTEXT}", ctx_str).replace(
+        "{ENDPOINT_EVIDENCE}", endpoint_evidence
     )
 
 
@@ -61,7 +59,11 @@ class BaselinePipeline:
             self.prompt_template = prompt_template
             return
 
-        p_path = Path(prompt_path) if prompt_path else (self.ws_root / "prompts" / f"{prompt_version}.txt")
+        p_path = (
+            Path(prompt_path)
+            if prompt_path
+            else (self.ws_root / "prompts" / f"{prompt_version}.txt")
+        )
         if not p_path.exists():
             raise FileNotFoundError(f"Base prompt not found at {p_path}")
         self.prompt_template = p_path.read_text(encoding="utf-8")
@@ -81,9 +83,9 @@ class BaselinePipeline:
         """
         # Runtime condition enum validation
         validate_condition(condition)
-        [(sample_id, endpoint_evidence)] = validate_benchmark_batch([
-            {"sample_id": sample_id, "endpoint_evidence": endpoint_evidence}
-        ])
+        [(sample_id, endpoint_evidence)] = validate_benchmark_batch(
+            [{"sample_id": sample_id, "endpoint_evidence": endpoint_evidence}]
+        )
 
         # No-RAG context isolation invariant (enforced at pipeline level too)
         if condition == "no_rag" and retrieved_context is not None and retrieved_context.strip():

@@ -27,27 +27,41 @@ def source_lines(family: dict[str, Any]) -> list[str]:
     anchor = family["anchor"]
     contexts = family.get("contextual_event_specs", [])
     event_specs = [anchor, *contexts]
+    context_str = "; ".join(
+        f"`{item['event_key']}` = `{item['provider']}` / `{item['channel']}` "
+        f"/ EID `{item['windows_event_id']}`"
+        for item in contexts
+    )
+    doc_str = "; ".join(
+        f"EID {', '.join(str(event_id) for event_id in item.get('event_ids', []))} "
+        f"[{item.get('reference', 'missing')}]"
+        for item in family.get("windows_telemetry_source", [])
+    )
     lines = [
-        f"- Anchor telemetry: `{anchor['provider']}` / `{anchor['channel']}` / EID `{anchor['windows_event_id']}`",
-        f"- Context telemetry: " + "; ".join(
-            f"`{item['event_key']}` = `{item['provider']}` / `{item['channel']}` / EID `{item['windows_event_id']}`"
-            for item in contexts
+        (
+            f"- Anchor telemetry: `{anchor['provider']}` / `{anchor['channel']}` "
+            f"/ EID `{anchor['windows_event_id']}`"
         ),
+        f"- Context telemetry: {context_str}",
         f"- Anchor selection rule: {anchor['selection_rule']}",
-        "- Windows documentation: " + "; ".join(
-            f"EID {', '.join(str(event_id) for event_id in item.get('event_ids', []))} [{item.get('reference', 'missing')}]"
-            for item in family.get("windows_telemetry_source", [])
-        ),
+        f"- Windows documentation: {doc_str}",
         f"- Telemetry combinations covered: `{len(event_specs)}` registry event specifications",
     ]
     return lines
 
 
 def gt_block(title: str, gt: dict[str, Any]) -> list[str]:
+    tech_str = (
+        ", ".join(
+            f"`{tid}` ({name})"
+            for tid, name in zip(gt.get("technique_ids", []), gt.get("technique_names", []))
+        )
+        or "none"
+    )
     return [
         f"### {title}",
         f"- Status: `{gt['status']}`",
-        f"- Technique(s): " + (", ".join(f"`{tid}` ({name})" for tid, name in zip(gt.get("technique_ids", []), gt.get("technique_names", []))) or "none"),
+        f"- Technique(s): {tech_str}",
         "- Evidence predicate:",
         "```json",
         json.dumps(gt["evidence_predicate"], ensure_ascii=False, indent=2),
@@ -62,18 +76,36 @@ def main() -> int:
     families = registry["families"]
     digest = hashlib.sha256(registry_bytes).hexdigest()
     counts = Counter((family["split"], family["category"]) for family in families)
-    planned = Counter((family["split"], family["category"]) for family in families for _ in range(family["planned_instances"]))
+    planned = Counter(
+        (family["split"], family["category"])
+        for family in families
+        for _ in range(family["planned_instances"])
+    )
 
     lines = [
         "# RAG2ATTCK Synthetic Benchmark — Semantic Template Registry Approval",
         "",
-        "This package is generated from `config/synthetic_templates.json`. It is a human semantic-review artifact for Stage A. Stage B generation and final dataset freezing are intentionally not performed.",
+        (
+            "This package is generated from `config/synthetic_templates.json`. "
+            "It is a human semantic-review artifact for Stage A. "
+            "Stage B generation and final dataset freezing are intentionally not performed."
+        ),
         "",
         f"- Registry SHA-256: `{digest}`",
-        f"- Total families: `{len(families)}` (`test={sum(v for (s, _), v in counts.items() if s == 'test')}`, `dev={sum(v for (s, _), v in counts.items() if s == 'dev')}`)",
+        (
+            f"- Total families: `{len(families)}` "
+            f"(`test={sum(v for (s, _), v in counts.items() if s == 'test')}`, "
+            f"`dev={sum(v for (s, _), v in counts.items() if s == 'dev')}`)"
+        ),
         f"- Planned pairs: `{sum(family['planned_instances'] for family in families)}`",
-        "- ATT&CK catalog: pinned Enterprise v19.2; names are checked against the local STIX snapshot.",
-        "- Attribution policy: evidence-conditioned closed-world; absence of evidence is ambiguous, not unmapped.",
+        (
+            "- ATT&CK catalog: pinned Enterprise v19.2; "
+            "names are checked against the local STIX snapshot."
+        ),
+        (
+            "- Attribution policy: evidence-conditioned closed-world; "
+            "absence of evidence is ambiguous, not unmapped."
+        ),
         "",
         "## Planned quota summary",
         "",
@@ -82,7 +114,9 @@ def main() -> int:
     ]
     for split in ("test", "dev"):
         for category in ("mapped_single", "mapped_multi", "unmapped", "ambiguous"):
-            lines.append(f"| {split} | {category} | {counts[(split, category)]} | {planned[(split, category)]} |")
+            c_val = counts[(split, category)]
+            p_val = planned[(split, category)]
+            lines.append(f"| {split} | {category} | {c_val} | {p_val} |")
     lines += [
         "",
         "## Canonical telemetry schema",
@@ -95,13 +129,31 @@ def main() -> int:
         "",
         "## Relation DSL signatures",
         "",
-        "- `same_host`, `same_user`, `same_logon`, `same_process`, `same_process_guid`: `events` list.",
+        (
+            "- `same_host`, `same_user`, `same_logon`, `same_process`, `same_process_guid`: "
+            "`events` list."
+        ),
         "- `temporal_before`: `before`, `after` event keys.",
         "- `process_then_file`: `process`, `file`; `process_then_network`: `process`, `network`.",
-        "- `process_then_registry`: `process`, `registry`; `process_then_task`: `process`, `task`; `process_then_service`: `process`, `service`.",
-        "- `network_then_file`: `network`, `file`; operands are checked against the canonical event classes.",
-        "- Approved Stage B corrections: `task_then_process`, `service_then_process`, `registry_then_process`, `file_then_process` distinguish activation from registration; `parent_network_before_child` links a parent network event to a subsequently created child.",
-        "- Ordered relations require strictly increasing timestamps; process identity and resource correlations are specified in `docs/synthetic/relation_contract.md`.",
+        (
+            "- `process_then_registry`: `process`, `registry`; "
+            "`process_then_task`: `process`, `task`; "
+            "`process_then_service`: `process`, `service`."
+        ),
+        (
+            "- `network_then_file`: `network`, `file`; "
+            "operands are checked against the canonical event classes."
+        ),
+        (
+            "- Approved Stage B corrections: `task_then_process`, `service_then_process`, "
+            "`registry_then_process`, `file_then_process` distinguish activation "
+            "from registration; `parent_network_before_child` links a parent network event "
+            "to a subsequently created child."
+        ),
+        (
+            "- Ordered relations require strictly increasing timestamps; process identity "
+            "and resource correlations are specified in `docs/synthetic/relation_contract.md`."
+        ),
         "",
         "## Family-by-family semantic review",
         "",

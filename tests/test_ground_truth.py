@@ -10,7 +10,6 @@ Enforces the frozen methodology:
 
 import json
 from pathlib import Path
-import pytest
 
 from src.ground_truth import evaluate_lineage_evidence, inspect_candidate_lineage_sources
 
@@ -21,12 +20,23 @@ def test_candidate_lineage_matrix_structure():
     assert len(sources) == 10, "Must inspect all 10 candidate lineage sources"
 
     required_dimensions = [
-        "source", "investigated_files", "candidate_keys", "semantic_scope",
-        "granularity", "timestamp_availability", "time_zone_precision",
-        "run_identity_availability", "technique_identity_availability",
-        "possible_event_linkage", "cardinality_behavior", "ambiguity_conflicts",
-        "independent_of_wazuh_detector", "evidence", "decision",
-        "acceptance_result", "rejection_reason"
+        "source",
+        "investigated_files",
+        "candidate_keys",
+        "semantic_scope",
+        "granularity",
+        "timestamp_availability",
+        "time_zone_precision",
+        "run_identity_availability",
+        "technique_identity_availability",
+        "possible_event_linkage",
+        "cardinality_behavior",
+        "ambiguity_conflicts",
+        "independent_of_wazuh_detector",
+        "evidence",
+        "decision",
+        "acceptance_result",
+        "rejection_reason",
     ]
 
     for s in sources:
@@ -135,14 +145,19 @@ def test_detector_rules_not_independent_gt():
     rule_source = next(s for s in sources if s["source"] == "period_telemetry_csvs")
     assert rule_source["independent_of_wazuh_detector"] is False
     assert rule_source["acceptance_result"] == "REJECTED"
-    assert "detector/rule mappings cannot be promoted to independent" in rule_source["rejection_reason"]
+    assert (
+        "detector/rule mappings cannot be promoted to independent"
+        in rule_source["rejection_reason"]
+    )
 
 
 def test_scenario_list_and_temporal_proximity_rejection():
     """Scenario-wide lists and temporal proximity alone must be rejected."""
     sources = inspect_candidate_lineage_sources(Path("."))
     scenario_source = next(s for s in sources if s["source"] == "scenario_manifest_csv")
-    temporal_source = next(s for s in sources if s["source"] == "telemetry_timestamps_and_time_zones")
+    temporal_source = next(
+        s for s in sources if s["source"] == "telemetry_timestamps_and_time_zones"
+    )
 
     assert scenario_source["acceptance_result"] == "REJECTED"
     assert temporal_source["acceptance_result"] == "REJECTED"
@@ -187,9 +202,16 @@ def test_production_gate_blocker_task4():
 
     assert blocker["status"] == "STOP"
     assert blocker["independent_lineage_available"] is False
-    assert "Windows-APT 2025 v3 does not currently satisfy the frozen primary event-level ground-truth requirement" in blocker["blocker_reason"]
-    assert "Windows-APT 2025 v3 does not currently satisfy the frozen primary event-level ground-truth requirement" in blocker["methodological_standing"]["statement"]
-    assert "substantive methodological revision" in blocker["methodological_standing"]["relaxing_requirement_warning"]
+    expected_statement = (
+        "Windows-APT 2025 v3 does not currently satisfy the frozen primary "
+        "event-level ground-truth requirement"
+    )
+    assert expected_statement in blocker["blocker_reason"]
+    assert expected_statement in blocker["methodological_standing"]["statement"]
+    assert (
+        "substantive methodological revision"
+        in blocker["methodological_standing"]["relaxing_requirement_warning"]
+    )
 
     # Downstream tasks must be NOT_RUN
     downstream = blocker["affected_downstream_tasks"]

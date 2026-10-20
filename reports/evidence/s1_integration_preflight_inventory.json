@@ -1,0 +1,238 @@
+{
+  "schema_version": "1.0.0",
+  "audit_phase": "S1_INTEGRATED_PREFLIGHT",
+  "audit_timestamp_utc": "2026-10-01T22:57:11Z",
+  "target_worktree": "D:/RAG2ATTCK-worktrees/integrated-audit-s1",
+  "target_branch": "codex/s1-integrated-audit",
+  "base_commit": "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315",
+  "ownership_and_boundaries": {
+    "integrated_audit_worktree_status": "CLEAN",
+    "integrated_audit_worktree_access_mode": "STRICTLY_READ_ONLY",
+    "mutations_to_target_worktree": 0,
+    "provider_calls_made": 0
+  },
+  "canonical_experiment_lock": {
+    "lock_file": "config/canonical_experiment_lock_v1.json",
+    "lock_file_sha256": "d0ce198ad4853f4c41ef2bfbafbe10a395e4927a6c6561b3e72c055c4b887e9f",
+    "experiment_id": "synthetic-paired-test-1",
+    "protocol_version": "experiment-protocol-v1.1",
+    "protocol_sha256": "d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c",
+    "protocol_sha256_verified": true,
+    "code_manifest_sha256": "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4",
+    "code_manifest_sha256_verified": true,
+    "code_manifest_file_count": 53,
+    "config_sha256": "961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac",
+    "config_sha256_verified": true,
+    "pricing_v1_sha256": "e8afd6311f04dbbf5c34bb030e88a5b9d394f92c84d3e51feb32b327a08655a5",
+    "benchmark_scope_sha256": "d6aa89831dec75362b4fd48de0fd6e7082290f2be0cb7bd0afc6bc518148db8b",
+    "artifact_hashes": {
+      "attack_registry": {
+        "path": "attack/raw/enterprise-v19.2/enterprise-attack-19.2.json",
+        "expected_sha256": "dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4",
+        "worktree_exists": false,
+        "base_repo_exists": true,
+        "base_repo_sha256_match": true,
+        "note": "Gitignored directory (attack/raw/) per .gitignore; present in base repo and active worktrees, must be copied/symlinked into secondary worktrees prior to live execution."
+      },
+      "corpus": {
+        "path": "attack/corpus/enterprise-windows-v19.2.jsonl",
+        "expected_sha256": "b219341154ddf2f12e97d622158a04ab7d57641df6a865559258d365852c3c75",
+        "worktree_exists": true,
+        "worktree_sha256_match": true
+      },
+      "dataset_manifest": {
+        "path": "data/ground_truth/synthetic/dataset_manifest.json",
+        "expected_sha256": "4576b793360d02b60d619d199fd34d4555ace33215303ee847715c162a50dcc2",
+        "worktree_exists": true,
+        "worktree_sha256_match": true
+      },
+      "document_mapping": {
+        "path": "attack/index/enterprise-windows-v19.2.docmap.json",
+        "expected_sha256": "a7de3dfcf2b6e186e639d2922fcbc27766c160ae58bbafea74b5efc0faf30586",
+        "worktree_exists": true,
+        "worktree_sha256_match": true
+      },
+      "experiment_config": {
+        "path": "config/experiment_config.json",
+        "expected_sha256": "961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac",
+        "worktree_exists": true,
+        "worktree_sha256_match": true
+      },
+      "ground_truth": {
+        "path": "data/ground_truth/synthetic/ground_truth.jsonl",
+        "expected_sha256": "8f3d73bac7e81336a3e90bfa5a5d0850a51ac5588385ee53ad940bcbc3612608",
+        "worktree_exists": true,
+        "worktree_sha256_match": true
+      },
+      "index": {
+        "path": "attack/index/enterprise-windows-v19.2.index",
+        "expected_sha256": "7e3b9944870860766ebd5ba76f19a420c1bbe57cebd4e4238b06fd31128578e5",
+        "worktree_exists": true,
+        "worktree_sha256_match": true
+      },
+      "inference": {
+        "path": "data/ground_truth/synthetic/inference.jsonl",
+        "expected_sha256": "90d5f59e64f669f95d5ddccd86f1f047e10ee3dc46e4b67a8cd13d1ddf2cd4b8",
+        "worktree_exists": true,
+        "worktree_sha256_match": true
+      },
+      "model_config": {
+        "path": "config/model.json",
+        "expected_sha256": "312c34cedd84106f2004c6070b72aeac1dd84209a464e2993fee3ec87822697f",
+        "worktree_exists": true,
+        "worktree_sha256_match": true
+      },
+      "pairs": {
+        "path": "data/ground_truth/synthetic/pairs.jsonl",
+        "expected_sha256": "079e57a441b18d127739f610e7f62c263d943eefa19ca4ea5c6eab8b8a07665d",
+        "worktree_exists": true,
+        "worktree_sha256_match": true
+      },
+      "prompt": {
+        "path": "prompts/baseline_v1.txt",
+        "expected_sha256": "b751fde1ee33b03ec0bdc07cbba10267002d2086cf22b91a74bdfd123856f206",
+        "worktree_exists": true,
+        "worktree_sha256_match": true
+      },
+      "retrieval_config": {
+        "path": "config/retrieval.json",
+        "expected_sha256": "b33a93913e7f6de36f6f9021f77b2c9dcb1d426929162acb250a3c73ac8e6e25",
+        "worktree_exists": true,
+        "worktree_sha256_match": true
+      },
+      "retrieval_manifest": {
+        "path": "attack/index/enterprise-windows-v19.2.manifest.json",
+        "expected_sha256": "ad1fc8c8118ef897943597e30c3ab71cf30556f675b38bbeba6772537127ed0a",
+        "worktree_exists": true,
+        "worktree_sha256_match": true
+      },
+      "split_manifest": {
+        "path": "data/ground_truth/synthetic/split_manifest.json",
+        "expected_sha256": "37fce63ccaa6db8e13604b7e3783997a10635f58995881b5e41913e6f550f43f",
+        "worktree_exists": true,
+        "worktree_sha256_match": true
+      },
+      "views": {
+        "path": "data/ground_truth/synthetic/views.jsonl",
+        "expected_sha256": "1e6b0d3bd525b8fe9f97ba9e5656905597a3939e47c130a9e6f74535e2cd421d",
+        "worktree_exists": true,
+        "worktree_sha256_match": true
+      }
+    }
+  },
+  "tracks": {
+    "track_a": {
+      "name": "Audit Recovery",
+      "pr_number": 24,
+      "branch": "codex/s1-audit-recovery",
+      "head_commit": "1477a9fde092939e771883a588386326c2ba5519",
+      "merge_base": "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315",
+      "files_changed_count": 5,
+      "files_changed": [
+        "reports/evidence/runtime_recovery_audit.md",
+        "reports/evidence/sanitized_historical_logs.json",
+        "tests/fixtures/__init__.py",
+        "tests/fixtures/runtime_recovery_wrapper_fixture.py",
+        "tests/test_runtime_recovery_wrapper.py"
+      ],
+      "critical_code_modified": false,
+      "test_status": "16 passed in 6.02s"
+    },
+    "track_b": {
+      "name": "Evaluator Prep",
+      "pr_number": 27,
+      "branch": "codex/s1-evaluator-prep",
+      "head_commit": "7cc7a784e06505317626b97bad575fec1f8670d6",
+      "merge_base": "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315",
+      "files_changed_count": 4,
+      "files_changed": [
+        "reports/evidence/evaluator_contract_and_analysis_plan.md",
+        "scripts/analysis/__init__.py",
+        "scripts/analysis/evaluate_rqs.py",
+        "tests/test_evaluator_offline_contract.py"
+      ],
+      "critical_code_modified": false,
+      "test_status": "44 passed in 13.40s"
+    },
+    "track_c": {
+      "name": "Report & Related Work",
+      "pr_number": 25,
+      "branch": "codex/s1-report-related-work",
+      "head_commit": "bcadb5b41dda6de7be25aa5bd3033b5d25158cbd",
+      "merge_base": "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315",
+      "files_changed_count": 5,
+      "files_changed": [
+        "docs/report/scientific_report.docx",
+        "docs/report/scientific_report.md",
+        "reports/evidence/research_report_scaffold.md",
+        "scripts/export_report_docx.py",
+        "scripts/verify_report_metadata.py"
+      ],
+      "critical_code_modified": false,
+      "test_status": "All report metadata & invariant verifications passed"
+    },
+    "track_d": {
+      "name": "Reproducibility & Presentation",
+      "pr_number": 26,
+      "branch": "codex/s1-reproducibility-presentation",
+      "head_commit": "0c244e5bdf0f586416650d69530301e5ceb4fac3",
+      "merge_base": "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315",
+      "files_changed_count": 24,
+      "files_changed": [
+        "docs/README_PROPOSED.md",
+        "docs/presentation/slides.md",
+        "docs/presentation/slides.pptx",
+        "docs/reproducibility.md",
+        "docs/sanitized_evidence_manifest.json",
+        "outputs/reproduction/figures/fig_rq2_per_technique_breakdown.png",
+        "outputs/reproduction/figures/fig_rq2_retrieval_hit_rates.png",
+        "outputs/reproduction/figures/fig_rq3_pilot_token_scaling.png",
+        "outputs/reproduction/fixture_diagnostics/_fixture_metadata.json",
+        "outputs/reproduction/fixture_diagnostics/failure_decomposition.json",
+        "outputs/reproduction/fixture_diagnostics/overall_metrics.json",
+        "outputs/reproduction/fixture_diagnostics/per_condition_metrics.json",
+        "outputs/reproduction/fixture_diagnostics/per_technique_metrics.json",
+        "outputs/reproduction/fixture_diagnostics/retrieval_conditional_metrics.json",
+        "outputs/reproduction/fixture_diagnostics/run_provenance.json",
+        "outputs/reproduction/reproduction_report.md",
+        "outputs/reproduction/tables/table_1_retrieval_diagnostics.md",
+        "outputs/reproduction/tables/table_2_per_technique_retrieval.md",
+        "outputs/reproduction/tables/table_3_dev_pilot_resource_usage.md",
+        "outputs/reproduction/tables/table_4_pairwise_representation_comparison.md",
+        "reports/evidence/reproducibility_package_manifest.md",
+        "scripts/generate_slides.py",
+        "scripts/reproduce_study.py",
+        "tests/test_canonical_reproduction_boundary.py"
+      ],
+      "critical_code_modified": false,
+      "test_status": "9 passed in 2.30s"
+    }
+  },
+  "integration_verification": {
+    "disjoint_file_sets": true,
+    "total_modified_files": 38,
+    "overlapping_files_count": 0,
+    "git_merge_tree_simulations": {
+      "track_a_merge_tree": "fc34e2e39f1a3fcacd756bc3f5b59cf5f556d3dc (CLEAN)",
+      "track_b_merge_tree": "c52354a1a5d7878911df258e452400012d6f20e9 (CLEAN)",
+      "track_c_merge_tree": "da216f8a4751f1c91aea05a67cb5b439fa82727e (CLEAN)",
+      "track_d_merge_tree": "5b7219ae1100861de7ce76bd4691a528dfe6d05d (CLEAN)"
+    },
+    "critical_code_patterns_preserved": true,
+    "code_manifest_drift_risk": "ZERO"
+  },
+  "toolchain_and_runtime": {
+    "system_python": "C:/Program Files/Python313/python.exe (CPython 3.13.0)",
+    "uv_version": "uv 0.11.24",
+    "uv_lock_offline_check": "PASSED (Resolved 108 packages in 1ms)",
+    "virtualenv_audit": {
+      "integrated_audit_worktree_venv": false,
+      "base_repo_venv": true,
+      "audit_recovery_worktree_venv": true,
+      "prep_evaluator_worktree_venv": true,
+      "report_worktree_venv": true,
+      "repro_presentation_worktree_venv": true
+    },
+    "test_isolation_conftest": "ENFORCED (conftest prevents foreign interpreter execution)"
+  }
+}

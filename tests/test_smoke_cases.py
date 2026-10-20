@@ -16,13 +16,13 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from unittest.mock import patch
+
 import pytest
 
 from src.baseline.smoke import (
     load_smoke_cases,
     run_failure_pathways_suite,
     run_smoke_test_pipeline,
-    write_smoke_test_report,
 )
 from src.llm.client import (
     get_live_request_count,
@@ -47,6 +47,7 @@ def ensure_clean_live_budget():
 # ---------------------------------------------------------------------------
 # 1. Synthetic Cases Invariants
 # ---------------------------------------------------------------------------
+
 
 def test_smoke_cases_file_exists_and_quota():
     """Confirms data/synthetic/smoke_cases.jsonl exists and contains 20-30 cases."""
@@ -122,6 +123,7 @@ def test_smoke_cases_ground_truth_valid_in_attack_v19_2():
 # 2. Pipeline Execution and Failure Pathways
 # ---------------------------------------------------------------------------
 
+
 def test_failure_pathways_suite_covers_all_seven_statuses():
     """Verifies that the failure pathways suite exercises all 7 ParseStatus members."""
     reg = load_attack_registry()
@@ -191,19 +193,26 @@ def test_regenerated_report_no_fallback_references(tmp_path: Path):
     and reflects mock runtime without claiming authenticated runtime or Chat Completions.
     """
     test_report = tmp_path / "regenerated_report.md"
-    results = run_smoke_test_pipeline(report_path=test_report, allow_live=False)
+    run_smoke_test_pipeline(report_path=test_report, allow_live=False)
 
     assert test_report.exists()
     content = test_report.read_text(encoding="utf-8")
 
     # Invariant 1: Sole frozen interface declared, no runtime fallback
-    assert "Responses API execution (sole frozen experimental interface, no runtime fallback)" in content
+    assert (
+        "Responses API execution (sole frozen experimental interface, no runtime fallback)"
+        in content
+    )
     assert "Chat Completions" not in content
     assert "fallback_api_interface" not in content
 
-    # Invariant 2: No 'fallback' references in report (case-insensitive) except in "no runtime fallback"
+    # Invariant 2: No 'fallback' references in report (case-insensitive)
+    # except in "no runtime fallback"
     fallback_count = content.lower().count("fallback")
-    assert fallback_count == 1, f"Expected exactly 1 occurrence of 'fallback' (in 'no runtime fallback'), got {fallback_count}"
+    assert fallback_count == 1, (
+        f"Expected exactly 1 occurrence of 'fallback' (in 'no runtime fallback'), "
+        f"got {fallback_count}"
+    )
 
     # Invariant 3: Mock-only runtime status and cost when 0 live calls
     assert "Mock-only / unauthenticated test runtime" in content
@@ -241,7 +250,9 @@ def test_allow_live_without_api_key_raises_value_error(monkeypatch, tmp_path: Pa
 
     initial_count = get_live_request_count()
 
-    with pytest.raises(ValueError, match="allow_live=True was specified but OPENAI_API_KEY is not set"):
+    with pytest.raises(
+        ValueError, match="allow_live=True was specified but OPENAI_API_KEY is not set"
+    ):
         run_smoke_test_pipeline(report_path=test_report, allow_live=True)
 
     # No live API requests consumed before the error

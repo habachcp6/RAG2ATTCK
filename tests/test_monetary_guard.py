@@ -746,9 +746,7 @@ class TestReturnedServiceTierHandling:
                 input_tokens_details=SimpleNamespace(cached_tokens=0),
             ),
         )
-        fake_client = SimpleNamespace(
-            responses=SimpleNamespace(create=lambda **kwargs: mock_resp)
-        )
+        fake_client = SimpleNamespace(responses=SimpleNamespace(create=lambda **kwargs: mock_resp))
         client = LLMClient(
             config_dict={"model": "gpt-5.6-luna", "max_retries": 0},
             openai_client=fake_client,
@@ -975,9 +973,7 @@ class TestRecordBindingIntegrity:
         assert breach is False
         assert cost == Decimal("0.00085000")
 
-    def test_case_a_duplicate_ordinal_receipts_flags_breach_and_retains_worst(
-        self, sample_pricing
-    ):
+    def test_case_a_duplicate_ordinal_receipts_flags_breach_and_retains_worst(self, sample_pricing):
         """Case A: Duplicate ordinals across attempts flag breach and retain full reservation.
 
         attempts=2, record prompt1000/completion500/modelLuna/id resp-final,
@@ -1020,9 +1016,7 @@ class TestRecordBindingIntegrity:
         assert cost == Decimal("1.07949120")
         assert "Duplicate receipt ordinal" in reason or "Non-sequential" in reason
 
-    def test_case_b_success_before_final_retry_flags_breach_and_retains_worst(
-        self, sample_pricing
-    ):
+    def test_case_b_success_before_final_retry_flags_breach_and_retains_worst(self, sample_pricing):
         """Case B: SUCCESS before final attempt flags breach and retains full reservation.
 
         attempts=2, record prompt1000/completion500/modelLuna/id resp-final,
@@ -1070,9 +1064,7 @@ class TestRecordBindingIntegrity:
         assert cost == Decimal("1.07949120")
         assert "Attempt 0 has status 'SUCCESS' before final attempt" in reason
 
-    def test_genuine_3_timeouts_1_success_nonzero_globalstart_control(
-        self, sample_pricing
-    ):
+    def test_genuine_3_timeouts_1_success_nonzero_globalstart_control(self, sample_pricing):
         """Control: Genuine 3 timeouts + 1 success with nonzero globalstart must not breach.
 
         globalstart=10, ordinals=[11, 12, 13, 14], cost=3*worst + token_cost = 1.62008680.
@@ -1113,9 +1105,7 @@ class TestRecordBindingIntegrity:
         assert cost == Decimal("1.62008680")
         assert reason is None
 
-    def test_root_offline_record_incomplete_status_settles_without_breach(
-        self, sample_pricing
-    ):
+    def test_root_offline_record_incomplete_status_settles_without_breach(self, sample_pricing):
         """Offline record with parse_status=INCOMPLETE settles metered tokens without breach.
 
         Record: model=gpt-5.6-luna, id=resp-incomplete, prompt=1000, completion=8192,
@@ -1357,7 +1347,8 @@ class TestCleanUsdExhaustionAndSummary:
         ledger.reserve("dummy:drain", drain)
         assert (
             ledger.uncommitted_available_balance_usd
-            == Decimal("1.00000000") < Decimal("2.15898240")
+            == Decimal("1.00000000")
+            < Decimal("2.15898240")
         )
 
         calls_before = len(provider.calls)
@@ -1395,14 +1386,20 @@ class TestCliHistoricalCountsReporting:
 
         argv = [
             "live",
-            "--config", str(bundle[1]),
-            "--output-dir", str(output_dir),
-            "--auth-token", "HUMAN_TOKEN",
-            "--protocol-file", str(proto_file),
+            "--config",
+            str(bundle[1]),
+            "--output-dir",
+            str(output_dir),
+            "--auth-token",
+            "HUMAN_TOKEN",
+            "--protocol-file",
+            str(proto_file),
             "--allow-live-dispatch",
-            "--max-attempts", "100",
+            "--max-attempts",
+            "100",
             "--use-money-guard",
-            "--study-ledger-path", str(ledger_path),
+            "--study-ledger-path",
+            str(ledger_path),
         ]
         with (
             patch(
@@ -1434,28 +1431,37 @@ class TestCliHistoricalCountsReporting:
         proto_file.write_bytes(canonical_bytes(protocol_to_dict(proto)))
 
         call_count = 0
+
         def provider_factory(cfg, bud):
             p = MockProvider()
             orig_create = p.create
+
             def guarded_create(**kwargs):
                 nonlocal call_count
                 call_count += 1
                 if call_count > 1:
                     raise RuntimeError("Simulated provider failure after 1 call")
                 return orig_create(**kwargs)
+
             p.create = guarded_create
             return p
 
         argv = [
             "live",
-            "--config", str(bundle[1]),
-            "--output-dir", str(output_dir),
-            "--auth-token", "HUMAN_TOKEN",
-            "--protocol-file", str(proto_file),
+            "--config",
+            str(bundle[1]),
+            "--output-dir",
+            str(output_dir),
+            "--auth-token",
+            "HUMAN_TOKEN",
+            "--protocol-file",
+            str(proto_file),
             "--allow-live-dispatch",
-            "--max-attempts", "100",
+            "--max-attempts",
+            "100",
             "--use-money-guard",
-            "--study-ledger-path", str(ledger_path),
+            "--study-ledger-path",
+            str(ledger_path),
         ]
         with (
             patch(
@@ -1605,9 +1611,7 @@ class TestBreachPersistentlyPreventsResume:
             study_ledger_path=str(ledger_path),
         )
 
-        provider = MockProvider(
-            outcomes={("s1", "no_rag"): [MockReply(service_tier="priority")]}
-        )
+        provider = MockProvider(outcomes={("s1", "no_rag"): [MockReply(service_tier="priority")]})
         with pytest.raises(LiveExecutionBlockedError, match="Receipt ceiling or metadata breach"):
             run_live_exp(
                 plan,
@@ -1851,9 +1855,7 @@ class TestAnchorAndLedgerIntegrityRegressions:
         ):
             StudyBudgetLedger(ledger_path, pricing_config=sample_pricing)
 
-    def test_runner_case_incomplete_followed_by_another_request_and_resume(
-        self, bundle, tmp_path
-    ):
+    def test_runner_case_incomplete_followed_by_another_request_and_resume(self, bundle, tmp_path):
         """Runner handles INCOMPLETE outcome followed by another request and clean resume."""
         from src.experiment.config import load_plan
         from tests.test_experiment_t22 import run_live_experiment as run_live_exp
@@ -1880,9 +1882,7 @@ class TestAnchorAndLedgerIntegrityRegressions:
             output_tokens=8192,
             response_id="resp-inc-1",
         )
-        provider1 = MockProvider(
-            outcomes={("s1", "no_rag"): [reply_inc]}
-        )
+        provider1 = MockProvider(outcomes={("s1", "no_rag"): [reply_inc]})
         summary1 = run_live_exp(
             plan,
             output,
@@ -1913,9 +1913,7 @@ class TestAnchorAndLedgerIntegrityRegressions:
             output_tokens=500,
             response_id="resp-val-2",
         )
-        provider2 = MockProvider(
-            outcomes={("s1", "rag_k1"): [reply_val]}
-        )
+        provider2 = MockProvider(outcomes={("s1", "rag_k1"): [reply_val]})
         summary2 = run_live_exp(
             plan,
             output,
@@ -1988,9 +1986,7 @@ class TestAnchorAndLedgerIntegrityRegressions:
                 tampered = True
                 break
         assert tampered is True
-        journal_path.write_bytes(
-            b"".join(canonical_bytes(e) + b"\n" for e in events)
-        )
+        journal_path.write_bytes(b"".join(canonical_bytes(e) + b"\n" for e in events))
 
         # Attempt to resume with fresh provider
         provider2 = MockProvider()

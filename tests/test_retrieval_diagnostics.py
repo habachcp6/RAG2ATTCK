@@ -20,21 +20,31 @@ def _write_jsonl(path: Path, rows: list[dict]) -> None:
     path.write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
 
 
-def _fixture_paths(tmp_path: Path, *, duplicate_input: bool = False, missing_gt: bool = False, bad_id: bool = False):
-    inference = [{"sample_id": "view_1", "endpoint_evidence": "EventID 1 cmd.exe"},
-                 {"sample_id": "view_2", "endpoint_evidence": "EventID 1 powershell.exe"}]
+def _fixture_paths(
+    tmp_path: Path, *, duplicate_input: bool = False, missing_gt: bool = False, bad_id: bool = False
+):
+    inference = [
+        {"sample_id": "view_1", "endpoint_evidence": "EventID 1 cmd.exe"},
+        {"sample_id": "view_2", "endpoint_evidence": "EventID 1 powershell.exe"},
+    ]
     if duplicate_input:
         inference[1]["sample_id"] = "view_1"
-    gt = [{"view_id": "view_1", "label_status": "mapped", "technique_ids": ["T1059.003"]},
-          {"view_id": "view_2", "label_status": "mapped", "technique_ids": ["T1059.001"]}]
+    gt = [
+        {"view_id": "view_1", "label_status": "mapped", "technique_ids": ["T1059.003"]},
+        {"view_id": "view_2", "label_status": "mapped", "technique_ids": ["T1059.001"]},
+    ]
     if missing_gt:
         gt = gt[:1]
     if bad_id:
         gt[0]["technique_ids"] = ["not-an-attack-id"]
-    views = [{"view_id": "view_1", "pair_id": "pair_1", "view_type": "single"},
-             {"view_id": "view_2", "pair_id": "pair_1", "view_type": "contextual"}]
+    views = [
+        {"view_id": "view_1", "pair_id": "pair_1", "view_type": "single"},
+        {"view_id": "view_2", "pair_id": "pair_1", "view_type": "contextual"},
+    ]
     pairs = [{"pair_id": "pair_1", "split": "test"}]
-    paths = {name: tmp_path / f"{name}.jsonl" for name in ("inference", "ground_truth", "views", "pairs")}
+    paths = {
+        name: tmp_path / f"{name}.jsonl" for name in ("inference", "ground_truth", "views", "pairs")
+    }
     _write_jsonl(paths["inference"], inference)
     _write_jsonl(paths["ground_truth"], gt)
     _write_jsonl(paths["views"], views)
@@ -59,7 +69,9 @@ def _split_fixture_paths(tmp_path: Path):
         {"pair_id": "pair_test", "split": "test"},
         {"pair_id": "pair_dev", "split": "dev"},
     ]
-    paths = {name: tmp_path / f"{name}.jsonl" for name in ("inference", "ground_truth", "views", "pairs")}
+    paths = {
+        name: tmp_path / f"{name}.jsonl" for name in ("inference", "ground_truth", "views", "pairs")
+    }
     _write_jsonl(paths["inference"], inference)
     _write_jsonl(paths["ground_truth"], ground_truth)
     _write_jsonl(paths["views"], views)
@@ -77,70 +89,99 @@ def _result(rank: int, technique_id: str, score: float = 0.5) -> RetrievalResult
 
 
 def _view(gt: tuple[str, ...] = ("T1059.003",)) -> BenchmarkView:
-    return BenchmarkView("view_1", "cmd.exe", "view_1", "pair_1", "TEST", "single", "mapped", "mapped_single", gt)
+    return BenchmarkView(
+        "view_1", "cmd.exe", "view_1", "pair_1", "TEST", "single", "mapped", "mapped_single", gt
+    )
 
 
 def test_loader_rejects_duplicate_sample_id(tmp_path: Path):
     paths = _fixture_paths(tmp_path, duplicate_input=True)
     with pytest.raises(ValueError, match="Duplicate sample_id"):
-        load_benchmark_views(paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"])
+        load_benchmark_views(
+            paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"]
+        )
 
 
 def test_loader_rejects_missing_ground_truth(tmp_path: Path):
     paths = _fixture_paths(tmp_path, missing_gt=True)
     with pytest.raises(ValueError, match="missing_gt"):
-        load_benchmark_views(paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"])
+        load_benchmark_views(
+            paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"]
+        )
 
 
 def test_loader_rejects_missing_endpoint_evidence(tmp_path: Path):
     paths = _fixture_paths(tmp_path)
-    rows = [json.loads(line) for line in paths["inference"].read_text(encoding="utf-8").splitlines()]
+    rows = [
+        json.loads(line) for line in paths["inference"].read_text(encoding="utf-8").splitlines()
+    ]
     rows[1]["endpoint_evidence"] = ""
     _write_jsonl(paths["inference"], rows)
     with pytest.raises(ValueError, match="missing endpoint_evidence"):
-        load_benchmark_views(paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"])
+        load_benchmark_views(
+            paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"]
+        )
 
 
 def test_loader_rejects_malformed_attack_id(tmp_path: Path):
     paths = _fixture_paths(tmp_path, bad_id=True)
     with pytest.raises(ValueError, match="malformed ATT&CK IDs"):
-        load_benchmark_views(paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"])
+        load_benchmark_views(
+            paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"]
+        )
 
 
 def test_orphan_view_is_rejected(tmp_path: Path):
     paths = _fixture_paths(tmp_path)
-    views_rows = [json.loads(line) for line in paths["views"].read_text(encoding="utf-8").splitlines() if line]
+    views_rows = [
+        json.loads(line) for line in paths["views"].read_text(encoding="utf-8").splitlines() if line
+    ]
     views_rows.append({"view_id": "view_orphan", "pair_id": "pair_1", "view_type": "single"})
     _write_jsonl(paths["views"], views_rows)
     with pytest.raises(ValueError, match="orphan_views"):
-        load_benchmark_views(paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"])
+        load_benchmark_views(
+            paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"]
+        )
 
 
 def test_missing_view_is_rejected(tmp_path: Path):
     paths = _fixture_paths(tmp_path)
-    views_rows = [json.loads(line) for line in paths["views"].read_text(encoding="utf-8").splitlines() if line]
+    views_rows = [
+        json.loads(line) for line in paths["views"].read_text(encoding="utf-8").splitlines() if line
+    ]
     _write_jsonl(paths["views"], views_rows[:1])
     with pytest.raises(ValueError, match="missing_views"):
-        load_benchmark_views(paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"])
+        load_benchmark_views(
+            paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"]
+        )
 
 
 def test_duplicate_ground_truth_technique_is_rejected(tmp_path: Path):
     paths = _fixture_paths(tmp_path)
-    gt_rows = [json.loads(line) for line in paths["ground_truth"].read_text(encoding="utf-8").splitlines() if line]
+    gt_rows = [
+        json.loads(line)
+        for line in paths["ground_truth"].read_text(encoding="utf-8").splitlines()
+        if line
+    ]
     gt_rows[0]["technique_ids"] = ["T1059.001", "T1059.001"]
     _write_jsonl(paths["ground_truth"], gt_rows)
     with pytest.raises(ValueError, match="duplicate ATT&CK technique IDs"):
-        load_benchmark_views(paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"])
+        load_benchmark_views(
+            paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"]
+        )
 
 
 def test_view_referencing_unknown_pair_is_rejected(tmp_path: Path):
     paths = _fixture_paths(tmp_path)
-    views_rows = [json.loads(line) for line in paths["views"].read_text(encoding="utf-8").splitlines() if line]
+    views_rows = [
+        json.loads(line) for line in paths["views"].read_text(encoding="utf-8").splitlines() if line
+    ]
     views_rows[0]["pair_id"] = "unknown_pair"
     _write_jsonl(paths["views"], views_rows)
     with pytest.raises(ValueError, match="references unknown pair_id"):
-        load_benchmark_views(paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"])
-
+        load_benchmark_views(
+            paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"]
+        )
 
 
 def test_record_uses_retrieval_only_and_multi_label_query_hit_is_any_match():
@@ -200,7 +241,12 @@ def test_negative_has_no_recall_semantics():
 def test_metrics_known_rank_four():
     record = make_diagnostic_record(
         _view(),
-        [_result(1, "T1105"), _result(2, "T1547.001"), _result(3, "T1053.005"), _result(4, "T1059.003")],
+        [
+            _result(1, "T1105"),
+            _result(2, "T1547.001"),
+            _result(3, "T1053.005"),
+            _result(4, "T1059.003"),
+        ],
         {},
     )
     metrics = calculate_metrics([record])["overall_positive"]
@@ -231,7 +277,11 @@ def test_negative_diagnostic_name_describes_counted_value():
 def test_split_manifest_must_be_an_exact_partition(tmp_path: Path):
     paths = _split_fixture_paths(tmp_path)
     views = load_benchmark_views(
-        paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"], paths["split_manifest"]
+        paths["inference"],
+        paths["ground_truth"],
+        paths["views"],
+        paths["pairs"],
+        paths["split_manifest"],
     )
     assert {view.pair_id for view in views} == {"pair_test", "pair_dev"}
 
@@ -255,7 +305,11 @@ def test_split_manifest_invalid_states_fail_closed(tmp_path: Path, manifest, pai
     paths["split_manifest"].write_text(json.dumps(manifest), encoding="utf-8")
     with pytest.raises(ValueError, match=match):
         load_benchmark_views(
-            paths["inference"], paths["ground_truth"], paths["views"], paths["pairs"], paths["split_manifest"]
+            paths["inference"],
+            paths["ground_truth"],
+            paths["views"],
+            paths["pairs"],
+            paths["split_manifest"],
         )
 
 
@@ -263,7 +317,11 @@ def test_run_is_semantically_deterministic(tmp_path: Path):
     views = [_view()]
 
     class FakeRetriever:
-        config: ClassVar[dict] = {"corpus_sha256": "c", "index_sha256": "i", "embedding_model_revision": "r"}
+        config: ClassVar[dict] = {
+            "corpus_sha256": "c",
+            "index_sha256": "i",
+            "embedding_model_revision": "r",
+        }
 
         def retrieve(self, query: str, k: int):
             assert query == "cmd.exe"
@@ -277,7 +335,9 @@ def test_run_is_semantically_deterministic(tmp_path: Path):
     run_diagnostics(views, FakeRetriever(), first, first_metrics)
     run_diagnostics(views, FakeRetriever(), second, second_metrics)
     assert first.read_text(encoding="utf-8") == second.read_text(encoding="utf-8")
-    assert json.loads(first_metrics.read_text(encoding="utf-8")) == json.loads(second_metrics.read_text(encoding="utf-8"))
+    assert json.loads(first_metrics.read_text(encoding="utf-8")) == json.loads(
+        second_metrics.read_text(encoding="utf-8")
+    )
 
 
 def test_retrieval_prefix_consistency():
@@ -294,7 +354,9 @@ def test_retrieval_prefix_consistency():
     index = faiss.IndexFlatIP(8)
     index.add(normalize_l2(embedder.encode([doc["retrieval_text"] for doc in documents])))
     retriever = FAISSRetriever(index, documents, {}, embedder=embedder)
-    rankings = {k: [row.technique_id for row in retriever.retrieve("query", k)] for k in (1, 3, 5, 10)}
+    rankings = {
+        k: [row.technique_id for row in retriever.retrieve("query", k)] for k in (1, 3, 5, 10)
+    }
     assert rankings[1] == rankings[3][:1]
     assert rankings[3] == rankings[5][:3]
     assert rankings[5] == rankings[10][:5]

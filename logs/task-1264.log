@@ -1,0 +1,28 @@
+=== LAUNCHING CANONICAL RESUME (PID: 50192, stop_after=6399) ===
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|##########| 103/103 [00:00<00:00, 1903.06it/s]
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+=== CANONICAL_RESUME_COMPLETE ===
+{
+  "complete": true,
+  "consumed_provider_attempts": 6401,
+  "execution_mode": "live",
+  "exit_code": 0,
+  "new_records": 6175,
+  "pid": 50192,
+  "record_count": 6400,
+  "requests_consumed": 6401,
+  "run_id": "live-66b94b1676bf46a9",
+  "stopped_reason": null,
+  "study_budget": {
+    "active_reservations_usd": "0E-8",
+    "breached_records_count": 0,
+    "cumulative_settled_cost_usd": "6.57575890",
+    "has_breach": false,
+    "pricing_contract_sha256": "4adfe8a0630bc1703a92e233133ea55eeff21ef5312dc3102369c267767c9565",
+    "prior_pilot_provisional_hold_usd": "0.05264010",
+    "service_tier": "default",
+    "settlement_records_count": 6400,
+    "total_budget_usd": "19.99000000",
+    "uncommitted_available_balance_usd": "13.36160100"
+  }
+}

@@ -1,0 +1,204 @@
+{
+  "review_version": "BIBLIOGRAPHY_V2_CLOSEOUT_REMEDIATED",
+  "observation_date_client": "2026-10-19",
+  "prior_observation_date_client": "2026-10-03",
+  "client_timezone": "Asia/Saigon",
+  "report_source_sha": "a0b70f61ac0021111ecf70b4f139c252766122e5",
+  "report_source_file": "docs/report/scientific_report.md",
+  "report_source_sha256": "4301e6ea54de43d0171813280a79e8a11009b91f5696bb75df1032488d5987cb",
+  "PR8_source_sha": "6783f20971cbff91f105d0280ddd07cb0925aab0",
+  "PR8_source_file": "reports/T33_related_work.md",
+  "PR8_source_sha256": "606bc88334b70f55e8f09b484eb51fb631fceba5fdb80ec3feee1b9205618936",
+  "t33_verification_companion": "reports/evidence/t33_lade_claim_verification_record.json",
+  "references_reviewed": 13,
+  "comparator_fulltext_verified_count": 6,
+  "comparator_total_count": 8,
+  "records": [
+    {
+      "reference_number": 1,
+      "original_template_entry": "The MITRE Corporation. \"MITRE ATT&CK® Enterprise Matrix, Version 19.2.\" Published 05 August 2026. Available: <https://github.com/mitre-attack/attack-stix-data/releases/tag/v19.2> (version history horizon begins 28 April 2026: <https://attack.mitre.org/resources/versions/>). `[PRIMARY SOURCE VERIFIED]`",
+      "primary_urls": [
+        "https://github.com/mitre-attack/attack-stix-data/releases/tag/v19.2",
+        "https://attack.mitre.org/resources/versions/"
+      ],
+      "access_level": "OFFICIAL_RELEASE_METADATA",
+      "observed_metadata_and_supported_claims": "v19.2 repository release 05 August 2026; official website interval 28 April 2026-current. Project 474 is derived subset.",
+      "source_locations": "Release heading/date and version history current interval",
+      "finding": "SUPPORTED_DISTINCT_DATE_DOMAINS",
+      "full_text_not_implied_by_metadata": true
+    },
+    {
+      "reference_number": 2,
+      "original_template_entry": "OpenAI. \"GPT-5.6 Luna Model.\" OpenAI Documentation, accessed 2 October 2026. Available: <https://developers.openai.com/api/docs/models/gpt-5.6-luna>. Specifications: 1,050,000 context window, 128,000 max output capacity. `[PRIMARY SOURCE VERIFIED]`",
+      "primary_urls": [
+        "https://developers.openai.com/api/docs/models/gpt-5.6-luna"
+      ],
+      "access_level": "OFFICIAL_CURRENT_DOCUMENTATION",
+      "observed_metadata_and_supported_claims": "Official title; context 1050000 / output capacity 128000. Configured 8192 distinct.",
+      "source_locations": "Model specification lines 938-944",
+      "finding": "SUPPORTED_NO_FROZEN_CONFIG_CHANGE",
+      "full_text_not_implied_by_metadata": true
+    },
+    {
+      "reference_number": 3,
+      "original_template_entry": "OpenAI. \"Reasoning models.\" OpenAI Documentation Guides, accessed 2 October 2026. Available: <https://developers.openai.com/api/docs/guides/reasoning>. Note: Details upper budget bounds and incomplete responses (status=\"incomplete\", incomplete_details.reason=\"max_output_tokens\") when max_output_tokens is exhausted. `[PRIMARY SOURCE VERIFIED]`",
+      "primary_urls": [
+        "https://developers.openai.com/api/docs/guides/reasoning"
+      ],
+      "access_level": "OFFICIAL_CURRENT_DOCUMENTATION",
+      "observed_metadata_and_supported_claims": "Token budget exhaustion incomplete/max_output_tokens reason supported.",
+      "source_locations": "Allocating space for reasoning subsection",
+      "finding": "SUPPORTED",
+      "full_text_not_implied_by_metadata": true
+    },
+    {
+      "reference_number": 4,
+      "original_template_entry": "Lewis, P.; Perez, E.; Piktus, A.; Petroni, F.; Karpukhin, V.; Goyal, N.; Küttler, H.; Lewis, M.; Yih, W.-t.; Rocktäschel, T.; Riedel, S.; Kiela, D. \"Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks.\" In: *Advances in Neural Information Processing Systems (NeurIPS 2020)*, vol. 33, pp. 9459–9474, 2020. `[PRIMARY SOURCE VERIFIED]`",
+      "primary_urls": [
+        "https://papers.nips.cc/paper_files/paper/2020/hash/6b493230205f780e1bc26945df7481e5-Abstract.html",
+        "https://papers.nips.cc/paper_files/paper/2020/file/6b493230205f780e1bc26945df7481e5-Paper.pdf"
+      ],
+      "access_level": "PRIMARY_RECORD_AND_PAPER_AVAILABLE",
+      "observed_metadata_and_supported_claims": "Title/authors/NeurIPS 33 (2020), parametric/nonparametric retrieval generation supported. Exact 9459-9474 span not independently reconfirmed; BibTeX endpoint blocked.",
+      "source_locations": "Proceedings title/authors/abstract; PDF",
+      "finding": "PARTIAL_METADATA_SPAN_CHECK",
+      "full_text_not_implied_by_metadata": true
+    },
+    {
+      "reference_number": 5,
+      "original_template_entry": "Lekssays, A.; Shukla, U.; Sencar, H. T.; Parvez, M. R. \"TechniqueRAG: Retrieval Augmented Generation for Adversarial Technique Annotation in Cyber Threat Intelligence Text.\" In: *Findings of the Association for Computational Linguistics: ACL 2025*, pp. 20913–20926, 2025. DOI: <https://doi.org/10.18653/v1/2025.findings-acl.1076>; arXiv: <https://arxiv.org/abs/2505.11988>. Note: Operates on paired CTI text-label exemplars; standalone Hit@k is NOT REPORTED. `[FULL TEXT VERIFIED]`",
+      "primary_urls": [
+        "https://aclanthology.org/2025.findings-acl.1076/",
+        "https://aclanthology.org/2025.findings-acl.1076.pdf",
+        "https://arxiv.org/abs/2505.11988"
+      ],
+      "access_level": "PRIMARY_METADATA_FULLTEXT_RELEVANT_SECTIONS",
+      "observed_metadata_and_supported_claims": "ACL 2025 pages 20913-20926 / DOI 10.18653/v1/2025.findings-acl.1076 / authors match; BM25 K=40, k=3, DeepSeek-v3 rerank, Ministral-8B generator supported.",
+      "source_locations": "ACL metadata; PDF §4.2/page 20917; baselines §4.2/5.2",
+      "finding": "SUPPORTED_USED_PIPELINE_CLAIMS",
+      "full_text_not_implied_by_metadata": true
+    },
+    {
+      "reference_number": 6,
+      "original_template_entry": "Morbiato, F.; Keller, M.; Nair, P.; Romano, L. \"Hierarchical Retrieval Augmented Generation for Adversarial Technique Annotation in Cyber Threat Intelligence Text.\" arXiv:2604.14166, submitted 24 March 2026. Available: <https://arxiv.org/abs/2604.14166>. Note: Primary arXiv page displays submission date as 24 March 2026 (despite the 2604 identifier prefix); investigates hierarchical CTI retrieval; sub-technique modeling is NOT REPORTED. `[FULL TEXT VERIFIED]`",
+      "primary_urls": [
+        "https://arxiv.org/abs/2604.14166",
+        "https://arxiv.org/html/2604.14166v1"
+      ],
+      "access_level": "PRIMARY_VERSIONED_FULLTEXT_RELEVANT_SECTIONS",
+      "observed_metadata_and_supported_claims": "Displayed 24 March 2026 / Morbiato, Keller, Nair, Romano verified; zero-shot baseline exists. Tactic M sensitivity yes; per-tactic K_A=15 distinct.",
+      "source_locations": "§3.3; §4.1 Baselines/Tables 1-2; §4.3 Hyperparameter Sensitivity; §4.4 Error Analysis",
+      "finding": "CORRECT_BASELINE_AND_QUALIFY_DEPTH",
+      "full_text_not_implied_by_metadata": true
+    },
+    {
+      "reference_number": 7,
+      "original_template_entry": "Yang, D.-R.; Hsu, F.-H. \"LLM-Based Malicious Behavior Detection from Sysmon Event Logs: A Practical System Integrating Process Trees, RAG, and In-Context Analysis.\" In: *Security and Information Technologies with AI, Internet Computing and Big-Data Applications (SITAIBA 2025)*, Smart Innovation, Systems and Technologies (SIST), vol. 8767, pp. 235–251, Springer Cham, published online 2 July 2026. DOI: <https://doi.org/10.1007/978-3-032-24063-7_18>. Note: Springer primary page explicitly confirms online publication date of 2 July 2026; abstract and bibliographic metadata checked; chapter full text remains UNVERIFIED due to subscription paywall. `[PARTIAL / METADATA ONLY]`",
+      "primary_urls": [
+        "https://link.springer.com/chapter/10.1007/978-3-032-24063-7_18"
+      ],
+      "access_level": "PRIMARY_ABSTRACT_METADATA_PAYWALL",
+      "observed_metadata_and_supported_claims": "Yang/Hsu/SITAIBA 2025/SIST 8767/02 July 2026/DOI match. Abstract supports models with/without RAG/precision F1 FPR; detailed corpus/counts/exact IDs/depth unverified.",
+      "source_locations": "Abstract and About this paper; full chapter subscription",
+      "finding": "KEEP_PARTIAL_REMOVE_METHOD_OVERREACH",
+      "full_text_not_implied_by_metadata": true
+    },
+    {
+      "reference_number": 8,
+      "original_template_entry": "Landauer, M.; Hotwagner, W.; Boenke, T.; Skopik, F.; Wurzenberger, M. \"CAM-LDS: cyber attack manifestations for automatic interpretation of system logs and security alerts.\" *International Journal of Information Security*, vol. 25, art. 148, published online 26 August 2026. DOI: <https://doi.org/10.1007/s10207-026-01318-x>; preprint: <https://arxiv.org/abs/2603.04186>. Note: Zero-shot prompting benchmark across 5 models; retrieval settings are NOT APPLICABLE. `[FULL TEXT VERIFIED]`",
+      "primary_urls": [
+        "https://link.springer.com/article/10.1007/s10207-026-01318-x"
+      ],
+      "access_level": "PRIMARY_JOURNAL_FULLTEXT",
+      "observed_metadata_and_supported_claims": "26 August 2026 / volume 25 article 148 / DOI match. Models GPT-5.5, GPT-5.2, Llama-4, Qwen-3, Ministral.",
+      "source_locations": "§5.1/footnotes 7-11; §5.2.2; About article",
+      "finding": "CORRECT_VERSION_MODELSET",
+      "full_text_not_implied_by_metadata": true
+    },
+    {
+      "reference_number": 9,
+      "original_template_entry": "Okuma, M.; Watarai, K.; Okada, S.; Mitsunaga, T. \"Automated Mapping Method for Sysmon Logs to ATT&CK Techniques by Leveraging Atomic Red Team.\" In: *2023 6th International Conference on Signal Processing and Information Security (ICSPIS 2023)*, pp. 104–109, IEEE, 2023. DOI: <https://doi.org/10.1109/ICSPIS60075.2023.10343783>. Note: IEEE bibliographic record checked; primary full text remains ACCESS BLOCKED in this audit. `[ACCESS BLOCKED / BIBLIOGRAPHIC RECORD ONLY]`",
+      "primary_urls": [
+        "https://ieeexplore.ieee.org/document/10343783",
+        "https://ieeexplore.ieee.org/abstract/document/10343783",
+        "https://edas.info/web/icspis2023/authors.html",
+        "https://api.crossref.org/works/10.1109/ICSPIS60075.2023.10343783"
+      ],
+      "access_level": "PRIMARY_ENDPOINTS_BLOCKED_THIS_REVIEW",
+      "observed_metadata_and_supported_claims": "IEEE 418/fetch errors; conference index/Crossref inaccessible. Rule/non-RAG/metrics/counts marked UNVERIFIED across all report and related-work tables.",
+      "source_locations": "Prior PR8 table evidence; current primary endpoints blocked",
+      "finding": "NOT_VERIFIED_METHOD_CELLS",
+      "full_text_not_implied_by_metadata": true
+    },
+    {
+      "reference_number": 10,
+      "original_template_entry": "Adediran, G.; Awuson-David, K.; Ahmed, Y. \"Retrieval-Augmented Large Language Model for AWS Cloud Threat Detection and Modelling: Cloudtrail Mitre ATT&CK Mapping.\" *Computers, Materials & Continua*, vol. 87, no. 2, art. 100, 2026. DOI: <https://doi.org/10.32604/cmc.2026.077606>. Note: Two-step RAG on AWS CloudTrail logs; numeric retrieval depth k is NOT REPORTED; published text contains an unresolved discrepancy reporting retrieval-generation gap as both 60% and 26%. `[FULL TEXT VERIFIED]`",
+      "primary_urls": [
+        "https://www.techscience.com/cmc/v87n2/66657",
+        "https://www.techscience.com/cmc/v87n2/66657/html",
+        "https://file.techscience.com/files/onlinefirst/2026/2.28/TSP_CMC_77606/TSP_CMC_77606.pdf"
+      ],
+      "access_level": "PRIMARY_PUBLISHER_METADATA_FULLTEXT",
+      "observed_metadata_and_supported_claims": "Authors/87(2)100/DOI match; issue 12 March 2026 vs online-first 28 February 2026. Two-step Gemini 2.5 Pro / 200 events. §2/conclusion 60% vs §6.4.1/7.1 26%.",
+      "source_locations": "Metadata; §4.4-4.6; §2/6.4.1/7.1/conclusion",
+      "finding": "CORRECT_DISCREPANCY_PRECISION",
+      "full_text_not_implied_by_metadata": true
+    },
+    {
+      "reference_number": 11,
+      "original_template_entry": "Lupinacci, M.; Arena, L.; Blefari, F.; Furfaro, A. \"A Graph-Based Approach for Mapping Kernel-Level Telemetry to MITRE ATT&CK.\" arXiv:2609.12841, 2026. Available: <https://arxiv.org/abs/2609.12841>. Note: Linux eBPF provenance graphs with Chroma retriever; standalone retriever Recall@k is NOT REPORTED. `[FULL TEXT VERIFIED]`",
+      "primary_urls": [
+        "https://arxiv.org/abs/2609.12841",
+        "https://arxiv.org/html/2609.12841v1"
+      ],
+      "access_level": "PRIMARY_VERSIONED_FULLTEXT_RELEVANT_SECTIONS",
+      "observed_metadata_and_supported_claims": "Lupinacci, Arena, Blefari, Furfaro / 11 September 2026. Linux 347 tests, Chroma 800-word / MMR 5 fetch 20. Models foundation-sec-8b-reasoning, qwen3.5-9b, gpt-oss-20b/120b, gemma4-31b-it, deepseek-r1-distill-qwen-32b, llama3.3-70b-instruct.",
+      "source_locations": "§6.4; §7 Table 3; Appendix B/Table 5",
+      "finding": "CORRECT_REPORT_MODELSET",
+      "full_text_not_implied_by_metadata": true
+    },
+    {
+      "reference_number": 12,
+      "original_template_entry": "Gwak, J.-Y.; Strier, A.; Xi, Z.; Yan, G.; Shu, X.; Stoller, S. D.; Yang, P. \"LADE: LLM-Assisted Advanced Persistent Threat Detection and Explanation.\" In: *Security and Privacy in Communication Networks (SecureComm 2026)*, Lecture Notes of the Institute for Computer Sciences, Social Informatics and Telecommunications Engineering (LNICST), vol. 705, pp. 245–273, Springer Cham, published online 20 July 2026, copyright 2027. DOI: <https://doi.org/10.1007/978-3-032-32767-3_11>; author manuscript: <https://www3.cs.stonybrook.edu/~stoller/papers/LADE-2026.pdf>. Note: Multi-stage prompting on command sequences; dynamic vector retriever is NOT APPLICABLE. `[FULL TEXT VERIFIED — AUTHOR MANUSCRIPT SHA-256: 6e8384569254bc4cf82dd4d0191746907ff40fa76016275946651cf47d6f4985]`",
+      "primary_urls": [
+        "https://link.springer.com/chapter/10.1007/978-3-032-32767-3_11",
+        "https://www3.cs.stonybrook.edu/~stoller/papers/LADE-2026.pdf"
+      ],
+      "access_level": "PRIMARY_PUBLISHER_METADATA_AND_AUTHENTICATED_AUTHOR_MANUSCRIPT_PDF",
+      "observed_metadata_and_supported_claims": "Authors/DOI/LNICST 705/SecureComm 2026/online 20 July 2026/copyright 2027 verified. Full 28-page author manuscript PDF (3,819,792 bytes, SHA-256: 6e8384569254bc4cf82dd4d0191746907ff40fa76016275946651cf47d6f4985) verified: evaluates 4 models (gpt-oss-120B, Llama-3.3-70B, Mistral-Small-3.2-24B, Gemini-2.5-Pro) on AVIATOR (35 attack / 32 benign sequences) and Caldera-derived dataset (two sets of 33 APT sequences for 2:1 and 10:1 benign-to-APT ratio settings, each comprising 20 adversary-profile sequences and 13 MITRE emulation-plan sequences [including 5 lateral-movement and 8 multi-stage attack sequences], plus 33 benign sequences).",
+      "source_locations": "Publisher metadata; Author manuscript PDF §4 (pp. 6-11), §5.1-5.5 (pp. 12-19, Tables 2-6), §7 (p. 20)",
+      "finding": "FULL_TEXT_VERIFIED_MODELS_AND_DATASETS_REMEDIATED",
+      "full_text_not_implied_by_metadata": true
+    },
+    {
+      "reference_number": 13,
+      "original_template_entry": "Mozaffari, M.; Yazdinejad, A.; Dehghantanha, A. \"Windows-APT2025: A dataset for APT-inspired attack scenarios on windows systems.\" *Data in Brief*, vol. 65, art. 112569, 2026. DOI: <https://doi.org/10.1016/j.dib.2026.112569>; Mendeley Data v3: <https://doi.org/10.17632/b8fmtzvpy8.3>. Note: Primary source inspected; Task 2 forensic audit identified 15,713 unresolved cell discrepancies preventing independent ground-truth verification. `[PRIMARY SOURCE VERIFIED]`",
+      "primary_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC12950481/",
+        "https://pubmed.ncbi.nlm.nih.gov/41778228/",
+        "https://data.mendeley.com/datasets/b8fmtzvpy8/3"
+      ],
+      "access_level": "PRIMARY_DEPOSITED_FULLTEXT_AND_DATA_METADATA",
+      "observed_metadata_and_supported_claims": "Actual title Windows-APT2025: A dataset for APT-inspired attack scenarios on windows systems; authors/65/112569/2026 match. Epublish 11 Feb 2026 / dataset v3 17 Dec 2025. Internal 15,713 is Task 2 audit finding.",
+      "source_locations": "Paper heading/author/date; Mendeley version 3; internal Task 2 separate",
+      "finding": "CORRECT_TITLE_AND_INTERNAL_EVIDENCE_ATTRIBUTION",
+      "full_text_not_implied_by_metadata": true
+    }
+  ],
+  "findings_companion": "reports/evidence/supervisor_bibliography_review_20261003.md",
+  "methods": {
+    "web_source_policy": "Primary official, publisher, proceedings, versioned author preprint, deposited paper/data only; nonprimary results used only to locate",
+    "provider_API_calls": 0,
+    "scoring": false,
+    "frozen_version_mutation": false,
+    "native_or_canonical_edits": false,
+    "new_pdf_downloads": false,
+    "purchases_or_author_messages": false
+  },
+  "H_tactic_depth_correction": "Earlier supervisor note underreported M sensitivity; final findings recognize §4.3 hyperparameter sensitivity M and distinguish K_A quota / flat project k depth",
+  "unresolved_access": [
+    "Yang/Hsu subscription full chapter (Reference 7 — remains PARTIAL / METADATA ONLY)",
+    "Okuma IEEE full text / primary metadata fresh access (Reference 9 — remains ACCESS BLOCKED / BIBLIOGRAPHIC RECORD ONLY; all method/metric cells marked UNVERIFIED)"
+  ],
+  "verdict": "REMEDIATED_6_OF_8_COMPARATORS_FULLTEXT_VERIFIED_2_BOUNDED_UNVERIFIED"
+}

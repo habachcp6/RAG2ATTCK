@@ -8,7 +8,6 @@ import csv
 import hashlib
 import json
 from pathlib import Path
-import pytest
 
 from src.profiler import generate_opaque_record_id
 
@@ -52,7 +51,10 @@ def test_production_parse_accounting():
         ledger = json.load(f)
 
     assert ledger["accounting_invariant_holds"] is True
-    assert ledger["source_logical_rows"] == ledger["successfully_parsed_records"] + ledger["rejected_malformed_records"]
+    assert (
+        ledger["source_logical_rows"]
+        == ledger["successfully_parsed_records"] + ledger["rejected_malformed_records"]
+    )
     assert ledger["source_logical_rows"] == 102011
     assert ledger["successfully_parsed_records"] == 102011
     assert ledger["rejected_malformed_records"] == 0
@@ -66,7 +68,12 @@ def test_production_record_index_csv():
 
     with open(index_csv, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
-        assert reader.fieldnames == ["record_id", "source_file", "source_file_sha256", "record_ordinal"]
+        assert reader.fieldnames == [
+            "record_id",
+            "source_file",
+            "source_file_sha256",
+            "record_ordinal",
+        ]
         row_count = 0
         first_row = None
         for row in reader:

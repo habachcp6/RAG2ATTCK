@@ -43,6 +43,7 @@ from src.llm.schemas import ParseStatus
 # Test Fixtures & Mock Response Helpers
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(autouse=True)
 def clean_live_budget():
     """Ensure global live request budget is reset before each test."""
@@ -74,18 +75,14 @@ def create_mock_responses_api_response(
         output = [
             SimpleNamespace(
                 type="message",
-                content=[
-                    SimpleNamespace(type="refusal", refusal=refusal)
-                ],
+                content=[SimpleNamespace(type="refusal", refusal=refusal)],
             )
         ]
     elif text:
         output = [
             SimpleNamespace(
                 type="message",
-                content=[
-                    SimpleNamespace(type="output_text", text=text)
-                ],
+                content=[SimpleNamespace(type="output_text", text=text)],
             )
         ]
 
@@ -110,6 +107,7 @@ def create_mock_responses_api_response(
 # ---------------------------------------------------------------------------
 # 1. Configuration Loading & Initialization
 # ---------------------------------------------------------------------------
+
 
 def test_llm_client_initialization_defaults():
     """Verify that LLMClient correctly loads config/model.json parameters."""
@@ -137,8 +135,11 @@ def test_llm_client_no_fallback_api_interface():
 # 2. Fail-Fast on Missing API Key
 # ---------------------------------------------------------------------------
 
+
 def test_real_client_fails_without_api_key(monkeypatch):
-    """Verify that constructing a real OpenAI client without API key raises ValueError immediately."""
+    """Verify that constructing a real OpenAI client without API key raises
+    ValueError immediately.
+    """
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     with pytest.raises(ValueError, match="OPENAI_API_KEY environment variable is required"):
         LLMClient()  # No openai_client injected, no api_key, no env var
@@ -191,6 +192,7 @@ def test_no_placeholder_credential_created(monkeypatch):
 # 3. Prompt Construction & Condition Isolation
 # ---------------------------------------------------------------------------
 
+
 def test_llm_client_prompt_construction_no_rag():
     """Verify that No-RAG replaces {RETRIEVED_CONTEXT} with empty string."""
     mock_openai = MagicMock()
@@ -241,6 +243,7 @@ def test_llm_client_prompt_construction_rag_context():
 # ---------------------------------------------------------------------------
 # 4. No-RAG Context Isolation Invariant
 # ---------------------------------------------------------------------------
+
 
 def test_no_rag_rejects_non_empty_retrieved_context():
     """No-RAG condition must raise ValueError if non-empty retrieved_context is supplied."""
@@ -315,6 +318,7 @@ def test_no_rag_rejects_whitespace_only_context():
 # 5. Responses API (Sole Frozen Interface) — Valid Extraction
 # ---------------------------------------------------------------------------
 
+
 def test_responses_api_valid_prediction():
     """Verify successful execution via the frozen Responses API endpoint."""
     mock_openai = MagicMock()
@@ -356,12 +360,16 @@ def test_no_fallback_when_responses_api_fails():
             endpoint_evidence="test log",
         )
     # Chat Completions should NEVER be called
-    assert not hasattr(mock_openai.chat, "completions") or not mock_openai.chat.completions.create.called
+    assert (
+        not hasattr(mock_openai.chat, "completions")
+        or not mock_openai.chat.completions.create.called
+    )
 
 
 # ---------------------------------------------------------------------------
 # 6. Parse Status Testing: All 7 Distinct Statuses
 # ---------------------------------------------------------------------------
+
 
 def test_status_invalid_id_syntax_failure():
     """Response contains technique_id but with malformed syntax -> INVALID_ID."""
@@ -617,12 +625,14 @@ def test_status_api_failure_non_retryable():
 # 7. Retries and Exponential Backoff
 # ---------------------------------------------------------------------------
 
+
 def test_transient_retries_and_exponential_backoff_recovery():
     """Verify that transient 429/500 errors trigger backoff and recover upon success."""
     mock_openai = MagicMock()
     mock_sleep = MagicMock()
 
-    # Fails on attempt 0 with RateLimitError, attempt 1 with InternalServerError, succeeds on attempt 2
+    # Fails on attempt 0 with RateLimitError, attempt 1 with InternalServerError,
+    # succeeds on attempt 2
     mock_openai.responses.create.side_effect = [
         openai.RateLimitError("Rate limit reached", response=MagicMock(), body=None),
         openai.InternalServerError("500 Internal Error", response=MagicMock(), body=None),
@@ -646,6 +656,7 @@ def test_transient_retries_and_exponential_backoff_recovery():
 # 8. Total Wall-Clock Latency Semantics
 # ---------------------------------------------------------------------------
 
+
 def test_latency_ms_measures_total_wall_clock_duration():
     """Verify that latency_ms captures total wall-clock duration including all retries."""
     mock_openai = MagicMock()
@@ -653,6 +664,7 @@ def test_latency_ms_measures_total_wall_clock_duration():
     def delayed_call(*args, **kwargs):
         # Simulate small real execution time
         import time
+
         time.sleep(0.01)
         return create_mock_responses_api_response(json.dumps({"technique_id": "T1059.001"}))
 
@@ -670,6 +682,7 @@ def test_latency_ms_measures_total_wall_clock_duration():
 # ---------------------------------------------------------------------------
 # 9. Global Live Request Budget Enforcement (Max 5 Requests)
 # ---------------------------------------------------------------------------
+
 
 def test_live_budget_tracker_unit_logic():
     """Verify that LiveBudget strictly enforces maximum live request limit."""
@@ -765,11 +778,11 @@ def test_5_maximum_network_attempts():
     )
 
     # First call: up to 4 attempts (initial + 3 retries), consuming 4 budget units
-    rec1 = client.predict(sample_id="net_1", endpoint_evidence="evidence")
+    client.predict(sample_id="net_1", endpoint_evidence="evidence")
     assert budget.count == 4  # initial + 3 retries
 
     # Second call: only 1 budget unit remaining, then exhaustion
-    rec2 = client.predict(sample_id="net_2", endpoint_evidence="evidence")
+    client.predict(sample_id="net_2", endpoint_evidence="evidence")
     assert budget.count == 5
     assert budget.is_exhausted()
 
@@ -816,7 +829,9 @@ def test_no_hidden_fallback_bypasses_budget():
 
     # Responses API raises a non-retryable error
     mock_openai.responses.create.side_effect = openai.AuthenticationError(
-        "Not authorized", response=MagicMock(), body=None,
+        "Not authorized",
+        response=MagicMock(),
+        body=None,
     )
 
     budget = LiveBudget(max_requests=1)
@@ -840,6 +855,7 @@ def test_no_hidden_fallback_bypasses_budget():
 # ---------------------------------------------------------------------------
 # R3: Condition Enum Validation Tests
 # ---------------------------------------------------------------------------
+
 
 def test_invalid_condition_norag_variant():
     """Verify condition='norag' raises ValueError before API call."""

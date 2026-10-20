@@ -1,0 +1,4172 @@
+{
+  "schema_version": "requirement-source-index-v1",
+  "source_document_sha256": "a17d3793fda0eb6bf7d86497f5f57254c24555afccaa9342ed607dd9b910b954",
+  "source_total_lines": 1362,
+  "content_blocks": [
+    {
+      "source_id": "SRC-L0001-L0001",
+      "section": "OBJECTIVE",
+      "source_start_line": 1,
+      "source_end_line": 1,
+      "text": "B\u1ea1n l\u00e0 **Lead Worker / Finalization Engineer** c\u1ee7a d\u1ef1 \u00e1n:",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0003-L0004",
+      "section": "OBJECTIVE",
+      "source_start_line": 3,
+      "source_end_line": 4,
+      "text": "Repository:\n`habachcp6/RAG2ATTCK`",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0006-L0006",
+      "section": "OBJECTIVE",
+      "source_start_line": 6,
+      "source_end_line": 6,
+      "text": "M\u1ee4C TI\u00caU CU\u1ed0I C\u00d9NG",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0009-L0009",
+      "section": "OBJECTIVE",
+      "source_start_line": 9,
+      "source_end_line": 9,
+      "text": "Ho\u00e0n th\u00e0nh TO\u00c0N B\u1ed8 d\u1ef1 \u00e1n RAG2ATTCK t\u1eeb tr\u1ea1ng th\u00e1i hi\u1ec7n t\u1ea1i \u0111\u1ebfn tr\u1ea1ng th\u00e1i c\u00f3 th\u1ec3 coi l\u00e0:",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0011-L0011",
+      "section": "OBJECTIVE",
+      "source_start_line": 11,
+      "source_end_line": 11,
+      "text": "`FINAL / REPRODUCIBLE / REPORT-READY / PRESENTATION-READY / GITHUB-CLEAN`",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0013-L0013",
+      "section": "OBJECTIVE",
+      "source_start_line": 13,
+      "source_end_line": 13,
+      "text": "Kh\u00f4ng ch\u1ec9 l\u00e0m cho code ch\u1ea1y.",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0015-L0015",
+      "section": "OBJECTIVE",
+      "source_start_line": 15,
+      "source_end_line": 15,
+      "text": "B\u1ea1n ph\u1ea3i ho\u00e0n t\u1ea5t \u0111\u1ed3ng th\u1eddi:",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0017-L0026",
+      "section": "OBJECTIVE",
+      "source_start_line": 17,
+      "source_end_line": 26,
+      "text": "1. Canonical experiment evidence.\n2. Evaluation RQ1\u2013RQ3.\n3. Scientific report.\n4. Figures/tables.\n5. Presentation.\n6. Reproducibility package.\n7. GitHub integration.\n8. PR cleanup.\n9. Final CI verification.\n10. Final release/handover evidence.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0028-L0028",
+      "section": "OBJECTIVE",
+      "source_start_line": 28,
+      "source_end_line": 28,
+      "text": "Kh\u00f4ng \u0111\u01b0\u1ee3c ch\u1ea1y l\u1ea1i canonical live provider experiment tr\u1eeb khi c\u00f3 b\u1eb1ng ch\u1ee9ng r\u00f5 r\u00e0ng r\u1eb1ng d\u1eef li\u1ec7u hi\u1ec7n t\u1ea1i b\u1ecb invalid v\u00e0 c\u1ea7n s\u1ef1 ch\u1ea5p thu\u1eadn c\u1ee7a human.",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0031-L0031",
+      "section": "A",
+      "source_start_line": 31,
+      "source_end_line": 31,
+      "text": "A. TR\u1ea0NG TH\u00c1I \u0110\u00c3 BI\u1ebeT \u2014 KH\u00d4NG L\u00c0M L\u1ea0I V\u00d4 \u00cdCH",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0034-L0034",
+      "section": "A",
+      "source_start_line": 34,
+      "source_end_line": 34,
+      "text": "Canonical experiment hi\u1ec7n \u0111\u00e3 c\u00f3 b\u1eb1ng ch\u1ee9ng v\u1ec1:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0036-L0037",
+      "section": "A",
+      "source_start_line": 36,
+      "source_end_line": 37,
+      "text": "- Run ID:\n  `live-66b94b1676bf46a9`",
+      "matrix_requirement_ids": [
+        "A.01-RUN_ID"
+      ]
+    },
+    {
+      "source_id": "SRC-L0039-L0040",
+      "section": "A",
+      "source_start_line": 39,
+      "source_end_line": 40,
+      "text": "- TEST matrix:\n  `6,400 / 6,400 records`",
+      "matrix_requirement_ids": [
+        "A.02-RECORD_COUNT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0042-L0043",
+      "section": "A",
+      "source_start_line": 42,
+      "source_end_line": 43,
+      "text": "- Provider attempts:\n  `6,401`",
+      "matrix_requirement_ids": [
+        "A.03-ATTEMPT_COUNT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0045-L0045",
+      "section": "A",
+      "source_start_line": 45,
+      "source_end_line": 45,
+      "text": "- C\u00f3 \u0111\u00fang 1 retry \u0111\u00e3 \u0111\u01b0\u1ee3c ghi nh\u1eadn.",
+      "matrix_requirement_ids": [
+        "A.03-ATTEMPT_COUNT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0047-L0049",
+      "section": "A",
+      "source_start_line": 47,
+      "source_end_line": 49,
+      "text": "- Terminal statuses:\n  - 6,387 VALID\n  - 13 INCOMPLETE",
+      "matrix_requirement_ids": [
+        "A.04-STATUS_TAXONOMY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0051-L0052",
+      "section": "A",
+      "source_start_line": 51,
+      "source_end_line": 52,
+      "text": "- Canonical settled accounting:\n  `$6.57575890`",
+      "matrix_requirement_ids": [
+        "A.05-SETTLED_COST"
+      ]
+    },
+    {
+      "source_id": "SRC-L0054-L0055",
+      "section": "A",
+      "source_start_line": 54,
+      "source_end_line": 55,
+      "text": "- Prior pilot provisional hold:\n  `$0.05264010`",
+      "matrix_requirement_ids": [
+        "A.06-TOTAL_ACCOUNTED"
+      ]
+    },
+    {
+      "source_id": "SRC-L0057-L0058",
+      "section": "A",
+      "source_start_line": 57,
+      "source_end_line": 58,
+      "text": "- Total accounted:\n  `$6.62839900`",
+      "matrix_requirement_ids": [
+        "A.06-TOTAL_ACCOUNTED"
+      ]
+    },
+    {
+      "source_id": "SRC-L0060-L0061",
+      "section": "A",
+      "source_start_line": 60,
+      "source_end_line": 61,
+      "text": "- Budget ceiling:\n  `$19.99000000`",
+      "matrix_requirement_ids": [
+        "A.06-TOTAL_ACCOUNTED"
+      ]
+    },
+    {
+      "source_id": "SRC-L0063-L0063",
+      "section": "A",
+      "source_start_line": 63,
+      "source_end_line": 63,
+      "text": "- Kh\u00f4ng \u0111\u01b0\u1ee3c c\u00f3 budget breach.",
+      "matrix_requirement_ids": [
+        "A.06-TOTAL_ACCOUNTED"
+      ]
+    },
+    {
+      "source_id": "SRC-L0065-L0065",
+      "section": "A",
+      "source_start_line": 65,
+      "source_end_line": 65,
+      "text": "K\u1ebft qu\u1ea3 hi\u1ec7n t\u1ea1i \u0111\u01b0\u1ee3c b\u00e1o c\u00e1o:",
+      "matrix_requirement_ids": [
+        "A.07-HEADLINE_STATS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0067-L0068",
+      "section": "A",
+      "source_start_line": 67,
+      "source_end_line": 68,
+      "text": "- No-RAG accuracy:\n  `560 / 718 = 77.99%`",
+      "matrix_requirement_ids": [
+        "A.07-HEADLINE_STATS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0070-L0071",
+      "section": "A",
+      "source_start_line": 70,
+      "source_end_line": 71,
+      "text": "- RAG k=10:\n  `571 / 718 = 79.53%`",
+      "matrix_requirement_ids": [
+        "A.07-HEADLINE_STATS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0073-L0074",
+      "section": "A",
+      "source_start_line": 73,
+      "source_end_line": 74,
+      "text": "- Observed delta:\n  kho\u1ea3ng `+1.532 percentage points`",
+      "matrix_requirement_ids": [
+        "A.07-HEADLINE_STATS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0076-L0077",
+      "section": "A",
+      "source_start_line": 76,
+      "source_end_line": 77,
+      "text": "- Pair-cluster bootstrap 95% CI:\n  `[-2.355, +5.300] pp`",
+      "matrix_requirement_ids": [
+        "A.07-HEADLINE_STATS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0079-L0080",
+      "section": "A",
+      "source_start_line": 79,
+      "source_end_line": 80,
+      "text": "- McNemar:\n  kho\u1ea3ng `p = 0.422`",
+      "matrix_requirement_ids": [
+        "A.07-HEADLINE_STATS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0082-L0082",
+      "section": "A",
+      "source_start_line": 82,
+      "source_end_line": 82,
+      "text": "K\u1ebft lu\u1eadn khoa h\u1ecdc PH\u1ea2I gi\u1eef \u1edf m\u1ee9c:",
+      "matrix_requirement_ids": [
+        "A.08-CLAIM_BOUNDARIES"
+      ]
+    },
+    {
+      "source_id": "SRC-L0084-L0084",
+      "section": "A",
+      "source_start_line": 84,
+      "source_end_line": 84,
+      "text": "> K\u1ebft qu\u1ea3 quan s\u00e1t cho th\u1ea5y RAG k=10 c\u00f3 accuracy cao h\u01a1n No-RAG tr\u00ean benchmark n\u00e0y, nh\u01b0ng kh\u00e1c bi\u1ec7t kh\u00f4ng c\u00f3 \u00fd ngh\u0129a th\u1ed1ng k\u00ea theo c\u00e1c ph\u00e2n t\u00edch hi\u1ec7n t\u1ea1i. Kh\u00f4ng \u0111\u01b0\u1ee3c tuy\u00ean b\u1ed1 RAG v\u01b0\u1ee3t tr\u1ed9i n\u00f3i chung.",
+      "matrix_requirement_ids": [
+        "A.08-CLAIM_BOUNDARIES"
+      ]
+    },
+    {
+      "source_id": "SRC-L0086-L0086",
+      "section": "A",
+      "source_start_line": 86,
+      "source_end_line": 86,
+      "text": "Kh\u00f4ng \u0111\u01b0\u1ee3c bi\u1ebfn correlation th\u00e0nh causation.",
+      "matrix_requirement_ids": [
+        "A.08-CLAIM_BOUNDARIES"
+      ]
+    },
+    {
+      "source_id": "SRC-L0088-L0088",
+      "section": "A",
+      "source_start_line": 88,
+      "source_end_line": 88,
+      "text": "Kh\u00f4ng \u0111\u01b0\u1ee3c suy r\u1ed9ng k\u1ebft qu\u1ea3 synthetic benchmark th\u00e0nh hi\u1ec7u qu\u1ea3 production/real-world.",
+      "matrix_requirement_ids": [
+        "A.08-CLAIM_BOUNDARIES"
+      ]
+    },
+    {
+      "source_id": "SRC-L0091-L0091",
+      "section": "B",
+      "source_start_line": 91,
+      "source_end_line": 91,
+      "text": "B. SOURCE OF TRUTH",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0094-L0094",
+      "section": "B",
+      "source_start_line": 94,
+      "source_end_line": 94,
+      "text": "GitHub l\u00e0 source of truth.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0096-L0096",
+      "section": "B",
+      "source_start_line": 96,
+      "source_end_line": 96,
+      "text": "Kh\u00f4ng \u0111\u01b0\u1ee3c PASS d\u1ef1a tr\u00ean:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0098-L0105",
+      "section": "B",
+      "source_start_line": 98,
+      "source_end_line": 105,
+      "text": "- l\u1eddi m\u00f4 t\u1ea3 c\u1ee7a agent;\n- terminal screenshot;\n- memory;\n- text report kh\u00f4ng \u0111\u01b0\u1ee3c commit;\n- file local ch\u01b0a push;\n- \u201cI verified it\u201d;\n- assertion kh\u00f4ng c\u00f3 artifact;\n- test log kh\u00f4ng g\u1eafn v\u1edbi commit SHA.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0107-L0107",
+      "section": "B",
+      "source_start_line": 107,
+      "source_end_line": 107,
+      "text": "M\u1ecdi k\u1ebft lu\u1eadn PASS ph\u1ea3i g\u1eafn v\u1edbi:",
+      "matrix_requirement_ids": [
+        "B.01-GITHUB_EVIDENCE"
+      ]
+    },
+    {
+      "source_id": "SRC-L0109-L0116",
+      "section": "B",
+      "source_start_line": 109,
+      "source_end_line": 116,
+      "text": "1. exact commit SHA;\n2. command \u0111\u00e3 ch\u1ea1y;\n3. exit code;\n4. output/test count;\n5. artifact li\u00ean quan;\n6. file/hash n\u1ebfu c\u1ea7n;\n7. CI URL ho\u1eb7c GitHub evidence;\n8. acceptance criteria t\u01b0\u01a1ng \u1ee9ng.",
+      "matrix_requirement_ids": [
+        "B.01-GITHUB_EVIDENCE"
+      ]
+    },
+    {
+      "source_id": "SRC-L0118-L0119",
+      "section": "B",
+      "source_start_line": 118,
+      "source_end_line": 119,
+      "text": "N\u1ebfu evidence thi\u1ebfu:\n`NOT VERIFIED`",
+      "matrix_requirement_ids": [
+        "B.02-FAIL_CLOSED_VERDICT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0121-L0122",
+      "section": "B",
+      "source_start_line": 121,
+      "source_end_line": 122,
+      "text": "N\u1ebfu fail:\n`FAIL`",
+      "matrix_requirement_ids": [
+        "B.02-FAIL_CLOSED_VERDICT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0124-L0125",
+      "section": "B",
+      "source_start_line": 124,
+      "source_end_line": 125,
+      "text": "Kh\u00f4ng \u0111\u01b0\u1ee3c g\u1ecdi:\n`PASS`",
+      "matrix_requirement_ids": [
+        "B.02-FAIL_CLOSED_VERDICT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0128-L0128",
+      "section": "C",
+      "source_start_line": 128,
+      "source_end_line": 128,
+      "text": "C. QUY\u1ec0N H\u1ea0N",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0131-L0131",
+      "section": "C",
+      "source_start_line": 131,
+      "source_end_line": 131,
+      "text": "B\u1ea1n \u0111\u01b0\u1ee3c ph\u00e9p:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0133-L0147",
+      "section": "C",
+      "source_start_line": 133,
+      "source_end_line": 147,
+      "text": "- t\u1ea1o worktree;\n- t\u1ea1o branch;\n- s\u1eeda code;\n- s\u1eeda tests;\n- s\u1eeda report;\n- s\u1eeda figures;\n- s\u1eeda slides;\n- s\u1eeda README;\n- s\u1eeda reproducibility tooling;\n- ch\u1ea1y offline tests;\n- ch\u1ea1y integration tests kh\u00f4ng provider;\n- merge c\u00e1c branch n\u1ed9i b\u1ed9 v\u00e0o integration branch;\n- m\u1edf/update PR;\n- push commit;\n- s\u1eeda l\u1ed7i v\u00e0 t\u1ef1 l\u1eb7p l\u1ea1i \u0111\u1ebfn khi pass.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0149-L0149",
+      "section": "C",
+      "source_start_line": 149,
+      "source_end_line": 149,
+      "text": "B\u1ea1n KH\u00d4NG \u0111\u01b0\u1ee3c t\u1ef1 \u00fd:",
+      "matrix_requirement_ids": [
+        "C.01-NO_LIVE_EXPERIMENTS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0151-L0161",
+      "section": "C",
+      "source_start_line": 151,
+      "source_end_line": 161,
+      "text": "- ch\u1ea1y th\u00eam provider/API experiment c\u00f3 chi ph\u00ed;\n- thay frozen experimental data;\n- thay ground truth;\n- thay canonical prediction records;\n- thay protocol \u0111\u1ec3 l\u00e0m \u0111\u1eb9p k\u1ebft qu\u1ea3;\n- thay metric definition sau khi xem k\u1ebft qu\u1ea3;\n- x\u00f3a inconvenient failures;\n- b\u1ecf 13 INCOMPLETE kh\u1ecfi provenance;\n- cherry-pick/squash l\u00e0m m\u1ea5t provenance n\u1ebfu ancestry \u0111ang c\u1ea7n \u0111\u01b0\u1ee3c b\u1ea3o t\u1ed3n;\n- force push l\u1ecbch s\u1eed canonical;\n- merge v\u00e0o `main` n\u1ebfu workflow hi\u1ec7n y\u00eau c\u1ea7u human authorization.",
+      "matrix_requirement_ids": [
+        "C.01-NO_LIVE_EXPERIMENTS",
+        "C.02-IMMUTABLE_FROZEN_DATA",
+        "C.03-HUMAN_MERGE_AUTH"
+      ]
+    },
+    {
+      "source_id": "SRC-L0163-L0167",
+      "section": "C",
+      "source_start_line": 163,
+      "source_end_line": 167,
+      "text": "Human l\u00e0 ng\u01b0\u1eddi duy nh\u1ea5t quy\u1ebft \u0111\u1ecbnh:\n- thay research scope;\n- thay ground truth;\n- rerun live canonical experiment;\n- final merge n\u1ebfu project policy y\u00eau c\u1ea7u.",
+      "matrix_requirement_ids": [
+        "C.03-HUMAN_MERGE_AUTH"
+      ]
+    },
+    {
+      "source_id": "SRC-L0170-L0170",
+      "section": "D",
+      "source_start_line": 170,
+      "source_end_line": 170,
+      "text": "D. CH\u1ebe \u0110\u1ed8 L\u00c0M VI\u1ec6C",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0173-L0173",
+      "section": "D",
+      "source_start_line": 173,
+      "source_end_line": 173,
+      "text": "B\u1ea1n l\u00e0 worker ch\u00ednh.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0175-L0175",
+      "section": "D",
+      "source_start_line": 175,
+      "source_end_line": 175,
+      "text": "H\u00e3y chia subagents c\u00e0ng nhi\u1ec1u c\u00e0ng h\u1ee3p l\u00fd, nh\u01b0ng m\u1ed7i agent ph\u1ea3i c\u00f3:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0177-L0182",
+      "section": "D",
+      "source_start_line": 177,
+      "source_end_line": 182,
+      "text": "- branch/worktree ri\u00eang;\n- nhi\u1ec7m v\u1ee5 r\u00f5 r\u00e0ng;\n- file ownership r\u00f5;\n- acceptance criteria;\n- test ri\u00eang;\n- evidence ri\u00eang.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0184-L0184",
+      "section": "D",
+      "source_start_line": 184,
+      "source_end_line": 184,
+      "text": "Khuy\u1ebfn ngh\u1ecb t\u1ed1i thi\u1ec3u 6 track:",
+      "matrix_requirement_ids": [
+        "D.01-TRACK_A",
+        "D.02-TRACK_B",
+        "D.03-TRACK_C",
+        "D.04-TRACK_D",
+        "D.05-TRACK_E",
+        "D.06-TRACK_F"
+      ]
+    },
+    {
+      "source_id": "SRC-L0186-L0191",
+      "section": "D",
+      "source_start_line": 186,
+      "source_end_line": 191,
+      "text": "TRACK A \u2014 Canonical Evidence & Terminal Audit\nTRACK B \u2014 Scientific Evaluation / RQ1\u2013RQ3\nTRACK C \u2014 Scientific Report\nTRACK D \u2014 Figures / Tables / Statistical QA\nTRACK E \u2014 Presentation / Reproducibility\nTRACK F \u2014 Integration / GitHub / Release QA",
+      "matrix_requirement_ids": [
+        "D.01-TRACK_A",
+        "D.02-TRACK_B",
+        "D.03-TRACK_C",
+        "D.04-TRACK_D",
+        "D.05-TRACK_E",
+        "D.06-TRACK_F"
+      ]
+    },
+    {
+      "source_id": "SRC-L0193-L0193",
+      "section": "D",
+      "source_start_line": 193,
+      "source_end_line": 193,
+      "text": "Kh\u00f4ng \u0111\u1ec3 hai agents c\u00f9ng s\u1eeda c\u00f9ng file n\u1ebfu kh\u00f4ng th\u1eadt s\u1ef1 c\u1ea7n.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0195-L0199",
+      "section": "D",
+      "source_start_line": 195,
+      "source_end_line": 199,
+      "text": "Root/Lead agent ch\u1ecbu tr\u00e1ch nhi\u1ec7m:\n- merge;\n- conflict resolution;\n- final review;\n- cross-artifact consistency.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0202-L0202",
+      "section": "E",
+      "source_start_line": 202,
+      "source_end_line": 202,
+      "text": "E. PHASE 0 \u2014 SNAPSHOT TR\u1ea0NG TH\u00c1I HI\u1ec6N T\u1ea0I",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0205-L0205",
+      "section": "E",
+      "source_start_line": 205,
+      "source_end_line": 205,
+      "text": "Tr\u01b0\u1edbc khi s\u1eeda b\u1ea5t c\u1ee9 th\u1ee9 g\u00ec:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0207-L0207",
+      "section": "E",
+      "source_start_line": 207,
+      "source_end_line": 207,
+      "text": "1. Fetch GitHub remote.",
+      "matrix_requirement_ids": [
+        "E.01-REMOTE_SNAPSHOT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0209-L0215",
+      "section": "E",
+      "source_start_line": 209,
+      "source_end_line": 215,
+      "text": "2. Ghi l\u1ea1i:\n   - `main` SHA\n   - t\u1ea5t c\u1ea3 open PR\n   - PR head SHA\n   - draft state\n   - mergeability\n   - CI state",
+      "matrix_requirement_ids": [
+        "E.01-REMOTE_SNAPSHOT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0217-L0223",
+      "section": "E",
+      "source_start_line": 217,
+      "source_end_line": 223,
+      "text": "\u0110\u1eb7c bi\u1ec7t ki\u1ec3m tra \u00edt nh\u1ea5t:\n- PR #24\n- PR #25\n- PR #26\n- PR #27\n- PR #28\n- PR #29",
+      "matrix_requirement_ids": [
+        "E.01-REMOTE_SNAPSHOT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0225-L0225",
+      "section": "E",
+      "source_start_line": 225,
+      "source_end_line": 225,
+      "text": "3. X\u00e1c minh HEAD m\u1edbi nh\u1ea5t c\u1ee7a integration/finalization branch.",
+      "matrix_requirement_ids": [
+        "E.01-REMOTE_SNAPSHOT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0227-L0227",
+      "section": "E",
+      "source_start_line": 227,
+      "source_end_line": 227,
+      "text": "4. T\u1ea1o:",
+      "matrix_requirement_ids": [
+        "E.02-PREFLIGHT_ARTIFACT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0229-L0229",
+      "section": "E",
+      "source_start_line": 229,
+      "source_end_line": 229,
+      "text": "`reports/evidence/finalization_preflight.json`",
+      "matrix_requirement_ids": [
+        "E.02-PREFLIGHT_ARTIFACT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0231-L0231",
+      "section": "E",
+      "source_start_line": 231,
+      "source_end_line": 231,
+      "text": "N\u1ed9i dung t\u1ed1i thi\u1ec3u:",
+      "matrix_requirement_ids": [
+        "E.02-PREFLIGHT_ARTIFACT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0233-L0242",
+      "section": "E",
+      "source_start_line": 233,
+      "source_end_line": 242,
+      "text": "- timestamp UTC;\n- repository;\n- main SHA;\n- relevant PRs;\n- branch SHAs;\n- current CI runs;\n- current known canonical bundle hashes;\n- protected baseline hashes;\n- open blockers;\n- finalization plan.",
+      "matrix_requirement_ids": [
+        "E.02-PREFLIGHT_ARTIFACT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0244-L0245",
+      "section": "E",
+      "source_start_line": 244,
+      "source_end_line": 245,
+      "text": "Acceptance:\nPreflight ph\u1ea3i l\u00e0 snapshot reproducible c\u1ee7a GitHub state.",
+      "matrix_requirement_ids": [
+        "E.02-PREFLIGHT_ARTIFACT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0248-L0248",
+      "section": "F",
+      "source_start_line": 248,
+      "source_end_line": 248,
+      "text": "F. PHASE 1 \u2014 CANONICAL TERMINAL EVIDENCE",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0251-L0251",
+      "section": "F",
+      "source_start_line": 251,
+      "source_end_line": 251,
+      "text": "\u0110\u00e2y l\u00e0 gate quan tr\u1ecdng nh\u1ea5t.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0253-L0253",
+      "section": "F",
+      "source_start_line": 253,
+      "source_end_line": 253,
+      "text": "Kh\u00f4ng \u0111\u01b0\u1ee3c coi report l\u00e0 final n\u1ebfu canonical evidence ch\u01b0a \u0111\u00f3ng.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0255-L0255",
+      "section": "F",
+      "source_start_line": 255,
+      "source_end_line": 255,
+      "text": "X\u00e1c minh:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0257-L0257",
+      "section": "F",
+      "source_start_line": 257,
+      "source_end_line": 257,
+      "text": "### F1. Terminal run",
+      "matrix_requirement_ids": [
+        "F.01-TERMINAL_RUN"
+      ]
+    },
+    {
+      "source_id": "SRC-L0259-L0259",
+      "section": "F",
+      "source_start_line": 259,
+      "source_end_line": 259,
+      "text": "Ph\u1ea3i c\u00f3 b\u1eb1ng ch\u1ee9ng:",
+      "matrix_requirement_ids": [
+        "F.01-TERMINAL_RUN"
+      ]
+    },
+    {
+      "source_id": "SRC-L0261-L0267",
+      "section": "F",
+      "source_start_line": 261,
+      "source_end_line": 267,
+      "text": "- run complete;\n- exactly 6,400 records;\n- execution_mode = live;\n- \u0111\u00fang run_id;\n- no active runner;\n- locks released;\n- run_summary valid.",
+      "matrix_requirement_ids": [
+        "F.01-TERMINAL_RUN"
+      ]
+    },
+    {
+      "source_id": "SRC-L0269-L0269",
+      "section": "F",
+      "source_start_line": 269,
+      "source_end_line": 269,
+      "text": "### F2. Prediction inventory",
+      "matrix_requirement_ids": [
+        "F.02-PREDICTION_INVENTORY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0271-L0271",
+      "section": "F",
+      "source_start_line": 271,
+      "source_end_line": 271,
+      "text": "Ph\u1ea3i c\u00f3 5 conditions:",
+      "matrix_requirement_ids": [
+        "F.02-PREDICTION_INVENTORY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0273-L0277",
+      "section": "F",
+      "source_start_line": 273,
+      "source_end_line": 277,
+      "text": "- no_rag\n- rag_k1\n- rag_k3\n- rag_k5\n- rag_k10",
+      "matrix_requirement_ids": [
+        "F.02-PREDICTION_INVENTORY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0279-L0280",
+      "section": "F",
+      "source_start_line": 279,
+      "source_end_line": 280,
+      "text": "T\u1ed5ng:\n`6,400 records`",
+      "matrix_requirement_ids": [
+        "F.02-PREDICTION_INVENTORY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0282-L0288",
+      "section": "F",
+      "source_start_line": 282,
+      "source_end_line": 288,
+      "text": "Ki\u1ec3m tra:\n- duplicate key;\n- missing key;\n- invalid condition;\n- foreign sample;\n- malformed JSON;\n- hash mismatch.",
+      "matrix_requirement_ids": [
+        "F.02-PREDICTION_INVENTORY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0290-L0290",
+      "section": "F",
+      "source_start_line": 290,
+      "source_end_line": 290,
+      "text": "### F3. Attempt accounting",
+      "matrix_requirement_ids": [
+        "F.03-ATTEMPT_ACCOUNTING"
+      ]
+    },
+    {
+      "source_id": "SRC-L0292-L0293",
+      "section": "F",
+      "source_start_line": 292,
+      "source_end_line": 293,
+      "text": "Expected:\n`6,401 attempts`",
+      "matrix_requirement_ids": [
+        "F.03-ATTEMPT_ACCOUNTING"
+      ]
+    },
+    {
+      "source_id": "SRC-L0295-L0300",
+      "section": "F",
+      "source_start_line": 295,
+      "source_end_line": 300,
+      "text": "Ph\u1ea3i x\u00e1c \u0111\u1ecbnh:\n- record c\u00f3 retry;\n- attempt ordinal;\n- status attempt \u0111\u1ea7u;\n- success attempt sau;\n- zero duplicate logical completion.",
+      "matrix_requirement_ids": [
+        "F.03-ATTEMPT_ACCOUNTING"
+      ]
+    },
+    {
+      "source_id": "SRC-L0302-L0302",
+      "section": "F",
+      "source_start_line": 302,
+      "source_end_line": 302,
+      "text": "### F4. Terminal outcome taxonomy",
+      "matrix_requirement_ids": [
+        "F.04-OUTCOME_TAXONOMY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0304-L0304",
+      "section": "F",
+      "source_start_line": 304,
+      "source_end_line": 304,
+      "text": "Expected currently:",
+      "matrix_requirement_ids": [
+        "F.04-OUTCOME_TAXONOMY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0306-L0307",
+      "section": "F",
+      "source_start_line": 306,
+      "source_end_line": 307,
+      "text": "- 6,387 VALID\n- 13 INCOMPLETE",
+      "matrix_requirement_ids": [
+        "F.04-OUTCOME_TAXONOMY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0309-L0309",
+      "section": "F",
+      "source_start_line": 309,
+      "source_end_line": 309,
+      "text": "Ki\u1ec3m tra distribution theo condition.",
+      "matrix_requirement_ids": [
+        "F.04-OUTCOME_TAXONOMY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0311-L0311",
+      "section": "F",
+      "source_start_line": 311,
+      "source_end_line": 311,
+      "text": "Kh\u00f4ng \u0111\u01b0\u1ee3c silently remove INCOMPLETE.",
+      "matrix_requirement_ids": [
+        "F.04-OUTCOME_TAXONOMY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0313-L0313",
+      "section": "F",
+      "source_start_line": 313,
+      "source_end_line": 313,
+      "text": "### F5. Ledger reconciliation",
+      "matrix_requirement_ids": [
+        "F.05-LEDGER_RECONCILIATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0315-L0315",
+      "section": "F",
+      "source_start_line": 315,
+      "source_end_line": 315,
+      "text": "Verify:",
+      "matrix_requirement_ids": [
+        "F.05-LEDGER_RECONCILIATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0317-L0317",
+      "section": "F",
+      "source_start_line": 317,
+      "source_end_line": 317,
+      "text": "`prediction \u2194 request journal \u2194 receipt \u2194 settlement \u2194 study ledger`",
+      "matrix_requirement_ids": [
+        "F.05-LEDGER_RECONCILIATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0319-L0319",
+      "section": "F",
+      "source_start_line": 319,
+      "source_end_line": 319,
+      "text": "Cho t\u1ea5t c\u1ea3 6,400 records.",
+      "matrix_requirement_ids": [
+        "F.05-LEDGER_RECONCILIATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0321-L0321",
+      "section": "F",
+      "source_start_line": 321,
+      "source_end_line": 321,
+      "text": "Ki\u1ec3m tra:",
+      "matrix_requirement_ids": [
+        "F.05-LEDGER_RECONCILIATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0323-L0333",
+      "section": "F",
+      "source_start_line": 323,
+      "source_end_line": 333,
+      "text": "- record SHA;\n- response ID;\n- actual returned model;\n- token usage;\n- attempt ordinal;\n- reservation;\n- settlement;\n- refund;\n- total cost;\n- budget balance;\n- breach state.",
+      "matrix_requirement_ids": [
+        "F.05-LEDGER_RECONCILIATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0335-L0335",
+      "section": "F",
+      "source_start_line": 335,
+      "source_end_line": 335,
+      "text": "Expected:",
+      "matrix_requirement_ids": [
+        "F.05-LEDGER_RECONCILIATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0337-L0338",
+      "section": "F",
+      "source_start_line": 337,
+      "source_end_line": 338,
+      "text": "canonical settled cost:\n`6.57575890 USD`",
+      "matrix_requirement_ids": [
+        "F.05-LEDGER_RECONCILIATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0340-L0341",
+      "section": "F",
+      "source_start_line": 340,
+      "source_end_line": 341,
+      "text": "prior pilot hold:\n`0.05264010 USD`",
+      "matrix_requirement_ids": [
+        "F.05-LEDGER_RECONCILIATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0343-L0344",
+      "section": "F",
+      "source_start_line": 343,
+      "source_end_line": 344,
+      "text": "total accounted:\n`6.62839900 USD`",
+      "matrix_requirement_ids": [
+        "F.05-LEDGER_RECONCILIATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0346-L0347",
+      "section": "F",
+      "source_start_line": 346,
+      "source_end_line": 347,
+      "text": "budget:\n`19.99000000 USD`",
+      "matrix_requirement_ids": [
+        "F.05-LEDGER_RECONCILIATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0349-L0349",
+      "section": "F",
+      "source_start_line": 349,
+      "source_end_line": 349,
+      "text": "Kh\u00f4ng d\u00f9ng float cho financial equality.",
+      "matrix_requirement_ids": [
+        "F.05-LEDGER_RECONCILIATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0351-L0351",
+      "section": "F",
+      "source_start_line": 351,
+      "source_end_line": 351,
+      "text": "D\u00f9ng Decimal/exact representation.",
+      "matrix_requirement_ids": [
+        "F.05-LEDGER_RECONCILIATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0353-L0353",
+      "section": "F",
+      "source_start_line": 353,
+      "source_end_line": 353,
+      "text": "### F6. Independent terminal validator",
+      "matrix_requirement_ids": [
+        "F.06-VALIDATOR_DEFECT_CODEX",
+        "F.07-VALIDATOR_EXECUTION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0355-L0355",
+      "section": "F",
+      "source_start_line": 355,
+      "source_end_line": 355,
+      "text": "PR #29 ho\u1eb7c equivalent validator ph\u1ea3i ch\u1ea1y tr\u00ean canonical evidence.",
+      "matrix_requirement_ids": [
+        "F.06-VALIDATOR_DEFECT_CODEX",
+        "F.07-VALIDATOR_EXECUTION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0357-L0357",
+      "section": "F",
+      "source_start_line": 357,
+      "source_end_line": 357,
+      "text": "Kh\u00f4ng \u0111\u01b0\u1ee3c d\u00f9ng fixture \u0111\u1ec3 claim production validation.",
+      "matrix_requirement_ids": [
+        "F.06-VALIDATOR_DEFECT_CODEX",
+        "F.07-VALIDATOR_EXECUTION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0359-L0359",
+      "section": "F",
+      "source_start_line": 359,
+      "source_end_line": 359,
+      "text": "Production seal ph\u1ea3i ph\u00e2n bi\u1ec7t r\u00f5 v\u1edbi fixture seal.",
+      "matrix_requirement_ids": [
+        "F.06-VALIDATOR_DEFECT_CODEX",
+        "F.07-VALIDATOR_EXECUTION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0361-L0362",
+      "section": "F",
+      "source_start_line": 361,
+      "source_end_line": 362,
+      "text": "N\u1ebfu validator hi\u1ec7n c\u00f3 defect:\ns\u1eeda \u2192 test \u2192 ch\u1ea1y l\u1ea1i.",
+      "matrix_requirement_ids": [
+        "F.06-VALIDATOR_DEFECT_CODEX",
+        "F.07-VALIDATOR_EXECUTION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0364-L0364",
+      "section": "F",
+      "source_start_line": 364,
+      "source_end_line": 364,
+      "text": "Acceptance:",
+      "matrix_requirement_ids": [
+        "F.06-VALIDATOR_DEFECT_CODEX",
+        "F.07-VALIDATOR_EXECUTION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0366-L0373",
+      "section": "F",
+      "source_start_line": 366,
+      "source_end_line": 373,
+      "text": "- exit 0;\n- zero egress;\n- exact record count;\n- all hashes valid;\n- all ledger joins valid;\n- production seal generated;\n- no fixture_only flag;\n- protected baseline verified.",
+      "matrix_requirement_ids": [
+        "F.06-VALIDATOR_DEFECT_CODEX",
+        "F.07-VALIDATOR_EXECUTION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0375-L0376",
+      "section": "F",
+      "source_start_line": 375,
+      "source_end_line": 376,
+      "text": "N\u1ebfu canonical raw artifacts c\u1ed1 t\u00ecnh kh\u00f4ng commit do security/size:\nph\u1ea3i \u0111\u1ea3m b\u1ea3o GitHub c\u00f3 \u0111\u1ee7:",
+      "matrix_requirement_ids": [
+        "F.08-RAW_ARTIFACT_TRANSPARENCY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0378-L0383",
+      "section": "F",
+      "source_start_line": 378,
+      "source_end_line": 383,
+      "text": "- immutable hashes;\n- public sanitized manifest;\n- derivation map;\n- validation log;\n- reproduction instructions;\n- provenance chain.",
+      "matrix_requirement_ids": [
+        "F.08-RAW_ARTIFACT_TRANSPARENCY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0385-L0385",
+      "section": "F",
+      "source_start_line": 385,
+      "source_end_line": 385,
+      "text": "Kh\u00f4ng \u0111\u01b0\u1ee3c gi\u1ea3 v\u1edd raw private artifact n\u1eb1m trong Git n\u1ebfu n\u00f3 kh\u00f4ng n\u1eb1m trong Git.",
+      "matrix_requirement_ids": [
+        "F.08-RAW_ARTIFACT_TRANSPARENCY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0388-L0388",
+      "section": "G",
+      "source_start_line": 388,
+      "source_end_line": 388,
+      "text": "G. PHASE 2 \u2014 FREEZE SCIENTIFIC DATASET",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0391-L0391",
+      "section": "G",
+      "source_start_line": 391,
+      "source_end_line": 391,
+      "text": "Sau khi canonical validation PASS:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0393-L0393",
+      "section": "G",
+      "source_start_line": 393,
+      "source_end_line": 393,
+      "text": "T\u1ea1o immutable scientific result bundle.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0395-L0395",
+      "section": "G",
+      "source_start_line": 395,
+      "source_end_line": 395,
+      "text": "Ph\u1ea3i x\u00e1c \u0111\u1ecbnh r\u00f5 c\u00e1c cohort:",
+      "matrix_requirement_ids": [
+        "G.01-COHORTS_AND_DENOMINATORS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0397-L0398",
+      "section": "G",
+      "source_start_line": 397,
+      "source_end_line": 398,
+      "text": "TOTAL TEST:\n- 1,280 views",
+      "matrix_requirement_ids": [
+        "G.01-COHORTS_AND_DENOMINATORS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0400-L0401",
+      "section": "G",
+      "source_start_line": 400,
+      "source_end_line": 401,
+      "text": "Mapped/scorable:\n- 718",
+      "matrix_requirement_ids": [
+        "G.01-COHORTS_AND_DENOMINATORS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0403-L0404",
+      "section": "G",
+      "source_start_line": 403,
+      "source_end_line": 404,
+      "text": "Ambiguous:\n- 311",
+      "matrix_requirement_ids": [
+        "G.01-COHORTS_AND_DENOMINATORS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0406-L0407",
+      "section": "G",
+      "source_start_line": 406,
+      "source_end_line": 407,
+      "text": "Unmapped:\n- 251",
+      "matrix_requirement_ids": [
+        "G.01-COHORTS_AND_DENOMINATORS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0409-L0409",
+      "section": "G",
+      "source_start_line": 409,
+      "source_end_line": 409,
+      "text": "Kh\u00f4ng \u0111\u01b0\u1ee3c tr\u1ed9n denominator gi\u1eefa c\u00e1c b\u1ea3ng.",
+      "matrix_requirement_ids": [
+        "G.01-COHORTS_AND_DENOMINATORS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0411-L0411",
+      "section": "G",
+      "source_start_line": 411,
+      "source_end_line": 411,
+      "text": "M\u1ecdi metric ph\u1ea3i ch\u1ec9 r\u00f5 denominator.",
+      "matrix_requirement_ids": [
+        "G.01-COHORTS_AND_DENOMINATORS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0413-L0413",
+      "section": "G",
+      "source_start_line": 413,
+      "source_end_line": 413,
+      "text": "Freeze output th\u00e0nh m\u1ed9t canonical metric bundle.",
+      "matrix_requirement_ids": [
+        "G.02-CANONICAL_METRIC_BUNDLE"
+      ]
+    },
+    {
+      "source_id": "SRC-L0415-L0415",
+      "section": "G",
+      "source_start_line": 415,
+      "source_end_line": 415,
+      "text": "V\u00ed d\u1ee5:",
+      "matrix_requirement_ids": [
+        "G.02-CANONICAL_METRIC_BUNDLE"
+      ]
+    },
+    {
+      "source_id": "SRC-L0417-L0417",
+      "section": "G",
+      "source_start_line": 417,
+      "source_end_line": 417,
+      "text": "`artifacts/results/canonical_metric_bundle_v1.json`",
+      "matrix_requirement_ids": [
+        "G.02-CANONICAL_METRIC_BUNDLE"
+      ]
+    },
+    {
+      "source_id": "SRC-L0419-L0419",
+      "section": "G",
+      "source_start_line": 419,
+      "source_end_line": 419,
+      "text": "Bundle ph\u1ea3i ch\u1ee9a:",
+      "matrix_requirement_ids": [
+        "G.02-CANONICAL_METRIC_BUNDLE"
+      ]
+    },
+    {
+      "source_id": "SRC-L0421-L0436",
+      "section": "G",
+      "source_start_line": 421,
+      "source_end_line": 436,
+      "text": "- provenance;\n- source hashes;\n- evaluation code hash;\n- run ID;\n- cohort definitions;\n- metric definitions;\n- RQ1;\n- RQ2;\n- RQ3;\n- statistical tests;\n- cost;\n- latency;\n- retrieval diagnostics;\n- failure taxonomy;\n- timestamps;\n- secondary-scope authorization binding n\u1ebfu c\u1ea7n.",
+      "matrix_requirement_ids": [
+        "G.02-CANONICAL_METRIC_BUNDLE"
+      ]
+    },
+    {
+      "source_id": "SRC-L0438-L0438",
+      "section": "G",
+      "source_start_line": 438,
+      "source_end_line": 438,
+      "text": "T\u1ea1o SHA-256.",
+      "matrix_requirement_ids": [
+        "G.02-CANONICAL_METRIC_BUNDLE"
+      ]
+    },
+    {
+      "source_id": "SRC-L0440-L0440",
+      "section": "G",
+      "source_start_line": 440,
+      "source_end_line": 440,
+      "text": "Kh\u00f4ng s\u1eeda bundle sau khi report population b\u1eaft \u0111\u1ea7u.",
+      "matrix_requirement_ids": [
+        "G.02-CANONICAL_METRIC_BUNDLE"
+      ]
+    },
+    {
+      "source_id": "SRC-L0442-L0443",
+      "section": "G",
+      "source_start_line": 442,
+      "source_end_line": 443,
+      "text": "N\u1ebfu c\u1ea7n s\u1eeda:\nbump version.",
+      "matrix_requirement_ids": [
+        "G.02-CANONICAL_METRIC_BUNDLE"
+      ]
+    },
+    {
+      "source_id": "SRC-L0446-L0446",
+      "section": "H",
+      "source_start_line": 446,
+      "source_end_line": 446,
+      "text": "H. PHASE 3 \u2014 RQ1 FINAL ANALYSIS",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0449-L0449",
+      "section": "H",
+      "source_start_line": 449,
+      "source_end_line": 449,
+      "text": "RQ1:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0451-L0451",
+      "section": "H",
+      "source_start_line": 451,
+      "source_end_line": 451,
+      "text": "\u201cRAG c\u1ea3i thi\u1ec7n ATT&CK technique attribution bao nhi\u00eau so v\u1edbi No-RAG?\u201d",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0453-L0453",
+      "section": "H",
+      "source_start_line": 453,
+      "source_end_line": 453,
+      "text": "T\u00ednh cho:",
+      "matrix_requirement_ids": [
+        "H.01-RQ1_CONDITION_SWEEP"
+      ]
+    },
+    {
+      "source_id": "SRC-L0455-L0459",
+      "section": "H",
+      "source_start_line": 455,
+      "source_end_line": 459,
+      "text": "- no_rag\n- rag_k1\n- rag_k3\n- rag_k5\n- rag_k10",
+      "matrix_requirement_ids": [
+        "H.01-RQ1_CONDITION_SWEEP"
+      ]
+    },
+    {
+      "source_id": "SRC-L0461-L0461",
+      "section": "H",
+      "source_start_line": 461,
+      "source_end_line": 461,
+      "text": "\u00cdt nh\u1ea5t:",
+      "matrix_requirement_ids": [
+        "H.01-RQ1_CONDITION_SWEEP"
+      ]
+    },
+    {
+      "source_id": "SRC-L0463-L0470",
+      "section": "H",
+      "source_start_line": 463,
+      "source_end_line": 470,
+      "text": "- correct;\n- total;\n- accuracy;\n- error rate;\n- Macro-F1 tr\u00ean frozen 474-class universe;\n- absolute delta vs No-RAG;\n- paired comparison;\n- CI.",
+      "matrix_requirement_ids": [
+        "H.01-RQ1_CONDITION_SWEEP",
+        "H.02-RQ1_MACRO_F1_474",
+        "H.03-RQ1_BOOTSTRAP_CI"
+      ]
+    },
+    {
+      "source_id": "SRC-L0472-L0472",
+      "section": "H",
+      "source_start_line": 472,
+      "source_end_line": 472,
+      "text": "Kh\u00f4ng \u0111\u01b0\u1ee3c ch\u1ecdn subset classes sau khi th\u1ea5y k\u1ebft qu\u1ea3 \u0111\u1ec3 l\u00e0m Macro-F1 \u0111\u1eb9p h\u01a1n.",
+      "matrix_requirement_ids": [
+        "H.02-RQ1_MACRO_F1_474"
+      ]
+    },
+    {
+      "source_id": "SRC-L0474-L0474",
+      "section": "H",
+      "source_start_line": 474,
+      "source_end_line": 474,
+      "text": "474-class universe ph\u1ea3i gi\u1eef nguy\u00ean n\u1ebfu protocol \u0111\u00e3 freeze nh\u01b0 v\u1eady.",
+      "matrix_requirement_ids": [
+        "H.02-RQ1_MACRO_F1_474"
+      ]
+    },
+    {
+      "source_id": "SRC-L0476-L0476",
+      "section": "H",
+      "source_start_line": 476,
+      "source_end_line": 476,
+      "text": "Ki\u1ec3m tra k\u1ebft qu\u1ea3 headline hi\u1ec7n t\u1ea1i:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0478-L0479",
+      "section": "H",
+      "source_start_line": 478,
+      "source_end_line": 479,
+      "text": "No-RAG:\n`560/718 \u2248 77.99%`",
+      "matrix_requirement_ids": [
+        "A.07-HEADLINE_STATS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0481-L0482",
+      "section": "H",
+      "source_start_line": 481,
+      "source_end_line": 482,
+      "text": "RAG k=10:\n`571/718 \u2248 79.53%`",
+      "matrix_requirement_ids": [
+        "A.07-HEADLINE_STATS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0484-L0485",
+      "section": "H",
+      "source_start_line": 484,
+      "source_end_line": 485,
+      "text": "Delta:\n`\u2248 +1.532 pp`",
+      "matrix_requirement_ids": [
+        "A.07-HEADLINE_STATS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0487-L0488",
+      "section": "H",
+      "source_start_line": 487,
+      "source_end_line": 488,
+      "text": "Bootstrap CI:\n`[-2.355, +5.300] pp`",
+      "matrix_requirement_ids": [
+        "H.03-RQ1_BOOTSTRAP_CI"
+      ]
+    },
+    {
+      "source_id": "SRC-L0490-L0491",
+      "section": "H",
+      "source_start_line": 490,
+      "source_end_line": 491,
+      "text": "McNemar:\n`p \u2248 0.422`",
+      "matrix_requirement_ids": [
+        "H.04-RQ1_MCNEMAR"
+      ]
+    },
+    {
+      "source_id": "SRC-L0493-L0494",
+      "section": "H",
+      "source_start_line": 493,
+      "source_end_line": 494,
+      "text": "N\u1ebfu calculation kh\u00e1c:\nKH\u00d4NG t\u1ef1 s\u1eeda report cho kh\u1edbp.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0496-L0496",
+      "section": "H",
+      "source_start_line": 496,
+      "source_end_line": 496,
+      "text": "Ph\u1ea3i truy root cause.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0499-L0499",
+      "section": "I",
+      "source_start_line": 499,
+      "source_end_line": 499,
+      "text": "I. PHASE 4 \u2014 RQ2 RETRIEVAL QUALITY",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0502-L0502",
+      "section": "I",
+      "source_start_line": 502,
+      "source_end_line": 502,
+      "text": "\u0110\u00e1nh gi\u00e1:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0504-L0504",
+      "section": "I",
+      "source_start_line": 504,
+      "source_end_line": 504,
+      "text": "\u201cRetrieval quality \u1ea3nh h\u01b0\u1edfng th\u1ebf n\u00e0o \u0111\u1ebfn downstream attribution?\u201d",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0506-L0506",
+      "section": "I",
+      "source_start_line": 506,
+      "source_end_line": 506,
+      "text": "Ph\u1ea3i gi\u1eef protocol D2i:",
+      "matrix_requirement_ids": [
+        "I.01-PROTOCOL_D2I_AXES"
+      ]
+    },
+    {
+      "source_id": "SRC-L0508-L0508",
+      "section": "I",
+      "source_start_line": 508,
+      "source_end_line": 508,
+      "text": "3 axes \u0111\u1ed9c l\u1eadp, c\u00f3 overlap.",
+      "matrix_requirement_ids": [
+        "I.01-PROTOCOL_D2I_AXES"
+      ]
+    },
+    {
+      "source_id": "SRC-L0510-L0511",
+      "section": "I",
+      "source_start_line": 510,
+      "source_end_line": 511,
+      "text": "Axis 1:\nRetrieval Miss.",
+      "matrix_requirement_ids": [
+        "I.01-PROTOCOL_D2I_AXES"
+      ]
+    },
+    {
+      "source_id": "SRC-L0513-L0514",
+      "section": "I",
+      "source_start_line": 513,
+      "source_end_line": 514,
+      "text": "Axis 2:\nDownstream Generation / Classification Failure.",
+      "matrix_requirement_ids": [
+        "I.01-PROTOCOL_D2I_AXES"
+      ]
+    },
+    {
+      "source_id": "SRC-L0516-L0517",
+      "section": "I",
+      "source_start_line": 516,
+      "source_end_line": 517,
+      "text": "Axis 3:\nJoint overlap.",
+      "matrix_requirement_ids": [
+        "I.01-PROTOCOL_D2I_AXES"
+      ]
+    },
+    {
+      "source_id": "SRC-L0519-L0519",
+      "section": "I",
+      "source_start_line": 519,
+      "source_end_line": 519,
+      "text": "Kh\u00f4ng \u0111\u01b0\u1ee3c bi\u1ebfn ch\u00fang th\u00e0nh mutually exclusive partition n\u1ebfu protocol kh\u00f4ng quy \u0111\u1ecbnh nh\u01b0 v\u1eady.",
+      "matrix_requirement_ids": [
+        "I.01-PROTOCOL_D2I_AXES"
+      ]
+    },
+    {
+      "source_id": "SRC-L0521-L0521",
+      "section": "I",
+      "source_start_line": 521,
+      "source_end_line": 521,
+      "text": "\u0110\u1ed1i v\u1edbi k=10 hi\u1ec7n c\u00f3 evidence kho\u1ea3ng:",
+      "matrix_requirement_ids": [
+        "I.02-RQ2_EMPIRICAL_K10"
+      ]
+    },
+    {
+      "source_id": "SRC-L0523-L0524",
+      "section": "I",
+      "source_start_line": 523,
+      "source_end_line": 524,
+      "text": "- Hit@10:\n  321 / 718 \u2248 44.71%",
+      "matrix_requirement_ids": [
+        "I.02-RQ2_EMPIRICAL_K10"
+      ]
+    },
+    {
+      "source_id": "SRC-L0526-L0527",
+      "section": "I",
+      "source_start_line": 526,
+      "source_end_line": 527,
+      "text": "- retrieval miss:\n  397 / 718 \u2248 55.29%",
+      "matrix_requirement_ids": [
+        "I.02-RQ2_EMPIRICAL_K10"
+      ]
+    },
+    {
+      "source_id": "SRC-L0529-L0530",
+      "section": "I",
+      "source_start_line": 529,
+      "source_end_line": 530,
+      "text": "- Correct | GT retrieved:\n  293 / 321 \u2248 91.28%",
+      "matrix_requirement_ids": [
+        "I.02-RQ2_EMPIRICAL_K10"
+      ]
+    },
+    {
+      "source_id": "SRC-L0532-L0533",
+      "section": "I",
+      "source_start_line": 532,
+      "source_end_line": 533,
+      "text": "- Correct | GT absent:\n  278 / 397 \u2248 70.03%",
+      "matrix_requirement_ids": [
+        "I.02-RQ2_EMPIRICAL_K10"
+      ]
+    },
+    {
+      "source_id": "SRC-L0535-L0536",
+      "section": "I",
+      "source_start_line": 535,
+      "source_end_line": 536,
+      "text": "- wrong classifications:\n  147",
+      "matrix_requirement_ids": [
+        "I.02-RQ2_EMPIRICAL_K10"
+      ]
+    },
+    {
+      "source_id": "SRC-L0538-L0539",
+      "section": "I",
+      "source_start_line": 538,
+      "source_end_line": 539,
+      "text": "- retrieval miss \u2229 wrong:\n  119 / 147 \u2248 80.95%",
+      "matrix_requirement_ids": [
+        "I.02-RQ2_EMPIRICAL_K10"
+      ]
+    },
+    {
+      "source_id": "SRC-L0541-L0541",
+      "section": "I",
+      "source_start_line": 541,
+      "source_end_line": 541,
+      "text": "Verify l\u1ea1i t\u1eeb canonical data.",
+      "matrix_requirement_ids": [
+        "I.02-RQ2_EMPIRICAL_K10"
+      ]
+    },
+    {
+      "source_id": "SRC-L0543-L0544",
+      "section": "I",
+      "source_start_line": 543,
+      "source_end_line": 544,
+      "text": "Kh\u00f4ng d\u00f9ng c\u00e2u ki\u1ec3u:\n\u201cretrieval caused improvement\u201d",
+      "matrix_requirement_ids": [
+        "I.03-RQ2_NON_CAUSAL_WORDING"
+      ]
+    },
+    {
+      "source_id": "SRC-L0546-L0546",
+      "section": "I",
+      "source_start_line": 546,
+      "source_end_line": 546,
+      "text": "tr\u1eeb khi thi\u1ebft k\u1ebf causal th\u1ef1c s\u1ef1 h\u1ed7 tr\u1ee3.",
+      "matrix_requirement_ids": [
+        "I.03-RQ2_NON_CAUSAL_WORDING"
+      ]
+    },
+    {
+      "source_id": "SRC-L0548-L0551",
+      "section": "I",
+      "source_start_line": 548,
+      "source_end_line": 551,
+      "text": "D\u00f9ng:\n\u201cassociated with\u201d\n\u201cconditional accuracy\u201d\n\u201cobserved relationship\u201d",
+      "matrix_requirement_ids": [
+        "I.03-RQ2_NON_CAUSAL_WORDING"
+      ]
+    },
+    {
+      "source_id": "SRC-L0554-L0554",
+      "section": "J",
+      "source_start_line": 554,
+      "source_end_line": 554,
+      "text": "J. PHASE 5 \u2014 RQ3 DEPTH / COST / LATENCY",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0557-L0557",
+      "section": "J",
+      "source_start_line": 557,
+      "source_end_line": 557,
+      "text": "Cho k = 0/1/3/5/10:",
+      "matrix_requirement_ids": [
+        "J.01-RQ3_TRADE_OFF_TABLE"
+      ]
+    },
+    {
+      "source_id": "SRC-L0559-L0559",
+      "section": "J",
+      "source_start_line": 559,
+      "source_end_line": 559,
+      "text": "T\u1ea1o final tables cho:",
+      "matrix_requirement_ids": [
+        "J.01-RQ3_TRADE_OFF_TABLE"
+      ]
+    },
+    {
+      "source_id": "SRC-L0561-L0573",
+      "section": "J",
+      "source_start_line": 561,
+      "source_end_line": 573,
+      "text": "- accuracy;\n- Macro-F1;\n- retrieval Hit@k;\n- prompt tokens;\n- completion tokens;\n- cached tokens;\n- total token usage;\n- mean latency;\n- median latency;\n- p95 n\u1ebfu \u0111\u00e3 protocol-authorized;\n- logical cost/query;\n- total condition cost;\n- failure rate.",
+      "matrix_requirement_ids": [
+        "J.01-RQ3_TRADE_OFF_TABLE"
+      ]
+    },
+    {
+      "source_id": "SRC-L0575-L0578",
+      "section": "J",
+      "source_start_line": 575,
+      "source_end_line": 578,
+      "text": "Kh\u00f4ng tr\u1ed9n:\nestimated billing\nv\u1edbi:\nactual provider invoice.",
+      "matrix_requirement_ids": [
+        "J.02-RQ3_COST_WORDING"
+      ]
+    },
+    {
+      "source_id": "SRC-L0580-L0583",
+      "section": "J",
+      "source_start_line": 580,
+      "source_end_line": 583,
+      "text": "D\u00f9ng wording:\n\u201ctariff-derived accounted cost\u201d\nho\u1eb7c:\n\u201cpricing-contract-derived cost\u201d",
+      "matrix_requirement_ids": [
+        "J.02-RQ3_COST_WORDING"
+      ]
+    },
+    {
+      "source_id": "SRC-L0585-L0585",
+      "section": "J",
+      "source_start_line": 585,
+      "source_end_line": 585,
+      "text": "n\u1ebfu kh\u00f4ng c\u00f3 invoice.",
+      "matrix_requirement_ids": [
+        "J.02-RQ3_COST_WORDING"
+      ]
+    },
+    {
+      "source_id": "SRC-L0588-L0588",
+      "section": "K",
+      "source_start_line": 588,
+      "source_end_line": 588,
+      "text": "K. PHASE 6 \u2014 FAILURE ANALYSIS",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0591-L0591",
+      "section": "K",
+      "source_start_line": 591,
+      "source_end_line": 591,
+      "text": "T\u1ea1o section ri\u00eang:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0593-L0593",
+      "section": "K",
+      "source_start_line": 593,
+      "source_end_line": 593,
+      "text": "### Provider failures",
+      "matrix_requirement_ids": [
+        "K.01-PROVIDER_FAILURE_RETRY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0595-L0596",
+      "section": "K",
+      "source_start_line": 595,
+      "source_end_line": 596,
+      "text": "Expected:\n1 transient API failure \u2192 retry \u2192 success.",
+      "matrix_requirement_ids": [
+        "K.01-PROVIDER_FAILURE_RETRY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0598-L0598",
+      "section": "K",
+      "source_start_line": 598,
+      "source_end_line": 598,
+      "text": "### INCOMPLETE",
+      "matrix_requirement_ids": [
+        "K.02-INCOMPLETE_CEILING_ANALYSIS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0600-L0601",
+      "section": "K",
+      "source_start_line": 600,
+      "source_end_line": 601,
+      "text": "Expected:\n13 INCOMPLETE.",
+      "matrix_requirement_ids": [
+        "K.02-INCOMPLETE_CEILING_ANALYSIS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0603-L0603",
+      "section": "K",
+      "source_start_line": 603,
+      "source_end_line": 603,
+      "text": "Ph\u00e2n b\u1ed1 hi\u1ec7n c\u00f3:",
+      "matrix_requirement_ids": [
+        "K.02-INCOMPLETE_CEILING_ANALYSIS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0605-L0609",
+      "section": "K",
+      "source_start_line": 605,
+      "source_end_line": 609,
+      "text": "- rag_k3: 6\n- rag_k5: 3\n- rag_k10: 4\n- no_rag: 0\n- rag_k1: 0",
+      "matrix_requirement_ids": [
+        "K.02-INCOMPLETE_CEILING_ANALYSIS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0611-L0611",
+      "section": "K",
+      "source_start_line": 611,
+      "source_end_line": 611,
+      "text": "X\u00e1c minh.",
+      "matrix_requirement_ids": [
+        "K.02-INCOMPLETE_CEILING_ANALYSIS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0613-L0616",
+      "section": "K",
+      "source_start_line": 613,
+      "source_end_line": 616,
+      "text": "Ghi r\u00f5:\n- max_output_tokens = 8192;\n- fail-closed parsing;\n- kh\u00f4ng heuristic repair truncated JSON.",
+      "matrix_requirement_ids": [
+        "K.02-INCOMPLETE_CEILING_ANALYSIS"
+      ]
+    },
+    {
+      "source_id": "SRC-L0618-L0618",
+      "section": "K",
+      "source_start_line": 618,
+      "source_end_line": 618,
+      "text": "Ph\u1ea3i n\u00f3i r\u00f5 13 INCOMPLETE c\u00f3 thu\u1ed9c headline 718 mapped cohort hay kh\u00f4ng.",
+      "matrix_requirement_ids": [
+        "K.03-INCOMPLETE_MAPPED_COHORT_EXCLUSION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0620-L0621",
+      "section": "K",
+      "source_start_line": 620,
+      "source_end_line": 621,
+      "text": "Evidence hi\u1ec7n n\u00f3i:\n0 / 13 thu\u1ed9c mapped headline cohort.",
+      "matrix_requirement_ids": [
+        "K.03-INCOMPLETE_MAPPED_COHORT_EXCLUSION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0623-L0623",
+      "section": "K",
+      "source_start_line": 623,
+      "source_end_line": 623,
+      "text": "X\u00e1c minh tr\u01b0\u1edbc khi report.",
+      "matrix_requirement_ids": [
+        "K.03-INCOMPLETE_MAPPED_COHORT_EXCLUSION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0626-L0626",
+      "section": "L",
+      "source_start_line": 626,
+      "source_end_line": 626,
+      "text": "L. PHASE 7 \u2014 SCIENTIFIC REPORT FINAL",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0629-L0629",
+      "section": "L",
+      "source_start_line": 629,
+      "source_end_line": 629,
+      "text": "Ho\u00e0n t\u1ea5t \u00edt nh\u1ea5t:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0631-L0631",
+      "section": "L",
+      "source_start_line": 631,
+      "source_end_line": 631,
+      "text": "`docs/report/scientific_report.md`",
+      "matrix_requirement_ids": [
+        "L.DOCX_DELIVERY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0633-L0633",
+      "section": "L",
+      "source_start_line": 633,
+      "source_end_line": 633,
+      "text": "v\u00e0:",
+      "matrix_requirement_ids": [
+        "L.DOCX_DELIVERY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0635-L0635",
+      "section": "L",
+      "source_start_line": 635,
+      "source_end_line": 635,
+      "text": "`docs/report/scientific_report.docx`",
+      "matrix_requirement_ids": [
+        "L.DOCX_DELIVERY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0637-L0637",
+      "section": "L",
+      "source_start_line": 637,
+      "source_end_line": 637,
+      "text": "Report ph\u1ea3i l\u00e0 b\u1ea3n FINAL, kh\u00f4ng c\u00f2n scaffold wording.",
+      "matrix_requirement_ids": [
+        "L.DOCX_DELIVERY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0639-L0639",
+      "section": "L",
+      "source_start_line": 639,
+      "source_end_line": 639,
+      "text": "C\u1ea5u tr\u00fac t\u1ed1i thi\u1ec3u:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0641-L0673",
+      "section": "L",
+      "source_start_line": 641,
+      "source_end_line": 673,
+      "text": "1. Title\n2. Abstract\n3. Introduction\n4. Problem statement\n5. Research questions\n6. Related work\n7. Background\n   - MITRE ATT&CK\n   - RAG\n   - technique attribution\n8. Dataset\n9. Synthetic data methodology\n10. Ground-truth construction\n11. Experimental design\n12. No-RAG baseline\n13. RAG architecture\n14. Frozen protocol\n15. Model/provider configuration\n16. Retrieval setup\n17. Evaluation metrics\n18. RQ1 results\n19. RQ2 results\n20. RQ3 results\n21. Statistical analysis\n22. Failure analysis\n23. Cost/resource analysis\n24. Discussion\n25. Threats to validity\n26. Limitations\n27. Reproducibility\n28. Conclusion\n29. References\n30. Appendix / artifact hashes n\u1ebfu ph\u00f9 h\u1ee3p.",
+      "matrix_requirement_ids": [
+        "L.SEC-01",
+        "L.SEC-02",
+        "L.SEC-03",
+        "L.SEC-04",
+        "L.SEC-05",
+        "L.SEC-06",
+        "L.SEC-07",
+        "L.SEC-08",
+        "L.SEC-09",
+        "L.SEC-10",
+        "L.SEC-11",
+        "L.SEC-12",
+        "L.SEC-13",
+        "L.SEC-14",
+        "L.SEC-15",
+        "L.SEC-16",
+        "L.SEC-17",
+        "L.SEC-18",
+        "L.SEC-19",
+        "L.SEC-20",
+        "L.SEC-21",
+        "L.SEC-22",
+        "L.SEC-23",
+        "L.SEC-24",
+        "L.SEC-25",
+        "L.SEC-26",
+        "L.SEC-27",
+        "L.SEC-28",
+        "L.SEC-29",
+        "L.SEC-30"
+      ]
+    },
+    {
+      "source_id": "SRC-L0676-L0676",
+      "section": "M",
+      "source_start_line": 676,
+      "source_end_line": 676,
+      "text": "M. REPORT QUALITY RULES",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0679-L0679",
+      "section": "M",
+      "source_start_line": 679,
+      "source_end_line": 679,
+      "text": "Kh\u00f4ng \u0111\u01b0\u1ee3c:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0681-L0688",
+      "section": "M",
+      "source_start_line": 681,
+      "source_end_line": 688,
+      "text": "- claim production efficacy;\n- claim enterprise SOC performance;\n- claim real-world generalization;\n- claim statistically significant improvement khi p \u2248 0.422;\n- claim causal retrieval effects n\u1ebfu ch\u1ec9 conditional analysis;\n- g\u1ecdi synthetic logs l\u00e0 real Windows APT telemetry;\n- d\u00f9ng \u201cproves\u201d;\n- cherry-pick metric.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0690-L0690",
+      "section": "M",
+      "source_start_line": 690,
+      "source_end_line": 690,
+      "text": "Ph\u1ea3i ph\u00e2n bi\u1ec7t:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0692-L0694",
+      "section": "M",
+      "source_start_line": 692,
+      "source_end_line": 694,
+      "text": "Synthetic endpoint inputs\nvs\nReal provider outputs.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0696-L0696",
+      "section": "M",
+      "source_start_line": 696,
+      "source_end_line": 696,
+      "text": "Ph\u1ea3i ghi r\u00f5:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0698-L0703",
+      "section": "M",
+      "source_start_line": 698,
+      "source_end_line": 703,
+      "text": "- benchmark synthetic;\n- ATT&CK version;\n- frozen universe;\n- mapped vs unmapped vs ambiguous;\n- scorable denominator;\n- limitations.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0706-L0706",
+      "section": "N",
+      "source_start_line": 706,
+      "source_end_line": 706,
+      "text": "N. RELATED WORK",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0709-L0709",
+      "section": "N",
+      "source_start_line": 709,
+      "source_end_line": 709,
+      "text": "Review l\u1ea1i references:",
+      "matrix_requirement_ids": [
+        "N.01-PRIMARY_LITERATURE"
+      ]
+    },
+    {
+      "source_id": "SRC-L0711-L0715",
+      "section": "N",
+      "source_start_line": 711,
+      "source_end_line": 715,
+      "text": "- Yang & Hsu;\n- H-TechniqueRAG;\n- MITRE ATT&CK primary material;\n- RAG foundational literature;\n- cybersecurity log/LLM mapping literature n\u1ebfu report d\u00f9ng.",
+      "matrix_requirement_ids": [
+        "N.01-PRIMARY_LITERATURE"
+      ]
+    },
+    {
+      "source_id": "SRC-L0717-L0717",
+      "section": "N",
+      "source_start_line": 717,
+      "source_end_line": 717,
+      "text": "Kh\u00f4ng invent DOI.",
+      "matrix_requirement_ids": [
+        "N.01-PRIMARY_LITERATURE"
+      ]
+    },
+    {
+      "source_id": "SRC-L0719-L0719",
+      "section": "N",
+      "source_start_line": 719,
+      "source_end_line": 719,
+      "text": "Kh\u00f4ng invent venue.",
+      "matrix_requirement_ids": [
+        "N.01-PRIMARY_LITERATURE"
+      ]
+    },
+    {
+      "source_id": "SRC-L0721-L0722",
+      "section": "N",
+      "source_start_line": 721,
+      "source_end_line": 722,
+      "text": "N\u1ebfu metadata ch\u01b0a ch\u1eafc:\nverify.",
+      "matrix_requirement_ids": [
+        "N.01-PRIMARY_LITERATURE"
+      ]
+    },
+    {
+      "source_id": "SRC-L0724-L0724",
+      "section": "N",
+      "source_start_line": 724,
+      "source_end_line": 724,
+      "text": "M\u1ed7i claim related work ph\u1ea3i c\u00f3 citation h\u1ee3p l\u1ec7.",
+      "matrix_requirement_ids": [
+        "N.01-PRIMARY_LITERATURE"
+      ]
+    },
+    {
+      "source_id": "SRC-L0727-L0727",
+      "section": "O",
+      "source_start_line": 727,
+      "source_end_line": 727,
+      "text": "O. FIGURES & TABLES",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0730-L0730",
+      "section": "O",
+      "source_start_line": 730,
+      "source_end_line": 730,
+      "text": "Final figures t\u1ed1i thi\u1ec3u:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0732-L0733",
+      "section": "O",
+      "source_start_line": 732,
+      "source_end_line": 733,
+      "text": "Figure 1:\nExperimental architecture.",
+      "matrix_requirement_ids": [
+        "O.FIG-01"
+      ]
+    },
+    {
+      "source_id": "SRC-L0735-L0736",
+      "section": "O",
+      "source_start_line": 735,
+      "source_end_line": 736,
+      "text": "Figure 2:\nAccuracy across k.",
+      "matrix_requirement_ids": [
+        "O.FIG-02"
+      ]
+    },
+    {
+      "source_id": "SRC-L0738-L0739",
+      "section": "O",
+      "source_start_line": 738,
+      "source_end_line": 739,
+      "text": "Figure 3:\nMacro-F1 across k.",
+      "matrix_requirement_ids": [
+        "O.FIG-03"
+      ]
+    },
+    {
+      "source_id": "SRC-L0741-L0742",
+      "section": "O",
+      "source_start_line": 741,
+      "source_end_line": 742,
+      "text": "Figure 4:\nRetrieval Hit@k.",
+      "matrix_requirement_ids": [
+        "O.FIG-04"
+      ]
+    },
+    {
+      "source_id": "SRC-L0744-L0745",
+      "section": "O",
+      "source_start_line": 744,
+      "source_end_line": 745,
+      "text": "Figure 5:\nConditional accuracy retrieved vs missed.",
+      "matrix_requirement_ids": [
+        "O.FIG-05"
+      ]
+    },
+    {
+      "source_id": "SRC-L0747-L0748",
+      "section": "O",
+      "source_start_line": 747,
+      "source_end_line": 748,
+      "text": "Figure 6:\nLatency vs k.",
+      "matrix_requirement_ids": [
+        "O.FIG-06"
+      ]
+    },
+    {
+      "source_id": "SRC-L0750-L0751",
+      "section": "O",
+      "source_start_line": 750,
+      "source_end_line": 751,
+      "text": "Figure 7:\nCost/token usage vs k.",
+      "matrix_requirement_ids": [
+        "O.FIG-07"
+      ]
+    },
+    {
+      "source_id": "SRC-L0753-L0754",
+      "section": "O",
+      "source_start_line": 753,
+      "source_end_line": 754,
+      "text": "Figure 8:\nFailure decomposition.",
+      "matrix_requirement_ids": [
+        "O.FIG-08"
+      ]
+    },
+    {
+      "source_id": "SRC-L0756-L0756",
+      "section": "O",
+      "source_start_line": 756,
+      "source_end_line": 756,
+      "text": "Tables t\u1ed1i thi\u1ec3u:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0758-L0759",
+      "section": "O",
+      "source_start_line": 758,
+      "source_end_line": 759,
+      "text": "Table 1:\nDataset/split.",
+      "matrix_requirement_ids": [
+        "O.TAB-01"
+      ]
+    },
+    {
+      "source_id": "SRC-L0761-L0762",
+      "section": "O",
+      "source_start_line": 761,
+      "source_end_line": 762,
+      "text": "Table 2:\nExperimental conditions.",
+      "matrix_requirement_ids": [
+        "O.TAB-02"
+      ]
+    },
+    {
+      "source_id": "SRC-L0764-L0765",
+      "section": "O",
+      "source_start_line": 764,
+      "source_end_line": 765,
+      "text": "Table 3:\nRQ1 metrics.",
+      "matrix_requirement_ids": [
+        "O.TAB-03"
+      ]
+    },
+    {
+      "source_id": "SRC-L0767-L0768",
+      "section": "O",
+      "source_start_line": 767,
+      "source_end_line": 768,
+      "text": "Table 4:\nRQ2 retrieval analysis.",
+      "matrix_requirement_ids": [
+        "O.TAB-04"
+      ]
+    },
+    {
+      "source_id": "SRC-L0770-L0771",
+      "section": "O",
+      "source_start_line": 770,
+      "source_end_line": 771,
+      "text": "Table 5:\nRQ3 cost/latency.",
+      "matrix_requirement_ids": [
+        "O.TAB-05"
+      ]
+    },
+    {
+      "source_id": "SRC-L0773-L0774",
+      "section": "O",
+      "source_start_line": 773,
+      "source_end_line": 774,
+      "text": "Table 6:\nProvenance/hash/evidence.",
+      "matrix_requirement_ids": [
+        "O.TAB-06"
+      ]
+    },
+    {
+      "source_id": "SRC-L0776-L0776",
+      "section": "O",
+      "source_start_line": 776,
+      "source_end_line": 776,
+      "text": "M\u1ed7i number trong figure/table ph\u1ea3i \u0111\u01b0\u1ee3c machine-generated t\u1eeb frozen bundle.",
+      "matrix_requirement_ids": [
+        "O.GEN-01"
+      ]
+    },
+    {
+      "source_id": "SRC-L0778-L0778",
+      "section": "O",
+      "source_start_line": 778,
+      "source_end_line": 778,
+      "text": "Kh\u00f4ng manually type important numerical values n\u1ebfu c\u00f3 th\u1ec3 generate.",
+      "matrix_requirement_ids": [
+        "O.GEN-01"
+      ]
+    },
+    {
+      "source_id": "SRC-L0781-L0781",
+      "section": "P",
+      "source_start_line": 781,
+      "source_end_line": 781,
+      "text": "P. CROSS-ARTIFACT CONSISTENCY",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0784-L0784",
+      "section": "P",
+      "source_start_line": 784,
+      "source_end_line": 784,
+      "text": "T\u1ea1o automated checker ki\u1ec3m tra s\u1ed1 li\u1ec7u gi\u1eefa:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0786-L0792",
+      "section": "P",
+      "source_start_line": 786,
+      "source_end_line": 792,
+      "text": "- canonical metric bundle;\n- README;\n- scientific_report.md;\n- scientific_report.docx;\n- slides;\n- figures;\n- tables.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0794-L0794",
+      "section": "P",
+      "source_start_line": 794,
+      "source_end_line": 794,
+      "text": "C\u00e1c headline number PH\u1ea2I identical.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0796-L0796",
+      "section": "P",
+      "source_start_line": 796,
+      "source_end_line": 796,
+      "text": "Ki\u1ec3m tra \u00edt nh\u1ea5t:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0798-L0813",
+      "section": "P",
+      "source_start_line": 798,
+      "source_end_line": 813,
+      "text": "77.99\n79.53\n+1.532 pp\n[-2.355, +5.300]\np\u22480.422\n6,400\n6,401\n6,387\n13\n6.57575890\n6.62839900\n19.99000000\n718\n311\n251\n474",
+      "matrix_requirement_ids": [
+        "P.VAL-0.422",
+        "P.VAL-13",
+        "P.VAL-19.99000000",
+        "P.VAL-251",
+        "P.VAL-311",
+        "P.VAL-474",
+        "P.VAL-6.57575890",
+        "P.VAL-6.62839900",
+        "P.VAL-6387",
+        "P.VAL-6400",
+        "P.VAL-6401",
+        "P.VAL-718",
+        "P.VAL-77.99",
+        "P.VAL-79.53",
+        "P.VAL-neg_2.355_pos_5.300",
+        "P.VAL-pos_1.532"
+      ]
+    },
+    {
+      "source_id": "SRC-L0815-L0815",
+      "section": "P",
+      "source_start_line": 815,
+      "source_end_line": 815,
+      "text": "Kh\u00f4ng ch\u1ec9 grep string.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0817-L0817",
+      "section": "P",
+      "source_start_line": 817,
+      "source_end_line": 817,
+      "text": "Parse structured sources n\u1ebfu c\u00f3 th\u1ec3.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0820-L0820",
+      "section": "Q",
+      "source_start_line": 820,
+      "source_end_line": 820,
+      "text": "Q. PRESENTATION FINAL",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0823-L0823",
+      "section": "Q",
+      "source_start_line": 823,
+      "source_end_line": 823,
+      "text": "Ho\u00e0n thi\u1ec7n:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0825-L0825",
+      "section": "Q",
+      "source_start_line": 825,
+      "source_end_line": 825,
+      "text": "`docs/presentation/slides.pptx`",
+      "matrix_requirement_ids": [
+        "Q.01-VIETNAMESE_DECK"
+      ]
+    },
+    {
+      "source_id": "SRC-L0827-L0827",
+      "section": "Q",
+      "source_start_line": 827,
+      "source_end_line": 827,
+      "text": "v\u00e0 source slide representation.",
+      "matrix_requirement_ids": [
+        "Q.01-VIETNAMESE_DECK"
+      ]
+    },
+    {
+      "source_id": "SRC-L0829-L0829",
+      "section": "Q",
+      "source_start_line": 829,
+      "source_end_line": 829,
+      "text": "Slide deck n\u00ean kho\u1ea3ng 10\u201315 slides.",
+      "matrix_requirement_ids": [
+        "Q.01-VIETNAMESE_DECK"
+      ]
+    },
+    {
+      "source_id": "SRC-L0831-L0831",
+      "section": "Q",
+      "source_start_line": 831,
+      "source_end_line": 831,
+      "text": "Ph\u1ea3i c\u00f3:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0833-L0844",
+      "section": "Q",
+      "source_start_line": 833,
+      "source_end_line": 844,
+      "text": "1. Problem\n2. RQ\n3. Architecture\n4. Dataset\n5. Protocol\n6. RQ1\n7. RQ2\n8. RQ3\n9. Cost/failures\n10. Key finding\n11. Limitations\n12. Conclusion",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0846-L0846",
+      "section": "Q",
+      "source_start_line": 846,
+      "source_end_line": 846,
+      "text": "Kh\u00f4ng l\u00e0m slide qu\u00e1 nhi\u1ec1u ch\u1eef.",
+      "matrix_requirement_ids": [
+        "Q.02-TYPOGRAPHY_AND_LAYOUT_QA"
+      ]
+    },
+    {
+      "source_id": "SRC-L0848-L0854",
+      "section": "Q",
+      "source_start_line": 848,
+      "source_end_line": 854,
+      "text": "Check:\n- overflow;\n- tiny text;\n- clipped charts;\n- inaccessible legends;\n- inconsistent units;\n- Vietnamese/English inconsistency.",
+      "matrix_requirement_ids": [
+        "Q.02-TYPOGRAPHY_AND_LAYOUT_QA"
+      ]
+    },
+    {
+      "source_id": "SRC-L0856-L0857",
+      "section": "Q",
+      "source_start_line": 856,
+      "source_end_line": 857,
+      "text": "N\u1ebfu report English v\u00e0 presentation Vietnamese:\ngi\u1eef thu\u1eadt ng\u1eef khoa h\u1ecdc nh\u1ea5t qu\u00e1n.",
+      "matrix_requirement_ids": [
+        "Q.01-VIETNAMESE_DECK"
+      ]
+    },
+    {
+      "source_id": "SRC-L0860-L0860",
+      "section": "R",
+      "source_start_line": 860,
+      "source_end_line": 860,
+      "text": "R. REPRODUCIBILITY PACKAGE",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0863-L0863",
+      "section": "R",
+      "source_start_line": 863,
+      "source_end_line": 863,
+      "text": "M\u1ed9t reviewer m\u1edbi clone repo ph\u1ea3i c\u00f3 th\u1ec3:",
+      "matrix_requirement_ids": [
+        "R.01-CLEAN_CLONE_REPRO"
+      ]
+    },
+    {
+      "source_id": "SRC-L0865-L0874",
+      "section": "R",
+      "source_start_line": 865,
+      "source_end_line": 874,
+      "text": "1. checkout exact final SHA;\n2. install locked dependencies;\n3. obtain/use public saved-data bundle;\n4. verify SHA;\n5. run offline reproduction;\n6. regenerate metrics;\n7. regenerate RQ analysis;\n8. verify headline numbers;\n9. reproduce figures/tables;\n10. perform zero provider calls.",
+      "matrix_requirement_ids": [
+        "R.01-CLEAN_CLONE_REPRO"
+      ]
+    },
+    {
+      "source_id": "SRC-L0876-L0876",
+      "section": "R",
+      "source_start_line": 876,
+      "source_end_line": 876,
+      "text": "Canonical command c\u1ea7n r\u00f5 r\u00e0ng.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0878-L0878",
+      "section": "R",
+      "source_start_line": 878,
+      "source_end_line": 878,
+      "text": "Expected outcome n\u00ean ki\u1ec3u:",
+      "matrix_requirement_ids": [
+        "R.02-REPRO_VERDICT_ASSERTION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0880-L0880",
+      "section": "R",
+      "source_start_line": 880,
+      "source_end_line": 880,
+      "text": "`PASS_CANONICAL_OFFLINE_VERIFIED`",
+      "matrix_requirement_ids": [
+        "R.02-REPRO_VERDICT_ASSERTION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0882-L0882",
+      "section": "R",
+      "source_start_line": 882,
+      "source_end_line": 882,
+      "text": "V\u00e0:",
+      "matrix_requirement_ids": [
+        "R.02-REPRO_VERDICT_ASSERTION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0884-L0884",
+      "section": "R",
+      "source_start_line": 884,
+      "source_end_line": 884,
+      "text": "`attempted_egress=0`",
+      "matrix_requirement_ids": [
+        "R.02-REPRO_VERDICT_ASSERTION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0886-L0890",
+      "section": "R",
+      "source_start_line": 886,
+      "source_end_line": 890,
+      "text": "Kh\u00f4ng \u0111\u01b0\u1ee3c ph\u1ee5 thu\u1ed9c v\u00e0o:\n- D:\\...\n- C:\\Users\\...\n- developer-specific venv;\n- private Antigravity paths.",
+      "matrix_requirement_ids": [
+        "R.02-REPRO_VERDICT_ASSERTION"
+      ]
+    },
+    {
+      "source_id": "SRC-L0893-L0893",
+      "section": "S",
+      "source_start_line": 893,
+      "source_end_line": 893,
+      "text": "S. SECURITY / PRIVACY PACKAGE AUDIT",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0896-L0896",
+      "section": "S",
+      "source_start_line": 896,
+      "source_end_line": 896,
+      "text": "Scan final tracked/public artifacts cho:",
+      "matrix_requirement_ids": [
+        "S.01-SECRETS_AND_PATHS_SCAN"
+      ]
+    },
+    {
+      "source_id": "SRC-L0898-L0909",
+      "section": "S",
+      "source_start_line": 898,
+      "source_end_line": 909,
+      "text": "- API keys;\n- bearer tokens;\n- authorization tokens;\n- user home paths;\n- Windows private paths;\n- local task IDs n\u1ebfu kh\u00f4ng c\u1ea7n;\n- private logs;\n- credential files;\n- `.env`;\n- caches;\n- Python bytecode;\n- accidental secrets.",
+      "matrix_requirement_ids": [
+        "S.01-SECRETS_AND_PATHS_SCAN"
+      ]
+    },
+    {
+      "source_id": "SRC-L0911-L0911",
+      "section": "S",
+      "source_start_line": 911,
+      "source_end_line": 911,
+      "text": "Kh\u00f4ng x\u00f3a provenance quan tr\u1ecdng.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0913-L0914",
+      "section": "S",
+      "source_start_line": 913,
+      "source_end_line": 914,
+      "text": "N\u1ebfu path ph\u1ea3i sanitize:\nrecord:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0916-L0918",
+      "section": "S",
+      "source_start_line": 916,
+      "source_end_line": 918,
+      "text": "original hash;\nsanitized hash;\ntransformation description.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0921-L0921",
+      "section": "T",
+      "source_start_line": 921,
+      "source_end_line": 921,
+      "text": "T. PR INTEGRATION",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0924-L0924",
+      "section": "T",
+      "source_start_line": 924,
+      "source_end_line": 924,
+      "text": "Review PR:",
+      "matrix_requirement_ids": [
+        "T.01-PR_CLASSIFICATION_AND_ANCESTRY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0926-L0931",
+      "section": "T",
+      "source_start_line": 926,
+      "source_end_line": 931,
+      "text": "#24\n#25\n#26\n#27\n#28\n#29",
+      "matrix_requirement_ids": [
+        "T.01-PR_CLASSIFICATION_AND_ANCESTRY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0933-L0933",
+      "section": "T",
+      "source_start_line": 933,
+      "source_end_line": 933,
+      "text": "Classify t\u1eebng PR:",
+      "matrix_requirement_ids": [
+        "T.01-PR_CLASSIFICATION_AND_ANCESTRY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0935-L0940",
+      "section": "T",
+      "source_start_line": 935,
+      "source_end_line": 940,
+      "text": "- MUST MERGE\n- ALREADY INCLUDED IN #28\n- SUPERSEDED\n- NEEDS SELECTIVE COMMIT\n- CLOSE AFTER FINAL\n- BLOCKER",
+      "matrix_requirement_ids": [
+        "T.01-PR_CLASSIFICATION_AND_ANCESTRY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0942-L0942",
+      "section": "T",
+      "source_start_line": 942,
+      "source_end_line": 942,
+      "text": "Kh\u00f4ng merge t\u1ea5t c\u1ea3 m\u1ed9t c\u00e1ch m\u00f9 qu\u00e1ng.",
+      "matrix_requirement_ids": [
+        "T.01-PR_CLASSIFICATION_AND_ANCESTRY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0944-L0944",
+      "section": "T",
+      "source_start_line": 944,
+      "source_end_line": 944,
+      "text": "PR #28 hi\u1ec7n c\u00f3 vai tr\u00f2 integration/final handover.",
+      "matrix_requirement_ids": [
+        "T.01-PR_CLASSIFICATION_AND_ANCESTRY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0946-L0947",
+      "section": "T",
+      "source_start_line": 946,
+      "source_end_line": 947,
+      "text": "Ki\u1ec3m tra ancestry:\n#24\u2013#27 content c\u00f3 \u0111\u00e3 th\u1ef1c s\u1ef1 \u0111\u01b0\u1ee3c t\u00edch h\u1ee3p trong #28 ch\u01b0a.",
+      "matrix_requirement_ids": [
+        "T.01-PR_CLASSIFICATION_AND_ANCESTRY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0949-L0951",
+      "section": "T",
+      "source_start_line": 949,
+      "source_end_line": 951,
+      "text": "PR #29 terminal validator:\nn\u1ebfu ch\u01b0a t\u00edch h\u1ee3p nh\u01b0ng c\u1ea7n cho final evidence:\nmerge/integrate validator artifact h\u1ee3p l\u00fd.",
+      "matrix_requirement_ids": [
+        "T.01-PR_CLASSIFICATION_AND_ANCESTRY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0953-L0953",
+      "section": "T",
+      "source_start_line": 953,
+      "source_end_line": 953,
+      "text": "Tr\u00e1nh duplicate commits.",
+      "matrix_requirement_ids": [
+        "T.01-PR_CLASSIFICATION_AND_ANCESTRY"
+      ]
+    },
+    {
+      "source_id": "SRC-L0956-L0956",
+      "section": "U",
+      "source_start_line": 956,
+      "source_end_line": 956,
+      "text": "U. FINAL INTEGRATION BRANCH",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0959-L0959",
+      "section": "U",
+      "source_start_line": 959,
+      "source_end_line": 959,
+      "text": "T\u1ea1o final candidate branch n\u1ebfu c\u1ea7n:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0961-L0961",
+      "section": "U",
+      "source_start_line": 961,
+      "source_end_line": 961,
+      "text": "`final/rag2attck-release`",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0963-L0963",
+      "section": "U",
+      "source_start_line": 963,
+      "source_end_line": 963,
+      "text": "Base ph\u1ea3i l\u00e0 correct main/current integration ancestry.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0965-L0965",
+      "section": "U",
+      "source_start_line": 965,
+      "source_end_line": 965,
+      "text": "Merge additive.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0967-L0967",
+      "section": "U",
+      "source_start_line": 967,
+      "source_end_line": 967,
+      "text": "Kh\u00f4ng force push.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0969-L0969",
+      "section": "U",
+      "source_start_line": 969,
+      "source_end_line": 969,
+      "text": "Sau integration:",
+      "matrix_requirement_ids": [
+        "U.01-DIFF_AUDIT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0971-L0971",
+      "section": "U",
+      "source_start_line": 971,
+      "source_end_line": 971,
+      "text": "run full diff audit:",
+      "matrix_requirement_ids": [
+        "U.01-DIFF_AUDIT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0973-L0979",
+      "section": "U",
+      "source_start_line": 973,
+      "source_end_line": 979,
+      "text": "- protected files;\n- config;\n- protocol;\n- data;\n- ground truth;\n- prompt;\n- canonical outputs.",
+      "matrix_requirement_ids": [
+        "U.01-DIFF_AUDIT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0981-L0981",
+      "section": "U",
+      "source_start_line": 981,
+      "source_end_line": 981,
+      "text": "No accidental scientific mutation.",
+      "matrix_requirement_ids": [
+        "U.01-DIFF_AUDIT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0984-L0984",
+      "section": "V",
+      "source_start_line": 984,
+      "source_end_line": 984,
+      "text": "V. TEST MATRIX",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L0987-L0987",
+      "section": "V",
+      "source_start_line": 987,
+      "source_end_line": 987,
+      "text": "Ch\u1ea1y \u00edt nh\u1ea5t:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L0989-L0990",
+      "section": "V",
+      "source_start_line": 989,
+      "source_end_line": 990,
+      "text": "1.\n`ruff check`",
+      "matrix_requirement_ids": [
+        "V.01-RUFF_CHECK"
+      ]
+    },
+    {
+      "source_id": "SRC-L0992-L0993",
+      "section": "V",
+      "source_start_line": 992,
+      "source_end_line": 993,
+      "text": "2.\n`ruff format --check`",
+      "matrix_requirement_ids": [
+        "V.02-RUFF_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0995-L0996",
+      "section": "V",
+      "source_start_line": 995,
+      "source_end_line": 996,
+      "text": "3.\noffline unit suite",
+      "matrix_requirement_ids": [
+        "V.03-OFFLINE_UNIT"
+      ]
+    },
+    {
+      "source_id": "SRC-L0998-L0999",
+      "section": "V",
+      "source_start_line": 998,
+      "source_end_line": 999,
+      "text": "4.\nintegration suite",
+      "matrix_requirement_ids": [
+        "V.04-INTEGRATION_SUITE"
+      ]
+    },
+    {
+      "source_id": "SRC-L1001-L1002",
+      "section": "V",
+      "source_start_line": 1001,
+      "source_end_line": 1002,
+      "text": "5.\nsynthetic data verification",
+      "matrix_requirement_ids": [
+        "V.05-SYNTHETIC_DATA"
+      ]
+    },
+    {
+      "source_id": "SRC-L1004-L1005",
+      "section": "V",
+      "source_start_line": 1004,
+      "source_end_line": 1005,
+      "text": "6.\ncanonical replay test",
+      "matrix_requirement_ids": [
+        "V.06-CANONICAL_REPLAY"
+      ]
+    },
+    {
+      "source_id": "SRC-L1007-L1008",
+      "section": "V",
+      "source_start_line": 1007,
+      "source_end_line": 1008,
+      "text": "7.\ncanonical manifest verification",
+      "matrix_requirement_ids": [
+        "V.07-CANONICAL_MANIFEST"
+      ]
+    },
+    {
+      "source_id": "SRC-L1010-L1011",
+      "section": "V",
+      "source_start_line": 1010,
+      "source_end_line": 1011,
+      "text": "8.\nRQ analysis known-answer tests",
+      "matrix_requirement_ids": [
+        "V.08-RQ_KNOWN_ANSWER"
+      ]
+    },
+    {
+      "source_id": "SRC-L1013-L1014",
+      "section": "V",
+      "source_start_line": 1013,
+      "source_end_line": 1014,
+      "text": "9.\nreport metadata verification",
+      "matrix_requirement_ids": [
+        "V.09-REPORT_METADATA"
+      ]
+    },
+    {
+      "source_id": "SRC-L1016-L1017",
+      "section": "V",
+      "source_start_line": 1016,
+      "source_end_line": 1017,
+      "text": "10.\npresentation regression tests",
+      "matrix_requirement_ids": [
+        "V.10-PRESENTATION_REGRESSION"
+      ]
+    },
+    {
+      "source_id": "SRC-L1019-L1020",
+      "section": "V",
+      "source_start_line": 1019,
+      "source_end_line": 1020,
+      "text": "11.\npath/secret scanner",
+      "matrix_requirement_ids": [
+        "V.11-PATH_SECRET_SCANNER"
+      ]
+    },
+    {
+      "source_id": "SRC-L1022-L1023",
+      "section": "V",
+      "source_start_line": 1022,
+      "source_end_line": 1023,
+      "text": "12.\ncross-artifact consistency test",
+      "matrix_requirement_ids": [
+        "V.12-CROSS_ARTIFACT_TEST"
+      ]
+    },
+    {
+      "source_id": "SRC-L1025-L1026",
+      "section": "V",
+      "source_start_line": 1025,
+      "source_end_line": 1026,
+      "text": "13.\nterminal validator",
+      "matrix_requirement_ids": [
+        "V.13-TERMINAL_VALIDATOR"
+      ]
+    },
+    {
+      "source_id": "SRC-L1028-L1028",
+      "section": "V",
+      "source_start_line": 1028,
+      "source_end_line": 1028,
+      "text": "Kh\u00f4ng d\u00f9ng `pytest passed` chung chung.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1030-L1037",
+      "section": "V",
+      "source_start_line": 1030,
+      "source_end_line": 1037,
+      "text": "Ghi ch\u00ednh x\u00e1c:\n- command;\n- commit;\n- count;\n- skipped;\n- deselected;\n- duration;\n- exit code.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1040-L1040",
+      "section": "W",
+      "source_start_line": 1040,
+      "source_end_line": 1040,
+      "text": "W. CI",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L1043-L1043",
+      "section": "W",
+      "source_start_line": 1043,
+      "source_end_line": 1043,
+      "text": "Push FINAL_CANDIDATE_SHA.",
+      "matrix_requirement_ids": [
+        "W.01-GITHUB_CI_GREEN"
+      ]
+    },
+    {
+      "source_id": "SRC-L1045-L1045",
+      "section": "W",
+      "source_start_line": 1045,
+      "source_end_line": 1045,
+      "text": "\u0110\u1ee3i/check GitHub CI.",
+      "matrix_requirement_ids": [
+        "W.01-GITHUB_CI_GREEN"
+      ]
+    },
+    {
+      "source_id": "SRC-L1047-L1047",
+      "section": "W",
+      "source_start_line": 1047,
+      "source_end_line": 1047,
+      "text": "Required checks ph\u1ea3i xanh.",
+      "matrix_requirement_ids": [
+        "W.01-GITHUB_CI_GREEN"
+      ]
+    },
+    {
+      "source_id": "SRC-L1049-L1054",
+      "section": "W",
+      "source_start_line": 1049,
+      "source_end_line": 1054,
+      "text": "N\u1ebfu fail:\n- inspect;\n- reproduce;\n- fix;\n- push;\n- rerun.",
+      "matrix_requirement_ids": [
+        "W.01-GITHUB_CI_GREEN"
+      ]
+    },
+    {
+      "source_id": "SRC-L1056-L1056",
+      "section": "W",
+      "source_start_line": 1056,
+      "source_end_line": 1056,
+      "text": "L\u1eb7p l\u1ea1i cho \u0111\u1ebfn khi xanh.",
+      "matrix_requirement_ids": [
+        "W.01-GITHUB_CI_GREEN"
+      ]
+    },
+    {
+      "source_id": "SRC-L1058-L1058",
+      "section": "W",
+      "source_start_line": 1058,
+      "source_end_line": 1058,
+      "text": "Kh\u00f4ng b\u00e1o ho\u00e0n t\u1ea5t v\u1edbi pending CI.",
+      "matrix_requirement_ids": [
+        "W.01-GITHUB_CI_GREEN"
+      ]
+    },
+    {
+      "source_id": "SRC-L1061-L1061",
+      "section": "X",
+      "source_start_line": 1061,
+      "source_end_line": 1061,
+      "text": "X. FINAL HUMAN REVIEW PACKAGE",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L1064-L1064",
+      "section": "X",
+      "source_start_line": 1064,
+      "source_end_line": 1064,
+      "text": "T\u1ea1o:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1066-L1066",
+      "section": "X",
+      "source_start_line": 1066,
+      "source_end_line": 1066,
+      "text": "`reports/evidence/FINAL_REVIEW_PACKAGE.md`",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1068-L1068",
+      "section": "X",
+      "source_start_line": 1068,
+      "source_end_line": 1068,
+      "text": "N\u1ed9i dung:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1070-L1074",
+      "section": "X",
+      "source_start_line": 1070,
+      "source_end_line": 1074,
+      "text": "## Repository State\n- main SHA\n- final candidate SHA\n- branch\n- PR",
+      "matrix_requirement_ids": [
+        "X.01-REPO_STATE"
+      ]
+    },
+    {
+      "source_id": "SRC-L1076-L1081",
+      "section": "X",
+      "source_start_line": 1076,
+      "source_end_line": 1081,
+      "text": "## Canonical Experiment\n- run_id\n- 6400 records\n- 6401 attempts\n- status counts\n- cost",
+      "matrix_requirement_ids": [
+        "X.02-CANONICAL_EXP"
+      ]
+    },
+    {
+      "source_id": "SRC-L1083-L1087",
+      "section": "X",
+      "source_start_line": 1083,
+      "source_end_line": 1087,
+      "text": "## Scientific Results\n- RQ1\n- RQ2\n- RQ3\n- statistics",
+      "matrix_requirement_ids": [
+        "X.03-SCIENTIFIC_RES"
+      ]
+    },
+    {
+      "source_id": "SRC-L1089-L1095",
+      "section": "X",
+      "source_start_line": 1089,
+      "source_end_line": 1095,
+      "text": "## Artifacts\n- report md/docx\n- slides\n- figures\n- canonical bundle\n- public manifest\n- reproducibility guide",
+      "matrix_requirement_ids": [
+        "X.04-ARTIFACTS"
+      ]
+    },
+    {
+      "source_id": "SRC-L1097-L1102",
+      "section": "X",
+      "source_start_line": 1097,
+      "source_end_line": 1102,
+      "text": "## Verification\n- tests\n- CI\n- offline replay\n- zero egress\n- hash verification",
+      "matrix_requirement_ids": [
+        "X.05-VERIFICATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L1104-L1104",
+      "section": "X",
+      "source_start_line": 1104,
+      "source_end_line": 1104,
+      "text": "## Remaining Known Limitations",
+      "matrix_requirement_ids": [
+        "X.06-LIMITATIONS"
+      ]
+    },
+    {
+      "source_id": "SRC-L1106-L1106",
+      "section": "X",
+      "source_start_line": 1106,
+      "source_end_line": 1106,
+      "text": "## Merge Recommendation",
+      "matrix_requirement_ids": [
+        "X.07-MERGE_RECOMMENDATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L1108-L1108",
+      "section": "X",
+      "source_start_line": 1108,
+      "source_end_line": 1108,
+      "text": "Kh\u00f4ng d\u00f9ng t\u1eeb PASS n\u1ebfu c\u00f2n blocker.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1111-L1111",
+      "section": "Y",
+      "source_start_line": 1111,
+      "source_end_line": 1111,
+      "text": "Y. MERGE / FINALIZE",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L1114-L1115",
+      "section": "Y",
+      "source_start_line": 1114,
+      "source_end_line": 1115,
+      "text": "N\u1ebfu policy y\u00eau c\u1ea7u human authorization:\nD\u1eeaNG tr\u01b0\u1edbc merge v\u00e0o main.",
+      "matrix_requirement_ids": [
+        "Y.01-READY_FOR_MERGE_GATE"
+      ]
+    },
+    {
+      "source_id": "SRC-L1117-L1117",
+      "section": "Y",
+      "source_start_line": 1117,
+      "source_end_line": 1117,
+      "text": "B\u00e1o:",
+      "matrix_requirement_ids": [
+        "Y.01-READY_FOR_MERGE_GATE"
+      ]
+    },
+    {
+      "source_id": "SRC-L1119-L1119",
+      "section": "Y",
+      "source_start_line": 1119,
+      "source_end_line": 1119,
+      "text": "`READY_FOR_HUMAN_FINAL_MERGE`",
+      "matrix_requirement_ids": [
+        "Y.01-READY_FOR_MERGE_GATE"
+      ]
+    },
+    {
+      "source_id": "SRC-L1121-L1121",
+      "section": "Y",
+      "source_start_line": 1121,
+      "source_end_line": 1121,
+      "text": "v\u00e0 cung c\u1ea5p exact PR/SHA.",
+      "matrix_requirement_ids": [
+        "Y.01-READY_FOR_MERGE_GATE"
+      ]
+    },
+    {
+      "source_id": "SRC-L1123-L1123",
+      "section": "Y",
+      "source_start_line": 1123,
+      "source_end_line": 1123,
+      "text": "N\u1ebfu \u0111\u00e3 \u0111\u01b0\u1ee3c human authorize merge:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1125-L1125",
+      "section": "Y",
+      "source_start_line": 1125,
+      "source_end_line": 1125,
+      "text": "merge final PR.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1127-L1127",
+      "section": "Y",
+      "source_start_line": 1127,
+      "source_end_line": 1127,
+      "text": "Sau merge:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1129-L1129",
+      "section": "Y",
+      "source_start_line": 1129,
+      "source_end_line": 1129,
+      "text": "fetch main.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1131-L1131",
+      "section": "Y",
+      "source_start_line": 1131,
+      "source_end_line": 1131,
+      "text": "X\u00e1c minh exact merged SHA.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1133-L1133",
+      "section": "Y",
+      "source_start_line": 1133,
+      "source_end_line": 1133,
+      "text": "Ch\u1ea1y minimum post-merge verification.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1136-L1136",
+      "section": "Z",
+      "source_start_line": 1136,
+      "source_end_line": 1136,
+      "text": "Z. POST-MERGE CLEANUP",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L1139-L1139",
+      "section": "Z",
+      "source_start_line": 1139,
+      "source_end_line": 1139,
+      "text": "Sau khi final main verified:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1141-L1146",
+      "section": "Z",
+      "source_start_line": 1141,
+      "source_end_line": 1146,
+      "text": "- close superseded PRs;\n- ghi l\u00fd do closure;\n- delete obsolete remote branches n\u1ebfu an to\u00e0n;\n- \u0111\u1ea3m b\u1ea3o README \u0111\u00fang;\n- \u0111\u1ea3m b\u1ea3o links kh\u00f4ng broken;\n- ensure no stale \u201cTODO\u201d, \u201cscaffold\u201d, \u201cawaiting results\u201d.",
+      "matrix_requirement_ids": [
+        "Z.01-POST_MERGE_CLEANUP"
+      ]
+    },
+    {
+      "source_id": "SRC-L1148-L1148",
+      "section": "Z",
+      "source_start_line": 1148,
+      "source_end_line": 1148,
+      "text": "Kh\u00f4ng x\u00f3a historical evidence.",
+      "matrix_requirement_ids": [
+        "Z.01-POST_MERGE_CLEANUP"
+      ]
+    },
+    {
+      "source_id": "SRC-L1151-L1151",
+      "section": "AA",
+      "source_start_line": 1151,
+      "source_end_line": 1151,
+      "text": "AA. RELEASE",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L1154-L1154",
+      "section": "AA",
+      "source_start_line": 1154,
+      "source_end_line": 1154,
+      "text": "N\u1ebfu \u0111\u01b0\u1ee3c ph\u00e9p:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1156-L1156",
+      "section": "AA",
+      "source_start_line": 1156,
+      "source_end_line": 1156,
+      "text": "tag:",
+      "matrix_requirement_ids": [
+        "AA.01-RELEASE_TAG"
+      ]
+    },
+    {
+      "source_id": "SRC-L1158-L1158",
+      "section": "AA",
+      "source_start_line": 1158,
+      "source_end_line": 1158,
+      "text": "`v1.0.0-rag2attck-study`",
+      "matrix_requirement_ids": [
+        "AA.01-RELEASE_TAG"
+      ]
+    },
+    {
+      "source_id": "SRC-L1160-L1160",
+      "section": "AA",
+      "source_start_line": 1160,
+      "source_end_line": 1160,
+      "text": "Ho\u1eb7c naming ph\u00f9 h\u1ee3p existing convention.",
+      "matrix_requirement_ids": [
+        "AA.01-RELEASE_TAG"
+      ]
+    },
+    {
+      "source_id": "SRC-L1162-L1162",
+      "section": "AA",
+      "source_start_line": 1162,
+      "source_end_line": 1162,
+      "text": "Release notes ph\u1ea3i n\u00eau:",
+      "matrix_requirement_ids": [
+        "AA.01-RELEASE_TAG"
+      ]
+    },
+    {
+      "source_id": "SRC-L1164-L1170",
+      "section": "AA",
+      "source_start_line": 1164,
+      "source_end_line": 1170,
+      "text": "- benchmark scope;\n- final SHA;\n- run ID;\n- headline result;\n- limitations;\n- reproduction instructions;\n- artifact hashes.",
+      "matrix_requirement_ids": [
+        "AA.01-RELEASE_TAG"
+      ]
+    },
+    {
+      "source_id": "SRC-L1172-L1172",
+      "section": "AA",
+      "source_start_line": 1172,
+      "source_end_line": 1172,
+      "text": "Kh\u00f4ng g\u1ecdi \u0111\u00e2y l\u00e0 production security product.",
+      "matrix_requirement_ids": [
+        "AA.01-RELEASE_TAG"
+      ]
+    },
+    {
+      "source_id": "SRC-L1175-L1175",
+      "section": "AB",
+      "source_start_line": 1175,
+      "source_end_line": 1175,
+      "text": "AB. DEFINITION OF DONE",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L1178-L1178",
+      "section": "AB",
+      "source_start_line": 1178,
+      "source_end_line": 1178,
+      "text": "Ch\u1ec9 b\u00e1o:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1180-L1180",
+      "section": "AB",
+      "source_start_line": 1180,
+      "source_end_line": 1180,
+      "text": "`PROJECT FINAL \u2014 PASS`",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1182-L1182",
+      "section": "AB",
+      "source_start_line": 1182,
+      "source_end_line": 1182,
+      "text": "khi T\u1ea4T C\u1ea2 \u0111i\u1ec1u sau \u0111\u00fang:",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1184-L1208",
+      "section": "AB",
+      "source_start_line": 1184,
+      "source_end_line": 1208,
+      "text": "[ ] canonical 6400/6400 verified\n[ ] 6401 attempts reconciled\n[ ] terminal evidence verified\n[ ] ledger reconciled\n[ ] budget safe\n[ ] canonical metric bundle frozen\n[ ] RQ1 verified\n[ ] RQ2 verified\n[ ] RQ3 verified\n[ ] report final\n[ ] DOCX final\n[ ] figures final\n[ ] tables final\n[ ] slides final\n[ ] reproduction works from clean clone\n[ ] zero provider calls during reproduction\n[ ] no secrets/private paths\n[ ] cross-artifact numbers match\n[ ] all tests pass\n[ ] CI pass at final exact SHA\n[ ] PR integration resolved\n[ ] main contains final state\n[ ] superseded PRs cleaned\n[ ] final evidence package committed\n[ ] release/tag completed or explicitly deferred by human",
+      "matrix_requirement_ids": [
+        "DOD-01",
+        "DOD-02",
+        "DOD-03",
+        "DOD-04",
+        "DOD-05",
+        "DOD-06",
+        "DOD-07",
+        "DOD-08",
+        "DOD-09",
+        "DOD-10",
+        "DOD-11",
+        "DOD-12",
+        "DOD-13",
+        "DOD-14",
+        "DOD-15",
+        "DOD-16",
+        "DOD-17",
+        "DOD-18",
+        "DOD-19",
+        "DOD-20",
+        "DOD-21",
+        "DOD-22",
+        "DOD-23",
+        "DOD-24",
+        "DOD-25"
+      ]
+    },
+    {
+      "source_id": "SRC-L1210-L1211",
+      "section": "AB",
+      "source_start_line": 1210,
+      "source_end_line": 1211,
+      "text": "N\u1ebfu b\u1ea5t k\u1ef3 \u00f4 n\u00e0o ch\u01b0a \u0111\u1ea1t:\nKH\u00d4NG g\u1ecdi project FINAL.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1214-L1214",
+      "section": "AC",
+      "source_start_line": 1214,
+      "source_end_line": 1214,
+      "text": "AC. SELF-CORRECTION LOOP",
+      "matrix_requirement_ids": [
+        "STRUCTURAL_HEADING"
+      ],
+      "block_type": "structural_heading"
+    },
+    {
+      "source_id": "SRC-L1217-L1217",
+      "section": "AC",
+      "source_start_line": 1217,
+      "source_end_line": 1217,
+      "text": "Sau m\u1ed7i phase:",
+      "matrix_requirement_ids": [
+        "AC.01-SELF_CORRECTION"
+      ]
+    },
+    {
+      "source_id": "SRC-L1219-L1224",
+      "section": "AC",
+      "source_start_line": 1219,
+      "source_end_line": 1224,
+      "text": "1. run tests;\n2. inspect failures;\n3. identify root cause;\n4. repair;\n5. rerun;\n6. compare acceptance criteria.",
+      "matrix_requirement_ids": [
+        "AC.01-SELF_CORRECTION"
+      ]
+    },
+    {
+      "source_id": "SRC-L1226-L1226",
+      "section": "AC",
+      "source_start_line": 1226,
+      "source_end_line": 1226,
+      "text": "Max fix rounds kh\u00f4ng gi\u1edbi h\u1ea1n nh\u00e2n t\u1ea1o n\u1ebfu v\u1eabn c\u00f2n l\u1ed7i c\u00f3 th\u1ec3 s\u1eeda.",
+      "matrix_requirement_ids": [
+        "AC.01-SELF_CORRECTION"
+      ]
+    },
+    {
+      "source_id": "SRC-L1228-L1228",
+      "section": "AC",
+      "source_start_line": 1228,
+      "source_end_line": 1228,
+      "text": "Kh\u00f4ng \u201cwaive\u201d test ch\u1ec9 \u0111\u1ec3 pass.",
+      "matrix_requirement_ids": [
+        "AC.01-SELF_CORRECTION"
+      ]
+    },
+    {
+      "source_id": "SRC-L1230-L1231",
+      "section": "AC",
+      "source_start_line": 1230,
+      "source_end_line": 1231,
+      "text": "N\u1ebfu skip:\nph\u1ea3i gi\u1ea3i th\u00edch skip thu\u1ed9c environment hay product defect.",
+      "matrix_requirement_ids": [
+        "AC.01-SELF_CORRECTION"
+      ]
+    },
+    {
+      "source_id": "SRC-L1234-L1234",
+      "section": "AD",
+      "source_start_line": 1234,
+      "source_end_line": 1234,
+      "text": "AD. REVIEWER ESCALATION",
+      "matrix_requirement_ids": [
+        "AD.01-REVIEWER_ESCALATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L1237-L1237",
+      "section": "AD",
+      "source_start_line": 1237,
+      "source_end_line": 1237,
+      "text": "N\u1ebfu c\u00f3 m\u1ed9t quy\u1ebft \u0111\u1ecbnh kh\u00f4ng ch\u1eafc ch\u1eafn v\u1ec1:",
+      "matrix_requirement_ids": [
+        "AD.01-REVIEWER_ESCALATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L1239-L1244",
+      "section": "AD",
+      "source_start_line": 1239,
+      "source_end_line": 1244,
+      "text": "- scientific validity;\n- metric interpretation;\n- protocol mutation;\n- ground-truth handling;\n- canonical data integrity;\n- whether evidence \u0111\u1ee7 \u0111\u1ec3 PASS;",
+      "matrix_requirement_ids": [
+        "AD.01-REVIEWER_ESCALATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L1246-L1246",
+      "section": "AD",
+      "source_start_line": 1246,
+      "source_end_line": 1246,
+      "text": "kh\u00f4ng t\u1ef1 suy \u0111o\u00e1n.",
+      "matrix_requirement_ids": [
+        "AD.01-REVIEWER_ESCALATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L1248-L1248",
+      "section": "AD",
+      "source_start_line": 1248,
+      "source_end_line": 1248,
+      "text": "Chu\u1ea9n b\u1ecb evidence package v\u00e0 h\u1ecfi reviewer.",
+      "matrix_requirement_ids": [
+        "AD.01-REVIEWER_ESCALATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L1250-L1250",
+      "section": "AD",
+      "source_start_line": 1250,
+      "source_end_line": 1250,
+      "text": "Reviewer ch\u1ec9 \u0111\u01b0\u1ee3c \u0111\u00e1nh gi\u00e1 d\u1ef1a tr\u00ean GitHub evidence.",
+      "matrix_requirement_ids": [
+        "AD.01-REVIEWER_ESCALATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L1252-L1252",
+      "section": "AD",
+      "source_start_line": 1252,
+      "source_end_line": 1252,
+      "text": "B\u1ea1n c\u00f3 quy\u1ec1n ph\u1ea3n bi\u1ec7n reviewer n\u1ebfu c\u00f3 GitHub evidence r\u00f5 r\u00e0ng.",
+      "matrix_requirement_ids": [
+        "AD.01-REVIEWER_ESCALATION"
+      ]
+    },
+    {
+      "source_id": "SRC-L1255-L1255",
+      "section": "AE",
+      "source_start_line": 1255,
+      "source_end_line": 1255,
+      "text": "AE. FINAL RESPONSE FORMAT",
+      "matrix_requirement_ids": [
+        "AE.01-RESPONSE_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L1258-L1258",
+      "section": "AE",
+      "source_start_line": 1258,
+      "source_end_line": 1258,
+      "text": "Khi ho\u00e0n t\u1ea5t, b\u00e1o theo \u0111\u00fang format:",
+      "matrix_requirement_ids": [
+        "AE.01-RESPONSE_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L1260-L1261",
+      "section": "AE",
+      "source_start_line": 1260,
+      "source_end_line": 1261,
+      "text": "FINAL_STATUS:\nPASS / FAIL / READY_FOR_HUMAN_FINAL_MERGE",
+      "matrix_requirement_ids": [
+        "AE.01-RESPONSE_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L1263-L1264",
+      "section": "AE",
+      "source_start_line": 1263,
+      "source_end_line": 1264,
+      "text": "FINAL_SHA:\n<sha>",
+      "matrix_requirement_ids": [
+        "AE.01-RESPONSE_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L1266-L1267",
+      "section": "AE",
+      "source_start_line": 1266,
+      "source_end_line": 1267,
+      "text": "MAIN_SHA:\n<sha>",
+      "matrix_requirement_ids": [
+        "AE.01-RESPONSE_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L1269-L1270",
+      "section": "AE",
+      "source_start_line": 1269,
+      "source_end_line": 1270,
+      "text": "FINAL_PR:\n<#>",
+      "matrix_requirement_ids": [
+        "AE.01-RESPONSE_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L1272-L1279",
+      "section": "AE",
+      "source_start_line": 1272,
+      "source_end_line": 1279,
+      "text": "CANONICAL_RUN:\nrun_id:\nrecords:\nattempts:\nVALID:\nINCOMPLETE:\nsettled_cost:\ntotal_accounted:",
+      "matrix_requirement_ids": [
+        "AE.01-RESPONSE_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L1281-L1286",
+      "section": "AE",
+      "source_start_line": 1281,
+      "source_end_line": 1286,
+      "text": "RQ1:\nNo-RAG:\nRAG-k10:\nDelta:\n95% CI:\nMcNemar p:",
+      "matrix_requirement_ids": [
+        "AE.01-RESPONSE_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L1288-L1292",
+      "section": "AE",
+      "source_start_line": 1288,
+      "source_end_line": 1292,
+      "text": "RQ2:\nHit@10:\nretrieval_miss:\nAcc | retrieved:\nAcc | missed:",
+      "matrix_requirement_ids": [
+        "AE.01-RESPONSE_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L1294-L1295",
+      "section": "AE",
+      "source_start_line": 1294,
+      "source_end_line": 1295,
+      "text": "RQ3:\nbrief cost/latency tradeoff summary",
+      "matrix_requirement_ids": [
+        "AE.01-RESPONSE_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L1297-L1299",
+      "section": "AE",
+      "source_start_line": 1297,
+      "source_end_line": 1299,
+      "text": "REPORT:\npath\nhash",
+      "matrix_requirement_ids": [
+        "AE.01-RESPONSE_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L1301-L1303",
+      "section": "AE",
+      "source_start_line": 1301,
+      "source_end_line": 1303,
+      "text": "PRESENTATION:\npath\nhash",
+      "matrix_requirement_ids": [
+        "AE.01-RESPONSE_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L1305-L1307",
+      "section": "AE",
+      "source_start_line": 1305,
+      "source_end_line": 1307,
+      "text": "CANONICAL_BUNDLE:\npath\nhash",
+      "matrix_requirement_ids": [
+        "AE.01-RESPONSE_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L1309-L1312",
+      "section": "AE",
+      "source_start_line": 1309,
+      "source_end_line": 1312,
+      "text": "REPRODUCTION:\ncommand\nresult\nattempted_egress",
+      "matrix_requirement_ids": [
+        "AE.01-RESPONSE_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L1314-L1315",
+      "section": "AE",
+      "source_start_line": 1314,
+      "source_end_line": 1315,
+      "text": "TESTS:\ncommands + counts",
+      "matrix_requirement_ids": [
+        "AE.01-RESPONSE_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L1317-L1318",
+      "section": "AE",
+      "source_start_line": 1317,
+      "source_end_line": 1318,
+      "text": "CI:\nrun URLs + results",
+      "matrix_requirement_ids": [
+        "AE.01-RESPONSE_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L1320-L1321",
+      "section": "AE",
+      "source_start_line": 1320,
+      "source_end_line": 1321,
+      "text": "PR CLEANUP:\nstatus of #24\u2013#29",
+      "matrix_requirement_ids": [
+        "AE.01-RESPONSE_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L1323-L1324",
+      "section": "AE",
+      "source_start_line": 1323,
+      "source_end_line": 1324,
+      "text": "KNOWN LIMITATIONS:\n...",
+      "matrix_requirement_ids": [
+        "AE.01-RESPONSE_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L1326-L1327",
+      "section": "AE",
+      "source_start_line": 1326,
+      "source_end_line": 1327,
+      "text": "BLOCKERS:\nnone / list",
+      "matrix_requirement_ids": [
+        "AE.01-RESPONSE_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L1329-L1330",
+      "section": "AE",
+      "source_start_line": 1329,
+      "source_end_line": 1330,
+      "text": "NEXT HUMAN ACTION:\nnone / exact required action",
+      "matrix_requirement_ids": [
+        "AE.01-RESPONSE_FORMAT"
+      ]
+    },
+    {
+      "source_id": "SRC-L1333-L1333",
+      "section": "AF",
+      "source_start_line": 1333,
+      "source_end_line": 1333,
+      "text": "AF. PRIORITY ORDER",
+      "matrix_requirement_ids": [
+        "AF.01-PRIORITY_ORDER"
+      ]
+    },
+    {
+      "source_id": "SRC-L1336-L1336",
+      "section": "AF",
+      "source_start_line": 1336,
+      "source_end_line": 1336,
+      "text": "\u01afu ti\u00ean tuy\u1ec7t \u0111\u1ed1i:",
+      "matrix_requirement_ids": [
+        "AF.01-PRIORITY_ORDER"
+      ]
+    },
+    {
+      "source_id": "SRC-L1338-L1345",
+      "section": "AF",
+      "source_start_line": 1338,
+      "source_end_line": 1345,
+      "text": "P0 \u2014 Canonical integrity\nP1 \u2014 Scientific correctness\nP2 \u2014 Reproducibility\nP3 \u2014 Cross-artifact consistency\nP4 \u2014 Report completeness\nP5 \u2014 Presentation quality\nP6 \u2014 GitHub cleanliness\nP7 \u2014 Cosmetic polish",
+      "matrix_requirement_ids": [
+        "AF.01-PRIORITY_ORDER"
+      ]
+    },
+    {
+      "source_id": "SRC-L1347-L1347",
+      "section": "AF",
+      "source_start_line": 1347,
+      "source_end_line": 1347,
+      "text": "Kh\u00f4ng hy sinh P0\u2013P3 \u0111\u1ec3 l\u00e0m \u0111\u1eb9p P4\u2013P7.",
+      "matrix_requirement_ids": [
+        "AF.01-PRIORITY_ORDER"
+      ]
+    },
+    {
+      "source_id": "SRC-L1349-L1349",
+      "section": "AF",
+      "source_start_line": 1349,
+      "source_end_line": 1349,
+      "text": "B\u1eaeT \u0110\u1ea6U NGAY T\u1eea PHASE 0.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1351-L1351",
+      "section": "AF",
+      "source_start_line": 1351,
+      "source_end_line": 1351,
+      "text": "Kh\u00f4ng h\u1ecfi human nh\u1eefng th\u1ee9 c\u00f3 th\u1ec3 x\u00e1c minh tr\u1ef1c ti\u1ebfp t\u1eeb repository.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1353-L1353",
+      "section": "AF",
+      "source_start_line": 1353,
+      "source_end_line": 1353,
+      "text": "Kh\u00f4ng d\u1eebng \u1edf vi\u1ec7c \u0111\u01b0a k\u1ebf ho\u1ea1ch.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1355-L1355",
+      "section": "AF",
+      "source_start_line": 1355,
+      "source_end_line": 1355,
+      "text": "Th\u1ef1c thi k\u1ebf ho\u1ea1ch.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1357-L1357",
+      "section": "AF",
+      "source_start_line": 1357,
+      "source_end_line": 1357,
+      "text": "N\u1ebfu ph\u00e1t hi\u1ec7n l\u1ed7i, s\u1eeda v\u00e0 ch\u1ea1y l\u1ea1i.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    },
+    {
+      "source_id": "SRC-L1359-L1362",
+      "section": "AF",
+      "source_start_line": 1359,
+      "source_end_line": 1362,
+      "text": "Ch\u1ec9 quay l\u1ea1i human khi:\n- c\u1ea7n authorization;\n- c\u1ea7n thay frozen scientific decision;\n- ho\u1eb7c \u0111\u00e3 \u0111\u1ea1t READY_FOR_HUMAN_FINAL_MERGE / PROJECT FINAL.",
+      "matrix_requirement_ids": [
+        "CONTEXTUAL_GUIDELINE"
+      ],
+      "block_type": "contextual_prose"
+    }
+  ],
+  "definition_of_done_items": [
+    {
+      "source_line": 1184,
+      "text": "[ ] canonical 6400/6400 verified"
+    },
+    {
+      "source_line": 1185,
+      "text": "[ ] 6401 attempts reconciled"
+    },
+    {
+      "source_line": 1186,
+      "text": "[ ] terminal evidence verified"
+    },
+    {
+      "source_line": 1187,
+      "text": "[ ] ledger reconciled"
+    },
+    {
+      "source_line": 1188,
+      "text": "[ ] budget safe"
+    },
+    {
+      "source_line": 1189,
+      "text": "[ ] canonical metric bundle frozen"
+    },
+    {
+      "source_line": 1190,
+      "text": "[ ] RQ1 verified"
+    },
+    {
+      "source_line": 1191,
+      "text": "[ ] RQ2 verified"
+    },
+    {
+      "source_line": 1192,
+      "text": "[ ] RQ3 verified"
+    },
+    {
+      "source_line": 1193,
+      "text": "[ ] report final"
+    },
+    {
+      "source_line": 1194,
+      "text": "[ ] DOCX final"
+    },
+    {
+      "source_line": 1195,
+      "text": "[ ] figures final"
+    },
+    {
+      "source_line": 1196,
+      "text": "[ ] tables final"
+    },
+    {
+      "source_line": 1197,
+      "text": "[ ] slides final"
+    },
+    {
+      "source_line": 1198,
+      "text": "[ ] reproduction works from clean clone"
+    },
+    {
+      "source_line": 1199,
+      "text": "[ ] zero provider calls during reproduction"
+    },
+    {
+      "source_line": 1200,
+      "text": "[ ] no secrets/private paths"
+    },
+    {
+      "source_line": 1201,
+      "text": "[ ] cross-artifact numbers match"
+    },
+    {
+      "source_line": 1202,
+      "text": "[ ] all tests pass"
+    },
+    {
+      "source_line": 1203,
+      "text": "[ ] CI pass at final exact SHA"
+    },
+    {
+      "source_line": 1204,
+      "text": "[ ] PR integration resolved"
+    },
+    {
+      "source_line": 1205,
+      "text": "[ ] main contains final state"
+    },
+    {
+      "source_line": 1206,
+      "text": "[ ] superseded PRs cleaned"
+    },
+    {
+      "source_line": 1207,
+      "text": "[ ] final evidence package committed"
+    },
+    {
+      "source_line": 1208,
+      "text": "[ ] release/tag completed or explicitly deferred by human"
+    }
+  ],
+  "instruction": "Every substantive source block must map to matrix IDs. Retain explicit figures/tables/report sections/metrics/tests as children. This source index assigns no verification status.",
+  "mapping_statistics": {
+    "total_blocks": 385,
+    "mapped_to_requirements": 269,
+    "structural_blocks": 37,
+    "contextual_blocks": 79,
+    "unmapped_blocks": 0
+  }
+}

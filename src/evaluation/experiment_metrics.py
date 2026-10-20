@@ -989,9 +989,7 @@ def verify_evaluator_provenance(
 
     # Model provenance drift check: all records with returned_model_id must match
     returned_models = {
-        r.get("returned_model_id")
-        for r in inputs.records
-        if r.get("returned_model_id") is not None
+        r.get("returned_model_id") for r in inputs.records if r.get("returned_model_id") is not None
     }
     if len(returned_models) > 1:
         models_str = sorted(returned_models)
@@ -1028,7 +1026,6 @@ def verify_evaluator_provenance(
                 raise ValueError(
                     f"timestamp tampering detected: response ({resp_ts}) before request ({req_ts})"
                 )
-
 
 
 def compute_condition_metrics(
@@ -1090,9 +1087,7 @@ def compute_condition_metrics(
         invalid_syntax_count / len(completed_records) if completed_records else None
     )
     unknown_id_count = len(unknown_id_records)
-    unknown_id_rate = (
-        unknown_id_count / len(completed_records) if completed_records else None
-    )
+    unknown_id_rate = unknown_id_count / len(completed_records) if completed_records else None
 
     provider_failure_records = [
         r
@@ -1164,9 +1159,7 @@ def compute_condition_metrics(
         support = sum(
             1 for r in scorable_records if tid in inputs.ground_truth.get(r["sample_id"], ())
         )
-        predictions = sum(
-            1 for r in scorable_records if r.get("parsed_technique_ids") == [tid]
-        )
+        predictions = sum(1 for r in scorable_records if r.get("parsed_technique_ids") == [tid])
         if support == 0 and predictions == 0:
             # Zero denominator per D2d/D2j: unobserved class contributes 0.0 to numerator sum
             f1 = 0.0
@@ -1696,9 +1689,7 @@ def validate_evaluator_compatibility(
         "attack_release"
     )
     if attack_release != "19.2":
-        raise ValueError(
-            f"Evaluator requires ATT&CK release 19.2, got '{attack_release}'"
-        )
+        raise ValueError(f"Evaluator requires ATT&CK release 19.2, got '{attack_release}'")
 
     # Validate required artifacts are present in plan
     plan_artifacts = getattr(plan, "artifacts", None)
@@ -1735,9 +1726,7 @@ def validate_evaluator_compatibility(
                         continue
                     row = json.loads(line)
                     if not isinstance(row, dict) or "technique_id" not in row:
-                        raise ValueError(
-                            f"Corpus snapshot line {line_idx} missing 'technique_id'"
-                        )
+                        raise ValueError(f"Corpus snapshot line {line_idx} missing 'technique_id'")
                     corpus_tids.add(row["technique_id"])
                 if len(corpus_tids) != 474:
                     raise ValueError(
@@ -1766,4 +1755,3 @@ def validate_evaluator_compatibility(
         "d3_model_version_policy": protocol.d3_model_version_policy,
         "artifacts_verified": sorted(required_evaluator_artifacts),
     }
-

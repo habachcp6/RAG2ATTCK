@@ -98,7 +98,10 @@ def _validate_split_manifest(
     missing = sorted(canonical - declared_ids)
     unknown = sorted(declared_ids - canonical)
     if missing or unknown:
-        raise ValueError(f"split manifest is not an exact partition: missing={missing[:3]}, unknown={unknown[:3]}")
+        raise ValueError(
+            f"split manifest is not an exact partition: missing={missing[:3]}, "
+            f"unknown={unknown[:3]}"
+        )
 
     disagreements = sorted(
         pair_id
@@ -202,13 +205,17 @@ def load_benchmark_views(
     if set(inference_by_id) != set(ground_truth_by_view):
         missing_gt = sorted(set(inference_by_id) - set(ground_truth_by_view))
         missing_input = sorted(set(ground_truth_by_view) - set(inference_by_id))
-        raise ValueError(f"benchmark join mismatch: missing_gt={missing_gt[:3]} missing_input={missing_input[:3]}")
+        raise ValueError(
+            f"benchmark join mismatch: missing_gt={missing_gt[:3]} "
+            f"missing_input={missing_input[:3]}"
+        )
 
     if set(inference_by_id) != set(views_by_id):
         missing_views = sorted(set(inference_by_id) - set(views_by_id))
         orphan_views = sorted(set(views_by_id) - set(inference_by_id))
         raise ValueError(
-            f"benchmark view join mismatch: missing_views={missing_views[:3]} orphan_views={orphan_views[:3]}"
+            f"benchmark view join mismatch: missing_views={missing_views[:3]} "
+            f"orphan_views={orphan_views[:3]}"
         )
 
     result: list[BenchmarkView] = []
@@ -245,7 +252,10 @@ def load_benchmark_views(
         for view in result:
             unknown = set(view.ground_truth_technique_ids) - corpus_ids
             if unknown:
-                raise ValueError(f"ground truth IDs absent from retrieval corpus for {view.sample_id}: {sorted(unknown)}")
+                raise ValueError(
+                    "ground truth IDs absent from retrieval corpus for "
+                    f"{view.sample_id}: {sorted(unknown)}"
+                )
 
     return result
 
@@ -292,15 +302,23 @@ def make_diagnostic_record(
     gt_ids = set(view.ground_truth_technique_ids)
     technique_ranks = {
         technique_id: next(
-            (candidate["rank"] for candidate in candidates if candidate["technique_id"] == technique_id),
+            (
+                candidate["rank"]
+                for candidate in candidates
+                if candidate["technique_id"] == technique_id
+            ),
             None,
         )
         for technique_id in view.ground_truth_technique_ids
     }
-    best_rank = min(
-        (rank for rank in technique_ranks.values() if rank is not None),
-        default=None,
-    ) if gt_ids else None
+    best_rank = (
+        min(
+            (rank for rank in technique_ranks.values() if rank is not None),
+            default=None,
+        )
+        if gt_ids
+        else None
+    )
     record: dict[str, Any] = {
         "sample_id": view.sample_id,
         "split": view.split,
@@ -318,19 +336,23 @@ def make_diagnostic_record(
         "hit_at_10": (bool(best_rank is not None and best_rank <= 10) if gt_ids else None),
         "recall_at_1": (
             sum(rank is not None and rank <= 1 for rank in technique_ranks.values()) / len(gt_ids)
-            if gt_ids else None
+            if gt_ids
+            else None
         ),
         "recall_at_3": (
             sum(rank is not None and rank <= 3 for rank in technique_ranks.values()) / len(gt_ids)
-            if gt_ids else None
+            if gt_ids
+            else None
         ),
         "recall_at_5": (
             sum(rank is not None and rank <= 5 for rank in technique_ranks.values()) / len(gt_ids)
-            if gt_ids else None
+            if gt_ids
+            else None
         ),
         "recall_at_10": (
             sum(rank is not None and rank <= 10 for rank in technique_ranks.values()) / len(gt_ids)
-            if gt_ids else None
+            if gt_ids
+            else None
         ),
         "corpus_sha256": provenance.get("corpus_sha256"),
         "index_sha256": provenance.get("index_sha256"),
@@ -367,7 +389,11 @@ def _metric_rows(
         # Compatibility key: it now has true multi-label recall semantics.
         metrics[f"recall_at_{k}"] = macro_recall
     if technique_id is None:
-        ranks = [row["ground_truth_best_rank"] for row in positive if row["ground_truth_best_rank"] is not None]
+        ranks = [
+            row["ground_truth_best_rank"]
+            for row in positive
+            if row["ground_truth_best_rank"] is not None
+        ]
     else:
         ranks = [technique_rank(row, technique_id) for row in positive]
         ranks = [rank for rank in ranks if rank is not None]
@@ -396,7 +422,9 @@ def calculate_metrics(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     positive = [record for record in records if record["ground_truth_technique_ids"]]
     negatives = [record for record in records if not record["ground_truth_technique_ids"]]
     per_technique: dict[str, Any] = {}
-    techniques = sorted({tid for record in positive for tid in record["ground_truth_technique_ids"]})
+    techniques = sorted(
+        {tid for record in positive for tid in record["ground_truth_technique_ids"]}
+    )
     for technique_id in techniques:
         per_technique[technique_id] = _metric_rows(
             [record for record in positive if technique_id in record["ground_truth_technique_ids"]],
@@ -415,7 +443,9 @@ def calculate_metrics(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         "per_technique": per_technique,
         "negative_diagnostics": {
             "samples": len(negatives),
-            "negative_samples_with_candidates": sum(bool(row["retrieved_candidates"]) for row in negatives),
+            "negative_samples_with_candidates": sum(
+                bool(row["retrieved_candidates"]) for row in negatives
+            ),
             "no_positive_ground_truth_for_recall": True,
         },
     }
@@ -442,7 +472,9 @@ def run_diagnostics(
     metrics_output.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8", newline="\n") as handle:
         for record in records:
-            handle.write(json.dumps(record, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+            handle.write(
+                json.dumps(record, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+            )
             handle.write("\n")
     metrics = calculate_metrics(records)
     metrics["provenance"] = {

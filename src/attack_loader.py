@@ -4,16 +4,14 @@ Handles acquiring Enterprise ATT&CK v19.2 STIX JSON, verifying checksums,
 building the immutable technique catalog, and performing transition audits.
 """
 
-from dataclasses import dataclass, asdict
-from datetime import datetime, timezone
 import hashlib
 import json
-import os
-from pathlib import Path
 import shutil
 import urllib.request
-from typing import Any, Dict, List, Optional, Set, Tuple
-
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
 ATTACK_VERSION = "19.2"
 ATTACK_REPO = "https://github.com/mitre-attack/attack-stix-data"
@@ -46,11 +44,12 @@ def download_attack_reference(
     target_dir: Optional[Path] = None,
     expected_size: int = EXPECTED_ATTACK_SIZE,
     expected_sha256: str = EXPECTED_ATTACK_SHA256,
-    chunk_size: int = 1024 * 1024
+    chunk_size: int = 1024 * 1024,
 ) -> Tuple[Path, str, int]:
     """
-    Downloads Enterprise ATT&CK v19.2 from immutable GitHub commit SHA to attack/raw/enterprise-v19.2/
-    using staging and verifies size and expected SHA-256 before moving to final destination.
+    Downloads Enterprise ATT&CK v19.2 from immutable GitHub commit SHA to
+    attack/raw/enterprise-v19.2/ using staging and verifies size and expected SHA-256
+    before moving to final destination.
     Returns (final_path, sha256_hash, file_size).
     """
     ws = workspace_root.resolve()
@@ -67,7 +66,9 @@ def download_attack_reference(
         if sha256 == expected_sha256:
             return target_file, sha256, target_file.stat().st_size
         else:
-            raise ValueError(f"Existing ATT&CK file SHA-256 mismatch: expected {expected_sha256}, got {sha256}")
+            raise ValueError(
+                f"Existing ATT&CK file SHA-256 mismatch: expected {expected_sha256}, got {sha256}"
+            )
 
     print(f"[*] Downloading ATT&CK v19.2 reference from immutable source {url}...")
     req = urllib.request.Request(url, headers={"User-Agent": "RAG2ATTCK-Pipeline/1.0"})
@@ -133,7 +134,6 @@ def parse_attack_bundle(stix_path: Path) -> Dict[str, AttackTechnique]:
                 revocation_map[source_ref] = target_ref
 
     # Second pass: attack patterns
-    attack_pattern_id_to_stix: Dict[str, str] = {}
     stix_to_technique_id: Dict[str, str] = {}
 
     for obj in objects:
@@ -202,7 +202,7 @@ def parse_attack_bundle(stix_path: Path) -> Dict[str, AttackTechnique]:
                 revoked_by=revoked_by_id,
                 created=created,
                 modified=modified,
-                url=url
+                url=url,
             )
             techniques[mitre_id] = tech
 
@@ -214,7 +214,7 @@ def generate_attack_manifest(
     stix_file: Path,
     sha256: str,
     file_size: int,
-    techniques: Dict[str, AttackTechnique]
+    techniques: Dict[str, AttackTechnique],
 ) -> Path:
     """
     Generates data/metadata/attack_manifest.json summarizing the ATT&CK release.
@@ -225,7 +225,8 @@ def generate_attack_manifest(
     manifest_file = meta_dir / "attack_manifest.json"
 
     windows_techniques = {
-        tid: t for tid, t in techniques.items()
+        tid: t
+        for tid, t in techniques.items()
         if "Windows" in t.platforms and not t.revoked and not t.deprecated
     }
 
@@ -244,17 +245,23 @@ def generate_attack_manifest(
         "stix_file": {
             "path": str(stix_file.relative_to(ws)).replace("\\", "/"),
             "size_bytes": file_size,
-            "sha256": sha256
+            "sha256": sha256,
         },
         "catalog_statistics": {
             "total_techniques_and_subtechniques": len(techniques),
             "revoked_count": sum(1 for t in techniques.values() if t.revoked),
             "deprecated_count": sum(1 for t in techniques.values() if t.deprecated),
-            "active_count": sum(1 for t in techniques.values() if not t.revoked and not t.deprecated),
+            "active_count": sum(
+                1 for t in techniques.values() if not t.revoked and not t.deprecated
+            ),
             "windows_active_count": len(windows_techniques),
-            "windows_root_techniques": sum(1 for t in windows_techniques.values() if not t.is_subtechnique),
-            "windows_subtechniques": sum(1 for t in windows_techniques.values() if t.is_subtechnique)
-        }
+            "windows_root_techniques": sum(
+                1 for t in windows_techniques.values() if not t.is_subtechnique
+            ),
+            "windows_subtechniques": sum(
+                1 for t in windows_techniques.values() if t.is_subtechnique
+            ),
+        },
     }
 
     with open(manifest_file, "w", encoding="utf-8") as f:

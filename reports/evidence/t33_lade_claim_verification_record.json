@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "record_id": "t33_lade_claim_verification_record_20261019",
-  "generated_at_utc": "2026-10-19T02:55:00Z",
+  "generated_at_utc": "2026-10-20T05:18:00Z",
   "comparator_id": "T33",
   "report_reference_number": 12,
   "citation": {
@@ -78,21 +78,31 @@
       ]
     },
     "context_window_and_segmentation": {
-      "verified_value": "Section 4.1 (Context Building, page 8): each segment is capped at up to 70% of the model's context window, using iterative sequence segmentation (sub-sequences of 400 code snippets; 300 for Mistral-Small-3.2-24B) with summary propagation for sequences exceeding LLM context windows. Section 5.2 (APT Detection, page 14): gpt-oss-120B, Llama-3.3-70B, and Mistral-Small-3.2-24B use a 128k token context window with an effective 70% segment limit of ~89,600 tokens (Gemini-2.5-Pro uses a 1M token context window without segmentation). Section 5.2 (page 15): 13.8% on page 15 is the 4-1 majority voting consensus rate across 5 runs (76.3% 5-0 consensus, 13.8% 4-1 consensus, 10% 3-2 split), not a token count. Full raw MITRE ATT&CK knowledge base exceeds practical context limits without LLM summarization or RAG (Section 2.2 page 3, Section 5.4 page 16, Section 7 page 20).",
+      "verified_value": "Section 4.1 (Context Building / Beyond LLM Context Windows, pages 7-8): sequences exceeding an LLM's context window are divided into multiple segments capped at 70% of the LLM's maximum context window (computed using the model's tokenizer, with segmentation boundaries adjusted to avoid splitting individual command-line entries or scripts) and processed iteratively with cumulative summary propagation. Section 5.2 (APT Detection, page 14): all sequences in the Caldera-derived dataset fit within the models' context windows without segmentation due to their smaller average size (Section 5.1); on the AVIATOR dataset, Mistral-Small-3.2-24B required segmentation for 12 sequences, gpt-oss-120B and Llama-3.3-70B required segmentation for 10 sequences each (all three having 128k windows and an effective 70% segment limit of ~89,600 tokens), and Gemini-2.5-Pro (1M window) required segmentation for only 6 AVIATOR sequences. Section 5.2 (page 15): 13.8% on page 15 is the 4-1 majority voting consensus rate across 5 runs (76.3% 5-0 unanimous consensus, 13.8% 4-1 strong consensus, 10% 3-2 split decisions), not a token count. Full raw MITRE ATT&CK knowledge base exceeds practical context limits without LLM summarization or RAG (Section 2.2 page 3, Section 5.4 page 16, Section 7 page 20).",
       "source_locations": [
         "Section 2.2 (Challenges in Applying LLMs to APT Detection), page 3",
-        "Section 4.1 (Context Building), page 8",
+        "Section 4.1 (Context Building / Beyond LLM Context Windows), pages 7-8",
         "Section 5.2 (APT Detection), pages 14-15",
         "Section 5.4 (TTP Mapping), page 16",
         "Section 7 (Conclusion), page 20"
       ],
+      "verbatim_excerpts": [
+        "To reserve space for the prompt and the iteratively updated context summary, segments are limited to 70% of the LLM's maximum context window. This threshold is computed using the model's tokenizer to ensure precise segment boundaries. Furthermore, segmentation boundaries are adjusted to avoid splitting individual command-line entries or scripts.",
+        "Several sequences from AVIATOR exceed the LLMs' context windows and were processed using the segment-based method described in Section 4. In contrast, all sequences in the Caldera-derived dataset fit within the context window due to their smaller average size (Section 5.1). Because each model uses a different tokenizer, the number of AVIATOR sequences requiring segmentation varies across LLMs. Mistral-Small-3.2-24B required segmentation for 12 sequences, compared to 10 for both gpt-oss-120B and Llama-3.3-70B (all with 128k windows and an effective segment limit of ~89,600 tokens). Gemini-2.5-Pro (1M window) required segmentation for only 6 sequences.",
+        "We have also analyzed the consistency of predictions across the five independent runs. On average, 76.3% of predictions were unanimous (5-0), 13.8% showed strong consensus (4-1), and 10% of cases resulted in split decisions (3-2)."
+      ],
       "context_window_parameters": {
-        "segment_cap_fraction_of_context_window": "70%",
+        "segment_cap_fraction_of_context_window": "70% (computed via each model's tokenizer; boundaries adjusted to avoid splitting individual commands/scripts)",
         "gpt_oss_120b_llama_3_3_70b_mistral_small_3_2_24b_context_window_tokens": "128k",
-        "effective_70_percent_segment_limit_tokens": "~89,600",
-        "gemini_2_5_pro_context_window_tokens": "1M (no segmentation required)",
-        "default_snippets_per_segment": 400,
-        "mistral_small_3_2_24b_snippets_per_segment": 300,
+        "effective_70_percent_segment_limit_tokens_128k_models": "~89,600",
+        "gemini_2_5_pro_context_window_tokens": "1M",
+        "caldera_derived_sequences_requiring_segmentation": 0,
+        "aviator_sequences_requiring_segmentation_by_model": {
+          "Mistral-Small-3.2-24B": 12,
+          "gpt-oss-120B": 10,
+          "Llama-3.3-70B": 10,
+          "Gemini-2.5-Pro": 6
+        },
         "majority_voting_5_run_consensus_rates_page_15": {
           "5_0_unanimous": "76.3%",
           "4_1_majority": "13.8%",
@@ -118,8 +128,8 @@
     },
     {
       "stage": 3,
-      "date": "2026-10-19",
-      "event": "Closeout Verification Pass: re-retrieved and cryptographically pinned the 28-page author manuscript PDF (LADE-2026.pdf, 3,819,792 bytes, SHA-256: 6e8384569254bc4cf82dd4d0191746907ff40fa76016275946651cf47d6f4985), reconciling every row of Table 1b (Primary Models, Primary Dataset, Retrieval Settings, Key Difference) and synchronizing all evidence records",
+      "date": "2026-10-19 / 2026-10-20",
+      "event": "Closeout Verification Pass: re-retrieved and cryptographically pinned the 28-page author manuscript PDF (LADE-2026.pdf, 3,819,792 bytes, SHA-256: 6e8384569254bc4cf82dd4d0191746907ff40fa76016275946651cf47d6f4985), reconciling every row of Table 1b (Primary Models, Primary Dataset, Retrieval Settings, Key Difference), verifying exact AVIATOR vs Caldera segmentation counts (§4.1 pp. 7-8, §5.2 p. 14), and synchronizing all evidence records",
       "artifact_sha256": "6e8384569254bc4cf82dd4d0191746907ff40fa76016275946651cf47d6f4985",
       "status": "FULL_TEXT_VERIFIED_ALL_CLAIMS_RECONCILED"
     }

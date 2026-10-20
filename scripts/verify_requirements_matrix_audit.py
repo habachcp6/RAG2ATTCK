@@ -35,9 +35,7 @@ GITHUB_URL_PATTERN = re.compile(
 )
 
 PINNED_RELEASE_ASSET_LOCATOR = "artifacts/packages/public_v4_candidate_20261003.zip"
-PINNED_RELEASE_ASSET_SHA256 = (
-    "1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1"
-)
+PINNED_RELEASE_ASSET_SHA256 = "1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1"
 EXPECTED_REQUIREMENTS_COUNT = 170
 REQUIRED_REQUIREMENT_KEYS = (
     "id",
@@ -47,6 +45,179 @@ REQUIRED_REQUIREMENT_KEYS = (
     "evidence_type",
     "final_candidate_status",
 )
+CANONICAL_REQUIREMENT_IDS = (
+    "A.01-RUN_ID",
+    "A.02-RECORD_COUNT",
+    "A.03-ATTEMPT_COUNT",
+    "A.04-STATUS_TAXONOMY",
+    "A.05-SETTLED_COST",
+    "A.06-TOTAL_ACCOUNTED",
+    "A.07-HEADLINE_STATS",
+    "A.08-CLAIM_BOUNDARIES",
+    "B.01-GITHUB_EVIDENCE",
+    "B.02-FAIL_CLOSED_VERDICT",
+    "C.01-NO_LIVE_EXPERIMENTS",
+    "C.02-IMMUTABLE_FROZEN_DATA",
+    "C.03-HUMAN_MERGE_AUTH",
+    "D.01-TRACK_A",
+    "D.02-TRACK_B",
+    "D.03-TRACK_C",
+    "D.04-TRACK_D",
+    "D.05-TRACK_E",
+    "D.06-TRACK_F",
+    "E.01-REMOTE_SNAPSHOT",
+    "E.02-PREFLIGHT_ARTIFACT",
+    "F.01-TERMINAL_RUN",
+    "F.02-PREDICTION_INVENTORY",
+    "F.03-ATTEMPT_ACCOUNTING",
+    "F.04-OUTCOME_TAXONOMY",
+    "F.05-LEDGER_RECONCILIATION",
+    "F.06-VALIDATOR_DEFECT_CODEX",
+    "F.07-VALIDATOR_EXECUTION",
+    "F.08-RAW_ARTIFACT_TRANSPARENCY",
+    "G.01-COHORTS_AND_DENOMINATORS",
+    "G.02-CANONICAL_METRIC_BUNDLE",
+    "H.01-RQ1_CONDITION_SWEEP",
+    "H.02-RQ1_MACRO_F1_474",
+    "H.03-RQ1_BOOTSTRAP_CI",
+    "H.04-RQ1_MCNEMAR",
+    "I.01-PROTOCOL_D2I_AXES",
+    "I.02-RQ2_EMPIRICAL_K10",
+    "I.03-RQ2_NON_CAUSAL_WORDING",
+    "J.01-RQ3_TRADE_OFF_TABLE",
+    "J.02-RQ3_COST_WORDING",
+    "K.01-PROVIDER_FAILURE_RETRY",
+    "K.02-INCOMPLETE_CEILING_ANALYSIS",
+    "K.03-INCOMPLETE_MAPPED_COHORT_EXCLUSION",
+    "L.SEC-01",
+    "L.SEC-02",
+    "L.SEC-03",
+    "L.SEC-04",
+    "L.SEC-05",
+    "L.SEC-06",
+    "L.SEC-07",
+    "L.SEC-08",
+    "L.SEC-09",
+    "L.SEC-10",
+    "L.SEC-11",
+    "L.SEC-12",
+    "L.SEC-13",
+    "L.SEC-14",
+    "L.SEC-15",
+    "L.SEC-16",
+    "L.SEC-17",
+    "L.SEC-18",
+    "L.SEC-19",
+    "L.SEC-20",
+    "L.SEC-21",
+    "L.SEC-22",
+    "L.SEC-23",
+    "L.SEC-24",
+    "L.SEC-25",
+    "L.SEC-26",
+    "L.SEC-27",
+    "L.SEC-28",
+    "L.SEC-29",
+    "L.SEC-30",
+    "L.DOCX_DELIVERY",
+    "M.01-SYNTHETIC_VS_LIVE",
+    "M.02-DENOMINATOR_DISCIPLINE",
+    "M.03-NON_CAUSAL_DISCIPLINE",
+    "M.04-NON_PRODUCTION_DISCIPLINE",
+    "N.01-PRIMARY_LITERATURE",
+    "O.FIG-01",
+    "O.FIG-02",
+    "O.FIG-03",
+    "O.FIG-04",
+    "O.FIG-05",
+    "O.FIG-06",
+    "O.FIG-07",
+    "O.FIG-08",
+    "O.TAB-01",
+    "O.TAB-02",
+    "O.TAB-03",
+    "O.TAB-04",
+    "O.TAB-05",
+    "O.TAB-06",
+    "O.GEN-01",
+    "P.VAL-77.99",
+    "P.VAL-79.53",
+    "P.VAL-pos_1.532",
+    "P.VAL-neg_2.355_pos_5.300",
+    "P.VAL-0.422",
+    "P.VAL-6400",
+    "P.VAL-6401",
+    "P.VAL-6387",
+    "P.VAL-13",
+    "P.VAL-6.57575890",
+    "P.VAL-6.62839900",
+    "P.VAL-19.99000000",
+    "P.VAL-718",
+    "P.VAL-311",
+    "P.VAL-251",
+    "P.VAL-474",
+    "Q.01-VIETNAMESE_DECK",
+    "Q.02-TYPOGRAPHY_AND_LAYOUT_QA",
+    "R.01-CLEAN_CLONE_REPRO",
+    "R.02-REPRO_VERDICT_ASSERTION",
+    "S.01-SECRETS_AND_PATHS_SCAN",
+    "T.01-PR_CLASSIFICATION_AND_ANCESTRY",
+    "U.01-DIFF_AUDIT",
+    "V.01-RUFF_CHECK",
+    "V.02-RUFF_FORMAT",
+    "V.03-OFFLINE_UNIT",
+    "V.04-INTEGRATION_SUITE",
+    "V.05-SYNTHETIC_DATA",
+    "V.06-CANONICAL_REPLAY",
+    "V.07-CANONICAL_MANIFEST",
+    "V.08-RQ_KNOWN_ANSWER",
+    "V.09-REPORT_METADATA",
+    "V.10-PRESENTATION_REGRESSION",
+    "V.11-PATH_SECRET_SCANNER",
+    "V.12-CROSS_ARTIFACT_TEST",
+    "V.13-TERMINAL_VALIDATOR",
+    "W.01-GITHUB_CI_GREEN",
+    "X.01-REPO_STATE",
+    "X.02-CANONICAL_EXP",
+    "X.03-SCIENTIFIC_RES",
+    "X.04-ARTIFACTS",
+    "X.05-VERIFICATION",
+    "X.06-LIMITATIONS",
+    "X.07-MERGE_RECOMMENDATION",
+    "Y.01-READY_FOR_MERGE_GATE",
+    "Z.01-POST_MERGE_CLEANUP",
+    "AA.01-RELEASE_TAG",
+    "DOD-01",
+    "DOD-02",
+    "DOD-03",
+    "DOD-04",
+    "DOD-05",
+    "DOD-06",
+    "DOD-07",
+    "DOD-08",
+    "DOD-09",
+    "DOD-10",
+    "DOD-11",
+    "DOD-12",
+    "DOD-13",
+    "DOD-14",
+    "DOD-15",
+    "DOD-16",
+    "DOD-17",
+    "DOD-18",
+    "DOD-19",
+    "DOD-20",
+    "DOD-21",
+    "DOD-22",
+    "DOD-23",
+    "DOD-24",
+    "DOD-25",
+    "AC.01-SELF_CORRECTION",
+    "AD.01-REVIEWER_ESCALATION",
+    "AE.01-RESPONSE_FORMAT",
+    "AF.01-PRIORITY_ORDER",
+)
+CANONICAL_REQUIREMENT_IDS_SET = frozenset(CANONICAL_REQUIREMENT_IDS)
 
 
 def _get_git_tracked_files(repo_root: Path) -> set[str] | None:
@@ -61,16 +232,16 @@ def _get_git_tracked_files(repo_root: Path) -> set[str] | None:
     )
     if proc.returncode != 0:
         return None
-    return {
-        line.strip().replace("\\", "/") for line in proc.stdout.splitlines() if line.strip()
-    }
+    return {line.strip().replace("\\", "/") for line in proc.stdout.splitlines() if line.strip()}
 
 
-def _commit_is_valid_ancestor(
-    repo_root: Path, commit_sha: str, cache: dict[str, bool]
-) -> bool:
+def _commit_is_valid_ancestor(repo_root: Path, commit_sha: str, cache: dict[str, bool]) -> bool:
     """Check whether commit_sha is a full 40-char lowercase hex SHA that exists and is an ancestor of HEAD."""
-    if not commit_sha or not isinstance(commit_sha, str) or not re.fullmatch(r"[0-9a-f]{40}", commit_sha):
+    if (
+        not commit_sha
+        or not isinstance(commit_sha, str)
+        or not re.fullmatch(r"[0-9a-f]{40}", commit_sha)
+    ):
         return False
     if commit_sha in cache:
         return cache[commit_sha]
@@ -133,9 +304,7 @@ def _validate_requirements_schema_and_count(requirements: Any) -> list[str]:
             continue
         missing_keys = [k for k in REQUIRED_REQUIREMENT_KEYS if k not in item]
         if missing_keys:
-            errors.append(
-                f"Requirement at index {idx} missing required keys: {missing_keys}"
-            )
+            errors.append(f"Requirement at index {idx} missing required keys: {missing_keys}")
         req_id = item.get("id")
         if not isinstance(req_id, str) or not req_id.strip():
             errors.append(f"Requirement at index {idx} has empty or non-string id")
@@ -143,6 +312,11 @@ def _validate_requirements_schema_and_count(requirements: Any) -> list[str]:
             errors.append(f"Duplicate requirement id: {req_id}")
         else:
             seen_ids.add(req_id)
+            if req_id not in CANONICAL_REQUIREMENT_IDS_SET:
+                errors.append(f"Non-canonical requirement id: {req_id}")
+    missing_canonical = sorted(CANONICAL_REQUIREMENT_IDS_SET - seen_ids)
+    if missing_canonical:
+        errors.append(f"Missing canonical requirement ids: {missing_canonical[:10]}")
     return errors
 
 
@@ -197,7 +371,9 @@ def audit_requirements_matrix(
         report = {
             "schema_version": "matrix_git_blob_audit_report_v1",
             "summary": {
-                "total_requirements_tracked": len(requirements) if isinstance(requirements, list) else 0,
+                "total_requirements_tracked": len(requirements)
+                if isinstance(requirements, list)
+                else 0,
                 "valid_git_blob_bindings": 0,
                 "missing_git_blobs": 0,
                 "unresolved_local_locators": 0,
@@ -214,9 +390,7 @@ def audit_requirements_matrix(
         if output_path is not None:
             out_p = Path(output_path)
             out_p.parent.mkdir(parents=True, exist_ok=True)
-            out_p.write_text(
-                json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n"
-            )
+            out_p.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
         return report, 1
 
     git_tracked_files = _get_git_tracked_files(repo_root) if check_git_index else None
@@ -243,9 +417,7 @@ def audit_requirements_matrix(
         if output_path is not None:
             out_p = Path(output_path)
             out_p.parent.mkdir(parents=True, exist_ok=True)
-            out_p.write_text(
-                json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n"
-            )
+            out_p.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
         return report, 1
 
     # Load pinned release asset SHA from inventory if available
@@ -566,9 +738,7 @@ def audit_requirements_matrix(
     if output_path is not None:
         out_p = Path(output_path)
         out_p.parent.mkdir(parents=True, exist_ok=True)
-        out_p.write_text(
-            json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n"
-        )
+        out_p.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
 
     return report, exit_code
 

@@ -1,6 +1,7 @@
 {
   "schema_version": "visual_qa_inspection_record_v2",
-  "inspection_timestamp_utc": "2026-10-19T03:18:00Z",
+  "inspection_timestamp_utc": "2026-10-20T05:18:00Z",
+  "inspection_timestamp_local_ict": "2026-10-20T12:18:00+07:00",
   "historical_qa_record_ref": "reports/evidence/historical/visual_qa_inspection_record_20261003.json",
   "historical_qa_record_sha256": "dd3e5d5a0e61bf7aef233376f52256ec7c06a2cbea266963d154146acbae8da5",
   "errata_record_ref": "reports/evidence/report_revision_errata_record.json",
@@ -30,7 +31,14 @@
       "rendered_output": {
         "repo_relative_path": "reports/evidence/canonical_populated_report.pdf",
         "sha256": "5d01169187c9bb56164efde4acff97e87f0d47deb15dba81139e64b49de635ad",
-        "size_bytes": 1292377
+        "size_bytes": 1292377,
+        "pdf_internal_metadata": {
+          "creation_date_raw": "D:20261020053223+07'00'",
+          "mod_date_raw": "D:20261020053223+07'00'",
+          "creation_timestamp_local_ict": "2026-10-20T05:32:23+07:00",
+          "creation_timestamp_utc": "2026-10-19T22:32:23Z",
+          "inspection_chronology_verified": "inspection_timestamp_utc (2026-10-20T05:18:00Z / 2026-10-20T12:18:00+07:00) is strictly after PDF creation_timestamp_utc (2026-10-19T22:32:23Z / 2026-10-20T05:32:23+07:00)"
+        }
       },
       "page_coverage": {
         "total_pages": 41,
@@ -121,7 +129,14 @@
     "rendered_output": {
       "repo_relative_path": "reports/evidence/canonical_populated_report.pdf",
       "sha256": "5d01169187c9bb56164efde4acff97e87f0d47deb15dba81139e64b49de635ad",
-      "size_bytes": 1292377
+      "size_bytes": 1292377,
+      "pdf_internal_metadata": {
+        "creation_date_raw": "D:20261020053223+07'00'",
+        "mod_date_raw": "D:20261020053223+07'00'",
+        "creation_timestamp_local_ict": "2026-10-20T05:32:23+07:00",
+        "creation_timestamp_utc": "2026-10-19T22:32:23Z",
+        "inspection_chronology_verified": "inspection_timestamp_utc (2026-10-20T05:18:00Z / 2026-10-20T12:18:00+07:00) is strictly after PDF creation_timestamp_utc (2026-10-19T22:32:23Z / 2026-10-20T05:32:23+07:00)"
+      }
     },
     "page_coverage": {
       "total_pages": 41,
@@ -319,16 +334,34 @@
     },
     "pdf_page_previews_inspected": {
       "rasterizer": "pypdfium2 (200 DPI, 1700x2200 px per page)",
+      "target_pdf_sha256": "5d01169187c9bb56164efde4acff97e87f0d47deb15dba81139e64b49de635ad",
+      "target_pdf_creation_date_raw": "D:20261020053223+07'00'",
+      "target_pdf_creation_timestamp_utc": "2026-10-19T22:32:23Z",
+      "inspection_executed_at_utc": "2026-10-20T05:18:00Z",
+      "total_pages_rasterized_and_checked": 41,
       "page_01": {
         "sha256": "da17846a605f280077df0603ca14939ec002bf24e1f1aea5edb6cd54ba444912",
         "size_bytes": 456946,
         "status": "VERIFIED_SHARP",
         "observation": "Page 1 title block (pure black, no border), single-prefix Status line ('Status: CANONICAL CANDIDATE — PENDING ROOT FINAL REVIEW (CORRECTED RELEASE CANDIDATE — PENDING OWNER CLOSEOUT SIGN-OFF)'), canonical bundle banner, and Abstract render cleanly with Page 1 of 41 footer."
       },
+      "pages_04_05_09": {
+        "sha256_page_04": "5140b8dca5982105843128fe8e4ef4f515665c40ee0b8973e0d8396b5288af48",
+        "size_bytes_page_04": 658481,
+        "sha256_page_05": "ad50e433279be4ca875f834f011dbf6ab1a660e0523627f9805c417e2edfd4f4",
+        "size_bytes_page_05": 598728,
+        "sha256_page_09": "d5d4a100609e5d5052e2a51d8430550ff212b2c8c7a1c9e6492739a7b23500a5",
+        "size_bytes_page_09": 632417,
+        "status": "VERIFIED_SHARP",
+        "observation": "Section 1.3 and Section 2.1 related-work narrative (6/8 full-text verified including LADE [12] author manuscript 6e838456...; 2/8 Yang & Hsu [7] and Okuma et al. [9] bounded as UNVERIFIED) and Section 3 threat-model tables render cleanly with zero clipping."
+      },
       "pages_06_07_08": {
         "sha256_page_06": "d4928f6b5332a04660fe52d1ac6b7a6e19248dfcf14a0740a6cbfc158f32cffe",
+        "size_bytes_page_06": 504671,
         "sha256_page_07": "dd7342db4183d4d12d5109c2617b382b77353988cc8b812cd455c498ec9491d4",
+        "size_bytes_page_07": 522116,
         "sha256_page_08": "6eba427e55a72b10fda5c20f9a6815bf200da4453a1a7ef4d9594b74cac20596",
+        "size_bytes_page_08": 429659,
         "status": "VERIFIED_SHARP",
         "observation": "Table 1a and Table 1b render with repeated dark navy header row across page breaks, cantSplit row integrity, width <= 6.50 in, Okuma et al. (2023) [9] strictly UNVERIFIED in Row 16, and LADE (Gwak et al., 2026/2027) [12] displaying OMML math k in {3,10}, 4 evaluated models, and AVIATOR/Caldera dataset splits (33 APT seqs per 2:1 & 10:1 setting [including 20 profile, 5 lateral, 8 multi-stage] + 33 benign)."
       },
@@ -340,7 +373,9 @@
       },
       "pages_40_41": {
         "sha256_page_40": "237d4945ee3bcb417ae467fb0b37bfda409178c30e324ad158554c2f43ccd8e3",
+        "size_bytes_page_40": 664447,
         "sha256_page_41": "bad52359df8d529490a8004c53dc49b39eb191b846610364237210f7c826fa7f",
+        "size_bytes_page_41": 675302,
         "status": "VERIFIED_SHARP",
         "observation": "References [1]..[13] render with static bracketed numbering and hanging indents; [9] displays [ACCESS BLOCKED / BIBLIOGRAPHIC RECORD ONLY / UNVERIFIED] and [12] displays [FULL TEXT VERIFIED] with manuscript SHA-256."
       }

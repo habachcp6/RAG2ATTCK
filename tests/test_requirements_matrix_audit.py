@@ -251,9 +251,7 @@ def test_missing_or_empty_commit_sha_fails_closed(
 
 
 @pytest.mark.parametrize("tamper_mode", ["empty", "truncated", "duplicate_id", "missing_key"])
-def test_invalid_matrix_schema_or_count_fails_closed(
-    tmp_path: Path, tamper_mode: str
-) -> None:
+def test_invalid_matrix_schema_or_count_fails_closed(tmp_path: Path, tamper_mode: str) -> None:
     """Negative test: empty, truncated, duplicate-ID, or malformed requirement fails closed."""
     data = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
     if tamper_mode == "empty":
@@ -421,3 +419,43 @@ def test_git_blob_vs_disk_hash_verification_with_git_index_enabled(
     assert mismatch["disk_hash"] != mismatch["git_blob_hash"]
 
 
+def test_noncanonical_requirement_id_substitution_fails_closed(tmp_path: Path) -> None:
+    """Substituting one canonical requirement ID with AUDITOR_NONCANONICAL_ID fails closed."""
+    data = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
+    data["requirements"][0]["id"] = "AUDITOR_NONCANONICAL_ID"
+
+    tampered_matrix = tmp_path / "tampered_noncanonical_id_matrix.json"
+    tampered_matrix.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    report, exit_code = audit_requirements_matrix(
+        repo_root=REPO_ROOT,
+        matrix_path=tampered_matrix,
+        check_git_index=True,
+    )
+
+    assert exit_code == 1
+    assert report["summary"]["audit_verdict"] == "FAIL_INVALID_MATRIX_SCHEMA_OR_COUNT"
+    assert any("AUDITOR_NONCANONICAL_ID" in err for err in report.get("defects", []))
+
+
+def test_t33_lade_verification_record_segmentation_claims_match_manuscript() -> None:
+    """Verify T33 LADE claim record matches AVIATOR vs Caldera segmentation counts."""
+    record_path = REPO_ROOT / "reports/evidence/t33_lade_claim_verification_record.json"
+    raw_text = record_path.read_text(encoding="utf-8")
+    record = json.loads(raw_text)
+
+    assert "without segmentation)" not in raw_text
+    assert "no segmentation required" not in raw_text
+    assert "default_snippets_per_segment" not in raw_text
+    assert "mistral_small_3_2_24b_snippets_per_segment" not in raw_text
+
+    ctx_block = record["remediated_claims"]["context_window_and_segmentation"]
+    params = ctx_block["context_window_parameters"]
+    assert params["caldera_derived_sequences_requiring_segmentation"] == 0
+    assert params["aviator_sequences_requiring_segmentation_by_model"] == {
+        "Mistral-Small-3.2-24B": 12,
+        "gpt-oss-120B": 10,
+        "Llama-3.3-70B": 10,
+        "Gemini-2.5-Pro": 6,
+    }
+    assert "required segmentation for only 6 AVIATOR sequences" in ctx_block["verified_value"]

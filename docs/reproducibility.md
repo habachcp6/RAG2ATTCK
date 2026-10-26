@@ -1,6 +1,6 @@
-# RAG2ATT&CK - Independent Offline Reproducibility Guide
+# RAG2ATT&CK — Independent Offline Reproducibility Guide (`v1.0.0-rag2attck-study`)
 
-This document provides a comprehensive, step-by-step guide for an external researcher or reviewer to independently verify and reproduce all empirical findings, diagnostic evaluations, and cryptographic integrity locks of the **RAG2ATT&CK** study.
+This document provides the complete, step-by-step protocol for an external researcher or reviewer to independently verify and reproduce all canonical empirical findings, diagnostic evaluations, financial ledger reconciliations, and cryptographic integrity locks of the **RAG2ATT&CK** study from a clean Git clone and the official public release package.
 
 ---
 
@@ -8,250 +8,247 @@ This document provides a comprehensive, step-by-step guide for an external resea
 
 To ensure scientific rigor and eliminate barriers to replication:
 
-1. **Strictly Offline Execution (Zero Financial Cost & Zero API Keys):**
+1. **Strictly Offline Execution (`OFFLINE_GUARD` — Zero Financial Cost & Zero API Keys):**
    - No paid API keys (e.g., OpenAI, Anthropic) are needed to reproduce the study findings.
-   - All evaluation datasets, raw retrieval diagnostics, model outputs from the real-provider pilot, and MITRE ATT&CK corpora are committed directly to the repository as byte-preserved artifacts.
-   - The reproduction pipeline operates under an enforced offline guard that disallows network egress and strips any accidental environment credentials.
+   - All evaluation datasets, raw retrieval diagnostics, model outputs from the canonical 6,400-record live study (`synthetic-paired-test-1`), and MITRE ATT&CK v19.2 corpora are cryptographically sealed.
+   - All reproduction and verification commands execute under `scripts/run_offline_tests.py`, which installs a Python socket-level network egress guard (`OFFLINE_GUARD: installed=True attempted_egress=0`) and strips ambient API credentials.
 
-2. **Cryptographic Hash Immutability (Canonical Lock v1):**
-   - 15 core artifacts (datasets, prompt templates, retrieval index, models, and configs) are bound by SHA-256 digests in [`config/canonical_experiment_lock_v1.json`](../config/canonical_experiment_lock_v1.json).
-   - The scientific evaluation protocol decisions (D1–D7) are immutably locked under [`config/experiment_protocol_v1.json`](../config/experiment_protocol_v1.json) with hash `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`.
-   - The critical source code is locked under digest `8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4`.
+2. **Cryptographic Hash Immutability & Official Release Anchors:**
+   - **Official Release Tag:** [`v1.0.0-rag2attck-study`](https://github.com/habachcp6/RAG2ATTCK/releases/tag/v1.0.0-rag2attck-study) (`Release ID: 402490699`), pointing to merge commit `ca8d39824a72e80053371e208506bfdc6332dc5d` (`tree: f868b5bf7ce52b79e2d8906f0436edec9c84b446`, identical to accepted candidate commit `d6c4827eda7d9e07054d85158e921f71374d137d`).
+   - **Protected Baseline (`22` Files):** 21 git-tracked baseline artifacts plus 1 raw MITRE ATT&CK v19.2 STIX bundle (`attack/raw/enterprise-v19.2/enterprise-attack-19.2.json`, SHA-256 `dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4`) preserved byte-identical to baseline commit `80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315`.
+   - **Four Immutable Experimental Trust Anchors:**
+     - `artifacts/results/canonical_metric_bundle_v2.json` (`49,465` bytes, SHA-256 `442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34`)
+     - `reports/evidence/canonical_run_seal_v1.json` (`3,046` bytes, SHA-256 `ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701`)
+     - `reports/evidence/populated_report_slots_canonical.json` (`15,010` bytes, SHA-256 `7c5a37f2659035108a70b7f161114f5d35e6c903a5e77df1d395164fbb75e77e`)
+     - `public_v4_candidate_20261003.zip` (`2,343,105` bytes, SHA-256 `1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1`, Release Asset ID `607731773`)
+   - **Scientific Protocol Lock (`Protocol v1.1`):** Locked in [`config/experiment_protocol_v1.json`](../config/experiment_protocol_v1.json) (file SHA-256 `a402b04ab463172f9d4079bff27b089ca8a21ffd0805d097af6cb1f3c7b5a8fb`; canonical decisions digest `d3bf3d31ad307100ac437a7daecc470bf12de9ada49f19de3d77592d5a21974c`).
 
 3. **Five Distinct Scientific Provenance Tiers:**
-   To maintain absolute transparency, all data and outputs in this study belong to one of 5 distinct tiers:
-   - **Tier 1 (Canonical Source Artifacts):** The 15 frozen artifacts committed in the repository and sealed under `canonical-lock-v1`.
-   - **Tier 2 (Evaluator Fixture Diagnostics):** Known-answer synthetic unit test fixture records (`sample_count=5`) exported to `outputs/reproduction/fixture_diagnostics/` with explicit `_fixture_metadata.json` (`fixture_only=True`) to verify offline mathematical correctness of evaluator metrics.
-   - **Tier 3 (DEV Cost Pilot Evidence):** Real-provider exploratory pilot records on OpenAI `gpt-5.6-luna` across 4 DEV views and all 5 conditions (20 records, $0.0242 USD spend) in `reports/evidence/dev_cost_pilot_20261001/`.
-   - **Tier 4 (T20 Retrieval Diagnostics):** Full benchmark dense retrieval evaluation across 756 positive views and 670 scenario pairs, establishing canonical anchor pairwise rank differences (296 pairs) and lexical gaps (`T1136.001`).
-   - **Tier 5 (Canonical TEST Study Matrix):** The full 1,280 samples x 5 conditions (6,400 records) live test execution (`synthetic-paired-test-1`), which is in-flight or awaiting live run termination under PID 50192. The evaluator enforces a strict fail-closed contract if run outputs are incomplete.
+   All data and outputs in this study belong to one of five explicitly separated tiers:
+   - **Tier 1 (Canonical Source & Baseline Artifacts):** The 22 protected baseline files (`PROTECTED_BASELINE_22`) and 15 core artifacts sealed under [`config/canonical_experiment_lock_v1.json`](../config/canonical_experiment_lock_v1.json).
+   - **Tier 2 (Evaluator Fixture Diagnostics):** Known-answer synthetic unit test fixture records (`sample_count=5`) in `outputs/reproduction/fixture_diagnostics/` with `_fixture_metadata.json` (`fixture_only=True`) used strictly to verify offline mathematical correctness of evaluator functions.
+   - **Tier 3 (DEV Cost Pilot Evidence):** Real-provider exploratory pilot records on OpenAI `gpt-5.6-luna` across 4 DEV views and all 5 conditions (20 records, `$0.0242094 USD` standard / `$0.05264010 USD` provisional hold) in `reports/evidence/dev_cost_pilot_20261001/`.
+   - **Tier 4 (T20 Retrieval Diagnostics):** Full Stage B benchmark dense retrieval evaluation across 756 positive views and 670 scenario pairs (`all-MiniLM-L6-v2`, revision `1110a243fdf4706b3f48f1d95db1a4f5529b4d41`, `IndexFlatIP`).
+   - **Tier 5 (Completed Canonical TEST Study Matrix — `synthetic-paired-test-1`):** The completed, cryptographically sealed 1,280 TEST views $\times$ 5 conditions (`6,400` records, `6,401` provider attempts, `6,387` VALID dispatches, `13` INCOMPLETE max-token records, `1` transient API retry on `view_d870d574:rag_k1`, `$6.57575890 USD` settled spend, `exit_code=0` in `canonical_run_seal_v1.json`), packaged inside `public_v4_candidate_20261003.zip` (`base_public_v3/`) and summarized in `artifacts/results/canonical_metric_bundle_v2.json`.
 
 ---
 
-## 2. System Requirements & Environment Setup
+## 2. System Requirements & Environment Matrix
 
-### 2.1 Hardware & OS
-- **OS:** Linux (Ubuntu 22.04+), macOS (13+), or Windows 10/11.
-- **CPU:** Standard x86_64 or ARM64 multi-core processor (no GPU required for reproduction).
+### 2.1 Hardware & Operating System
+- **OS:** Windows 10/11, Linux (Ubuntu 22.04 / 24.04+), or macOS 13+.
+- **CPU:** Standard x86_64 or ARM64 multi-core processor (no GPU required).
 - **RAM:** Minimum 4 GB available memory.
-- **Disk Space:** ~500 MB for repository checkout, virtual environment, and generated outputs.
+- **Disk Space:** ~1.5 GB free space (for repository checkout, `.venv`, the 53.8 MB raw STIX v19.2 JSON, and unpacked release verification outputs).
 
-### 2.2 Software Prerequisites
-- **Python:** Version 3.12 or 3.13.
-- **Package Manager:** `uv` (recommended) or standard `pip` + `venv`.
-- **Git:** Git 2.30+.
-- **Optional Dependencies:** `matplotlib` (for PNG figures) and `python-pptx` (for PowerPoint generation). The core audit and recomputation pipeline operates with strictly Python standard library.
+### 2.2 Python & Environment Tiers (`Saved-Data Replay` vs. `Full Authoring Suite`)
 
-### 2.3 Environment Setup (using `uv`)
+The repository enforces `requires-python = ">=3.13.0"` in [`pyproject.toml`](../pyproject.toml) and pins `3.13` in [`.python-version`](../.python-version) (verified on **`Python 3.13.0`** across Windows 11 and Ubuntu 24.04).
 
+| Environment Tier | Purpose & Scope | Required Toolchain & Packages | Mutates `uv.lock`? |
+| :--- | :--- | :--- | :---: |
+| **Tier A: Saved-Data Replay & Core Verification (Default)** | Reproduce all canonical `Native-6` and `RQ1–RQ3` metrics from `public_v4_candidate_20261003.zip`, verify package/ZIP integrity, audit the 170-requirement traceability matrix, check cross-artifact consistency, and run the standard CI test suite (`pytest -m "not integration"`). | `Python >= 3.13.0` (`3.13.0` tested), `uv`, `git`, and frozen dependencies via `uv sync --frozen`. | **No** |
+| **Tier B: Full 178-Node Workstation Authoring & QA Suite (Optional)** | Additionally execute the 4 DOCX report-authoring tests in `tests/test_populate_report.py` (`scripts/export_report_docx.py`) and the 2 proprietary slide-deck AST authoring tests in `tests/test_presentation_and_repro_regressions.py` (`scripts/artifact_tool_deck_updater.mjs`), plus staged local bundle tests. | Tier A + `python-docx==1.2.0` installed into `.venv` (`uv pip install --python .venv/Scripts/python.exe python-docx==1.2.0`), `Node.js` + `@oai/artifact-tool` runtime, `PYTHONNOUSERSITE=1`, `PYTHONPATH=.`, and staged bundle directories. | **No** |
+
+> [!IMPORTANT]
+> **Why `uv.lock` is never modified for Tier B authoring extras:**
+> Both `pyproject.toml` and `uv.lock` are part of `CRITICAL_CODE_PATTERNS` in [`src/experiment/authorization.py`](../src/experiment/authorization.py). Installing `python-docx==1.2.0` directly into the git-ignored `.venv` via `uv pip install` enables the DOCX authoring tests without altering the frozen experiment lockfile. In clean public environments without `@oai/artifact-tool`, the 2 proprietary JS deck-updater execution tests automatically skip via `@pytest.mark.skipif(not has_artifact_tool_runtime())`.
+
+---
+
+## 3. Unified Clean-Clone Canonical Reproduction Workflow (`v1.0.0-rag2attck-study`)
+
+Every command below has been tested end-to-end on a clean clone of tag `v1.0.0-rag2attck-study` (`ca8d39824a72e80053371e208506bfdc6332dc5d`).
+
+### Step 3.1: Clone Repository, Checkout Release Tag & Sync Frozen Environment
+
+**Linux / macOS (Bash) & Windows (PowerShell):**
 ```bash
-# 1. Clone repository (if not already local)
 git clone https://github.com/habachcp6/RAG2ATTCK.git
 cd RAG2ATTCK
+git checkout v1.0.0-rag2attck-study
 
-# 2. Check out target branch
-git checkout codex/s1-reproducibility-presentation
+# Verify commit SHA matches ca8d39824a72e80053371e208506bfdc6332dc5d:
+git rev-parse HEAD
 
-# 3. Create virtual environment and synchronize dependencies
-uv venv
-uv sync
+# Create .venv and install exact frozen dependencies from uv.lock:
+uv sync --frozen
 ```
 
-Alternatively, with standard Python:
+### Step 3.2: Acquire & Verify the Raw MITRE ATT&CK v19.2 STIX Bundle (Baseline File #22)
+
+21 of the 22 protected baseline files are tracked directly in Git. The 53.8 MB raw STIX v19.2 JSON (`attack/raw/enterprise-v19.2/enterprise-attack-19.2.json`, SHA-256 `dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4`) is `.gitignore`d due to file size and is required by `load_evaluation_inputs()` during `--replay-evaluation` and by `scripts/verify_report_metadata.py`. Fetch and hash-verify it using the built-in loader (identical to `.github/workflows/ci.yml`):
+
 ```bash
-python -m venv .venv
-# On Windows:
-.venv\Scripts\activate
-# On Linux/macOS:
-source .venv/bin/activate
-
-pip install -e .
-pip install matplotlib python-pptx
+uv run python -c "from pathlib import Path; from src.attack_loader import download_attack_reference; download_attack_reference(Path('.'))"
 ```
 
----
+### Step 3.3: Download, Verify & Unpack `public_v4_candidate_20261003.zip`
 
-## 3. Automated One-Click Reproduction Pipeline
-
-The repository provides a single, unified reproduction script: [`scripts/reproduce_study.py`](../scripts/reproduce_study.py).
-
-To execute the entire verification suite:
-```bash
-uv run python scripts/reproduce_study.py
-```
-
-### CLI Execution Modes:
-- `uv run python scripts/reproduce_study.py --all`: Run complete pipeline (default).
-- `uv run python scripts/reproduce_study.py --verify-hashes`: Audit SHA-256 hashes of canonical locks and evidence.
-- `uv run python scripts/reproduce_study.py --recompute-t20`: Recompute T20 retrieval diagnostic metrics from raw JSONL rows.
-- `uv run python scripts/reproduce_study.py --run-fixture-diagnostics`: Run evaluator on synthetic test fixtures only (outputs to `outputs/reproduction/fixture_diagnostics/`).
-- `uv run python scripts/reproduce_study.py --run-evaluator --run-dir <DIR>`: Execute authoritative evaluation on a completed canonical run directory (enforces fail-closed validation of full 1,280 x 5 matrix).
-- `uv run python scripts/reproduce_study.py --generate-figures`: Generate publication figures (requires `matplotlib`).
-- `uv run python scripts/reproduce_study.py --generate-tables`: Generate Markdown summary tables.
-
-### What the script executes:
-1. **Stage 1 (Cryptographic Hash Audit):** Checks SHA-256 hashes of all 15 canonical artifacts, the frozen protocol v1.1, the code manifest, and the 10 DEV cost pilot evidence files.
-2. **Stage 2 (T20 Retrieval Diagnostics):** Recomputes Hit@k, Macro Recall@k, and absent rates across all 756 positive views; performs canonical anchor pairwise analysis across 670 scenario pairs.
-3. **Stage 3 (Evaluator Fixture Diagnostics & Pilot Audit):** Runs `evaluate_experiment()` under Protocol v1.1 on known-answer unit fixtures (writing `outputs/reproduction/fixture_diagnostics/_fixture_metadata.json`), and audits the real-provider DEV pilot records.
-4. **Stage 4 (Publication Figures):** Generates publication-ready 300 DPI figures in `outputs/reproduction/figures/`.
-5. **Stage 5 (Summary Tables):** Generates markdown comparison tables in `outputs/reproduction/tables/`.
-
-### Verified Offline Egress Guard:
-To verify that the reproduction script does not leak credentials or make outbound network calls:
-```bash
-uv run python scripts/run_offline_tests.py -c "import sys; from scripts.reproduce_study import main; sys.exit(main(['--verify-hashes']))"
-```
-*Expected output:* `OFFLINE_GUARD: installed=True attempted_egress=0`.
-
----
-
-## 4. Manual Step-by-Step Verification
-
-For external researchers wishing to verify each component independently using standard command-line tools or custom scripts:
-
-### Step 4.1: Verify Cryptographic Artifact Hashes
-Read [`config/canonical_experiment_lock_v1.json`](../config/canonical_experiment_lock_v1.json) and calculate the SHA-256 hash of each file:
+Download the official release package asset (`2,343,105` bytes, SHA-256 `1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1`) from Release [`v1.0.0-rag2attck-study`](https://github.com/habachcp6/RAG2ATTCK/releases/tag/v1.0.0-rag2attck-study) and unpack it into `.tmp/public_v4_unpacked`:
 
 **Linux / macOS (Bash):**
 ```bash
-sha256sum config/experiment_config.json
-# Expected: 961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac
-
-sha256sum data/ground_truth/synthetic/ground_truth.jsonl
-# Expected: 8f3d73bac7e81336a3e90bfa5a5d0850a51ac5588385ee53ad940bcbc3612608
-
-sha256sum attack/corpus/enterprise-windows-v19.2.jsonl
-# Expected: b219341154ddf2f12e97d622158a04ab7d57641df6a865559258d365852c3c75
+mkdir -p .tmp
+curl -fL "https://github.com/habachcp6/RAG2ATTCK/releases/download/v1.0.0-rag2attck-study/public_v4_candidate_20261003.zip" \
+  -o .tmp/public_v4_candidate_20261003.zip
+echo "1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1  .tmp/public_v4_candidate_20261003.zip" | sha256sum -c -
+unzip -q -o .tmp/public_v4_candidate_20261003.zip -d .tmp/public_v4_unpacked
 ```
 
 **Windows (PowerShell):**
 ```powershell
-Get-FileHash -Algorithm SHA256 config\experiment_config.json
-Get-FileHash -Algorithm SHA256 data\ground_truth\synthetic\ground_truth.jsonl
-Get-FileHash -Algorithm SHA256 attack\corpus\enterprise-windows-v19.2.jsonl
+New-Item -ItemType Directory -Force -Path .tmp | Out-Null
+curl.exe -fL "https://github.com/habachcp6/RAG2ATTCK/releases/download/v1.0.0-rag2attck-study/public_v4_candidate_20261003.zip" `
+  -o ".tmp/public_v4_candidate_20261003.zip"
+$zipHash = (Get-FileHash -Algorithm SHA256 ".tmp/public_v4_candidate_20261003.zip").Hash.ToLower()
+if ($zipHash -ne "1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1") { throw "SHA-256 mismatch: $zipHash" }
+Expand-Archive -Path ".tmp/public_v4_candidate_20261003.zip" -DestinationPath ".tmp/public_v4_unpacked" -Force
 ```
 
-All 15 hashes must match the values documented in [`docs/sanitized_evidence_manifest.json`](sanitized_evidence_manifest.json).
-
----
-
-### Step 4.2: Recomputing T20 Retrieval Diagnostics (RQ2)
-To recompute the headline retrieval performance metrics from the raw diagnostic JSONL rows:
-```bash
-uv run python scripts/verify_t20_canonical_artifacts.py
-```
-
-**Expected Headline Results:**
-| Metric | Depth $k=1$ | Depth $k=3$ | Depth $k=5$ | Depth $k=10$ |
-| :--- | :---: | :---: | :---: | :---: |
-| **Hit@k** | 4.23% (32/756) | 16.80% (127/756) | 24.21% (183/756) | 45.11% (341/756) |
-| **Macro Recall@k** | 3.46% | 15.90% | 23.13% | 43.14% |
-
-**Key Diagnostic Insights to Verify:**
-1. **Semantic Embedding Gap (`T1136.001`):** The local account creation technique `T1136.001` achieves **0 hits out of 99 positive views** in Top-10 ($Hit@10 = 0.0\%$). Dense bi-encoders using `all-MiniLM-L6-v2` fail to map Windows Event ID 4720 ("A user account was created") because the STIX technique description emphasizes threat actor objectives rather than specific event log tokens.
-2. **Canonical Anchor Pairwise Comparison (670 candidate pairs):**
-   - **Canonical Anchor Cohort (296 eligible pairs):** Single-event view contains exactly one technique that also appears in the contextual view. Single-event representation achieves a strictly better rank in **65 pairs (22.0%)**, Contextual-event in **23 pairs (7.8%)**, and **208 pairs (70.3%)** have equal rank (147 both absent from Top-10, 61 identical Top-10 rank). 374 pairs are excluded due to multi-label single view or missing anchor.
-   - **Secondary Strict Single-Technique Cohort (252 eligible pairs):** Both single and contextual views contain exactly one identical technique. Single-event is better in **59 pairs (23.4%)** vs. **23 pairs (9.1%)** for Contextual-event (170 pairs equal).
-   - *Scientific Note:* These empirical numbers represent observed retrieval rank differences under dense semantic search (`all-MiniLM-L6-v2`) on `synthetic-paired-v1`.
-
----
-
-### Step 4.3: Auditing the Real-Provider DEV Cost Pilot (RQ3)
-Inspect [`reports/evidence/dev_cost_pilot_20261001/summary.json`](../reports/evidence/dev_cost_pilot_20261001/summary.json) and associated prediction files:
+### Step 3.4: Verify the 34-Member Public v4 Package & ZIP Stream Integrity (`OFFLINE_GUARD`)
 
 ```bash
-# Verify record validity and unique response IDs
-uv run python -c "
-import json
-from pathlib import Path
-
-p = Path('reports/evidence/dev_cost_pilot_20261001')
-for cond in ['no_rag', 'rag_k1', 'rag_k3', 'rag_k5', 'rag_k10']:
-    rows = [json.loads(l) for l in (p / f'{cond}_predictions.jsonl').read_text().splitlines()]
-    print(f'{cond}: {len(rows)} records, all VALID: {all(r[\"parse_status\"] == \"VALID\" for r in rows)}')
-"
+uv run python scripts/run_offline_tests.py -m scripts.verify_canonical_package_acceptance \
+  --candidate-dir .tmp/public_v4_unpacked \
+  --candidate-zip .tmp/public_v4_candidate_20261003.zip \
+  --expected-manifest-sha256 dbc2e133e8de30d6afa8345dcfa8b82890b13367a2bb24775278cc814a83dee2
 ```
 
-**Verified Pilot Empirical Statistics:**
-- Total requests executed: 20 across 4 DEV views (2 single, 2 contextual) across all 5 conditions.
-- Provider retries: 0 (100% first-attempt success).
-- Total input tokens: 42,213; Total output tokens (including reasoning): 13,139.
-- Measured standard price cost: **$0.0242094 USD**; conservative rate cost: **$0.0263201 USD**.
-- Latency mean: **8,127.6 ms** per request.
-- Token growth factor from $k=0$ (No-RAG: 643 tokens/req) to $k=10$ (RAG k=10: 4,536 tokens/req) is **~7.05x**.
+*Expected output:*
+- `ACCEPTANCE VERIFICATION VERDICT: PASS`
+- `Archive SHA-256: 1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1`
+- `Package Manifest SHA-256: dbc2e133e8de30d6afa8345dcfa8b82890b13367a2bb24775278cc814a83dee2`
+- `Base Manifest SHA-256: 32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c`
+- `Verified Items: 30 items (23 base, 7 supp)`, `Verified Semantic Roles: 8`, `Privacy Scan: CLEAN (0 violations)`
+- `OFFLINE_GUARD: installed=True attempted_egress=0`
 
----
+### Step 3.5: Execute Guarded Canonical Saved-Data Scientific Replay (`scripts/reproduce_canonical_study.py`)
 
-### Step 4.4: Canonical Evaluator Execution & Contract Check
-Run the unit test suite verifying evaluator behavior and fail-closed security properties under OFFLINE_GUARD:
+Run the authoritative saved-data replay helper against `.tmp/public_v4_unpacked/base_public_v3` using the 4 saved-data replay flags (`--verify-hashes --audit-costs --replay-evaluation --demo`):
+
 ```bash
-uv run python scripts/run_offline_tests.py -m pytest tests/test_experiment_evaluation.py -q
+uv run python scripts/run_offline_tests.py -m scripts.reproduce_canonical_study \
+  --repository-root . \
+  --bundle-dir .tmp/public_v4_unpacked/base_public_v3 \
+  --output-dir .tmp/canonical_replay_output \
+  --expected-manifest-sha 32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c \
+  --verify-hashes \
+  --audit-costs \
+  --replay-evaluation \
+  --demo
 ```
-*Expected result:* 94 tests pass in ~15 seconds with `OFFLINE_GUARD: installed=True attempted_egress=0`. Note: Raw pytest without OFFLINE_GUARD is forbidden. Full reproduction of live provider runs requires running with real credentials under the strict budget guard ($19.99 USD hard cap), whereas offline reproduction validates against committed frozen artifacts.
 
-To test the authoritative evaluation path on an incomplete or pilot run (verifying fail-closed enforcement):
+*What this command verifies and recomputes:*
+1. **`--verify-hashes`:** Authenticates `canonical_bundle_manifest.json` (`32f520c0...`), all 10 canonical input files (`manifest.json`, 5 condition prediction JSONLs, `request_journal.jsonl`, `run_summary.json`, `study_ledger.json`, `.study_anchor.json`), all 8 canonical analytical output files (`overall_metrics.json`, `per_condition_metrics.json`, `per_technique_metrics.json`, `retrieval_conditional_metrics.json`, `failure_decomposition.json`, `run_provenance.json`, `rq_analysis.json`, `rq_analysis_summary.md`), 4 sanitized provenance records, and `runtime_recovery_wrapper.py` (`RAW_WRAPPER_BLOCK` digest `e4a0115f...`).
+2. **`--audit-costs`:** Reconciles the `$19.99000000` budget cap, `$0.05264010` prior pilot hold, `$6.57575890` settled spend across 6,400 records (`6,401` provider attempts, `1` transient API retry on `('view_d870d574', 'rag_k1')`), and `$13.36160100` remaining uncommitted balance.
+3. **`--replay-evaluation`:** Re-executes `evaluate_experiment()` (`Native-6` outputs) and `run_rq_analysis()` (`RQ1–RQ3` with `1,000` cluster bootstrap iterations, `seed=42`) from the raw prediction JSONLs into `.tmp/canonical_replay_output` and performs deep typed tree comparison against the accepted canonical outputs (`float_tolerance=1e-12`, exact `Decimal` currency equality, `0` discrepancies across `2,331` Native-6 fields and `791` RQ fields).
+4. **`--demo`:** Runs dynamic operator inspection across exemplar views (`view_0088e302`, `view_0265275a`, `view_026cbe9e`).
+5. *Expected final verdict:* `VERDICT: PASS_CANONICAL_OFFLINE_VERIFIED` and `OFFLINE_GUARD: installed=True attempted_egress=0`.
+
+> [!NOTE]
+> **Why `--verify-hashes --audit-costs --replay-evaluation --demo` is used on the release checkout instead of `--all`:**
+> Passing `--all` (or `--verify-baseline`) invokes `verify_protected_baseline(repository_root)`, which verifies both `PROTECTED_BASELINE_22` and whether `compute_code_manifest_sha256(repository_root)` equals the historical S1 execution code manifest `8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4` (from historical commit `b69a6909acda4c7588744acc7e1d6c20bfce2612`). Because post-S1 closeout hardening added fail-closed path and symlink checks to `src/experiment/authorization.py`, `compute_code_manifest_sha256` on the final release tree (`d41ca7c2...`) intentionally differs from `8b1b3ea4...`.
+>
+> To run `--all` (including `--verify-baseline` against the historical S1 code manifest `8b1b3ea4...`), provision the portable historical `b69a690` snapshot first and pass it as `--repository-root`:
+> ```bash
+> uv run python scripts/provision_snapshot.py --target-dir ../rag2attck_snapshot_b69a690
+> uv run python scripts/run_offline_tests.py -m scripts.reproduce_canonical_study \
+>   --repository-root ../rag2attck_snapshot_b69a690 \
+>   --bundle-dir .tmp/public_v4_unpacked/base_public_v3 \
+>   --output-dir .tmp/canonical_replay_output_all \
+>   --expected-manifest-sha 32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c \
+>   --all
+> ```
+
+### Step 3.6: Verify Report Metadata, Cross-Artifact Consistency & 170-Requirement Matrix
+
 ```bash
-uv run python scripts/reproduce_study.py --run-evaluator --run-dir reports/evidence/dev_cost_pilot_20261001
+# 1. Verify Table 6 hashes, DOCX formatting invariants, zero-denominator cases, and STIX v19.2 census:
+uv run python scripts/run_offline_tests.py -m scripts.verify_report_metadata
+
+# 2. Verify strict cross-artifact numerical & OpenXML consistency against Canonical Metric Bundle v2:
+uv run python scripts/run_offline_tests.py -m scripts.check_cross_artifact_consistency \
+  --strict --scope all \
+  --metric-bundle artifacts/results/canonical_metric_bundle_v2.json \
+  --expected-bundle-sha256 442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34
+
+# 3. Verify 170-requirement closeout traceability matrix (141 git blob bindings across 21 files):
+uv run python scripts/run_offline_tests.py -m scripts.verify_requirements_matrix_audit
+
+# 4. Verify R9 final artifact inventory (59/59 files and visual QA inspection record):
+uv run python scripts/run_offline_tests.py -m scripts.generate_r9_artifact_inventory \
+  --output .tmp/r9_inventory_check.json \
+  --rc-output .tmp/r9_rc_check.json
 ```
-*Expected result:* Fails closed with explicit diagnostic message:
-`[FAIL_CLOSED] Authoritative evaluation requires canonical 'test' split matrix (1,280 samples). Provided manifest has split='dev'.`
 
 ---
 
-## 5. Compiling Presentation Slides (PPTX & Markdown)
+## 4. Secondary Historical Diagnostics & Evaluator Fixture Helper (`scripts/reproduce_study.py`)
 
-The presentation deck is provided in two complementary formats:
-1. **Markdown Outline / Scaffold:** [`docs/presentation/slides.md`](presentation/slides.md) (12 slides structured for thesis defense / technical presentation).
-2. **Materialized PowerPoint Deck:** [`docs/presentation/slides.pptx`](presentation/slides.pptx) (16:9 widescreen, custom cybersecurity color palette, embedded metric cards and figures, automatically authored by the Python `python-pptx` pipeline via `scripts/generate_slides.py`).
+Alongside the primary canonical study replay script (`scripts/reproduce_canonical_study.py`), the repository retains [`scripts/reproduce_study.py`](../scripts/reproduce_study.py) for reproducing the **Tier 1 (S1 Snapshot Code Manifest `8b1b3ea4...` & 15 Canonical Lock Artifacts)**, **Tier 2 (Evaluator Unit Fixtures)**, **Tier 3 (DEV Cost Pilot)**, and **Tier 4 (Stage B T20 Retrieval Diagnostics)** artifacts established prior to the full TEST study run. Because Stage 1 verifies the historical S1 execution code manifest (`8b1b3ea4...`), point `--repository-root` at the provisioned `b69a690` snapshot directory:
 
-To re-generate the PPTX slides programmatically:
 ```bash
-uv run python scripts/generate_slides.py
-```
-*Verification output:* Confirms 12 slides generated, verified layout geometry (13.333 x 7.500 inches), and zero text overflow.
-
----
-
-## 6. Directory of Generated Reproduction Outputs
-
-When `scripts/reproduce_study.py` completes, outputs are stored in `outputs/reproduction/`:
-
-```text
-outputs/reproduction/
-├── reproduction_report.md             # Complete timestamped verification log
-├── fixture_diagnostics/               # Unit test fixture diagnostics (Mathematical Verification Only)
-│   ├── _fixture_metadata.json         # Explicit metadata: {"fixture_only": true, "sample_count": 5}
-│   ├── overall_metrics.json           # Accuracy, scorable sample counts, macro scores
-│   ├── per_condition_metrics.json     # Per-condition performance across k in {0, 1, 3, 5, 10}
-│   ├── per_technique_metrics.json     # Per-class precision, recall, and F1
-│   ├── retrieval_conditional_metrics.json # P(Correct | Retrieved) vs P(Correct | Not Retrieved)
-│   ├── failure_decomposition.json     # Independent axes of error decomposition
-│   └── run_provenance.json            # Machine, environment, git, and protocol hashes
-├── figures/                           # High-resolution 300 DPI publication plots
-│   ├── fig_rq2_per_technique_breakdown.png # Hit@10 vs Absent-from-Top10 bar chart
-│   ├── fig_rq2_retrieval_hit_rates.png     # Hit@k & Recall@k curve vs candidate depth k
-│   └── fig_rq3_pilot_token_scaling.png     # Input & output token growth across RAG depths
-└── tables/                            # Publication summary tables in GitHub Markdown
-    ├── table_1_retrieval_diagnostics.md
-    ├── table_2_per_technique_retrieval.md
-    ├── table_3_dev_pilot_resource_usage.md
-    └── table_4_pairwise_representation_comparison.md
+uv run python scripts/provision_snapshot.py --target-dir ../rag2attck_snapshot_b69a690
+uv run python scripts/run_offline_tests.py -m scripts.reproduce_study \
+  --repository-root ../rag2attck_snapshot_b69a690 \
+  --output .tmp/reproduction_report.md \
+  --json-output .tmp/reproduction_verdict.json
 ```
 
+### What `scripts/reproduce_study.py` verifies:
+1. **Stage 1 (Hash & S1 Code Manifest Audit):** Audits SHA-256 hashes of the 15 canonical lock v1 artifacts, frozen protocol v1.1 (`d3bf3d31...`), critical S1 code manifest (`8b1b3ea4...`), and the 10 DEV cost pilot evidence files (`reports/evidence/dev_cost_pilot_20261001/`).
+2. **Stage 2 (Stage B T20 Retrieval Diagnostics):** Recomputes Stage B T20 dense retrieval diagnostics across all 756 positive benchmark views (`Hit@1 = 4.23%`, `Hit@3 = 16.80%`, `Hit@5 = 24.21%`, `Hit@10 = 45.11%`; `T1136.001` semantic embedding gap `0/99` hits at Top-10) and canonical anchor pairwise comparisons across 670 scenario pairs (296 eligible canonical anchor pairs: Single-event strictly better in `65` pairs `[22.0%]`, Contextual-event better in `23` pairs `[7.8%]`, `208` pairs equal `[70.3%]`). Also verifiable standalone on the release checkout via:
+   ```bash
+   uv run python scripts/run_offline_tests.py -m scripts.verify_t20_canonical_artifacts
+   ```
+3. **Stage 3 (Evaluator Fixture & DEV Pilot Audit):** Runs `evaluate_experiment()` on the 5-sample synthetic unit fixture (`fixture_only=True`) and audits the 20-record DEV pilot (`$0.0242094 USD`).
+4. **Fail-Closed Split Contract Check:** Verifies that attempting authoritative evaluation on the `dev` split pilot directory fails closed:
+   ```bash
+   uv run python scripts/run_offline_tests.py -m scripts.reproduce_study \
+     --repository-root ../rag2attck_snapshot_b69a690 \
+     --run-evaluator \
+     --run-dir reports/evidence/dev_cost_pilot_20261001
+   # Expected: [FAIL_CLOSED] Authoritative evaluation requires canonical 'test' split matrix (1,280 samples). Provided manifest has split='dev'.
+   ```
+
 ---
 
-## 7. Security, Anti-Leakage, and Privacy Audit
+## 5. Running the Offline Regression Test Suites
 
-- **Zero Credentials:** The codebase and all evidence bundles have been scanned with automated regex byte-scanners; no `OPENAI_API_KEY`, AWS credentials, or bearer tokens exist in any committed file.
-- **Anti-Label Leakage:** Raw inference rows (`data/ground_truth/synthetic/inference.jsonl`) undergo strict allowlist filtering (`INFERENCE_ALLOWLIST` in `src/synthetic.py`). Fields such as `technique_id`, `rule_name`, `tactic`, and `description` are strictly stripped prior to evaluation. Top-level row keys are restricted strictly to `sample_id` and `endpoint_evidence`.
-- **Offline Network Isolation:** The test suite and reproduction scripts utilize the `offline_guard` (`scripts/run_offline_tests.py`), which intercepts socket connections at the Python level and strips environment credentials. (Note: `offline_guard` operates at the Python application socket level rather than an OS-level sandbox container; bare `uv run` commands without offline flags or pre-cached packages have no network guarantee).
+### 5.1 Standard Clean-Clone CI Test Suite (Tier A)
+After running Steps 3.1–3.2 and provisioning the historical `b69a690` snapshot (`uv run python scripts/provision_snapshot.py --target-dir ../rag2attck_snapshot_b69a690`), run the full offline test suite:
+
+**Linux / macOS (Bash):**
+```bash
+PYTHONNOUSERSITE=1 PYTHONPATH=. RAG2ATTCK_SNAPSHOT_ROOT=../rag2attck_snapshot_b69a690 \
+  uv run python scripts/run_offline_tests.py -m pytest -m "not integration" -q
+```
+
+**Windows (PowerShell):**
+```powershell
+$env:PYTHONNOUSERSITE = "1"
+$env:PYTHONPATH = "."
+$env:RAG2ATTCK_SNAPSHOT_ROOT = (Resolve-Path "../rag2attck_snapshot_b69a690").Path
+uv run python scripts/run_offline_tests.py -m pytest -m "not integration" -q
+```
+
+### 5.2 Full 178-Node Closeout Acceptance Suite (Tier B Workstation Authoring Mode)
+To execute the exact 178-node acceptance suite recorded in Release Asset `workstation_acceptance_d6c4827_sanitized.log` (`178 passed, 0 skipped, 0 failed`):
+1. Install `python-docx==1.2.0` into `.venv` (`uv pip install --python .venv/Scripts/python.exe python-docx==1.2.0`).
+2. Ensure `Node.js` and `@oai/artifact-tool` are present in the workstation runtime cache (for the 2 JS deck-updater tests in `tests/test_presentation_and_repro_regressions.py`).
+3. Stage the unpacked Public v4 package at `artifacts/public_package_staging/04_public_v4_candidate` (with `public_v4_candidate_20261003.zip` at `artifacts/public_package_staging/public_v4_candidate_20261003.zip`) and `base_public_v3` at `artifacts/public_package_staging/canonical-bundle-public-v1`, plus the canonical v1 bundle directory in `CANONICAL_BUNDLE_DIR`.
+4. Run the 11 acceptance test modules under `scripts/run_offline_tests.py` with `PYTHONNOUSERSITE=1` and `PYTHONPATH=.`.
 
 ---
 
-## 8. Runtime Provenance, OS Concurrency & License Disclosures
+## 6. Runtime Provenance, OS Concurrency, Errata & License Disclosures
 
-- **Runtime Launcher Binding:** The pinned executable runtime launcher hash is `05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa`.
-- **Windows Filesystem Concurrency Wrapper:** On Windows platforms, filesystem locking anomalies during atomic journal commits and prediction file renames (`WinError 5` [Access Denied] and `WinError 32` [Sharing Violation]) are handled via a dedicated 12-attempt retry wrapper in `StudyBudgetLedger._write_atomically_unlocked` and `_write_anchor_atomically_unlocked` to ensure transactional record integrity without corrupted states.
-- **License Disclosure:** The repository root `README.md` declares that the project is licensed under the MIT License. Note that a standalone `LICENSE` text file is currently not committed in the repository tree.
+- **Runtime Launcher Binding:** The pinned executable runtime launcher hash is `05b60f050cb456688ed74bddb72f994f3b61a84b56f8e568dda4c17467c4c7aa` (`RAW_WRAPPER_BLOCK` SHA-256 `e4a0115ff2d712bf6a0b896b50d9f4d412b786707d9721f47c74a4ac174e5f68`).
+- **Windows Filesystem Concurrency Wrapper:** On Windows platforms, filesystem locking anomalies during atomic journal commits and prediction file renames (`WinError 5` [Access Denied] and `WinError 32` [Sharing Violation]) are handled via a 12-attempt retry wrapper in `StudyBudgetLedger._write_atomically_unlocked` and `_write_anchor_atomically_unlocked`.
+- **License Disclosure:** This project is licensed under the MIT License — see the standalone [`LICENSE`](../LICENSE) file in the repository root.
+- **Post-Release Audit Errata (`release_closeout_acceptance.json`):**
+  - The checksum-pinned release asset `release_closeout_acceptance.json` (`Asset ID: 679064106`, `11,969` bytes, SHA-256 `aa8e4bcf52e2b2ca6631b16e1458891069423108bfbbdb6ce40b2ca46b50e6ba`) is preserved byte-identical on Release `v1.0.0-rag2attck-study`.
+  - Its `post_approval_execution_phase_ii.main_branch_integration.merged_at_utc` field (`"2026-10-26T18:08:06Z"`) reflects the GitHub auto-merge timestamp of ancestor PRs `#24–#29`, whereas PR `#30`'s own `merged_at` timestamp in the GitHub Pulls API is `"2026-10-26T18:08:04Z"` (merge commit `ca8d39824a72e80053371e208506bfdc6332dc5d` commit timestamp `"2026-10-26T18:08:03Z"`).
 - **Technique Naming Alignment:** Active ATT&CK technique `T1059.009` is named `'Command & Scripting: Cloud API'`. ATT&CK technique `T1218.012` is named `'System Binary Proxy Execution: Verclsid'`.
-- **Scope Boundary:** The empirical results and diagnostic observations reported herein are strictly bounded to the frozen `synthetic-paired-v1` benchmark (670 scenario pairs / 1,340 views). This research prototype does not claim generalizable empirical performance on in-the-wild real enterprise telemetry without an approved, sanitized real-world dataset.
+- **Scope Boundary:** All empirical findings reported in this repository are strictly bounded to the frozen `synthetic-paired-v1` benchmark (`670` scenario pairs / `1,340` views; `718` scorable TEST views across `440` clusters and `8` positively supported ground-truth techniques). Real-world enterprise telemetry (`T15`) remains `DATA_UNAVAILABLE`.

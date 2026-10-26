@@ -186,27 +186,34 @@ uv run python scripts/run_offline_tests.py -m scripts.generate_r9_artifact_inven
 
 ## 4. Secondary Historical Diagnostics & Evaluator Fixture Helper (`scripts/reproduce_study.py`)
 
-Alongside the primary canonical study replay script (`scripts/reproduce_canonical_study.py`), the repository retains [`scripts/reproduce_study.py`](../scripts/reproduce_study.py) for reproducing the **Tier 1 (S1 Snapshot Code Manifest `8b1b3ea4...` & 15 Canonical Lock Artifacts)**, **Tier 2 (Evaluator Unit Fixtures)**, **Tier 3 (DEV Cost Pilot)**, and **Tier 4 (Stage B T20 Retrieval Diagnostics)** artifacts established prior to the full TEST study run. Because Stage 1 verifies the historical S1 execution code manifest (`8b1b3ea4...`), point `--repository-root` at the provisioned `b69a690` snapshot directory:
+Alongside the primary canonical study replay script (`scripts/reproduce_canonical_study.py`), the repository retains [`scripts/reproduce_study.py`](../scripts/reproduce_study.py) for reproducing the **Tier 1 (S1 Snapshot Code Manifest `8b1b3ea4...` & 15 Canonical Lock Artifacts)**, **Tier 2 (Evaluator Unit Fixtures)**, **Tier 3 (DEV Cost Pilot)**, and **Tier 4 (Stage B T20 Retrieval Diagnostics)** artifacts established prior to the full TEST study run:
 
 ```bash
-uv run python scripts/provision_snapshot.py --target-dir ../rag2attck_snapshot_b69a690
+# On the release checkout (runs Stage 2 T20 diagnostics + Stage 3A evaluator unit fixtures):
 uv run python scripts/run_offline_tests.py -m scripts.reproduce_study \
-  --repository-root ../rag2attck_snapshot_b69a690 \
-  --output .tmp/reproduction_report.md \
-  --json-output .tmp/reproduction_verdict.json
+  --recompute-t20 \
+  --run-fixture-diagnostics \
+  --output-dir .tmp/s1_diagnostics
+
+# Inside the provisioned historical S1 snapshot (also runs Stage 1 --verify-hashes against 8b1b3ea4...):
+uv run python scripts/provision_snapshot.py --target-dir ../rag2attck_snapshot_b69a690
+(cd ../rag2attck_snapshot_b69a690 && uv run python scripts/run_offline_tests.py -m scripts.reproduce_study \
+  --verify-hashes \
+  --recompute-t20 \
+  --run-fixture-diagnostics \
+  --output-dir .tmp/s1_diagnostics)
 ```
 
 ### What `scripts/reproduce_study.py` verifies:
-1. **Stage 1 (Hash & S1 Code Manifest Audit):** Audits SHA-256 hashes of the 15 canonical lock v1 artifacts, frozen protocol v1.1 (`d3bf3d31...`), critical S1 code manifest (`8b1b3ea4...`), and the 10 DEV cost pilot evidence files (`reports/evidence/dev_cost_pilot_20261001/`).
-2. **Stage 2 (Stage B T20 Retrieval Diagnostics):** Recomputes Stage B T20 dense retrieval diagnostics across all 756 positive benchmark views (`Hit@1 = 4.23%`, `Hit@3 = 16.80%`, `Hit@5 = 24.21%`, `Hit@10 = 45.11%`; `T1136.001` semantic embedding gap `0/99` hits at Top-10) and canonical anchor pairwise comparisons across 670 scenario pairs (296 eligible canonical anchor pairs: Single-event strictly better in `65` pairs `[22.0%]`, Contextual-event better in `23` pairs `[7.8%]`, `208` pairs equal `[70.3%]`). Also verifiable standalone on the release checkout via:
+1. **Stage 1 (`--verify-hashes`, inside `../rag2attck_snapshot_b69a690`):** Audits SHA-256 hashes of the 15 canonical lock v1 artifacts, frozen protocol v1.1 (`d3bf3d31...`), critical S1 code manifest (`8b1b3ea4...`), and the 10 DEV cost pilot evidence files (`reports/evidence/dev_cost_pilot_20261001/`).
+2. **Stage 2 (`--recompute-t20`):** Recomputes Stage B T20 dense retrieval diagnostics across all 756 positive benchmark views (`Hit@1 = 4.23%`, `Hit@3 = 16.80%`, `Hit@5 = 24.21%`, `Hit@10 = 45.11%`; `T1136.001` semantic embedding gap `0/99` hits at Top-10) and canonical anchor pairwise comparisons across 670 scenario pairs (296 eligible canonical anchor pairs: Single-event strictly better in `65` pairs `[22.0%]`, Contextual-event better in `23` pairs `[7.8%]`, `208` pairs equal `[70.3%]`). Also verifiable standalone on the release checkout via:
    ```bash
    uv run python scripts/run_offline_tests.py -m scripts.verify_t20_canonical_artifacts
    ```
-3. **Stage 3 (Evaluator Fixture & DEV Pilot Audit):** Runs `evaluate_experiment()` on the 5-sample synthetic unit fixture (`fixture_only=True`) and audits the 20-record DEV pilot (`$0.0242094 USD`).
+3. **Stage 3 (`--run-fixture-diagnostics`):** Runs `evaluate_experiment()` on the 5-sample synthetic unit fixture (`fixture_only=True`) and audits the 20-record DEV pilot (`$0.0242094 USD`).
 4. **Fail-Closed Split Contract Check:** Verifies that attempting authoritative evaluation on the `dev` split pilot directory fails closed:
    ```bash
    uv run python scripts/run_offline_tests.py -m scripts.reproduce_study \
-     --repository-root ../rag2attck_snapshot_b69a690 \
      --run-evaluator \
      --run-dir reports/evidence/dev_cost_pilot_20261001
    # Expected: [FAIL_CLOSED] Authoritative evaluation requires canonical 'test' split matrix (1,280 samples). Provided manifest has split='dev'.

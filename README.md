@@ -387,11 +387,11 @@ uv run python scripts/run_offline_tests.py -m scripts.reproduce_canonical_study 
   --expected-manifest-sha 32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c \
   --all
 
-# 8. Secondary historical Stage B T20 / DEV pilot / evaluator fixture helper (against S1 snapshot):
+# 8. Secondary historical Stage B T20 / evaluator fixture helper (on release checkout):
 uv run python scripts/run_offline_tests.py -m scripts.reproduce_study \
-  --repository-root ../rag2attck_snapshot_b69a690 \
-  --output .tmp/reproduction_report.md \
-  --json-output .tmp/reproduction_verdict.json
+  --recompute-t20 \
+  --run-fixture-diagnostics \
+  --output-dir .tmp/s1_diagnostics
 ```
 
 > [!NOTE]

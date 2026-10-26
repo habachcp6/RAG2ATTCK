@@ -42,8 +42,7 @@ def test_swallowed_name_resolution_event_still_fails_check(event):
     # Python emits these distinct audit events for resolver calls. Raise the
     # event directly so a broken guard cannot accidentally issue a DNS query.
     result = launch(
-        f"import sys\ntry:\n sys.audit({event!r}, 'localhost')"
-        "\nexcept Exception:\n pass"
+        f"import sys\ntry:\n sys.audit({event!r}, 'localhost')\nexcept Exception:\n pass"
     )
     assert result.returncode == 97
     assert "attempted_egress=1" in result.stdout

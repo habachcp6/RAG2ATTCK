@@ -4,17 +4,16 @@ Performs formal record-multiset comparison between the 16 period CSVs
 and combined.csv using deterministic canonical row representations.
 """
 
-from collections import Counter, defaultdict
 import csv
+import hashlib
+import json
+import re
+from collections import Counter
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
-import hashlib
-import json
 from pathlib import Path
-import re
-from typing import Any, Dict, List, Optional, Set, Tuple
-
+from typing import Any, Dict, List, Optional, Tuple
 
 EXCEL_EPOCH = datetime(1899, 12, 30, tzinfo=timezone.utc)
 NULL_LITERALS = {"null", "none", "nan", "na", "n/a", "<null>"}
@@ -125,8 +124,22 @@ def _classify_excel_time(period_value: str, combined_value: str) -> Optional[Cel
     if parsed_dt is not None:
         delta = abs((parsed_dt - serial_dt).total_seconds())
         if delta <= 2.0:
-            return CellDifference("", period_value, combined_value, "EXCEL_SERIAL_DATETIME_EQUIVALENT", True, "datetime and Excel serial resolve to the same instant within rounding tolerance")
-        return CellDifference("", period_value, combined_value, "EXCEL_SERIAL_DATETIME_MISMATCH", False, "datetime and Excel serial resolve to different instants")
+            return CellDifference(
+                "",
+                period_value,
+                combined_value,
+                "EXCEL_SERIAL_DATETIME_EQUIVALENT",
+                True,
+                "datetime and Excel serial resolve to the same instant within rounding tolerance",
+            )
+        return CellDifference(
+            "",
+            period_value,
+            combined_value,
+            "EXCEL_SERIAL_DATETIME_MISMATCH",
+            False,
+            "datetime and Excel serial resolve to different instants",
+        )
 
     display_seconds = _parse_minute_second_display(period_value)
     if display_seconds is None:
@@ -136,13 +149,34 @@ def _classify_excel_time(period_value: str, combined_value: str) -> Optional[Cel
     if serial is None:
         return None
     if serial >= Decimal("1"):
-        serial_seconds = serial_dt.minute * 60 + serial_dt.second + serial_dt.microsecond / 1_000_000
+        serial_seconds = (
+            serial_dt.minute * 60 + serial_dt.second + serial_dt.microsecond / 1_000_000
+        )
     else:
-        serial_seconds = serial_dt.hour * 3600 + serial_dt.minute * 60 + serial_dt.second + serial_dt.microsecond / 1_000_000
+        serial_seconds = (
+            serial_dt.hour * 3600
+            + serial_dt.minute * 60
+            + serial_dt.second
+            + serial_dt.microsecond / 1_000_000
+        )
 
     if _close_seconds(display_seconds, serial_seconds):
-        return CellDifference("", period_value, combined_value, "EXCEL_SERIAL_TIME_DISPLAY_EQUIVALENT", True, "minute/second display and Excel serial time agree within rounding tolerance")
-    return CellDifference("", period_value, combined_value, "EXCEL_SERIAL_TIME_MISMATCH", False, "minute/second display and Excel serial time do not agree")
+        return CellDifference(
+            "",
+            period_value,
+            combined_value,
+            "EXCEL_SERIAL_TIME_DISPLAY_EQUIVALENT",
+            True,
+            "minute/second display and Excel serial time agree within rounding tolerance",
+        )
+    return CellDifference(
+        "",
+        period_value,
+        combined_value,
+        "EXCEL_SERIAL_TIME_MISMATCH",
+        False,
+        "minute/second display and Excel serial time do not agree",
+    )
 
 
 def classify_cell_difference(field: str, period_value: Any, combined_value: Any) -> CellDifference:
@@ -153,29 +187,74 @@ def classify_cell_difference(field: str, period_value: Any, combined_value: Any)
     cv = _to_text(combined_value)
 
     if pv == cv:
-        return CellDifference(field, pv, cv, "EXACT_MATCH", True, "values are identical after string normalization")
+        return CellDifference(
+            field, pv, cv, "EXACT_MATCH", True, "values are identical after string normalization"
+        )
     if pv is None or cv is None:
-        return CellDifference(field, pv, cv, "FIELD_ABSENT_OR_PRESENT_CHANGED", False, "one side lacks the field")
+        return CellDifference(
+            field, pv, cv, "FIELD_ABSENT_OR_PRESENT_CHANGED", False, "one side lacks the field"
+        )
     if pv == "" or cv == "":
-        ttype = "EXPLICIT_NULL_EMPTY_CHANGED" if pv.lower() in NULL_LITERALS or cv.lower() in NULL_LITERALS else "MISSING_OR_EMPTY_VALUE_CHANGED"
-        return CellDifference(field, pv, cv, ttype, False, "empty and explicit/missing values are not assumed equivalent")
+        ttype = (
+            "EXPLICIT_NULL_EMPTY_CHANGED"
+            if pv.lower() in NULL_LITERALS or cv.lower() in NULL_LITERALS
+            else "MISSING_OR_EMPTY_VALUE_CHANGED"
+        )
+        return CellDifference(
+            field,
+            pv,
+            cv,
+            ttype,
+            False,
+            "empty and explicit/missing values are not assumed equivalent",
+        )
     if pv.lower() in NULL_LITERALS or cv.lower() in NULL_LITERALS:
-        return CellDifference(field, pv, cv, "EXPLICIT_NULL_TEXT_CHANGED", False, "explicit null literal changed representation")
+        return CellDifference(
+            field,
+            pv,
+            cv,
+            "EXPLICIT_NULL_TEXT_CHANGED",
+            False,
+            "explicit null literal changed representation",
+        )
     if _is_boolean(pv) and _is_boolean(cv) and pv.lower() == cv.lower():
-        return CellDifference(field, pv, cv, "BOOLEAN_CASE_EQUIVALENT", True, "boolean values differ only by case")
+        return CellDifference(
+            field, pv, cv, "BOOLEAN_CASE_EQUIVALENT", True, "boolean values differ only by case"
+        )
     if pv.endswith("%"):
         left = _decimal(pv[:-1])
         right = _decimal(cv)
         if left is not None and right is not None and left / Decimal(100) == right:
-            return CellDifference(field, pv, cv, "PERCENT_DECIMAL_EQUIVALENT", True, "percentage and decimal representations are numerically equal")
+            return CellDifference(
+                field,
+                pv,
+                cv,
+                "PERCENT_DECIMAL_EQUIVALENT",
+                True,
+                "percentage and decimal representations are numerically equal",
+            )
 
     excel_diff = _classify_excel_time(pv, cv)
     if excel_diff is None:
         reversed_diff = _classify_excel_time(cv, pv)
         if reversed_diff is not None:
-            excel_diff = CellDifference(field, pv, cv, reversed_diff.transformation_type, reversed_diff.is_equivalent, reversed_diff.evidence)
+            excel_diff = CellDifference(
+                field,
+                pv,
+                cv,
+                reversed_diff.transformation_type,
+                reversed_diff.is_equivalent,
+                reversed_diff.evidence,
+            )
     else:
-        excel_diff = CellDifference(field, pv, cv, excel_diff.transformation_type, excel_diff.is_equivalent, excel_diff.evidence)
+        excel_diff = CellDifference(
+            field,
+            pv,
+            cv,
+            excel_diff.transformation_type,
+            excel_diff.is_equivalent,
+            excel_diff.evidence,
+        )
     if excel_diff is not None:
         return excel_diff
 
@@ -183,10 +262,31 @@ def classify_cell_difference(field: str, period_value: Any, combined_value: Any)
     right_dec = _decimal(cv)
     if left_dec is not None and right_dec is not None:
         if left_dec == right_dec:
-            return CellDifference(field, pv, cv, "NUMERIC_FORMAT_EQUIVALENT", True, "numeric values are equal despite formatting")
-        return CellDifference(field, pv, cv, "NUMERIC_PRECISION_OR_VALUE_LOSS", False, "numeric values differ after decimal parsing")
+            return CellDifference(
+                field,
+                pv,
+                cv,
+                "NUMERIC_FORMAT_EQUIVALENT",
+                True,
+                "numeric values are equal despite formatting",
+            )
+        return CellDifference(
+            field,
+            pv,
+            cv,
+            "NUMERIC_PRECISION_OR_VALUE_LOSS",
+            False,
+            "numeric values differ after decimal parsing",
+        )
 
-    return CellDifference(field, pv, cv, "TEXT_VALUE_CHANGED", False, "no deterministic representation-preserving transform matched")
+    return CellDifference(
+        field,
+        pv,
+        cv,
+        "TEXT_VALUE_CHANGED",
+        False,
+        "no deterministic representation-preserving transform matched",
+    )
 
 
 def reconcile_representations(
@@ -221,14 +321,16 @@ def reconcile_representations(
             unresolved_count += 1
             taxonomy_by_type["ROW_ID_COVERAGE_MISMATCH"] += 1
             if len(examples) < sample_limit:
-                examples.append({
-                    "_id": rid,
-                    "field": id_field,
-                    "transformation_type": "ROW_ID_COVERAGE_MISMATCH",
-                    "is_equivalent": False,
-                    "period_value": "present" if p_row is not None else "missing",
-                    "combined_value": "present" if c_row is not None else "missing",
-                })
+                examples.append(
+                    {
+                        "_id": rid,
+                        "field": id_field,
+                        "transformation_type": "ROW_ID_COVERAGE_MISMATCH",
+                        "is_equivalent": False,
+                        "period_value": "present" if p_row is not None else "missing",
+                        "combined_value": "present" if c_row is not None else "missing",
+                    }
+                )
             continue
 
         p_canonical = dict(canonicalize_row(p_row))
@@ -254,7 +356,12 @@ def reconcile_representations(
                 examples.append(asdict(diff) | {"_id": rid})
 
     discrepancy_count = equivalent_count + unresolved_count
-    resolved = (not raw_exact) and discrepancy_count > 0 and unresolved_count == 0 and missing_row_count == 0
+    resolved = (
+        (not raw_exact)
+        and discrepancy_count > 0
+        and unresolved_count == 0
+        and missing_row_count == 0
+    )
     if raw_exact:
         status = "RECONCILED_EXACT_MATCH"
     elif resolved:
@@ -280,8 +387,7 @@ def reconcile_representations(
 
 
 def run_multiset_reconciliation(
-    workspace_root: Path,
-    sample_discrepancies_limit: int = 10
+    workspace_root: Path, sample_discrepancies_limit: int = 10
 ) -> Dict[str, Any]:
     """
     Executes formal record-multiset comparison between:
@@ -306,16 +412,18 @@ def run_multiset_reconciliation(
     with open(manifest_file, "r", encoding="utf-8") as f:
         manifest = json.load(f)
 
-    period_files = sorted([
-        f["filename"] for f in manifest["files"]
-        if f["role"] == "ingest_period_csv"
-    ])
+    period_files = sorted(
+        [f["filename"] for f in manifest["files"] if f["role"] == "ingest_period_csv"]
+    )
     combined_file = raw_dir / "combined.csv"
 
     if not combined_file.exists():
         raise FileNotFoundError(f"Missing combined.csv: {combined_file}")
 
-    print(f"[*] Beginning record-multiset reconciliation across {len(period_files)} period files vs combined.csv...")
+    print(
+        f"[*] Beginning record-multiset reconciliation across {len(period_files)} "
+        "period files vs combined.csv..."
+    )
 
     period_fingerprints = Counter()
     period_file_breakdown = {}
@@ -343,10 +451,7 @@ def run_multiset_reconciliation(
                         "row": row,
                     }
 
-        period_file_breakdown[pf] = {
-            "rows": file_rows,
-            "header_cols": header_cols
-        }
+        period_file_breakdown[pf] = {"rows": file_rows, "header_cols": header_cols}
         print(f"  [+] Ingested {pf}: {file_rows:,} rows, {header_cols} columns")
 
     combined_fingerprints = Counter()
@@ -370,7 +475,9 @@ def run_multiset_reconciliation(
                     "row": row,
                 }
 
-    print(f"  [+] Ingested combined.csv: {total_combined_rows:,} rows, {combined_header_cols} columns")
+    print(
+        f"  [+] Ingested combined.csv: {total_combined_rows:,} rows, {combined_header_cols} columns"
+    )
 
     # Multiset Metrics
     unique_period_fps = set(period_fingerprints.keys())
@@ -390,14 +497,18 @@ def run_multiset_reconciliation(
             multiplicity_diffs[fp] = {
                 "period_count": p_count,
                 "combined_count": c_count,
-                "delta": p_count - c_count
+                "delta": p_count - c_count,
             }
 
     # Duplicate multiplicities on each side
-    period_duplicate_multiplicities = {fp: count for fp, count in period_fingerprints.items() if count > 1}
-    combined_duplicate_multiplicities = {fp: count for fp, count in combined_fingerprints.items() if count > 1}
+    period_duplicate_multiplicities = {
+        fp: count for fp, count in period_fingerprints.items() if count > 1
+    }
+    combined_duplicate_multiplicities = {
+        fp: count for fp, count in combined_fingerprints.items() if count > 1
+    }
 
-    multisets_match = (period_fingerprints == combined_fingerprints)
+    multisets_match = period_fingerprints == combined_fingerprints
 
     # Discrepancy field-level diagnosis
     divergent_field_counts = Counter()
@@ -425,13 +536,15 @@ def run_multiset_reconciliation(
                         if pv != cv:
                             divergent_field_counts[k] += 1
                             if len(sample_discrepancies) < sample_discrepancies_limit:
-                                sample_discrepancies.append({
-                                    "_id": rid,
-                                    "field": k,
-                                    "source_file": src_pf,
-                                    "period_value": pv,
-                                    "combined_value": cv
-                                })
+                                sample_discrepancies.append(
+                                    {
+                                        "_id": rid,
+                                        "field": k,
+                                        "source_file": src_pf,
+                                        "period_value": pv,
+                                        "combined_value": cv,
+                                    }
+                                )
 
     # Exact status formulation
     if multisets_match:
@@ -440,18 +553,19 @@ def run_multiset_reconciliation(
     elif semantic_result["representation_equivalence_resolved"]:
         equality_status = "RECONCILIATION_DIVERGENT"
         explanation = (
-            f"Raw cell-level string multisets diverge in {len(fps_only_in_period):,} rows, but every observed "
-            "cell difference is classified as a deterministic representation-preserving transformation. "
-            "The artifact records raw_exact_equality=false and semantic/representation reconciliation=resolved."
+            f"Raw cell-level string multisets diverge in {len(fps_only_in_period):,} rows, "
+            "but every observed cell difference is classified as a deterministic "
+            "representation-preserving transformation. The artifact records "
+            "raw_exact_equality=false and semantic/representation reconciliation=resolved."
         )
     else:
         equality_status = "RECONCILIATION_DIVERGENT"
         explanation = (
-            f"Row counts match exactly ({total_period_rows:,} == {total_combined_rows:,}), but raw cell-level string "
-            f"multisets diverge in {len(fps_only_in_period):,} rows and "
-            f"{semantic_result['unresolved_discrepancy_count']:,} cell differences cannot be proven "
-            "representation-equivalent. Under the frozen methodology this remains an unresolved "
-            "RECONCILIATION_DIVERGENT gate and downstream Task 3 execution must stop."
+            f"Row counts match exactly ({total_period_rows:,} == {total_combined_rows:,}), "
+            f"but raw cell-level string multisets diverge in {len(fps_only_in_period):,} rows and "
+            f"{semantic_result['unresolved_discrepancy_count']:,} cell differences cannot be "
+            "proven representation-equivalent. Under the frozen methodology this remains an "
+            "unresolved RECONCILIATION_DIVERGENT gate and downstream Task 3 execution must stop."
         )
 
     reconciliation_log = {
@@ -462,7 +576,9 @@ def run_multiset_reconciliation(
         "is_exact_match": multisets_match,
         "raw_exact_equality": semantic_result["raw_exact_equality"],
         "semantic_reconciliation_status": semantic_result["semantic_reconciliation_status"],
-        "representation_equivalence_resolved": semantic_result["representation_equivalence_resolved"],
+        "representation_equivalence_resolved": semantic_result[
+            "representation_equivalence_resolved"
+        ],
         "discrepancy_count": semantic_result["discrepancy_count"],
         "equivalent_discrepancy_count": semantic_result["equivalent_discrepancy_count"],
         "unresolved_discrepancy_count": semantic_result["unresolved_discrepancy_count"],
@@ -471,7 +587,7 @@ def run_multiset_reconciliation(
             "total_period_rows": total_period_rows,
             "total_combined_rows": total_combined_rows,
             "row_count_delta": total_period_rows - total_combined_rows,
-            "row_counts_match": (total_period_rows == total_combined_rows)
+            "row_counts_match": (total_period_rows == total_combined_rows),
         },
         "fingerprint_accounting": {
             "unique_period_fingerprints": len(unique_period_fps),
@@ -481,7 +597,7 @@ def run_multiset_reconciliation(
             "fingerprints_only_in_combined_count": len(fps_only_in_combined),
             "multiplicity_differences_count": len(multiplicity_diffs),
             "period_duplicate_multiplicities_count": len(period_duplicate_multiplicities),
-            "combined_duplicate_multiplicities_count": len(combined_duplicate_multiplicities)
+            "combined_duplicate_multiplicities_count": len(combined_duplicate_multiplicities),
         },
         "explanation": explanation,
         "divergent_fields_summary": dict(divergent_field_counts.most_common(10)),
@@ -492,8 +608,8 @@ def run_multiset_reconciliation(
             "filename": "combined.csv",
             "rows": total_combined_rows,
             "header_cols": combined_header_cols,
-            "role": "reconciliation_only_never_added_to_observations"
-        }
+            "role": "reconciliation_only_never_added_to_observations",
+        },
     }
 
     # Write reconciliation_log.json
@@ -514,19 +630,42 @@ def run_multiset_reconciliation(
         "",
         "## 1. Executive Summary",
         "",
-        f"A rigorous, cell-level record multiset comparison was performed between the **16 period CSV collections** ({total_period_rows:,} rows) "
-        f"and **`combined.csv`** ({total_combined_rows:,} rows) using deterministic row canonicalization and SHA-256 fingerprints.",
+        (
+            "A rigorous, cell-level record multiset comparison was performed between the "
+            f"**16 period CSV collections** ({total_period_rows:,} rows) "
+            f"and **`combined.csv`** ({total_combined_rows:,} rows) using deterministic "
+            "row canonicalization and SHA-256 fingerprints."
+        ),
         "",
         "| Metric | Period CSVs (Ingest) | `combined.csv` (Reconciliation) | Difference |",
         "|---|---:|---:|---:|",
         f"| **Total Rows** | {total_period_rows:,} | {total_combined_rows:,} | **0** |",
-        f"| **Unique Record Fingerprints** | {len(unique_period_fps):,} | {len(unique_combined_fps):,} | — |",
-        f"| **Exact Multiset Fingerprint Matches** | {len(fps_in_both):,} ({len(fps_in_both)/total_period_rows*100:.1f}%) | {len(fps_in_both):,} | 0 |",
-        f"| **Divergent Value Fingerprints** | {len(fps_only_in_period):,} ({len(fps_only_in_period)/total_period_rows*100:.1f}%) | {len(fps_only_in_combined):,} | 0 |",
-        f"| **Duplicate Multiplicities** | {len(period_duplicate_multiplicities)} | {len(combined_duplicate_multiplicities)} | 0 |",
+        (
+            f"| **Unique Record Fingerprints** | {len(unique_period_fps):,} | "
+            f"{len(unique_combined_fps):,} | — |"
+        ),
+        (
+            f"| **Exact Multiset Fingerprint Matches** | {len(fps_in_both):,} "
+            f"({len(fps_in_both) / total_period_rows * 100:.1f}%) | {len(fps_in_both):,} | 0 |"
+        ),
+        (
+            f"| **Divergent Value Fingerprints** | {len(fps_only_in_period):,} "
+            f"({len(fps_only_in_period) / total_period_rows * 100:.1f}%) | "
+            f"{len(fps_only_in_combined):,} | 0 |"
+        ),
+        (
+            f"| **Duplicate Multiplicities** | {len(period_duplicate_multiplicities)} | "
+            f"{len(combined_duplicate_multiplicities)} | 0 |"
+        ),
         f"| **Multiset Exact Equality** | — | — | **{multisets_match}** |",
-        f"| **Representation Equivalence Resolved** | — | — | **{semantic_result['representation_equivalence_resolved']}** |",
-        f"| **Unresolved Cell Differences** | — | — | **{semantic_result['unresolved_discrepancy_count']:,}** |",
+        (
+            "| **Representation Equivalence Resolved** | — | — | "
+            f"**{semantic_result['representation_equivalence_resolved']}** |"
+        ),
+        (
+            "| **Unresolved Cell Differences** | — | — | "
+            f"**{semantic_result['unresolved_discrepancy_count']:,}** |"
+        ),
         "",
         "---",
         "",
@@ -535,15 +674,26 @@ def run_multiset_reconciliation(
         "> [!IMPORTANT]",
         "> Per Task 2 methodology (§R4):",
         "> - The **16 period CSVs** constitute the canonical ingest observation pool.",
-        "> - `combined.csv` is preserved strictly as reconciliation input and **never added to observations**.",
-        "> - Equal row counts do **not** imply exact multiset equality. The actual value divergences must be documented rather than ignored.",
+        (
+            "> - `combined.csv` is preserved strictly as reconciliation input "
+            "and **never added to observations**."
+        ),
+        (
+            "> - Equal row counts do **not** imply exact multiset equality. "
+            "The actual value divergences must be documented rather than ignored."
+        ),
         "",
         "---",
         "",
         "## 3. Detailed Root-Cause Analysis of Divergences",
         "",
-        f"All **{total_period_rows:,} records share identical `_id` values** across both sides. However, exactly **{len(fps_only_in_period):,} records** "
-        "diverge in raw string representation. The corrected semantic audit classifies each changed cell and does not assume Excel serialization is sufficient:",
+        (
+            f"All **{total_period_rows:,} records share identical `_id` values** "
+            "across both sides. "
+            f"However, exactly **{len(fps_only_in_period):,} records** diverge in raw string "
+            "representation. The corrected semantic audit classifies each changed cell and "
+            "does not assume Excel serialization is sufficient:"
+        ),
         "",
         "| Transformation Type | Cell Count | Representation-Equivalent? |",
         "|---|---:|:---:|",
@@ -564,44 +714,60 @@ def run_multiset_reconciliation(
         equivalent = "No" if ttype in non_equivalent_types else "Yes"
         report_lines.append(f"| `{ttype}` | {count:,} | {equivalent} |")
 
-    report_lines.extend([
-        "",
-        "Sample classified discrepancies:",
-        "",
-        "| Record `_id` | Field | Type | Period CSV | `combined.csv` | Equivalent |",
-        "|---|---|---|---|---|:---:|",
-    ])
+    report_lines.extend(
+        [
+            "",
+            "Sample classified discrepancies:",
+            "",
+            "| Record `_id` | Field | Type | Period CSV | `combined.csv` | Equivalent |",
+            "|---|---|---|---|---|:---:|",
+        ]
+    )
 
     for ex in semantic_result["discrepancy_taxonomy"]["examples"][:10]:
         report_lines.append(
-            f"| `{ex.get('_id', '')}` | `{ex.get('field', '')}` | `{ex.get('transformation_type', '')}` | "
-            f"`{str(ex.get('period_value', ''))[:60]}` | `{str(ex.get('combined_value', ''))[:60]}` | {ex.get('is_equivalent')} |"
+            f"| `{ex.get('_id', '')}` | `{ex.get('field', '')}` | "
+            f"`{ex.get('transformation_type', '')}` | "
+            f"`{str(ex.get('period_value', ''))[:60]}` | "
+            f"`{str(ex.get('combined_value', ''))[:60]}` | {ex.get('is_equivalent')} |"
         )
 
-    report_lines.extend([
-        "",
-        "---",
-        "",
-        "## 4. Per-File Period Breakdown",
-        "",
-        "| Period File | Rows | Header Columns |",
-        "|---|---:|---:|",
-    ])
+    report_lines.extend(
+        [
+            "",
+            "---",
+            "",
+            "## 4. Per-File Period Breakdown",
+            "",
+            "| Period File | Rows | Header Columns |",
+            "|---|---:|---:|",
+        ]
+    )
 
     for pf, data in period_file_breakdown.items():
         report_lines.append(f"| `{pf}` | {data['rows']:,} | {data['header_cols']} |")
 
-    report_lines.extend([
-        f"| **Total (16 Period Files)** | **{total_period_rows:,}** | **Superset: {combined_header_cols}** |",
-        f"| **`combined.csv`** | **{total_combined_rows:,}** | **{combined_header_cols}** |",
-        "",
-        "---",
-        "",
-        "## 5. Audit Determination",
-        f"Because exact cell-level string multisets diverge in {len(fps_only_in_period):,} rows, the gate reports **`{equality_status}`** "
-        "rather than a false exact match claim. Because unresolved non-equivalent cell differences remain, "
-        "Task 2 is a STOP gate and Task 3+ are not validly executable under the frozen methodology."
-    ])
+    report_lines.extend(
+        [
+            (
+                f"| **Total (16 Period Files)** | **{total_period_rows:,}** | "
+                f"**Superset: {combined_header_cols}** |"
+            ),
+            f"| **`combined.csv`** | **{total_combined_rows:,}** | **{combined_header_cols}** |",
+            "",
+            "---",
+            "",
+            "## 5. Audit Determination",
+            (
+                f"Because exact cell-level string multisets diverge in {len(fps_only_in_period):,} "
+                "rows, the gate reports "
+                f"**`{equality_status}`** rather than a false exact match claim. "
+                "Because unresolved non-equivalent cell differences remain, "
+                "Task 2 is a STOP gate and Task 3+ are not validly executable "
+                "under the frozen methodology."
+            ),
+        ]
+    )
 
     report_file = audit_dir / "reconciliation_report.md"
     with open(report_file, "w", encoding="utf-8") as f:

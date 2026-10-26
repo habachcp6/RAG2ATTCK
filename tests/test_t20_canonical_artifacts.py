@@ -23,8 +23,11 @@ def test_rehashed_t1136_summary_drift_is_rejected(tmp_path, monkeypatch):
         verifier,
         "EXPECTED_HASHES",
         {
-            **{path: digest for path, digest in verifier.EXPECTED_HASHES.items()
-               if path != verifier.ROOT / "artifacts/analysis/t20_retrieval_failure_summary.json"},
+            **{
+                path: digest
+                for path, digest in verifier.EXPECTED_HASHES.items()
+                if path != verifier.ROOT / "artifacts/analysis/t20_retrieval_failure_summary.json"
+            },
             changed: sha256(changed.read_bytes()).hexdigest(),
         },
     )

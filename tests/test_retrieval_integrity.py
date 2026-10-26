@@ -20,13 +20,17 @@ def artifacts(tmp_path):
     (root / "config").mkdir(parents=True)
     cfg = json.loads(Path("config/retrieval.json").read_text())
     corpus = root / "corpus.jsonl"
-    corpus.write_text(json.dumps({"technique_id": "T1059.001", "retrieval_text": "PowerShell"}) + "\n")
+    corpus.write_text(
+        json.dumps({"technique_id": "T1059.001", "retrieval_text": "PowerShell"}) + "\n"
+    )
     cfg["corpus_path"] = "corpus.jsonl"
     cfg["corpus_sha256"] = hashlib.sha256(corpus.read_bytes()).hexdigest()
     config = root / "config" / "retrieval.json"
     write_json(config, cfg)
     retriever = FAISSRetriever.from_corpus(corpus, config, embedder=StubEmbedder())
-    paths = [root / cfg[key] for key in ("faiss_index_path", "document_mapping_path", "manifest_path")]
+    paths = [
+        root / cfg[key] for key in ("faiss_index_path", "document_mapping_path", "manifest_path")
+    ]
     retriever.save(*paths)
     return config, cfg, paths
 
@@ -50,33 +54,41 @@ def test_default_config_ignores_unrelated_cwd(tmp_path, monkeypatch):
     assert retriever.index.ntotal == len(retriever.document_mapping) == 474
 
 
-@pytest.mark.parametrize("field,value", [
-    ("corpus_sha256", "a" * 64),
-    ("embedding_model_revision", "a" * 40),
-    ("embedding_model_id", "another-model"),
-    ("embedding_dimension", 768),
-    ("faiss_index_type", "IndexFlatL2"),
-    ("normalization", "none"),
-    ("similarity_metric", "euclidean"),
-])
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("corpus_sha256", "a" * 64),
+        ("embedding_model_revision", "a" * 40),
+        ("embedding_model_id", "another-model"),
+        ("embedding_dimension", 768),
+        ("faiss_index_type", "IndexFlatL2"),
+        ("normalization", "none"),
+        ("similarity_metric", "euclidean"),
+    ],
+)
 def test_config_manifest_mismatch_fails_before_embedding(artifacts, monkeypatch, field, value):
     config, cfg, paths = artifacts
     manifest = json.loads(paths[2].read_text())
     manifest[field] = value
     write_json(paths[2], manifest)
+
     def no_model(**kwargs):
         pytest.fail("Mismatch must be rejected before model initialization")
+
     monkeypatch.setattr("src.retrieval.retriever.SentenceTransformerEmbedder", no_model)
     with pytest.raises(ValueError, match=f"{field} mismatch"):
         FAISSRetriever.from_saved(config)
 
 
-@pytest.mark.parametrize("case,message", [
-    ("docmap", "index.ntotal/docmap count"),
-    ("count", "document_count mismatch"),
-    ("dimension", "embedding_dimension mismatch"),
-    ("type", "faiss_index_type mismatch"),
-])
+@pytest.mark.parametrize(
+    "case,message",
+    [
+        ("docmap", "index.ntotal/docmap count"),
+        ("count", "document_count mismatch"),
+        ("dimension", "embedding_dimension mismatch"),
+        ("type", "faiss_index_type mismatch"),
+    ],
+)
 def test_loaded_artifact_invariants_even_with_valid_hashes(artifacts, case, message):
     config, cfg, paths = artifacts
     index_path, docmap_path, manifest_path = paths

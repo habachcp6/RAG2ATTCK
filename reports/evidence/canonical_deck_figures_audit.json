@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0.0",
+  "timestamp_utc": "2026-10-03T01:09:58.659438+00:00",
+  "deck_file": "docs/presentation/slides.pptx",
+  "actual_embedded_media_count": 2,
+  "embedded_figures": {
+    "slide_6_rq2_hit_rate": {
+      "file": "docs/presentation/figures/canonical_rq2_retrieval_hit_rate.png",
+      "canonical_name": "fig4_retrieval_hit_rate.png",
+      "sha256": "f8287936d2b5fc24e89584349028f393b801b6bebe668f8bea449c6b67f2128f",
+      "cohort": "TEST 718 scorable views",
+      "metric_hit10": "44.71% (321 / 718)"
+    },
+    "slide_9_rq3_resource_consumption": {
+      "file": "docs/presentation/figures/canonical_rq3_resource_consumption.png",
+      "canonical_name": "fig7_cost_and_tokens_vs_k.png",
+      "sha256": "ca296165b38b499432f851618e3d6a512964c461e59dc3b646e647ddcb70bfb1",
+      "cohort": "TEST 1,280 views cohort (6,400 logical requests)",
+      "k10_prompt_tokens_mean": 5114.3,
+      "k1_to_k10_prompt_ratio": 4.103
+    }
+  },
+  "provenance_anchors": {
+    "canonical_lock": "d0ce198ad4853f4c41ef2bfbafbe10a395e4927a6c6561b3e72c055c4b887e9f",
+    "experiment_config": "961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac",
+    "baseline_prompt": "b751fde1ee33b03ec0bdc07cbba10267002d2086cf22b91a74bdfd123856f206",
+    "inference_data": "90d5f59e64f669f95d5ddccd86f1f047e10ee3dc46e4b67a8cd13d1ddf2cd4b8",
+    "pairs_data": "079e57a441b18d127739f610e7f62c263d943eefa19ca4ea5c6eab8b8a07665d",
+    "canonical_bundle": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34"
+  }
+}

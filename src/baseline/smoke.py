@@ -26,7 +26,6 @@ import openai
 from src.llm.client import (
     GLOBAL_LIVE_BUDGET,
     LLMClient,
-    get_live_request_count,
 )
 from src.llm.schemas import (
     ExecutionRecord,
@@ -41,6 +40,7 @@ logger = logging.getLogger("rag2attck.baseline.smoke")
 # ---------------------------------------------------------------------------
 # 1. Mock Response Builders
 # ---------------------------------------------------------------------------
+
 
 def create_mock_usage(input_tokens: int = 1450, output_tokens: int = 38) -> SimpleNamespace:
     """Creates a mock token usage namespace matching OpenAI response format."""
@@ -66,18 +66,14 @@ def create_mock_responses_api_obj(
         output = [
             SimpleNamespace(
                 type="message",
-                content=[
-                    SimpleNamespace(type="refusal", refusal=refusal)
-                ],
+                content=[SimpleNamespace(type="refusal", refusal=refusal)],
             )
         ]
     elif payload_text is not None:
         output = [
             SimpleNamespace(
                 type="message",
-                content=[
-                    SimpleNamespace(type="output_text", text=payload_text)
-                ],
+                content=[SimpleNamespace(type="output_text", text=payload_text)],
             )
         ]
 
@@ -118,9 +114,15 @@ def build_mock_client_for_samples(cases: List[Dict[str, Any]]) -> MagicMock:
         if matched_case is None and cases:
             matched_case = cases[0]
 
-        tech_id = matched_case["synthetic_debug_ground_truth"]["technique_id"] if matched_case else "T1059.001"
+        tech_id = (
+            matched_case["synthetic_debug_ground_truth"]["technique_id"]
+            if matched_case
+            else "T1059.001"
+        )
         payload = json.dumps({"technique_id": tech_id})
-        return create_mock_responses_api_obj(payload_text=payload, input_tokens=1420, output_tokens=32)
+        return create_mock_responses_api_obj(
+            payload_text=payload, input_tokens=1420, output_tokens=32
+        )
 
     mock_client.responses.create.side_effect = mock_responses_create
     return mock_client
@@ -129,6 +131,7 @@ def build_mock_client_for_samples(cases: List[Dict[str, Any]]) -> MagicMock:
 # ---------------------------------------------------------------------------
 # 2. Case Loading and Verification
 # ---------------------------------------------------------------------------
+
 
 def load_smoke_cases(cases_path: Optional[Path | str] = None) -> List[Dict[str, Any]]:
     """
@@ -162,6 +165,7 @@ def load_smoke_cases(cases_path: Optional[Path | str] = None) -> List[Dict[str, 
 # 3. Failure Pathways Verification Suite
 # ---------------------------------------------------------------------------
 
+
 def run_failure_pathways_suite(
     registry_ids: Optional[set[str]] = None,
 ) -> List[ExecutionRecord]:
@@ -183,7 +187,9 @@ def run_failure_pathways_suite(
 
     # Pathway 1: VALID Technique
     m1 = MagicMock()
-    m1.responses.create.return_value = create_mock_responses_api_obj(json.dumps({"technique_id": "T1105"}))
+    m1.responses.create.return_value = create_mock_responses_api_obj(
+        json.dumps({"technique_id": "T1105"})
+    )
     c1 = LLMClient(openai_client=m1, is_live=False, registry_ids=reg)
     rec1 = c1.predict(sample_id="pathway_valid_technique", endpoint_evidence="certutil download")
     assert rec1.parse_status == ParseStatus.VALID, f"Expected VALID, got {rec1.parse_status}"
@@ -192,28 +198,44 @@ def run_failure_pathways_suite(
 
     # Pathway 2: VALID Sub-technique
     m2 = MagicMock()
-    m2.responses.create.return_value = create_mock_responses_api_obj(json.dumps({"technique_id": "T1059.001"}))
+    m2.responses.create.return_value = create_mock_responses_api_obj(
+        json.dumps({"technique_id": "T1059.001"})
+    )
     c2 = LLMClient(openai_client=m2, is_live=False, registry_ids=reg)
-    rec2 = c2.predict(sample_id="pathway_valid_subtechnique", endpoint_evidence="powershell execution")
+    rec2 = c2.predict(
+        sample_id="pathway_valid_subtechnique", endpoint_evidence="powershell execution"
+    )
     assert rec2.parse_status == ParseStatus.VALID, f"Expected VALID, got {rec2.parse_status}"
     assert rec2.predicted_technique_id == "T1059.001"
     pathway_records.append(rec2)
 
     # Pathway 3: INVALID_ID (Layer 1 Syntax Failure)
     m3 = MagicMock()
-    m3.responses.create.return_value = create_mock_responses_api_obj(json.dumps({"technique_id": "T1059_invalid_syntax"}))
+    m3.responses.create.return_value = create_mock_responses_api_obj(
+        json.dumps({"technique_id": "T1059_invalid_syntax"})
+    )
     c3 = LLMClient(openai_client=m3, is_live=False, registry_ids=reg)
-    rec3 = c3.predict(sample_id="pathway_invalid_id_syntax", endpoint_evidence="test syntax failure")
-    assert rec3.parse_status == ParseStatus.INVALID_ID, f"Expected INVALID_ID, got {rec3.parse_status}"
+    rec3 = c3.predict(
+        sample_id="pathway_invalid_id_syntax", endpoint_evidence="test syntax failure"
+    )
+    assert rec3.parse_status == ParseStatus.INVALID_ID, (
+        f"Expected INVALID_ID, got {rec3.parse_status}"
+    )
     assert "syntax" in (rec3.invalid_reason or "").lower()
     pathway_records.append(rec3)
 
     # Pathway 4: INVALID_ID (Layer 2 Registry Membership Failure)
     m4 = MagicMock()
-    m4.responses.create.return_value = create_mock_responses_api_obj(json.dumps({"technique_id": "T9999"}))
+    m4.responses.create.return_value = create_mock_responses_api_obj(
+        json.dumps({"technique_id": "T9999"})
+    )
     c4 = LLMClient(openai_client=m4, is_live=False, registry_ids=reg)
-    rec4 = c4.predict(sample_id="pathway_invalid_id_registry", endpoint_evidence="test registry failure")
-    assert rec4.parse_status == ParseStatus.INVALID_ID, f"Expected INVALID_ID, got {rec4.parse_status}"
+    rec4 = c4.predict(
+        sample_id="pathway_invalid_id_registry", endpoint_evidence="test registry failure"
+    )
+    assert rec4.parse_status == ParseStatus.INVALID_ID, (
+        f"Expected INVALID_ID, got {rec4.parse_status}"
+    )
     assert "registry" in (rec4.invalid_reason or "").lower()
     pathway_records.append(rec4)
 
@@ -221,16 +243,26 @@ def run_failure_pathways_suite(
     m5 = MagicMock()
     m5.responses.create.return_value = create_mock_responses_api_obj("{technique_id: unquoted_val")
     c5 = LLMClient(openai_client=m5, is_live=False, registry_ids=reg)
-    rec5 = c5.predict(sample_id="pathway_malformed_broken_json", endpoint_evidence="test broken json")
-    assert rec5.parse_status == ParseStatus.MALFORMED_RESPONSE, f"Expected MALFORMED_RESPONSE, got {rec5.parse_status}"
+    rec5 = c5.predict(
+        sample_id="pathway_malformed_broken_json", endpoint_evidence="test broken json"
+    )
+    assert rec5.parse_status == ParseStatus.MALFORMED_RESPONSE, (
+        f"Expected MALFORMED_RESPONSE, got {rec5.parse_status}"
+    )
     pathway_records.append(rec5)
 
     # Pathway 6: MALFORMED_RESPONSE (Missing Required Field)
     m6 = MagicMock()
-    m6.responses.create.return_value = create_mock_responses_api_obj(json.dumps({"predicted_attack": "T1059"}))
+    m6.responses.create.return_value = create_mock_responses_api_obj(
+        json.dumps({"predicted_attack": "T1059"})
+    )
     c6 = LLMClient(openai_client=m6, is_live=False, registry_ids=reg)
-    rec6 = c6.predict(sample_id="pathway_malformed_missing_field", endpoint_evidence="test missing field")
-    assert rec6.parse_status == ParseStatus.MALFORMED_RESPONSE, f"Expected MALFORMED_RESPONSE, got {rec6.parse_status}"
+    rec6 = c6.predict(
+        sample_id="pathway_malformed_missing_field", endpoint_evidence="test missing field"
+    )
+    assert rec6.parse_status == ParseStatus.MALFORMED_RESPONSE, (
+        f"Expected MALFORMED_RESPONSE, got {rec6.parse_status}"
+    )
     pathway_records.append(rec6)
 
     # Pathway 7: REFUSAL (Model Refusal)
@@ -254,7 +286,9 @@ def run_failure_pathways_suite(
     )
     c8 = LLMClient(openai_client=m8, is_live=False, registry_ids=reg)
     rec8 = c8.predict(sample_id="pathway_incomplete", endpoint_evidence="test incomplete")
-    assert rec8.parse_status == ParseStatus.INCOMPLETE, f"Expected INCOMPLETE, got {rec8.parse_status}"
+    assert rec8.parse_status == ParseStatus.INCOMPLETE, (
+        f"Expected INCOMPLETE, got {rec8.parse_status}"
+    )
     pathway_records.append(rec8)
 
     # Pathway 9: API_FAILURE (Non-retryable API Error)
@@ -267,7 +301,9 @@ def run_failure_pathways_suite(
     m9.responses.create.side_effect = req_err
     c9 = LLMClient(openai_client=m9, is_live=False, registry_ids=reg)
     rec9 = c9.predict(sample_id="pathway_api_failure", endpoint_evidence="test api failure")
-    assert rec9.parse_status == ParseStatus.API_FAILURE, f"Expected API_FAILURE, got {rec9.parse_status}"
+    assert rec9.parse_status == ParseStatus.API_FAILURE, (
+        f"Expected API_FAILURE, got {rec9.parse_status}"
+    )
     pathway_records.append(rec9)
 
     # Pathway 10: TIMEOUT (APITimeoutError exhausted retries)
@@ -286,6 +322,7 @@ def run_failure_pathways_suite(
 # ---------------------------------------------------------------------------
 # 4. Main Smoke Pipeline Execution
 # ---------------------------------------------------------------------------
+
 
 def run_smoke_test_pipeline(
     cases_path: Optional[Path | str] = None,
@@ -421,6 +458,7 @@ def run_smoke_test_pipeline(
 # 5. Report Generator
 # ---------------------------------------------------------------------------
 
+
 def write_smoke_test_report(
     results: Dict[str, Any],
     model_cfg: Dict[str, Any],
@@ -438,7 +476,8 @@ def write_smoke_test_report(
     for r in syn_records:
         tok_str = f"{r.input_tokens or 0} / {r.output_tokens or 0}"
         rows_syn.append(
-            f"| `{r.sample_id}` | `{r.predicted_technique_id or 'None'}` | `{r.parse_status}` | `{r.retry_count}` | `{r.latency_ms:.1f} ms` | `{tok_str}` |"
+            f"| `{r.sample_id}` | `{r.predicted_technique_id or 'None'}` | "
+            f"`{r.parse_status}` | `{r.retry_count}` | `{r.latency_ms:.1f} ms` | `{tok_str}` |"
         )
     syn_table = "\n".join(rows_syn)
 
@@ -449,11 +488,14 @@ def write_smoke_test_report(
         if len(reason) > 70:
             reason = reason[:67] + "..."
         rows_fail.append(
-            f"| `{r.sample_id}` | `{r.predicted_technique_id or 'None'}` | `{r.parse_status}` | `{r.retry_count}` | `{reason}` |"
+            f"| `{r.sample_id}` | `{r.predicted_technique_id or 'None'}` | "
+            f"`{r.parse_status}` | `{r.retry_count}` | `{reason}` |"
         )
     fail_table = "\n".join(rows_fail)
 
-    live_api_consumed = results.get("live_api_requests_consumed", results.get("live_requests_consumed", 0))
+    live_api_consumed = results.get(
+        "live_api_requests_consumed", results.get("live_requests_consumed", 0)
+    )
     live_samples_disp = results.get("live_samples_dispatched", 0)
 
     if live_api_consumed == 0:
@@ -465,168 +507,333 @@ def write_smoke_test_report(
         cost_str = "See OpenAI dashboard for actual cost"
         mock_tag = ""
 
-    report_content = f"""# T14: Synthetic Smoke Test and Baseline Pipeline Verification Report
-
-## Executive Summary
-This report documents the end-to-end execution of the **No-RAG Baseline smoke test pipeline** under Task **T14** of the **RAG2ATTCK** research project. 
-
-The smoke testing pipeline validates the full inference path:
-1. Frozen model configuration loading (`config/model.json`)
-2. Frozen base prompt loading and symmetric placeholder substitution (`prompts/baseline_v1.txt`)
-3. Responses API execution (sole frozen experimental interface, no runtime fallback)
-4. Pydantic schema deserialization (`{{"technique_id": "..."}}`)
-5. Mandatory post-hoc two-layer ATT&CK ID validation (syntax regex + Enterprise ATT&CK v19.2 registry)
-6. Precision wall-clock latency measurement (inclusive of retries and backoff)
-7. Global live API budget tracking and strict capping (≤ 5 requests per-process smoke-test run)
-8. Exhaustive verification of all 7 parse status taxonomy members across realistic failure conditions
-
----
-
-## Research Integrity Attestation & Data Isolation
-> [!IMPORTANT]
-> **Strict Research Guardrail Attestation:**
-> All 25 telemetry samples evaluated in this report were synthetically generated for engineering pipeline validation and smoke verification only. 
-> 
-> **Explicit Integrity Declarations:**
-> 1. None of the synthetic cases, predictions, token usages, latencies, or error traces contained in this report contribute to or influence any research questions (RQ1, RQ2, RQ3).
-> 2. No synthetic data is included in accuracy, Macro-F1, or paper results.
-> 3. Task T15 (Main Baseline Evaluation on real benchmark data) was NOT executed during this task.
-> 4. The ATT&CK v19.2 registry was utilized strictly as a post-hoc evaluator; zero ATT&CK descriptions or knowledge were injected into prompts or retrieval paths.
-
----
-
-## 1. Pipeline Architecture & Configuration
-
-| Configuration Dimension | Verified Value | Origin |
-| :--- | :--- | :--- |
-| **Provider** | `{model_cfg.get("provider")}` | `config/model.json` |
-| **Model** | `{model_cfg.get("model")}` | `config/model.json` |
-| **Reasoning Effort** | `{model_cfg.get("reasoning_effort")}` | `config/model.json` |
-| **Primary API Interface** | `{model_cfg.get("api_interface")}` | `config/model.json` |
-| **Max Output Tokens** | `{model_cfg.get("max_output_tokens")}` | `config/model.json` |
-| **Timeout Seconds** | `{model_cfg.get("timeout_seconds")}s` | `config/model.json` |
-| **Max Retries** | `{model_cfg.get("max_retries")}` | `config/model.json` |
-| **Base Prompt Template** | `prompts/baseline_v1.txt` | Prompt Freeze T13 |
-| **Placeholders Verified** | `{{ENDPOINT_EVIDENCE}}`, `{{RETRIEVED_CONTEXT}}` | Symmetry Check |
-| **No-RAG Context Value** | `""` (empty string) | Context Isolation Check |
-
----
-
-## 2. Global Live Request Budget & Cost Accounting
-
-The global live request budget strictly caps actual OpenAI API network invocations to **at most 5 requests total** (including all retries) per-process smoke-test live request cap.
-
-| Metric | Recorded Value | Budget Limit | Status |
-| :--- | :--- | :--- | :--- |
-| **Live Environment Key Detected (`OPENAI_API_KEY`)** | `{"YES" if results["has_live_key"] else "NO"}` | N/A | {runtime_status} |
-| **Live Samples Dispatched** | **`{live_samples_disp}`** | `{results["total_synthetic_cases"]}` | Sample routing |
-| **Live API Requests Consumed** | **`{live_api_consumed}`** | **5** (Maximum) | **COMPLIANT** (≤ 5) |
-| **Live API Requests Remaining** | `{results["live_requests_remaining"]}` | 5 | Preserved |
-| **Mocked Predictions Executed** | `{results["mock_requests_count"]}` | N/A | Mock-engine insulated |
-| **Total Input Tokens (Synthetic Suite)** | `{results["total_input_tokens"]:,}{mock_tag}` | N/A | Parametric inference |
-| **Total Output Tokens (Synthetic Suite)** | `{results["total_output_tokens"]:,}{mock_tag}` | N/A | Structured output |
-| **Approximate Financial Cost** | **{cost_str}** | Budget Cap | No unmetered spend |
-
-*Note: In environments where `OPENAI_API_KEY` is not present (or in default mock mode), all 25 synthetic cases are executed against the deterministic mock engine, incurring 0 live requests and $0.00 cost, while fully exercising prompt construction, validation, and serialization logic. All token counts and latencies in this report are synthetic mock values — not live provider performance measurements.*
-
----
-
-## 3. Synthetic Telemetry Suite Evaluation (25 Cases)
-
-All 25 synthetic cases from `data/synthetic/smoke_cases.jsonl` were processed sequentially through `src/baseline/pipeline.py` using `BaselinePipeline.run_sample()`.
-
-### Summary Statistics
-- **Total Synthetic Cases:** `{results["total_synthetic_cases"]}`
-- **Successfully Parsed & Validated (`VALID`):** `{results["valid_count"]}` / `{results["total_synthetic_cases"]}` ({results["valid_count"] / results["total_synthetic_cases"] * 100:.1f}%)
-- **Average Wall-Clock Latency per Sample:** `{results["avg_latency_ms"]:.2f} ms`{mock_tag}
-- **Total Wall-Clock Pipeline Duration:** `{results["total_latency_ms"]:.2f} ms`{mock_tag}
-
-### Execution Records Log
-| Sample ID | Predicted Technique | Parse Status | Retries | Latency | Tokens (In / Out) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-{syn_table}
-
----
-
-## 4. Post-Hoc Two-Layer ATT&CK ID Validation
-
-Every candidate prediction was subjected to the mandatory two-layer post-hoc validation pipeline:
-
-```
-[ Raw Model Output ]
-        │
-        ▼
-[ Structured Deserialization: {{"technique_id": "..."}} ]
-        │
-        ├─► Syntax Failure (Layer 1: regex ^T\\d{{4}}(?:\\.\\d{{3}})?$)
-        │       └─► Status: INVALID_ID (syntax error logged)
-        │
-        └─► Syntax Valid
-                │
-                ▼
-        [ Registry Lookup (Layer 2: Enterprise ATT&CK v19.2) ]
-                │
-                ├─► Missing from v19.2 (858 canonical techniques/sub-techniques)
-                │       └─► Status: INVALID_ID (registry error logged)
-                │
-                └─► Present in v19.2
-                        └─► Status: VALID
-```
-
-### Invariant Verification
-1. **Side-Effect Free:** Post-hoc validation does not prompt, retry, or modify the LLM's parametric output.
-2. **Distinct Categorization:** Syntactically invalid IDs (`T1059.1`, `T99999_bad`) and non-existent IDs (`T9999`) produce `INVALID_ID`, whereas schema/JSON failures produce `MALFORMED_RESPONSE`.
-
----
-
-## 5. Failure Pathways & Taxonomy Verification Suite
-
-To guarantee total pipeline resilience, an exhaustive suite of 10 targeted failure conditions was executed against `src/llm/client.py`. All 7 parse status taxonomy members were successfully produced and verified:
-
-| Pathway ID | Test Target | Simulated Condition | Expected Status | Observed Status | Verification |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **F1** | Standard Technique | Valid canonical technique `T1105` | `VALID` | `VALID` | PASS |
-| **F2** | Sub-technique | Valid canonical sub-technique `T1059.001` | `VALID` | `VALID` | PASS |
-| **F3** | Layer 1 Syntax Failure | Regex mismatch `T1059_invalid_syntax` | `INVALID_ID` | `INVALID_ID` | PASS |
-| **F4** | Layer 2 Registry Failure | Syntax passes regex, absent from v19.2 `T9999` | `INVALID_ID` | `INVALID_ID` | PASS |
-| **F5** | JSON Parsing Failure | Broken unparseable JSON text | `MALFORMED_RESPONSE` | `MALFORMED_RESPONSE` | PASS |
-| **F6** | Schema Validation Failure | Missing required `technique_id` field | `MALFORMED_RESPONSE` | `MALFORMED_RESPONSE` | PASS |
-| **F7** | Upfront Safety Refusal | Model status `completed` / refusal object | `REFUSAL` | `REFUSAL` | PASS |
-| **F8** | Incomplete Output | `finish_reason='length'` / max token cutoff | `INCOMPLETE` | `INCOMPLETE` | PASS |
-| **F9** | Non-Retryable Error | HTTP 400 Bad Request / parameter error | `API_FAILURE` | `API_FAILURE` | PASS |
-| **F10** | Exhausted Retries / Timeout | `APITimeoutError` after 3 backoff retries | `TIMEOUT` | `TIMEOUT` | PASS |
-
-### Detailed Failure Pathways Results Table
-| Pathway ID | Predicted ID | Status | Retries | Details / Reason |
-| :--- | :--- | :--- | :--- | :--- |
-{fail_table}
-
----
-
-## 6. Latency Semantics Verification
-
-The client records `latency_ms` measuring the **complete wall-clock duration** of the attribution operation:
-- Includes initial request duration.
-- Includes time spent waiting during exponential backoff sleeps (`retry_initial_delay_seconds * (retry_backoff_factor ** attempt)`).
-- Includes subsequent retry attempts until terminal response or error.
-- Separate `retry_count` field enables distinct tracking of transient errors without distorting end-to-end operational latency.
-
----
-
-## 7. Quality Gate Checklist (Milestone M3 / T14)
-
-- [x] **Synthetic Case Quota:** 25 cases generated at `data/synthetic/smoke_cases.jsonl` (Requirement: 20–30 cases).
-- [x] **Sysmon Event Richness:** Telemetry includes Process Creation (Event 1), Network Connection (Event 3), Registry Operations (Event 13), File Operations (Event 11), and PowerShell Script Block Logging (Event 4104).
-- [x] **Ground Truth Isolation:** Every case contains `synthetic_debug_ground_truth` and explicit non-research notices.
-- [x] **End-to-End Pipeline:** Pipeline executed through `src/baseline/pipeline.py` with symmetrical prompt formatting (`baseline_v1.txt`).
-- [x] **Two-Layer Validation:** Mandatory regex syntax check and Enterprise ATT&CK v19.2 registry membership check applied.
-- [x] **All 7 Parse Statuses Verified:** Exhaustive tests confirm VALID, INVALID_ID, MALFORMED_RESPONSE, REFUSAL, INCOMPLETE, API_FAILURE, and TIMEOUT.
-- [x] **Live API Budget Compliance:** Consumed {live_api_consumed} / 5 live requests; budget counter strictly enforced.
-- [x] **Test Suite Health:** All existing and new tests passing via `uv run pytest -v`.
-- [x] **Secret Safety:** Zero API secrets in code, reports, or version control.
-- [x] **Read-Only Whitelist:** Data pipeline source and tests unmodified.
-"""
-
+    report_lines = [
+        "# T14: Synthetic Smoke Test and Baseline Pipeline Verification Report",
+        "",
+        "## Executive Summary",
+        (
+            "This report documents the end-to-end execution of the **No-RAG Baseline "
+            "smoke test pipeline** under Task **T14** of the **RAG2ATTCK** research project."
+        ),
+        "",
+        "The smoke testing pipeline validates the full inference path:",
+        "1. Frozen model configuration loading (`config/model.json`)",
+        (
+            "2. Frozen base prompt loading and symmetric placeholder substitution "
+            "(`prompts/baseline_v1.txt`)"
+        ),
+        (
+            "3. Responses API execution "
+            "(sole frozen experimental interface, no runtime fallback)"
+        ),
+        '4. Pydantic schema deserialization (`{"technique_id": "..."}`)',
+        (
+            "5. Mandatory post-hoc two-layer ATT&CK ID validation "
+            "(syntax regex + Enterprise ATT&CK v19.2 registry)"
+        ),
+        (
+            "6. Precision wall-clock latency measurement "
+            "(inclusive of retries and backoff)"
+        ),
+        (
+            "7. Global live API budget tracking and strict capping "
+            "(≤ 5 requests per-process smoke-test run)"
+        ),
+        (
+            "8. Exhaustive verification of all 7 parse status taxonomy members "
+            "across realistic failure conditions"
+        ),
+        "",
+        "---",
+        "",
+        "## Research Integrity Attestation & Data Isolation",
+        "> [!IMPORTANT]",
+        "> **Strict Research Guardrail Attestation:**",
+        (
+            "> All 25 telemetry samples evaluated in this report were synthetically generated "
+            "for engineering pipeline validation and smoke verification only."
+        ),
+        ">",
+        "> **Explicit Integrity Declarations:**",
+        (
+            "> 1. None of the synthetic cases, predictions, token usages, latencies, or "
+            "error traces contained in this report contribute to or influence any "
+            "research questions (RQ1, RQ2, RQ3)."
+        ),
+        "> 2. No synthetic data is included in accuracy, Macro-F1, or paper results.",
+        (
+            "> 3. Task T15 (Main Baseline Evaluation on real benchmark data) was NOT "
+            "executed during this task."
+        ),
+        (
+            "> 4. The ATT&CK v19.2 registry was utilized strictly as a post-hoc evaluator; "
+            "zero ATT&CK descriptions or knowledge were injected into prompts or retrieval paths."
+        ),
+        "",
+        "---",
+        "",
+        "## 1. Pipeline Architecture & Configuration",
+        "",
+        "| Configuration Dimension | Verified Value | Origin |",
+        "| :--- | :--- | :--- |",
+        f'| **Provider** | `{model_cfg.get("provider")}` | `config/model.json` |',
+        f'| **Model** | `{model_cfg.get("model")}` | `config/model.json` |',
+        f'| **Reasoning Effort** | `{model_cfg.get("reasoning_effort")}` | `config/model.json` |',
+        f'| **Primary API Interface** | `{model_cfg.get("api_interface")}` | `config/model.json` |',
+        f'| **Max Output Tokens** | `{model_cfg.get("max_output_tokens")}` | `config/model.json` |',
+        f'| **Timeout Seconds** | `{model_cfg.get("timeout_seconds")}s` | `config/model.json` |',
+        f'| **Max Retries** | `{model_cfg.get("max_retries")}` | `config/model.json` |',
+        "| **Base Prompt Template** | `prompts/baseline_v1.txt` | Prompt Freeze T13 |",
+        (
+            "| **Placeholders Verified** | `{{ENDPOINT_EVIDENCE}}`, `{{RETRIEVED_CONTEXT}}` | "
+            "Symmetry Check |"
+        ),
+        '| **No-RAG Context Value** | `""` (empty string) | Context Isolation Check |',
+        "",
+        "---",
+        "",
+        "## 2. Global Live Request Budget & Cost Accounting",
+        "",
+        (
+            "The global live request budget strictly caps actual OpenAI API network invocations "
+            "to **at most 5 requests total** (including all retries) "
+            "per-process smoke-test live request cap."
+        ),
+        "",
+        "| Metric | Recorded Value | Budget Limit | Status |",
+        "| :--- | :--- | :--- | :--- |",
+        (
+            '| **Live Environment Key Detected (`OPENAI_API_KEY`)** | '
+            f'`{"YES" if results["has_live_key"] else "NO"}` | N/A | {runtime_status} |'
+        ),
+        (
+            f'| **Live Samples Dispatched** | **`{live_samples_disp}`** | '
+            f'`{results["total_synthetic_cases"]}` | Sample routing |'
+        ),
+        (
+            f'| **Live API Requests Consumed** | **`{live_api_consumed}`** | '
+            "**5** (Maximum) | **COMPLIANT** (≤ 5) |"
+        ),
+        (
+            f'| **Live API Requests Remaining** | `{results["live_requests_remaining"]}` | '
+            "5 | Preserved |"
+        ),
+        (
+            f'| **Mocked Predictions Executed** | `{results["mock_requests_count"]}` | '
+            "N/A | Mock-engine insulated |"
+        ),
+        (
+            f'| **Total Input Tokens (Synthetic Suite)** | '
+            f'`{results["total_input_tokens"]:,}{mock_tag}` | N/A | Parametric inference |'
+        ),
+        (
+            f'| **Total Output Tokens (Synthetic Suite)** | '
+            f'`{results["total_output_tokens"]:,}{mock_tag}` | N/A | Structured output |'
+        ),
+        f"| **Approximate Financial Cost** | **{cost_str}** | Budget Cap | No unmetered spend |",
+        "",
+        (
+            "*Note: In environments where `OPENAI_API_KEY` is not present "
+            "(or in default mock mode), "
+            "all 25 synthetic cases are executed against the deterministic mock engine, "
+            "incurring 0 live requests and $0.00 cost, while fully exercising prompt construction, "
+            "validation, and serialization logic. All token counts and latencies in this report "
+            "are synthetic mock values \u2014 not live provider performance measurements.*"
+        ),
+        "",
+        "---",
+        "",
+        "## 3. Synthetic Telemetry Suite Evaluation (25 Cases)",
+        "",
+        (
+            "All 25 synthetic cases from `data/synthetic/smoke_cases.jsonl` were processed "
+            "sequentially through `src/baseline/pipeline.py` using `BaselinePipeline.run_sample()`."
+        ),
+        "",
+        "### Summary Statistics",
+        f'- **Total Synthetic Cases:** `{results["total_synthetic_cases"]}`',
+        (
+            f'- **Successfully Parsed & Validated (`VALID`):** `{results["valid_count"]}` / '
+            f'`{results["total_synthetic_cases"]}` '
+            f'({results["valid_count"] / results["total_synthetic_cases"] * 100:.1f}%)'
+        ),
+        (
+            f'- **Average Wall-Clock Latency per Sample:** '
+            f'`{results["avg_latency_ms"]:.2f} ms`{mock_tag}'
+        ),
+        (
+            f'- **Total Wall-Clock Pipeline Duration:** '
+            f'`{results["total_latency_ms"]:.2f} ms`{mock_tag}'
+        ),
+        "",
+        "### Execution Records Log",
+        (
+            "| Sample ID | Predicted Technique | Parse Status | Retries | "
+            "Latency | Tokens (In / Out) |"
+        ),
+        "| :--- | :--- | :--- | :--- | :--- | :--- |",
+        syn_table,
+        "",
+        "---",
+        "",
+        "## 4. Post-Hoc Two-Layer ATT&CK ID Validation",
+        "",
+        (
+            "Every candidate prediction was subjected to the mandatory "
+            "two-layer post-hoc validation pipeline:"
+        ),
+        "",
+        "```",
+        "[ Raw Model Output ]",
+        "        │",
+        "        ▼",
+        ' [ Structured Deserialization: {"technique_id": "..."} ]',
+        "        │",
+        r"        ├─► Syntax Failure (Layer 1: regex ^T\d{4}(?:\.\d{3})?$)",
+        "        │       └─► Status: INVALID_ID (syntax error logged)",
+        "        │",
+        "        └─► Syntax Valid",
+        "                │",
+        "                ▼",
+        "        [ Registry Lookup (Layer 2: Enterprise ATT&CK v19.2) ]",
+        "                │",
+        "                ├─► Missing from v19.2 (858 canonical techniques/sub-techniques)",
+        "                │       └─► Status: INVALID_ID (registry error logged)",
+        "                │",
+        "                └─► Present in v19.2",
+        "                        └─► Status: VALID",
+        "```",
+        "",
+        "### Invariant Verification",
+        (
+            "1. **Side-Effect Free:** Post-hoc validation does not prompt, retry, "
+            "or modify the LLM's parametric output."
+        ),
+        (
+            "2. **Distinct Categorization:** Syntactically invalid IDs (`T1059.1`, `T99999_bad`) "
+            "and non-existent IDs (`T9999`) produce `INVALID_ID`, whereas schema/JSON failures "
+            "produce `MALFORMED_RESPONSE`."
+        ),
+        "",
+        "---",
+        "",
+        "## 5. Failure Pathways & Taxonomy Verification Suite",
+        "",
+        (
+            "To guarantee total pipeline resilience, an exhaustive suite of 10 targeted failure "
+            "conditions was executed against `src/llm/client.py`. All 7 parse status taxonomy "
+            "members were successfully produced and verified:"
+        ),
+        "",
+        (
+            "| Pathway ID | Test Target | Simulated Condition | "
+            "Expected Status | Observed Status | Verification |"
+        ),
+        "| :--- | :--- | :--- | :--- | :--- | :--- |",
+        (
+            "| **F1** | Standard Technique | Valid canonical technique `T1105` | "
+            "`VALID` | `VALID` | PASS |"
+        ),
+        (
+            "| **F2** | Sub-technique | Valid canonical sub-technique `T1059.001` | "
+            "`VALID` | `VALID` | PASS |"
+        ),
+        (
+            "| **F3** | Layer 1 Syntax Failure | Regex mismatch `T1059_invalid_syntax` | "
+            "`INVALID_ID` | `INVALID_ID` | PASS |"
+        ),
+        (
+            "| **F4** | Layer 2 Registry Failure | "
+            "Syntax passes regex, absent from v19.2 `T9999` | "
+            "`INVALID_ID` | `INVALID_ID` | PASS |"
+        ),
+        (
+            "| **F5** | JSON Parsing Failure | Broken unparseable JSON text | "
+            "`MALFORMED_RESPONSE` | `MALFORMED_RESPONSE` | PASS |"
+        ),
+        (
+            "| **F6** | Schema Validation Failure | Missing required `technique_id` field | "
+            "`MALFORMED_RESPONSE` | `MALFORMED_RESPONSE` | PASS |"
+        ),
+        (
+            "| **F7** | Upfront Safety Refusal | Model status `completed` / refusal object | "
+            "`REFUSAL` | `REFUSAL` | PASS |"
+        ),
+        (
+            "| **F8** | Incomplete Output | `finish_reason='length'` / max token cutoff | "
+            "`INCOMPLETE` | `INCOMPLETE` | PASS |"
+        ),
+        (
+            "| **F9** | Non-Retryable Error | HTTP 400 Bad Request / parameter error | "
+            "`API_FAILURE` | `API_FAILURE` | PASS |"
+        ),
+        (
+            "| **F10** | Exhausted Retries / Timeout | `APITimeoutError` after 3 backoff retries | "
+            "`TIMEOUT` | `TIMEOUT` | PASS |"
+        ),
+        "",
+        "### Detailed Failure Pathways Results Table",
+        "| Pathway ID | Predicted ID | Status | Retries | Details / Reason |",
+        "| :--- | :--- | :--- | :--- | :--- |",
+        fail_table,
+        "",
+        "---",
+        "",
+        "## 6. Latency Semantics Verification",
+        "",
+        (
+            "The client records `latency_ms` measuring the **complete wall-clock duration** "
+            "of the attribution operation:"
+        ),
+        "- Includes initial request duration.",
+        (
+            "- Includes time spent waiting during exponential backoff sleeps "
+            "(`retry_initial_delay_seconds * (retry_backoff_factor ** attempt)`)."
+        ),
+        "- Includes subsequent retry attempts until terminal response or error.",
+        (
+            "- Separate `retry_count` field enables distinct tracking of transient errors "
+            "without distorting end-to-end operational latency."
+        ),
+        "",
+        "---",
+        "",
+        "## 7. Quality Gate Checklist (Milestone M3 / T14)",
+        "",
+        (
+            "- [x] **Synthetic Case Quota:** 25 cases generated at "
+            "`data/synthetic/smoke_cases.jsonl` (Requirement: 20–30 cases)."
+        ),
+        (
+            "- [x] **Sysmon Event Richness:** Telemetry includes Process Creation (Event 1), "
+            "Network Connection (Event 3), Registry Operations (Event 13), "
+            "File Operations (Event 11), and PowerShell Script Block Logging (Event 4104)."
+        ),
+        (
+            "- [x] **Ground Truth Isolation:** Every case contains `synthetic_debug_ground_truth` "
+            "and explicit non-research notices."
+        ),
+        (
+            "- [x] **End-to-End Pipeline:** Pipeline executed through `src/baseline/pipeline.py` "
+            "with symmetrical prompt formatting (`baseline_v1.txt`)."
+        ),
+        (
+            "- [x] **Two-Layer Validation:** Mandatory regex syntax check and Enterprise "
+            "ATT&CK v19.2 registry membership check applied."
+        ),
+        (
+            "- [x] **All 7 Parse Statuses Verified:** Exhaustive tests confirm VALID, INVALID_ID, "
+            "MALFORMED_RESPONSE, REFUSAL, INCOMPLETE, API_FAILURE, and TIMEOUT."
+        ),
+        (
+            f"- [x] **Live API Budget Compliance:** Consumed {live_api_consumed} / "
+            "5 live requests; budget counter strictly enforced."
+        ),
+        "- [x] **Test Suite Health:** All existing and new tests passing via `uv run pytest -v`.",
+        "- [x] **Secret Safety:** Zero API secrets in code, reports, or version control.",
+        "- [x] **Read-Only Whitelist:** Data pipeline source and tests unmodified.",
+    ]
+    report_content = "\n".join(report_lines) + "\n"
     out.write_text(report_content, encoding="utf-8")
     return out
 
@@ -641,6 +848,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     res = run_smoke_test_pipeline(allow_live=args.live)
     print(
-        f"Smoke test pipeline successfully executed. Valid cases: {res['valid_count']}/{res['total_synthetic_cases']}"
+        "Smoke test pipeline successfully executed. Valid cases: "
+        f"{res['valid_count']}/{res['total_synthetic_cases']}"
     )
-

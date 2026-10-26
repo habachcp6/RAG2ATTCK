@@ -9,11 +9,10 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-import pytest
 
 from src.attack_loader import (
-    ATTACK_VERSION,
     ATTACK_V19_2_COMMIT,
+    ATTACK_VERSION,
     EXPECTED_ATTACK_SHA256,
     parse_attack_bundle,
 )
@@ -72,24 +71,32 @@ def test_corpus_schema_and_required_fields():
     docs = load_corpus_docs()
     assert len(docs) == EXPECTED_DOC_COUNT
 
-    expected_fields = frozenset({
-        "technique_id",
-        "stix_id",
-        "name",
-        "description",
-        "platforms",
-        "tactics",
-        "is_subtechnique",
-        "parent_technique_id",
-        "modified",
-        "source_version",
-        "retrieval_text",
-    })
+    expected_fields = frozenset(
+        {
+            "technique_id",
+            "stix_id",
+            "name",
+            "description",
+            "platforms",
+            "tactics",
+            "is_subtechnique",
+            "parent_technique_id",
+            "modified",
+            "source_version",
+            "retrieval_text",
+        }
+    )
 
     for doc in docs:
-        assert set(doc.keys()) == expected_fields, f"Field mismatch in doc {doc.get('technique_id')}"
-        assert doc["technique_id"].startswith("T"), f"Invalid technique_id format: {doc['technique_id']}"
-        assert doc["stix_id"].startswith("attack-pattern--"), f"Invalid stix_id format: {doc['stix_id']}"
+        assert set(doc.keys()) == expected_fields, (
+            f"Field mismatch in doc {doc.get('technique_id')}"
+        )
+        assert doc["technique_id"].startswith("T"), (
+            f"Invalid technique_id format: {doc['technique_id']}"
+        )
+        assert doc["stix_id"].startswith("attack-pattern--"), (
+            f"Invalid stix_id format: {doc['stix_id']}"
+        )
         assert isinstance(doc["name"], str) and len(doc["name"]) > 0
         assert isinstance(doc["description"], str) and len(doc["description"]) > 0
         assert isinstance(doc["platforms"], list) and "Windows" in doc["platforms"]
@@ -148,7 +155,9 @@ def test_corpus_strict_technique_id_sorting():
 
     assert len(technique_ids) == EXPECTED_DOC_COUNT
     assert len(set(technique_ids)) == EXPECTED_DOC_COUNT, "Duplicate technique_id found"
-    assert technique_ids == sorted(technique_ids), "Corpus documents are not strictly sorted by technique_id"
+    assert technique_ids == sorted(technique_ids), (
+        "Corpus documents are not strictly sorted by technique_id"
+    )
 
 
 def test_corpus_active_windows_attributes():
@@ -179,8 +188,12 @@ def test_corpus_active_windows_attributes():
             root_count += 1
             assert d["parent_technique_id"] is None
 
-    assert root_count == EXPECTED_ROOT_COUNT, f"Expected {EXPECTED_ROOT_COUNT} root techniques, got {root_count}"
-    assert sub_count == EXPECTED_SUB_COUNT, f"Expected {EXPECTED_SUB_COUNT} subtechniques, got {sub_count}"
+    assert root_count == EXPECTED_ROOT_COUNT, (
+        f"Expected {EXPECTED_ROOT_COUNT} root techniques, got {root_count}"
+    )
+    assert sub_count == EXPECTED_SUB_COUNT, (
+        f"Expected {EXPECTED_SUB_COUNT} subtechniques, got {sub_count}"
+    )
 
 
 def test_benchmark_techniques_coverage():
@@ -203,7 +216,9 @@ def test_benchmark_techniques_coverage():
         raw = raw_techniques[tid]
 
         # Name must match pinned STIX exactly (including T1685.005 == Clear Windows Event Logs)
-        assert doc["name"] == raw.name, f"Corpus name mismatch for {tid}: {doc['name']!r} != {raw.name!r}"
+        assert doc["name"] == raw.name, (
+            f"Corpus name mismatch for {tid}: {doc['name']!r} != {raw.name!r}"
+        )
         assert doc["is_subtechnique"] == raw.is_subtechnique
         assert doc["parent_technique_id"] == raw.parent_technique_id
         assert not raw.revoked, f"Benchmark technique {tid} is revoked in raw STIX"
@@ -258,7 +273,8 @@ def test_corpus_manifest_integrity():
 
     computed_manifest_sha = hashlib.sha256(manifest_bytes).hexdigest()
     assert computed_manifest_sha == EXPECTED_MANIFEST_SHA256, (
-        f"Manifest SHA-256 mismatch: expected {EXPECTED_MANIFEST_SHA256}, got {computed_manifest_sha}"
+        f"Manifest SHA-256 mismatch: expected {EXPECTED_MANIFEST_SHA256}, "
+        f"got {computed_manifest_sha}"
     )
 
     data = json.loads(manifest_bytes.decode("utf-8"))

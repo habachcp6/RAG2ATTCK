@@ -12,3 +12,5 @@ config/retrieval.json -text -eol
 src/baseline/smoke.py -text -eol
 src/rag/__init__.py -text -eol
 scripts/dev.ps1 -text -eol
+reports/evidence/root_public_inventory_acceptance_30b9834.json -text -eol
+reports/evidence/root_track_a_acceptance_b69a690.json -text -eol

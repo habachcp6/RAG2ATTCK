@@ -1,0 +1,46 @@
+{
+  "schema_version": "root_public_inventory_acceptance_v1",
+  "generated_timestamp_utc": "2026-10-03T03:46:01Z",
+  "source_sha": "30b9834dcb63c3e27299e1fec2978052abedc57c",
+  "verdict": "PASS_INVENTORY_AND_GENERATED_PLAN_SCOPE",
+  "helper_sha256": "03f1e35e44d6f3972a2aaadaedb687ee087592618193d02affaf0ac7b5e6e4a7",
+  "inventory_sha256": "2797090df77395f9012c11ff015ca66f2cfab092771e9f04b1a11b16b3092bb5",
+  "generated_plan_sha256": "82a676c83328ed48ab7b50cac56bff30fe9a997980af3da2e7bb027909d0f8f4",
+  "generated_plan_bytes": 11582,
+  "evidence_sha256": "613c4740fae1d0908a552710291425c29345883085a0cf0e93ae81bd469aae24",
+  "checks": {
+    "plan_source_preservation_passed": 19,
+    "inherited_factual_checks_passed": 104,
+    "inherited_collector_tests_passed": 19,
+    "inherited_contract_controls_passed": 21,
+    "reuse_reason": "Collector authentication and CLI AST and test bytes unchanged; only plan generation template changed",
+    "exact_metadata_reproduction": true,
+    "second_generation_idempotent": true,
+    "native_and_public_pre_post_equal": true
+  },
+  "authorities": {
+    "metric_bundle_sha256": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+    "metric_bundle_freeze_envelope_sha256": "e284344e8d571a61e40aa03dd6fbf529dc1e097378f2532c07d596936c10fad2",
+    "public_v3_manifest_sha256": "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c",
+    "core_code_manifest_sha256": "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4",
+    "rq_source_sha256": "f85d7f7373e825dcc7171ce4491fd15c6fb755955da245041783fe317bc80351"
+  },
+  "original_log_review": {
+    "raw_sha256": "fcacacf67d72797b8f1781d4998ed77bbf6d3e59e3e4d2e26fd0a9a7cca29b44",
+    "bytes": 1141,
+    "lines": 30,
+    "root_full_text_inspected": true,
+    "preliminary_private_path_credential_ip_email_counts": 0,
+    "original_bytes_can_be_candidate_supplement": true,
+    "full_package_privacy_gate_still_required": true,
+    "historical_pid_is_process_provenance_not_new_observation": true
+  },
+  "exclusions": [
+    "Public package not yet built or accepted",
+    "Scientific replay and full clean-clone reproduction not executed by this acceptance",
+    "No new mathematical scorer or method authorized",
+    "No main merge, release publish, or PROJECT_FINAL claim"
+  ],
+  "provider_calls": 0,
+  "tracker_modified": false
+}

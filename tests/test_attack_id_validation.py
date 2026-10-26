@@ -28,10 +28,10 @@ from src.llm.schemas import (
     validate_technique_id,
 )
 
-
 # ---------------------------------------------------------------------------
 # 1. Layer 1: Syntax Validation Tests
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.parametrize(
     "valid_id",
@@ -46,7 +46,7 @@ from src.llm.schemas import (
         "T1021",
         "T1047",
         "T1543",
-    ]
+    ],
 )
 def test_syntax_valid_root_techniques(valid_id: str):
     """Verify that canonical 4-digit root technique IDs pass Layer 1 syntax check."""
@@ -66,39 +66,41 @@ def test_syntax_valid_root_techniques(valid_id: str):
         "T1053.005",
         "T1055.001",
         "T1055.012",
-    ]
+    ],
 )
 def test_syntax_valid_subtechniques(valid_sub_id: str):
-    """Verify that canonical 4-digit root with 3-digit sub-technique IDs pass Layer 1 syntax check."""
+    """Verify that canonical 4-digit root with 3-digit sub-technique IDs
+    pass Layer 1 syntax check.
+    """
     assert validate_attack_id_syntax(valid_sub_id) is True
 
 
 @pytest.mark.parametrize(
     "invalid_id",
     [
-        "T105",        # Only 3 digits (must be 4)
-        "T10590",      # 5 digits (must be 4)
-        "T1059.01",    # 2-digit subtechnique (must be 3)
+        "T105",  # Only 3 digits (must be 4)
+        "T10590",  # 5 digits (must be 4)
+        "T1059.01",  # 2-digit subtechnique (must be 3)
         "T1059.0001",  # 4-digit subtechnique (must be 3)
-        "t1059",       # Lowercase 't'
-        "t1059.001",   # Lowercase 't' with subtechnique
-        "1059",        # Missing 'T' prefix
-        "1059.001",    # Missing 'T' prefix with subtechnique
-        "T1059.",      # Trailing dot with no subtechnique digits
-        "T1059.abc",   # Non-digit subtechnique
-        "T1059 ",      # Trailing space
-        " T1059",      # Leading space
-        "T1059\n",     # Trailing newline
-        "T 1059",      # Embedded space
+        "t1059",  # Lowercase 't'
+        "t1059.001",  # Lowercase 't' with subtechnique
+        "1059",  # Missing 'T' prefix
+        "1059.001",  # Missing 'T' prefix with subtechnique
+        "T1059.",  # Trailing dot with no subtechnique digits
+        "T1059.abc",  # Non-digit subtechnique
+        "T1059 ",  # Trailing space
+        " T1059",  # Leading space
+        "T1059\n",  # Trailing newline
+        "T 1059",  # Embedded space
         "T1059. 001",  # Space after dot
-        "",            # Empty string
-        "technique_id",# Text string
-        "T1059; DROP", # Injection attempt
-        "T１０５９",      # Full-width Unicode digits (must be strict ASCII)
+        "",  # Empty string
+        "technique_id",  # Text string
+        "T1059; DROP",  # Injection attempt
+        "T１０５９",  # Full-width Unicode digits (must be strict ASCII)
         "T\uff11\uff10\uff15\uff19",  # Explicit escaped full-width digits
-        "T１０５９.００１", # Full-width subtechnique
-        "T١٠٥٩",        # Eastern Arabic numerals
-    ]
+        "T１０５９.００１",  # Full-width subtechnique
+        "T١٠٥٩",  # Eastern Arabic numerals
+    ],
 )
 def test_syntax_invalid_strings(invalid_id: str):
     """Verify that malformed strings fail Layer 1 syntax check."""
@@ -114,7 +116,9 @@ def test_syntax_unicode_and_non_ascii_digits_rejected():
 
 
 def test_two_layer_validation_unicode_digits_fails_at_syntax_layer():
-    """Verify that full-width Unicode digits fail at Layer 1 syntax check with syntax error reason."""
+    """Verify that full-width Unicode digits fail at Layer 1 syntax check
+    with syntax error reason.
+    """
     is_valid, status, reason = validate_technique_id("T１０５９")
     assert is_valid is False
     assert status == ParseStatus.INVALID_ID
@@ -132,6 +136,7 @@ def test_syntax_non_string_types():
 # ---------------------------------------------------------------------------
 # 2. Layer 2: Registry Membership Tests with Production Enterprise ATT&CK v19.2
 # ---------------------------------------------------------------------------
+
 
 def test_production_attack_registry_loading():
     """Verify that Enterprise ATT&CK v19.2 registry loads correctly and caches technique IDs."""
@@ -154,9 +159,9 @@ def test_production_attack_registry_loading():
 def test_two_layer_validation_production_valid_cases():
     """Known valid ATT&CK v19.2 techniques must pass both Layer 1 and Layer 2 -> VALID."""
     test_cases = [
-        "T1059",      # Command and Scripting Interpreter
+        "T1059",  # Command and Scripting Interpreter
         "T1059.001",  # PowerShell
-        "T1078",      # Valid Accounts
+        "T1078",  # Valid Accounts
         "T1078.003",  # Local Accounts
         "T1053.005",  # Scheduled Task
         "T1055.001",  # Dynamic-link Library Injection
@@ -201,13 +206,22 @@ def test_two_layer_validation_syntax_failure_preempts_registry():
 # 3. Custom / Mock Registry Testing
 # ---------------------------------------------------------------------------
 
+
 def test_two_layer_validation_with_custom_registry():
     """Verify two-layer validation using an explicit mock registry set."""
     mock_registry = {"T1059", "T1059.001", "T1082"}
 
     # Pass both layers
-    assert validate_technique_id("T1059", registry_ids=mock_registry) == (True, ParseStatus.VALID, None)
-    assert validate_technique_id("T1082", registry_ids=mock_registry) == (True, ParseStatus.VALID, None)
+    assert validate_technique_id("T1059", registry_ids=mock_registry) == (
+        True,
+        ParseStatus.VALID,
+        None,
+    )
+    assert validate_technique_id("T1082", registry_ids=mock_registry) == (
+        True,
+        ParseStatus.VALID,
+        None,
+    )
 
     # Fail layer 1 (syntax)
     is_valid_1, status_1, reason_1 = validate_technique_id("t1059", registry_ids=mock_registry)
@@ -225,6 +239,7 @@ def test_two_layer_validation_with_custom_registry():
 # ---------------------------------------------------------------------------
 # 4. Post-Hoc Enforcement Properties
 # ---------------------------------------------------------------------------
+
 
 def test_post_hoc_validation_is_side_effect_free():
     """

@@ -6,12 +6,12 @@ Provides deterministic vector indexing and retrieval over the Windows ATT&CK v19
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
 import hashlib
 import json
 import os
-from pathlib import Path
 import re
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Protocol, Tuple, Union
 
 import numpy as np
@@ -35,8 +35,7 @@ def validate_model_revision(revision: str) -> None:
 class Embedder(Protocol):
     """Protocol for text embedding generation."""
 
-    def encode(self, texts: List[str]) -> np.ndarray:
-        ...
+    def encode(self, texts: List[str]) -> np.ndarray: ...
 
 
 class SentenceTransformerEmbedder:
@@ -145,9 +144,7 @@ class FAISSRetriever:
         actual_sha = hashlib.sha256(corpus_bytes).hexdigest()
         expected_sha = config.get("corpus_sha256")
         if expected_sha and actual_sha != expected_sha:
-            raise ValueError(
-                f"Corpus SHA256 mismatch! Expected {expected_sha}, got {actual_sha}"
-            )
+            raise ValueError(f"Corpus SHA256 mismatch! Expected {expected_sha}, got {actual_sha}")
 
         documents: List[Dict[str, Any]] = []
         retrieval_texts: List[str] = []
@@ -172,8 +169,7 @@ class FAISSRetriever:
         expected_dim = config.get("embedding_dimension", 384)
         if raw_vectors.shape[1] != expected_dim:
             raise ValueError(
-                f"Embedding dimension mismatch: expected {expected_dim}, "
-                f"got {raw_vectors.shape[1]}"
+                f"Embedding dimension mismatch: expected {expected_dim}, got {raw_vectors.shape[1]}"
             )
 
         norm_vectors = normalize_l2(raw_vectors).astype(np.float32)
@@ -244,7 +240,9 @@ class FAISSRetriever:
             name = res.name
             score = res.score
             retrieval_text = doc.get("retrieval_text", "")
-            header = f"Candidate {res.rank}: [{technique_id}] {name} (Similarity Score: {score:.4f})"
+            header = (
+                f"Candidate {res.rank}: [{technique_id}] {name} (Similarity Score: {score:.4f})"
+            )
             sections.append(f"{header}\n{retrieval_text}")
         return "\n\n---\n\n".join(sections)
 
@@ -325,9 +323,14 @@ class FAISSRetriever:
 
         if expected_config is not None:
             for field in (
-                "corpus_sha256", "embedding_model_id", "embedding_model_revision",
-                "embedding_dimension", "faiss_index_type", "normalization",
-                "similarity_metric", "faiss_version",
+                "corpus_sha256",
+                "embedding_model_id",
+                "embedding_model_revision",
+                "embedding_dimension",
+                "faiss_index_type",
+                "normalization",
+                "similarity_metric",
+                "faiss_version",
             ):
                 if field not in expected_config or field not in manifest:
                     raise ValueError(f"Missing required config/manifest field: {field}")
@@ -352,7 +355,8 @@ class FAISSRetriever:
         dmap_sha = hashlib.sha256(dmap_bytes).hexdigest()
         if dmap_sha != manifest["document_mapping_sha256"]:
             raise ValueError(
-                f"Docmap hash mismatch! Expected {manifest['document_mapping_sha256']}, got {dmap_sha}"
+                f"Docmap hash mismatch! Expected {manifest['document_mapping_sha256']}, "
+                f"got {dmap_sha}"
             )
 
         index = faiss.read_index(str(idx_p))
@@ -362,19 +366,36 @@ class FAISSRetriever:
         if not isinstance(docmap, list):
             raise ValueError("docmap must be a list of documents")
         if index.ntotal != len(docmap):
-            raise ValueError(f"index.ntotal/docmap count mismatch: index={index.ntotal} docmap={len(docmap)}")
+            raise ValueError(
+                f"index.ntotal/docmap count mismatch: index={index.ntotal} docmap={len(docmap)}"
+            )
         if len(docmap) != manifest.get("document_count"):
-            raise ValueError(f"document_count mismatch: docmap={len(docmap)} manifest={manifest.get('document_count')!r}")
+            raise ValueError(
+                f"document_count mismatch: docmap={len(docmap)} "
+                f"manifest={manifest.get('document_count')!r}"
+            )
         if index.d != manifest.get("embedding_dimension"):
-            raise ValueError(f"embedding_dimension mismatch: index={index.d} manifest={manifest.get('embedding_dimension')!r}")
-        if manifest.get("faiss_index_type") != "IndexFlatIP" or not isinstance(index, faiss.IndexFlatIP):
-            raise ValueError(f"faiss_index_type mismatch: index={type(index).__name__} manifest={manifest.get('faiss_index_type')!r}; required IndexFlatIP")
+            raise ValueError(
+                f"embedding_dimension mismatch: index={index.d} "
+                f"manifest={manifest.get('embedding_dimension')!r}"
+            )
+        if manifest.get("faiss_index_type") != "IndexFlatIP" or not isinstance(
+            index, faiss.IndexFlatIP
+        ):
+            raise ValueError(
+                f"faiss_index_type mismatch: index={type(index).__name__} "
+                f"manifest={manifest.get('faiss_index_type')!r}; required IndexFlatIP"
+            )
         if index.metric_type != faiss.METRIC_INNER_PRODUCT:
             raise ValueError("FAISS metric mismatch: required inner product")
         if manifest.get("normalization") != "L2" or manifest.get("similarity_metric") != "cosine":
             raise ValueError("normalization/similarity_metric mismatch: required L2/cosine")
 
-        if embedder is None and manifest.get("embedding_model_id") and manifest.get("embedding_model_revision"):
+        if (
+            embedder is None
+            and manifest.get("embedding_model_id")
+            and manifest.get("embedding_model_revision")
+        ):
             embedder = SentenceTransformerEmbedder(
                 model_id=manifest["embedding_model_id"],
                 revision=manifest["embedding_model_revision"],
@@ -429,17 +450,38 @@ class FAISSRetriever:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Build and verify deterministic FAISS retrieval index.")
-    parser.add_argument("--build-index", action="store_true", default=False, help="Build and serialize the FAISS index")
-    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG_PATH, help="Path to retrieval configuration JSON")
-    parser.add_argument("--corpus", type=Path, default=None, help="Path to corpus JSONL (overrides config)")
-    parser.add_argument("--out-dir", type=Path, default=Path("attack/index"), help="Output directory for index artifacts")
+    parser = argparse.ArgumentParser(
+        description="Build and verify deterministic FAISS retrieval index."
+    )
+    parser.add_argument(
+        "--build-index",
+        action="store_true",
+        default=False,
+        help="Build and serialize the FAISS index",
+    )
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=DEFAULT_CONFIG_PATH,
+        help="Path to retrieval configuration JSON",
+    )
+    parser.add_argument(
+        "--corpus", type=Path, default=None, help="Path to corpus JSONL (overrides config)"
+    )
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        default=Path("attack/index"),
+        help="Output directory for index artifacts",
+    )
     args = parser.parse_args()
 
     with open(args.config, "r", encoding="utf-8") as f:
         cfg = json.load(f)
 
-    corpus_path = args.corpus or Path(cfg.get("corpus_path", "attack/corpus/enterprise-windows-v19.2.jsonl"))
+    corpus_path = args.corpus or Path(
+        cfg.get("corpus_path", "attack/corpus/enterprise-windows-v19.2.jsonl")
+    )
     out_dir = args.out_dir
     index_path = out_dir / "enterprise-windows-v19.2.index"
     docmap_path = out_dir / "enterprise-windows-v19.2.docmap.json"
@@ -448,7 +490,7 @@ def main():
     print(f"[*] Building FAISS retriever from {corpus_path}...")
     retriever = FAISSRetriever.from_corpus(corpus_path, args.config)
     idx_sha, dmap_sha, man_sha = retriever.save(index_path, docmap_path, manifest_path)
-    print(f"[+] Index built and saved successfully:")
+    print("[+] Index built and saved successfully:")
     print(f"    Index:    {index_path} (SHA: {idx_sha})")
     print(f"    Docmap:   {docmap_path} (SHA: {dmap_sha})")
     print(f"    Manifest: {manifest_path} (SHA: {man_sha})")

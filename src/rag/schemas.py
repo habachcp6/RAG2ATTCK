@@ -6,9 +6,10 @@ Preserves baseline ExecutionRecord without mutation.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
 import math
 import re
+from typing import Any, Dict, List
+
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from src.llm.schemas import ExecutionRecord
@@ -43,7 +44,10 @@ class RetrievalMetadata(BaseModel):
             raise ValueError("technique_ids, ranks and scores lengths must equal k")
         if self.ranks != list(range(1, self.k + 1)):
             raise ValueError("ranks must be exactly [1, ..., k]")
-        if any(re.fullmatch(r"T\d{4}(?:\.\d{3})?", tid, flags=re.ASCII) is None for tid in self.technique_ids):
+        if any(
+            re.fullmatch(r"T\d{4}(?:\.\d{3})?", tid, flags=re.ASCII) is None
+            for tid in self.technique_ids
+        ):
             raise ValueError("technique_ids must use canonical ATT&CK technique ID syntax")
         if any(not math.isfinite(score) for score in self.scores):
             raise ValueError("scores must all be finite")
@@ -53,7 +57,9 @@ class RetrievalMetadata(BaseModel):
         if not self.embedding_model_id.strip():
             raise ValueError("embedding_model_id must be non-empty")
         if re.fullmatch(r"[0-9a-fA-F]{40}", self.embedding_model_revision) is None:
-            raise ValueError("embedding_model_revision must be an exact 40-character hexadecimal commit")
+            raise ValueError(
+                "embedding_model_revision must be an exact 40-character hexadecimal commit"
+            )
         return self
 
     def to_dict(self) -> Dict[str, Any]:

@@ -34,6 +34,7 @@ data/processed/
 
 # Provider responses and execution journals are local-only scientific outputs.
 /artifacts/experiments/
+artifacts/public_package_staging/*/
 
 # Historical context archive (canonical docs tracked in docs/context/)
 /Context/

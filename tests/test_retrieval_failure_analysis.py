@@ -56,6 +56,7 @@ CANONICAL_GROUND_TRUTH = REPO_ROOT / "data/ground_truth/synthetic/ground_truth.j
 # Utility helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_row(
     pair_id: str,
     view_type: str,
@@ -65,13 +66,17 @@ def _make_row(
 ) -> dict:
     """Build producer-shaped fields while retaining intentionally invalid GT inputs."""
     valid_ranks = {
-        rank: technique_id for technique_id, rank in gt_ranks.items()
+        rank: technique_id
+        for technique_id, rank in gt_ranks.items()
         if type(rank) is int and 1 <= rank <= 10
     }
     best_rank = min(valid_ranks, default=None)
     candidates = [
-        {"rank": rank, "technique_id": valid_ranks.get(rank, f"T{9000 + rank}"),
-         "score": 1.0 / rank}
+        {
+            "rank": rank,
+            "technique_id": valid_ranks.get(rank, f"T{9000 + rank}"),
+            "score": 1.0 / rank,
+        }
         for rank in range(1, 11)
     ]
     return {
@@ -83,14 +88,17 @@ def _make_row(
         "ground_truth_technique_ranks": gt_ranks,
         "retrieved_candidates": candidates,
         "ground_truth_best_rank": best_rank,
-        **{f"hit_at_{k}": (best_rank is not None and best_rank <= k) if gt_ids else None
-           for k in (1, 3, 5, 10)},
+        **{
+            f"hit_at_{k}": (best_rank is not None and best_rank <= k) if gt_ids else None
+            for k in (1, 3, 5, 10)
+        },
     }
 
 
 # ---------------------------------------------------------------------------
 # Basic utility tests
 # ---------------------------------------------------------------------------
+
 
 def test_compute_file_sha256(tmp_path: Path) -> None:
     test_file = tmp_path / "hello.txt"
@@ -221,6 +229,7 @@ def test_recompute_overall_positive_metrics_synthetic() -> None:
 # The most important regression test.
 # ---------------------------------------------------------------------------
 
+
 def test_pairwise_contextual_extra_label_does_not_hijack() -> None:
     """Test 1: Contextual extra label must not hijack single-anchor comparison.
 
@@ -232,10 +241,10 @@ def test_pairwise_contextual_extra_label_does_not_hijack() -> None:
     Correct anchor method compares T1059.003: 5 vs 8 -> single_better.
     """
     records = [
-        _make_row("p1", "single", "mapped_single",
-                  ["T1059.003"], {"T1059.003": 5}),
-        _make_row("p1", "contextual", "mapped_multi",
-                  ["T1059.003", "T1105"], {"T1059.003": 8, "T1105": 2}),
+        _make_row("p1", "single", "mapped_single", ["T1059.003"], {"T1059.003": 5}),
+        _make_row(
+            "p1", "contextual", "mapped_multi", ["T1059.003", "T1105"], {"T1059.003": 8, "T1105": 2}
+        ),
     ]
     result = analyze_single_vs_contextual_pairs(records)
     assert result["eligible_pairs"] == 1
@@ -252,13 +261,14 @@ def test_pairwise_contextual_extra_label_does_not_hijack() -> None:
 # TEST 2 — Same anchor technique improves in contextual view
 # ---------------------------------------------------------------------------
 
+
 def test_pairwise_same_technique_improves_in_contextual() -> None:
     """Test 2: Correctly identifies contextual_better when anchor rank improves."""
     records = [
-        _make_row("p1", "single", "mapped_single",
-                  ["T1059.003"], {"T1059.003": 8}),
-        _make_row("p1", "contextual", "mapped_multi",
-                  ["T1059.003", "T1105"], {"T1059.003": 3, "T1105": 1}),
+        _make_row("p1", "single", "mapped_single", ["T1059.003"], {"T1059.003": 8}),
+        _make_row(
+            "p1", "contextual", "mapped_multi", ["T1059.003", "T1105"], {"T1059.003": 3, "T1105": 1}
+        ),
     ]
     result = analyze_single_vs_contextual_pairs(records)
     assert result["eligible_pairs"] == 1
@@ -272,6 +282,7 @@ def test_pairwise_same_technique_improves_in_contextual() -> None:
 # ---------------------------------------------------------------------------
 # TEST 3 — Same anchor technique ranks equal within Top-10
 # ---------------------------------------------------------------------------
+
 
 def test_pairwise_same_technique_equal_in_top10() -> None:
     """Test 3: Equal outcome when anchor ranks match within Top-10."""
@@ -292,6 +303,7 @@ def test_pairwise_same_technique_equal_in_top10() -> None:
 # TEST 4 — Both absent Top-10
 # ---------------------------------------------------------------------------
 
+
 def test_pairwise_both_absent() -> None:
     """Test 4: Both absent -> equal with both_absent_top10 += 1."""
     records = [
@@ -311,6 +323,7 @@ def test_pairwise_both_absent() -> None:
 # TEST 5 — Single absent, contextual retrieved
 # ---------------------------------------------------------------------------
 
+
 def test_pairwise_single_absent_contextual_retrieved() -> None:
     """Test 5: Single absent, contextual retrieved -> contextual_better."""
     records = [
@@ -328,6 +341,7 @@ def test_pairwise_single_absent_contextual_retrieved() -> None:
 # TEST 6 — Single retrieved, contextual absent
 # ---------------------------------------------------------------------------
 
+
 def test_pairwise_single_retrieved_contextual_absent() -> None:
     """Test 6: Single retrieved, contextual absent -> single_better."""
     records = [
@@ -344,6 +358,7 @@ def test_pairwise_single_retrieved_contextual_absent() -> None:
 # ---------------------------------------------------------------------------
 # TEST 7 — Anchor missing from contextual GT (fail-closed / explicit exclusion)
 # ---------------------------------------------------------------------------
+
 
 def test_pairwise_anchor_missing_from_contextual_ranks() -> None:
     """Test 7: Anchor not in contextual GT -> excluded with specific reason.
@@ -370,13 +385,16 @@ def test_pairwise_anchor_missing_from_contextual_ranks() -> None:
 # TEST 8 — Multi-label single view is excluded
 # ---------------------------------------------------------------------------
 
+
 def test_pairwise_multi_label_single_view_excluded() -> None:
     """Test 8: Single view with multiple GT techniques -> excluded with reason."""
     records = [
-        _make_row("p1", "single", "mapped_multi",
-                  ["T1059.003", "T1105"], {"T1059.003": 3, "T1105": 5}),
-        _make_row("p1", "contextual", "mapped_multi",
-                  ["T1059.003", "T1105"], {"T1059.003": 3, "T1105": 5}),
+        _make_row(
+            "p1", "single", "mapped_multi", ["T1059.003", "T1105"], {"T1059.003": 3, "T1105": 5}
+        ),
+        _make_row(
+            "p1", "contextual", "mapped_multi", ["T1059.003", "T1105"], {"T1059.003": 3, "T1105": 5}
+        ),
     ]
     result = analyze_single_vs_contextual_pairs(records)
     assert result["eligible_pairs"] == 0
@@ -387,6 +405,7 @@ def test_pairwise_multi_label_single_view_excluded() -> None:
 # ---------------------------------------------------------------------------
 # TEST 8b — Partition invariant across mixed pairs
 # ---------------------------------------------------------------------------
+
 
 def test_pairwise_partition_invariant() -> None:
     """Verify partition: single_better + contextual_better + equal == eligible_pairs."""
@@ -418,7 +437,7 @@ def test_pairwise_partition_invariant() -> None:
     eligible = result["eligible_pairs"]
 
     assert sb + cb + eq == eligible, (
-        f"Partition violated: {sb}+{cb}+{eq}={sb+cb+eq} != eligible={eligible}"
+        f"Partition violated: {sb}+{cb}+{eq}={sb + cb + eq} != eligible={eligible}"
     )
     assert result["both_absent_top10"] + result["top10_equal"] == result["equal"]
     assert result["candidate_pairs"] == result["eligible_pairs"] + result["excluded_pairs"]
@@ -435,29 +454,45 @@ def test_pairwise_partition_invariant() -> None:
 # TEST 9 — Exact technique set consistency
 # ---------------------------------------------------------------------------
 
+
 def test_exact_technique_set_consistency_missing_from_recomputed() -> None:
     """Test 9a: Canonical has technique missing from recomputed -> ValueError."""
     canonical = {
         "per_technique": {
-            "T1": {"evaluated_positive_samples": 5, "gt_absent_from_top10_count": 0,
-                   "gt_absent_from_top10_rate": 0.0,
-                   "hit_rate_at_1": 1.0, "hit_rate_at_3": 1.0,
-                   "hit_rate_at_5": 1.0, "hit_rate_at_10": 1.0,
-                   "median_ground_truth_rank_when_retrieved": 1.0},
-            "T2": {"evaluated_positive_samples": 3, "gt_absent_from_top10_count": 0,
-                   "gt_absent_from_top10_rate": 0.0,
-                   "hit_rate_at_1": 1.0, "hit_rate_at_3": 1.0,
-                   "hit_rate_at_5": 1.0, "hit_rate_at_10": 1.0,
-                   "median_ground_truth_rank_when_retrieved": 1.0},
+            "T1": {
+                "evaluated_positive_samples": 5,
+                "gt_absent_from_top10_count": 0,
+                "gt_absent_from_top10_rate": 0.0,
+                "hit_rate_at_1": 1.0,
+                "hit_rate_at_3": 1.0,
+                "hit_rate_at_5": 1.0,
+                "hit_rate_at_10": 1.0,
+                "median_ground_truth_rank_when_retrieved": 1.0,
+            },
+            "T2": {
+                "evaluated_positive_samples": 3,
+                "gt_absent_from_top10_count": 0,
+                "gt_absent_from_top10_rate": 0.0,
+                "hit_rate_at_1": 1.0,
+                "hit_rate_at_3": 1.0,
+                "hit_rate_at_5": 1.0,
+                "hit_rate_at_10": 1.0,
+                "median_ground_truth_rank_when_retrieved": 1.0,
+            },
         }
     }
     # Recomputed only has T1 — missing T2
     recomputed = {
-        "T1": {"evaluated_positive_samples": 5, "gt_absent_from_top10_count": 0,
-               "gt_absent_from_top10_rate": 0.0,
-               "hit_rate_at_1": 1.0, "hit_rate_at_3": 1.0,
-               "hit_rate_at_5": 1.0, "hit_rate_at_10": 1.0,
-               "median_ground_truth_rank_when_retrieved": 1.0},
+        "T1": {
+            "evaluated_positive_samples": 5,
+            "gt_absent_from_top10_count": 0,
+            "gt_absent_from_top10_rate": 0.0,
+            "hit_rate_at_1": 1.0,
+            "hit_rate_at_3": 1.0,
+            "hit_rate_at_5": 1.0,
+            "hit_rate_at_10": 1.0,
+            "median_ground_truth_rank_when_retrieved": 1.0,
+        },
     }
     with pytest.raises(ValueError, match="Technique set mismatch"):
         verify_canonical_metric_consistency(recomputed, canonical)
@@ -467,25 +502,40 @@ def test_exact_technique_set_consistency_extra_in_recomputed() -> None:
     """Test 9b: Recomputed has extra technique not in canonical -> ValueError."""
     canonical = {
         "per_technique": {
-            "T1": {"evaluated_positive_samples": 5, "gt_absent_from_top10_count": 0,
-                   "gt_absent_from_top10_rate": 0.0,
-                   "hit_rate_at_1": 1.0, "hit_rate_at_3": 1.0,
-                   "hit_rate_at_5": 1.0, "hit_rate_at_10": 1.0,
-                   "median_ground_truth_rank_when_retrieved": 1.0},
+            "T1": {
+                "evaluated_positive_samples": 5,
+                "gt_absent_from_top10_count": 0,
+                "gt_absent_from_top10_rate": 0.0,
+                "hit_rate_at_1": 1.0,
+                "hit_rate_at_3": 1.0,
+                "hit_rate_at_5": 1.0,
+                "hit_rate_at_10": 1.0,
+                "median_ground_truth_rank_when_retrieved": 1.0,
+            },
         }
     }
     # Recomputed has T1 + extra T2
     recomputed = {
-        "T1": {"evaluated_positive_samples": 5, "gt_absent_from_top10_count": 0,
-               "gt_absent_from_top10_rate": 0.0,
-               "hit_rate_at_1": 1.0, "hit_rate_at_3": 1.0,
-               "hit_rate_at_5": 1.0, "hit_rate_at_10": 1.0,
-               "median_ground_truth_rank_when_retrieved": 1.0},
-        "T2": {"evaluated_positive_samples": 3, "gt_absent_from_top10_count": 0,
-               "gt_absent_from_top10_rate": 0.0,
-               "hit_rate_at_1": 1.0, "hit_rate_at_3": 1.0,
-               "hit_rate_at_5": 1.0, "hit_rate_at_10": 1.0,
-               "median_ground_truth_rank_when_retrieved": 1.0},
+        "T1": {
+            "evaluated_positive_samples": 5,
+            "gt_absent_from_top10_count": 0,
+            "gt_absent_from_top10_rate": 0.0,
+            "hit_rate_at_1": 1.0,
+            "hit_rate_at_3": 1.0,
+            "hit_rate_at_5": 1.0,
+            "hit_rate_at_10": 1.0,
+            "median_ground_truth_rank_when_retrieved": 1.0,
+        },
+        "T2": {
+            "evaluated_positive_samples": 3,
+            "gt_absent_from_top10_count": 0,
+            "gt_absent_from_top10_rate": 0.0,
+            "hit_rate_at_1": 1.0,
+            "hit_rate_at_3": 1.0,
+            "hit_rate_at_5": 1.0,
+            "hit_rate_at_10": 1.0,
+            "median_ground_truth_rank_when_retrieved": 1.0,
+        },
     }
     with pytest.raises(ValueError, match="Technique set mismatch"):
         verify_canonical_metric_consistency(recomputed, canonical)
@@ -540,6 +590,7 @@ def test_exact_technique_set_consistency_match_passes() -> None:
 # TEST 10 — Overall metric mismatch detection
 # ---------------------------------------------------------------------------
 
+
 def test_overall_metric_mismatch_hit_rate() -> None:
     """Test 10: Overall Hit@10 mismatch -> fail closed."""
     canonical = {
@@ -576,6 +627,7 @@ def test_overall_metric_mismatch_hit_rate() -> None:
 # ---------------------------------------------------------------------------
 # TEST 11 — T1136 dynamic median (not hardcoded None)
 # ---------------------------------------------------------------------------
+
 
 def test_t1136_median_dynamic_with_some_retrieved() -> None:
     """Test 11a: Median computed dynamically when some views ARE retrieved."""
@@ -624,35 +676,41 @@ def test_t1136_median_dynamic_all_absent() -> None:
 # T1105 hard negatives
 # ---------------------------------------------------------------------------
 
+
 def test_t1105_hard_negatives_distribution_sorting() -> None:
-    records = [
-        {
-            **_make_row("p1", "single", "mapped_single", ["T1105"], {"T1105": None}),
-            "sample_id": f"s{i}",
-            "retrieved_candidates": [{"rank": 1, "score": 0.5, "technique_id": "T1218.012"}],
-        }
-        for i in range(4)
-    ] + [
-        {
-            **_make_row("p1", "single", "mapped_single", ["T1105"], {"T1105": None}),
-            "sample_id": f"s_b{i}",
-            "retrieved_candidates": [{"rank": 1, "score": 0.5, "technique_id": "T1003.002"}],
-        }
-        for i in range(2)
-    ] + [
-        {
-            **_make_row("p1", "single", "mapped_single", ["T1105"], {"T1105": None}),
-            "sample_id": f"s_c{i}",
-            "retrieved_candidates": [{"rank": 1, "score": 0.5, "technique_id": "T1053.005"}],
-        }
-        for i in range(2)
-    ] + [
-        {
-            **_make_row("p1", "single", "mapped_single", ["T1059.001"], {"T1059.001": None}),
-            "sample_id": "other",
-            "retrieved_candidates": [{"rank": 1, "score": 0.5, "technique_id": "T1547.001"}],
-        }
-    ]
+    records = (
+        [
+            {
+                **_make_row("p1", "single", "mapped_single", ["T1105"], {"T1105": None}),
+                "sample_id": f"s{i}",
+                "retrieved_candidates": [{"rank": 1, "score": 0.5, "technique_id": "T1218.012"}],
+            }
+            for i in range(4)
+        ]
+        + [
+            {
+                **_make_row("p1", "single", "mapped_single", ["T1105"], {"T1105": None}),
+                "sample_id": f"s_b{i}",
+                "retrieved_candidates": [{"rank": 1, "score": 0.5, "technique_id": "T1003.002"}],
+            }
+            for i in range(2)
+        ]
+        + [
+            {
+                **_make_row("p1", "single", "mapped_single", ["T1105"], {"T1105": None}),
+                "sample_id": f"s_c{i}",
+                "retrieved_candidates": [{"rank": 1, "score": 0.5, "technique_id": "T1053.005"}],
+            }
+            for i in range(2)
+        ]
+        + [
+            {
+                **_make_row("p1", "single", "mapped_single", ["T1059.001"], {"T1059.001": None}),
+                "sample_id": "other",
+                "retrieved_candidates": [{"rank": 1, "score": 0.5, "technique_id": "T1547.001"}],
+            }
+        ]
+    )
 
     t1105_analysis = analyze_t1105_hard_negatives(records)
     assert t1105_analysis["evaluated_positive_views"] == 8
@@ -673,6 +731,7 @@ def test_t1105_hard_negatives_distribution_sorting() -> None:
 # ---------------------------------------------------------------------------
 # Serialization
 # ---------------------------------------------------------------------------
+
 
 def test_deterministic_json_serialization() -> None:
     data = {
@@ -696,6 +755,7 @@ def test_deterministic_json_serialization() -> None:
 # ---------------------------------------------------------------------------
 # inspect_sample
 # ---------------------------------------------------------------------------
+
 
 def test_inspect_sample() -> None:
     records = [
@@ -732,6 +792,7 @@ def test_inspect_sample() -> None:
 # ---------------------------------------------------------------------------
 # TEST 12 — Canonical end-to-end (corrected expected values)
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.skipif(not CANONICAL_DIAGNOSTICS.exists(), reason="Canonical diagnostics missing")
 def test_canonical_analysis_end_to_end() -> None:
@@ -825,32 +886,49 @@ def test_canonical_analysis_end_to_end() -> None:
 # Determinism test
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.skipif(not CANONICAL_DIAGNOSTICS.exists(), reason="Canonical diagnostics missing")
 def test_cli_execution_and_repeat_determinism(tmp_path: Path) -> None:
     """Verify CLI main entrypoint and byte-deterministic repeat execution."""
     out_a = tmp_path / "out_a.json"
     out_b = tmp_path / "out_b.json"
 
-    ret_a = main([
-        "--diagnostics", str(CANONICAL_DIAGNOSTICS),
-        "--metrics", str(CANONICAL_METRICS),
-        "--views", str(CANONICAL_VIEWS),
-        "--pairs", str(CANONICAL_PAIRS),
-        "--ground-truth", str(CANONICAL_GROUND_TRUTH),
-        "--output", str(out_a),
-        "--quiet",
-    ])
+    ret_a = main(
+        [
+            "--diagnostics",
+            str(CANONICAL_DIAGNOSTICS),
+            "--metrics",
+            str(CANONICAL_METRICS),
+            "--views",
+            str(CANONICAL_VIEWS),
+            "--pairs",
+            str(CANONICAL_PAIRS),
+            "--ground-truth",
+            str(CANONICAL_GROUND_TRUTH),
+            "--output",
+            str(out_a),
+            "--quiet",
+        ]
+    )
     assert ret_a == 0
 
-    ret_b = main([
-        "--diagnostics", str(CANONICAL_DIAGNOSTICS),
-        "--metrics", str(CANONICAL_METRICS),
-        "--views", str(CANONICAL_VIEWS),
-        "--pairs", str(CANONICAL_PAIRS),
-        "--ground-truth", str(CANONICAL_GROUND_TRUTH),
-        "--output", str(out_b),
-        "--quiet",
-    ])
+    ret_b = main(
+        [
+            "--diagnostics",
+            str(CANONICAL_DIAGNOSTICS),
+            "--metrics",
+            str(CANONICAL_METRICS),
+            "--views",
+            str(CANONICAL_VIEWS),
+            "--pairs",
+            str(CANONICAL_PAIRS),
+            "--ground-truth",
+            str(CANONICAL_GROUND_TRUTH),
+            "--output",
+            str(out_b),
+            "--quiet",
+        ]
+    )
     assert ret_b == 0
 
     committed = REPO_ROOT / "artifacts/analysis/t20_retrieval_failure_summary.json"
@@ -864,6 +942,7 @@ def test_cli_execution_and_repeat_determinism(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 # REGRESSION TESTS — Structural integrity hardening (Phase 1)
 # ---------------------------------------------------------------------------
+
 
 class TestDuplicatePairViewDetection:
     """§1.1: Duplicate (pair_id, view_type) must raise ValueError."""
@@ -960,8 +1039,13 @@ class TestCachedBestRankVerification:
     def test_multi_label_wrong_cached_best_raises(self) -> None:
         records = [
             {
-                **_make_row("p1", "single", "mapped_multi", ["T1059.001", "T1105"],
-                            {"T1059.001": 5, "T1105": 2}),
+                **_make_row(
+                    "p1",
+                    "single",
+                    "mapped_multi",
+                    ["T1059.001", "T1105"],
+                    {"T1059.001": 5, "T1105": 2},
+                ),
                 "sample_id": "s1",
                 "ground_truth_best_rank": 5,  # Wrong! Should be min(5,2)=2
             },
@@ -972,8 +1056,13 @@ class TestCachedBestRankVerification:
     def test_correct_cached_best_rank_passes(self) -> None:
         records = [
             {
-                **_make_row("p1", "single", "mapped_multi", ["T1059.001", "T1105"],
-                            {"T1059.001": 5, "T1105": 2}),
+                **_make_row(
+                    "p1",
+                    "single",
+                    "mapped_multi",
+                    ["T1059.001", "T1105"],
+                    {"T1059.001": 5, "T1105": 2},
+                ),
                 "sample_id": "s1",
                 "ground_truth_best_rank": 2,  # Correct: min(5,2)=2
             },
@@ -1067,8 +1156,10 @@ def canonical_inputs() -> tuple[list[dict], list[dict], list[dict], list[dict]]:
     """Minimal valid Stage B linkage, including the pair's embedded views."""
     diag = [
         {**_make_row("p1", "single", "mapped_single", ["T1001"], {"T1001": 1}), "sample_id": "v1"},
-        {**_make_row("p1", "contextual", "mapped_single", ["T1001"], {"T1001": 2}),
-         "sample_id": "v2"},
+        {
+            **_make_row("p1", "contextual", "mapped_single", ["T1001"], {"T1001": 2}),
+            "sample_id": "v2",
+        },
     ]
     views = [
         {"view_id": "v1", "pair_id": "p1", "view_type": "single"},
@@ -1114,8 +1205,9 @@ class TestProvenanceCrossValidation:
         with pytest.raises(ValueError, match="canonical views missing"):
             validate_canonical_input_consistency(*canonical_inputs)
 
-    @pytest.mark.parametrize("index,key", [(0, "sample_id"), (1, "view_id"),
-                                          (2, "pair_id"), (3, "view_id")])
+    @pytest.mark.parametrize(
+        "index,key", [(0, "sample_id"), (1, "view_id"), (2, "pair_id"), (3, "view_id")]
+    )
     def test_duplicate_identifiers_raise(self, canonical_inputs, index, key) -> None:
         canonical_inputs[index].append(dict(canonical_inputs[index][0]))
         with pytest.raises(ValueError, match=f"Duplicate {key}"):
@@ -1160,9 +1252,14 @@ class TestProvenanceCrossValidation:
         with pytest.raises(ValueError, match="Duplicate view_type"):
             validate_canonical_input_consistency(*canonical_inputs)
 
-    @pytest.mark.parametrize("field,value", [
-        ("view_id", "v2"), ("pair_id", "unknown"), ("view_type", "contextual"),
-    ])
+    @pytest.mark.parametrize(
+        "field,value",
+        [
+            ("view_id", "v2"),
+            ("pair_id", "unknown"),
+            ("view_type", "contextual"),
+        ],
+    )
     def test_embedded_view_linkage_mismatch_raises(self, canonical_inputs, field, value) -> None:
         canonical_inputs[2][0]["single_view"][field] = value
         with pytest.raises(ValueError, match="single_view linkage mismatch"):
@@ -1178,8 +1275,9 @@ class TestProvenanceCrossValidation:
         with pytest.raises(ValueError, match="GT label_status/category mismatch"):
             validate_canonical_input_consistency(*canonical_inputs)
 
-    @pytest.mark.parametrize("index,key", [(0, "sample_id"), (1, "view_id"),
-                                          (2, "pair_id"), (3, "view_id")])
+    @pytest.mark.parametrize(
+        "index,key", [(0, "sample_id"), (1, "view_id"), (2, "pair_id"), (3, "view_id")]
+    )
     @pytest.mark.parametrize("value", [None, "", [], 1])
     def test_malformed_identifiers_raise(self, canonical_inputs, index, key, value) -> None:
         canonical_inputs[index][0][key] = value
@@ -1194,11 +1292,18 @@ class TestProvenanceCrossValidation:
 
 
 @pytest.mark.parametrize("view_type", ["single", "contextual"])
-@pytest.mark.parametrize("category,ids", [
-    ("mapped_single", []), ("mapped_single", ["T1001", "T1002"]),
-    ("mapped_multi", []), ("mapped_multi", ["T1001"]),
-    ("unmapped", ["T1001"]), ("ambiguous", ["T1001"]), ("ambiguous", ["T1001", "T1002"]),
-])
+@pytest.mark.parametrize(
+    "category,ids",
+    [
+        ("mapped_single", []),
+        ("mapped_single", ["T1001", "T1002"]),
+        ("mapped_multi", []),
+        ("mapped_multi", ["T1001"]),
+        ("unmapped", ["T1001"]),
+        ("ambiguous", ["T1001"]),
+        ("ambiguous", ["T1001", "T1002"]),
+    ],
+)
 def test_category_gt_inconsistency_raises_before_exclusion(view_type, category, ids) -> None:
     # The other view has no GT, so eligibility must never hide this corruption.
     other_type = "contextual" if view_type == "single" else "single"
@@ -1210,23 +1315,35 @@ def test_category_gt_inconsistency_raises_before_exclusion(view_type, category, 
         analyze_single_vs_contextual_pairs(rows)
 
 
-@pytest.mark.parametrize("category,ids,eligible", [
-    ("mapped_single", ["T1001"], 1), ("mapped_multi", ["T1001", "T1002"], 0),
-    ("unmapped", [], 0), ("ambiguous", [], 0),
-])
+@pytest.mark.parametrize(
+    "category,ids,eligible",
+    [
+        ("mapped_single", ["T1001"], 1),
+        ("mapped_multi", ["T1001", "T1002"], 0),
+        ("unmapped", [], 0),
+        ("ambiguous", [], 0),
+    ],
+)
 def test_valid_category_gt_contract(category, ids, eligible) -> None:
-    rows = [_make_row("p1", kind, category, ids, dict.fromkeys(ids, None))
-            for kind in ("single", "contextual")]
+    rows = [
+        _make_row("p1", kind, category, ids, dict.fromkeys(ids, None))
+        for kind in ("single", "contextual")
+    ]
     result = analyze_single_vs_contextual_pairs(rows)
     assert result["eligible_pairs"] == eligible
     assert result["excluded_pairs"] == 1 - eligible
     assert result["both_absent_top10"] == eligible
 
 
-@pytest.mark.parametrize("ids,ranks", [
-    (["T1001"], {}), (["T1001"], {"T1001": 3, "T1002": 1}),
-    (["T1001", "T1002"], {"T1001": 2}), ([], {"T1001": None}),
-])
+@pytest.mark.parametrize(
+    "ids,ranks",
+    [
+        (["T1001"], {}),
+        (["T1001"], {"T1001": 3, "T1002": 1}),
+        (["T1001", "T1002"], {"T1001": 2}),
+        ([], {"T1001": None}),
+    ],
+)
 @pytest.mark.parametrize("view_type", ["single", "contextual"])
 def test_rank_keys_must_exactly_equal_gt_ids(ids, ranks, view_type) -> None:
     category = "unmapped" if not ids else "mapped_single" if len(ids) == 1 else "mapped_multi"
@@ -1238,27 +1355,34 @@ def test_rank_keys_must_exactly_equal_gt_ids(ids, ranks, view_type) -> None:
 @pytest.mark.parametrize("rank", [0, -1, 11, True, False, "3", 3.0])
 @pytest.mark.parametrize("excluded", [False, True])
 def test_non_anchor_rank_validation_before_eligibility(rank, excluded) -> None:
-    single = (_make_row("p1", "single", "unmapped", [], {}) if excluded else
-              _make_row("p1", "single", "mapped_single", ["T1001"], {"T1001": 3}))
-    contextual = _make_row("p1", "contextual", "mapped_multi", ["T1001", "T1002"],
-                           {"T1001": 2, "T1002": rank})
+    single = (
+        _make_row("p1", "single", "unmapped", [], {})
+        if excluded
+        else _make_row("p1", "single", "mapped_single", ["T1001"], {"T1001": 3})
+    )
+    contextual = _make_row(
+        "p1", "contextual", "mapped_multi", ["T1001", "T1002"], {"T1001": 2, "T1002": rank}
+    )
     with pytest.raises(ValueError, match="Rank"):
         analyze_single_vs_contextual_pairs([single, contextual])
 
 
-@pytest.mark.parametrize("field,value,match", [
-    ("ground_truth_technique_ids", None, "must be a list"),
-    ("ground_truth_technique_ids", "T1001", "must be a list"),
-    ("ground_truth_technique_ids", [None], "must be a list"),
-    ("ground_truth_technique_ids", [["T1001"]], "must be a list"),
-    ("ground_truth_technique_ids", ["T1001", "T1001"], "duplicate technique IDs"),
-    ("ground_truth_technique_ranks", None, "must be a mapping"),
-    ("ground_truth_technique_ranks", [], "must be a mapping"),
-    ("category", None, "invalid category"),
-    ("category", "unknown", "invalid category"),
-    ("pair_id", None, "invalid pair_id"),
-    ("view_type", "unknown", "invalid view_type"),
-])
+@pytest.mark.parametrize(
+    "field,value,match",
+    [
+        ("ground_truth_technique_ids", None, "must be a list"),
+        ("ground_truth_technique_ids", "T1001", "must be a list"),
+        ("ground_truth_technique_ids", [None], "must be a list"),
+        ("ground_truth_technique_ids", [["T1001"]], "must be a list"),
+        ("ground_truth_technique_ids", ["T1001", "T1001"], "duplicate technique IDs"),
+        ("ground_truth_technique_ranks", None, "must be a mapping"),
+        ("ground_truth_technique_ranks", [], "must be a mapping"),
+        ("category", None, "invalid category"),
+        ("category", "unknown", "invalid category"),
+        ("pair_id", None, "invalid pair_id"),
+        ("view_type", "unknown", "invalid view_type"),
+    ],
+)
 def test_malformed_diagnostic_schema_raises(field, value, match) -> None:
     row = _make_row("p1", "single", "mapped_single", ["T1001"], {"T1001": 3})
     row[field] = value
@@ -1271,17 +1395,26 @@ def test_diagnostics_hash_accepts_matching_bytes(tmp_path: Path) -> None:
     diagnostics = tmp_path / "diagnostics.jsonl"
     diagnostics.write_text("{}\n", encoding="utf-8")
     digest = compute_file_sha256(diagnostics)
-    assert validate_diagnostics_artifact_hash(
-        diagnostics, {"diagnostic_jsonl_sha256": digest}
-    ) == digest
+    assert (
+        validate_diagnostics_artifact_hash(diagnostics, {"diagnostic_jsonl_sha256": digest})
+        == digest
+    )
 
 
-@pytest.mark.parametrize("metrics", [
-    {}, {"diagnostic_jsonl_sha256": None}, {"diagnostic_jsonl_sha256": 123},
-    {"diagnostic_jsonl_sha256": True}, {"diagnostic_jsonl_sha256": ""},
-    {"diagnostic_jsonl_sha256": "a" * 63}, {"diagnostic_jsonl_sha256": "a" * 65},
-    {"diagnostic_jsonl_sha256": "z" * 64}, {"diagnostic_jsonl_sha256": "0" * 64},
-])
+@pytest.mark.parametrize(
+    "metrics",
+    [
+        {},
+        {"diagnostic_jsonl_sha256": None},
+        {"diagnostic_jsonl_sha256": 123},
+        {"diagnostic_jsonl_sha256": True},
+        {"diagnostic_jsonl_sha256": ""},
+        {"diagnostic_jsonl_sha256": "a" * 63},
+        {"diagnostic_jsonl_sha256": "a" * 65},
+        {"diagnostic_jsonl_sha256": "z" * 64},
+        {"diagnostic_jsonl_sha256": "0" * 64},
+    ],
+)
 def test_diagnostics_hash_rejects_invalid_fingerprint(tmp_path: Path, metrics) -> None:
     diagnostics = tmp_path / "diagnostics.jsonl"
     diagnostics.write_text("{}\n", encoding="utf-8")
@@ -1296,9 +1429,10 @@ def test_diagnostics_hash_detects_single_byte_tamper(tmp_path: Path) -> None:
     diagnostics.write_bytes(original)
     metrics = {"diagnostic_jsonl_sha256": compute_file_sha256(diagnostics)}
     validate_diagnostic_record(load_jsonl(diagnostics)[0])
-    assert validate_diagnostics_artifact_hash(diagnostics, metrics) == metrics[
-        "diagnostic_jsonl_sha256"
-    ]
+    assert (
+        validate_diagnostics_artifact_hash(diagnostics, metrics)
+        == metrics["diagnostic_jsonl_sha256"]
+    )
     # Both IDs are well-shaped non-GT candidates; semantic checks alone cannot detect this.
     tampered = original.replace(b"T9001", b"T8001", 1)
     assert sum(a != b for a, b in zip(original, tampered, strict=True)) == 1
@@ -1322,9 +1456,17 @@ def test_cli_rejects_one_byte_tamper_without_output(tmp_path: Path, sample_mode)
     diagnostics.write_bytes(tampered)
     assert load_jsonl(diagnostics)
     output = tmp_path / "summary.json"
-    command = [sys.executable, str(REPO_ROOT / "scripts/analyze_retrieval_failures.py"),
-               "--diagnostics", str(diagnostics), "--metrics", str(CANONICAL_METRICS),
-               "--output", str(output), "--quiet"]
+    command = [
+        sys.executable,
+        str(REPO_ROOT / "scripts/analyze_retrieval_failures.py"),
+        "--diagnostics",
+        str(diagnostics),
+        "--metrics",
+        str(CANONICAL_METRICS),
+        "--output",
+        str(output),
+        "--quiet",
+    ]
     if sample_mode:
         command.extend(["--sample", first["sample_id"], "--json"])
     result = subprocess.run(command, cwd=REPO_ROOT, capture_output=True, text=True, check=False)
@@ -1346,8 +1488,17 @@ def test_candidates_require_list_of_complete_objects(valid_diagnostic, candidate
         validate_diagnostic_record(valid_diagnostic)
 
 
-@pytest.mark.parametrize("field", ["retrieved_candidates", "ground_truth_best_rank",
-                                   "hit_at_1", "hit_at_3", "hit_at_5", "hit_at_10"])
+@pytest.mark.parametrize(
+    "field",
+    [
+        "retrieved_candidates",
+        "ground_truth_best_rank",
+        "hit_at_1",
+        "hit_at_3",
+        "hit_at_5",
+        "hit_at_10",
+    ],
+)
 def test_stored_diagnostic_fields_are_required(valid_diagnostic, field) -> None:
     del valid_diagnostic[field]
     with pytest.raises(ValueError):
@@ -1375,8 +1526,9 @@ def test_candidate_id_rejects_invalid_values(valid_diagnostic, technique_id) -> 
         validate_diagnostic_record(valid_diagnostic)
 
 
-@pytest.mark.parametrize("score", [float("nan"), float("inf"), -float("inf"),
-                                   "0.5", None, True, False])
+@pytest.mark.parametrize(
+    "score", [float("nan"), float("inf"), -float("inf"), "0.5", None, True, False]
+)
 def test_candidate_score_requires_finite_number(valid_diagnostic, score) -> None:
     valid_diagnostic["retrieved_candidates"][0]["score"] = score
     with pytest.raises(ValueError):
@@ -1389,9 +1541,16 @@ def test_candidate_score_does_not_impose_probability_range(valid_diagnostic, sco
     validate_diagnostic_record(valid_diagnostic)
 
 
-@pytest.mark.parametrize("mutation", [
-    "duplicate_rank", "gap", "reorder", "duplicate_id", "too_many",
-])
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "duplicate_rank",
+        "gap",
+        "reorder",
+        "duplicate_id",
+        "too_many",
+    ],
+)
 def test_candidate_sequence_integrity(valid_diagnostic, mutation) -> None:
     candidates = valid_diagnostic["retrieved_candidates"]
     if mutation == "duplicate_rank":
@@ -1419,8 +1578,7 @@ def test_empty_short_and_negative_candidates_follow_producer(count, category) ->
     assert row["hit_at_10"] is (False if ids else None)
 
 
-@pytest.mark.parametrize("ranks", [{"T1105": 2, "T1059.003": 7},
-                                    {"T1105": 2, "T1059.003": None}])
+@pytest.mark.parametrize("ranks", [{"T1105": 2, "T1059.003": 7}, {"T1105": 2, "T1059.003": None}])
 def test_multi_gt_candidates_and_best_rank_match(ranks) -> None:
     row = _make_row("p1", "contextual", "mapped_multi", list(ranks), ranks)
     validate_diagnostic_record(row)
@@ -1469,9 +1627,15 @@ def test_negative_hit_flags_must_be_null(category, k) -> None:
         validate_diagnostic_record(row)
 
 
-@pytest.mark.parametrize("mutation", [
-    "replace_gt_top1", "malformed_top1", "duplicate_rank", "bad_rank",
-])
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "replace_gt_top1",
+        "malformed_top1",
+        "duplicate_rank",
+        "bad_rank",
+    ],
+)
 def test_t1105_direct_call_rejects_malformed_candidates_without_gt_changes(mutation) -> None:
     row = _make_row("p1", "single", "mapped_single", ["T1105"], {"T1105": 1})
     frozen_gt = deepcopy(

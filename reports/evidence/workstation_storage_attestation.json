@@ -1,0 +1,3001 @@
+{
+  "schema_version": "1.0",
+  "audit_step": "Step 0.3 \u2014 Workstation Storage Reconciliation & Attestation",
+  "generated_at_utc": "2026-10-19T05:00:00Z",
+  "Mandatory_Stop_Gate_Status": "NON_DESTRUCTIVE_RECONCILIATION_ONLY_NO_FILES_DELETED",
+  "d_drive_clone_audit": {
+    "sanitized_path": "<WORKSTATION_D_DRIVE_CLONE>",
+    "head_commit": "80dbeb3f72e7db1ee1fc9ac3ce2daffbeab0c044",
+    "branch": "main",
+    "classification": "STALE_PRE_FINALIZATION_CLONE_WITH_BROKEN_VENV",
+    "total_file_count_including_git_and_venv": 20676,
+    "total_size_bytes_including_git_and_venv": 1337508718,
+    "non_git_non_venv_file_count": 532,
+    "candidate_repo_non_git_non_venv_file_count": 572,
+    "only_in_d_count": 334,
+    "only_in_d": [
+      {
+        "path": "Context/RAG2ATTCK-20260915T154859Z-1-001/RAG2ATTCK/RAG_ATTCK_Project_Tracker_Updated.xlsx",
+        "size_bytes": 49142,
+        "sha256": "ed946fa1918af54a0634a317b6bf3d2b4291501219524de691c5da8b15725ef8",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "Context/RAG2ATTCK-20260915T154859Z-1-001/RAG2ATTCK/RAG_ATTCK_Research_Plan_Updated.docx",
+        "size_bytes": 214812,
+        "sha256": "39499aa68188530eed81d1426af4d2f0217e17e10d9d016ddc0b38c0ae7a91af",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/experiments/live-test-01-evaluation/failure_decomposition.json",
+        "size_bytes": 2375,
+        "sha256": "52d952dfad7133d96c09a5f819811e0af2a6ffb0383d61c2e45710315b834b82",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/experiments/live-test-01-evaluation/overall_metrics.json",
+        "size_bytes": 1633,
+        "sha256": "3d844646c72892f5d6f0e30efa6b7943b228d133aa0d73ae10e7a11412d2e8e6",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/experiments/live-test-01-evaluation/per_condition_metrics.json",
+        "size_bytes": 3777,
+        "sha256": "030fab54ee285c0569846e34ffd4b31c2c79c42c80cff1fb31b03a5cfa69ff12",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/experiments/live-test-01-evaluation/per_technique_metrics.json",
+        "size_bytes": 205398,
+        "sha256": "f4907c370701bfe2b600152b75e9af4203b645e985ca56f0f7758d283e36b4a4",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/experiments/live-test-01-evaluation/retrieval_conditional_metrics.json",
+        "size_bytes": 1406,
+        "sha256": "17b6ecb9d9d4a2853d44222b3e6748cc06c8e3d386774a5cf88bce1c90dfa3ce",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/experiments/live-test-01-evaluation/run_provenance.json",
+        "size_bytes": 2929,
+        "sha256": "3e60cbaaf490835e1e0ba29b34b450b54185eeef6f1d501f307eaf5f94a2b2c6",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/experiments/live-test-01/manifest.json",
+        "size_bytes": 127772,
+        "sha256": "32573eee54bb981358141d2f96ea9f58aae2930cd640f5ba100f0df4e6c59edc",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/experiments/live-test-01/no_rag_predictions.jsonl",
+        "size_bytes": 3452,
+        "sha256": "3c72a907f4b04208b6f9520e6cf9aec894325a7e418608aa95e7821b3d993610",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/experiments/live-test-01/rag_k10_predictions.jsonl",
+        "size_bytes": 2389,
+        "sha256": "368d11aacfb5191e78082e55acc3f0ee1e59f128357d0af8fc80a405fb395a3e",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/experiments/live-test-01/rag_k1_predictions.jsonl",
+        "size_bytes": 3583,
+        "sha256": "980b41bfd29c95c1083732cf33dff2b4e3a1d77e4892a5e5bb86aa663aea70c2",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/experiments/live-test-01/rag_k3_predictions.jsonl",
+        "size_bytes": 1927,
+        "sha256": "6be06aa3267c937f4117cd0a19bbe94c47a3fc19d2dbcb5ec6a5f8c25f24e1ce",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/experiments/live-test-01/rag_k5_predictions.jsonl",
+        "size_bytes": 2059,
+        "sha256": "4b8b1fa7e76f1e5f0a49ed5859e6f3cff148b65cf6373c03082125e022efe3f7",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/experiments/live-test-01/request_journal.jsonl",
+        "size_bytes": 3750,
+        "sha256": "94aa328a84e0e4349c277cd0a647ce6843de9c0eae2746652325291e0d79e395",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/experiments/live-test-01/run_summary.json",
+        "size_bytes": 162,
+        "sha256": "4d40e2419497f9c59ff40da3737b776c1107568ecde9b10d8df46f00b396f0fa",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/a_manifest_identity_probe_20261002.json",
+        "size_bytes": 817,
+        "sha256": "506b25c758abbae95c77a84fdfbe2e61eff6a280dd226fc0590c66ffa72a7d54",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/a_public_staging_review_20261002.md",
+        "size_bytes": 3591,
+        "sha256": "ba5a96241702f78877e9c01d19df139ca25b4d0f1c549a2763388eaf51690d76",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/a_replay_b2af_source_fail_20261002.md",
+        "size_bytes": 3323,
+        "sha256": "e8f5a949455588e13c365b731ae283ccf301098a1403c942040d5af71889703a",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/analysis_reproduction_review_20261002.md",
+        "size_bytes": 6716,
+        "sha256": "65525e59cbde3801d848cab509f17716282c9d51cdc199a050c9c3cdf61a9b07",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/b_financial_reconciliation_review_20261002.md",
+        "size_bytes": 3775,
+        "sha256": "e3521cf1c943ce6929e82c1b791629fa2cce4948041638f387e06b68222d21a3",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/b_native_tariff_review_20261002.md",
+        "size_bytes": 3448,
+        "sha256": "511b7a72835c4b6e3c29dc1251721fb79123011c9e84390786215fb34f8a77a0",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/b_rq_source_edge_correction_20261002.md",
+        "size_bytes": 1766,
+        "sha256": "5c190fa2bdafda5314f587b620d0b484b15b917f353488c77d77c54b309958e6",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/b_scope_acceptance_dbe816.json",
+        "size_bytes": 1018,
+        "sha256": "fa9a65b04962d70642a149c67caa8f856a570c79557fbe31d227ef624a33e32f",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/bd_boundary_acceptance_20261002.json",
+        "size_bytes": 1232,
+        "sha256": "5fb89f7a7f1d23d6546a5195b2443a6882ad0efde51b64b41966cd39359a6f90",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/bd_execution_mode_review_20261002.md",
+        "size_bytes": 3286,
+        "sha256": "53352879cf4151170997fbaeaec0d679c4f019e4d9e666a3c5f63cf7a6ba3e95",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/build_accepted_metric_bundle.py",
+        "size_bytes": 4731,
+        "sha256": "520a669d6d35b3bf3e9f91f91470878532c47cb48c59cf34ccee7c44cd60631f",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/build_fixture_export_schema.py",
+        "size_bytes": 2505,
+        "sha256": "a90e172f587815b8deeb90e8827a5137eb57876915373c2ddeff644a9b1a20dd",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/c_methods_final_alignment_20261002.md",
+        "size_bytes": 4729,
+        "sha256": "4d4a7d9721eed400d7e4c85fa6cfcc1698a36f9dc3dd42443d01878aa7e59e5d",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/c_report_82d_final_semantic_fixes_20261002.md",
+        "size_bytes": 5042,
+        "sha256": "29f94ad52523965539e4b5b7ace9e006faf58801df2baa1d8d023b7f767fe632",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/canonical_bundle_contract_20261002.md",
+        "size_bytes": 3045,
+        "sha256": "daf0c6864a0fbbfab6f8484ae6b2c2ddecc9672e1a98d355f3e55ffc313622ec",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/canonical_immutable_snapshot_plan_20261002.md",
+        "size_bytes": 5701,
+        "sha256": "4c87a69ecce148087b42be237465ba1d612b54d03ee251fc9c609ad8488d1dbb",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/canonical_release_review_notes_20261002.md",
+        "size_bytes": 2273,
+        "sha256": "ce3bb1c82fab955052e275414aad0da0cfe17c8f7f5aafec97f9960fc7ae4bc1",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/cd_factual_followup_r2_20261002.md",
+        "size_bytes": 6898,
+        "sha256": "5b5756b9f1e8aebc28276a75ca883f11be81277fae128aadf44c5975417f3c30",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/cd_render_review_20261002.md",
+        "size_bytes": 6739,
+        "sha256": "ee4d955626abc23dfe78df522c851f63e427787b250fc8ac23561e494048932d",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/compare_canonical_exports.py",
+        "size_bytes": 7791,
+        "sha256": "c6d91960067ed344aa311c24d43ef6f9258a31c1e1f92e1e59ac633fdd843740",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/compare_rq_inference_versions.py",
+        "size_bytes": 1560,
+        "sha256": "54f54b81debe391ca457844bdc717d3b19365c353a0f530c4f274dfc58e068dc",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/copy_terminal_snapshot.py",
+        "size_bytes": 2702,
+        "sha256": "e84dc3b453574c7188abc5530d8bb7034af5b8bbf20f5fd124f388d27bb9062c",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/d_canonical_source_failure_20261002.md",
+        "size_bytes": 6486,
+        "sha256": "959367f2c1e19a6a072b443e9d657402115fde6ec87146008a4db31af72cac37",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/delivery_contract_repair_20261002.md",
+        "size_bytes": 4648,
+        "sha256": "89dc111a5ec352fb8097f9c6577e292c637b0ac0a5e66eb95d770410b01452e5",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/final_handoff_5754_v3_20261002.md",
+        "size_bytes": 2634,
+        "sha256": "a6cbf5fd51384397addc16f22cb3418deccdc82663bae3e58fe7c7417f6e1c31",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/final_v4_word_v3_deck_review_20261002.md",
+        "size_bytes": 3617,
+        "sha256": "a5fc9ce577949593930bda9228f92dcc28cb95637b207d1b58276d982e13d7c1",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/finalization_ack_20261003_vi.md",
+        "size_bytes": 4506,
+        "sha256": "df1d00becc1eadf6665a21a91b2a7cb8ef9e1462692e9ab9423b0007bfb736d9",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/finalization_phase0_execute_20261003_vi.md",
+        "size_bytes": 4704,
+        "sha256": "856bdd7e6fde554323fdcc8f7e22bffada4abbf6735b6aa036634254458742af",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/fix_final_report_narrative.py",
+        "size_bytes": 5740,
+        "sha256": "5f8c090be1bc89f0efd551181acc4436da1580625e388621a320114909be42b8",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/fixture_export_schema_3625.json",
+        "size_bytes": 128046,
+        "sha256": "82e30652f6dc3ce29c6043ee83dcd5202c69dd19bffa14d5af4d76bab27d7484",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/fixture_export_schema_3625386.json",
+        "size_bytes": 121424,
+        "sha256": "b478cc9fcd71ce1cf88d00f079dd7b2f399091bb976ae2993a635963ab69762b",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/fixture_export_schema_b172.json",
+        "size_bytes": 128046,
+        "sha256": "82e30652f6dc3ce29c6043ee83dcd5202c69dd19bffa14d5af4d76bab27d7484",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/independent_canonical_numbers.py",
+        "size_bytes": 4809,
+        "sha256": "80262da283dd47cb15f3600ffca3d599364cbad8037dd600d2a0da4062673ea4",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/integration_identity_95b9246.json",
+        "size_bytes": 860,
+        "sha256": "ad7938dd79dba2497c9b2af818032695d85096fa026295a8462384e05fd854ba",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/latest_run_snapshot.json",
+        "size_bytes": 841,
+        "sha256": "ac5d25a12ccf9971fea0a4c6e6546eac89d1b7cf42a6fb7fb2f9e34d6cb01523",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/operational_status_journal_proof_20261002.md",
+        "size_bytes": 11599,
+        "sha256": "c7fa30d3d7068b45a11e11bc903c43b7bef65da4a2b8fc497eae4b21f6eb75b7",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/plot_verified_native_results.py",
+        "size_bytes": 5479,
+        "sha256": "27267cfa299b4ec6dee831e8b60073bcbe343a5ff4773457ecf68b09a3b43df3",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/pr28_final_review_body_20261002.md",
+        "size_bytes": 4389,
+        "sha256": "97855434bc6ac9c0ffb7ab5be4893402071072eee13353afb717182005f5e787",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/pr28_updated_body.md",
+        "size_bytes": 3400,
+        "sha256": "507e2bf76d2e9b96f9001aebd16271d3791f8316e69269a8d7e3dcf77249711c",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/primary_reference_metadata_check_20261002.md",
+        "size_bytes": 1208,
+        "sha256": "bbd833e23cd7f89c0cfedd026e2556cb12b69b4b53fb29c850b50b0e39ea8730",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/probe_b_receipt_reconciliation.py",
+        "size_bytes": 1961,
+        "sha256": "a0a5762e4cb7fd90feaf1d31b0f2285c3a6181c9dd1573f6db0b2237f1b768c3",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/probe_schema_verifier.py",
+        "size_bytes": 1854,
+        "sha256": "00a5d5efc671d2d16fcc5ccf2cafeb6bebd3ce4947b8c9108cc71f6afdae80e3",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/probe_subset_macro.py",
+        "size_bytes": 3151,
+        "sha256": "ca10b3ad13d863f03f7ea221b18c718b5468db41a88ee493438da7ccbc4a2bc2",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/probe_validator_r2.py",
+        "size_bytes": 3064,
+        "sha256": "8cd86da5865ffe2fb9480bfc9226113fc3986f89e1f1c39a1c832359dfc85e85",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/prompt_ban_giao_de_theo_doi_20261002.md",
+        "size_bytes": 2864,
+        "sha256": "25684015903ee323c376a5eef021365b7868e6c3823229a4488b1f16f0248fcc",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/prompt_lam_sach_ban_giao_20261002.md",
+        "size_bytes": 4404,
+        "sha256": "83252c4aa89d6dec0f568d7c0fae5afeeb2ac1580039c174018f8a39f6074b30",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/prompt_sua_kiem_tra_goi_20261002.md",
+        "size_bytes": 3135,
+        "sha256": "ed72c7cc3ccb9e29b87a8bad67bb7bc1f70e0715ed02f7103d32b1b6969bc784",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/prompt_tich_hop_va_kiem_chung_cuoi_20261002.md",
+        "size_bytes": 4079,
+        "sha256": "73fee58d328fb8adf030fe99c88d4bb2eb283ecc7dcac9cda20385f99e5c5721",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/render_current_deck.mjs",
+        "size_bytes": 1198,
+        "sha256": "9dae0fb78bf4a38e0b50da336096a7c8318053867e3d49b947fdb10d763a2e84",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-1.png",
+        "size_bytes": 349844,
+        "sha256": "09ab28220e46ecb376a5e70e0ffb4d7305316822be4424d7ec08b5ff2e772a27",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-10.png",
+        "size_bytes": 350309,
+        "sha256": "b6a432eb86da611f0b954dc40636cb9d519d8be636ca81d80bed194b1be45993",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-11.png",
+        "size_bytes": 353551,
+        "sha256": "64348c4032040f8c5235429b7c7ab49d9a6179e9e41f6834356ad84cf9ae1b10",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-12.png",
+        "size_bytes": 322284,
+        "sha256": "0305bd660d22058d36cfa5d241ec28d472adc9c94650adf7b7cda5934fd0dea6",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-13.png",
+        "size_bytes": 381966,
+        "sha256": "feb26a59c8f483f75bcc2833a41f6d68edc2cdc57acaca4a9c2ef7788dec4d7d",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-14.png",
+        "size_bytes": 282310,
+        "sha256": "560746c4cd13108d1439937239bac0c26ce25d40d59c5370135d79c0d4e02af5",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-15.png",
+        "size_bytes": 288232,
+        "sha256": "de8bb364c3d702b3d0ebccdda46bcf84b44fa60abdce218fa6c05c94f1fddbbb",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-16.png",
+        "size_bytes": 319793,
+        "sha256": "10dd05483e326f761163929f0797e4a90050bb7ed7a10456cab812aba8ce9da5",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-17.png",
+        "size_bytes": 319323,
+        "sha256": "73e4c324880619cfc9605ef91903fd1b53ebe6cb5bce56cfc1c4d1438d03022c",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-18.png",
+        "size_bytes": 229226,
+        "sha256": "08f6d74ae04c66cf872c2cfba1953d501c6fc160c4fe1b91f63dc8bb96fab0c3",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-19.png",
+        "size_bytes": 191298,
+        "sha256": "0c7614fa18fdd20a692deed5d14a61e615171bedbc5c6fbbbe9ce9e1582cbce3",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-2.png",
+        "size_bytes": 318226,
+        "sha256": "8ce9fb08a3dbcfb9a28a551d0f7cc33f880ba74fecd8c3e7e89c7882d587b371",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-20.png",
+        "size_bytes": 365249,
+        "sha256": "5282820f26bb09cb016d913a9bdfec975acf528bffdae2e8369f4beaf42db77a",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-21.png",
+        "size_bytes": 205611,
+        "sha256": "36ca59c6e4aa86103b89ef035e272ed132d14433959d26615e998160be084002",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-22.png",
+        "size_bytes": 334772,
+        "sha256": "2c92f45b1fb7c92c469ff4378a5a9cd9f6fea52c2930444289aa60b037380100",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-23.png",
+        "size_bytes": 233915,
+        "sha256": "0d5c76ec0064cc05a1db8d79237c9267dad62fb405f99a42b28dba8fee0c5166",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-24.png",
+        "size_bytes": 207061,
+        "sha256": "f4c29d88a3cc293b753f5fd5f606508d7c64bf11f2524ff4b2727832e46ec2aa",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-25.png",
+        "size_bytes": 292293,
+        "sha256": "e00d715a8d6df452569e4ad19bdf40966b4a25928181c47f04bc42b452500179",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-26.png",
+        "size_bytes": 443953,
+        "sha256": "0a80c0954086c3a1cd80c66060d81549ae02e0efd1569c90106bd397239b04ad",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-27.png",
+        "size_bytes": 34319,
+        "sha256": "f86963a3bb2fe290b63cdf02084b98ebf69b024bf1d0ed7a079eeaf51a73f8a7",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-3.png",
+        "size_bytes": 356149,
+        "sha256": "0e98ae9db0db3263bd4067f582760e22bd69f1a26c0846e8387145e351bc0b18",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-4.png",
+        "size_bytes": 310569,
+        "sha256": "91d486bc3d4567b8e8ffed1cde4192e79ae4fc8802cddb60e6abfca2ccf36213",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-5.png",
+        "size_bytes": 265068,
+        "sha256": "3fa3b6251164c06f2988735a52d94bff3a7285c16105671f8a536f834ff1c83f",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-6.png",
+        "size_bytes": 207302,
+        "sha256": "5d7596e58149731edc7c944673964dc1930c0701a3b667fed3488059b4f12b04",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-7.png",
+        "size_bytes": 215567,
+        "sha256": "a8899076e3182b15ae00f0375a1030fc6c8edd6198877a13d310631a44465c6c",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-8.png",
+        "size_bytes": 225585,
+        "sha256": "a9fe4d31f8cc1509c6ae4c3dfa1fa9216e3a34ec7443c051a6dbd9e8e829bc01",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/page-9.png",
+        "size_bytes": 291518,
+        "sha256": "18fbade4a7f90b6f010e093a44b591a963ef472214ed25d040a2d346289c3a08",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/scientific_report.native_word.pdf",
+        "size_bytes": 693110,
+        "sha256": "082ff11a4483c25f3190932fe3f6f109f1bbf4e8c864c029e80b31cde643f810",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_20261002/scientific_report.source.docx",
+        "size_bytes": 71213,
+        "sha256": "f33463a362e90a7b2e13bba8437ea4d3a276d1931eb4407ef8105946172fe924",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/native_word.pdf",
+        "size_bytes": 761056,
+        "sha256": "4d35700e1d6ad373d24d7a1d12af399c63548e9a42935ebf01d5932ab2c321e6",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-1.png",
+        "size_bytes": 310837,
+        "sha256": "238fd1a30b5dd5a2412d82a57f88e3d80817047682394022a8537e55a9560ebc",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-10.png",
+        "size_bytes": 334955,
+        "sha256": "b55aa9594f8c03221f369cd657f5664abe869d4323dcc12d70621cef006199fa",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-11.png",
+        "size_bytes": 391400,
+        "sha256": "754897a4d7639dfe61c6bbdf6e30bedd5df94c43b4d7866be7808d49eb6025b0",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-12.png",
+        "size_bytes": 239302,
+        "sha256": "bc37f1bf2023b42857961882e6db8c774ad67744db907ea76fe5e4939f8643d8",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-13.png",
+        "size_bytes": 307822,
+        "sha256": "687204123869b7aacaaf985ed29dd7d477e96254a8dae3407f5aee515df1aa0d",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-14.png",
+        "size_bytes": 298954,
+        "sha256": "824e44447c3403a23f00b4f2e09faba9cda7f1dd41c02e07ff408e51d0fefa78",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-15.png",
+        "size_bytes": 302444,
+        "sha256": "26d6b4185dcfd70499d1439b1bec4ca07b67182c66495514cb635bb9f61052d3",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-16.png",
+        "size_bytes": 198147,
+        "sha256": "d720241d79cec886604e892a35136db25679085a7a1cb575488b58e79bd04763",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-17.png",
+        "size_bytes": 254942,
+        "sha256": "abb70c854155b9ec5c59934680886b693171ec7aeff869d174df844e25709a11",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-18.png",
+        "size_bytes": 320707,
+        "sha256": "c41697e02137a06f901b663dbf59d7c9740de419d97fb9e78497e0dbbc8c066f",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-19.png",
+        "size_bytes": 311551,
+        "sha256": "de74e96b3aee8b306e27f98ee6babfdb5ddfd79cc08bb9160375b9810f0e8519",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-2.png",
+        "size_bytes": 349269,
+        "sha256": "ce17861763362031fd180652331689fb9c298d86c1a58f2064464e26c54b19ff",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-20.png",
+        "size_bytes": 313628,
+        "sha256": "5f42c2c616b1aa0df89c8098109190fd8691a961432826fbcc35558c5412cbc9",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-21.png",
+        "size_bytes": 302606,
+        "sha256": "3deae88a07064c7320903a3e658e563b7b0135203dad2e6366bc42f66a208c2d",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-22.png",
+        "size_bytes": 432581,
+        "sha256": "fc66b7202d1063833a97a9c79b5f93a85148c2fe334089e171d39d09dcf37aea",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-23.png",
+        "size_bytes": 223788,
+        "sha256": "d4571dec7c2cd3afe0be43ea705ed6c7dfe8edd2bd8aee8640cfb4cce888ad39",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-3.png",
+        "size_bytes": 349124,
+        "sha256": "c9ec44e2576c9c26e27e49650c385e1269d267e059fd7024f60809fd8ed61bb1",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-4.png",
+        "size_bytes": 333393,
+        "sha256": "2d750e38040aa4d455cff09d4ef6c0efdf2c150c4cdbd2f07cf985003532ad78",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-5.png",
+        "size_bytes": 290192,
+        "sha256": "f3d24228fffeadf2d5f658378e4c7deed939b368277ac2df3419dc4655690c2a",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-6.png",
+        "size_bytes": 303875,
+        "sha256": "9fe0190231f15eead5feead221fa84db1a4283bc6d20dcbf41a94cc4d6d929a5",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-7.png",
+        "size_bytes": 375934,
+        "sha256": "6a6747a0c5bb94f31753445f5c2c6119a352f3429f2c15adb19b004063fa4953",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-8.png",
+        "size_bytes": 307438,
+        "sha256": "742cbeac328f99f040013682997932f1a6c14fd1a198d93ad3485ae67e08cd4c",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/page-9.png",
+        "size_bytes": 368018,
+        "sha256": "533d4a23d34a0da76777be3ab9fac8dc1b102b236b8d5f2bc5490167b5007c1d",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r2_30268/source.docx",
+        "size_bytes": 73323,
+        "sha256": "11993dc6e44b014441d1744dbd0ef1174362df6b6f19c7f7f0805f12ecc8d6fb",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/native_word.pdf",
+        "size_bytes": 770628,
+        "sha256": "da28374379984f78bf61f209a29212ba72a4862963d310402c5bc85c4f7cb8e7",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-1.png",
+        "size_bytes": 306821,
+        "sha256": "0f933b3bbe547626146e0719f43796290f174a1e539cb05116305dd41ecd9b74",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-10.png",
+        "size_bytes": 318703,
+        "sha256": "d99d6fbd22be23c481e765f7b0e13d4908989017e0e5e70b3b0f3c988412f702",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-11.png",
+        "size_bytes": 396934,
+        "sha256": "97b7f39ede318a1f3e606e67a4c8bbb31a0c5c28eb0b5e67f093b0df0a00b24a",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-12.png",
+        "size_bytes": 297665,
+        "sha256": "4261160df01271257b9007cf4cd79fb05e3f58185e429ee3668363456fa9fbd3",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-13.png",
+        "size_bytes": 263209,
+        "sha256": "f3ba82e5ad7eca6e0734fc7ead881d98f3ecdaf96e9cae7201e5996c3b8ebc89",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-14.png",
+        "size_bytes": 319650,
+        "sha256": "07fb9dc75e6874bd3aa605e603825e3860723921162054b66b768155c227509f",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-15.png",
+        "size_bytes": 334028,
+        "sha256": "da9f88fd40ed06574f7c260b58c6e1259427efe594ee4a88339b4c2e6c4593ab",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-16.png",
+        "size_bytes": 304536,
+        "sha256": "08c7f59d87dc4b51f42415a8ecb320afefada3bfc9ba67dc98589292c1732708",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-17.png",
+        "size_bytes": 231617,
+        "sha256": "66b4544346bd74ca67e70fd9bc7a993dd076a261cfe0d38c93e089b563768e17",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-18.png",
+        "size_bytes": 247304,
+        "sha256": "0cecc384f174605694d43d37ed72ba76b3fcd37e0691617d8648dd4b58fa21ec",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-19.png",
+        "size_bytes": 285867,
+        "sha256": "3839df5fa891617ecbc4f5678b2b47dde625ec2cc5945176199f4b3a678ab06e",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-2.png",
+        "size_bytes": 349939,
+        "sha256": "e647b8df5ea9f29bddbfa3c7bf7ba0b7982bf1586de1ce9aad896a3f50dd7e1c",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-20.png",
+        "size_bytes": 311551,
+        "sha256": "de74e96b3aee8b306e27f98ee6babfdb5ddfd79cc08bb9160375b9810f0e8519",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-21.png",
+        "size_bytes": 313628,
+        "sha256": "5f42c2c616b1aa0df89c8098109190fd8691a961432826fbcc35558c5412cbc9",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-22.png",
+        "size_bytes": 301709,
+        "sha256": "b8e95d2e223c666549d3fd83872bee36fec8c4ca9ccca088c87514e44d1fb674",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-23.png",
+        "size_bytes": 442937,
+        "sha256": "7531080128ebd73c8511b630fc1a14c7a7745ce0419607f38e4389e0f2985de8",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-24.png",
+        "size_bytes": 161216,
+        "sha256": "9583c5e73c311810e5a36ad024747a2728332dc8d6a660d8e0a5b7a0feafd6e5",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-3.png",
+        "size_bytes": 349786,
+        "sha256": "e63036936a4cd8d4b5b10a62b4c031096aac0ef5e086686a45eec2cd83e20d85",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-4.png",
+        "size_bytes": 330969,
+        "sha256": "3045521ed23e952f09c6575637fd722ac4b8ac78da5bc11c6f36553376cb273e",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-5.png",
+        "size_bytes": 323001,
+        "sha256": "b8f019e2f412c318b7f4e696328a84398c08f0a9361c8809b308358f8d27fcad",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-6.png",
+        "size_bytes": 288244,
+        "sha256": "9aa9b37474a84507e1b989a2c74f3619c0f605b63e796e6b2bf1283789f6c4ea",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-7.png",
+        "size_bytes": 328577,
+        "sha256": "0b2c8bf280806901c077643853fdb74e6542e125ec091bf77a3fd20a7babde22",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-8.png",
+        "size_bytes": 346006,
+        "sha256": "d3db5290cf2cd455b6f392f8a395a5fe0a12ba44081149a34d10f8b3ebcb954d",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/page-9.png",
+        "size_bytes": 335770,
+        "sha256": "2e937148348d2e6e0eedbd8598acc8572303ff83a1d5be6d82b262c8b0dae88b",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r3_bcadb/source.docx",
+        "size_bytes": 75802,
+        "sha256": "4e74a4e680fe65e1d822f49312fc936d3b08cb8f473b6cee62dc53499b046659",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/native_word.pdf",
+        "size_bytes": 773840,
+        "sha256": "9260f9d3e1089218bbe1869c765c954f131f3e9de41306f323f531c293b123b3",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-1.png",
+        "size_bytes": 305142,
+        "sha256": "d7ef65e5a809d3d1d014fe24ff0e7ee54fdac63845fae66b3aa0121fafb576f4",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-10.png",
+        "size_bytes": 338986,
+        "sha256": "c573808e04645c6a3d96438a73cac0e33d377d938a050a8f4517fb12955a28ef",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-11.png",
+        "size_bytes": 362474,
+        "sha256": "58c2ab958b684f9ec537fdaaf09b67373dcce582dd3068bfe7245a339dc5bb16",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-12.png",
+        "size_bytes": 328228,
+        "sha256": "a7925b8906dbf6bc49e85f823ab45a3600624dfaec3e0cfa166972d46b3f4d7d",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-13.png",
+        "size_bytes": 339005,
+        "sha256": "c72a989258c07edb26a2b6ea5c9d9713ac7bc9e7164a3df56a27aa7413197240",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-14.png",
+        "size_bytes": 282520,
+        "sha256": "6f77562b5d3202eb95b3933e91bfbd7d397eaba09f2475efc0bc98e9c10e2054",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-15.png",
+        "size_bytes": 311744,
+        "sha256": "b3b935b5cce7e959a96aa396516c27c10c7f3c5e9a08df353133110d65ddad1a",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-16.png",
+        "size_bytes": 334028,
+        "sha256": "da9f88fd40ed06574f7c260b58c6e1259427efe594ee4a88339b4c2e6c4593ab",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-17.png",
+        "size_bytes": 304536,
+        "sha256": "08c7f59d87dc4b51f42415a8ecb320afefada3bfc9ba67dc98589292c1732708",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-18.png",
+        "size_bytes": 231617,
+        "sha256": "66b4544346bd74ca67e70fd9bc7a993dd076a261cfe0d38c93e089b563768e17",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-19.png",
+        "size_bytes": 247304,
+        "sha256": "0cecc384f174605694d43d37ed72ba76b3fcd37e0691617d8648dd4b58fa21ec",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-2.png",
+        "size_bytes": 349446,
+        "sha256": "a3d96b00a6ea06b8a000e1d6904fa842fcde26030026aaebe221c1ebeaceecc1",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-20.png",
+        "size_bytes": 313055,
+        "sha256": "0e4bd00e0493d920f341eb13c5ba1c86f61cf6f180b05b822b799fd725a85de0",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-21.png",
+        "size_bytes": 311551,
+        "sha256": "de74e96b3aee8b306e27f98ee6babfdb5ddfd79cc08bb9160375b9810f0e8519",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-22.png",
+        "size_bytes": 318004,
+        "sha256": "2da84e10e236819510585b4138d42f27283a54a474c0cd50292e0e1f7a5a95b0",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-23.png",
+        "size_bytes": 306872,
+        "sha256": "1081728ecfbef1d2166e4179ebcc6a6a568533f4822edb52d213141020418f75",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-24.png",
+        "size_bytes": 434706,
+        "sha256": "3a3a1598069727527203050e7d3df8e6af1087cedf0d82554bac2130fdc5db08",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-25.png",
+        "size_bytes": 193303,
+        "sha256": "684c4b6cdc27aa425dbb1d4d896cd4cf0635abf15775697cf615ed9a1f73e3e6",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-3.png",
+        "size_bytes": 344262,
+        "sha256": "28c84a0aa7f0ef8fb934ca9303db88c8bbedd200680eb9863435dbf997384e6c",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-4.png",
+        "size_bytes": 322273,
+        "sha256": "b09977ef0cec75f2600bd17dc3e0ed3e7d885ef290881b8362e561bcaf7adf9c",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-5.png",
+        "size_bytes": 332561,
+        "sha256": "83ba7f49d06ce20fc9c66618fced633c8163bcaa7462c6634aaca62aab512bf5",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-6.png",
+        "size_bytes": 277882,
+        "sha256": "032a31905403d812e6b3f95f8d7d965cb1424757b2b978614c1e56371fe5c65c",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-7.png",
+        "size_bytes": 320503,
+        "sha256": "ed755430b1b5d4cc511ec104000ea3f60696bc34de1eee544c72e0f6be0af2e2",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-8.png",
+        "size_bytes": 355215,
+        "sha256": "67efc4f1404cabb5d42289e443e70e211029cd5942159e15ab82201062ac81f0",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/page-9.png",
+        "size_bytes": 331594,
+        "sha256": "415ef43d2a94a09962490a465cd16fc97dc5f0caa2b922ffa4018814cac5cf8b",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/report_r4_3d7a/source.docx",
+        "size_bytes": 77319,
+        "sha256": "932bf6ad2977cdddd53ea15aa1e80c3b9aabff23599a1d35d228592a9dbc4cb3",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_20261002/slide-1.png",
+        "size_bytes": 50735,
+        "sha256": "bc478dad9fbc103859effbfda11c0a05d235fe9ca32a96b9ce2b63e806fea340",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_20261002/slide-10.png",
+        "size_bytes": 96870,
+        "sha256": "92d7f953a2c0d28b153f7ea2b135328f110c4044d00814ec2eb6bc924ecd2195",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_20261002/slide-11.png",
+        "size_bytes": 109174,
+        "sha256": "864e4f011c1a615a3ece93605f565cdf1513da52afe06b36463886600837870e",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_20261002/slide-12.png",
+        "size_bytes": 63125,
+        "sha256": "b745ad3da07d611338e0a6c1cc08b0766aa3dc07425a5e6c1ae5309bc74e2d16",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_20261002/slide-2.png",
+        "size_bytes": 118029,
+        "sha256": "1b2129d6a46c192c195776fe199766732e49f1eb8f71fe37772fc5a8d9eeb7a3",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_20261002/slide-3.png",
+        "size_bytes": 101421,
+        "sha256": "03e03505b80eef83c5b6ed00329b646009b6b64e30ffd14276b1b6fe4e0ce86b",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_20261002/slide-4.png",
+        "size_bytes": 113399,
+        "sha256": "403593304b9a968790f63feaf94cb3583c7e522c96c19e71c3e3407ba2e810c9",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_20261002/slide-5.png",
+        "size_bytes": 127107,
+        "sha256": "03dc325f3873aa133818bf77935881938eeb8cadba0dc3fc6cb85b92f232adce",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_20261002/slide-6.png",
+        "size_bytes": 128374,
+        "sha256": "584fd8c8732ddd079bfa9dd26e0384c184870523be9237ea88ad3d6ff687610a",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_20261002/slide-7.png",
+        "size_bytes": 138638,
+        "sha256": "1329d5aa69d02c3c163a8d172a79d9092473ad859f96d8db95f6fc30de9aa94c",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_20261002/slide-8.png",
+        "size_bytes": 128679,
+        "sha256": "f9b64c1a6987edf18067a148a5d5682aad77449ac4404d5831c52b4ae0cdd24a",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_20261002/slide-9.png",
+        "size_bytes": 130659,
+        "sha256": "a7c04f44bf8b5856d61088ebd1bd04096d4f9114e5ca090552d069059d4e9b6f",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r2_0533/slide-1.png",
+        "size_bytes": 50760,
+        "sha256": "d2b3ac6d45ddbda7afee8c6d7c435a6e3fb75a482f1fa6cd1abff192e23adec8",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r2_0533/slide-10.png",
+        "size_bytes": 104467,
+        "sha256": "0d39d862977499d88b0467c6e3c9acea66c9766348336d52c3f0e5064119efbe",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r2_0533/slide-11.png",
+        "size_bytes": 109598,
+        "sha256": "42b5a99168a487b6ec4d36b228afdd1679d83bfb6ac0dbb75eb1fd8f09010a87",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r2_0533/slide-12.png",
+        "size_bytes": 66604,
+        "sha256": "6b555f45f316335be681921026d7b15fbd5d75056161fb45b2d1fb31527cb1ae",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r2_0533/slide-2.png",
+        "size_bytes": 114869,
+        "sha256": "841a293f911b1ff9bad5353f4616d549016ad63ad5b1ff1266d295c6523305ae",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r2_0533/slide-3.png",
+        "size_bytes": 100845,
+        "sha256": "1ad0a7edaac6f99208f3111bf1de4a73e2ba344447e21a13c8c1b1618dc53a9e",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r2_0533/slide-4.png",
+        "size_bytes": 96553,
+        "sha256": "5d63c7ba6f5381faf6f0d147b329e5f94fe7138598e2ea5dbada0db1604cb39b",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r2_0533/slide-5.png",
+        "size_bytes": 133172,
+        "sha256": "14b6b5534003afbef82472f36277a8402163d056db07fcdc2af4232287a55f8a",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r2_0533/slide-6.png",
+        "size_bytes": 120922,
+        "sha256": "180b8df1ed21ebab944dfe84b17b25ef895ae84932c7c4ffec5afd6795e7b858",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r2_0533/slide-7.png",
+        "size_bytes": 123793,
+        "sha256": "529e8951a7d8da0d2af5bc1f4ebef54831f5d8a42f9bac54d768b2dfe8c15af2",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r2_0533/slide-8.png",
+        "size_bytes": 136453,
+        "sha256": "b37150706b717bc063b05dd039e73be8bee4d9b44e0313dbb95a6a36c3056c1e",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r2_0533/slide-9.png",
+        "size_bytes": 140808,
+        "sha256": "7b0bb83cadb93b34b08ee07d85e6cbf5a749c5f63f6c684bb808e4761c4a7c98",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r2_0533/source.pptx",
+        "size_bytes": 374804,
+        "sha256": "b82b25ba494dca81270ca54ee8b0163556e7eef98c1d1a8882313005aa66bc2d",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r3_8b392/slide-1.png",
+        "size_bytes": 50976,
+        "sha256": "b06c421891649f306482c6eb982d8244b97f84758ba4371b4704f85a6d227487",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r3_8b392/slide-10.png",
+        "size_bytes": 98633,
+        "sha256": "2c052299ae00ed4f2af94c9924ad3dbb3b1b9c6ace226d2c2f28f5bd1ed53e46",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r3_8b392/slide-11.png",
+        "size_bytes": 108989,
+        "sha256": "09076da0d9b828543d3fe0e58d4c0dbe5557e4d85b4973d6a19b3192a7b7b774",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r3_8b392/slide-12.png",
+        "size_bytes": 78485,
+        "sha256": "0a816cf5fafea5dd921733d97c5168e276aca7e2e233859ff7cefe825c9f0dd0",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r3_8b392/slide-2.png",
+        "size_bytes": 102551,
+        "sha256": "b395fe1450f62e03e7290ebcdd5024725fe605db4eef31744d7feab2b417883c",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r3_8b392/slide-3.png",
+        "size_bytes": 95342,
+        "sha256": "c85714dadc9777e6a7e42e4256ea4702daf93e93645537ae3bc7a952db4fef5a",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r3_8b392/slide-4.png",
+        "size_bytes": 96553,
+        "sha256": "5d63c7ba6f5381faf6f0d147b329e5f94fe7138598e2ea5dbada0db1604cb39b",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r3_8b392/slide-5.png",
+        "size_bytes": 132774,
+        "sha256": "978270ec05ecc14410673618010695b1c43abc36cbfb596bca96ca6ab04fc727",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r3_8b392/slide-6.png",
+        "size_bytes": 120922,
+        "sha256": "180b8df1ed21ebab944dfe84b17b25ef895ae84932c7c4ffec5afd6795e7b858",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r3_8b392/slide-7.png",
+        "size_bytes": 123793,
+        "sha256": "529e8951a7d8da0d2af5bc1f4ebef54831f5d8a42f9bac54d768b2dfe8c15af2",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r3_8b392/slide-8.png",
+        "size_bytes": 140005,
+        "sha256": "6609d66387d518dab56049754946343abfb85f6d415cd99b08d4a4c8012fff3c",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r3_8b392/slide-9.png",
+        "size_bytes": 140021,
+        "sha256": "70ca36a163bc6303d393bf56a7b9245e518a66beda2f91a5d10f395709aea1ef",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r3_8b392/source.pptx",
+        "size_bytes": 375682,
+        "sha256": "e37a74f2db91e96714e346d6d4bcbb867954e13fedd9f7b1d33ce41067243046",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r4_0c244/render_metadata.json",
+        "size_bytes": 258,
+        "sha256": "9fab8f0b1b496676c438e972b18ae2211fa532947dc97bbefeeb8a484d8a5ae4",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r4_0c244/slide-1.png",
+        "size_bytes": 49172,
+        "sha256": "69554e086709d9839b26a998a6a138b4a6f77d5b8738444604f75162e279dedd",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r4_0c244/slide-10.png",
+        "size_bytes": 98633,
+        "sha256": "2c052299ae00ed4f2af94c9924ad3dbb3b1b9c6ace226d2c2f28f5bd1ed53e46",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r4_0c244/slide-11.png",
+        "size_bytes": 108989,
+        "sha256": "09076da0d9b828543d3fe0e58d4c0dbe5557e4d85b4973d6a19b3192a7b7b774",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r4_0c244/slide-12.png",
+        "size_bytes": 78485,
+        "sha256": "0a816cf5fafea5dd921733d97c5168e276aca7e2e233859ff7cefe825c9f0dd0",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r4_0c244/slide-2.png",
+        "size_bytes": 113041,
+        "sha256": "edb7df987660f699c8d19f1cad6eea7f4ef45b81a5ee569a06e5ebed72d14c72",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r4_0c244/slide-3.png",
+        "size_bytes": 95342,
+        "sha256": "c85714dadc9777e6a7e42e4256ea4702daf93e93645537ae3bc7a952db4fef5a",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r4_0c244/slide-4.png",
+        "size_bytes": 96553,
+        "sha256": "5d63c7ba6f5381faf6f0d147b329e5f94fe7138598e2ea5dbada0db1604cb39b",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r4_0c244/slide-5.png",
+        "size_bytes": 132774,
+        "sha256": "978270ec05ecc14410673618010695b1c43abc36cbfb596bca96ca6ab04fc727",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r4_0c244/slide-6.png",
+        "size_bytes": 120922,
+        "sha256": "180b8df1ed21ebab944dfe84b17b25ef895ae84932c7c4ffec5afd6795e7b858",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r4_0c244/slide-7.png",
+        "size_bytes": 123793,
+        "sha256": "529e8951a7d8da0d2af5bc1f4ebef54831f5d8a42f9bac54d768b2dfe8c15af2",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r4_0c244/slide-8.png",
+        "size_bytes": 140005,
+        "sha256": "6609d66387d518dab56049754946343abfb85f6d415cd99b08d4a4c8012fff3c",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r4_0c244/slide-9.png",
+        "size_bytes": 140021,
+        "sha256": "70ca36a163bc6303d393bf56a7b9245e518a66beda2f91a5d10f395709aea1ef",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/qa/slides_r4_0c244/source.pptx",
+        "size_bytes": 376014,
+        "sha256": "9e330fe96c506284b6b219c0b4feef458a4cfde9897d4b60c6c73bd4e918152a",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/read_live_progress.py",
+        "size_bytes": 1805,
+        "sha256": "798074d3a2f286d2d3567bc0440cafcef6372a1e10d4f7b74925c62ec8ef2804",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/render_report_pdf_pages.py",
+        "size_bytes": 1135,
+        "sha256": "df061ba81dbecbcfcd44bea8b83003a1b35434b99b363ece1a0f9f24445df975",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/report_scaffold_review_20261002.md",
+        "size_bytes": 3516,
+        "sha256": "5692d100b2448813448d573b6a40bd9c5b3a2059ebaf833952d15effdca523a7",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/root_canonical_export_validation_v1.json",
+        "size_bytes": 8175,
+        "sha256": "cc4ee21b7ee9613758421c4d56d037015524048111d1a47f62904f450c9c19d2",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/root_canonical_export_validation_v2.json",
+        "size_bytes": 1681,
+        "sha256": "551d0ca63101701837365a845078ab3b2f0e14a0b6c6f4946092f8cfd3ef1f39",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/root_canonical_run_seal_v1.json",
+        "size_bytes": 3064,
+        "sha256": "16fbfca3dc55deccaf91b95b84d289a4a1e7eb3218d45fdd511c9a9c22d91357",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/root_canonical_snapshot_seal_v1.json",
+        "size_bytes": 3064,
+        "sha256": "16fbfca3dc55deccaf91b95b84d289a4a1e7eb3218d45fdd511c9a9c22d91357",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/root_ci_208ac00_actual.json",
+        "size_bytes": 11139,
+        "sha256": "58250422c23da383cd19b46145f09c0fa13ac4023437e5b64a36f9860a30b098",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/root_delivery_archive_review_20261002.md",
+        "size_bytes": 3789,
+        "sha256": "71f381dcf640431a4b8e19ba32a6f2ce0bf389a9f85e9177c1554ecc987ad599",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/root_final_handover_v3_acceptance_20261002.json",
+        "size_bytes": 3406,
+        "sha256": "be2a884ec7334a86c958bb9e7bc82638823ef359edb701ef69098fb13d1ea75f",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/root_independent_canonical_numbers.json",
+        "size_bytes": 477586,
+        "sha256": "6ca7338b534f70d9c6cddd160ed46ad2652beb340cca82888aaaf06f5f22870e",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/root_integrated_208ac00_source_audit.json",
+        "size_bytes": 3265,
+        "sha256": "7b3e79640706675b592a90c2488a1a51da370912149634217ac040b6d483f0aa",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/root_integrated_264ed31_source_audit.json",
+        "size_bytes": 3314,
+        "sha256": "b164b13d76a76ed7893ebf6b7e87ff5a28898a15f3425a6764e0f4efa84db608",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/root_preintegration_acceptance_20261002.json",
+        "size_bytes": 1794,
+        "sha256": "dde01b13df5cc5998c8fd09517a61b180e49c9c27323aec9dbe7815a6a172bcc",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/root_private_replay_acceptance_20261002.json",
+        "size_bytes": 1461,
+        "sha256": "cdc875da1647552a3596100e2d168f7cb79878e64e50c0f1f59e6a0c4bceed05",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/root_public_replay_acceptance_fb065160_20261002.json",
+        "size_bytes": 1488,
+        "sha256": "df110115712826ddf6c1865436018c0381693b9d62f84191630cb77a72fc4416",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/root_rq_inference_version_comparison.json",
+        "size_bytes": 1314,
+        "sha256": "e1a6b562bded9019a9052cdba72c57068a9eb0f8c9729454baf840c688104ec4",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/root_s1_acceptance_20261002.md",
+        "size_bytes": 3707,
+        "sha256": "aa9f43c25c829a4c696f01a2de8362451b717220aabd487dcf9181a1621605b8",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/runtime_audit_review_20261002.md",
+        "size_bytes": 3214,
+        "sha256": "37d8bf1a2dcc9f3630861cbc9414f16df328a4d7e9f0b73af5dd3677baacd40d",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s1_additive_repin_execute_commands_20261002.md",
+        "size_bytes": 9038,
+        "sha256": "3a8758eb78add0aa58592176875b558801c45ebfc563be3b840a9d47b6ee57b4",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s1_dispatch_roster_20261002.json",
+        "size_bytes": 1246,
+        "sha256": "b95a9e2296cf07a4983198db4956bd2b7cbe5894623fc2fd7c50078552027d67",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s1_evidence_followup_20261002.md",
+        "size_bytes": 5077,
+        "sha256": "5293656d83b4bd62c685438f19687c8545df783558c43b2bf6686dcb954bcb99",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s1_integration_execute_packet_20261002.md",
+        "size_bytes": 6515,
+        "sha256": "e64042e2ebe8d18ea8ae5d7a16ff78028e6c1f2b9160027356b17e70746ae174",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s1_repin_and_integration_plan_20261002.md",
+        "size_bytes": 11188,
+        "sha256": "037a838ce3b59db52964b4b272353289eac947ba997c0108ed2e9d579ca689ff",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s1_repin_and_mapping_review_r3_20261002.md",
+        "size_bytes": 5828,
+        "sha256": "253905c6a4aae3e43ec1b05c31d610a704aaa5bd91bb248b128c57cd56bf2ec9",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s1_repin_execute_exact_20261002.md",
+        "size_bytes": 5226,
+        "sha256": "62522b146a79c822ef1b542b27f4106fec2c09c1f54750ab8c690326dbf69f8f",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s1_scoped_ruff_findings.json",
+        "size_bytes": 135929,
+        "sha256": "88e83db33246116d8afdb9b1db32d3a455cfcb56bada4effc33cf6b035289fce",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s2_cd_plan_review_r1_20261002.md",
+        "size_bytes": 7830,
+        "sha256": "2174282e3806e46fe85dc3d5f8de0a2fb6632151694568b221bf263f2d742845",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s2_evaluation_execute_20261002.md",
+        "size_bytes": 6793,
+        "sha256": "b988a599800bbbb01b0418e60bfd00fbbce3ab2c4d631da678f99bfd2141c4b5",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s2_inference_publication_scope_20261002.md",
+        "size_bytes": 3736,
+        "sha256": "b93fddef86a10f1d09a279a903ef558b4fc945be1b0bc333ad8ffb5980b9ef61",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s2_integrity_execute_20261002.md",
+        "size_bytes": 4047,
+        "sha256": "811cfd6c8c9e546098adf166d519ab0930b675cbffa30d2e1e2a1bb92734ed15",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s2_mapping_review_r2_20261002.md",
+        "size_bytes": 5216,
+        "sha256": "8619f750889a7695b7cf5257b29fbc5993ddde36689a30679fae25dd89f44fc6",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s2_plan_review_r1_20261002.md",
+        "size_bytes": 6955,
+        "sha256": "b86bcee847b1da7e43df60ee836815df22f7e6e5833265fb1f89d24454f6d918",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s2_rq_consumer_failure_20261002.md",
+        "size_bytes": 4784,
+        "sha256": "a13d1f148b7df38820704cfcc6aef7e443d9ef7fb24e88e17ceb958aa6d3aef3",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s2_rq_v2_execute_exact_20261002.md",
+        "size_bytes": 4629,
+        "sha256": "c34b1350881d61f153a50fd5fa2b79a9438ece09c2a2b09d022e74e863313570",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s2_unified_schema_mapping_and_source_pointers.json",
+        "size_bytes": 23105,
+        "sha256": "60c85752fff9a2ea9d5753fc4e4e9fe49de2707336289d4052bec0f8ea22132f",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s2_validator_source_review_r2_20261002.md",
+        "size_bytes": 4986,
+        "sha256": "d0cdcd046f91051576847298ba10b987724d68c1d91cf1d39d10a5bcdb130a15",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s3_canonical_candidate_authoring_20261002.md",
+        "size_bytes": 6572,
+        "sha256": "9bf72c48f74cadeb8fd6ea5580d254fc13b1c4606cba132f54abe4c1cfb8f83b",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s3_deck_visual_numeric_qa_fail_20261002.md",
+        "size_bytes": 5560,
+        "sha256": "05b167dbbf52814656e0770098d4c53c784b70f37f0b6ae5d522541dcf4ae38c",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s3_report_full_page_qa_findings_20261002.md",
+        "size_bytes": 7849,
+        "sha256": "6711b1d11ce8ad05c8cb1c47001e89c482e42920bf32a5023dfe44318d2e2504",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s4_publication_replay_preparation_20261002.md",
+        "size_bytes": 4355,
+        "sha256": "f8d639a95d69a01fca603fa35504e046e922d831e0a2f30532899a5c1c4736c6",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/s4_replay_demo_contract_repair_20261002.md",
+        "size_bytes": 8670,
+        "sha256": "a2dd957201c9acff141746c239d7288127ef2a64be16bb6d054c4851f9e5617e",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/schema_verifier_probe_result.json",
+        "size_bytes": 299,
+        "sha256": "2beb100aba8f4e9a18764399151a2892b428772e7b895459783affd93323fc63",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/seal_terminal_evidence.py",
+        "size_bytes": 2836,
+        "sha256": "646bb0ecff894637968edaee819eaf7ed1a83c87a0c859787462a2a9fa670722",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/snapshot_byte_copy_manifest_20261002.json",
+        "size_bytes": 5155,
+        "sha256": "e7d9a3b8e0680986558f6c278202c0fa96094e3107e225877a7d978ce65fc967",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/subset_macro_probe_result.json",
+        "size_bytes": 3438,
+        "sha256": "e6cf143ff1477e567d3065c0905918621a2c734a76ead472cb086638685d1ac7",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/supervisor_checkpoint_20261002.md",
+        "size_bytes": 77359,
+        "sha256": "b65f33dd6eac33a922b82ba0638b62e970e76a1bfda1e4a543d378f1610ccf96",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/supervisor_handoff_20261002.md",
+        "size_bytes": 11680,
+        "sha256": "ab68ae282df65c4c93b92ec11df4feeccb600d35bcbadffe9abeeb9d953e4aae",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/supervisor_preflight_20261002.json",
+        "size_bytes": 3598,
+        "sha256": "10ed74e5e8e3e969dd3708a0c066e9adb2329cf11b28b6585a675d3d5d685b14",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/terminal_original_bytes_inventory_20261002.json",
+        "size_bytes": 2433,
+        "sha256": "f50f4da12b23502f26ff9c3ba948dc25e7441c34dec61b5c732943440f579c7b",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/terminal_process_proof_20261002.json",
+        "size_bytes": 1527,
+        "sha256": "cbffe862b60c49b5c872837f81b580d5a59197b681f7b7623fd844b897a0981e",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/test_schema_verifier_mutants.py",
+        "size_bytes": 9426,
+        "sha256": "8455118c682468ab3d8f1ff4082648b33c238578b7e98a123471dae4aa069dd6",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/track_a_execute_20261003_vi.md",
+        "size_bytes": 5002,
+        "sha256": "c2c2ff5637b07745afc01256f33e6554f843c88ebe86320c6ec3cfdcfe262c88",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/validator_r2_probe_result.json",
+        "size_bytes": 408,
+        "sha256": "e461f0cd7592364dde56b3cac2abcde50468a3945dfad980d7682a07c431286a",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/verify_integrated_head.py",
+        "size_bytes": 2579,
+        "sha256": "0ac82d881fa1a1b343135aa53993d527058f128f2e2a898cadf87bcaf71bc3b5",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/orchestration/verify_schema_pointers.py",
+        "size_bytes": 20633,
+        "sha256": "b1737262a04dcf0faf3d80eebac90c0ea557194bc3af9e1fc311d69ba32862cf",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/attack/corpus/enterprise-windows-v19.2.jsonl",
+        "size_bytes": 1548724,
+        "sha256": "b219341154ddf2f12e97d622158a04ab7d57641df6a865559258d365852c3c75",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/attack/index/enterprise-windows-v19.2.docmap.json",
+        "size_bytes": 1591447,
+        "sha256": "a7de3dfcf2b6e186e639d2922fcbc27766c160ae58bbafea74b5efc0faf30586",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/attack/index/enterprise-windows-v19.2.index",
+        "size_bytes": 728109,
+        "sha256": "7e3b9944870860766ebd5ba76f19a420c1bbe57cebd4e4238b06fd31128578e5",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/attack/index/enterprise-windows-v19.2.manifest.json",
+        "size_bytes": 770,
+        "sha256": "ad1fc8c8118ef897943597e30c3ab71cf30556f675b38bbeba6772537127ed0a",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/attack/raw/enterprise-v19.2/enterprise-attack-19.2.json",
+        "size_bytes": 53835637,
+        "sha256": "dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/authorization.json",
+        "size_bytes": 241,
+        "sha256": "5c1ccdae24700fc1a2e5935419f9f01107592d08a7a78ef7cd78a52199fb0649",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/config/authorization.json",
+        "size_bytes": 241,
+        "sha256": "5c1ccdae24700fc1a2e5935419f9f01107592d08a7a78ef7cd78a52199fb0649",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/config/dev_experiment_config.json",
+        "size_bytes": 3885,
+        "sha256": "9061673f61d79cf68d72e012829736940d41b1937ed39b8d23514bc87b1f351e",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/config/dev_protocol_v1.json",
+        "size_bytes": 1070,
+        "sha256": "fe39e403fdbf9b2c6fbee765a80dc4d8a1273c0421cdfa91939a61f003242cb6",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/config/experiment_config.json",
+        "size_bytes": 3885,
+        "sha256": "9061673f61d79cf68d72e012829736940d41b1937ed39b8d23514bc87b1f351e",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/config/model.json",
+        "size_bytes": 964,
+        "sha256": "312c34cedd84106f2004c6070b72aeac1dd84209a464e2993fee3ec87822697f",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/config/retrieval.json",
+        "size_bytes": 920,
+        "sha256": "b33a93913e7f6de36f6f9021f77b2c9dcb1d426929162acb250a3c73ac8e6e25",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/data/ground_truth/synthetic/dataset_manifest.json",
+        "size_bytes": 2470,
+        "sha256": "4576b793360d02b60d619d199fd34d4555ace33215303ee847715c162a50dcc2",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/data/ground_truth/synthetic/ground_truth.jsonl",
+        "size_bytes": 733851,
+        "sha256": "8f3d73bac7e81336a3e90bfa5a5d0850a51ac5588385ee53ad940bcbc3612608",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/data/ground_truth/synthetic/inference.jsonl",
+        "size_bytes": 1185407,
+        "sha256": "90d5f59e64f669f95d5ddccd86f1f047e10ee3dc46e4b67a8cd13d1ddf2cd4b8",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/data/ground_truth/synthetic/pairs.jsonl",
+        "size_bytes": 2221465,
+        "sha256": "079e57a441b18d127739f610e7f62c263d943eefa19ca4ea5c6eab8b8a07665d",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/data/ground_truth/synthetic/split_manifest.json",
+        "size_bytes": 10739,
+        "sha256": "37fce63ccaa6db8e13604b7e3783997a10635f58995881b5e41913e6f550f43f",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/data/ground_truth/synthetic/views.jsonl",
+        "size_bytes": 153500,
+        "sha256": "1e6b0d3bd525b8fe9f97ba9e5656905597a3939e47c130a9e6f74535e2cd421d",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/dev_experiment_config.json",
+        "size_bytes": 3885,
+        "sha256": "9061673f61d79cf68d72e012829736940d41b1937ed39b8d23514bc87b1f351e",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/dev_protocol_v1.json",
+        "size_bytes": 1070,
+        "sha256": "fe39e403fdbf9b2c6fbee765a80dc4d8a1273c0421cdfa91939a61f003242cb6",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/live-output/manifest.json",
+        "size_bytes": 11865,
+        "sha256": "2ae55058c6fcb2d740f6b11ef536635059bde7aa20e9b5249915960e511e8aa8",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/live-output/no_rag_predictions.jsonl",
+        "size_bytes": 6889,
+        "sha256": "99fbf3b1aaaf40e11c00c97aaabbb10804eac23243afcffce52517fe56d02dcf",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/live-output/rag_k10_predictions.jsonl",
+        "size_bytes": 9510,
+        "sha256": "db43b0b8bc42c8e0f462a9d308514a25f75a48eb89094221bf54606caa706718",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/live-output/rag_k1_predictions.jsonl",
+        "size_bytes": 7154,
+        "sha256": "dc8ae9208bea77cdb3244508b1f1973205706b58198cf96e792f431b216f24bc",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/live-output/rag_k3_predictions.jsonl",
+        "size_bytes": 7673,
+        "sha256": "801538052bf50a60afeaa7de7f73860ade01b0513b9562239706e1edd1d08f69",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/live-output/rag_k5_predictions.jsonl",
+        "size_bytes": 8193,
+        "sha256": "2535542c9ce74dee6343d7e2143132c0cab0d7df0575ebf092fbc0d93588b713",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/live-output/request_journal.jsonl",
+        "size_bytes": 10499,
+        "sha256": "1f00e3f34fb78aec51eaf00c90e7f67cd3fcbe44ea4e0a39b7277e32cf64c4ac",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/live-output/run_summary.json",
+        "size_bytes": 166,
+        "sha256": "e5789a9fac84c8e304f869d827cce48e243a6adacee8d7310e87e66e58d372fb",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/prompts/baseline_v1.txt",
+        "size_bytes": 1372,
+        "sha256": "b751fde1ee33b03ec0bdc07cbba10267002d2086cf22b91a74bdfd123856f206",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/report_metrics.py",
+        "size_bytes": 5347,
+        "sha256": "243138855215e969a6d722449e5d2e876d5a4509a89c3ba34247e252dac4ad6a",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/test_mock_pilot.py",
+        "size_bytes": 10794,
+        "sha256": "bf482c215a8d5f1ab71b06508a5db03907ac41f70d93595978028c622a63d1ca",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/pilots/cost-20261001/verify_pilot_artifacts.py",
+        "size_bytes": 5611,
+        "sha256": "372a3542e76d068fd6f9d0ec4a97f8df398460cdeec90295779205e9e1f32c79",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "artifacts/study_budget/study_ledger.json",
+        "size_bytes": 1012943,
+        "sha256": "21e4c49b1f19bba5310bc0e9897d828b16ab27420c1d25b14b9f3e727dce94d8",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/01-03-December.csv",
+        "size_bytes": 20872574,
+        "sha256": "1da71220fd233a053ae9629b32142aa7c7bd9f28bfa057decae776a87c23cc82",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/03-04-December.csv",
+        "size_bytes": 17586594,
+        "sha256": "91d005371ccce593a61c15dbde1a6780bfadaa5564304f3a20b8733d850b8d35",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/04-07-December.csv",
+        "size_bytes": 17124589,
+        "sha256": "dc5bab6434b7ff0c329f7f4baaff99d2d52b967cc138a332db7e518e66a12db9",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/07-10-December.csv",
+        "size_bytes": 20683573,
+        "sha256": "f7ceb72aa4728620970fe3781ce7de948ae2f20576b0aa4f4600f27a5369b325",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/1-11-November.csv",
+        "size_bytes": 22217589,
+        "sha256": "e60f822890dab491a7a189c549c873a52d56f52c3dc31c125923917014a56900",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/10-December-P1.csv",
+        "size_bytes": 19774595,
+        "sha256": "896eb72630932598192628f72012ce749786868cc2d1f7217937e555ab588229",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/10-December-P2.csv",
+        "size_bytes": 2762501,
+        "sha256": "847d58c19fc46680007ab26dd8de31ebe0ebe1fc12de37b149c1ea9d40ffeaa1",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/11-12-December.csv",
+        "size_bytes": 22698392,
+        "sha256": "f20c7ebfd1a02025d0b59f435174590133949e228c9cfb43fb04d2591ca98324",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/11-16-November.csv",
+        "size_bytes": 10787736,
+        "sha256": "7be42cc28018b095ce121d1c7479f69c025ee33b8a20fc3a89bf1a6e519685eb",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/12-13-December.csv",
+        "size_bytes": 15281186,
+        "sha256": "4e7581d44ecc4d864f2a0c6c9b424ec785e40ad903cdcd1c025251d25089dcbf",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/13-14-December.csv",
+        "size_bytes": 22007210,
+        "sha256": "91585370696c11ca3ddb6f17011a7ecd38822898704c2c12d9c4cf306e3c99ff",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/14-17-December.csv",
+        "size_bytes": 12018645,
+        "sha256": "aadb88153649f5fc35f75e8a0afe95f4fd4b69cb54873ee98caa91451c9478a9",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/22-December.csv",
+        "size_bytes": 2633050,
+        "sha256": "71e975fcc53276ce8e3d311d47176407044c1d19320b3ccb4061f359e17cc6b6",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/23-30-November.csv",
+        "size_bytes": 20879628,
+        "sha256": "1ff4ba90457024fe61e1416da8c755d53bd23a9937a3d75b80d44f7122d57373",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/28-October-01-November.csv",
+        "size_bytes": 1428654,
+        "sha256": "d63e3b95988a2940af87f01d05b064a6516687144de51398d4493eceb70a82c3",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/30-November.csv",
+        "size_bytes": 4121991,
+        "sha256": "6496073eb8ecc4317efba7d746aad18e9abf61a1276e3f3dfe35281977181249",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/README.md",
+        "size_bytes": 5780,
+        "sha256": "0ed29fc5948d79e8007bd5911c0cf271e5c065f3c8762a9fe4a81940dac150b2",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/checksums.sha256",
+        "size_bytes": 2187,
+        "sha256": "0ee0b4f68882f63ac9392b6fe6744c310e931ad27736acd3f58b9a18de0cd647",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/combined.csv",
+        "size_bytes": 247934817,
+        "sha256": "0f7eaa4027482c81cae56a5b759e7058e9e9df225ae060933c7015f6f16e8465",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/scenario_manifest.csv",
+        "size_bytes": 28317,
+        "sha256": "77b881e662b2b912fa466a2510fb65597342b3869d0113118f49558dbb1fa81f",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      },
+      {
+        "path": "data/raw/windows_apt_2025/v3/validation_summary.csv",
+        "size_bytes": 7318,
+        "sha256": "61afe9da2c7ea32f6ab58a700163c0bbb23c0b8b70e5142580d4a3113d731781",
+        "disposition": "Stale pre-finalization artifact superseded by canonical closeout repo; do not copy into candidate."
+      }
+    ],
+    "only_in_candidate_count": 374,
+    "same_path_same_hash_count": 132,
+    "same_path_diff_hash_count": 66,
+    "same_path_diff_hash": [
+      {
+        "path": "artifacts/orchestration/integration_protected_baseline.json",
+        "d_size": 2939,
+        "d_sha256": "75b9691ea8778112d6baa469082eda031719a6152ecbccb72e09e22ea5b6a7e6",
+        "c_size": 2750,
+        "c_sha256": "e9bc31ed9bc5cdbfbb291826c885ecc39926f1994e074c6c3ecad09b609e1968"
+      },
+      {
+        "path": "docs/related_work/T02_comparator_matrix.md",
+        "d_size": 9729,
+        "d_sha256": "92567b49a45751a94f2fbdd948da4285b9cf89f75f8fea58857ded60f9f27b24",
+        "c_size": 10508,
+        "c_sha256": "5168948e8267df73d8b20d4337b804932d2da219ea97a4da6b1dc0871a2b8249"
+      },
+      {
+        "path": "docs/related_work/T02_comparator_notes.md",
+        "d_size": 39108,
+        "d_sha256": "153764c91663d4340ed12b3f26f5f67eaa7bfecccb599b77d637e9262a594489",
+        "c_size": 43110,
+        "c_sha256": "7ca69d83d8ccc543d0f2c2942736126bae7f0c4e7e1e323b7e077eb8d9271472"
+      },
+      {
+        "path": "scripts/generate_template_approval.py",
+        "d_size": 7144,
+        "d_sha256": "3712f08ea7f97ca093f5a3b0d481bd77a6d0b1cde15455fbfc480ab33d4d30ae",
+        "c_size": 7824,
+        "c_sha256": "5903b1d8611de63504756b6c9467f2791cc972da4635643b42d920dfaf2af8be"
+      },
+      {
+        "path": "scripts/run_offline_tests.py",
+        "d_size": 2323,
+        "d_sha256": "c64c3fe89fedb3de9f13374208272eab03104300ed455233223df58905324dd9",
+        "c_size": 2193,
+        "c_sha256": "c416d729cc0a2b90bea7660bbf5979edc724a4328acfc838b02044b6d1e65319"
+      },
+      {
+        "path": "scripts/validate_synthetic_registry.py",
+        "d_size": 953,
+        "d_sha256": "3cbf8fcf10930d9987276d7bc2634a2892e5dbe6b20454468d3856069df8e786",
+        "c_size": 1051,
+        "c_sha256": "b46666363eaee913008625858fad5b4df59a4d42da574e8af49743c1a13f16e8"
+      },
+      {
+        "path": "src/acquisition.py",
+        "d_size": 7473,
+        "d_sha256": "ee76fc19910e999412c0b0b091c1bf9fb962f27f14a68eaacfdb59576c7d591b",
+        "c_size": 7768,
+        "c_sha256": "17f17730064d46612d41c13ac74724ea545b477be659ee79bd2b653ce30355d1"
+      },
+      {
+        "path": "src/artifacts.py",
+        "d_size": 11653,
+        "d_sha256": "bb8efdd4536d49d474c5ed91e9111307091969d67dc977eaedb1e0570ab77b7d",
+        "c_size": 12484,
+        "c_sha256": "28e18dda052e92f95bac98e3dec59fe48a0e5d17faccc842ce273a33dc6c15d9"
+      },
+      {
+        "path": "src/attack_loader.py",
+        "d_size": 9692,
+        "d_sha256": "ac06763c64cfe2b110b30771f44b08bbed3d8221ec057743388eb0a02eda8dae",
+        "c_size": 9750,
+        "c_sha256": "efc0c74053e744a26f7c9f9396d099e6b9f89ef655a1e64d9ff862d6732ef7ac"
+      },
+      {
+        "path": "src/baseline/pipeline.py",
+        "d_size": 4741,
+        "d_sha256": "18846c5aff617c031af22d74a399715698b60b0a12c1e5ac1e916fb9bc478306",
+        "c_size": 4769,
+        "c_sha256": "a35e86fb20b226cc5ce0ed713af7c6c6c033e1fd2b944d3df7cff01603bcc098"
+      },
+      {
+        "path": "src/baseline/smoke.py",
+        "d_size": 30084,
+        "d_sha256": "9e1f7e68b3fc321c3f30ede06825b75dd96d82ad12cbfa8f064761560efe9a9e",
+        "c_size": 34527,
+        "c_sha256": "5160e60616407726e2da99331de689179d48b32e8e5589ca20555b8f4b3cfdf1"
+      },
+      {
+        "path": "src/data_ground_truth.py",
+        "d_size": 9928,
+        "d_sha256": "e35891c29c6a970b4a5b916a7f16093592ee2b29403f542650bbb4eeddfc2f7c",
+        "c_size": 10545,
+        "c_sha256": "d28187b0a0ca168f49533469e84ad852ed98cbec17fb4dea8d324806e075925f"
+      },
+      {
+        "path": "src/dataset.py",
+        "d_size": 19602,
+        "d_sha256": "a518ab4a918a320be0b50de0bf74f96942afc97c8558c605145eda39e0d3a2a9",
+        "c_size": 19891,
+        "c_sha256": "760eeda3ef7bc67e3af333a9b45d512268ea27159d2831cd65d5b09dda5aafb2"
+      },
+      {
+        "path": "src/evaluation/experiment_metrics.py",
+        "d_size": 73137,
+        "d_sha256": "31e57ecf7606520fc6b45398a5e1f51400dbd1c170acf18b85151e72e0ac9f8e",
+        "c_size": 73005,
+        "c_sha256": "57d35e24652632de4091df6777483c4102d4e8b18d4f1252cbba72690bcba7b0"
+      },
+      {
+        "path": "src/evaluation/retrieval_diagnostics.py",
+        "d_size": 21947,
+        "d_sha256": "04800c2f674fb5ec393de69ca5ec5fa455a5df35d482cc7b9c7094aabef4ef30",
+        "c_size": 22374,
+        "c_sha256": "a77bceeaeb03aeaa6b71be4fef63700b6d40a4d1fb2fa4bf4808eebc17376961"
+      },
+      {
+        "path": "src/experiment/__main__.py",
+        "d_size": 29332,
+        "d_sha256": "704783b0134d629c15d57369d3155d82d410646a08875a9a33cf58a87c2105b6",
+        "c_size": 29408,
+        "c_sha256": "3b7287603632af5edf0bef5b875102a52202a5a6d217192fe2db5819bc294b02"
+      },
+      {
+        "path": "src/experiment/authorization.py",
+        "d_size": 34870,
+        "d_sha256": "2866db03fa117904cca37ec2e4279975d4b303714fee96ffe38b0b8a0145b71f",
+        "c_size": 34749,
+        "c_sha256": "8a9601e7d4803b7c853b10ffb9db9edd62d379132a2906526c3431b0b6eb3e40"
+      },
+      {
+        "path": "src/experiment/monetary_ledger.py",
+        "d_size": 56367,
+        "d_sha256": "bbb8fdd2d43110807280e712b4ae77e311251d404fce0d03e8385f0d8cee07f4",
+        "c_size": 56255,
+        "c_sha256": "238198565eded5616eb0f873fd7f9d8e59992cd25e8ab070bc17aeb1d88f63b4"
+      },
+      {
+        "path": "src/experiment/redaction.py",
+        "d_size": 1695,
+        "d_sha256": "b3f059b37499652a50c502d947dd192fa565c411ee73cdcb98b9064dcbdc46b1",
+        "c_size": 1694,
+        "c_sha256": "c14da219dd549c8043ed158ffd9040d37eb4c5af8908b6d75a1041f5ba76f15d"
+      },
+      {
+        "path": "src/experiment/runner.py",
+        "d_size": 68543,
+        "d_sha256": "0911d763bb26dd00c999666f2732407815182e83815bf123fab0c85ba9dc9020",
+        "c_size": 68444,
+        "c_sha256": "d1dde6f1fa3988a5f3b2407be4d98394d76cf27cd79e26d6ae4659cabdcd44d3"
+      },
+      {
+        "path": "src/ground_truth.py",
+        "d_size": 41413,
+        "d_sha256": "bf9f9b5801de337ff3cffe31c326cc0d707cfd100933d32655ec3b344e5c33d9",
+        "c_size": 44621,
+        "c_sha256": "5202ec4b4c330c41e87b951930c6b665eca5f8e64ca6f739b8237438ef4dec9e"
+      },
+      {
+        "path": "src/llm/__init__.py",
+        "d_size": 1173,
+        "d_sha256": "f3760b4f5c51b51426a1c2606a00ec28ada1047c4c28ae4a6910ddd12baafee7",
+        "c_size": 1173,
+        "c_sha256": "9bb43876d86ed792ef5799a41c658ec759352eac91d80ffc7192e8e56c761952"
+      },
+      {
+        "path": "src/llm/client.py",
+        "d_size": 30380,
+        "d_sha256": "087cffebcc145e28d12ef8b2d32b718286e2cb5f352c998d76e01bcae4fa49b3",
+        "c_size": 30580,
+        "c_sha256": "17d3464b9f68ce3d8daf8c20083184e3180e5750353bfd30d755d60559a0ed79"
+      },
+      {
+        "path": "src/llm/inputs.py",
+        "d_size": 1635,
+        "d_sha256": "d6d510d9faac090667ba12d332fe18905934bb5d6688a8d58e6e5eca6b452f9e",
+        "c_size": 1657,
+        "c_sha256": "d43da0d16825f60d83314a1ccc923e064624eaddd9664b4371a3e36d61130ae3"
+      },
+      {
+        "path": "src/llm/logging.py",
+        "d_size": 5102,
+        "d_sha256": "5de6ef0f7c5d409b0c551bd1d3abdafff2d527541c447912581dc86ef4405d6a",
+        "c_size": 5091,
+        "c_sha256": "70121486f03c1240c705602ce9f7252d1698b238630c66ebcecb47b27d014f4e"
+      },
+      {
+        "path": "src/llm/schemas.py",
+        "d_size": 8127,
+        "d_sha256": "bd5b7b2bc1c306fa3b16f5bd3a6f93d4c6da106e8e79571f313ce6051420eb43",
+        "c_size": 8226,
+        "c_sha256": "db79d2f73b5fe609c94caf861a134c4391cb3e16b4749b587b10ae98a96f1c86"
+      },
+      {
+        "path": "src/profiler.py",
+        "d_size": 16765,
+        "d_sha256": "e43cbbe0924c6853fc08f22d855c679fc2c335543c127c202ca201fbb2304a90",
+        "c_size": 18308,
+        "c_sha256": "97a1e315746c72a6f79b0a74c59012bb0c1fd453fa6d5c14d1169631587b84bd"
+      },
+      {
+        "path": "src/rag/__init__.py",
+        "d_size": 325,
+        "d_sha256": "1d16d258b4c3f89aac043fad68a19031bf16d21daad4251846ba2f4297fa16c1",
+        "c_size": 321,
+        "c_sha256": "49e0b4836a99c4140b9aef9145b8a165358fb782eba29e25ea61a3dd7a9dba83"
+      },
+      {
+        "path": "src/rag/pipeline.py",
+        "d_size": 7512,
+        "d_sha256": "176eb41d5c2220c40c3497709afaece788bcc9bd9e77e0e50efeeb2a4f33b80b",
+        "c_size": 7532,
+        "c_sha256": "bdaee745b7016d242650afdfaeb56871817d4291f24521a1dcb30b7ef192ee07"
+      },
+      {
+        "path": "src/rag/schemas.py",
+        "d_size": 3024,
+        "d_sha256": "9491438494de059ad3884930aa571c758bf8863eff36ad413ec285d61154dad8",
+        "c_size": 3089,
+        "c_sha256": "dde3e5f04e571a54e4aded88706c553f0757fd2b459c79acd84eba1390facc04"
+      },
+      {
+        "path": "src/reconcile.py",
+        "d_size": 26890,
+        "d_sha256": "d69d1f4eaf7ca95eda075e3e55b600eaa607240eb25e6f415876623d5d1b207c",
+        "c_size": 29176,
+        "c_sha256": "500c3be77ec6a2e57c250f11471985dd89975f516c0a70ac6219b8d43d99d2ee"
+      },
+      {
+        "path": "src/retrieval/corpus_builder.py",
+        "d_size": 8773,
+        "d_sha256": "9ddb26c94116f338c8304e9f70ee0c820cb0ea0a9aab24962438ab1e0c3a7c64",
+        "c_size": 8820,
+        "c_sha256": "03004740ba28213731caa40a22500e5a5569468032eb95f50c35ae7d24bcd5e9"
+      },
+      {
+        "path": "src/retrieval/retriever.py",
+        "d_size": 17677,
+        "d_sha256": "5645584a49c12fc57d7776322185d0db90cd3fee1bc54377577adeb192cc0ab2",
+        "c_size": 18159,
+        "c_sha256": "49f3110062bedd7163e60b2b50a894c161c7c3f0e6b2d1adc8742a1f209eed2a"
+      },
+      {
+        "path": "tests/test_acquisition.py",
+        "d_size": 2137,
+        "d_sha256": "d178cd5b437de33db5176851bad680c5d429ed4709a43d211c02f010faf4f5a7",
+        "c_size": 2177,
+        "c_sha256": "17332e626dc5251ded7fbb67726ee1a2b257d76efaba50b3f13f40ec0e482db5"
+      },
+      {
+        "path": "tests/test_artifact_gates.py",
+        "d_size": 8592,
+        "d_sha256": "3b14ef8c24741b6d16677dac32bd23c5a4095553fd307e9aa28b5d4b1cd53eaf",
+        "c_size": 8605,
+        "c_sha256": "c4f672605f8900963d3bef3bdbcd151f8e09d0e8552610c2844868bd6be3ad33"
+      },
+      {
+        "path": "tests/test_attack_corpus.py",
+        "d_size": 13979,
+        "d_sha256": "b59c30cb2a2c0f85af94958c02003fb2180a515904a79278461ab8348cd2ed59",
+        "c_size": 14183,
+        "c_sha256": "d9b295a61beb15514c1eef1bd3f34ac2f16fb5995937df1255bf898c233ecf2e"
+      },
+      {
+        "path": "tests/test_attack_id_validation.py",
+        "d_size": 9077,
+        "d_sha256": "fee185554d9c46961515d877d4b921703e947a9555b0dec90493caff8190bae5",
+        "c_size": 9093,
+        "c_sha256": "b43dbf5b7956ef7db57edac35c2cb662f16da7d8dcad1facedc1c98a047aa4b5"
+      },
+      {
+        "path": "tests/test_attack_loader.py",
+        "d_size": 5791,
+        "d_sha256": "ad882543ac966bd9f0fafdd3c31829cc9da86b09f8f0ee875832eb7da20ce0f4",
+        "c_size": 5808,
+        "c_sha256": "a1b9455e2f5341dfb3437ccbc086f7b6f46e3b52587bdab424151c03af4619f1"
+      },
+      {
+        "path": "tests/test_baseline_pipeline.py",
+        "d_size": 6574,
+        "d_sha256": "3e46e55bb7565341770d1025e26117e118e633e5e7b8d55d64cff4e58d327612",
+        "c_size": 6576,
+        "c_sha256": "052e35f846432a3edeeae8b1d42421f9f41b1ce67c53678f7113b7f2f66ff2e5"
+      },
+      {
+        "path": "tests/test_benchmark_inputs.py",
+        "d_size": 3112,
+        "d_sha256": "4cf23399b5b88a75a3aa57a42bf3330163316bf0fb6d55cf47f95e0619691085",
+        "c_size": 3284,
+        "c_sha256": "ae2a3f88bfc5570b5c60fb4f207cdb169c6438ba4a96e77bbde7ca774b87104a"
+      },
+      {
+        "path": "tests/test_ci_contract.py",
+        "d_size": 17111,
+        "d_sha256": "225824a215ac762f721bae2f2502a2a62b4d41a3f58fd0f74312132657faa6f6",
+        "c_size": 23866,
+        "c_sha256": "64c3e9cff6603cbcb08723b39037e37d87d886c1f1e005c3deaed1042be2865a"
+      },
+      {
+        "path": "tests/test_dataset.py",
+        "d_size": 11523,
+        "d_sha256": "abe4d5bb5983c81cd05eb018608a3047fe033d7075e67ee32d8d07e6da0fbbd0",
+        "c_size": 11835,
+        "c_sha256": "e8bb9a02128b75ad8f7a88b311b25762c298a0282a81c6a32392daa04979f3e7"
+      },
+      {
+        "path": "tests/test_experiment_evaluation.py",
+        "d_size": 45959,
+        "d_sha256": "6a3b518508e260931470a0f90ca86fadc81185cdf9442b80594e89a0a4c1f161",
+        "c_size": 45900,
+        "c_sha256": "bb48b4400db5f0bcfc9a7c58f026c7f06e7dbe62955530dd2aebfad893ed8d50"
+      },
+      {
+        "path": "tests/test_experiment_t22.py",
+        "d_size": 212791,
+        "d_sha256": "588e7c8f8011ed3d924a5a2ce12696c0b80b73872b2ed26556e0d78fdf7a61e9",
+        "c_size": 217455,
+        "c_sha256": "9b33f8903e338afb30e29726459262ea7ed44cca4afebb1d5af887760b1861b7"
+      },
+      {
+        "path": "tests/test_ground_truth.py",
+        "d_size": 8455,
+        "d_sha256": "63c4ff9b35e5697aa1cb102532a6f2756c8efbfac138142ffe158b2a3622d48b",
+        "c_size": 8577,
+        "c_sha256": "6cb6beb5599303ff6af3f6366f089eff5af326bb1191a04451b411c9fc4dd40d"
+      },
+      {
+        "path": "tests/test_live_budget.py",
+        "d_size": 3904,
+        "d_sha256": "df03894bd624ae24e50c8a638db41f2456ab9618052e41d060559e14d84a9587",
+        "c_size": 3992,
+        "c_sha256": "3e19430959060ef455a4ec15ff0c6c2c8723c1c24f980339b6b871589db0b854"
+      },
+      {
+        "path": "tests/test_llm_client.py",
+        "d_size": 33697,
+        "d_sha256": "a054398940fcce5c1b092f27a20b32904c649e325a38002ffaa6fcbea5600838",
+        "c_size": 33674,
+        "c_sha256": "98affec37adfd535f0855922565c273bd852da4449c766d80711f676df6a27e2"
+      },
+      {
+        "path": "tests/test_model_config.py",
+        "d_size": 8065,
+        "d_sha256": "bc8d33365b6efd9d1be338b86a8f12c7fddf276f320576416ad1dbf9fb979d27",
+        "c_size": 8270,
+        "c_sha256": "08f16be546d87bd0c251ea0aa678ac883a43ce9d4afe0f4f1bc206932da9f7c7"
+      },
+      {
+        "path": "tests/test_monetary_guard.py",
+        "d_size": 75399,
+        "d_sha256": "063b7896f18ca62916ca1af983af417d0bce78e0ed5dc6767d1f0ac252e2fa33",
+        "c_size": 75378,
+        "c_sha256": "6649bcfd5ad1a58c0f2add810ef44d06b5523a8612244bd78c681c98b6de4162"
+      },
+      {
+        "path": "tests/test_no_rag_pilot.py",
+        "d_size": 15885,
+        "d_sha256": "e90b246ab08825d4b9be2c9344d8a32427ea0715a1f56bb7f1567d62e8e7066a",
+        "c_size": 16151,
+        "c_sha256": "959082d6a3ac2b5d242fd3994603b88430ac4fcc00ffe4784f7e93f2f43a27e9"
+      },
+      {
+        "path": "tests/test_offline_guard.py",
+        "d_size": 2216,
+        "d_sha256": "5d5b2cab7dafab7e581f92209361057ffdc8c18f449483ba85846b56c2e2ca3f",
+        "c_size": 2205,
+        "c_sha256": "e566d70dadda5721b273cfbbda8fb0312d319e559072f0d789580c4d3335b63d"
+      },
+      {
+        "path": "tests/test_output_schema.py",
+        "d_size": 11032,
+        "d_sha256": "aaf14afb6d15f19e857a941b7705438b600d11495f4eb3ee2cf97944b0a0f48d",
+        "c_size": 10992,
+        "c_sha256": "c741f468ffb757b4aefa3c8782c1d04aab3cad7a3e52c5f23e12bcc1218440f0"
+      },
+      {
+        "path": "tests/test_profiler_invariants.py",
+        "d_size": 4437,
+        "d_sha256": "a1596f83b1d101a9045bbd574a01569255c251fbcd7086b06707b39408ffc667",
+        "c_size": 4465,
+        "c_sha256": "5003a6df3a780813b1da5899c57be862359f618da2b3cb23b4b6b44093eaedac"
+      },
+      {
+        "path": "tests/test_profiling.py",
+        "d_size": 3475,
+        "d_sha256": "6d496120394bdad5d5632a1ff17b77499e279d527b41a4893a5be228fd5dd107",
+        "c_size": 3544,
+        "c_sha256": "4630ef4ee08eabacac70d98a7465880440128ab20f5a8ff2fa6bbf1a44d3ce1d"
+      },
+      {
+        "path": "tests/test_rag_pipeline.py",
+        "d_size": 11606,
+        "d_sha256": "ef7170ce3d61ad14512b363044b1191f39de171704b3eb9ef39a99fcd05351af",
+        "c_size": 11816,
+        "c_sha256": "8292043c3e5995e5bafc8e91045277df501648db3e609afa45104a21b7aa5b1b"
+      },
+      {
+        "path": "tests/test_reconciliation.py",
+        "d_size": 3155,
+        "d_sha256": "5c63f7d58f38902a4509fecb7403c85900ffde259733fedf4835915c4319e922",
+        "c_size": 3141,
+        "c_sha256": "a33d245ed7701057cb140548f24bec319cf91ce1226189a387c5cb6c4943d746"
+      },
+      {
+        "path": "tests/test_retrieval_diagnostics.py",
+        "d_size": 13478,
+        "d_sha256": "560aa6f51a7947b86dfd37f1602f99e1938989496e7a075879d8dbfbb7a26161",
+        "c_size": 14032,
+        "c_sha256": "bfe6a953181dbb70de6d896fd75e244cb75742a932e248f8e35778494e4f9975"
+      },
+      {
+        "path": "tests/test_retrieval_failure_analysis.py",
+        "d_size": 65216,
+        "d_sha256": "4544e4fbd2f58adabdf5b1c8ca4ba1c3533e02e5c3e7401f55cd1dadf34bc54c",
+        "c_size": 66631,
+        "c_sha256": "248b7f0f02311b6213e1b39c5689a202dce6ac4aae999b455ebddd0d3921fa0f"
+      },
+      {
+        "path": "tests/test_retrieval_integrity.py",
+        "d_size": 4420,
+        "d_sha256": "51ecaf0e78fd799bb1f568b92f986befdb36cf94f37461846aff0218bfc7da8d",
+        "c_size": 4524,
+        "c_sha256": "58c7c308bc21a2aabbd932b92ea21ef13cd77489e80891a2229c2da1123cdc4f"
+      },
+      {
+        "path": "tests/test_retrieval_metadata.py",
+        "d_size": 1977,
+        "d_sha256": "46f6b66be56f8be79cfe2b9ebcc64555eb2cc99eca28b3d3c6874e3df1464b01",
+        "c_size": 2123,
+        "c_sha256": "97c932ed8b0c55956c171a8eeb226be0f04533f42002678a05fdfe71c1807249"
+      },
+      {
+        "path": "tests/test_retriever.py",
+        "d_size": 22091,
+        "d_sha256": "4a974c1dd2f1827ffb216d771b978685009cf27fa726f0cababe413574096242",
+        "c_size": 22863,
+        "c_sha256": "c836979a3b7b27cd3f54f479ef9295d3021b6934acb6b2da3a9889a06f9e9d19"
+      },
+      {
+        "path": "tests/test_smoke_cases.py",
+        "d_size": 10177,
+        "d_sha256": "1e70723c81ceec9e8e90554364636cd8bfe3c210951e0ad007969dd3014f5a05",
+        "c_size": 9965,
+        "c_sha256": "bbb982872c97aca3000005911bce2dd7dac02a1743819efbd9f03318e0a66a63"
+      },
+      {
+        "path": "tests/test_synthetic.py",
+        "d_size": 60981,
+        "d_sha256": "acccb1e44c7a5e07af8b51cb30cda3fea5bb0165636526956e036976e13139f2",
+        "c_size": 63395,
+        "c_sha256": "84b8661963501f294fbd34fe3e51d0afa3b74a530bed180092a89344c4fc9258"
+      },
+      {
+        "path": "tests/test_synthetic_freeze.py",
+        "d_size": 6580,
+        "d_sha256": "6c9c7941f73995569d521652f36a1690706377520de6bbae523c13924ef0e393",
+        "c_size": 7154,
+        "c_sha256": "60695ec77be647e8417c670478e159effe72c4ea5f0e75604cde9f2e70ea2ee4"
+      },
+      {
+        "path": "tests/test_synthetic_generation.py",
+        "d_size": 10717,
+        "d_sha256": "9c782e9ac1a24a2e83f9ef87622bae60dc13f2ba631b4f78bf3779607de7219b",
+        "c_size": 11997,
+        "c_sha256": "df0092c8d636f0bc8a2a41990ad0e22400118d5f6f1607d13e6a08dd3d257a1f"
+      },
+      {
+        "path": "tests/test_t20_canonical_artifacts.py",
+        "d_size": 1129,
+        "d_sha256": "ea89abe899aed54dac1e309e7cda9552af7f8462b5e1ec3c4a75fcc364b800d6",
+        "c_size": 1176,
+        "c_sha256": "86de5d61f63169a2bbc91a351ac9f5554a59d67829a831564a7187c4eeeb01a7"
+      }
+    ],
+    "venv_diagnosis": {
+      "d_drive_venv_pyvenv_cfg_exists": false,
+      "d_drive_venv_status": "BROKEN_MISSING_PYVENV_CFG (running <WORKSTATION_D_DRIVE_CLONE>/.venv/Scripts/python.exe fails with: failed to locate pyvenv.cfg: The system cannot find the file specified.)",
+      "candidate_repo_venv_pyvenv_cfg_exists": true,
+      "candidate_repo_venv_status": "HEALTHY_PYTHON_3_13_12 (home = C:/Program Files/Python313, version = 3.13.12, verified with PYTHONNOUSERSITE=1)"
+    }
+  },
+  "codex_artifacts_directory_inventory": {
+    "sanitized_root_path": "<USER_HOME>/.codex/artifacts/rag2attck",
+    "total_subdirectories_audited": 31,
+    "directories": [
+      {
+        "directory_name": "canonical-accepted-bundle-v2",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/canonical-accepted-bundle-v2",
+        "classification": "CANONICAL_METRIC_BUNDLE_ARCHIVE",
+        "file_count": 19,
+        "total_size_bytes": 21617751,
+        "notes": "Archive copy of canonical_metric_bundle_v2.json and sealed run artifacts."
+      },
+      {
+        "directory_name": "canonical-authoring-candidates-v2",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/canonical-authoring-candidates-v2",
+        "classification": "HISTORICAL_AUTHORING_CANDIDATES",
+        "file_count": 80,
+        "total_size_bytes": 8412760,
+        "notes": "Intermediate authoring candidates superseded by canonical v6."
+      },
+      {
+        "directory_name": "canonical-authoring-final-v4",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/canonical-authoring-final-v4",
+        "classification": "HISTORICAL_AUTHORING_CANDIDATE_V4",
+        "file_count": 3,
+        "total_size_bytes": 535857,
+        "notes": "Authoring iteration v4 superseded by canonical v6."
+      },
+      {
+        "directory_name": "canonical-authoring-final-v5",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/canonical-authoring-final-v5",
+        "classification": "HISTORICAL_AUTHORING_CANDIDATE_V5",
+        "file_count": 11,
+        "total_size_bytes": 995638,
+        "notes": "Authoring iteration v5 superseded by canonical v6."
+      },
+      {
+        "directory_name": "canonical-authoring-final-v6",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/canonical-authoring-final-v6",
+        "classification": "CANONICAL_AUTHORING_FINAL_V6",
+        "file_count": 11,
+        "total_size_bytes": 995734,
+        "notes": "Final authoring bundle for scientific report and presentation."
+      },
+      {
+        "directory_name": "canonical-metrics-208ac00-v1",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/canonical-metrics-208ac00-v1",
+        "classification": "HISTORICAL_METRICS_SNAPSHOT",
+        "file_count": 8,
+        "total_size_bytes": 262347,
+        "notes": "Metrics snapshot at commit 208ac00 superseded by canonical_metric_bundle_v2.json."
+      },
+      {
+        "directory_name": "canonical-metrics-rq-v2",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/canonical-metrics-rq-v2",
+        "classification": "CANONICAL_RQ_METRICS_V2",
+        "file_count": 2,
+        "total_size_bytes": 45969,
+        "notes": "Research question metric bundle v2 inputs."
+      },
+      {
+        "directory_name": "deck-qa-c1561d6a51",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/deck-qa-c1561d6a51",
+        "classification": "PRESENTATION_QA_RENDERS",
+        "file_count": 17,
+        "total_size_bytes": 1888122,
+        "notes": "Slide deck visual QA render outputs."
+      },
+      {
+        "directory_name": "final_handover_package_20261002",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/final_handover_package_20261002",
+        "classification": "HISTORICAL_HANDOVER_PACKAGE_V1",
+        "file_count": 56,
+        "total_size_bytes": 24530843,
+        "notes": "Superseded 2026-10-02 handover package v1."
+      },
+      {
+        "directory_name": "final_handover_package_v2_20261002",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/final_handover_package_v2_20261002",
+        "classification": "HISTORICAL_HANDOVER_PACKAGE_V2",
+        "file_count": 55,
+        "total_size_bytes": 24532827,
+        "notes": "Superseded 2026-10-02 handover package v2."
+      },
+      {
+        "directory_name": "final_handover_package_v3_20261002",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/final_handover_package_v3_20261002",
+        "classification": "HISTORICAL_HANDOVER_PACKAGE_V3",
+        "file_count": 55,
+        "total_size_bytes": 24538820,
+        "notes": "Superseded 2026-10-02 handover package v3."
+      },
+      {
+        "directory_name": "finalization_20261003",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/finalization_20261003",
+        "classification": "CONTROLLER_ORCHESTRATION_AND_ROOT_ACCEPTANCE_WORKSPACE",
+        "file_count": 490,
+        "total_size_bytes": 58673171,
+        "notes": "Contains ROOT_STATE_CURRENT.md, controller probe scripts, and root acceptance JSON records."
+      },
+      {
+        "directory_name": "finalization_repo_20261003",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/finalization_repo_20261003",
+        "classification": "ACTIVE_CANONICAL_REPO",
+        "file_count": 32608,
+        "total_size_bytes": 1294288636,
+        "notes": "Active working repository and canonical closeout candidate (PR #30)."
+      },
+      {
+        "directory_name": "finalization_snapshots",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/finalization_snapshots",
+        "classification": "IMMUTABLE_BASELINE_SNAPSHOTS",
+        "file_count": 29283,
+        "total_size_bytes": 1179717676,
+        "notes": "Contains snapshot b69a690 used for historical lineage verification."
+      },
+      {
+        "directory_name": "finalization_worktrees_20261003",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/finalization_worktrees_20261003",
+        "classification": "PHASE_WORKTREES_ARCHIVE",
+        "file_count": 357984,
+        "total_size_bytes": 14400452843,
+        "notes": "Worktrees used during multi-track finalization execution."
+      },
+      {
+        "directory_name": "integration_audit_run_20261002",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/integration_audit_run_20261002",
+        "classification": "HISTORICAL_INTEGRATION_AUDIT",
+        "file_count": 44,
+        "total_size_bytes": 22012321,
+        "notes": "2026-10-02 integration audit logs."
+      },
+      {
+        "directory_name": "provisional-audit-replay-91872ae",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/provisional-audit-replay-91872ae",
+        "classification": "HISTORICAL_PROVISIONAL_REPLAY",
+        "file_count": 9,
+        "total_size_bytes": 267684,
+        "notes": "Provisional audit replay at commit 91872ae."
+      },
+      {
+        "directory_name": "public_v4_candidate_20261003",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/public_v4_candidate_20261003",
+        "classification": "UNPACKED_RELEASE_CANDIDATE_MIRROR",
+        "file_count": 34,
+        "total_size_bytes": 21752622,
+        "notes": "Unpacked directory mirror of public_v4_candidate_20261003.zip (34 files verified byte-identical)."
+      },
+      {
+        "directory_name": "qa_renders_20261019",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/qa_renders_20261019",
+        "classification": "CLOSEOUT_VISUAL_QA_RENDERS",
+        "file_count": 9,
+        "total_size_bytes": 2656682,
+        "notes": "Visual QA PNG renders for closeout verification (19 pages report + 14 slides)."
+      },
+      {
+        "directory_name": "report-qa-08a564c4e6",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/report-qa-08a564c4e6",
+        "classification": "HISTORICAL_REPORT_QA_RENDERS",
+        "file_count": 71,
+        "total_size_bytes": 12066191,
+        "notes": "Historical report QA render outputs (08a564c4e6)."
+      },
+      {
+        "directory_name": "report-qa-79667279b6",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/report-qa-79667279b6",
+        "classification": "HISTORICAL_REPORT_QA_RENDERS",
+        "file_count": 65,
+        "total_size_bytes": 10372687,
+        "notes": "Historical report QA render outputs (79667279b6)."
+      },
+      {
+        "directory_name": "report-qa-v4-3ea0f24234",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/report-qa-v4-3ea0f24234",
+        "classification": "HISTORICAL_REPORT_QA_RENDERS",
+        "file_count": 82,
+        "total_size_bytes": 17608650,
+        "notes": "Historical report QA render outputs v4 (3ea0f24234)."
+      },
+      {
+        "directory_name": "report-qa-v5-753a632b0d",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/report-qa-v5-753a632b0d",
+        "classification": "HISTORICAL_REPORT_QA_RENDERS",
+        "file_count": 76,
+        "total_size_bytes": 14085521,
+        "notes": "Historical report QA render outputs v5 (753a632b0d)."
+      },
+      {
+        "directory_name": "report-qa-v6-73d402b21f",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/report-qa-v6-73d402b21f",
+        "classification": "CANONICAL_REPORT_QA_RENDERS_V6",
+        "file_count": 73,
+        "total_size_bytes": 12323657,
+        "notes": "Report QA render outputs v6 (73d402b21f)."
+      },
+      {
+        "directory_name": "root_remote_clone_5754_20261002",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/root_remote_clone_5754_20261002",
+        "classification": "HISTORICAL_REMOTE_CLONE",
+        "file_count": 28137,
+        "total_size_bytes": 1183894231,
+        "notes": "Clean remote clone verification workspace (2026-10-02)."
+      },
+      {
+        "directory_name": "root_remote_replay_5754_20261002",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/root_remote_replay_5754_20261002",
+        "classification": "HISTORICAL_REMOTE_REPLAY",
+        "file_count": 8,
+        "total_size_bytes": 265844,
+        "notes": "Clean remote replay verification workspace (2026-10-02)."
+      },
+      {
+        "directory_name": "sealed-live66-20261002",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/sealed-live66-20261002",
+        "classification": "SEALED_LIVE66_EVIDENCE_ARCHIVE",
+        "file_count": 10,
+        "total_size_bytes": 21346826,
+        "notes": "Sealed 66-incident live benchmark run archive."
+      },
+      {
+        "directory_name": "supervisor_boundary_v2_pytest_tmp",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/supervisor_boundary_v2_pytest_tmp",
+        "classification": "EPHEMERAL_PYTEST_TMP",
+        "file_count": 69,
+        "total_size_bytes": 1497275,
+        "notes": "Temporary pytest directory from boundary v2 verification."
+      },
+      {
+        "directory_name": "supervisor_boundary_v3_pytest_tmp",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/supervisor_boundary_v3_pytest_tmp",
+        "classification": "EPHEMERAL_PYTEST_TMP",
+        "file_count": 74,
+        "total_size_bytes": 1530066,
+        "notes": "Temporary pytest directory from boundary v3 verification."
+      },
+      {
+        "directory_name": "supervisor_integration_repo_20261003",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/supervisor_integration_repo_20261003",
+        "classification": "SUPERVISOR_INTEGRATION_CLONE",
+        "file_count": 29853,
+        "total_size_bytes": 1230665385,
+        "notes": "Historical integration clone at 02641512 prior to finalization_repo_20261003."
+      },
+      {
+        "directory_name": "verified-native-figures-v1",
+        "sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/verified-native-figures-v1",
+        "classification": "VERIFIED_NATIVE_FIGURES_ARCHIVE",
+        "file_count": 7,
+        "total_size_bytes": 453860,
+        "notes": "Verified native figure assets v1."
+      }
+    ]
+  },
+  "release_asset_archive_verification": {
+    "archive_sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/public_v4_candidate_20261003.zip",
+    "unpacked_mirror_sanitized_path": "<USER_HOME>/.codex/artifacts/rag2attck/public_v4_candidate_20261003",
+    "archive_size_bytes": 2343105,
+    "archive_sha256": "1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1",
+    "expected_sha256": "1d5f9f4bb2d50bbb885746fe4d26f34ca5af1cacdbcad7e0005c2af8ea1086c1",
+    "archive_sha256_matches_expected": true,
+    "unpacked_file_count": 34,
+    "all_34_unpacked_files_byte_identical": true,
+    "verified_entries": [
+      {
+        "relative_path": "README.md",
+        "size_bytes": 2650,
+        "zip_entry_sha256": "7a21fb4674afeed2b0b9270fa3cf94756d77be717d441ef7918a434fcc21d149",
+        "unpacked_file_sha256": "7a21fb4674afeed2b0b9270fa3cf94756d77be717d441ef7918a434fcc21d149",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/canonical_bundle_manifest.json",
+        "size_bytes": 11193,
+        "zip_entry_sha256": "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c",
+        "unpacked_file_sha256": "32f520c0db7cfdd3252103eff7910c504e92561faaf2cb273856dc24777c244c",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/inputs/.study_anchor.json",
+        "size_bytes": 423,
+        "zip_entry_sha256": "6a15639c213782a6ef7863a960b064d604185297b121ab41197a057774d23097",
+        "unpacked_file_sha256": "6a15639c213782a6ef7863a960b064d604185297b121ab41197a057774d23097",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/inputs/manifest.json",
+        "size_bytes": 127772,
+        "zip_entry_sha256": "66b658cfa9dd42e131ec567bbe043b8bc87ac6e92aeaa5e8f6661b0195e486e5",
+        "unpacked_file_sha256": "66b658cfa9dd42e131ec567bbe043b8bc87ac6e92aeaa5e8f6661b0195e486e5",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/inputs/no_rag_predictions.jsonl",
+        "size_bytes": 2207966,
+        "zip_entry_sha256": "70034c5e3c417fc4a28c357d00d6a046751175ed03e7815645fa09e0411e228a",
+        "unpacked_file_sha256": "70034c5e3c417fc4a28c357d00d6a046751175ed03e7815645fa09e0411e228a",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/inputs/rag_k10_predictions.jsonl",
+        "size_bytes": 3046881,
+        "zip_entry_sha256": "40cd9d2b19c691ed8bcb97ff5dfbebd378857346e9a06b00a9ab54e51fd9a122",
+        "unpacked_file_sha256": "40cd9d2b19c691ed8bcb97ff5dfbebd378857346e9a06b00a9ab54e51fd9a122",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/inputs/rag_k1_predictions.jsonl",
+        "size_bytes": 2292294,
+        "zip_entry_sha256": "745cb883a90b4d1bac7c76c4007b143893834530a843e153fc24277aae5da7ac",
+        "unpacked_file_sha256": "745cb883a90b4d1bac7c76c4007b143893834530a843e153fc24277aae5da7ac",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/inputs/rag_k3_predictions.jsonl",
+        "size_bytes": 2459866,
+        "zip_entry_sha256": "29f215d74a3139df53036c642c8a14762bec4542d04685125cf28d024571b006",
+        "unpacked_file_sha256": "29f215d74a3139df53036c642c8a14762bec4542d04685125cf28d024571b006",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/inputs/rag_k5_predictions.jsonl",
+        "size_bytes": 2626661,
+        "zip_entry_sha256": "896d900d10e25af748e00235c33cace84511c450bf7cfb0da2b4d1a658124178",
+        "unpacked_file_sha256": "896d900d10e25af748e00235c33cace84511c450bf7cfb0da2b4d1a658124178",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/inputs/request_journal.jsonl",
+        "size_bytes": 7571342,
+        "zip_entry_sha256": "f36e0f3099ef704e6ed5e0bc0097affbe98932e1620563a6db22e631ae114f31",
+        "unpacked_file_sha256": "f36e0f3099ef704e6ed5e0bc0097affbe98932e1620563a6db22e631ae114f31",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/inputs/run_summary.json",
+        "size_bytes": 593,
+        "zip_entry_sha256": "67df38e336b4250b5a5c044b754ab02e8cc1826b8569f76d9bdf265ae4f84c2a",
+        "unpacked_file_sha256": "67df38e336b4250b5a5c044b754ab02e8cc1826b8569f76d9bdf265ae4f84c2a",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/inputs/study_ledger.json",
+        "size_bytes": 1012943,
+        "zip_entry_sha256": "21e4c49b1f19bba5310bc0e9897d828b16ab27420c1d25b14b9f3e727dce94d8",
+        "unpacked_file_sha256": "21e4c49b1f19bba5310bc0e9897d828b16ab27420c1d25b14b9f3e727dce94d8",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/outputs/failure_decomposition.json",
+        "size_bytes": 2522,
+        "zip_entry_sha256": "1ea3a899fefc7f92bcb739ab16e70036c269ebff16a7ec7e38240d2cc2c1c05d",
+        "unpacked_file_sha256": "1ea3a899fefc7f92bcb739ab16e70036c269ebff16a7ec7e38240d2cc2c1c05d",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/outputs/overall_metrics.json",
+        "size_bytes": 1967,
+        "zip_entry_sha256": "25662753963ecdd05d16b8607095fffb964c0d53cd2c43026c50b47b22e55074",
+        "unpacked_file_sha256": "25662753963ecdd05d16b8607095fffb964c0d53cd2c43026c50b47b22e55074",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/outputs/per_condition_metrics.json",
+        "size_bytes": 4292,
+        "zip_entry_sha256": "e6592f9a0f97739be1168f9d1448e0d209fe4a300727ff6ad78902523f1591d6",
+        "unpacked_file_sha256": "e6592f9a0f97739be1168f9d1448e0d209fe4a300727ff6ad78902523f1591d6",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/outputs/per_technique_metrics.json",
+        "size_bytes": 206543,
+        "zip_entry_sha256": "a2f96027439ba876b1c48b155a18f99872d3c4cc2c62c1bdc573a09aa73f49ef",
+        "unpacked_file_sha256": "a2f96027439ba876b1c48b155a18f99872d3c4cc2c62c1bdc573a09aa73f49ef",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/outputs/retrieval_conditional_metrics.json",
+        "size_bytes": 1541,
+        "zip_entry_sha256": "2c68395f4ae923167b7cbc08835ff2772044ddc7695f69c0781ec277287d775f",
+        "unpacked_file_sha256": "2c68395f4ae923167b7cbc08835ff2772044ddc7695f69c0781ec277287d775f",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/outputs/rq_analysis.json",
+        "size_bytes": 51842,
+        "zip_entry_sha256": "1604a5537b57cefbe86fd59d7fa2acfb8658a27215f7df8a98dfd0c400981156",
+        "unpacked_file_sha256": "1604a5537b57cefbe86fd59d7fa2acfb8658a27215f7df8a98dfd0c400981156",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/outputs/rq_analysis_summary.md",
+        "size_bytes": 7437,
+        "zip_entry_sha256": "712d495d5d71e5d96fd844fcb3dfdbc88e722056e265cf4a19d3813d9d9446c6",
+        "unpacked_file_sha256": "712d495d5d71e5d96fd844fcb3dfdbc88e722056e265cf4a19d3813d9d9446c6",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/outputs/run_provenance.json",
+        "size_bytes": 2929,
+        "zip_entry_sha256": "90918c9efe149c537c9b2cee7f7392607f273c12627bcc61b9dc9443359e63a1",
+        "unpacked_file_sha256": "90918c9efe149c537c9b2cee7f7392607f273c12627bcc61b9dc9443359e63a1",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/provenance/root_canonical_export_validation_public.json",
+        "size_bytes": 1581,
+        "zip_entry_sha256": "4767e1512741733874b20a3b8d6e420b24f887b5c6517b5f05a3e19521a19e35",
+        "unpacked_file_sha256": "4767e1512741733874b20a3b8d6e420b24f887b5c6517b5f05a3e19521a19e35",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/provenance/s2_evaluation_execute_public.md",
+        "size_bytes": 5981,
+        "zip_entry_sha256": "d515f70426435e9edb79cdc415e91c23b16e189fd171d4db4b04074c9b580aa1",
+        "unpacked_file_sha256": "d515f70426435e9edb79cdc415e91c23b16e189fd171d4db4b04074c9b580aa1",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/provenance/terminal_original_bytes_inventory_public.json",
+        "size_bytes": 1618,
+        "zip_entry_sha256": "5a2d7a892510c3c6c825974683fb9fd8c9a36f7797613873762ffff495e2ca10",
+        "unpacked_file_sha256": "5a2d7a892510c3c6c825974683fb9fd8c9a36f7797613873762ffff495e2ca10",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/provenance/terminal_process_proof_public.json",
+        "size_bytes": 1390,
+        "zip_entry_sha256": "1a720d799315d8384fef62c357eb66632f0509de592248302b37c45e8711a87e",
+        "unpacked_file_sha256": "1a720d799315d8384fef62c357eb66632f0509de592248302b37c45e8711a87e",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "base_public_v3/runtime/runtime_recovery_wrapper.py",
+        "size_bytes": 5235,
+        "zip_entry_sha256": "6eabc4f0a2065780fab6e6bdf28711f7902e97d3738b3f200543a8d86939113f",
+        "unpacked_file_sha256": "6eabc4f0a2065780fab6e6bdf28711f7902e97d3738b3f200543a8d86939113f",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "package_manifest_v4.json",
+        "size_bytes": 9940,
+        "zip_entry_sha256": "dbc2e133e8de30d6afa8345dcfa8b82890b13367a2bb24775278cc814a83dee2",
+        "unpacked_file_sha256": "dbc2e133e8de30d6afa8345dcfa8b82890b13367a2bb24775278cc814a83dee2",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "supplemental/evidence/canonical_metric_bundle_v2.json",
+        "size_bytes": 49465,
+        "zip_entry_sha256": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+        "unpacked_file_sha256": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "supplemental/evidence/canonical_run_seal_v1.json",
+        "size_bytes": 3046,
+        "zip_entry_sha256": "ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701",
+        "unpacked_file_sha256": "ae7a9ada86927a79e0c6916b44d3f0ba9e1f9756df55dd7b2fce712b35d48701",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "supplemental/evidence/root_metric_bundle_v2_freeze_95c0233.json",
+        "size_bytes": 4335,
+        "zip_entry_sha256": "e284344e8d571a61e40aa03dd6fbf529dc1e097378f2532c07d596936c10fad2",
+        "unpacked_file_sha256": "e284344e8d571a61e40aa03dd6fbf529dc1e097378f2532c07d596936c10fad2",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "supplemental/evidence/root_public_inventory_acceptance_30b9834.json",
+        "size_bytes": 2405,
+        "zip_entry_sha256": "4dfd888bcce1330a26789068517aef37631e484c59a65c0dfd7e2915180adda9",
+        "unpacked_file_sha256": "4dfd888bcce1330a26789068517aef37631e484c59a65c0dfd7e2915180adda9",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "supplemental/evidence/root_track_a_acceptance_b69a690.json",
+        "size_bytes": 5399,
+        "zip_entry_sha256": "70032a7726c47585a68d547cb7a69444b92f83d2a52ec0f31ae78a2b8b02b6a6",
+        "unpacked_file_sha256": "70032a7726c47585a68d547cb7a69444b92f83d2a52ec0f31ae78a2b8b02b6a6",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "supplemental/logs/task-1264.log",
+        "size_bytes": 1141,
+        "zip_entry_sha256": "fcacacf67d72797b8f1781d4998ed77bbf6d3e59e3e4d2e26fd0a9a7cca29b44",
+        "unpacked_file_sha256": "fcacacf67d72797b8f1781d4998ed77bbf6d3e59e3e4d2e26fd0a9a7cca29b44",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "supplemental/provenance/s2_rq_v2_execute_public.md",
+        "size_bytes": 3959,
+        "zip_entry_sha256": "0aadc3b0f8d8416b2336995925fb459f032e2f88140bc52e9199b70643b51ad9",
+        "unpacked_file_sha256": "0aadc3b0f8d8416b2336995925fb459f032e2f88140bc52e9199b70643b51ad9",
+        "byte_identical": true
+      },
+      {
+        "relative_path": "verify_public_v4_package.py",
+        "size_bytes": 17470,
+        "zip_entry_sha256": "63a75f81421c3f986b2e67b0b92ee655a8acbdd0835cd80f62caefabf17a71c9",
+        "unpacked_file_sha256": "63a75f81421c3f986b2e67b0b92ee655a8acbdd0835cd80f62caefabf17a71c9",
+        "byte_identical": true
+      }
+    ]
+  },
+  "verdict": "PASS_WORKSTATION_STORAGE_RECONCILED_AND_ATTESTED"
+}

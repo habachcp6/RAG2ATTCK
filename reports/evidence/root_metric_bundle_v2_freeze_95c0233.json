@@ -1,0 +1,93 @@
+{
+  "schema_version": "canonical-metric-freeze-envelope-v2",
+  "status": "ROOT_ACCEPTED_FROZEN_METRIC_BUNDLE",
+  "accepted_timestamp_utc": "2026-10-02T21:44:55.862679+00:00",
+  "repository": "habachcp6/RAG2ATTCK",
+  "source_git_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+  "source_pr": "https://github.com/habachcp6/RAG2ATTCK/pull/32",
+  "bundle_path": "artifacts/results/canonical_metric_bundle_v2.json",
+  "bundle_sha256": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+  "bundle_version": "2.0.0",
+  "bundle_byte_size": 49465,
+  "accepted_source_mode": "Synthetic endpoint inputs and real provider outputs; saved-data adapter; original records/protocol/evaluator preserved.",
+  "independent_review_sha256": "ec5097a88f5ea3b79009da964c3f84b8bc51d0b0fa132075d3b0b288407e181b",
+  "local_guarded_validation": {
+    "command": ".venv/Scripts/python.exe scripts/run_offline_tests.py -m pytest tests/test_canonical_metric_bundle.py -q",
+    "exit_code": 0,
+    "passed": 33,
+    "duration_seconds": 12.21,
+    "attempted_egress": 0
+  },
+  "independent_integrity_controls": {
+    "missing_external_trusted_sha_rejected": true,
+    "rehashed_mutants_rejected": 12,
+    "raw_data_oracle_baseline_checks": 178330,
+    "latest_value_checks": 184,
+    "scientific_mismatches": 0,
+    "only_change_since_value_baseline": "Truthful supplied build timestamp",
+    "binary_regeneration_equals_git_blob": true,
+    "structural_audit_has_no_canonical_pass": true
+  },
+  "ci": {
+    "url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37067860481",
+    "head_sha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+    "event": "workflow_dispatch",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "Full Test Suite (ubuntu-24.04)",
+        "conclusion": "success",
+        "url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37067860481/job/111040377517"
+      },
+      {
+        "name": "Full Test Suite (windows-latest)",
+        "conclusion": "success",
+        "url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37067860481/job/111040377695"
+      },
+      {
+        "name": "Synthetic Tests",
+        "conclusion": "success",
+        "url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37067860481/job/111040377795"
+      },
+      {
+        "name": "Registry Validation",
+        "conclusion": "success",
+        "url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37067860481/job/111040377864"
+      }
+    ],
+    "actual_suite_summary_lines": [
+      "2026-10-02T21:40:34.8978299Z ========== 1508 passed, 34 skipped, 5 deselected in 99.15s (0:01:39) ===========",
+      "2026-10-02T21:43:01.4440836Z ========= 1508 passed, 34 skipped, 5 deselected in 213.23s (0:03:33) =========="
+    ]
+  },
+  "integration": {
+    "conclusion": "success",
+    "event": "workflow_dispatch",
+    "headSha": "95c02338d146bfb060accc5efbc63bfab89a686d",
+    "status": "completed",
+    "url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37067586617"
+  },
+  "canonical_integrity_source": {
+    "git_sha": "b69a6909acda4c7588744acc7e1d6c20bfce2612",
+    "root_acceptance_sha256": "70032a7726c47585a68d547cb7a69444b92f83d2a52ec0f31ae78a2b8b02b6a6"
+  },
+  "consumer_contract": {
+    "mandatory_external_trusted_bundle_sha": "442b5933858caafc9da3c06ee9398637213ed30d7a7db80195c0babb1195ef34",
+    "trusted_distribution": "This Root freeze envelope and exact reviewed Git source; sidecar alone is not authority.",
+    "precision": {
+      "accuracy_percent_decimals": 2,
+      "delta_ci_percentage_point_decimals": 3,
+      "mcnemar_p_decimals": 3,
+      "money_decimal_places": 8
+    },
+    "p95": "NOT REPORTED; approval evidence not established",
+    "after_population_mutation": "Do not overwrite accepted bundle; bump version and obtain fresh acceptance for any correction."
+  },
+  "scope_limits": [
+    "Metric bundle and generator integrity acceptance only; not whole project FINAL.",
+    "All report/DOCX/PPTX/README/figures/tables must be regenerated against this pinned digest and independently validated.",
+    "Public supplementary authorization and raw/private artifact derivation evidence still require final integration checks.",
+    "Full quality13 gates, clean-clone replay, current-final-SHA CI, main merge and release remain open."
+  ]
+}

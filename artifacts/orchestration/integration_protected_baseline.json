@@ -1,0 +1,29 @@
+{
+  "baseline_sha": "80dbeb3fe2316e5d2d39de2ed6a5a2d15cfa9315",
+  "reference_file": "artifacts/orchestration/integration_protected_baseline.json",
+  "all_22_files_verified": true,
+  "protected_files": {
+    "attack/corpus/enterprise-windows-v19.2.jsonl": "b219341154ddf2f12e97d622158a04ab7d57641df6a865559258d365852c3c75",
+    "attack/corpus/enterprise-windows-v19.2.manifest.json": "6bd769324f6ac9193d7df82e7f54f5a1397a41b9bc72be767da5a72b54b3a47c",
+    "attack/index/enterprise-windows-v19.2.docmap.json": "a7de3dfcf2b6e186e639d2922fcbc27766c160ae58bbafea74b5efc0faf30586",
+    "attack/index/enterprise-windows-v19.2.index": "7e3b9944870860766ebd5ba76f19a420c1bbe57cebd4e4238b06fd31128578e5",
+    "attack/index/enterprise-windows-v19.2.manifest.json": "ad1fc8c8118ef897943597e30c3ab71cf30556f675b38bbeba6772537127ed0a",
+    "attack/raw/enterprise-v19.2/enterprise-attack-19.2.json": "dc1639caa5501d720e280cf1cbd8fbe009884a0c9b3e6e9ed9d0c25166c3d8f4",
+    "config/benchmark_scope.json": "d6aa89831dec75362b4fd48de0fd6e7082290f2be0cb7bd0afc6bc518148db8b",
+    "config/canonical_experiment_lock_v1.json": "d0ce198ad4853f4c41ef2bfbafbe10a395e4927a6c6561b3e72c055c4b887e9f",
+    "config/experiment_config.json": "961ba9b3e9e1b459a6694a5c8c76424d36c89d65bd4d88b14d0b0de7e4c017ac",
+    "config/experiment_protocol_v1.json": "a402b04ab463172f9d4079bff27b089ca8a21ffd0805d097af6cb1f3c7b5a8fb",
+    "config/model.json": "312c34cedd84106f2004c6070b72aeac1dd84209a464e2993fee3ec87822697f",
+    "config/pricing_v1.json": "e8afd6311f04dbbf5c34bb030e88a5b9d394f92c84d3e51feb32b327a08655a5",
+    "config/retrieval.json": "b33a93913e7f6de36f6f9021f77b2c9dcb1d426929162acb250a3c73ac8e6e25",
+    "data/ground_truth/synthetic/dataset_manifest.json": "4576b793360d02b60d619d199fd34d4555ace33215303ee847715c162a50dcc2",
+    "data/ground_truth/synthetic/ground_truth.jsonl": "8f3d73bac7e81336a3e90bfa5a5d0850a51ac5588385ee53ad940bcbc3612608",
+    "data/ground_truth/synthetic/inference.jsonl": "90d5f59e64f669f95d5ddccd86f1f047e10ee3dc46e4b67a8cd13d1ddf2cd4b8",
+    "data/ground_truth/synthetic/pairs.jsonl": "079e57a441b18d127739f610e7f62c263d943eefa19ca4ea5c6eab8b8a07665d",
+    "data/ground_truth/synthetic/split_manifest.json": "37fce63ccaa6db8e13604b7e3783997a10635f58995881b5e41913e6f550f43f",
+    "data/ground_truth/synthetic/views.jsonl": "1e6b0d3bd525b8fe9f97ba9e5656905597a3939e47c130a9e6f74535e2cd421d",
+    "docs/context/RAG_ATTCK_Project_Tracker_Updated.xlsx": "ed946fa1918af54a0634a317b6bf3d2b4291501219524de691c5da8b15725ef8",
+    "docs/context/RAG_ATTCK_Research_Plan_Updated.docx": "39499aa68188530eed81d1426af4d2f0217e17e10d9d016ddc0b38c0ae7a91af",
+    "prompts/baseline_v1.txt": "b751fde1ee33b03ec0bdc07cbba10267002d2086cf22b91a74bdfd123856f206"
+  }
+}

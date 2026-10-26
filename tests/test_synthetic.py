@@ -13,101 +13,120 @@ Tests organized by:
 """
 
 import copy
-import hashlib
 import json
-import math
-import re
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
 from src.synthetic import (
-    SyntheticEvent, ViewGroundTruth, View, ScenarioPair,
-    build_security_4697, build_security_4688, build_security_4698,
-    build_security_4720, build_security_1102,
-    build_sysmon_1, build_sysmon_3, build_sysmon_11, build_sysmon_13,
-    generate_deterministic_id, get_inference_payload, check_leakage,
-    character_ngrams, jaccard_similarity, normalize_for_dedup,
-    find_near_duplicates, compute_split_key, assign_splits,
-    serialize_dataset, load_dataset,
-    INFERENCE_ALLOWLIST, SAFE_IPS, SAFE_HOSTS, SAFE_USERS,
-    HOSTS_DOMAIN_CONTROLLER, HOSTS_ALLOWED_LOCAL_ACCOUNT,
+    HOSTS_ALLOWED_LOCAL_ACCOUNT,
+    HOSTS_DOMAIN_CONTROLLER,
+    INFERENCE_ALLOWLIST,
+    ScenarioPair,
+    SyntheticEvent,
+    View,
+    ViewGroundTruth,
+    assign_splits,
+    build_security_4697,
+    find_near_duplicates,
+    generate_deterministic_id,
+    get_inference_payload,
+    load_dataset,
+    serialize_dataset,
 )
 from src.synthetic_validator import (
-    ValidationResult, validate_synthetic_dataset,
-    validate_template_registry,
-    compute_transition_matrix, compute_statistics, generate_audit_table,
-    ALLOWED_TRANSITIONS, BENCHMARK_CATALOG, BENCHMARK_TECHNIQUE_NAMES,
-    VALID_LABEL_STATUSES, _validate_registry_dsl, _registry_predicate_leaves,
-    _check_01_schema, _check_04_single_one_event,
-    _check_05_contextual_event_count, _check_06_anchor_exists_in_both,
-    _check_07_strict_anchor_equality, _check_11_mapped_has_techniques,
-    _check_12_unmapped_no_techniques, _check_13_ambiguous_no_techniques,
-    _check_17_transition_allowed, _check_18_leakage,
-    _check_25_family_diversity, _check_26_no_family_overlap_dev_test,
+    ALLOWED_TRANSITIONS,
+    BENCHMARK_CATALOG,
+    BENCHMARK_TECHNIQUE_NAMES,
+    VALID_LABEL_STATUSES,
+    ValidationResult,
+    _check_04_single_one_event,
+    _check_05_contextual_event_count,
+    _check_06_anchor_exists_in_both,
+    _check_07_strict_anchor_equality,
+    _check_11_mapped_has_techniques,
+    _check_12_unmapped_no_techniques,
+    _check_13_ambiguous_no_techniques,
+    _check_17_transition_allowed,
+    _check_18_leakage,
+    _check_25_family_diversity,
+    _check_26_no_family_overlap_dev_test,
     _check_27_local_account_host,
     _check_service_event_provider,
+    _registry_predicate_leaves,
+    _validate_registry_dsl,
+    compute_statistics,
+    compute_transition_matrix,
+    generate_audit_table,
+    validate_template_registry,
 )
-
 
 # ============================================================
 # Helpers
 # ============================================================
 
-def _make_event(event_id: str = "evt_001",
-                provider: str = "Microsoft-Windows-Sysmon",
-                channel: str = "Microsoft-Windows-Sysmon/Operational",
-                windows_event_id: int = 1,
-                computer: str = "WORKSTATION01",
-                timestamp: str = "2024-03-15T10:00:00Z",
-                event_record_id: int = 1001,
-                **extra_fields) -> SyntheticEvent:
+
+def _make_event(
+    event_id: str = "evt_001",
+    provider: str = "Microsoft-Windows-Sysmon",
+    channel: str = "Microsoft-Windows-Sysmon/Operational",
+    windows_event_id: int = 1,
+    computer: str = "WORKSTATION01",
+    timestamp: str = "2024-03-15T10:00:00Z",
+    event_record_id: int = 1001,
+    **extra_fields,
+) -> SyntheticEvent:
     fields = {
-        'UtcTime': timestamp,
-        'Computer': computer,
-        'EventID': windows_event_id,
-        'Image': r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe',
-        'CommandLine': 'powershell.exe -EncodedCommand ZQBjAGgAbwAgAHQAZQBzAHQA',
-        'ParentImage': r'C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE',
-        'ParentCommandLine': 'WINWORD.EXE',
-        'User': 'WORKSTATION01\\jsmith',
-        'ProcessId': 4444,
-        'ParentProcessId': 2222,
-        'ProcessGuid': '{00000000-0000-0000-0000-000000000001}',
-        'ParentProcessGuid': '{00000000-0000-0000-0000-000000000002}',
-        'LogonGuid': '{00000000-0000-0000-0000-000000000099}',
-        'LogonId': '0x12345',
-        'Hashes': 'SHA256=AABBCCDD',
+        "UtcTime": timestamp,
+        "Computer": computer,
+        "EventID": windows_event_id,
+        "Image": r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe",
+        "CommandLine": "powershell.exe -EncodedCommand ZQBjAGgAbwAgAHQAZQBzAHQA",
+        "ParentImage": r"C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE",
+        "ParentCommandLine": "WINWORD.EXE",
+        "User": "WORKSTATION01\\jsmith",
+        "ProcessId": 4444,
+        "ParentProcessId": 2222,
+        "ProcessGuid": "{00000000-0000-0000-0000-000000000001}",
+        "ParentProcessGuid": "{00000000-0000-0000-0000-000000000002}",
+        "LogonGuid": "{00000000-0000-0000-0000-000000000099}",
+        "LogonId": "0x12345",
+        "Hashes": "SHA256=AABBCCDD",
     }
     fields.update(extra_fields)
     return SyntheticEvent(
-        event_id=event_id, provider=provider, channel=channel,
+        event_id=event_id,
+        provider=provider,
+        channel=channel,
         event_record_id=event_record_id,
-        windows_event_id=windows_event_id, computer=computer,
-        timestamp_utc=timestamp, fields=fields
+        windows_event_id=windows_event_id,
+        computer=computer,
+        timestamp_utc=timestamp,
+        fields=fields,
     )
 
 
-def _make_context_event(event_id: str = "evt_002",
-                         windows_event_id: int = 3,
-                         timestamp: str = "2024-03-15T10:00:05Z",
-                         computer: str = "WORKSTATION01",
-                         event_record_id: int = 1002) -> SyntheticEvent:
+def _make_context_event(
+    event_id: str = "evt_002",
+    windows_event_id: int = 3,
+    timestamp: str = "2024-03-15T10:00:05Z",
+    computer: str = "WORKSTATION01",
+    event_record_id: int = 1002,
+) -> SyntheticEvent:
     fields = {
-        'UtcTime': timestamp,
-        'Computer': computer,
-        'EventID': windows_event_id,
-        'Image': r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe',
-        'User': 'WORKSTATION01\\jsmith',
-        'SourceIp': '192.0.2.10',
-        'SourcePort': 49152,
-        'DestinationIp': '198.51.100.20',
-        'DestinationPort': 443,
-        'Protocol': 'tcp',
-        'ProcessId': 4444,
-        'ProcessGuid': '{00000000-0000-0000-0000-000000000001}',
+        "UtcTime": timestamp,
+        "Computer": computer,
+        "EventID": windows_event_id,
+        "Image": r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe",
+        "User": "WORKSTATION01\\jsmith",
+        "SourceIp": "192.0.2.10",
+        "SourcePort": 49152,
+        "DestinationIp": "198.51.100.20",
+        "DestinationPort": 443,
+        "Protocol": "tcp",
+        "ProcessId": 4444,
+        "ProcessGuid": "{00000000-0000-0000-0000-000000000001}",
     }
     return SyntheticEvent(
         event_id=event_id,
@@ -117,26 +136,36 @@ def _make_context_event(event_id: str = "evt_002",
         windows_event_id=windows_event_id,
         computer=computer,
         timestamp_utc=timestamp,
-        fields=fields
+        fields=fields,
     )
 
 
-def make_valid_pair(pair_id: str = "pair_001",
-                    split: str = "test",
-                    family: str = "TF_T1059_001_A",
-                    single_status: str = "mapped",
-                    contextual_status: str = "mapped",
-                    single_techniques: tuple = ("T1059.001",),
-                    contextual_techniques: tuple = ("T1059.001",),
-                    computer: str = "WORKSTATION01") -> ScenarioPair:
+def make_valid_pair(
+    pair_id: str = "pair_001",
+    split: str = "test",
+    family: str = "TF_T1059_001_A",
+    single_status: str = "mapped",
+    contextual_status: str = "mapped",
+    single_techniques: tuple = ("T1059.001",),
+    contextual_techniques: tuple = ("T1059.001",),
+    computer: str = "WORKSTATION01",
+) -> ScenarioPair:
     anchor = _make_event("evt_anchor_001", computer=computer)
     ctx1 = _make_context_event("evt_ctx_001", timestamp="2024-03-15T10:00:05Z", computer=computer)
-    ctx2 = _make_context_event("evt_ctx_002", windows_event_id=11,
-                                timestamp="2024-03-15T10:00:10Z", computer=computer,
-                                event_record_id=1003)
+    ctx2 = _make_context_event(
+        "evt_ctx_002",
+        windows_event_id=11,
+        timestamp="2024-03-15T10:00:10Z",
+        computer=computer,
+        event_record_id=1003,
+    )
 
-    single_names = tuple("PowerShell" for _ in single_techniques) if single_status == "mapped" else ()
-    ctx_names = tuple("PowerShell" for _ in contextual_techniques) if contextual_status == "mapped" else ()
+    single_names = (
+        tuple("PowerShell" for _ in single_techniques) if single_status == "mapped" else ()
+    )
+    ctx_names = (
+        tuple("PowerShell" for _ in contextual_techniques) if contextual_status == "mapped" else ()
+    )
     single_tids = single_techniques if single_status == "mapped" else ()
     ctx_tids = contextual_techniques if contextual_status == "mapped" else ()
 
@@ -188,13 +217,14 @@ def make_valid_pair(pair_id: str = "pair_001",
             approval_reference="test",
         ),
         generation_seed=20260915,
-        generation_provenance={"source": "test"}
+        generation_provenance={"source": "test"},
     )
 
 
 # ============================================================
 # 1. Event Builder Tests
 # ============================================================
+
 
 class TestBuildSecurity4697:
     """EID 4697 builder with correct Security-auditing fields."""
@@ -212,14 +242,14 @@ class TestBuildSecurity4697:
             subject_domain="WORKSTATION01",
             logon_id="0x12345",
         )
-        assert fields['EventID'] == 4697
-        assert fields['ServiceName'] == "MaliciousService"
-        assert fields['ServiceFileName'] == r"C:\Users\Public\evil.exe"
-        assert fields['ServiceStartType'] == "2"
-        assert fields['ServiceAccount'] == "LocalSystem"
-        assert fields['SubjectUserName'] == "jsmith"
-        assert fields['SubjectDomainName'] == "WORKSTATION01"
-        assert fields['SubjectLogonId'] == "0x12345"
+        assert fields["EventID"] == 4697
+        assert fields["ServiceName"] == "MaliciousService"
+        assert fields["ServiceFileName"] == r"C:\Users\Public\evil.exe"
+        assert fields["ServiceStartType"] == "2"
+        assert fields["ServiceAccount"] == "LocalSystem"
+        assert fields["SubjectUserName"] == "jsmith"
+        assert fields["SubjectDomainName"] == "WORKSTATION01"
+        assert fields["SubjectLogonId"] == "0x12345"
 
     def test_no_7045_fields(self):
         """Must NOT have 7045-specific fields."""
@@ -235,9 +265,9 @@ class TestBuildSecurity4697:
             subject_domain="WORKSTATION01",
             logon_id="0x1",
         )
-        assert 'ImagePath' not in fields
-        assert 'StartType' not in fields
-        assert 'AccountName' not in fields
+        assert "ImagePath" not in fields
+        assert "StartType" not in fields
+        assert "AccountName" not in fields
 
     def test_extra_kwargs_preserved(self):
         fields = build_security_4697(
@@ -253,7 +283,7 @@ class TestBuildSecurity4697:
             logon_id="L",
             CustomField="test_value",
         )
-        assert fields['CustomField'] == "test_value"
+        assert fields["CustomField"] == "test_value"
 
 
 class TestBuildSecurity7045Removed:
@@ -261,7 +291,8 @@ class TestBuildSecurity7045Removed:
 
     def test_7045_builder_not_importable(self):
         import src.synthetic as syn
-        assert not hasattr(syn, 'build_security_7045'), (
+
+        assert not hasattr(syn, "build_security_7045"), (
             "build_security_7045 should be removed; use build_security_4697"
         )
 
@@ -280,12 +311,15 @@ class TestServiceEventProviderCheck:
             windows_event_id=7045,
             computer="WORKSTATION01",
             timestamp_utc="2024-03-15T10:00:00Z",
-            fields={"EventID": 7045, "ServiceName": "test"}
+            fields={"EventID": 7045, "ServiceName": "test"},
         )
         pair = ScenarioPair(
-            pair_id=pair.pair_id, scenario_id=pair.scenario_id,
-            template_family_id=pair.template_family_id, split=pair.split,
-            single_view=pair.single_view, contextual_view=pair.contextual_view,
+            pair_id=pair.pair_id,
+            scenario_id=pair.scenario_id,
+            template_family_id=pair.template_family_id,
+            split=pair.split,
+            single_view=pair.single_view,
+            contextual_view=pair.contextual_view,
             events={**pair.events, "evt_bad_svc": bad_event},
             single_ground_truth=pair.single_ground_truth,
             contextual_ground_truth=pair.contextual_ground_truth,
@@ -302,33 +336,34 @@ class TestServiceEventProviderCheck:
 # 2. Allowlist Tests
 # ============================================================
 
+
 class TestInferenceAllowlist:
     """Allowlist uses EID 4697, not 7045."""
 
     def test_4697_in_allowlist(self):
-        assert 4697 in INFERENCE_ALLOWLIST['Security']
-        fields = INFERENCE_ALLOWLIST['Security'][4697]
-        assert 'ServiceName' in fields
-        assert 'ServiceFileName' in fields
-        assert 'ServiceStartType' in fields
-        assert 'SubjectUserName' in fields
+        assert 4697 in INFERENCE_ALLOWLIST["Security"]
+        fields = INFERENCE_ALLOWLIST["Security"][4697]
+        assert "ServiceName" in fields
+        assert "ServiceFileName" in fields
+        assert "ServiceStartType" in fields
+        assert "SubjectUserName" in fields
 
     def test_7045_not_in_allowlist(self):
-        assert 7045 not in INFERENCE_ALLOWLIST['Security']
+        assert 7045 not in INFERENCE_ALLOWLIST["Security"]
 
     def test_4697_no_7045_fields(self):
-        fields = INFERENCE_ALLOWLIST['Security'][4697]
-        assert 'ImagePath' not in fields
-        assert 'StartType' not in fields
-        assert 'AccountName' not in fields
+        fields = INFERENCE_ALLOWLIST["Security"][4697]
+        assert "ImagePath" not in fields
+        assert "StartType" not in fields
+        assert "AccountName" not in fields
 
 
 # ============================================================
 # 3. Data Model Tests
 # ============================================================
 
-class TestDataModel:
 
+class TestDataModel:
     def test_valid_pair_construction(self):
         pair = make_valid_pair()
         assert pair.pair_id == "pair_001"
@@ -358,24 +393,36 @@ class TestDataModel:
 # 4. Attribution Policy Tests
 # ============================================================
 
+
 class TestAttributionPolicy:
     """Tests for evidence-conditioned attribution semantics."""
 
     def test_mapped_requires_techniques(self):
-        pair = make_valid_pair(single_status="mapped", contextual_status="mapped",
-                               single_techniques=(), contextual_techniques=("T1059.001",))
+        pair = make_valid_pair(
+            single_status="mapped",
+            contextual_status="mapped",
+            single_techniques=(),
+            contextual_techniques=("T1059.001",),
+        )
         result = ValidationResult()
         _check_11_mapped_has_techniques(pair, result)
         assert not result.passed  # single is mapped but has no techniques
 
     def test_unmapped_forbids_techniques(self):
-        pair = make_valid_pair(single_status="unmapped", contextual_status="unmapped",
-                               single_techniques=(), contextual_techniques=())
+        pair = make_valid_pair(
+            single_status="unmapped",
+            contextual_status="unmapped",
+            single_techniques=(),
+            contextual_techniques=(),
+        )
         # Force technique_ids on unmapped
         pair = ScenarioPair(
-            pair_id=pair.pair_id, scenario_id=pair.scenario_id,
-            template_family_id=pair.template_family_id, split=pair.split,
-            single_view=pair.single_view, contextual_view=pair.contextual_view,
+            pair_id=pair.pair_id,
+            scenario_id=pair.scenario_id,
+            template_family_id=pair.template_family_id,
+            split=pair.split,
+            single_view=pair.single_view,
+            contextual_view=pair.contextual_view,
             events=pair.events,
             single_ground_truth=ViewGroundTruth(
                 view_id=pair.single_ground_truth.view_id,
@@ -383,7 +430,8 @@ class TestAttributionPolicy:
                 technique_ids=("T1059.001",),
                 technique_names=("PowerShell",),
                 evidence_refs={},
-                rationale="test", approval_reference="test"
+                rationale="test",
+                approval_reference="test",
             ),
             contextual_ground_truth=pair.contextual_ground_truth,
             generation_seed=pair.generation_seed,
@@ -394,12 +442,19 @@ class TestAttributionPolicy:
         assert not result.passed
 
     def test_ambiguous_forbids_techniques(self):
-        pair = make_valid_pair(single_status="ambiguous", contextual_status="ambiguous",
-                               single_techniques=(), contextual_techniques=())
+        pair = make_valid_pair(
+            single_status="ambiguous",
+            contextual_status="ambiguous",
+            single_techniques=(),
+            contextual_techniques=(),
+        )
         pair = ScenarioPair(
-            pair_id=pair.pair_id, scenario_id=pair.scenario_id,
-            template_family_id=pair.template_family_id, split=pair.split,
-            single_view=pair.single_view, contextual_view=pair.contextual_view,
+            pair_id=pair.pair_id,
+            scenario_id=pair.scenario_id,
+            template_family_id=pair.template_family_id,
+            split=pair.split,
+            single_view=pair.single_view,
+            contextual_view=pair.contextual_view,
             events=pair.events,
             single_ground_truth=ViewGroundTruth(
                 view_id=pair.single_ground_truth.view_id,
@@ -407,7 +462,8 @@ class TestAttributionPolicy:
                 technique_ids=("T1059.001",),
                 technique_names=("PowerShell",),
                 evidence_refs={},
-                rationale="test", approval_reference="test"
+                rationale="test",
+                approval_reference="test",
             ),
             contextual_ground_truth=pair.contextual_ground_truth,
             generation_seed=pair.generation_seed,
@@ -422,36 +478,51 @@ class TestAttributionPolicy:
 # 5. Transition Tests
 # ============================================================
 
+
 class TestTransitions:
     """Tests for allowed/disallowed transition types."""
 
-    @pytest.mark.parametrize("single,contextual", [
-        ("mapped", "mapped"),
-        ("ambiguous", "mapped"),
-        ("ambiguous", "unmapped"),
-        ("ambiguous", "ambiguous"),
-        ("unmapped", "unmapped"),
-    ])
+    @pytest.mark.parametrize(
+        "single,contextual",
+        [
+            ("mapped", "mapped"),
+            ("ambiguous", "mapped"),
+            ("ambiguous", "unmapped"),
+            ("ambiguous", "ambiguous"),
+            ("unmapped", "unmapped"),
+        ],
+    )
     def test_allowed_transitions(self, single, contextual):
         s_tech = ("T1059.001",) if single == "mapped" else ()
         c_tech = ("T1059.001",) if contextual == "mapped" else ()
-        pair = make_valid_pair(single_status=single, contextual_status=contextual,
-                               single_techniques=s_tech, contextual_techniques=c_tech)
+        pair = make_valid_pair(
+            single_status=single,
+            contextual_status=contextual,
+            single_techniques=s_tech,
+            contextual_techniques=c_tech,
+        )
         result = ValidationResult()
         _check_17_transition_allowed(pair, result)
         assert result.passed, f"Transition {single}→{contextual} should be allowed"
 
-    @pytest.mark.parametrize("single,contextual", [
-        ("mapped", "ambiguous"),
-        ("mapped", "unmapped"),
-        ("unmapped", "ambiguous"),
-        ("unmapped", "mapped"),
-    ])
+    @pytest.mark.parametrize(
+        "single,contextual",
+        [
+            ("mapped", "ambiguous"),
+            ("mapped", "unmapped"),
+            ("unmapped", "ambiguous"),
+            ("unmapped", "mapped"),
+        ],
+    )
     def test_disallowed_transitions(self, single, contextual):
         s_tech = ("T1059.001",) if single == "mapped" else ()
         c_tech = ("T1059.001",) if contextual == "mapped" else ()
-        pair = make_valid_pair(single_status=single, contextual_status=contextual,
-                               single_techniques=s_tech, contextual_techniques=c_tech)
+        pair = make_valid_pair(
+            single_status=single,
+            contextual_status=contextual,
+            single_techniques=s_tech,
+            contextual_techniques=c_tech,
+        )
         result = ValidationResult()
         _check_17_transition_allowed(pair, result)
         assert not result.passed, f"Transition {single}→{contextual} should be disallowed"
@@ -460,6 +531,7 @@ class TestTransitions:
 # ============================================================
 # 6. Split Holdout Tests
 # ============================================================
+
 
 class TestSplitHoldout:
     """Template-family holdout: dev and test families must be disjoint."""
@@ -488,6 +560,7 @@ class TestSplitHoldout:
 # 7. Quota Tests
 # ============================================================
 
+
 class TestQuotas:
     """Quota enforcement tests."""
 
@@ -508,15 +581,23 @@ class TestQuotas:
         # but if we have 2 families and one has 40, max allowed is ceil(50/2)=25
         pairs = []
         for i in range(40):
-            pairs.append(make_valid_pair(
-                pair_id=f"p{i}", split="test", family="FAM_A",
-                contextual_techniques=("T1059.001",),
-            ))
+            pairs.append(
+                make_valid_pair(
+                    pair_id=f"p{i}",
+                    split="test",
+                    family="FAM_A",
+                    contextual_techniques=("T1059.001",),
+                )
+            )
         for i in range(10):
-            pairs.append(make_valid_pair(
-                pair_id=f"q{i}", split="test", family="FAM_B",
-                contextual_techniques=("T1059.001",),
-            ))
+            pairs.append(
+                make_valid_pair(
+                    pair_id=f"q{i}",
+                    split="test",
+                    family="FAM_B",
+                    contextual_techniques=("T1059.001",),
+                )
+            )
         result = ValidationResult()
         _check_25_family_diversity(pairs, result)
         assert not result.passed  # FAM_A has 40, max allowed ceil(50/2)=25
@@ -525,6 +606,7 @@ class TestQuotas:
 # ============================================================
 # 8. Anchor Integrity Tests
 # ============================================================
+
 
 class TestAnchorIntegrity:
     """Strict anchor equality between views."""
@@ -539,8 +621,10 @@ class TestAnchorIntegrity:
         pair = make_valid_pair()
         # Remove anchor from contextual view
         pair = ScenarioPair(
-            pair_id=pair.pair_id, scenario_id=pair.scenario_id,
-            template_family_id=pair.template_family_id, split=pair.split,
+            pair_id=pair.pair_id,
+            scenario_id=pair.scenario_id,
+            template_family_id=pair.template_family_id,
+            split=pair.split,
             single_view=pair.single_view,
             contextual_view=View(
                 view_id=pair.contextual_view.view_id,
@@ -563,8 +647,10 @@ class TestAnchorIntegrity:
         # Remove anchor from events dict
         events_without_anchor = {k: v for k, v in pair.events.items() if k != "evt_anchor_001"}
         pair = ScenarioPair(
-            pair_id=pair.pair_id, scenario_id=pair.scenario_id,
-            template_family_id=pair.template_family_id, split=pair.split,
+            pair_id=pair.pair_id,
+            scenario_id=pair.scenario_id,
+            template_family_id=pair.template_family_id,
+            split=pair.split,
             single_view=pair.single_view,
             contextual_view=pair.contextual_view,
             events=events_without_anchor,
@@ -581,6 +667,7 @@ class TestAnchorIntegrity:
 # ============================================================
 # 9. T1136.001 Host Constraint Tests
 # ============================================================
+
 
 class TestLocalAccountHostConstraint:
     """T1136.001 must not be generated on domain controllers."""
@@ -622,8 +709,8 @@ class TestLocalAccountHostConstraint:
 # 10. Host-Role Constants
 # ============================================================
 
-class TestHostRoleConstants:
 
+class TestHostRoleConstants:
     def test_dc_in_domain_controllers(self):
         assert "DC01" in HOSTS_DOMAIN_CONTROLLER
 
@@ -639,8 +726,8 @@ class TestHostRoleConstants:
 # 11. Leakage Tests
 # ============================================================
 
-class TestLeakage:
 
+class TestLeakage:
     def test_clean_payload_no_leakage(self):
         pair = make_valid_pair()
         result = ValidationResult()
@@ -652,18 +739,24 @@ class TestLeakage:
         # Inject technique ID into event field
         anchor = pair.events["evt_anchor_001"]
         bad_fields = dict(anchor.fields)
-        bad_fields['CommandLine'] = 'powershell.exe T1059.001 test'
+        bad_fields["CommandLine"] = "powershell.exe T1059.001 test"
         bad_anchor = SyntheticEvent(
-            event_id=anchor.event_id, provider=anchor.provider,
-            channel=anchor.channel, event_record_id=anchor.event_record_id,
+            event_id=anchor.event_id,
+            provider=anchor.provider,
+            channel=anchor.channel,
+            event_record_id=anchor.event_record_id,
             windows_event_id=anchor.windows_event_id,
-            computer=anchor.computer, timestamp_utc=anchor.timestamp_utc,
-            fields=bad_fields
+            computer=anchor.computer,
+            timestamp_utc=anchor.timestamp_utc,
+            fields=bad_fields,
         )
         pair = ScenarioPair(
-            pair_id=pair.pair_id, scenario_id=pair.scenario_id,
-            template_family_id=pair.template_family_id, split=pair.split,
-            single_view=pair.single_view, contextual_view=pair.contextual_view,
+            pair_id=pair.pair_id,
+            scenario_id=pair.scenario_id,
+            template_family_id=pair.template_family_id,
+            split=pair.split,
+            single_view=pair.single_view,
+            contextual_view=pair.contextual_view,
             events={**pair.events, "evt_anchor_001": bad_anchor},
             single_ground_truth=pair.single_ground_truth,
             contextual_ground_truth=pair.contextual_ground_truth,
@@ -678,6 +771,7 @@ class TestLeakage:
 # ============================================================
 # 12. Template Registry Tests
 # ============================================================
+
 
 class TestTemplateRegistry:
     """Verify registry file structure and content."""
@@ -711,14 +805,26 @@ class TestTemplateRegistry:
 
     def test_test_quotas_match(self, registry):
         families = registry["families"]
-        test_mapped = sum(f["planned_instances"] for f in families
-                         if f["split"] == "test" and f["category"] == "mapped_single")
-        test_multi = sum(f["planned_instances"] for f in families
-                        if f["split"] == "test" and f["category"] == "mapped_multi")
-        test_unmap = sum(f["planned_instances"] for f in families
-                        if f["split"] == "test" and f["category"] == "unmapped")
-        test_ambig = sum(f["planned_instances"] for f in families
-                        if f["split"] == "test" and f["category"] == "ambiguous")
+        test_mapped = sum(
+            f["planned_instances"]
+            for f in families
+            if f["split"] == "test" and f["category"] == "mapped_single"
+        )
+        test_multi = sum(
+            f["planned_instances"]
+            for f in families
+            if f["split"] == "test" and f["category"] == "mapped_multi"
+        )
+        test_unmap = sum(
+            f["planned_instances"]
+            for f in families
+            if f["split"] == "test" and f["category"] == "unmapped"
+        )
+        test_ambig = sum(
+            f["planned_instances"]
+            for f in families
+            if f["split"] == "test" and f["category"] == "ambiguous"
+        )
         assert test_mapped == 400
         assert test_multi == 40
         assert test_unmap == 150
@@ -726,14 +832,26 @@ class TestTemplateRegistry:
 
     def test_dev_quotas_match(self, registry):
         families = registry["families"]
-        dev_mapped = sum(f["planned_instances"] for f in families
-                        if f["split"] == "dev" and f["category"] == "mapped_single")
-        dev_multi = sum(f["planned_instances"] for f in families
-                       if f["split"] == "dev" and f["category"] == "mapped_multi")
-        dev_unmap = sum(f["planned_instances"] for f in families
-                       if f["split"] == "dev" and f["category"] == "unmapped")
-        dev_ambig = sum(f["planned_instances"] for f in families
-                       if f["split"] == "dev" and f["category"] == "ambiguous")
+        dev_mapped = sum(
+            f["planned_instances"]
+            for f in families
+            if f["split"] == "dev" and f["category"] == "mapped_single"
+        )
+        dev_multi = sum(
+            f["planned_instances"]
+            for f in families
+            if f["split"] == "dev" and f["category"] == "mapped_multi"
+        )
+        dev_unmap = sum(
+            f["planned_instances"]
+            for f in families
+            if f["split"] == "dev" and f["category"] == "unmapped"
+        )
+        dev_ambig = sum(
+            f["planned_instances"]
+            for f in families
+            if f["split"] == "dev" and f["category"] == "ambiguous"
+        )
         assert dev_mapped == 16
         assert dev_multi == 4
         assert dev_unmap == 6
@@ -742,6 +860,7 @@ class TestTemplateRegistry:
     def test_per_technique_50_test(self, registry):
         families = registry["families"]
         from collections import defaultdict
+
         tech_counts = defaultdict(int)
         for f in families:
             if f["split"] == "test" and f["category"] == "mapped_single":
@@ -753,6 +872,7 @@ class TestTemplateRegistry:
     def test_per_technique_2_dev(self, registry):
         families = registry["families"]
         from collections import defaultdict
+
         tech_counts = defaultdict(int)
         for f in families:
             if f["split"] == "dev" and f["category"] == "mapped_single":
@@ -771,9 +891,11 @@ class TestTemplateRegistry:
         families = registry["families"]
         for f in families:
             if "T1136.001" in f.get("technique_ids", []):
-                assert "host_constraint" in f or "host_constraints" in f or \
-                       any("DC" in str(f.get(k, "")) for k in f), \
-                    f"T1136.001 family {f['template_family_id']} missing host constraint"
+                assert (
+                    "host_constraint" in f
+                    or "host_constraints" in f
+                    or any("DC" in str(f.get(k, "")) for k in f)
+                ), f"T1136.001 family {f['template_family_id']} missing host constraint"
 
     def test_no_7045_service_events(self, registry):
         families = registry["families"]
@@ -782,9 +904,7 @@ class TestTemplateRegistry:
             if anchor.get("windows_event_id") == 7045:
                 provider = anchor.get("provider", "")
                 if "Security" in provider:
-                    pytest.fail(
-                        f"{f['template_family_id']}: EID 7045 with Security provider"
-                    )
+                    pytest.fail(f"{f['template_family_id']}: EID 7045 with Security provider")
 
     def test_evidence_predicates_structured(self, registry):
         """Evidence predicates should use structured format, not just prose."""
@@ -798,8 +918,9 @@ class TestTemplateRegistry:
                         # Prose-only predicate — at minimum should be a dict
                         pass  # Allow for now, warn
                     # At least rationale should exist
-                    assert "rationale" in gt or "rationale" in f, \
+                    assert "rationale" in gt or "rationale" in f, (
                         f"{f['template_family_id']} {gt_key}: missing rationale"
+                    )
 
 
 class TestSemanticRegistryValidator:
@@ -826,30 +947,44 @@ class TestSemanticRegistryValidator:
         family = self.family(registry, "TF_UNMAP_ACCT")
         leaves = family["single_ground_truth"]["evidence_predicate"]["all"]
         assert {item["field"] for item in leaves} >= {"TargetUserName", "SubjectUserName"}
-        assert any(item["field"] == "TargetUserName" and item["value"] == "backupsvc" for item in leaves)
-        assert any(item["field"] == "SubjectUserName" and item["value"] == "Administrator" for item in leaves)
+        assert any(
+            item["field"] == "TargetUserName" and item["value"] == "backupsvc" for item in leaves
+        )
+        assert any(
+            item["field"] == "SubjectUserName" and item["value"] == "Administrator"
+            for item in leaves
+        )
 
     def test_rejects_account_name_in_subject_username(self, registry):
         candidate = copy.deepcopy(registry)
         family = self.family(candidate, "TF_UNMAP_ACCT")
-        family["single_ground_truth"]["evidence_predicate"] = {"all": [
-            {"event": "anchor", "field": "SubjectUserName", "op": "eq", "value": "backupsvc"},
-            {"event": "anchor", "field": "SubjectLogonId", "op": "neq", "value": ""},
-        ]}
+        family["single_ground_truth"]["evidence_predicate"] = {
+            "all": [
+                {"event": "anchor", "field": "SubjectUserName", "op": "eq", "value": "backupsvc"},
+                {"event": "anchor", "field": "SubjectLogonId", "op": "neq", "value": ""},
+            ]
+        }
         result = self.validate(candidate)
         assert any("created-account identity belongs in TargetUserName" in e for e in result.errors)
 
     def test_eid_13_run_key_path_and_value_fields_are_distinct(self, registry):
         family = self.family(registry, "TF_UNMAP_REG")
         leaves = family["single_ground_truth"]["evidence_predicate"]["all"]
-        assert any(item["field"] == "TargetObject" and "CurrentVersion\\Run" in item["value"] for item in leaves)
-        assert any(item["field"] == "Details" and "Program Files" in item["value"] for item in leaves)
+        assert any(
+            item["field"] == "TargetObject" and "CurrentVersion\\Run" in item["value"]
+            for item in leaves
+        )
+        assert any(
+            item["field"] == "Details" and "Program Files" in item["value"] for item in leaves
+        )
 
     def test_rejects_run_key_path_in_eid_13_details(self, registry):
         candidate = copy.deepcopy(registry)
         family = self.family(candidate, "TF_UNMAP_REG")
         family["single_ground_truth"]["evidence_predicate"]["all"][1] = {
-            "event": "anchor", "field": "Details", "op": "contains_ci",
+            "event": "anchor",
+            "field": "Details",
+            "op": "contains_ci",
             "value": "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
         }
         result = self.validate(candidate)
@@ -873,18 +1008,32 @@ class TestSemanticRegistryValidator:
     def test_eid_1102_system_wevtutil_without_workflow_is_rejected(self, registry):
         candidate = copy.deepcopy(registry)
         family = self.family(candidate, "TF_UNMAP_EVTCLR")
-        family["contextual_event_specs"] = [{
-            "event_key": "context_1",
-            "provider": "Microsoft-Windows-Security-Auditing",
-            "channel": "Security",
-            "windows_event_id": 4688,
-            "selection_rule": "wevtutil process only",
-        }]
-        family["contextual_ground_truth"]["evidence_predicate"] = {"all": [
-            {"event": "anchor", "field": "EventID", "op": "eq", "value": 1102},
-            {"event": "context_1", "field": "NewProcessName", "op": "endswith_ci", "value": "\\wevtutil.exe"},
-            {"event": "context_1", "field": "CommandLine", "op": "contains_ci", "value": " cl Security"},
-        ]}
+        family["contextual_event_specs"] = [
+            {
+                "event_key": "context_1",
+                "provider": "Microsoft-Windows-Security-Auditing",
+                "channel": "Security",
+                "windows_event_id": 4688,
+                "selection_rule": "wevtutil process only",
+            }
+        ]
+        family["contextual_ground_truth"]["evidence_predicate"] = {
+            "all": [
+                {"event": "anchor", "field": "EventID", "op": "eq", "value": 1102},
+                {
+                    "event": "context_1",
+                    "field": "NewProcessName",
+                    "op": "endswith_ci",
+                    "value": "\\wevtutil.exe",
+                },
+                {
+                    "event": "context_1",
+                    "field": "CommandLine",
+                    "op": "contains_ci",
+                    "value": " cl Security",
+                },
+            ]
+        }
         result = self.validate(candidate)
         assert any("SYSTEM+wevtutil is insufficient" in e for e in result.errors)
 
@@ -901,7 +1050,10 @@ class TestSemanticRegistryValidator:
         assert family["category"] == "unmapped"
         assert family["single_ground_truth"]["status"] == "ambiguous"
         assert family["contextual_ground_truth"]["status"] == "unmapped"
-        assert any("account-provisioner" in str(item) for item in family["contextual_ground_truth"]["evidence_predicate"]["all"])
+        assert any(
+            "account-provisioner" in str(item)
+            for item in family["contextual_ground_truth"]["evidence_predicate"]["all"]
+        )
 
     def test_tf_unmap_e_transition_and_workflow(self, registry):
         family = self.family(registry, "TF_UNMAP_E")
@@ -911,8 +1063,18 @@ class TestSemanticRegistryValidator:
         assert family["expected_transition"] == "ambiguous->unmapped"
         leaves = _registry_predicate_leaves(family["contextual_ground_truth"]["evidence_predicate"])
         # Affirmative provisioning workflow required: Provisioner.exe parent and net.exe child
-        assert any(item.get("field") == "ParentProcessName" and "provisioner" in str(item.get("value", "")).lower() for item in leaves if isinstance(item, dict))
-        assert any(item.get("field") == "CommandLine" and "net user jdoe /add" in str(item.get("value", "")).lower() for item in leaves if isinstance(item, dict))
+        assert any(
+            item.get("field") == "ParentProcessName"
+            and "provisioner" in str(item.get("value", "")).lower()
+            for item in leaves
+            if isinstance(item, dict)
+        )
+        assert any(
+            item.get("field") == "CommandLine"
+            and "net user jdoe /add" in str(item.get("value", "")).lower()
+            for item in leaves
+            if isinstance(item, dict)
+        )
 
     def test_tf_unmap_e_rejects_identity_only_unmapped(self, registry):
         candidate = copy.deepcopy(registry)
@@ -920,34 +1082,65 @@ class TestSemanticRegistryValidator:
         family["single_ground_truth"]["status"] = "unmapped"
         family["expected_transition"] = "unmapped->unmapped"
         result = self.validate(candidate)
-        assert any("alone cannot establish authorized provisioning in single view" in e for e in result.errors)
+        assert any(
+            "alone cannot establish authorized provisioning in single view" in e
+            for e in result.errors
+        )
 
     def test_tf_unmap_e_rejects_context_without_provisioner_parent(self, registry):
         candidate = copy.deepcopy(registry)
         family = self.family(candidate, "TF_UNMAP_E")
-        # Strip provisioning workflow from contextual evidence (leave only net.exe and helpdesk identity)
-        family["contextual_ground_truth"]["evidence_predicate"] = {"all": [
-            {"event": "anchor", "field": "TargetUserName", "op": "eq", "value": "jdoe"},
-            {"event": "context_1", "field": "NewProcessName", "op": "endswith_ci", "value": "\\net.exe"},
-            {"event": "context_1", "field": "SubjectUserName", "op": "eq", "value": "helpdesk"},
-            {"relation": "same_host", "events": ["context_1", "anchor"]},
-        ]}
+        # Strip provisioning workflow from contextual evidence
+        # (leave only net.exe and helpdesk identity)
+        family["contextual_ground_truth"]["evidence_predicate"] = {
+            "all": [
+                {"event": "anchor", "field": "TargetUserName", "op": "eq", "value": "jdoe"},
+                {
+                    "event": "context_1",
+                    "field": "NewProcessName",
+                    "op": "endswith_ci",
+                    "value": "\\net.exe",
+                },
+                {"event": "context_1", "field": "SubjectUserName", "op": "eq", "value": "helpdesk"},
+                {"relation": "same_host", "events": ["context_1", "anchor"]},
+            ]
+        }
         result = self.validate(candidate)
-        assert any("actor identity and command alone cannot establish authorization" in e for e in result.errors)
+        assert any(
+            "actor identity and command alone cannot establish authorization" in e
+            for e in result.errors
+        )
 
     def test_tf_unmap_svc_semantics_and_workflow(self, registry):
         family = self.family(registry, "TF_UNMAP_SVC")
         assert family["category"] == "unmapped"
         assert "restart" not in family["behavior_description"].lower()
-        assert any(term in family["behavior_description"].lower() for term in ("deployment", "installation", "deploy", "install"))
+        assert any(
+            term in family["behavior_description"].lower()
+            for term in ("deployment", "installation", "deploy", "install")
+        )
         assert family["single_ground_truth"]["status"] == "ambiguous"
         assert family["contextual_ground_truth"]["status"] == "unmapped"
         assert family["expected_transition"] == "ambiguous->unmapped"
         # Contextual predicate requires deployment workflow independent of Administrator identity
         leaves = _registry_predicate_leaves(family["contextual_ground_truth"]["evidence_predicate"])
-        assert any(item.get("field") == "ParentProcessName" and "ccmexec" in str(item.get("value", "")).lower() for item in leaves if isinstance(item, dict))
-        assert any(item.get("field") == "CommandLine" and "msiexec" in str(item.get("value", "")).lower() for item in leaves if isinstance(item, dict))
-        assert not any(item.get("field") == "SubjectUserName" and "administrator" in str(item.get("value", "")).lower() for item in leaves if isinstance(item, dict))
+        assert any(
+            item.get("field") == "ParentProcessName"
+            and "ccmexec" in str(item.get("value", "")).lower()
+            for item in leaves
+            if isinstance(item, dict)
+        )
+        assert any(
+            item.get("field") == "CommandLine" and "msiexec" in str(item.get("value", "")).lower()
+            for item in leaves
+            if isinstance(item, dict)
+        )
+        assert not any(
+            item.get("field") == "SubjectUserName"
+            and "administrator" in str(item.get("value", "")).lower()
+            for item in leaves
+            if isinstance(item, dict)
+        )
 
     def test_tf_unmap_svc_rejects_restart_description(self, registry):
         candidate = copy.deepcopy(registry)
@@ -969,46 +1162,77 @@ class TestSemanticRegistryValidator:
         family = self.family(candidate, "TF_UNMAP_SVC")
         # Strip deployment agent and MSI command, leaving only Administrator identity and msiexec
         family["contextual_ground_truth"]["evidence_predicate"]["all"] = [
-            {"event": "anchor", "field": "ServiceName", "op": "contains_ci", "value": "PatchService"},
-            {"event": "context_1", "field": "NewProcessName", "op": "endswith_ci", "value": "\\msiexec.exe"},
-            {"event": "context_1", "field": "SubjectUserName", "op": "contains_ci", "value": "Administrator"},
+            {
+                "event": "anchor",
+                "field": "ServiceName",
+                "op": "contains_ci",
+                "value": "PatchService",
+            },
+            {
+                "event": "context_1",
+                "field": "NewProcessName",
+                "op": "endswith_ci",
+                "value": "\\msiexec.exe",
+            },
+            {
+                "event": "context_1",
+                "field": "SubjectUserName",
+                "op": "contains_ci",
+                "value": "Administrator",
+            },
             {"relation": "same_host", "events": ["context_1", "anchor"]},
         ]
         result = self.validate(candidate)
-        assert any("Administrator identity alone cannot establish deployment authorization" in e or "requires affirmative enterprise deployment workflow" in e for e in result.errors)
+        assert any(
+            "Administrator identity alone cannot establish deployment authorization" in e
+            or "requires affirmative enterprise deployment workflow" in e
+            for e in result.errors
+        )
 
     def test_relation_signature_rejects_wrong_operand_name(self):
         result = ValidationResult()
         _validate_registry_dsl(
             {"relation": "process_then_network", "process": "context_1", "log_clear": "anchor"},
-            "test.relation", {"anchor": ("EventID",), "context_1": ("Image", "CommandLine")}, result,
+            "test.relation",
+            {"anchor": ("EventID",), "context_1": ("Image", "CommandLine")},
+            result,
         )
-        assert any("invalid arguments" in error or "missing arguments" in error for error in result.errors)
+        assert any(
+            "invalid arguments" in error or "missing arguments" in error for error in result.errors
+        )
 
     def test_relation_signature_rejects_wrong_event_class(self):
         result = ValidationResult()
         _validate_registry_dsl(
             {"relation": "process_then_file", "process": "context_1", "file": "anchor"},
-            "test.relation", {
+            "test.relation",
+            {
                 "anchor": ("TargetFilename", "EventID"),
                 "context_1": ("TargetFilename", "EventID"),
-            }, result,
+            },
+            result,
         )
         assert any("not process telemetry" in error for error in result.errors)
 
-    @pytest.mark.parametrize("predicate", [
-        {"relation": "temporal_before", "before": "anchor"},
-        {"relation": "process_then_file", "process": "anchor"},
-        {"relation": "same_host", "events": "anchor"},
-        {"relation": "same_logon", "events": ["anchor"]},
-    ])
+    @pytest.mark.parametrize(
+        "predicate",
+        [
+            {"relation": "temporal_before", "before": "anchor"},
+            {"relation": "process_then_file", "process": "anchor"},
+            {"relation": "same_host", "events": "anchor"},
+            {"relation": "same_logon", "events": ["anchor"]},
+        ],
+    )
     def test_relation_signature_requires_complete_arguments(self, predicate):
         result = ValidationResult()
         _validate_registry_dsl(
-            predicate, "test.relation", {
+            predicate,
+            "test.relation",
+            {
                 "anchor": ("Image", "EventID", "Computer", "SubjectLogonId"),
                 "context_1": ("TargetFilename", "SubjectLogonId"),
-            }, result,
+            },
+            result,
         )
         assert not result.passed
 
@@ -1027,26 +1251,37 @@ class TestSemanticRegistryValidator:
             return values
 
         for family in registry["families"]:
-            if family["category"] != "unmapped" or family["template_family_id"] == "TF_UNMAP_EVTCLR":
+            if (
+                family["category"] != "unmapped"
+                or family["template_family_id"] == "TF_UNMAP_EVTCLR"
+            ):
                 continue
             evidence = leaves(family["single_ground_truth"]["evidence_predicate"])
-            assert any(item["field"] != "EventID" and item["value"] not in ("", "-EncodedCommand") for item in evidence), family["template_family_id"]
-            assert not any(item["value"] == "-EncodedCommand" for item in evidence), family["template_family_id"]
+            assert any(
+                item["field"] != "EventID" and item["value"] not in ("", "-EncodedCommand")
+                for item in evidence
+            ), family["template_family_id"]
+            assert not any(item["value"] == "-EncodedCommand" for item in evidence), family[
+                "template_family_id"
+            ]
 
-    @pytest.mark.parametrize("mutation", [
-        lambda f: f["single_ground_truth"].__setitem__("evidence_predicate", {"all": []}),
-        lambda f: f["single_ground_truth"].__setitem__("rationale", ""),
-        lambda f: f["anchor"].__setitem__("provider", "any"),
-        lambda f: f["anchor"].__setitem__("channel", "any"),
-        lambda f: f["anchor"].__setitem__("windows_event_id", 0),
-        lambda f: f.__setitem__("behavior_description", "Dev"),
-        lambda f: f.__setitem__("behavior_description", "Benign"),
-        lambda f: f["anchor"].__setitem__("selection_rule", "any"),
-        lambda f: f["single_ground_truth"]["technique_names"].__setitem__(0, "CMD"),
-        lambda f: f["single_ground_truth"]["technique_names"].__setitem__(0, "wrong name"),
-        lambda f: f.pop("attack_source"),
-        lambda f: f.pop("windows_telemetry_source"),
-    ])
+    @pytest.mark.parametrize(
+        "mutation",
+        [
+            lambda f: f["single_ground_truth"].__setitem__("evidence_predicate", {"all": []}),
+            lambda f: f["single_ground_truth"].__setitem__("rationale", ""),
+            lambda f: f["anchor"].__setitem__("provider", "any"),
+            lambda f: f["anchor"].__setitem__("channel", "any"),
+            lambda f: f["anchor"].__setitem__("windows_event_id", 0),
+            lambda f: f.__setitem__("behavior_description", "Dev"),
+            lambda f: f.__setitem__("behavior_description", "Benign"),
+            lambda f: f["anchor"].__setitem__("selection_rule", "any"),
+            lambda f: f["single_ground_truth"]["technique_names"].__setitem__(0, "CMD"),
+            lambda f: f["single_ground_truth"]["technique_names"].__setitem__(0, "wrong name"),
+            lambda f: f.pop("attack_source"),
+            lambda f: f.pop("windows_telemetry_source"),
+        ],
+    )
     def test_rejects_semantic_placeholder_or_missing_provenance(self, registry, mutation):
         candidate = copy.deepcopy(registry)
         mutation(self.family(candidate, "TF_T1059_001_A"))
@@ -1062,7 +1297,9 @@ class TestSemanticRegistryValidator:
         family = self.family(candidate, "TF_T1543_003_A")
         family["anchor"]["windows_event_id"] = 7045
         result = self.validate(candidate)
-        assert any("unsupported provider/channel/EventID" in e or "7045" in e for e in result.errors)
+        assert any(
+            "unsupported provider/channel/EventID" in e or "7045" in e for e in result.errors
+        )
 
     def test_eid_1102_eventlog_security_is_accepted(self, registry):
         result = self.validate(registry)
@@ -1086,9 +1323,11 @@ class TestSemanticRegistryValidator:
             "status": "mapped",
             "technique_ids": ["T1685.005"],
             "technique_names": [BENCHMARK_TECHNIQUE_NAMES["T1685.005"]],
-            "evidence_predicate": {"all": [
-                {"event": "anchor", "field": "EventID", "op": "eq", "value": 1102},
-            ]},
+            "evidence_predicate": {
+                "all": [
+                    {"event": "anchor", "field": "EventID", "op": "eq", "value": 1102},
+                ]
+            },
             "rationale": "Incorrectly maps the outcome event without mechanism evidence.",
         }
         family["expected_transition"] = "mapped->mapped"
@@ -1105,9 +1344,11 @@ class TestSemanticRegistryValidator:
     def test_unmapped_template_requires_affirmative_benign_clause(self, registry):
         candidate = copy.deepcopy(registry)
         family = self.family(candidate, "TF_UNMAP_A")
-        family["single_ground_truth"]["evidence_predicate"] = {"all": [
-            {"event": "anchor", "field": "EventID", "op": "eq", "value": 1},
-        ]}
+        family["single_ground_truth"]["evidence_predicate"] = {
+            "all": [
+                {"event": "anchor", "field": "EventID", "op": "eq", "value": 1},
+            ]
+        }
         result = self.validate(candidate)
         assert any("affirmative benign evidence" in e for e in result.errors)
 
@@ -1122,7 +1363,14 @@ class TestSemanticRegistryValidator:
         candidate = copy.deepcopy(registry)
         test_family = self.family(candidate, "TF_T1059_001_A")
         dev_family = self.family(candidate, "TF_T1059_001_DEV")
-        for key in ("category", "technique_ids", "anchor", "single_ground_truth", "contextual_ground_truth", "contextual_event_specs"):
+        for key in (
+            "category",
+            "technique_ids",
+            "anchor",
+            "single_ground_truth",
+            "contextual_ground_truth",
+            "contextual_event_specs",
+        ):
             dev_family[key] = copy.deepcopy(test_family[key])
         result = self.validate(candidate)
         assert any("structural clone" in e for e in result.errors)
@@ -1147,14 +1395,19 @@ class TestSemanticRegistryValidator:
 # 13. Transition Matrix Tests
 # ============================================================
 
-class TestTransitionMatrix:
 
+class TestTransitionMatrix:
     def test_matrix_sums_to_pair_count(self):
         pairs = [
             make_valid_pair("p1", single_status="mapped", contextual_status="mapped"),
             make_valid_pair("p2", single_status="ambiguous", contextual_status="mapped"),
-            make_valid_pair("p3", single_status="unmapped", contextual_status="unmapped",
-                           single_techniques=(), contextual_techniques=()),
+            make_valid_pair(
+                "p3",
+                single_status="unmapped",
+                contextual_status="unmapped",
+                single_techniques=(),
+                contextual_techniques=(),
+            ),
         ]
         matrix = compute_transition_matrix(pairs)
         assert sum(matrix.values()) == len(pairs)
@@ -1170,8 +1423,8 @@ class TestTransitionMatrix:
 # 14. Near-Duplicate Detection Tests
 # ============================================================
 
-class TestNearDuplicates:
 
+class TestNearDuplicates:
     def test_identical_events_detected(self):
         pair1 = make_valid_pair("p1")
         pair2 = make_valid_pair("p2")
@@ -1191,18 +1444,21 @@ class TestNearDuplicates:
             computer="FILESVR01",
             timestamp_utc="2024-06-01T08:00:00Z",
             fields={
-                'TimeCreated': "2024-06-01T08:00:00Z",
-                'Computer': "FILESVR01",
-                'EventID': 4720,
-                'TargetUserName': "backdoor_user",
-                'SubjectUserName': "attacker",
-                'SubjectLogonId': "0x99999",
-            }
+                "TimeCreated": "2024-06-01T08:00:00Z",
+                "Computer": "FILESVR01",
+                "EventID": 4720,
+                "TargetUserName": "backdoor_user",
+                "SubjectUserName": "attacker",
+                "SubjectLogonId": "0x99999",
+            },
         )
         pair2 = ScenarioPair(
-            pair_id=pair2.pair_id, scenario_id=pair2.scenario_id,
-            template_family_id=pair2.template_family_id, split=pair2.split,
-            single_view=pair2.single_view, contextual_view=pair2.contextual_view,
+            pair_id=pair2.pair_id,
+            scenario_id=pair2.scenario_id,
+            template_family_id=pair2.template_family_id,
+            split=pair2.split,
+            single_view=pair2.single_view,
+            contextual_view=pair2.contextual_view,
             events={**pair2.events, "evt_anchor_001": anchor2},
             single_ground_truth=pair2.single_ground_truth,
             contextual_ground_truth=pair2.contextual_ground_truth,
@@ -1218,12 +1474,12 @@ class TestNearDuplicates:
 # 15. Serialization Tests
 # ============================================================
 
-class TestSerialization:
 
+class TestSerialization:
     def test_round_trip(self):
         pair = make_valid_pair()
         with tempfile.TemporaryDirectory() as tmpdir:
-            manifest = serialize_dataset([pair], Path(tmpdir))
+            serialize_dataset([pair], Path(tmpdir))
             loaded = load_dataset(Path(tmpdir))
             assert len(loaded) == 1
             assert loaded[0].pair_id == pair.pair_id
@@ -1242,13 +1498,13 @@ class TestSerialization:
 # 16. Inference Payload Tests
 # ============================================================
 
-class TestInferencePayload:
 
+class TestInferencePayload:
     def test_excludes_internal_metadata(self):
         event = _make_event()
         payload = get_inference_payload(event)
-        assert 'ground_truth' not in str(payload).lower()
-        assert 'rationale' not in str(payload).lower()
+        assert "ground_truth" not in str(payload).lower()
+        assert "rationale" not in str(payload).lower()
 
     def test_4697_payload_correct(self):
         event = SyntheticEvent(
@@ -1273,17 +1529,17 @@ class TestInferencePayload:
             ),
         )
         payload = get_inference_payload(event)
-        assert payload['ServiceName'] == "TestSvc"
-        assert payload['ServiceFileName'] == r"C:\evil.exe"
-        assert 'ImagePath' not in payload  # 7045 field
+        assert payload["ServiceName"] == "TestSvc"
+        assert payload["ServiceFileName"] == r"C:\evil.exe"
+        assert "ImagePath" not in payload  # 7045 field
 
 
 # ============================================================
 # 17. View Structure Tests
 # ============================================================
 
-class TestViewStructure:
 
+class TestViewStructure:
     def test_single_view_type(self):
         pair = make_valid_pair()
         assert pair.single_view.view_type == "single"
@@ -1301,10 +1557,13 @@ class TestViewStructure:
     def test_single_zero_events_rejected(self):
         pair = make_valid_pair()
         pair = ScenarioPair(
-            pair_id=pair.pair_id, scenario_id=pair.scenario_id,
-            template_family_id=pair.template_family_id, split=pair.split,
+            pair_id=pair.pair_id,
+            scenario_id=pair.scenario_id,
+            template_family_id=pair.template_family_id,
+            split=pair.split,
             single_view=View(view_id="v1", pair_id=pair.pair_id, view_type="single", event_ids=()),
-            contextual_view=pair.contextual_view, events=pair.events,
+            contextual_view=pair.contextual_view,
+            events=pair.events,
             single_ground_truth=pair.single_ground_truth,
             contextual_ground_truth=pair.contextual_ground_truth,
             generation_seed=pair.generation_seed,
@@ -1317,11 +1576,17 @@ class TestViewStructure:
     def test_contextual_one_event_rejected(self):
         pair = make_valid_pair()
         pair = ScenarioPair(
-            pair_id=pair.pair_id, scenario_id=pair.scenario_id,
-            template_family_id=pair.template_family_id, split=pair.split,
+            pair_id=pair.pair_id,
+            scenario_id=pair.scenario_id,
+            template_family_id=pair.template_family_id,
+            split=pair.split,
             single_view=pair.single_view,
-            contextual_view=View(view_id="v2", pair_id=pair.pair_id, view_type="contextual",
-                                event_ids=("evt_anchor_001",)),  # Only 1 event
+            contextual_view=View(
+                view_id="v2",
+                pair_id=pair.pair_id,
+                view_type="contextual",
+                event_ids=("evt_anchor_001",),
+            ),  # Only 1 event
             events=pair.events,
             single_ground_truth=pair.single_ground_truth,
             contextual_ground_truth=pair.contextual_ground_truth,
@@ -1337,8 +1602,8 @@ class TestViewStructure:
 # 18. Statistics & Audit Tests
 # ============================================================
 
-class TestStatistics:
 
+class TestStatistics:
     def test_statistics_computed(self):
         pairs = [make_valid_pair("p1"), make_valid_pair("p2")]
         stats = compute_statistics(pairs)
@@ -1357,14 +1622,22 @@ class TestStatistics:
 # 19. Benchmark Catalog Constants
 # ============================================================
 
-class TestCatalogConstants:
 
+class TestCatalogConstants:
     def test_catalog_has_8_techniques(self):
         assert len(BENCHMARK_CATALOG) == 8
 
     def test_all_expected_techniques(self):
-        expected = {"T1059.001", "T1059.003", "T1053.005", "T1543.003",
-                    "T1136.001", "T1547.001", "T1685.005", "T1105"}
+        expected = {
+            "T1059.001",
+            "T1059.003",
+            "T1053.005",
+            "T1543.003",
+            "T1136.001",
+            "T1547.001",
+            "T1685.005",
+            "T1105",
+        }
         assert BENCHMARK_CATALOG == expected
 
     def test_valid_label_statuses(self):

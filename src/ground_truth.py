@@ -5,12 +5,10 @@ evaluates joinability against the frozen methodology requirements,
 builds the candidate lineage matrix, and evaluates the Task 4 methodological gate.
 """
 
-from collections import Counter, defaultdict
 import csv
-from datetime import datetime, timezone
-import hashlib
 import json
-import os
+from collections import Counter, defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -22,27 +20,45 @@ def evaluate_lineage_evidence(evidence: Dict[str, Any]) -> Dict[str, Any]:
     if evidence.get("independent_of_wazuh_detector") is False:
         return {
             "acceptance_result": "REJECTED",
-            "reason": "detector/rule mappings cannot be promoted to independent event-level ground truth.",
+            "reason": (
+                "detector/rule mappings cannot be promoted to independent "
+                "event-level ground truth."
+            ),
         }
     if evidence.get("uses_temporal_proximity_only") is True:
         return {
             "acceptance_result": "REJECTED",
-            "reason": "Temporal proximity alone is not event-level ground truth under the frozen methodology.",
+            "reason": (
+                "Temporal proximity alone is not event-level ground truth "
+                "under the frozen methodology."
+            ),
         }
-    if evidence.get("granularity") != "event_execution_level" or evidence.get("has_event_level_join_key") is not True:
+    if (
+        evidence.get("granularity") != "event_execution_level"
+        or evidence.get("has_event_level_join_key") is not True
+    ):
         return {
             "acceptance_result": "REJECTED",
-            "reason": "Candidate does not provide event-level execution linkage to telemetry records.",
+            "reason": (
+                "Candidate does not provide event-level execution linkage "
+                "to telemetry records."
+            ),
         }
     if evidence.get("has_technique_identifier") is not True:
         return {
             "acceptance_result": "REJECTED",
             "reason": "Candidate lacks MITRE technique identifiers at execution-event granularity.",
         }
-    if evidence.get("has_run_identifier") is not True or evidence.get("has_execution_identifier") is not True:
+    if (
+        evidence.get("has_run_identifier") is not True
+        or evidence.get("has_execution_identifier") is not True
+    ):
         return {
             "acceptance_result": "REJECTED",
-            "reason": "Candidate lacks run and execution identifiers required for deterministic lineage.",
+            "reason": (
+                "Candidate lacks run and execution identifiers required "
+                "for deterministic lineage."
+            ),
         }
     if evidence.get("has_execution_boundaries") is not True:
         return {
@@ -56,12 +72,18 @@ def evaluate_lineage_evidence(evidence: Dict[str, Any]) -> Dict[str, Any]:
     if coverage < 0.95 or conflicts > 0 or cardinality != "one_to_one":
         return {
             "acceptance_result": "REQUIRES_REVIEW",
-            "reason": "Independent evidence exists, but coverage, conflicts, or cardinality make the join ambiguous.",
+            "reason": (
+                "Independent evidence exists, but coverage, conflicts, or cardinality "
+                "make the join ambiguous."
+            ),
         }
 
     return {
         "acceptance_result": "ACCEPTED",
-        "reason": "Independent event-level execution lineage satisfies the frozen acceptance criteria.",
+        "reason": (
+            "Independent event-level execution lineage satisfies the "
+            "frozen acceptance criteria."
+        ),
     }
 
 
@@ -93,7 +115,8 @@ def _scan_period_telemetry(raw_dir: Path, period_files: List[str]) -> Dict[str, 
             reader = csv.DictReader(f)
             fields.update(reader.fieldnames or [])
             candidate_identifier_fields.update(
-                field for field in (reader.fieldnames or [])
+                field
+                for field in (reader.fieldnames or [])
                 if any(keyword in field.lower() for keyword in keywords)
             )
             for row in reader:
@@ -168,8 +191,7 @@ def _candidate_row(
 
 
 def inspect_candidate_lineage_sources(
-    workspace_root: Path,
-    period_files: Optional[List[str]] = None
+    workspace_root: Path, period_files: Optional[List[str]] = None
 ) -> List[Dict[str, Any]]:
     """
     Programmatically inspects candidate lineage sources, then derives each
@@ -180,10 +202,18 @@ def inspect_candidate_lineage_sources(
     sr_dir = ws / "data" / "audit" / "source_research"
 
     if period_files is None:
-        period_files = sorted([
-            f.name for f in raw_dir.glob("*.csv")
-            if f.name not in ("combined.csv", "scenario_manifest.csv", "validation_summary.csv")
-        ]) if raw_dir.exists() else []
+        period_files = (
+            sorted(
+                [
+                    f.name
+                    for f in raw_dir.glob("*.csv")
+                    if f.name
+                    not in ("combined.csv", "scenario_manifest.csv", "validation_summary.csv")
+                ]
+            )
+            if raw_dir.exists()
+            else []
+        )
 
     telemetry = _scan_period_telemetry(raw_dir, period_files)
     scen_fields, scen_rows = _read_csv_header_and_count(raw_dir / "scenario_manifest.csv")
@@ -211,9 +241,13 @@ def inspect_candidate_lineage_sources(
                 "has_execution_identifier": False,
                 "has_technique_identifier": telemetry["mitre_records"] > 0,
                 "has_execution_boundaries": False,
-                "coverage_ratio": telemetry["mitre_records"] / telemetry["total_records"] if telemetry["total_records"] else 0.0,
+                "coverage_ratio": telemetry["mitre_records"] / telemetry["total_records"]
+                if telemetry["total_records"]
+                else 0.0,
                 "conflicting_mappings_count": telemetry["multi_label_records"],
-                "linkage_cardinality": "one_to_many" if telemetry["multi_label_records"] else "one_to_one",
+                "linkage_cardinality": "one_to_many"
+                if telemetry["multi_label_records"]
+                else "one_to_one",
                 "uses_temporal_proximity_only": False,
                 "observed_records": telemetry["total_records"],
                 "records_with_wazuh_rule": telemetry["wazuh_rule_records"],
@@ -221,7 +255,10 @@ def inspect_candidate_lineage_sources(
             },
             "direct_row_attribute",
             "one_to_many_multilabel",
-            f"{telemetry['multi_label_records']:,} records contain multiple techniques; labels are detector-derived.",
+            (
+                f"{telemetry['multi_label_records']:,} records contain multiple techniques; "
+                "labels are detector-derived."
+            ),
         ),
         _candidate_row(
             "scenario_manifest_csv",
@@ -231,13 +268,17 @@ def inspect_candidate_lineage_sources(
             {
                 "source": "scenario_manifest_csv",
                 "granularity": "scenario_campaign_level",
-                "timestamp_availability": any("time" in col.lower() or "date" in col.lower() for col in scen_fields),
+                "timestamp_availability": any(
+                    "time" in col.lower() or "date" in col.lower() for col in scen_fields
+                ),
                 "time_zone_precision": "none",
                 "independent_of_wazuh_detector": True,
                 "has_event_level_join_key": False,
                 "has_run_identifier": any("run" in col.lower() for col in scen_fields),
                 "has_execution_identifier": False,
-                "has_technique_identifier": any("technique" in col.lower() or "mitre" in col.lower() for col in scen_fields),
+                "has_technique_identifier": any(
+                    "technique" in col.lower() or "mitre" in col.lower() for col in scen_fields
+                ),
                 "has_execution_boundaries": False,
                 "coverage_ratio": 0.0,
                 "conflicting_mappings_count": 0,
@@ -257,7 +298,9 @@ def inspect_candidate_lineage_sources(
             {
                 "source": "validation_summary_csv",
                 "granularity": "scenario_aggregate_statistics",
-                "timestamp_availability": any("time" in col.lower() or "date" in col.lower() for col in val_fields),
+                "timestamp_availability": any(
+                    "time" in col.lower() or "date" in col.lower() for col in val_fields
+                ),
                 "time_zone_precision": "none",
                 "independent_of_wazuh_detector": False,
                 "has_event_level_join_key": False,
@@ -331,7 +374,10 @@ def inspect_candidate_lineage_sources(
             "telemetry_scenario_run_step_fields",
             telemetry["candidate_identifier_fields"],
             telemetry["candidate_identifier_fields"],
-            "Telemetry fields whose names resemble operation, command, scenario, run, ability, paw, or execution identifiers.",
+            (
+                "Telemetry fields whose names resemble operation, command, scenario, "
+                "run, ability, paw, or execution identifiers."
+            ),
             {
                 "source": "telemetry_scenario_run_step_fields",
                 "granularity": "event_field_level",
@@ -355,7 +401,11 @@ def inspect_candidate_lineage_sources(
         ),
         _candidate_row(
             "telemetry_timestamps_and_time_zones",
-            ["_source.@timestamp", "_source.data.win.system.systemTime", "_source.data.win.eventdata.utcTime"],
+            [
+                "_source.@timestamp",
+                "_source.data.win.system.systemTime",
+                "_source.data.win.eventdata.utcTime",
+            ],
             ["@timestamp", "systemTime", "utcTime"],
             "Wazuh/Windows event timestamps in telemetry rows.",
             {
@@ -405,7 +455,11 @@ def inspect_candidate_lineage_sources(
         ),
         _candidate_row(
             "caldera_sandcat_process_metadata",
-            ["_source.data.win.eventdata.commandLine", "_source.data.win.eventdata.image", "_source.full_log"],
+            [
+                "_source.data.win.eventdata.commandLine",
+                "_source.data.win.eventdata.image",
+                "_source.full_log",
+            ],
             ["sandcat", "caldera"],
             "Sparse process/log strings mentioning Caldera or sandcat.",
             {
@@ -419,7 +473,10 @@ def inspect_candidate_lineage_sources(
                 "has_execution_identifier": False,
                 "has_technique_identifier": False,
                 "has_execution_boundaries": False,
-                "coverage_ratio": (telemetry["caldera_mentions"] + telemetry["sandcat_mentions"]) / telemetry["total_records"] if telemetry["total_records"] else 0.0,
+                "coverage_ratio": (telemetry["caldera_mentions"] + telemetry["sandcat_mentions"])
+                / telemetry["total_records"]
+                if telemetry["total_records"]
+                else 0.0,
                 "conflicting_mappings_count": 0,
                 "linkage_cardinality": "sparse_singleton",
                 "uses_temporal_proximity_only": False,
@@ -454,16 +511,17 @@ def inspect_candidate_lineage_sources(
             },
             "none",
             "none",
-            "No Caldera operation logs, ability execution journals, attack-flow graphs, or external annotations are present.",
+            (
+                "No Caldera operation logs, ability execution journals, attack-flow graphs, "
+                "or external annotations are present."
+            ),
         ),
     ]
 
     return matrix
 
 
-def verify_ground_truth_provenance(
-    workspace_root: Path
-) -> Dict[str, Any]:
+def verify_ground_truth_provenance(workspace_root: Path) -> Dict[str, Any]:
     """
     Executes the comprehensive Task 4 ground truth audit across all 16 period CSVs,
     inspects candidate lineage sources, evaluates the joinability matrix, and
@@ -483,10 +541,9 @@ def verify_ground_truth_provenance(
     with open(manifest_file, "r", encoding="utf-8") as f:
         manifest = json.load(f)
 
-    period_files = sorted([
-        item["filename"] for item in manifest["files"]
-        if item["role"] == "ingest_period_csv"
-    ])
+    period_files = sorted(
+        [item["filename"] for item in manifest["files"] if item["role"] == "ingest_period_csv"]
+    )
 
     print(f"[*] Auditing Ground Truth Provenance across {len(period_files)} period CSV files...")
 
@@ -497,13 +554,15 @@ def verify_ground_truth_provenance(
     single_label_records = 0
     multi_label_records = 0
 
-    rule_definitions = defaultdict(lambda: {
-        "description": "",
-        "mitre_ids": set(),
-        "tactics": set(),
-        "count": 0,
-        "event_ids": Counter()
-    })
+    rule_definitions = defaultdict(
+        lambda: {
+            "description": "",
+            "mitre_ids": set(),
+            "tactics": set(),
+            "count": 0,
+            "event_ids": Counter(),
+        }
+    )
     mitre_techniques_counter = Counter()
     multi_label_combinations = Counter()
 
@@ -537,8 +596,8 @@ def verify_ground_truth_provenance(
                             elif len(labels) > 1:
                                 multi_label_records += 1
                                 multi_label_combinations[tuple(sorted(labels))] += 1
-                                for l in labels:
-                                    mitre_techniques_counter[l] += 1
+                                for lbl in labels:
+                                    mitre_techniques_counter[lbl] += 1
                             else:
                                 unlabeled_records += 1
                         else:
@@ -554,8 +613,7 @@ def verify_ground_truth_provenance(
 
     # Accurate count of distinct Wazuh rules that ACTUALLY contain MITRE mappings
     rules_with_mitre = {
-        rid: rdata for rid, rdata in rule_definitions.items()
-        if len(rdata["mitre_ids"]) > 0
+        rid: rdata for rid, rdata in rule_definitions.items() if len(rdata["mitre_ids"]) > 0
     }
     distinct_wazuh_rules_with_mitre_mapping = len(rules_with_mitre)
     total_distinct_wazuh_rules_fired = len(rule_definitions)
@@ -564,20 +622,20 @@ def verify_ground_truth_provenance(
     lineage_matrix = inspect_candidate_lineage_sources(ws, period_files)
 
     # Explicit evaluation of whether any candidate source provides independent event-level lineage
-    accepted_lineage_sources = [
-        s for s in lineage_matrix if s["acceptance_result"] == "ACCEPTED"
-    ]
-    independent_lineage_available = (len(accepted_lineage_sources) > 0)
+    accepted_lineage_sources = [s for s in lineage_matrix if s["acceptance_result"] == "ACCEPTED"]
+    independent_lineage_available = len(accepted_lineage_sources) > 0
 
     # Task 4 Gate Evaluation
     gate_status = "BLOCKED_STOP"
     blocker_reason = (
-        "Windows-APT 2025 v3 does not currently satisfy the frozen primary event-level ground-truth requirement "
-        "unless independent execution lineage can be established. "
+        "Windows-APT 2025 v3 does not currently satisfy the frozen primary "
+        "event-level ground-truth requirement unless independent execution lineage "
+        "can be established. "
         "Programmatic inspection of all 10 candidate lineage sources rejected all candidates: "
-        "all 63,619 labeled telemetry records originate exclusively from Wazuh SIEM detection rules (_source.rule.mitre.id), "
-        "and no per-event Caldera execution logs exist. Under the frozen research methodology (§R6), "
-        "detector/rule mappings cannot be promoted to independent ground truth."
+        "all 63,619 labeled telemetry records originate exclusively from Wazuh SIEM detection "
+        "rules (_source.rule.mitre.id), and no per-event Caldera execution logs exist. "
+        "Under the frozen research methodology (§R6), detector/rule mappings cannot be promoted "
+        "to independent ground truth."
     )
 
     now_utc = datetime.now(timezone.utc).isoformat()
@@ -604,7 +662,7 @@ def verify_ground_truth_provenance(
         "top_multi_label_combinations": {
             str(list(k)): v for k, v in multi_label_combinations.most_common(10)
         },
-        "candidate_lineage_matrix": lineage_matrix
+        "candidate_lineage_matrix": lineage_matrix,
     }
 
     # Write data/metadata/join_diagnostics.json
@@ -619,7 +677,7 @@ def verify_ground_truth_provenance(
             "count": rdata["count"],
             "has_mitre_mapping": len(rdata["mitre_ids"]) > 0,
             "mitre_ids": sorted(list(rdata["mitre_ids"])),
-            "top_event_ids": dict(rdata["event_ids"].most_common(3))
+            "top_event_ids": dict(rdata["event_ids"].most_common(3)),
         }
 
     # Write data/metadata/ground_truth_register.json
@@ -631,7 +689,7 @@ def verify_ground_truth_provenance(
         "independent_lineage_present": independent_lineage_available,
         "total_distinct_rules": total_distinct_wazuh_rules_fired,
         "distinct_rules_with_mitre_mapping": distinct_wazuh_rules_with_mitre_mapping,
-        "rules_catalog": serializable_rules
+        "rules_catalog": serializable_rules,
     }
     with open(meta_dir / "ground_truth_register.json", "w", encoding="utf-8") as f:
         json.dump(gt_register_doc, f, indent=2, ensure_ascii=False)
@@ -647,22 +705,35 @@ def verify_ground_truth_provenance(
         "candidate_lineage_matrix_summary": {
             "sources_investigated": len(lineage_matrix),
             "sources_accepted": len(accepted_lineage_sources),
-            "rejection_summary": "All 10 investigated candidate sources lack independent event-level execution lineage."
+            "rejection_summary": (
+                "All 10 investigated candidate sources lack independent "
+                "event-level execution lineage."
+            ),
         },
         "affected_downstream_tasks": {
-            "T5_reconcile": "NOT_RUN (T5 reference acquired; reconciliation blocked by Task 4 gate)",
+            "T5_reconcile": (
+                "NOT_RUN (T5 reference acquired; reconciliation blocked by Task 4 gate)"
+            ),
             "T6_leakage_audit": "NOT_RUN",
             "T7_sanitization_and_grouping": "NOT_RUN",
             "T8_class_selection": "NOT_RUN",
             "T9_partition_and_sampling": "NOT_RUN",
             "T10_validation_reproduction": "NOT_RUN",
-            "T11_audit_package": "NOT_RUN"
+            "T11_audit_package": "NOT_RUN",
         },
         "downstream_disposition": "NOT_RUN",
         "methodological_standing": {
-            "statement": "Windows-APT 2025 v3 does not currently satisfy the frozen primary event-level ground-truth requirement unless independent execution lineage can be established.",
-            "relaxing_requirement_warning": "Accepting Wazuh SIEM detector/rule mappings as operational benchmark ground truth would represent a substantive methodological revision requiring an explicit, separate user decision, not an approval of the current design."
-        }
+            "statement": (
+                "Windows-APT 2025 v3 does not currently satisfy the frozen primary "
+                "event-level ground-truth requirement unless independent execution lineage "
+                "can be established."
+            ),
+            "relaxing_requirement_warning": (
+                "Accepting Wazuh SIEM detector/rule mappings as operational benchmark ground "
+                "truth would represent a substantive methodological revision requiring an "
+                "explicit, separate user decision, not an approval of the current design."
+            ),
+        },
     }
     with open(meta_dir / "gate_blocker_task4.json", "w", encoding="utf-8") as f:
         json.dump(blocker_doc, f, indent=2, ensure_ascii=False)
@@ -682,15 +753,40 @@ def verify_ground_truth_provenance(
         "## 1. Executive Summary",
         "",
         "Task 4 mandates verifying an authoritative, independent target for each observation:",
-        "> *'Do not treat rule mapping, scenario-wide list, successful operation or temporal proximity alone as event-level GT.'*",
+        (
+            "> *'Do not treat rule mapping, scenario-wide list, successful operation or "
+            "temporal proximity alone as event-level GT.'*"
+        ),
         "> *'Do not promote detector/rule mappings to independent ground truth.'*",
-        "> *'Stop when: Missing independent lineage, reannotation needed, or evaluation unit change needed.'*",
+        (
+            "> *'Stop when: Missing independent lineage, reannotation needed, "
+            "or evaluation unit change needed.'*"
+        ),
         "",
-        f"A comprehensive programmatic audit of all **{total_records:,} raw records** and **10 candidate lineage sources** reveals:",
-        "1. **No Independent Execution Lineage**: Exhaustive analysis across all 10 candidate sources confirms that no machine-readable Caldera execution journals, ability transaction IDs, or per-event start/end timestamps exist in the frozen snapshot.",
-        f"2. **Detector-Derived Labels**: All **{mitre_mapped_records:,} labeled records** receive their MITRE ATT&CK labels exclusively from **Wazuh detection rules** (`_source.rule.mitre.id`), which fire when telemetry matches predefined SIEM alert signatures.",
-        "3. **Circularity Hazard**: Evaluating an LLM to attribute telemetry events when the ground-truth label was itself generated by a detection rule evaluates detector reproduction rather than independent execution truth.",
-        "4. **Gate Action**: Execution halts at the Task 4 gate. Downstream tasks (T5-reconcile, T6–T11) are marked **`NOT_RUN`**.",
+        (
+            f"A comprehensive programmatic audit of all **{total_records:,} raw records** "
+            "and **10 candidate lineage sources** reveals:"
+        ),
+        (
+            "1. **No Independent Execution Lineage**: Exhaustive analysis across all 10 candidate "
+            "sources confirms that no machine-readable Caldera execution journals, ability "
+            "transaction IDs, or per-event start/end timestamps exist in the frozen snapshot."
+        ),
+        (
+            f"2. **Detector-Derived Labels**: All **{mitre_mapped_records:,} labeled records** "
+            "receive their MITRE ATT&CK labels exclusively from **Wazuh detection rules** "
+            "(`_source.rule.mitre.id`), which fire when telemetry matches predefined SIEM alert "
+            "signatures."
+        ),
+        (
+            "3. **Circularity Hazard**: Evaluating an LLM to attribute telemetry events when the "
+            "ground-truth label was itself generated by a detection rule evaluates detector "
+            "reproduction rather than independent execution truth."
+        ),
+        (
+            "4. **Gate Action**: Execution halts at the Task 4 gate. Downstream tasks "
+            "(T5-reconcile, T6–T11) are marked **`NOT_RUN`**."
+        ),
         "",
         "---",
         "",
@@ -700,21 +796,42 @@ def verify_ground_truth_provenance(
         "|---|---:|---:|",
         f"| **Total Ingest Records** | **{total_records:,}** | **100.0%** |",
         f"| Records with Wazuh Rule ID | {wazuh_rule_records:,} | 100.0% |",
-        f"| Records with MITRE Technique Mapping | {mitre_mapped_records:,} | {mitre_mapped_records/total_records*100:.1f}% |",
-        f"| — Single-label records | {single_label_records:,} | {single_label_records/total_records*100:.1f}% |",
-        f"| — Multi-label records | {multi_label_records:,} | {multi_label_records/total_records*100:.1f}% |",
-        f"| — Unlabeled records (telemetry without MITRE rule) | {unlabeled_records:,} | {unlabeled_records/total_records*100:.1f}% |",
+        (
+            f"| Records with MITRE Technique Mapping | {mitre_mapped_records:,} | "
+            f"{mitre_mapped_records / total_records * 100:.1f}% |"
+        ),
+        (
+            f"| — Single-label records | {single_label_records:,} | "
+            f"{single_label_records / total_records * 100:.1f}% |"
+        ),
+        (
+            f"| — Multi-label records | {multi_label_records:,} | "
+            f"{multi_label_records / total_records * 100:.1f}% |"
+        ),
+        (
+            f"| — Unlabeled records (telemetry without MITRE rule) | {unlabeled_records:,} | "
+            f"{unlabeled_records / total_records * 100:.1f}% |"
+        ),
         f"| **Total Distinct Wazuh Rules Fired** | **{total_distinct_wazuh_rules_fired}** | — |",
-        f"| **Distinct Wazuh Rules with MITRE Mapping** | **{distinct_wazuh_rules_with_mitre_mapping}** | — |",
+        (
+            f"| **Distinct Wazuh Rules with MITRE Mapping** | "
+            f"**{distinct_wazuh_rules_with_mitre_mapping}** | — |"
+        ),
         f"| Distinct MITRE Techniques Mapped | {len(mitre_techniques_counter)} | — |",
         "",
         "---",
         "",
         "## 3. Candidate Lineage / Joinability Matrix",
         "",
-        "Every candidate lineage source available in the dataset and workspace was programmatically investigated against frozen methodology requirements:",
+        (
+            "Every candidate lineage source available in the dataset and workspace was "
+            "programmatically investigated against frozen methodology requirements:"
+        ),
         "",
-        "| Source | Candidate Key(s) | Granularity | Timestamps | Run ID | Independent of Wazuh | Result | Rejection Reason |",
+        (
+            "| Source | Candidate Key(s) | Granularity | Timestamps | Run ID | "
+            "Independent of Wazuh | Result | Rejection Reason |"
+        ),
         "|---|---|---|---|---|:---:|:---:|---|",
     ]
 
@@ -725,40 +842,65 @@ def verify_ground_truth_provenance(
         ind_str = "Yes" if row["independent_of_wazuh_detector"] else "**No**"
         res_str = f"**{row['acceptance_result']}**"
         report_lines.append(
-            f"| `{row['source']}` | `{keys_str}` | {row['granularity']} | {ts_str} | {run_str} | {ind_str} | {res_str} | {row['rejection_reason'][:80]}... |"
+            f"| `{row['source']}` | `{keys_str}` | {row['granularity']} | "
+            f"{ts_str} | {run_str} | {ind_str} | {res_str} | {row['rejection_reason'][:80]}... |"
         )
 
-    report_lines.extend([
-        "",
-        "---",
-        "",
-        "## 4. Multi-Label and Ambiguity Diagnostics",
-        "",
-        f"Exactly **{multi_label_records:,} records ({multi_label_records/total_records*100:.1f}%)** have multiple MITRE techniques attached to a single event.",
-        "Top multi-label combinations derived dynamically from `join_diagnostics.json`:",
-        "",
-        "| Multi-Label Technique Combination | Record Count | Percentage of Multi-Label |",
-        "|---|---:|---:|",
-    ])
+    report_lines.extend(
+        [
+            "",
+            "---",
+            "",
+            "## 4. Multi-Label and Ambiguity Diagnostics",
+            "",
+            (
+                f"Exactly **{multi_label_records:,} records "
+                f"({multi_label_records / total_records * 100:.1f}%)** have multiple MITRE "
+                "techniques attached to a single event."
+            ),
+            "Top multi-label combinations derived dynamically from `join_diagnostics.json`:",
+            "",
+            "| Multi-Label Technique Combination | Record Count | Percentage of Multi-Label |",
+            "|---|---:|---:|",
+        ]
+    )
 
     for combo, count in multi_label_combinations.most_common(10):
         combo_str = " + ".join([f"`{t}`" for t in combo])
-        report_lines.append(f"| {combo_str} | {count:,} | {count/multi_label_records*100:.1f}% |")
+        report_lines.append(
+            f"| {combo_str} | {count:,} | {count / multi_label_records * 100:.1f}% |"
+        )
 
-    report_lines.extend([
-        "",
-        "---",
-        "",
-        "## 5. Gate Determination & Methodological Blocker",
-        "",
-        "### Blocker Finding",
-        "> **Windows-APT 2025 v3 does not currently satisfy the frozen primary event-level ground-truth requirement unless independent execution lineage can be established.**",
-        "",
-        "### Methodological Standing",
-        "1. Under the frozen research methodology, detector/rule mappings cannot be promoted to independent ground truth.",
-        "2. Accepting Wazuh SIEM detector/rule mappings as operational benchmark ground truth would represent a substantive methodological revision requiring an explicit, separate user decision, not approval of the current design.",
-        "3. Downstream tasks (T5-reconcile, T6–T11) remain strictly **`NOT_RUN`** pending human review."
-    ])
+    report_lines.extend(
+        [
+            "",
+            "---",
+            "",
+            "## 5. Gate Determination & Methodological Blocker",
+            "",
+            "### Blocker Finding",
+            (
+                "> **Windows-APT 2025 v3 does not currently satisfy the frozen primary "
+                "event-level ground-truth requirement unless independent execution "
+                "lineage can be established.**"
+            ),
+            "",
+            "### Methodological Standing",
+            (
+                "1. Under the frozen research methodology, detector/rule mappings cannot be "
+                "promoted to independent ground truth."
+            ),
+            (
+                "2. Accepting Wazuh SIEM detector/rule mappings as operational benchmark "
+                "ground truth would represent a substantive methodological revision requiring "
+                "an explicit, separate user decision, not approval of the current design."
+            ),
+            (
+                "3. Downstream tasks (T5-reconcile, T6–T11) remain strictly **`NOT_RUN`** "
+                "pending human review."
+            ),
+        ]
+    )
 
     report_path = reports_dir / "ground_truth_provenance.md"
     with open(report_path, "w", encoding="utf-8") as f:
@@ -772,7 +914,10 @@ def verify_ground_truth_provenance(
         "- **Dataset**: Windows-APT 2025 v3 (`b8fmtzvpy8.3`)",
         "- **Task Origin**: Task 4 — Verify independent event-level ground truth",
         f"- **Gate Status**: **{gate_status}**",
-        "- **Pipeline Compliance**: Early termination at this gate is **compliant behavior** per §R1 and §R6.",
+        (
+            "- **Pipeline Compliance**: Early termination at this gate is "
+            "**compliant behavior** per §R1 and §R6."
+        ),
         "",
         "---",
         "",
@@ -780,48 +925,111 @@ def verify_ground_truth_provenance(
         "",
         "| Task | Stage Name | Status | Key Deliverable / Finding |",
         "|---|---|:---:|---|",
-        "| **T0** | Preflight: workspace, capacity, junctions | **PASS** | Disk headroom verified (+25.37 GiB); Windows junction checking implemented and passed; paths contained. |",
-        "| **T1** | Scaffold & reproducible environment | **PASS** | `config/data_ground_truth.json`, `docs/data_ground_truth_execution_plan.md`, staged CLI with prerequisite checks. |",
-        "| **T2** | Dataset acquisition & multiset reconciliation | **PASS (Acquisition) / DIVERGENT (Reconciliation)** | 21/21 files verified against Mendeley hashes (480.86 MB). Multiset reconciliation shows equal row counts (102,011) but 65,337 rows diverge in cell formatting due to Excel serialization. |",
-        "| **T3** | Schema profiling & record indexing | **PASS** | 102,011 parsed rows, 0 malformed (`source_logical_rows = parsed + malformed` holds). Deterministic row-level index `record_index.csv` generated. |",
-        "| **T4** | Independent ground truth audit | **BLOCKED** | Auditable lineage matrix evaluated 10 candidate sources; all 10 rejected. No independent execution lineage exists. |",
-        "| **T5-acquire** | ATT&CK v19.2 reference acquisition | **PASS** | Pinned to immutable GitHub commit SHA `6cda5ad8462c79e14fbb872f4e09059b18e0cfc4`; SHA-256 verified (`dc1639caa55...`). |",
-        "| **T5-reconcile** | ATT&CK v19.2 label reconciliation | **NOT_RUN** | Blocked by Task 4 gate; historical GT authority not established. |",
-        "| **T6–T11** | Downstream pipeline tasks | **NOT_RUN** | Halted at Task 4 gate boundary per frozen dependency chain. |",
+        (
+            "| **T0** | Preflight: workspace, capacity, junctions | **PASS** | "
+            "Disk headroom verified (+25.37 GiB); Windows junction checking implemented "
+            "and passed; paths contained. |"
+        ),
+        (
+            "| **T1** | Scaffold & reproducible environment | **PASS** | "
+            "`config/data_ground_truth.json`, `docs/data_ground_truth_execution_plan.md`, "
+            "staged CLI with prerequisite checks. |"
+        ),
+        (
+            "| **T2** | Dataset acquisition & multiset reconciliation | "
+            "**PASS (Acquisition) / DIVERGENT (Reconciliation)** | 21/21 files verified against "
+            "Mendeley hashes (480.86 MB). Multiset reconciliation shows equal row counts (102,011) "
+            "but 65,337 rows diverge in cell formatting due to Excel serialization. |"
+        ),
+        (
+            "| **T3** | Schema profiling & record indexing | **PASS** | 102,011 parsed rows, "
+            "0 malformed (`source_logical_rows = parsed + malformed` holds). Deterministic "
+            "row-level index `record_index.csv` generated. |"
+        ),
+        (
+            "| **T4** | Independent ground truth audit | **BLOCKED** | "
+            "Auditable lineage matrix evaluated 10 candidate sources; all 10 rejected. "
+            "No independent execution lineage exists. |"
+        ),
+        (
+            "| **T5-acquire** | ATT&CK v19.2 reference acquisition | **PASS** | "
+            "Pinned to immutable GitHub commit SHA `6cda5ad8462c79e14fbb872f4e09059b18e0cfc4`; "
+            "SHA-256 verified (`dc1639caa55...`). |"
+        ),
+        (
+            "| **T5-reconcile** | ATT&CK v19.2 label reconciliation | **NOT_RUN** | Blocked by "
+            "Task 4 gate; historical GT authority not established. |"
+        ),
+        (
+            "| **T6–T11** | Downstream pipeline tasks | **NOT_RUN** | Halted at Task 4 gate "
+            "boundary per frozen dependency chain. |"
+        ),
         "",
         "---",
         "",
         "## 2. Root Cause of Task 4 Blocker",
         "",
         "Under the frozen methodology (§R6):",
-        "> *'Do not treat rule mapping, scenario-wide list, successful operation or temporal proximity alone as event-level GT.'*",
+        (
+            "> *'Do not treat rule mapping, scenario-wide list, successful operation or "
+            "temporal proximity alone as event-level GT.'*"
+        ),
         "> *'Do not promote detector/rule mappings to independent ground truth.'*",
-        "> *'Stop when: Missing independent lineage, reannotation needed, or evaluation unit change needed.'*",
+        (
+            "> *'Stop when: Missing independent lineage, reannotation needed, "
+            "or evaluation unit change needed.'*"
+        ),
         "",
         "Programmatic inspection of all 10 candidate lineage sources established:",
-        "1. **All 63,619 event labels originate exclusively from Wazuh SIEM detection rules** (`_source.rule.mitre.id`).",
-        "2. **No independent Caldera execution logs exist** with transaction-level ability timestamps joining Sysmon events to emulated attack steps.",
-        "3. **Circular Corroboration Hazard**: Evaluating an LLM to predict ATT&CK techniques against detector-generated labels evaluates detector rule replication rather than ground-truth attack telemetry attribution.",
+        (
+            "1. **All 63,619 event labels originate exclusively from Wazuh SIEM detection rules** "
+            "(`_source.rule.mitre.id`)."
+        ),
+        (
+            "2. **No independent Caldera execution logs exist** with transaction-level ability "
+            "timestamps joining Sysmon events to emulated attack steps."
+        ),
+        (
+            "3. **Circular Corroboration Hazard**: Evaluating an LLM to predict ATT&CK techniques "
+            "against detector-generated labels evaluates detector rule replication rather than "
+            "ground-truth attack telemetry attribution."
+        ),
         "",
         "---",
         "",
         "## 3. Methodological Blocker Determination",
         "",
         "### Formal Blocker Finding",
-        "> **Windows-APT 2025 v3 does not currently satisfy the frozen primary event-level ground-truth requirement unless independent execution lineage can be established.**",
+        (
+            "> **Windows-APT 2025 v3 does not currently satisfy the frozen primary event-level "
+            "ground-truth requirement unless independent execution lineage can be established.**"
+        ),
         "",
         "### Policy on Wazuh Detector Labels",
         "> [!WARNING]",
-        "> Accepting Wazuh rule-derived labels as operational benchmark ground truth **cannot be treated as a normal continuation path** or approval of the current design under the frozen methodology.",
-        "> Any utilization of Wazuh-derived labels requires a substantive methodological revision and a separate, explicit user decision.",
+        (
+            "> Accepting Wazuh rule-derived labels as operational benchmark ground truth "
+            "**cannot be treated as a normal continuation path** or approval of the current design "
+            "under the frozen methodology."
+        ),
+        (
+            "> Any utilization of Wazuh-derived labels requires a substantive "
+            "methodological revision and a separate, explicit user decision."
+        ),
         "",
         "### Downstream Disposition",
-        "All downstream tasks (T5-reconcile, T6, T7, T8, T9, T10, T11) remain strictly **`NOT_RUN`**."
+        (
+            "All downstream tasks (T5-reconcile, T6, T7, T8, T9, T10, T11) remain "
+            "strictly **`NOT_RUN`**."
+        ),
     ]
 
     blocker_md_path = reports_dir / "gate_blocker_task4.md"
     with open(blocker_md_path, "w", encoding="utf-8") as f:
         f.write("\n".join(blocker_md_lines) + "\n")
 
-    print(f"[+] Ground truth audit complete. Provenance report: {report_path}. Blocker report: {blocker_md_path}")
+    print(
+        f"[+] Ground truth audit complete. Provenance report: {report_path}. "
+        f"Blocker report: {blocker_md_path}"
+    )
     return diagnostics

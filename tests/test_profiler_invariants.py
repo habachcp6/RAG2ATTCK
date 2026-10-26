@@ -51,7 +51,9 @@ def test_malformed_logical_record_does_not_renumber_later_records(tmp_path):
     assert [row["record_ordinal"] for row in rows] == ["0", "2"]
     assert rows[1]["record_id"] == generate_opaque_record_id(sha, 2)
 
-    ledger = json.loads((tmp_path / "data" / "metadata" / "parse_error_ledger.json").read_text(encoding="utf-8"))
+    ledger = json.loads(
+        (tmp_path / "data" / "metadata" / "parse_error_ledger.json").read_text(encoding="utf-8")
+    )
     assert ledger["source_logical_rows"] == 3
     assert ledger["successfully_parsed_records"] == 2
     assert ledger["rejected_malformed_records"] == 1
@@ -97,6 +99,7 @@ def test_field_inventory_distinguishes_absent_empty_null_and_nonempty(tmp_path):
 def test_cmd_profile_consumes_canonical_schema_without_keyerror(monkeypatch, capsys):
     """cmd_profile must consume canonical schema keys without KeyError."""
     from types import SimpleNamespace
+
     from src.data_ground_truth import cmd_profile
 
     # Mock _validate_or_exit to avoid running production gates in isolated unit test
@@ -108,7 +111,9 @@ def test_cmd_profile_consumes_canonical_schema_without_keyerror(monkeypatch, cap
         "rejected_malformed_records": 2,
         "unique_field_count": 45,
     }
-    monkeypatch.setattr("src.data_ground_truth.profile_dataset_schemas", lambda ws: canonical_result)
+    monkeypatch.setattr(
+        "src.data_ground_truth.profile_dataset_schemas", lambda ws: canonical_result
+    )
 
     args = SimpleNamespace(workspace=".")
     ret = cmd_profile(args)
@@ -119,4 +124,3 @@ def test_cmd_profile_consumes_canonical_schema_without_keyerror(monkeypatch, cap
     assert "Parsed: 98" in captured.out
     assert "Malformed: 2" in captured.out
     assert "Distinct fields: 45" in captured.out
-

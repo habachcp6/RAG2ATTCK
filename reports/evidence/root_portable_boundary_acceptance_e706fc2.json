@@ -1,0 +1,124 @@
+{
+  "schema_version": "root-portable-boundary-acceptance-v1",
+  "status": "ROOT_ACCEPTED_PORTABLE_HISTORICAL_SNAPSHOT_BOUNDARY",
+  "accepted_timestamp_utc": "2026-10-02T23:49:22.870074+00:00",
+  "repository": "habachcp6/RAG2ATTCK",
+  "source_git_sha": "e706fc20b60212a0a821c34ae3f9707aa6395c42",
+  "source_pr": "https://github.com/habachcp6/RAG2ATTCK/pull/34",
+  "scope": "Isolated controller/worker, safe portable provisioning, real child identity/guard/dependency attestation and mandatory OS CI controls. Not full scientific replay or project-final acceptance.",
+  "independent_review_original_sha256": "dfc80df761db5c0aa1e6b48b81df2f37581f10be2f201eb8f54cb9fc9a28bc17",
+  "independent_source_fingerprints": {
+    "scripts/provision_snapshot.py": {
+      "sha256": "72a5fd8d6cc6716da81b579f3f68b94beddd3c1b165a12446df73205743b6d7f",
+      "size": 13867
+    },
+    "scripts/isolated_snapshot_controller.py": {
+      "sha256": "9c5b4c1c0ea21426805524079d0c02e9b5350163546091638640e17742d28bf3",
+      "size": 30650
+    },
+    "scripts/isolated_snapshot_worker.py": {
+      "sha256": "50d5ed95ff7f86d295258b97a2887c1403a7feab667bad85a8f567d0a566fc92",
+      "size": 24672
+    },
+    "scripts/run_offline_tests.py": {
+      "sha256": "c416d729cc0a2b90bea7660bbf5979edc724a4328acfc838b02044b6d1e65319",
+      "size": 2193
+    },
+    "scripts/offline_guard/sitecustomize.py": {
+      "sha256": "ab8d5e15e87c3545dc02bb42bcd95500cc2b715c2cf0be142da9c60c180a6ad0",
+      "size": 950
+    },
+    "tests/test_provision_snapshot.py": {
+      "sha256": "06b93c8d236a93c94c751a3a4472044f8332f43a9b0708fb68de537a291eb010",
+      "size": 6548
+    },
+    "tests/test_snapshot_boundary_isolation.py": {
+      "sha256": "1395b59ef6aed202618befdf038391ea6dbcd55cdd1f7d87072fcb13000f2151",
+      "size": 34269
+    },
+    "tests/test_ci_contract.py": {
+      "sha256": "a448c66551c6e1e5e1740a2f78175c0a9a483f9ffa855c69614bc436cf71b671",
+      "size": 18984
+    },
+    ".github/workflows/ci.yml": {
+      "sha256": "accc834459c8719aad7707f8c9d896141930003a5f3d6cefa0dff999551e7c54",
+      "size": 5484
+    },
+    ".github/workflows/integration.yml": {
+      "sha256": "36cb915f621f0a16c79a8278dd37defa8377a873607f3fac2fd39ecc3884ca35",
+      "size": 4155
+    },
+    "pyproject.toml": {
+      "sha256": "d7f420d057b66d58d6a330bca691b8f87d9a9ba7ec5eb70e45822d426466b2d3",
+      "size": 937
+    }
+  },
+  "historical_snapshot": {
+    "git_sha": "b69a6909acda4c7588744acc7e1d6c20bfce2612",
+    "core_manifest_sha256": "8b1b3ea4d11a8e3c0e53aff0ad7d3f8976c68d582d0848747e4be38a292258c4",
+    "core_files_count": 53,
+    "rq_source_sha256": "f85d7f7373e825dcc7171ce4491fd15c6fb755955da245041783fe317bc80351",
+    "raw_git_byte_fidelity_verified_files": 309,
+    "protected_baselines": 22,
+    "original_expanded_inventory_unchanged": true,
+    "platform_dependency_closures": {
+      "windows": 87,
+      "linux": 104,
+      "macos": 85
+    }
+  },
+  "meaningful_local_controls": {
+    "f8_targeted_passed": 10,
+    "f8_intentionally_deselected": 1,
+    "f8_duration_seconds": 4.66,
+    "attempted_egress": 0,
+    "wrong_child_prefix_executable_missing_guard_nonzero_exit_rejected": true,
+    "f7_inherited_controller_ci_contract_passed": 106,
+    "f7_duration_seconds": 28.76
+  },
+  "github_runs": {
+    "ci": {
+      "conclusion": "success",
+      "event": "workflow_dispatch",
+      "headSha": "e706fc20b60212a0a821c34ae3f9707aa6395c42",
+      "status": "completed",
+      "url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37077126214"
+    },
+    "integration": {
+      "conclusion": "success",
+      "event": "workflow_dispatch",
+      "headSha": "e706fc20b60212a0a821c34ae3f9707aa6395c42",
+      "status": "completed",
+      "url": "https://github.com/habachcp6/RAG2ATTCK/actions/runs/37078734418"
+    }
+  },
+  "ci_actual_counts": {
+    "ubuntu": {
+      "passed": 1538,
+      "skipped": 21,
+      "deselected": 5,
+      "duration_seconds": 136.33
+    },
+    "windows": {
+      "passed": 1538,
+      "skipped": 21,
+      "deselected": 5,
+      "duration_seconds": 212.48
+    },
+    "mandatory_provision_controls_executed": 11,
+    "mandatory_snapshot_controls_executed": 31,
+    "mandatory_snapshot_env_skips": 0,
+    "integration": {
+      "passed": 5,
+      "deselected": 1559,
+      "duration_seconds": 13.47,
+      "attempted_egress": 0
+    }
+  },
+  "scope_limits": [
+    "Keep original b69/53-file core, f85 analysis, lock, protocol, data, ground truth and original evidence immutable.",
+    "Modern engineering formatting/repairs require separate execution packet and distinct current-source provenance; do not rebind the old canonical lock.",
+    "Full saved-data science replay, all13 final quality gates, public package and final report/deck/figure acceptance remain open.",
+    "No provider experiment, tracker edits, main merge or release publish authorized by this receipt."
+  ]
+}

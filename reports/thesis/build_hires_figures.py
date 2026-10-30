@@ -126,10 +126,14 @@ def build_fig1():
 # Figure 2: Accuracy vs k (Two-panel: Full 0-100% scale + Point & 95% CI view)
 # ---------------------------------------------------------------------------
 def build_fig2():
+    import json
+    bundle_path = pathlib.Path(r"C:\Users\hahoa\.codex\artifacts\rag2attck\finalization_repo_20261003\artifacts\results\canonical_metric_bundle_v2.json")
+    bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
+    cond_keys = ["no_rag", "rag_k1", "rag_k3", "rag_k5", "rag_k10"]
     labels = ["No-RAG\n(k=0)", "RAG\n(k=1)", "RAG\n(k=3)", "RAG\n(k=5)", "RAG\n(k=10)"]
-    accs = [77.9944, 77.0195, 78.5515, 78.8301, 79.5265]
-    ci_lows = [74.6443, 73.5376, 75.0696, 75.3482, 75.8121]
-    ci_highs = [80.8810, 79.9443, 81.6156, 82.0334, 82.8468]
+    accs = [bundle["conditions"][c]["rq1_attribution"]["accuracy_end_to_end"] * 100.0 for c in cond_keys]
+    ci_lows = [bundle["conditions"][c]["rq1_attribution"]["accuracy_e2e_ci_95"][0] * 100.0 for c in cond_keys]
+    ci_highs = [bundle["conditions"][c]["rq1_attribution"]["accuracy_e2e_ci_95"][1] * 100.0 for c in cond_keys]
     yerr_low = [a - l for a, l in zip(accs, ci_lows)]
     yerr_high = [h - a for a, h in zip(accs, ci_highs)]
     x = np.arange(len(labels))
@@ -156,7 +160,7 @@ def build_fig2():
     ax2.plot(x[1:], accs[1:], color="#1d4ed8", linewidth=1.6, linestyle="--", alpha=0.65, zorder=2)
     ax2.errorbar(x, accs, yerr=[yerr_low, yerr_high], fmt="o", color="#1e3a8a", ecolor="#0f172a", markersize=7, elinewidth=1.8, capsize=5, capthick=1.5, zorder=3, label="Point Estimate & 95% Cluster-Bootstrap CI")
     for xi, a, lo, hi in zip(x, accs, ci_lows, ci_highs):
-        ax2.text(xi, hi + 0.35, f"{a:.2f}%\n[{lo:.1f}, {hi:.1f}]", ha="center", va="bottom", fontsize=8.2, fontweight="bold", color="#0f172a")
+        ax2.text(xi, hi + 0.35, f"{a:.2f}%\n[{lo:.2f}, {hi:.2f}]", ha="center", va="bottom", fontsize=8.0, fontweight="bold", color="#0f172a")
     ax2.set_ylim(71.5, 86.2)
     ax2.set_ylabel("Attribution Accuracy (%) [Zoomed Interval View]", fontsize=10.5, fontweight="bold", color="#1e293b")
     ax2.set_title("(b) Point Estimates & 95% Cluster-Bootstrap CIs", fontsize=10.5, fontweight="bold", color="#1e293b", pad=8)
@@ -246,7 +250,7 @@ def build_fig4():
 
     ax.set_ylim(0, 54)
     ax.set_ylabel("Retrieval Coverage on TEST Split (%)", fontsize=10.5, fontweight="bold")
-    ax.set_title("Figure 4: Standalone Dense Retrieval Hit@k vs. Macro Recall@k on 718 Scorable TEST Views\n(Divergence stems from 40 TEST multi-label views where Hit@10 = 75.00% [30/40] vs. Macro Recall@10 = 40.83% [TEST+DEV N=44: 72.73% vs. 39.02%])", fontsize=10.8, fontweight="bold", pad=10)
+    ax.set_title("Figure 4: Standalone Dense Retrieval Hit@k vs. Macro Recall@k on 718 Scorable TEST Views\n(40 TEST multi-label views: Hit@10 = 75.00% [30/40] vs. Macro Recall@10 = 40.83% [TEST+DEV N=44: 72.73% vs. 39.02%])", fontsize=10.0, fontweight="bold", pad=10)
     ax.set_xticks(x)
     ax.set_xticklabels(labels, fontsize=10, fontweight="bold")
     ax.grid(axis="y", linestyle="--", alpha=0.5, color="#cbd5e1")

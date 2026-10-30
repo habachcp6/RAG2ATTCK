@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 500" width="860" height="500">
+  <defs>
+    <style>
+      @page { size: 860px 500px; margin: 0; }
+      .title { font-family: "Segoe UI", Arial, sans-serif; font-size: 15.5px; font-weight: bold; fill: #0f172a; text-anchor: middle; }
+      .subtitle { font-family: "Segoe UI", Arial, sans-serif; font-size: 11.5px; fill: #475569; text-anchor: middle; }
+    </style>
+  </defs>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="430" y="30" class="title">Figure 1: RAG2ATT&amp;CK Dual-View Attribution Architecture</text>
+  <text x="430" y="50" class="subtitle">Controlled evaluation pipeline across 5 conditions (N = 1,280 TEST views; 718 scorable mapped-positive views)</text>
+
+  <!-- Boxes -->
+  <rect x="35" y="92" width="175" height="122" rx="8" ry="8" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+  <text x="122" y="116" font-family="Segoe UI, Arial" font-size="12.5" font-weight="bold" fill="#1d4ed8" text-anchor="middle">Windows Endpoint Telemetry</text>
+  <line x1="45" y1="125" x2="200" y2="125" stroke="#2563eb" stroke-width="1" opacity="0.45"/>
+  <text x="122" y="146" font-family="Segoe UI, Arial" font-size="11" fill="#1e293b" text-anchor="middle">Single &amp; Contextual Views</text>
+  <text x="122" y="166" font-family="Segoe UI, Arial" font-size="11" fill="#1e293b" text-anchor="middle">640 TEST Pairs (1,280 Views)</text>
+  <text x="122" y="186" font-family="Segoe UI, Arial" font-size="10.5" fill="#475569" text-anchor="middle">INFERENCE_ALLOWLIST Scrubbed</text>
+
+  <rect x="255" y="92" width="175" height="122" rx="8" ry="8" fill="#f5f3ff" stroke="#7c3aed" stroke-width="2"/>
+  <text x="342" y="116" font-family="Segoe UI, Arial" font-size="12.5" font-weight="bold" fill="#6d28d9" text-anchor="middle">Dense Vector Retrieval</text>
+  <line x1="265" y1="125" x2="420" y2="125" stroke="#7c3aed" stroke-width="1" opacity="0.45"/>
+  <text x="342" y="146" font-family="Segoe UI, Arial" font-size="11" fill="#1e293b" text-anchor="middle">all-MiniLM-L6-v2 (384-d L2)</text>
+  <text x="342" y="166" font-family="Segoe UI, Arial" font-size="11" fill="#1e293b" text-anchor="middle">FAISS IndexFlatIP (474 Docs)</text>
+  <text x="342" y="186" font-family="Segoe UI, Arial" font-size="10.5" fill="#475569" text-anchor="middle">Candidate Depths k in {1, 3, 5, 10}</text>
+
+  <rect x="475" y="92" width="175" height="122" rx="8" ry="8" fill="#ecfdf5" stroke="#059669" stroke-width="2"/>
+  <text x="562" y="116" font-family="Segoe UI, Arial" font-size="12.5" font-weight="bold" fill="#047857" text-anchor="middle">LLM Reasoning Engine</text>
+  <line x1="485" y1="125" x2="640" y2="125" stroke="#059669" stroke-width="1" opacity="0.45"/>
+  <text x="562" y="146" font-family="Segoe UI, Arial" font-size="11" fill="#1e293b" text-anchor="middle">OpenAI gpt-5.6-luna Alias</text>
+  <text x="562" y="166" font-family="Segoe UI, Arial" font-size="11" fill="#1e293b" text-anchor="middle">reasoning_effort = "xhigh"</text>
+  <text x="562" y="186" font-family="Segoe UI, Arial" font-size="10.5" fill="#475569" text-anchor="middle">Symmetric Prompt &amp; Schema</text>
+
+  <rect x="690" y="92" width="140" height="122" rx="8" ry="8" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+  <text x="760" y="116" font-family="Segoe UI, Arial" font-size="12.5" font-weight="bold" fill="#b45309" text-anchor="middle">Attribution Output</text>
+  <line x1="700" y1="125" x2="820" y2="125" stroke="#d97706" stroke-width="1" opacity="0.45"/>
+  <text x="760" y="146" font-family="Segoe UI, Arial" font-size="11" fill="#1e293b" text-anchor="middle">Single Technique ID</text>
+  <text x="760" y="166" font-family="Segoe UI, Arial" font-size="11" fill="#1e293b" text-anchor="middle">ANY_MATCH Scoring</text>
+  <text x="760" y="186" font-family="Segoe UI, Arial" font-size="10.5" fill="#475569" text-anchor="middle">474-Class Macro-F1</text>
+
+  <!-- Arrows -->
+  <line x1="210" y1="153" x2="253" y2="153" stroke="#475569" stroke-width="2.2"/>
+  <polygon points="255,153 247,148 247,158" fill="#475569"/>
+  <line x1="430" y1="153" x2="473" y2="153" stroke="#475569" stroke-width="2.2"/>
+  <polygon points="475,153 467,148 467,158" fill="#475569"/>
+  <line x1="650" y1="153" x2="688" y2="153" stroke="#475569" stroke-width="2.2"/>
+  <polygon points="690,153 682,148 682,158" fill="#475569"/>
+
+  <!-- No-RAG Bypass -->
+  <path d="M 122 92 L 122 68 L 562 68 L 562 92" fill="none" stroke="#2563eb" stroke-width="2" stroke-dasharray="5,4"/>
+  <polygon points="562,92 557,85 567,85" fill="#2563eb"/>
+  <rect x="242" y="57" width="215" height="22" rx="4" ry="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.2"/>
+  <text x="349" y="72" font-family="Segoe UI, Arial" font-size="10.5" font-weight="bold" fill="#1d4ed8" text-anchor="middle">No-RAG Baseline Bypass (k = 0)</text>
+
+  <!-- Governance Box -->
+  <rect x="35" y="238" width="795" height="235" rx="8" ry="8" fill="#f8fafc" stroke="#64748b" stroke-width="1.5" stroke-dasharray="5,5"/>
+  <text x="432" y="262" font-family="Segoe UI, Arial" font-size="13" font-weight="bold" fill="#1e293b" text-anchor="middle">Frozen Scientific Protocol v1.1 &amp; Financial Ledger Governance (Decisions D1–D7)</text>
+
+  <!-- Left col -->
+  <circle cx="60" cy="291" r="3.5" fill="#2563eb"/>
+  <text x="72" y="295" font-family="Segoe UI, Arial" font-size="11.5" font-weight="bold" fill="#0f172a">D1: RECORD_ONLY Prompt &amp; Output Policy</text>
+  <text x="72" y="311" font-family="Segoe UI, Arial" font-size="10.5" fill="#475569">Raw model completions recorded verbatim with secret scrubbing</text>
+  <text x="72" y="325" font-family="Segoe UI, Arial" font-size="10.5" fill="#475569">Byte-identical prompt template across No-RAG and RAG</text>
+
+  <circle cx="60" cy="351" r="3.5" fill="#2563eb"/>
+  <text x="72" y="355" font-family="Segoe UI, Arial" font-size="11.5" font-weight="bold" fill="#0f172a">D2a–D2j: Scoring, Universe &amp; NULL Semantics</text>
+  <text x="72" y="371" font-family="Segoe UI, Arial" font-size="10.5" fill="#475569">ANY_MATCH accuracy on 718 mapped views (311 ambig / 251 unmapped excl.)</text>
+  <text x="72" y="385" font-family="Segoe UI, Arial" font-size="10.5" fill="#475569">474-class Windows universe (D2d); zero denominators export as null (D2j)</text>
+
+  <circle cx="60" cy="411" r="3.5" fill="#2563eb"/>
+  <text x="72" y="415" font-family="Segoe UI, Arial" font-size="11.5" font-weight="bold" fill="#0f172a">D3 &amp; D4: Provenance &amp; Sequential Execution</text>
+  <text x="72" y="431" font-family="Segoe UI, Arial" font-size="10.5" fill="#475569">Sequential execution (concurrency = 1); fixed model alias &amp; settings</text>
+  <text x="72" y="445" font-family="Segoe UI, Arial" font-size="10.5" fill="#475569">Timestamped response IDs retained (backend version/fingerprints null)</text>
+
+  <!-- Right col -->
+  <circle cx="450" cy="291" r="3.5" fill="#2563eb"/>
+  <text x="462" y="295" font-family="Segoe UI, Arial" font-size="11.5" font-weight="bold" fill="#0f172a">D5: Financial Guard &amp; Worst-Case Reservation</text>
+  <text x="462" y="311" font-family="Segoe UI, Arial" font-size="10.5" fill="#475569">USD 19.99 hard study ceiling; USD 0.53974560 pre-dispatch attempt hold</text>
+  <text x="462" y="325" font-family="Segoe UI, Arial" font-size="10.5" fill="#475569">Missing usage receipts retain full worst-case hold in settled ledger</text>
+
+  <circle cx="450" cy="351" r="3.5" fill="#2563eb"/>
+  <text x="462" y="355" font-family="Segoe UI, Arial" font-size="11.5" font-weight="bold" fill="#0f172a">D6 &amp; D7: Synthetic Paired Benchmark Boundary</text>
+  <text x="462" y="371" font-family="Segoe UI, Arial" font-size="10.5" fill="#475569">Task 2 forensic stop on Mendeley v3 (15,713 discrepancies); T15 deferred</text>
+  <text x="462" y="385" font-family="Segoe UI, Arial" font-size="10.5" fill="#475569">All claims strictly bounded to synthetic-paired-v1 (640 TEST pairs)</text>
+
+  <circle cx="450" cy="411" r="3.5" fill="#2563eb"/>
+  <text x="462" y="415" font-family="Segoe UI, Arial" font-size="11.5" font-weight="bold" fill="#0f172a">D2h &amp; D2i: Retrieval Hit vs. Recall &amp; Failure Axes</text>
+  <text x="462" y="431" font-family="Segoe UI, Arial" font-size="10.5" fill="#475569">Hit@k (Y_i ∩ R_{i,k} ≠ ∅) distinguished from multi-label Macro Recall@k</text>
+  <text x="462" y="445" font-family="Segoe UI, Arial" font-size="10.5" fill="#475569">5 non-mutually-exclusive failure axes evaluated without forced causality</text>
+</svg>

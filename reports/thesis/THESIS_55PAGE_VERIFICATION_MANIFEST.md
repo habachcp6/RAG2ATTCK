@@ -1,4 +1,4 @@
-# Complete Verification Manifest & Full Text Dump of Final 55-Page Thesis
+# Complete Verification Manifest & Full Text Dump of Final 56-Page Thesis
 
 ## 1. File Digests & Structural Summary
 - **DOCX File**: `reports/thesis/HOD402_CP_StudentsGuideForm_RAG2ATTCK_HoanChinh.docx`
@@ -26,7 +26,7 @@
 | `reports/thesis/figures_hires/fig7_cost_and_tokens_vs_k.png` | 279,173 | `2a7cecfef961e0ed9ed7982edc95784965442fe2498e646e8b422d4e525ce384` |
 | `reports/thesis/figures_hires/fig8_failure_decomposition.png` | 202,082 | `550a9ffcd40d0ce10bb8f9843863f5da6387696024695e7cf4920fce7cdd4c2f` |
 
-## 3. Page-by-Page PDF Audit (Pages 1 to 55)
+## 3. Page-by-Page PDF Audit (Pages 1 to 56)
 | Page # | Text Chars | Embedded Images | First Line / Heading Preview |
 |---:|---:|---:|---|
 | 1 | 431 | 1 | MINISTRY OF EDUCATION AND TRAINING / FPT UNIVERSITY |
